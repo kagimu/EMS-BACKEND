@@ -3,7 +3,6 @@ package userManagement
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/config"
-	"github.com/hamsoftug/wholesomeEd/controllers/profile"
 	"github.com/hamsoftug/wholesomeEd/models"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"gorm.io/gorm"
@@ -110,8 +109,8 @@ func Users(context *gin.Context) {
 			Info:        item.Info,
 			Seen:        item.Seen,
 			CreatedAt:   item.CreatedAt,
-			CoverPic:    profile.CoverProfilePic(context, "cover_photo", item.Number, "defaultCoverPic.png"),
-			ProfilePic:  profile.CoverProfilePic(context, "profile", item.Number, "default.png"),
+			CoverPic:    "",
+			ProfilePic:  "",
 			ContactList: contactListInfo,
 		})
 	}

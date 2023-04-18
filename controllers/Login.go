@@ -3,7 +3,6 @@ package controllers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/config"
-	"github.com/hamsoftug/wholesomeEd/controllers/profile"
 	"github.com/hamsoftug/wholesomeEd/hassPassTokenGen"
 	"github.com/hamsoftug/wholesomeEd/models"
 	"net/http"
@@ -128,7 +127,7 @@ func Login(context *gin.Context) {
 		Gender:      userProfile.Gender,
 		Type:        userProfile.Type,
 		//CoverPic:    profile.CoverProfilePic(context, "cover_photo", userNumber, "defaultCoverPic.png"),
-		ProfilePic:  profile.CoverProfilePic(context, "profile", userNumber, "default.png"),
+		ProfilePic:  "",
 		ContactList: contactListInfo,
 	}
 

@@ -44,27 +44,10 @@ func Profile(context *gin.Context) {
 		Name:        userProfile.Name,
 		DateOfBirth: userProfile.DateOfBirth,
 		Gender:      userProfile.Gender,
-		CoverPic:    CoverProfilePic(context, "cover_photo", userId, "defaultCoverPic.png"),
-		ProfilePic:  CoverProfilePic(context, "profile", userId, "default.png"),
+		CoverPic:    "",
+		ProfilePic:  "",
 		ContactList: contactListInfo,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _userProfile})
-}
-
-func CoverProfilePic(context *gin.Context, pictureType string, userId string, defaultPic string) string {
-	profilePath := ""
-	//path := "https://" + context.Request.Host + "/fileRepo/profileCoverPhoto/"
-	path := "https://" + context.Request.Host + "/api/v1/main/file/"
-	var displayPic models.DisplayPic
-	if err := config.DB.
-		Where("picture_type = ?", pictureType).
-		Where("user_number = ?", userId).
-		Order("created_at desc").
-		First(&displayPic).Error; err != nil {
-		profilePath = path + defaultPic + "?cat=cover"
-	} else {
-		profilePath = path + displayPic.FileName + "?cat=cover"
-	}
-	return profilePath
 }
