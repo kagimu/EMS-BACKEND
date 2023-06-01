@@ -48,7 +48,7 @@ func main() {
 
 	router := routes.SetupRoute()
 
-	errPort := router.Run(":2053")
+	errPort := router.Run(":2054")
 	if errPort != nil {
 		fmt.Println("Error starting server:", errPort)
 	}
