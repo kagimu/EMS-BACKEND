@@ -41,6 +41,7 @@ func main() {
 		&models2.User{},
 		&models2.Contact{},
 		&models2.PasswordReset{},
+		&models2.UserPassword{},
 	)
 	if errMigrate != nil {
 		return

@@ -39,14 +39,12 @@ func Profile(context *gin.Context) {
 	}
 
 	_userProfile := models2.GetUserList{
-		ID:          userProfile.ID,
-		Number:      userProfile.Number,
-		Name:        userProfile.Name,
-		DateOfBirth: userProfile.DateOfBirth,
-		Gender:      userProfile.Gender,
-		CoverPic:    "",
-		ProfilePic:  "",
-		ContactList: contactListInfo,
+		ID:         userProfile.ID,
+		Number:     userProfile.Number,
+		FirstName:  userProfile.FirstName,
+		SecondName: userProfile.SecondName,
+		LastName:   userProfile.LastName,
+		Gender:     userProfile.Gender,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _userProfile})
