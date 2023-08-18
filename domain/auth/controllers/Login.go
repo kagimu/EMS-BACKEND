@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
 )
 
 func Login(context *gin.Context) {
@@ -89,15 +88,6 @@ func Login(context *gin.Context) {
 		return
 	}
 
-	//update last seen for user
-	updateLastSeen := config.DB.Model(&user).
-		Where("number = ?", userNumber).
-		Update("seen", time.Now())
-	if updateLastSeen.Error != nil {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
-		return
-	}
-
 	//return User profile
 	var userProfile models2.User
 	if err := config.DB.
@@ -115,7 +105,6 @@ func Login(context *gin.Context) {
 			ID:          item.ID,
 			Contact:     item.Contact,
 			ContactType: item.ContactType,
-			//UserNumber:  item.UserNumber,
 		})
 	}
 

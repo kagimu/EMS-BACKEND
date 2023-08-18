@@ -35,6 +35,8 @@ func SetupRoute() *gin.Engine {
 	{
 		auth.POST("login", controllers2.Login)
 		auth.POST("register", controllers2.Register)
+		//auth.POST("set-password", controllers.UserPassword)
+		//auth.POST("reset-password", controllers.ResetPassword)
 	}
 
 	main := router.Group("/main")
