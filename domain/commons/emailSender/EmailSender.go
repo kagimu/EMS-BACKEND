@@ -19,9 +19,9 @@ type Info struct {
 func (i Info) SendEmail() {
 	templateUrl := ""
 	if i.Type == "registration" {
-		templateUrl = "/fileRepo/templates/registrationTemplate.html"
+		templateUrl = "/api/fileRepo/templates/registrationTemplate.html"
 	} else {
-		templateUrl = "/fileRepo/templates/resetPasswordTemplate.html"
+		templateUrl = "/api/fileRepo/templates/resetPasswordTemplate.html"
 	}
 
 	t, err := template.ParseFiles(templateUrl)

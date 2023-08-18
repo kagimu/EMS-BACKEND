@@ -1,14 +1,12 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/api/config"
 	models2 "github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	"github.com/hamsoftug/wholesomeEd/domain/commons"
 	"github.com/hamsoftug/wholesomeEd/domain/commons/emailSender"
 	uuid "github.com/satori/go.uuid"
-	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -20,40 +18,28 @@ func Register(context *gin.Context) {
 	//	we need to first initialize a struct that caters for posted data
 	//then after this data is separated
 
-	var userPostData models2.PostUserData
+	var userPostData models2.UserDataRequest
 	err := context.BindJSON(&userPostData)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
-	userName := userPostData.Name
-	dateOfBirth := userPostData.DateOfBirth
+	firstName := userPostData.FirstName
+	secondName := userPostData.SecondName
+	lastName := userPostData.LastName
 	userGender := userPostData.Gender
 	userEmail := userPostData.Email
 	userPhone := userPostData.Phone
 
 	// form validation for required fields
-	if userName == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User Name is required!"})
+	if firstName == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "First Name is required!"})
 		return
 	}
 
-	if dateOfBirth == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Date of Birth is required!"})
-		return
-	}
-
-	currentYear := time.Now().Year()
-	birthYear, _ := time.Parse("2006-01-02", dateOfBirth)
-
-	if birthYear.Year() > currentYear {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid date of Birth!"})
-		return
-	}
-	//this allows birthdate of 4 years and above
-	if (currentYear - birthYear.Year()) < 4 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid date of Birth!"})
+	if secondName == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "First Name is required!"})
 		return
 	}
 
@@ -120,34 +106,24 @@ func Register(context *gin.Context) {
 	var user models2.User
 	userType := "User"
 	userStatus := "Inactive"
-	seen := time.Now()
+
 	if userTypeChecker := config.DB.
 		First(&user).Error; userTypeChecker != nil {
 		userType = "Admin"
 	}
-
-	//get user ip address
-	conn, err3 := net.Dial("udp", "8.8.8.8:80")
-	if err3 != nil {
-		fmt.Println("Error:")
-	}
-
-	//defer conn.Close()
-	userInfo := conn.LocalAddr().(*net.UDPAddr)
 
 	//creates a secure uuid user number
 	userNumber := uuid.NewV4().String()
 
 	///save user data
 	saveUser := models2.User{
-		Number:      userNumber,
-		Name:        userName,
-		DateOfBirth: dateOfBirth,
-		Gender:      userGender,
-		Type:        userType,
-		Status:      userStatus,
-		Info:        userInfo.String(),
-		Seen:        seen,
+		Number:     userNumber,
+		FirstName:  firstName,
+		SecondName: secondName,
+		LastName:   lastName,
+		Gender:     userGender,
+		Type:       userType,
+		Status:     userStatus,
 	}
 
 	config.DB.Save(&saveUser)
@@ -182,7 +158,7 @@ func Register(context *gin.Context) {
 
 	//email sender
 	Token := userToken
-	d := emailSender.Info{Email: userEmail, Token: Token, MailType: "TutorView: User Account Confirmation", UserName: userName, CurrentYear: time.Now().Year(), Type: "registration"}
+	d := emailSender.Info{Email: userEmail, Token: Token, MailType: "WholesomeEd: User Account Confirmation", UserName: secondName, CurrentYear: time.Now().Year(), Type: "registration"}
 	d.SendEmail()
 
 	var collection []interface{}
