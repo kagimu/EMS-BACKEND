@@ -4,9 +4,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/hamsoftug/wholesomeEd/config"
-	"github.com/hamsoftug/wholesomeEd/models"
-	"github.com/hamsoftug/wholesomeEd/routes"
+	"github.com/hamsoftug/wholesomeEd/api/config"
+	"github.com/hamsoftug/wholesomeEd/api/routes"
+	models2 "github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -38,9 +38,9 @@ func main() {
 	}(sqlDB)
 
 	errMigrate := config.DB.AutoMigrate(
-		&models.User{},
-		&models.Contact{},
-		&models.PasswordReset{},
+		&models2.User{},
+		&models2.Contact{},
+		&models2.PasswordReset{},
 	)
 	if errMigrate != nil {
 		return

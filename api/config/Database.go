@@ -19,15 +19,16 @@ type DBConfig struct {
 
 func BuildDBConfig() *DBConfig {
 	dbConfig := DBConfig{
-		Host:     "127.0.0.1",
-		Port:     3306,
-		User:     "tutorview_gouser",
-		Password: "bQGgKwTdh9",
-		DBName:   "tutorview_godb",
-		//Host:     "localhost",
-		//User:     "root",
-		//Password: "",
+		//Host:     "127.0.0.1",
+		Port: 3306,
+		//User:     "tutorview_gouser",
+		//Password: "bQGgKwTdh9",
+		//DBName:   "tutorview_godb",
+		Host:     "localhost",
+		User:     "root",
+		Password: "",
 		//DBName:   "tutorview_db",
+		DBName: "wholesome_ed_db",
 	}
 	return &dbConfig
 }

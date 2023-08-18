@@ -3,10 +3,10 @@ package controllers
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/commons"
-	"github.com/hamsoftug/wholesomeEd/config"
-	"github.com/hamsoftug/wholesomeEd/emailSender"
-	"github.com/hamsoftug/wholesomeEd/models"
+	"github.com/hamsoftug/wholesomeEd/api/config"
+	models2 "github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	"github.com/hamsoftug/wholesomeEd/domain/commons"
+	"github.com/hamsoftug/wholesomeEd/domain/commons/emailSender"
 	uuid "github.com/satori/go.uuid"
 	"net"
 	"net/http"
@@ -20,7 +20,7 @@ func Register(context *gin.Context) {
 	//	we need to first initialize a struct that caters for posted data
 	//then after this data is separated
 
-	var userPostData models.PostUserData
+	var userPostData models2.PostUserData
 	err := context.BindJSON(&userPostData)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -92,7 +92,7 @@ func Register(context *gin.Context) {
 	}
 
 	//	duplicate Email validation
-	var contact models.Contact
+	var contact models2.Contact
 	if duplicateEmail := config.DB.
 		Where("contact = ?", userEmail).
 		Where("contact_type = ?", "email").
@@ -117,7 +117,7 @@ func Register(context *gin.Context) {
 	}
 
 	//first time registration user type must be admin
-	var user models.User
+	var user models2.User
 	userType := "User"
 	userStatus := "Inactive"
 	seen := time.Now()
@@ -139,7 +139,7 @@ func Register(context *gin.Context) {
 	userNumber := uuid.NewV4().String()
 
 	///save user data
-	saveUser := models.User{
+	saveUser := models2.User{
 		Number:      userNumber,
 		Name:        userName,
 		DateOfBirth: dateOfBirth,
@@ -153,7 +153,7 @@ func Register(context *gin.Context) {
 	config.DB.Save(&saveUser)
 
 	//after you need to save user email
-	saveEmailContact := models.Contact{
+	saveEmailContact := models2.Contact{
 		Contact:     userEmail,
 		ContactType: "Email",
 		UserNumber:  saveUser.Number,
@@ -161,7 +161,7 @@ func Register(context *gin.Context) {
 	config.DB.Save(&saveEmailContact)
 
 	//after you need to save user phone
-	savePhoneContact := models.Contact{
+	savePhoneContact := models2.Contact{
 		Contact:     userPhone,
 		ContactType: "Phone",
 		UserNumber:  saveUser.Number,
@@ -171,7 +171,7 @@ func Register(context *gin.Context) {
 	//create / generate a token for the user to reset their password
 	//userToken := tokenGenerator()
 	userToken := uuid.NewV4().String()
-	saveUserPasswordToken := models.PasswordReset{
+	saveUserPasswordToken := models2.PasswordReset{
 		Number:     uuid.NewV4().String(),
 		UserNumber: userNumber,
 		Token:      userToken,
@@ -190,7 +190,7 @@ func Register(context *gin.Context) {
 	collection = append(collection, savePhoneContact)
 
 	type UserInfo struct {
-		models.User
+		models2.User
 		Contacts []interface{}
 	}
 

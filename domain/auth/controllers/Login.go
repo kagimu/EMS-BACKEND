@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/config"
-	"github.com/hamsoftug/wholesomeEd/hassPassTokenGen"
-	"github.com/hamsoftug/wholesomeEd/models"
+	"github.com/hamsoftug/wholesomeEd/api/config"
+	models2 "github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	"github.com/hamsoftug/wholesomeEd/domain/commons/hassPassTokenGen"
 	"net/http"
 	"regexp"
 	"strings"
@@ -51,7 +51,7 @@ func Login(context *gin.Context) {
 	}
 
 	//	check if user exists
-	var contact models.Contact
+	var contact models2.Contact
 
 	userContact := config.DB.
 		Where("contact = ?", Email).
@@ -64,7 +64,7 @@ func Login(context *gin.Context) {
 	userNumber := contact.UserNumber
 
 	//get user password from the password table
-	var userPassword models.UserPassword
+	var userPassword models2.UserPassword
 	getUserPassword := config.DB.
 		Where("user_number = ?", userNumber).
 		First(&userPassword)
@@ -74,7 +74,7 @@ func Login(context *gin.Context) {
 	}
 
 	//check if user is active / not blocked
-	var user models.User
+	var user models2.User
 	config.DB.Where("number = ?", userNumber).First(&user)
 	if user.Status != "Active" {
 		context.JSON(http.StatusNotFound, gin.H{"message": "Account not Active, please reset password to activate your account"})
@@ -99,7 +99,7 @@ func Login(context *gin.Context) {
 	}
 
 	//return User profile
-	var userProfile models.User
+	var userProfile models2.User
 	if err := config.DB.
 		Where("number = ?", userNumber).
 		Preload("Contacts").
@@ -108,10 +108,10 @@ func Login(context *gin.Context) {
 		return
 	}
 
-	var contactListInfo []models.ContactList
+	var contactListInfo []models2.ContactList
 
 	for _, item := range userProfile.Contacts {
-		contactListInfo = append(contactListInfo, models.ContactList{
+		contactListInfo = append(contactListInfo, models2.ContactList{
 			ID:          item.ID,
 			Contact:     item.Contact,
 			ContactType: item.ContactType,
@@ -119,7 +119,7 @@ func Login(context *gin.Context) {
 		})
 	}
 
-	_userProfile := models.GetUserList{
+	_userProfile := models2.GetUserList{
 		ID:          userProfile.ID,
 		Number:      userProfile.Number,
 		Name:        userProfile.Name,

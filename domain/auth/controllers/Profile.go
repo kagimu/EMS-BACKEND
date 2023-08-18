@@ -1,9 +1,9 @@
-package profile
+package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/config"
-	"github.com/hamsoftug/wholesomeEd/models"
+	"github.com/hamsoftug/wholesomeEd/api/config"
+	models2 "github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	"net/http"
 )
 
@@ -17,7 +17,7 @@ func Profile(context *gin.Context) {
 		return
 	}
 
-	var userProfile models.User
+	var userProfile models2.User
 
 	if err := config.DB.
 		Where("number = ?", userId).
@@ -27,10 +27,10 @@ func Profile(context *gin.Context) {
 		return
 	}
 
-	var contactListInfo []models.ContactList
+	var contactListInfo []models2.ContactList
 
 	for _, item := range userProfile.Contacts {
-		contactListInfo = append(contactListInfo, models.ContactList{
+		contactListInfo = append(contactListInfo, models2.ContactList{
 			ID:          item.ID,
 			Contact:     item.Contact,
 			ContactType: item.ContactType,
@@ -38,7 +38,7 @@ func Profile(context *gin.Context) {
 		})
 	}
 
-	_userProfile := models.GetUserList{
+	_userProfile := models2.GetUserList{
 		ID:          userProfile.ID,
 		Number:      userProfile.Number,
 		Name:        userProfile.Name,
