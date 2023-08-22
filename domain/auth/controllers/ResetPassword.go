@@ -55,35 +55,56 @@ func ResetPassword(context *gin.Context) {
 	}
 
 	userNumber := contact.UserNumber
+	userStatus := contact.User.Status
+	userToken := ""
+
+	//passwordStatus := contact.User.Status
+
 	status := "Inactive"
+	statusActive := "Active"
 	var userData models.User
 
-	//then we proceed to update the user
+	//this is done only when user already sent an activation link
+	if userStatus == statusActive {
+		//then we proceed to update the user
+		//var userData models.User
+		updateStatus := config.DB.Model(&userData).
+			Where("number = ?", userNumber).
+			Update("status", status)
+		if updateStatus.Error != nil {
+			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+			return
+		}
 
-	//var userData models.User
-	updateStatus := config.DB.Model(&userData).
-		Where("number = ?", userNumber).
-		Update("status", status)
-	if updateStatus.Error != nil {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
-		return
+		userToken = uuid.NewV4().String()
+		saveUserPasswordToken := models.PasswordReset{
+			Number:     uuid.NewV4().String(),
+			UserNumber: userNumber,
+			Token:      userToken,
+			Status:     status,
+		}
+
+		config.DB.Save(&saveUserPasswordToken)
+
+	} else {
+
+		var passwordResetInfo models.PasswordReset
+		if err := config.DB.
+			Where("user_number = ?", userNumber).
+			Where("status = ?", status).
+			First(&passwordResetInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Token not found"})
+			return
+		}
+
+		userToken = passwordResetInfo.Token
+
 	}
-
-	userToken := uuid.NewV4().String()
-	saveUserPasswordToken := models.PasswordReset{
-		Number:     uuid.NewV4().String(),
-		UserNumber: userNumber,
-		Token:      userToken,
-		Status:     status,
-	}
-
-	config.DB.Save(&saveUserPasswordToken)
 
 	//email sender
-
 	d := emailSender.Info{Email: Email, Token: userToken, MailType: "TutorView: User Account Confirmation", UserName: contact.User.SecondName, CurrentYear: time.Now().Year(), Type: "reset-password"}
 	d.SendEmail()
 
-	context.JSON(http.StatusOK, gin.H{"message": "Please check your email to continue resetting your password"})
+	context.JSON(http.StatusOK, gin.H{"message": "Please check your email to continue resetting your password", "token": userToken})
 
 }
