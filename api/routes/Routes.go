@@ -4,7 +4,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	controllers2 "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
+	authController "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
 	"time"
 )
 
@@ -33,16 +33,16 @@ func SetupRoute() *gin.Engine {
 
 	auth := router.Group("/auth")
 	{
-		auth.POST("login", controllers2.Login)
-		auth.POST("register", controllers2.Register)
-		auth.POST("set-password", controllers2.UserPassword)
-		auth.POST("reset-password", controllers2.ResetPassword)
+		auth.POST("login", authController.Login)
+		auth.POST("register", authController.Register)
+		auth.POST("set-password", authController.UserPassword)
+		auth.POST("reset-password", authController.ResetPassword)
 	}
 
 	main := router.Group("/main")
 	{
 		//main.GET("profile/:id", middlewares.JWTMiddleware(), controllers.Profile)
-		main.GET("profile", controllers2.Profile)
+		main.GET("profile", authController.Profile)
 	}
 	//router.GET("/profile/:name", profile)
 	return router
