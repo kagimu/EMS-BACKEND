@@ -5,6 +5,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	authController "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
+	"github.com/hamsoftug/wholesomeEd/domain/campus"
 	"time"
 )
 
@@ -13,7 +14,7 @@ func SetupRoute() *gin.Engine {
 
 	//setting cors in the system
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:2053", "https://api.tutorview.net"},
+		AllowOrigins:     []string{"http://localhost:2054", "https://wholesomeed.com"},
 		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Access-Control-Allow-Origin", "Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host", "Token", "Authorization", "Accept-Encoding", "X-CSRF-Token", "Access-Control-Allow-Headers", "Content-Type", "user-number"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -43,6 +44,7 @@ func SetupRoute() *gin.Engine {
 	{
 		//main.GET("profile/:id", middlewares.JWTMiddleware(), controllers.Profile)
 		main.GET("profile", authController.Profile)
+		main.POST("new-campus", campus.NewCampus)
 	}
 	//router.GET("/profile/:name", profile)
 	return router

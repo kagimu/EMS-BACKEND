@@ -7,7 +7,7 @@ import (
 type (
 	Contact struct {
 		ID          uint   `gorm:"primaryKey"`
-		Contact     string `json:"contact" form:"contact" binding:"required" gorm:"size:30;unique;not null"`
+		Contact     string `json:"contact" form:"contact" binding:"required" gorm:"size:40;unique;not null"`
 		ContactType string `json:"contact_type" gorm:"size:10;not null"`
 		UserNumber  string `json:"user_number" gorm:"size:100;index;not null"`
 		CreatedAt   time.Time
