@@ -87,7 +87,11 @@ func NewCampus(context *gin.Context) {
 		Level:      level,
 	}
 
-	config.DB.Save(&saveCampus)
+	errorMessage := config.DB.Save(&saveCampus)
+	if errorMessage != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save campus!"})
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveCampus})
 }
