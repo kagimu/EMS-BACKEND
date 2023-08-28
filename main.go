@@ -8,6 +8,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/api/routes"
 	models2 "github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	"github.com/hamsoftug/wholesomeEd/domain/campus/models"
+	models3 "github.com/hamsoftug/wholesomeEd/domain/school/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -43,6 +44,7 @@ func main() {
 		&models2.Contact{},
 		&models2.PasswordReset{},
 		&models2.UserPassword{},
+		&models3.School{},
 		&models.Campus{},
 	)
 	if errMigrate != nil {

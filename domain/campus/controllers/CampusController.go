@@ -1,4 +1,4 @@
-package campus
+package controllers
 
 import (
 	"github.com/gin-gonic/gin"
@@ -12,11 +12,12 @@ import (
 func NewCampus(context *gin.Context) {
 
 	type CampusInfo struct {
-		Name     string `json:"name"`
-		Phone    string `json:"phone"`
-		Email    string `json:"email"`
-		Location string `json:"location"`
-		Level    string `json:"level"`
+		Name         string `json:"name"`
+		Phone        string `json:"phone"`
+		Email        string `json:"email"`
+		Location     string `json:"location"`
+		Level        string `json:"level"`
+		SchoolNumber string `json:"school_number"`
 	}
 
 	var campusInfo CampusInfo
@@ -31,6 +32,7 @@ func NewCampus(context *gin.Context) {
 	email := campusInfo.Email
 	location := campusInfo.Location
 	level := campusInfo.Level
+	schoolNumber := campusInfo.SchoolNumber
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {
@@ -65,6 +67,11 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School number is required!"})
+		return
+	}
+
 	var userData models.User
 	//check if user is a valid user
 	validateUser := config.DB.
@@ -78,13 +85,14 @@ func NewCampus(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveCampus := models2.Campus{
-		Number:     number,
-		UserNumber: userNumber,
-		Name:       name,
-		Phone:      phone,
-		Email:      email,
-		Location:   location,
-		Level:      level,
+		Number:       number,
+		UserNumber:   userNumber,
+		Name:         name,
+		Phone:        phone,
+		Email:        email,
+		Location:     location,
+		Level:        level,
+		SchoolNumber: schoolNumber,
 	}
 
 	config.DB.Save(&saveCampus)

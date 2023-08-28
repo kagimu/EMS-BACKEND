@@ -5,7 +5,8 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	authController "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
-	"github.com/hamsoftug/wholesomeEd/domain/campus"
+	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
+	controllers2 "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
 	"time"
 )
 
@@ -44,7 +45,12 @@ func SetupRoute() *gin.Engine {
 	{
 		//main.GET("profile/:id", middlewares.JWTMiddleware(), controllers.Profile)
 		main.GET("profile", authController.Profile)
-		main.POST("new-campus", campus.NewCampus)
+
+		//manage School
+		main.POST("new-school", controllers2.NewSchool)
+
+		//manage campus
+		main.POST("new-campus", controllers.NewCampus)
 	}
 	//router.GET("/profile/:name", profile)
 	return router
