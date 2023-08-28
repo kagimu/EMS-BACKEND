@@ -142,7 +142,7 @@ func FetchLevel(context *gin.Context) {
 
 	var campus models2.Campus
 	if err := config.DB.
-		Where("campus_number = ?", campusNumber).
+		Where("number = ?", campusNumber).
 		Preload("Level").
 		Order("created_at desc").
 		First(&campus).Error; err != nil {
