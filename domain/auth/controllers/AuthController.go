@@ -6,6 +6,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/api/requests"
 	"github.com/hamsoftug/wholesomeEd/domain/auth/api/responses"
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	"github.com/hamsoftug/wholesomeEd/domain/auth/services"
 	"github.com/hamsoftug/wholesomeEd/domain/commons"
 	"github.com/hamsoftug/wholesomeEd/domain/commons/emailSender"
 	"github.com/hamsoftug/wholesomeEd/domain/commons/hassPassTokenGen"
@@ -133,9 +134,11 @@ func Login(context *gin.Context) {
 		return
 	}*/
 
+	token, err := services.JWTAuthService().GenerateToken(user.Number)
+
 	//context.SetCookie("token", token, 60*60*24*7, "/", "", false, true)
 	//context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "data": user, "expires_in": date, "token": token})
-	context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "data": _userProfile})
+	context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "token": token, "data": _userProfile})
 
 }
 
