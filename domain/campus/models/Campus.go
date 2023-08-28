@@ -19,7 +19,7 @@ type (
 		CreatedAt    time.Time      `json:"created_at"`
 		UpdatedAt    time.Time      `json:"updated_at"`
 		DeletedAt    *time.Time     `sql:"index"`
-		Level        []Level        `json:"contacts" gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Level        []Level        `json:"levels" gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User         models.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		School       models2.School `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
