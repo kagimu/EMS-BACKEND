@@ -12,12 +12,12 @@ import (
 func NewCampus(context *gin.Context) {
 
 	type CampusInfo struct {
-		Name         string `json:"name"`
-		Phone        string `json:"phone"`
-		Email        string `json:"email"`
-		Location     string `json:"location"`
-		Level        string `json:"level"`
-		SchoolNumber string `json:"school_number"`
+		Name         string   `json:"name"`
+		Phone        string   `json:"phone"`
+		Email        string   `json:"email"`
+		Location     string   `json:"location"`
+		Level        []string `json:"level"`
+		SchoolNumber string   `json:"school_number"`
 	}
 
 	var campusInfo CampusInfo
@@ -62,7 +62,7 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
-	if level == "" {
+	if len(level) == 0 {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
 	}
@@ -83,7 +83,6 @@ func NewCampus(context *gin.Context) {
 	}
 
 	number := uuid.NewV4().String()
-	///save user data
 	saveCampus := models2.Campus{
 		Number:       number,
 		UserNumber:   userNumber,
@@ -91,11 +90,66 @@ func NewCampus(context *gin.Context) {
 		Phone:        phone,
 		Email:        email,
 		Location:     location,
-		Level:        level,
 		SchoolNumber: schoolNumber,
 	}
 
 	config.DB.Save(&saveCampus)
 
+	//save Level
+	for _, item := range level {
+		levelNumber := uuid.NewV4().String()
+		saveLevel := models2.Level{
+			Number:       levelNumber,
+			Name:         item,
+			CampusNumber: saveCampus.Number,
+		}
+		config.DB.Save(&saveLevel)
+	}
+
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveCampus})
+}
+
+func FetchCampuses(context *gin.Context) {
+
+	schoolNumber := context.Query("school_number")
+
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School Number is required!"})
+		return
+	}
+
+	var campuses []models2.Campus
+	if err := config.DB.
+		Where("school_number = ?", schoolNumber).
+		Order("created_at desc").
+		Find(&campuses).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No class found"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses})
+
+}
+
+func FetchLevel(context *gin.Context) {
+
+	campusNumber := context.Query("campus_number")
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Campus Number is required!"})
+		return
+	}
+
+	var campus models2.Campus
+	if err := config.DB.
+		Where("number = ?", campusNumber).
+		Preload("Level").
+		Order("created_at desc").
+		First(&campus).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus found"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus})
+
 }
