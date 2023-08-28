@@ -99,3 +99,25 @@ func NewCampus(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveCampus})
 }
+
+func FetchCampuses(context *gin.Context) {
+
+	schoolNumber := context.Query("school_number")
+
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School Number is required!"})
+		return
+	}
+
+	var campuses []models2.Campus
+	if err := config.DB.
+		Where("school_number = ?", schoolNumber).
+		Order("created_at desc").
+		Find(&campuses).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No class found"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses})
+
+}
