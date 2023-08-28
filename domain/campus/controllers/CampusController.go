@@ -83,19 +83,28 @@ func NewCampus(context *gin.Context) {
 	}
 
 	number := uuid.NewV4().String()
-	///save user data
 	saveCampus := models2.Campus{
-		Number:     number,
-		UserNumber: userNumber,
-		Name:       name,
-		Phone:      phone,
-		Email:      email,
-		Location:   location,
-		//Level:        level,
+		Number:       number,
+		UserNumber:   userNumber,
+		Name:         name,
+		Phone:        phone,
+		Email:        email,
+		Location:     location,
 		SchoolNumber: schoolNumber,
 	}
 
 	config.DB.Save(&saveCampus)
+
+	//save Level
+	for _, item := range level {
+		levelNumber := uuid.NewV4().String()
+		saveLevel := models2.Level{
+			Number:       levelNumber,
+			Name:         item,
+			CampusNumber: saveCampus.Number,
+		}
+		config.DB.Save(&saveLevel)
+	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveCampus})
 }

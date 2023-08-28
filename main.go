@@ -46,6 +46,7 @@ func main() {
 		&models2.UserPassword{},
 		&models3.School{},
 		&models.Campus{},
+		&models.Level{},
 	)
 	if errMigrate != nil {
 		return
