@@ -13,7 +13,6 @@ type (
 		CreatedAt    time.Time  `json:"created_at"`
 		UpdatedAt    time.Time  `json:"updated_at"`
 		DeletedAt    *time.Time `sql:"index"`
-		Campus       Campus     `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )
 

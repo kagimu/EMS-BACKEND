@@ -53,6 +53,7 @@ func SetupRoute() *gin.Engine {
 		//manage campus
 		main.POST("new-campus", controllers.NewCampus)
 		main.GET("campuses", controllers.FetchCampuses)
+		main.GET("level", controllers.FetchLevel)
 	}
 	//router.GET("/profile/:name", profile)
 	return router

@@ -130,3 +130,26 @@ func FetchCampuses(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses})
 
 }
+
+func FetchLevel(context *gin.Context) {
+
+	campusNumber := context.Query("campus_number")
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Campus Number is required!"})
+		return
+	}
+
+	var campus models2.Campus
+	if err := config.DB.
+		Where("campus_number = ?", campusNumber).
+		Preload("Level").
+		Order("created_at desc").
+		First(&campus).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus found"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus})
+
+}
