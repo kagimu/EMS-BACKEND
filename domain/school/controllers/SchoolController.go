@@ -63,11 +63,12 @@ func NewSchool(context *gin.Context) {
 func FetchSchools(context *gin.Context) {
 
 	var schools []models3.School
-	if err := config.DB.Find(&schools).Error; err != nil {
+	if err := config.DB.
+		Order("created_at desc").
+		Find(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools})
-
 }

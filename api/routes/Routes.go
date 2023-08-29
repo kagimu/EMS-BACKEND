@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	authController "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
 	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
+	controllers3 "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
 	controllers2 "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
 	"time"
 )
@@ -54,6 +55,11 @@ func SetupRoute() *gin.Engine {
 		main.POST("new-campus", controllers.NewCampus)
 		main.GET("campuses", controllers.FetchCampuses)
 		main.GET("level", controllers.FetchLevel)
+
+		//	manage class
+		main.POST("new-class", controllers3.ClassSchool)
+		main.GET("classes", controllers3.FetchClasses)
+
 	}
 	//router.GET("/profile/:name", profile)
 	return router
