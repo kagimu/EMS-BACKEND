@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func ClassSchool(context *gin.Context) {
+func NewClass(context *gin.Context) {
 
 	type ClassInfo struct {
 		Name        string `json:"name"`
@@ -54,27 +54,26 @@ func ClassSchool(context *gin.Context) {
 		return
 	}
 
-	var duplicateClass models2.Classes
-	if duplicateEmail := config.DB.
+	var duplicateClass models2.Class
+	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("level_number = ?", levelNumber).
-		First(&duplicateClass).Error; duplicateEmail == nil {
+		First(&duplicateClass).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists"})
 		return
 	}
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveCampus := models2.Classes{
+	saveClass := models2.Class{
 		Number:      number,
 		Name:        name,
 		UserNumber:  userNumber,
 		LevelNumber: levelNumber,
 	}
+	config.DB.Save(&saveClass)
 
-	config.DB.Save(&saveCampus)
-
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveCampus})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
 }
 
 func FetchClasses(context *gin.Context) {
@@ -86,7 +85,7 @@ func FetchClasses(context *gin.Context) {
 		return
 	}
 
-	var classes []models2.Classes
+	var classes []models2.Class
 	if err := config.DB.
 		Where("level_number = ?", levelNumber).
 		Order("created_at desc").

@@ -10,6 +10,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/campus/models"
 	models4 "github.com/hamsoftug/wholesomeEd/domain/class/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/school/models"
+	models5 "github.com/hamsoftug/wholesomeEd/domain/subject/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -48,7 +49,8 @@ func main() {
 		&models3.School{},
 		&models.Campus{},
 		&models.Level{},
-		&models4.Classes{},
+		&models4.Class{},
+		&models5.Subject{},
 	)
 	if errMigrate != nil {
 		return

@@ -8,6 +8,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
 	controllers3 "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
 	controllers2 "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
+	controllers4 "github.com/hamsoftug/wholesomeEd/domain/subject/controllers"
 	"time"
 )
 
@@ -57,8 +58,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("level", controllers.FetchLevel)
 
 		//	manage class
-		main.POST("new-class", controllers3.ClassSchool)
+		main.POST("new-class", controllers3.NewClass)
 		main.GET("classes", controllers3.FetchClasses)
+
+		//manage subject
+		main.POST("new-subject", controllers4.NewSubject)
+		main.GET("subjects", controllers4.FetchSubject)
 
 	}
 	//router.GET("/profile/:name", profile)

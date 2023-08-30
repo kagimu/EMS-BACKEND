@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	Classes struct {
+	Class struct {
 		ID          uint          `gorm:"primaryKey"`
 		Number      string        `json:"number" gorm:"size:100;unique;not null"`
 		Name        string        `json:"name" form:"name" binding:"required" gorm:"size:60;unique;not null"`
@@ -21,6 +21,6 @@ type (
 	}
 )
 
-func (u *Classes) TableName() string {
+func (u *Class) TableName() string {
 	return "classes"
 }
