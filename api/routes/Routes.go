@@ -7,6 +7,7 @@ import (
 	authController "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
 	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
 	controllers3 "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
+	controllers5 "github.com/hamsoftug/wholesomeEd/domain/learningarea/controllers"
 	controllers2 "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
 	controllers4 "github.com/hamsoftug/wholesomeEd/domain/subject/controllers"
 	"time"
@@ -64,6 +65,10 @@ func SetupRoute() *gin.Engine {
 		//manage subject
 		main.POST("new-subject", controllers4.NewSubject)
 		main.GET("subjects", controllers4.FetchSubject)
+
+		//manage Learning Area
+		main.POST("new-learning-area", controllers5.NewLearningArea)
+		main.GET("learning-areas", controllers5.FetchLearningArea)
 
 	}
 	//router.GET("/profile/:name", profile)

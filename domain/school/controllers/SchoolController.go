@@ -47,6 +47,15 @@ func NewSchool(context *gin.Context) {
 		return
 	}
 
+	var duplicateSchool models3.School
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("user_number = ?", userNumber).
+		First(&duplicateSchool).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School already exists"})
+		return
+	}
+
 	number := uuid.NewV4().String()
 	///save user data
 	saveCampus := models3.School{
