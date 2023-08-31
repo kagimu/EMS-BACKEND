@@ -21,9 +21,9 @@ type (
 	}
 
 	LearningAreaInfo struct {
-		Number   string `json:"number"`
-		Name     string `json:"name"`
-		Subjects []SubjectsInfo
+		Number   string         `json:"number"`
+		Name     string         `json:"name"`
+		Subjects []SubjectsInfo `json:"subjects"`
 	}
 
 	SubjectsInfo struct {

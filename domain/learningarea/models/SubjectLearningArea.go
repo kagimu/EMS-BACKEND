@@ -13,6 +13,7 @@ type (
 		LearningAreaNumber string          `json:"learning_area_number" gorm:"size:40;not null"`
 		SubjectNumber      string          `json:"subject_number" gorm:"size:40;not null"`
 		CampusNumber       string          `json:"campus_number" gorm:"size:40;not null"`
+		LevelNumber        string          `json:"level_number" gorm:"size:40;not null"`
 		UserNumber         string          `json:"user_number" gorm:"size:40;not null"`
 		CreatedAt          time.Time       `json:"created_at"`
 		UpdatedAt          time.Time       `json:"updated_at"`

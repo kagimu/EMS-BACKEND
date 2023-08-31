@@ -78,6 +78,7 @@ func NewLearningArea(context *gin.Context) {
 func FetchLearningArea(context *gin.Context) {
 
 	campusNumber := context.Query("campus_number")
+	levelNumber := context.Query("level_number")
 
 	if campusNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Campus is required!"})
@@ -103,6 +104,7 @@ func FetchLearningArea(context *gin.Context) {
 
 		if err := config.DB.
 			Where("learning_area_number = ?", item.Number).
+			Where("level_number = ?", levelNumber).
 			Preload("Subject").
 			Find(&subjLearningArea).Error; err != nil {
 			//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Subj found"})
@@ -132,6 +134,7 @@ func AddSubjectToLearningArea(context *gin.Context) {
 	type SubjectLearningAreaInfo struct {
 		LearningAreaNumber string   `json:"learning_area_number"`
 		CampusNumber       string   `json:"campus_number"`
+		LevelNumber        string   `json:"level_number"`
 		SubjectNumbers     []string `json:"subject_number"`
 	}
 
@@ -145,6 +148,7 @@ func AddSubjectToLearningArea(context *gin.Context) {
 	learningAreaNumber := subjectLearningAreaInfoInfo.LearningAreaNumber
 	subjectNumbers := subjectLearningAreaInfoInfo.SubjectNumbers
 	campusNumber := subjectLearningAreaInfoInfo.CampusNumber
+	levelNumber := subjectLearningAreaInfoInfo.LevelNumber
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {
@@ -161,6 +165,11 @@ func AddSubjectToLearningArea(context *gin.Context) {
 
 	if campusNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning Area is required!"})
+		return
+	}
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
 	}
 
@@ -183,7 +192,8 @@ func AddSubjectToLearningArea(context *gin.Context) {
 
 		var duplicateSubLearningArea models2.SubjectLearningArea
 		if duplicate := config.DB.
-			Where("learning_area_number = ?", learningAreaNumber).
+			Where("campus_number = ?", campusNumber).
+			Where("level_number = ?", levelNumber).
 			Where("subject_number = ?", item).
 			First(&duplicateSubLearningArea).Error; duplicate != nil {
 
@@ -194,6 +204,7 @@ func AddSubjectToLearningArea(context *gin.Context) {
 				Number:             number,
 				LearningAreaNumber: learningAreaNumber,
 				CampusNumber:       campusNumber,
+				LevelNumber:        levelNumber,
 				SubjectNumber:      item,
 				UserNumber:         userNumber,
 			}
