@@ -96,3 +96,24 @@ func FetchClasses(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
 }
+
+func FetchClassSubjects(context *gin.Context) {
+
+	levelNumber := context.Query("level_number")
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	var classes []models2.Class
+	if err := config.DB.
+		Where("level_number = ?", levelNumber).
+		Order("created_at desc").
+		Find(&classes).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus!"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+}
