@@ -85,6 +85,7 @@ func FetchLearningArea(context *gin.Context) {
 	}
 
 	var learningAreas []models2.LearningArea
+	var learningAreas_ []models2.LearningAreaInfo
 	if err := config.DB.
 		Where("campus_number = ?", campusNumber).
 		Order("created_at desc").
@@ -93,13 +94,44 @@ func FetchLearningArea(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas})
+	for _, item := range learningAreas {
+
+		//fetch subjects under a learning area
+
+		var subjLearningArea []models2.SubjectLearningArea
+		var subjects_ []models2.SubjectsInfo
+
+		if err := config.DB.
+			Where("learning_area_number = ?", item.Number).
+			Preload("Subject").
+			Find(&subjLearningArea).Error; err != nil {
+			//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Subj found"})
+			//return
+		}
+
+		for _, lst := range subjLearningArea {
+			subjects_ = append(subjects_, models2.SubjectsInfo{
+				Number: lst.Subject.Number,
+				Name:   lst.Subject.Name,
+			})
+		}
+
+		learningAreas_ = append(learningAreas_, models2.LearningAreaInfo{
+			Number:   item.Number,
+			Name:     item.Name,
+			Subjects: subjects_,
+		})
+
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})
 }
 
 func AddSubjectToLearningArea(context *gin.Context) {
 
 	type SubjectLearningAreaInfo struct {
 		LearningAreaNumber string   `json:"learning_area_number"`
+		CampusNumber       string   `json:"campus_number"`
 		SubjectNumbers     []string `json:"subject_number"`
 	}
 
@@ -112,6 +144,7 @@ func AddSubjectToLearningArea(context *gin.Context) {
 
 	learningAreaNumber := subjectLearningAreaInfoInfo.LearningAreaNumber
 	subjectNumbers := subjectLearningAreaInfoInfo.SubjectNumbers
+	campusNumber := subjectLearningAreaInfoInfo.CampusNumber
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {
@@ -122,6 +155,11 @@ func AddSubjectToLearningArea(context *gin.Context) {
 	}
 
 	if learningAreaNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning Area is required!"})
+		return
+	}
+
+	if campusNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning Area is required!"})
 		return
 	}
@@ -155,6 +193,7 @@ func AddSubjectToLearningArea(context *gin.Context) {
 			saveLevel := models2.SubjectLearningArea{
 				Number:             number,
 				LearningAreaNumber: learningAreaNumber,
+				CampusNumber:       campusNumber,
 				SubjectNumber:      item,
 				UserNumber:         userNumber,
 			}

@@ -19,6 +19,17 @@ type (
 		Campus       models2.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User         models.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
+
+	LearningAreaInfo struct {
+		Number   string `json:"number"`
+		Name     string `json:"name"`
+		Subjects []SubjectsInfo
+	}
+
+	SubjectsInfo struct {
+		Number string `json:"number"`
+		Name   string `json:"name"`
+	}
 )
 
 func (u *LearningArea) TableName() string {
