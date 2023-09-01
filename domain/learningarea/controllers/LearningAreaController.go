@@ -138,17 +138,17 @@ func AddSubjectToLearningArea(context *gin.Context) {
 		SubjectNumbers     []string `json:"subject_number"`
 	}
 
-	var subjectLearningAreaInfoInfo SubjectLearningAreaInfo
-	err := context.BindJSON(&subjectLearningAreaInfoInfo)
+	var subjectLearningAreaInfo SubjectLearningAreaInfo
+	err := context.BindJSON(&subjectLearningAreaInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
-	learningAreaNumber := subjectLearningAreaInfoInfo.LearningAreaNumber
-	subjectNumbers := subjectLearningAreaInfoInfo.SubjectNumbers
-	campusNumber := subjectLearningAreaInfoInfo.CampusNumber
-	levelNumber := subjectLearningAreaInfoInfo.LevelNumber
+	learningAreaNumber := subjectLearningAreaInfo.LearningAreaNumber
+	subjectNumbers := subjectLearningAreaInfo.SubjectNumbers
+	campusNumber := subjectLearningAreaInfo.CampusNumber
+	levelNumber := subjectLearningAreaInfo.LevelNumber
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {

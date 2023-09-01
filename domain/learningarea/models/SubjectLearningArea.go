@@ -1,6 +1,7 @@
 package models
 
 import (
+	models2 "github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	"github.com/hamsoftug/wholesomeEd/domain/campus/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/subject/models"
 	"time"
@@ -18,9 +19,11 @@ type (
 		CreatedAt          time.Time       `json:"created_at"`
 		UpdatedAt          time.Time       `json:"updated_at"`
 		DeletedAt          *time.Time      `sql:"index"`
+		User               models2.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Subject            models3.Subject `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		LearningArea       LearningArea    `gorm:"foreignKey:LearningAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Campus             models.Campus   `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Level              models.Level    `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )
 

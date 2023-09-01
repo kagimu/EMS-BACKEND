@@ -54,6 +54,7 @@ func main() {
 		&models5.Subject{},
 		&models6.LearningArea{},
 		&models6.SubjectLearningArea{},
+		&models4.SubjectCLass{},
 	)
 	if errMigrate != nil {
 		return

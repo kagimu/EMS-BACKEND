@@ -62,6 +62,7 @@ func SetupRoute() *gin.Engine {
 		main.POST("new-class", controllers3.NewClass)
 		main.GET("classes", controllers3.FetchClasses)
 		main.GET("class-subjects", controllers3.FetchClassSubjects)
+		main.POST("subject-to-class", controllers3.NewClassSubjects)
 
 		//manage subject
 		main.POST("new-subject", controllers4.NewSubject)

@@ -19,6 +19,17 @@ type (
 		Level       models2.Level `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User        models.User   `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
+
+	ClassInfo struct {
+		Number   string         `json:"number"`
+		Name     string         `json:"name"`
+		Subjects []SubjectsInfo `json:"subjects"`
+	}
+
+	SubjectsInfo struct {
+		Number string `json:"number"`
+		Name   string `json:"name"`
+	}
 )
 
 func (u *Class) TableName() string {
