@@ -52,10 +52,10 @@ func main() {
 		&models.Campus{},
 		&models.Level{},
 		&models4.Class{},
-		&models5.Subject{},
 		&models6.LearningArea{},
 		&models4.SubjectCLass{},
 		&models7.SubjectCluster{},
+		&models5.Subject{},
 	)
 	if errMigrate != nil {
 		return
