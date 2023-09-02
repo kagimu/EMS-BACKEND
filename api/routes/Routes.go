@@ -71,7 +71,6 @@ func SetupRoute() *gin.Engine {
 		//manage Learning Area
 		main.POST("new-learning-area", controllers5.NewLearningArea)
 		main.GET("learning-areas", controllers5.FetchLearningArea)
-		main.POST("subject-to-learning-area", controllers5.AddSubjectToLearningArea)
 
 	}
 	//router.GET("/profile/:name", profile)
