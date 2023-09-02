@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/api/config"
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	models2 "github.com/hamsoftug/wholesomeEd/domain/learningarea/models"
+	models2 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/models"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 )

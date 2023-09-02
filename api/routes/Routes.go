@@ -7,7 +7,8 @@ import (
 	authController "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
 	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
 	controllers3 "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
-	controllers5 "github.com/hamsoftug/wholesomeEd/domain/learningarea/controllers"
+	controllers5 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/controllers"
+	controllers6 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/controllers"
 	controllers2 "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
 	controllers4 "github.com/hamsoftug/wholesomeEd/domain/subject/controllers"
 	"time"
@@ -71,6 +72,10 @@ func SetupRoute() *gin.Engine {
 		//manage Learning Area
 		main.POST("new-learning-area", controllers5.NewLearningArea)
 		main.GET("learning-areas", controllers5.FetchLearningArea)
+
+		//subject cluster
+		main.POST("new-subject-cluster", controllers6.NewSubjectCluster)
+		main.GET("subject-clusters", controllers6.FetchSubjectCluster)
 
 	}
 	//router.GET("/profile/:name", profile)
