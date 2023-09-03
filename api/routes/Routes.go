@@ -8,7 +8,9 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
 	controllers3 "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
 	controllers5 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/controllers"
+	controllers7 "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/controllers"
 	controllers6 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/controllers"
+	controllers8 "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/controllers"
 	controllers2 "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
 	controllers4 "github.com/hamsoftug/wholesomeEd/domain/subject/controllers"
 	"time"
@@ -76,6 +78,14 @@ func SetupRoute() *gin.Engine {
 		//subject cluster
 		main.POST("new-subject-cluster", controllers6.NewSubjectCluster)
 		main.GET("subject-clusters", controllers6.FetchSubjectCluster)
+
+		//strand
+		main.POST("new-strand", controllers7.NewStrand)
+		main.GET("strands", controllers7.FetchStrand)
+
+		//topic
+		main.POST("new-topic", controllers8.NewTopic)
+		main.GET("topics", controllers8.FetchTopic)
 
 	}
 	//router.GET("/profile/:name", profile)

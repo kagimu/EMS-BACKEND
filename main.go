@@ -10,7 +10,9 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/campus/models"
 	models4 "github.com/hamsoftug/wholesomeEd/domain/class/models"
 	models6 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/models"
+	models8 "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/models"
 	models7 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/models"
+	models9 "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/school/models"
 	models5 "github.com/hamsoftug/wholesomeEd/domain/subject/models"
 	"gorm.io/driver/mysql"
@@ -56,6 +58,8 @@ func main() {
 		&models4.SubjectCLass{},
 		&models7.SubjectCluster{},
 		&models5.Subject{},
+		&models8.Strand{},
+		&models9.Topic{},
 	)
 	if errMigrate != nil {
 		return
