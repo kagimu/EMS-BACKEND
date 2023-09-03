@@ -12,8 +12,8 @@ import (
 func NewSubject(context *gin.Context) {
 
 	type SubjectInfo struct {
-		Name        string `json:"name"`
-		LevelNumber string `json:"level_number"`
+		Name                 string `json:"name"`
+		SubjectClusterNumber string `json:"subject_cluster_number"`
 	}
 
 	var subjectInfo SubjectInfo
@@ -24,7 +24,7 @@ func NewSubject(context *gin.Context) {
 	}
 
 	name := subjectInfo.Name
-	levelNumber := subjectInfo.LevelNumber
+	subjectClusterNumber := subjectInfo.SubjectClusterNumber
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {
@@ -39,7 +39,7 @@ func NewSubject(context *gin.Context) {
 		return
 	}
 
-	if levelNumber == "" {
+	if subjectClusterNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
 	}
@@ -57,7 +57,7 @@ func NewSubject(context *gin.Context) {
 	var duplicateSubject models3.Subject
 	if duplicate := config.DB.
 		Where("name = ?", name).
-		Where("level_number = ?", levelNumber).
+		Where("level_number = ?", subjectClusterNumber).
 		First(&duplicateSubject).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject already exists"})
 		return
@@ -66,10 +66,10 @@ func NewSubject(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveCampus := models3.Subject{
-		Number:      number,
-		Name:        name,
-		UserNumber:  userNumber,
-		LevelNumber: levelNumber,
+		Number:               number,
+		Name:                 name,
+		UserNumber:           userNumber,
+		SubjectClusterNumber: subjectClusterNumber,
 	}
 
 	config.DB.Save(&saveCampus)
@@ -78,16 +78,16 @@ func NewSubject(context *gin.Context) {
 
 func FetchSubject(context *gin.Context) {
 
-	levelNumber := context.Query("level_number")
+	subjectClusterNumber := context.Query("subject_cluster_number")
 
-	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+	if subjectClusterNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject cluster is required!"})
 		return
 	}
 
 	var subjects []models3.Subject
 	if err := config.DB.
-		Where("level_number = ?", levelNumber).
+		Where("subject_cluster_number = ?", subjectClusterNumber).
 		Order("created_at desc").
 		Find(&subjects).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
