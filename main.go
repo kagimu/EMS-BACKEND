@@ -12,6 +12,7 @@ import (
 	models6 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/models"
 	models8 "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/models"
 	models7 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/models"
+	models10 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subtopic/models"
 	models9 "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/school/models"
 	models5 "github.com/hamsoftug/wholesomeEd/domain/subject/models"
@@ -60,6 +61,7 @@ func main() {
 		&models5.Subject{},
 		&models8.Strand{},
 		&models9.Topic{},
+		&models10.SubTopic{},
 	)
 	if errMigrate != nil {
 		return

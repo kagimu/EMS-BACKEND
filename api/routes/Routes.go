@@ -10,6 +10,7 @@ import (
 	controllers5 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/controllers"
 	controllers7 "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/controllers"
 	controllers6 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/controllers"
+	controllers9 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subtopic/controllers"
 	controllers8 "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/controllers"
 	controllers2 "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
 	controllers4 "github.com/hamsoftug/wholesomeEd/domain/subject/controllers"
@@ -86,6 +87,10 @@ func SetupRoute() *gin.Engine {
 		//topic
 		main.POST("new-topic", controllers8.NewTopic)
 		main.GET("topics", controllers8.FetchTopic)
+
+		//sub topic
+		main.POST("new-sub-topic", controllers9.NewSubTopic)
+		main.GET("sub-topics", controllers9.FetchSubTopic)
 
 	}
 	//router.GET("/profile/:name", profile)
