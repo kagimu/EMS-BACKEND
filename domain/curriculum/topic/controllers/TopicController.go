@@ -6,6 +6,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -80,14 +81,14 @@ func FetchTopic(context *gin.Context) {
 
 	strandNumber := context.Query("strand_number")
 
-	if strandNumber == "" {
+	/*	if strandNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
 		return
-	}
+	}*/
 
 	var topic []models3.Topic
 	if err := config.DB.
-		Where("strand_number = ?", strandNumber).
+		Scopes(strand(strandNumber)).
 		Order("created_at desc").
 		Find(&topic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No topic found!"})
@@ -95,4 +96,13 @@ func FetchTopic(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": topic})
+}
+
+func strand(strandNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if strandNumber != "" {
+			return db.Where("strand_number = ?", strandNumber)
+		}
+		return db
+	}
 }

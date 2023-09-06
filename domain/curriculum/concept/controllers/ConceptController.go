@@ -6,6 +6,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/curriculum/concept/models"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -80,14 +81,14 @@ func FetchConcept(context *gin.Context) {
 
 	subtopicNumber := context.Query("sub_topic_number")
 
-	if subtopicNumber == "" {
+	/*	if subtopicNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic is required!"})
 		return
-	}
+	}*/
 
 	var concept []models3.Concept
 	if err := config.DB.
-		Where("sub_topic_number = ?", subtopicNumber).
+		Scopes(subTopic(subtopicNumber)).
 		Order("created_at desc").
 		Find(&concept).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Concept found!"})
@@ -95,4 +96,13 @@ func FetchConcept(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": concept})
+}
+
+func subTopic(subtopicNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if subtopicNumber != "" {
+			return db.Where("sub_topic_number = ?", subtopicNumber)
+		}
+		return db
+	}
 }

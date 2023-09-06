@@ -6,6 +6,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	models2 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subtopic/models"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -80,14 +81,14 @@ func FetchSubTopic(context *gin.Context) {
 
 	topicNumber := context.Query("topic_number")
 
-	if topicNumber == "" {
+	/*if topicNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Topic is required!"})
 		return
-	}
+	}*/
 
 	var subtopic []models2.SubTopic
 	if err := config.DB.
-		Where("topic_number = ?", topicNumber).
+		Scopes(topic(topicNumber)).
 		Order("created_at desc").
 		Find(&subtopic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
@@ -95,4 +96,13 @@ func FetchSubTopic(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subtopic})
+}
+
+func topic(topicNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if topicNumber != "" {
+			return db.Where("topic_number = ?", topicNumber)
+		}
+		return db
+	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/models"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -80,14 +81,14 @@ func FetchSubjectCluster(context *gin.Context) {
 
 	learningAreaNumber := context.Query("learning_area_number")
 
-	if learningAreaNumber == "" {
+	/*	if learningAreaNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning Area Number is required!"})
 		return
-	}
+	}*/
 
 	var subjectCluster []models3.SubjectCluster
 	if err := config.DB.
-		Where("learning_area_number = ?", learningAreaNumber).
+		Scopes(learningArea(learningAreaNumber)).
 		Order("created_at desc").
 		Find(&subjectCluster).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject Cluster!"})
@@ -95,4 +96,13 @@ func FetchSubjectCluster(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjectCluster})
+}
+
+func learningArea(learningAreaNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if learningAreaNumber != "" {
+			return db.Where("learning_area_number = ?", learningAreaNumber)
+		}
+		return db
+	}
 }

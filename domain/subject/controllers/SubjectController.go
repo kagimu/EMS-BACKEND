@@ -6,6 +6,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/subject/models"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -80,14 +81,14 @@ func FetchSubject(context *gin.Context) {
 
 	subjectClusterNumber := context.Query("subject_cluster_number")
 
-	if subjectClusterNumber == "" {
+	/*	if subjectClusterNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject cluster is required!"})
 		return
-	}
+	}*/
 
 	var subjects []models3.Subject
 	if err := config.DB.
-		Where("subject_cluster_number = ?", subjectClusterNumber).
+		Scopes(subjectCluster(subjectClusterNumber)).
 		Order("created_at desc").
 		Find(&subjects).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
@@ -95,4 +96,13 @@ func FetchSubject(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjects})
+}
+
+func subjectCluster(subjectClusterNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if subjectClusterNumber != "" {
+			return db.Where("subject_cluster_number = ?", subjectClusterNumber)
+		}
+		return db
+	}
 }
