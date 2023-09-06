@@ -1,7 +1,11 @@
 package models
 
+import "github.com/jinzhu/gorm"
+
 // Role represents the database model of roles
 type Role struct {
-	ID   uint
-	Name string
+	gorm.Model
+	ID           uint   `gorm:"primary_key"`
+	Name         string `gorm:"unique;not null" json:"name"`
+	SchoolNumber string `gorm:"size:36;not null" json:"school_number"`
 }
