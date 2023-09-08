@@ -15,6 +15,7 @@ func NewTopic(context *gin.Context) {
 	type TopicInfo struct {
 		Name         string `json:"name"`
 		StrandNumber string `json:"strand_number"`
+		ClassNumber  string `json:"Class_number"`
 	}
 
 	var topicInfo TopicInfo
@@ -26,6 +27,7 @@ func NewTopic(context *gin.Context) {
 
 	name := topicInfo.Name
 	strandNumber := topicInfo.StrandNumber
+	classNumber := topicInfo.ClassNumber
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {
@@ -45,6 +47,11 @@ func NewTopic(context *gin.Context) {
 		return
 	}
 
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
 	var userData models.User
 	//check if user is a valid user
 	validateUser := config.DB.
@@ -59,6 +66,7 @@ func NewTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("strand_number = ?", strandNumber).
+		Where("class_number = ?", classNumber).
 		First(&duplicateTopic).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand already exists"})
 		return
@@ -71,6 +79,7 @@ func NewTopic(context *gin.Context) {
 		Name:         name,
 		StrandNumber: strandNumber,
 		UserNumber:   userNumber,
+		ClassNumber:  classNumber,
 	}
 	config.DB.Save(&saveStrand)
 
