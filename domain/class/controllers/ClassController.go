@@ -6,6 +6,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	models2 "github.com/hamsoftug/wholesomeEd/domain/class/models"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -80,14 +81,14 @@ func FetchClasses(context *gin.Context) {
 
 	levelNumber := context.Query("level_number")
 
-	if levelNumber == "" {
+	/*if levelNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
 	}
-
+	*/
 	var classes []models2.Class
 	if err := config.DB.
-		Where("level_number = ?", levelNumber).
+		Scopes(level(levelNumber)).
 		Order("created_at desc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus!"})
@@ -95,6 +96,15 @@ func FetchClasses(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+}
+
+func level(levelNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if levelNumber != "" {
+			return db.Where("level_number = ?", levelNumber)
+		}
+		return db
+	}
 }
 
 func FetchClassSubjects(context *gin.Context) {
