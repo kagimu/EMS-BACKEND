@@ -13,8 +13,9 @@ import (
 func NewSubTopic(context *gin.Context) {
 
 	type TopicInfo struct {
-		Name        string `json:"name"`
-		TopicNumber string `json:"topic_number"`
+		Name          string `json:"name"`
+		TopicNumber   string `json:"topic_number"`
+		EstimatedTime string `json:"estimated_time"`
 	}
 
 	var topicInfo TopicInfo
@@ -26,6 +27,7 @@ func NewSubTopic(context *gin.Context) {
 
 	name := topicInfo.Name
 	topicNumber := topicInfo.TopicNumber
+	estimatedTime := topicInfo.EstimatedTime
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {
@@ -42,6 +44,11 @@ func NewSubTopic(context *gin.Context) {
 
 	if topicNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Topic is required!"})
+		return
+	}
+
+	if estimatedTime == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Estimated time is required!"})
 		return
 	}
 
@@ -67,10 +74,11 @@ func NewSubTopic(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveStrand := models2.SubTopic{
-		Number:      number,
-		Name:        name,
-		TopicNumber: topicNumber,
-		UserNumber:  userNumber,
+		Number:        number,
+		Name:          name,
+		EstimatedTime: estimatedTime,
+		TopicNumber:   topicNumber,
+		UserNumber:    userNumber,
 	}
 	config.DB.Save(&saveStrand)
 
