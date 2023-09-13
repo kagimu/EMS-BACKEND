@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	models2 "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
+	topicModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
 	"time"
 )
 
@@ -17,7 +17,7 @@ type (
 		CreatedAt     time.Time     `json:"created_at"`
 		UpdatedAt     time.Time     `json:"updated_at"`
 		DeletedAt     *time.Time    `sql:"index"`
-		Topic         models2.Topic `gorm:"foreignKey:TopicNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Topic         topicModels.Topic `gorm:"foreignKey:TopicNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User          models.User   `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )
