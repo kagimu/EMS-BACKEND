@@ -82,6 +82,15 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
+	var duplicateCampus models2.Campus
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("school_number = ?", schoolNumber).
+		First(&duplicateCampus).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Campus already exists"})
+		return
+	}
+
 	number := uuid.NewV4().String()
 	saveCampus := models2.Campus{
 		Number:       number,
