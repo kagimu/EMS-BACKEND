@@ -128,11 +128,20 @@ func AddClassToLevel(context *gin.Context) {
 	}
 
 	var duplicateClass models2.ClassLevel
+	db := config.DB
 	if duplicate := config.DB.
 		Where("class_number = ?", classNumber).
 		Where("campus_number = ?", campusNumber).
 		Where("level_number = ?", levelNumber).
 		First(&duplicateClass).Error; duplicate == nil {
+
+		//delete classs if it is removed from the level
+		db.Where("class_number = ?", classNumber).
+			Where("campus_number = ?", campusNumber).
+			Where("level_number = ?", levelNumber).
+			Delete(&duplicateClass)
+		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
+
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists"})
 		return
 	}
@@ -185,8 +194,9 @@ func FetchClassLevel(context *gin.Context) {
 
 	for _, lst := range classLvl {
 		classLvl_ = append(classLvl_, models2.ClassLevelInfo{
-			Number: lst.Class.Number,
-			Name:   lst.Class.Name,
+			Number:       lst.Class.Number,
+			Name:         lst.Class.Name,
+			Abbreviation: lst.Class.Abbreviation,
 		})
 	}
 
