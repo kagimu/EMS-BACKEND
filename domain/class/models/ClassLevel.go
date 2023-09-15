@@ -27,12 +27,12 @@ type (
 		Number   string         `json:"number"`
 		Name     string         `json:"name"`
 		Subjects []SubjectsInfo `json:"subjects"`
-	}
+	}*/
 
-	SubjectsInfo struct {
+	ClassLevelInfo struct {
 		Number string `json:"number"`
 		Name   string `json:"name"`
-	}*/
+	}
 )
 
 func (u *ClassLevel) TableName() string {

@@ -75,7 +75,7 @@ func NewClass(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
 }
 
-func AddCampusToLevel(context *gin.Context) {
+func AddClassToLevel(context *gin.Context) {
 
 	type ClassInfo struct {
 		ClassNumber  string `json:"class_number"`
@@ -161,6 +161,36 @@ func FetchClasses(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+}
+
+func FetchClassLevel(context *gin.Context) {
+
+	levelNumber := context.Query("level_number")
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level Number is required!"})
+		return
+	}
+
+	var classLvl []models2.ClassLevel
+	var classLvl_ []models2.ClassLevelInfo
+	if err := config.DB.
+		Where("level_number = ?", levelNumber).
+		Preload("Class").
+		Order("created_at desc").
+		Find(&classLvl).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
+	for _, lst := range classLvl {
+		classLvl_ = append(classLvl_, models2.ClassLevelInfo{
+			Number: lst.Class.Number,
+			Name:   lst.Class.Name,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classLvl_})
 }
 
 func FetchClassSubjects(context *gin.Context) {
