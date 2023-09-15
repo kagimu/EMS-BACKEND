@@ -10,6 +10,7 @@ type (
 		ID         uint        `gorm:"primaryKey"`
 		Number     string      `json:"number" gorm:"size:100;unique;not null"`
 		Name       string      `json:"name" form:"name" binding:"required" gorm:"size:60;unique;not null"`
+		Code       string      `json:"code" form:"code" binding:"required" gorm:"size:60;unique;not null"`
 		UserNumber string      `json:"user_number" gorm:"size:40;not null"`
 		CreatedAt  time.Time   `json:"created_at"`
 		UpdatedAt  time.Time   `json:"updated_at"`

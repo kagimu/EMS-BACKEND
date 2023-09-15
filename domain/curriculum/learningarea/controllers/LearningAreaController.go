@@ -13,6 +13,7 @@ func NewLearningArea(context *gin.Context) {
 
 	type LearningAreaInfo struct {
 		Name string `json:"name"`
+		Code string `json:"code"`
 	}
 
 	var learningAreaInfo LearningAreaInfo
@@ -23,6 +24,7 @@ func NewLearningArea(context *gin.Context) {
 	}
 
 	name := learningAreaInfo.Name
+	code := learningAreaInfo.Code
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {
@@ -34,6 +36,11 @@ func NewLearningArea(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
 		return
 	}
 
@@ -49,7 +56,8 @@ func NewLearningArea(context *gin.Context) {
 
 	var duplicateLearningArea models2.LearningArea
 	if duplicate := config.DB.
-		Where("name = ?", name).
+		//Where("name = ?", name).
+		Where("name = ? OR code = ?", name, code).
 		First(&duplicateLearningArea).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area already exists"})
 		return
@@ -60,6 +68,7 @@ func NewLearningArea(context *gin.Context) {
 	saveLearningArea := models2.LearningArea{
 		Number:     number,
 		Name:       name,
+		Code:       code,
 		UserNumber: userNumber,
 	}
 	config.DB.Save(&saveLearningArea)
@@ -70,7 +79,7 @@ func FetchLearningArea(context *gin.Context) {
 
 	var learningAreas []models2.LearningArea
 	if err := config.DB.
-		Order("created_at desc").
+		Order("code desc").
 		Find(&learningAreas).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Learning Area!"})
 		return
