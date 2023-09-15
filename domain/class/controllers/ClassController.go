@@ -75,6 +75,81 @@ func NewClass(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
 }
 
+func AddCampusToLevel(context *gin.Context) {
+
+	type ClassInfo struct {
+		ClassNumber  string `json:"class_number"`
+		CampusNumber string `json:"campus_number"`
+		LevelNumber  string `json:"level_number"`
+	}
+
+	var classInfo ClassInfo
+	err := context.BindJSON(&classInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	classNumber := classInfo.ClassNumber
+	campusNumber := classInfo.CampusNumber
+	levelNumber := classInfo.LevelNumber
+
+	userNumber := ""
+	if len(context.Request.Header["User-Number"]) > 0 {
+		userNumber = context.Request.Header["User-Number"][0]
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
+		return
+	}
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Campus is required!"})
+		return
+	}
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateClass models2.ClassLevel
+	if duplicate := config.DB.
+		Where("class_number = ?", classNumber).
+		Where("campus_number = ?", campusNumber).
+		Where("level_number = ?", levelNumber).
+		First(&duplicateClass).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists"})
+		return
+	}
+
+	number := uuid.NewV4().String()
+	saveClass := models2.ClassLevel{
+		Number:       number,
+		ClassNumber:  classNumber,
+		CampusNumber: campusNumber,
+		LevelNumber:  levelNumber,
+		UserNumber:   userNumber,
+	}
+	config.DB.Save(&saveClass)
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+}
+
 func FetchClasses(context *gin.Context) {
 
 	var classes []models2.Class

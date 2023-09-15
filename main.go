@@ -64,6 +64,7 @@ func main() {
 		&models9.Topic{},
 		&models10.SubTopic{},
 		&models11.Concept{},
+		&models4.ClassLevel{},
 	)
 	if errMigrate != nil {
 		return
