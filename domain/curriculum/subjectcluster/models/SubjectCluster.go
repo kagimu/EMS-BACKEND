@@ -19,6 +19,13 @@ type (
 		LearningArea       learningAreaModels.LearningArea `gorm:"foreignKey:LearningAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User               authModels.User                 `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
+
+	SubjectClusterInfo struct {
+		Number             string `json:"number"`
+		Name               string `json:"name"`
+		LearningAreaNumber string `json:"learning_area_number"`
+		LearningAreaName   string `json:"learning_area_name"`
+	}
 )
 
 func (u *SubjectCluster) TableName() string {

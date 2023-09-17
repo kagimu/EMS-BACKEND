@@ -81,21 +81,27 @@ func FetchSubjectCluster(context *gin.Context) {
 
 	learningAreaNumber := context.Query("learning_area_number")
 
-	/*	if learningAreaNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning Area Number is required!"})
-		return
-	}*/
-
 	var subjectCluster []models3.SubjectCluster
+	var subjectCluster_ []models3.SubjectClusterInfo
 	if err := config.DB.
 		Scopes(learningArea(learningAreaNumber)).
+		Preload("LearningArea").
 		Order("created_at desc").
 		Find(&subjectCluster).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject Cluster!"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjectCluster})
+	for _, lst := range subjectCluster {
+		subjectCluster_ = append(subjectCluster_, models3.SubjectClusterInfo{
+			Number:             lst.Number,
+			Name:               lst.Name,
+			LearningAreaNumber: lst.LearningAreaNumber,
+			LearningAreaName:   lst.LearningArea.Name,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjectCluster_})
 }
 
 func learningArea(learningAreaNumber string) func(db *gorm.DB) *gorm.DB {
