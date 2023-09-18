@@ -56,7 +56,9 @@ func SetupRoute() *gin.Engine {
 
 		//manage School
 		main.POST("new-school", controllers2.NewSchool)
+		main.POST("edit-school", controllers2.EditSchool)
 		main.GET("schools", controllers2.FetchSchools)
+		main.GET("school-info", controllers2.FetchSchoolInfo)
 
 		//manage campus
 		main.POST("new-campus", controllers.NewCampus)
