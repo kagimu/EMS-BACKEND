@@ -59,7 +59,7 @@ func NewLearningArea(context *gin.Context) {
 		//Where("name = ?", name).
 		Where("name = ? OR code = ?", name, code).
 		First(&duplicateLearningArea).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area already exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area or Code already exists"})
 		return
 	}
 
