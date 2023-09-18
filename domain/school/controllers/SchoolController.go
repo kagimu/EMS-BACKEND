@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/api/config"
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	models2 "github.com/hamsoftug/wholesomeEd/domain/campus/models"
 	models3 "github.com/hamsoftug/wholesomeEd/domain/school/models"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -134,6 +135,64 @@ func EditSchool(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "School Edited Successfully!", "data": schoolData})
+}
+
+func DeleteSchool(context *gin.Context) {
+	type SchoolInfo struct {
+		SchoolNumber string `json:"school_number"`
+	}
+
+	var schoolInfo SchoolInfo
+	err := context.BindJSON(&schoolInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	schoolNumber := schoolInfo.SchoolNumber
+
+	userNumber := ""
+	if len(context.Request.Header["User-Number"]) > 0 {
+		userNumber = context.Request.Header["User-Number"][0]
+	} else {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	db := config.DB
+
+	var schoolChecker models2.Campus
+	if err := db.
+		Where("school_number = ?", schoolNumber).
+		First(&schoolChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this School, it has Children"})
+		return
+	}
+
+	var schoolData models3.School
+
+	classLevelInfo := config.DB.
+		Where("number = ?", schoolNumber).
+		First(&schoolData)
+	if classLevelInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "School not found!"})
+		return
+	}
+
+	db.Where("number = ?", schoolNumber).Delete(&schoolData)
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "School deleted successfully!"})
+
 }
 
 func FetchSchoolInfo(context *gin.Context) {
