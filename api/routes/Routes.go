@@ -8,6 +8,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
 	controllers3 "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
 	controllers10 "github.com/hamsoftug/wholesomeEd/domain/curriculum/concept/controllers"
+	controllers11 "github.com/hamsoftug/wholesomeEd/domain/curriculum/importCurriculum/controllers"
 	controllers5 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/controllers"
 	controllers7 "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/controllers"
 	controllers6 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/controllers"
@@ -39,7 +40,9 @@ func SetupRoute() *gin.Engine {
 	//router.Use(middlewares.JWTMiddleware())
 	router.MaxMultipartMemory = 20 << 20 // 20 MiB
 	//router.Static("/", "./fileRepo")
-	router.Use(static.Serve("/api/fileRepo", static.LocalFile("/api/fileRepo", true)))
+	//router.Use(static.Serve("/api/fileRepo", static.LocalFile("/api/fileRepo", true)))
+	//router.Use(static.Serve("/fileRepo", static.LocalFile("/fileRepo", true)))
+	router.Use(static.Serve("fileRepo", static.LocalFile("fileRepo", true)))
 
 	auth := router.Group("/auth")
 	{
@@ -53,6 +56,10 @@ func SetupRoute() *gin.Engine {
 	{
 		//main.GET("profile/:id", middlewares.JWTMiddleware(), controllers.Profile)
 		main.GET("profile", authController.Profile)
+
+		//manage School
+		main.POST("upload-curriculum", controllers11.ImportCurriculum)
+		main.GET("uploaded-curriculum", controllers11.FetchUploadedCurriculum)
 
 		//manage School
 		main.POST("new-school", controllers2.NewSchool)

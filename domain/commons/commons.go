@@ -10,7 +10,7 @@ import (
 )
 
 func DeleteFileFromPath(path string, context *gin.Context) {
-	//path := "/fileRepo/pdfFile/" + pdfDel.FileName
+	//path := "/fileRepo/excelFile/" + pdfDel.FileName
 	// detect file if it exists
 	_, err2 := mimetype.DetectFile(path)
 	if err2 == nil {
