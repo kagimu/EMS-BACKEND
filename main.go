@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"github.com/hamsoftug/wholesomeEd/api/config"
 	"github.com/hamsoftug/wholesomeEd/api/routes"
-	models2 "github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	authModels "github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	"github.com/hamsoftug/wholesomeEd/domain/campus/models"
-	models4 "github.com/hamsoftug/wholesomeEd/domain/class/models"
-	models11 "github.com/hamsoftug/wholesomeEd/domain/curriculum/concept/models"
+	classModels "github.com/hamsoftug/wholesomeEd/domain/class/models"
+	conceptModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/concept/models"
 	models12 "github.com/hamsoftug/wholesomeEd/domain/curriculum/importCurriculum/controllers/models"
-	models6 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/models"
-	models8 "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/models"
-	models7 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/models"
-	models10 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subtopic/models"
-	models9 "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
-	models3 "github.com/hamsoftug/wholesomeEd/domain/school/models"
-	models5 "github.com/hamsoftug/wholesomeEd/domain/subject/models"
+	learningAreaModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/models"
+	strandModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/models"
+	subjectClusterModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/models"
+	subTopicModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/subtopic/models"
+	topicModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
+	schoolModels "github.com/hamsoftug/wholesomeEd/domain/school/models"
+	subjectModels "github.com/hamsoftug/wholesomeEd/domain/subject/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -49,23 +49,23 @@ func main() {
 	}(sqlDB)
 
 	errMigrate := config.DB.AutoMigrate(
-		&models2.User{},
-		&models2.Contact{},
-		&models2.PasswordReset{},
-		&models2.UserPassword{},
-		&models3.School{},
+		&authModels.User{},
+		&authModels.Contact{},
+		&authModels.PasswordReset{},
+		&authModels.UserPassword{},
+		&schoolModels.School{},
 		&models.Campus{},
 		&models.Level{},
-		&models4.Class{},
-		&models6.LearningArea{},
-		&models4.SubjectCLass{},
-		&models7.SubjectCluster{},
-		&models5.Subject{},
-		&models8.Strand{},
-		&models9.Topic{},
-		&models10.SubTopic{},
-		&models11.Concept{},
-		&models4.ClassLevel{},
+		&classModels.Class{},
+		&learningAreaModels.LearningArea{},
+		&classModels.SubjectCLass{},
+		&subjectClusterModels.SubjectCluster{},
+		&subjectModels.Subject{},
+		&strandModels.Strand{},
+		&topicModels.Topic{},
+		&subTopicModels.SubTopic{},
+		&conceptModels.Concept{},
+		&classModels.ClassLevel{},
 		&models12.ImportCurriculum{},
 	)
 	if errMigrate != nil {
