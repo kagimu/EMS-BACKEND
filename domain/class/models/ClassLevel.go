@@ -10,8 +10,8 @@ type (
 	ClassLevel struct {
 		ID           uint           `gorm:"primaryKey"`
 		Number       string         `json:"number" gorm:"size:100;unique;not null"`
-		ClassNumber  string         `json:"class_id" gorm:"size:40;not null"`
-		CampusNumber string         `json:"campus_id" gorm:"size:40;not null"`
+		ClassNumber  string         `json:"class_number" gorm:"size:40;not null"`
+		CampusNumber string         `json:"campus_number" gorm:"size:40;not null"`
 		LevelNumber  string         `json:"level_number" gorm:"size:40;not null"`
 		UserNumber   string         `json:"user_number" gorm:"size:40;not null"`
 		CreatedAt    time.Time      `json:"created_at"`
@@ -37,5 +37,5 @@ type (
 )
 
 func (u *ClassLevel) TableName() string {
-	return "classes_levels"
+	return "class_levels"
 }

@@ -207,7 +207,7 @@ func FetchSchoolInfo(context *gin.Context) {
 	var schools models3.School
 	if err := config.DB.
 		Where("number = ?", schoolNumber).
-		Find(&schools).Error; err != nil {
+		First(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return
 	}

@@ -63,7 +63,10 @@ func SetupRoute() *gin.Engine {
 
 		//manage campus
 		main.POST("new-campus", controllers.NewCampus)
+		main.POST("edit-campus", controllers.EditCampus)
+		main.POST("delete-campus", controllers.DeleteCampus)
 		main.GET("campuses", controllers.FetchCampuses)
+		main.GET("campus-info", controllers.CampusInfo)
 		main.GET("level", controllers.FetchLevel)
 
 		//	manage class
