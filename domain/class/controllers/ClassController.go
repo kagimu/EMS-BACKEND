@@ -6,6 +6,7 @@ import (
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	models2 "github.com/hamsoftug/wholesomeEd/domain/class/models"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -14,6 +15,7 @@ func NewClass(context *gin.Context) {
 	type ClassInfo struct {
 		Name         string `json:"name"`
 		Abbreviation string `json:"abbreviation"`
+		Level        string `json:"level"`
 	}
 
 	var classInfo ClassInfo
@@ -25,6 +27,7 @@ func NewClass(context *gin.Context) {
 
 	name := classInfo.Name
 	abbreviation := classInfo.Abbreviation
+	level := classInfo.Level
 
 	userNumber := ""
 	if len(context.Request.Header["User-Number"]) > 0 {
@@ -36,6 +39,11 @@ func NewClass(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if level == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
 	}
 
@@ -69,6 +77,7 @@ func NewClass(context *gin.Context) {
 		Name:         name,
 		Abbreviation: abbreviation,
 		UserNumber:   userNumber,
+		Level:        level,
 	}
 	config.DB.Save(&saveClass)
 
@@ -161,8 +170,11 @@ func AddClassToLevel(context *gin.Context) {
 
 func FetchClasses(context *gin.Context) {
 
+	level := context.Query("level")
+
 	var classes []models2.Class
 	if err := config.DB.
+		Scopes(levelFilter(level)).
 		Order("created_at desc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus!"})
@@ -170,6 +182,15 @@ func FetchClasses(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+}
+
+func levelFilter(level string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if level != "" {
+			return db.Where("level = ?", level)
+		}
+		return db
+	}
 }
 
 func FetchClassLevel(context *gin.Context) {

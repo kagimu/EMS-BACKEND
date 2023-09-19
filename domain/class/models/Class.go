@@ -12,6 +12,7 @@ type (
 		Name         string      `json:"name" form:"name" binding:"required" gorm:"size:60;unique;not null"`
 		Abbreviation string      `json:"abbreviation" form:"abbreviation" binding:"required" gorm:"size:60;unique;not null"`
 		UserNumber   string      `json:"user_number" gorm:"size:40;not null"`
+		Level        string      `json:"level" gorm:"size:30;not null"`
 		CreatedAt    time.Time   `json:"created_at"`
 		UpdatedAt    time.Time   `json:"updated_at"`
 		DeletedAt    *time.Time  `sql:"index"`
