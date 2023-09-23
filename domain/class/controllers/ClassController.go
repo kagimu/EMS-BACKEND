@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/api/config"
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	models4 "github.com/hamsoftug/wholesomeEd/domain/campus/models"
 	models2 "github.com/hamsoftug/wholesomeEd/domain/class/models"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -65,9 +64,9 @@ func NewClass(context *gin.Context) {
 
 	var duplicateClass models2.Class
 	if duplicate := config.DB.
-		Where("name = ?", name).
+		Where("name = ? OR abbreviation = ?", name, abbreviation).
 		First(&duplicateClass).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class cant be added exists"})
 		return
 	}
 
@@ -173,17 +172,17 @@ func FetchClasses(context *gin.Context) {
 
 	level := context.Query("level")
 
-	var levelsInfo models4.Level
-	if err := config.DB.
-		Where("number = ?", level).
-		First(&levelsInfo).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
-		return
-	}
+	/*	var levelsInfo models4.Level
+		if err := config.DB.
+			Where("number = ?", level).
+			First(&levelsInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+			return
+		}*/
 
 	var classes []models2.Class
 	if err := config.DB.
-		Scopes(levelFilter(levelsInfo.Name)).
+		Scopes(levelFilter(level)).
 		Order("created_at desc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus!"})
@@ -196,7 +195,7 @@ func FetchClasses(context *gin.Context) {
 func levelFilter(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if level != "" {
-			return db.Where("level = ?", level)
+			return db.Where("level like ?", "%"+level+"%")
 		}
 		return db
 	}
