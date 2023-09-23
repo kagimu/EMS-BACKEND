@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/api/config"
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	models4 "github.com/hamsoftug/wholesomeEd/domain/campus/models"
 	models2 "github.com/hamsoftug/wholesomeEd/domain/class/models"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -172,9 +173,17 @@ func FetchClasses(context *gin.Context) {
 
 	level := context.Query("level")
 
+	var levelsInfo models4.Level
+	if err := config.DB.
+		Where("number = ?", level).
+		First(&levelsInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}
+
 	var classes []models2.Class
 	if err := config.DB.
-		Scopes(levelFilter(level)).
+		Scopes(levelFilter(levelsInfo.Name)).
 		Order("created_at desc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus!"})
@@ -196,9 +205,15 @@ func levelFilter(level string) func(db *gorm.DB) *gorm.DB {
 func FetchClassLevel(context *gin.Context) {
 
 	levelNumber := context.Query("level_number")
+	campusNumber := context.Query("campus_number")
 
 	if levelNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level Number is required!"})
+		return
+	}
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "campus Number is required!"})
 		return
 	}
 
@@ -206,6 +221,7 @@ func FetchClassLevel(context *gin.Context) {
 	var classLvl_ []models2.ClassLevelInfo
 	if err := config.DB.
 		Where("level_number = ?", levelNumber).
+		Where("campus_number = ?", campusNumber).
 		Preload("Class").
 		Order("created_at desc").
 		Find(&classLvl).Error; err != nil {
