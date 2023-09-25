@@ -18,6 +18,7 @@ import (
 	topicModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
 	schoolModels "github.com/hamsoftug/wholesomeEd/domain/school/models"
 	subjectModels "github.com/hamsoftug/wholesomeEd/domain/subject/models"
+	timetableModels "github.com/hamsoftug/wholesomeEd/domain/timetable/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -67,6 +68,8 @@ func main() {
 		&conceptModels.Concept{},
 		&classModels.ClassLevel{},
 		&models12.ImportCurriculum{},
+		&classModels.Stream{},
+		&timetableModels.Timetable{},
 	)
 	if errMigrate != nil {
 		return
