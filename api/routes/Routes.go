@@ -5,6 +5,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	authController "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
+	"github.com/hamsoftug/wholesomeEd/domain/auth/middleware"
 	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
 	controllers3 "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
 	controllers10 "github.com/hamsoftug/wholesomeEd/domain/curriculum/concept/controllers"
@@ -52,7 +53,7 @@ func SetupRoute() *gin.Engine {
 		auth.POST("reset-password", authController.ResetPassword)
 	}
 
-	main := router.Group("/main")
+	main := router.Group("/main", middleware.AuthorizeJWT())
 	{
 		//main.GET("profile/:id", middlewares.JWTMiddleware(), controllers.Profile)
 		main.GET("profile", authController.Profile)

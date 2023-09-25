@@ -27,13 +27,7 @@ func NewConcept(context *gin.Context) {
 	name := conceptInfo.Name
 	subtopicNumber := conceptInfo.SubTopicNumber
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})

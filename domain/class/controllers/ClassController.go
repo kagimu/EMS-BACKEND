@@ -26,13 +26,7 @@ func NewClass(context *gin.Context) {
 	abbreviation := classInfo.Abbreviation
 	level := classInfo.Level
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -100,13 +94,7 @@ func AddClassToLevel(context *gin.Context) {
 	campusNumber := classInfo.CampusNumber
 	levelNumber := classInfo.LevelNumber
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
@@ -310,13 +298,7 @@ func NewClassSubjects(context *gin.Context) {
 	levelNumber := subjectClassInfo.LevelNumber
 	subjectNumbers := subjectClassInfo.SubjectNumbers
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
