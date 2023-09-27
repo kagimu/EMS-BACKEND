@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/api/config"
 	authModels "github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	campusModels "github.com/hamsoftug/wholesomeEd/domain/campus/models"
 	"github.com/hamsoftug/wholesomeEd/domain/class/api/requests"
 	"github.com/hamsoftug/wholesomeEd/domain/class/api/responses"
 	"github.com/hamsoftug/wholesomeEd/domain/class/models"
