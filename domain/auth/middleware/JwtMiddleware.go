@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/services"
 	"net/http"
 )
 
@@ -13,13 +12,20 @@ func AuthorizeJWT() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 
 		if authHeader == "" {
+			/*	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"message": "Authorization not set",
+				})
+				return*/
+		}
+
+		if len(c.Request.Header["User-Number"]) < 1 {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "Authorization not set",
+				"message": "Not Authenticated!",
 			})
 			return
 		}
 
-		tokenString := authHeader[len(BearerSchema):]
+		/*tokenString := authHeader[len(BearerSchema):]
 
 		if tokenString == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -47,7 +53,7 @@ func AuthorizeJWT() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "Invalid token",
 			})
-		}
+		}*/
 
 	}
 }

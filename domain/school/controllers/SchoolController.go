@@ -25,13 +25,7 @@ func NewSchool(context *gin.Context) {
 
 	name := schoolInfo.Name
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -87,13 +81,7 @@ func EditSchool(context *gin.Context) {
 	name := schoolInfo.Name
 	schoolNumber := schoolInfo.SchoolNumber
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -151,13 +139,7 @@ func DeleteSchool(context *gin.Context) {
 
 	schoolNumber := schoolInfo.SchoolNumber
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	var userData models.User
 	//check if user is a valid user

@@ -3,8 +3,11 @@ package controllers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/api/config"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	models2 "github.com/hamsoftug/wholesomeEd/domain/class/models"
+	authModels "github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	campusModels "github.com/hamsoftug/wholesomeEd/domain/campus/models"
+	"github.com/hamsoftug/wholesomeEd/domain/class/api/requests"
+	"github.com/hamsoftug/wholesomeEd/domain/class/api/responses"
+	"github.com/hamsoftug/wholesomeEd/domain/class/models"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
@@ -12,13 +15,7 @@ import (
 
 func NewClass(context *gin.Context) {
 
-	type ClassInfo struct {
-		Name         string `json:"name"`
-		Abbreviation string `json:"abbreviation"`
-		Level        string `json:"level"`
-	}
-
-	var classInfo ClassInfo
+	var classInfo requests.ClassInfo
 	err := context.BindJSON(&classInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -29,13 +26,7 @@ func NewClass(context *gin.Context) {
 	abbreviation := classInfo.Abbreviation
 	level := classInfo.Level
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -52,7 +43,7 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
-	var userData models.User
+	var userData authModels.User
 	//check if user is a valid user
 	validateUser := config.DB.
 		Where("number = ?", userNumber).
@@ -62,7 +53,7 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateClass models2.Class
+	var duplicateClass models.Class
 	if duplicate := config.DB.
 		Where("name = ? OR abbreviation = ?", name, abbreviation).
 		First(&duplicateClass).Error; duplicate == nil {
@@ -72,7 +63,7 @@ func NewClass(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveClass := models2.Class{
+	saveClass := models.Class{
 		Number:       number,
 		Name:         name,
 		Abbreviation: abbreviation,
@@ -103,13 +94,7 @@ func AddClassToLevel(context *gin.Context) {
 	campusNumber := classInfo.CampusNumber
 	levelNumber := classInfo.LevelNumber
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
@@ -126,7 +111,7 @@ func AddClassToLevel(context *gin.Context) {
 		return
 	}
 
-	var userData models.User
+	var userData authModels.User
 	//check if user is a valid user
 	validateUser := config.DB.
 		Where("number = ?", userNumber).
@@ -136,7 +121,7 @@ func AddClassToLevel(context *gin.Context) {
 		return
 	}
 
-	var duplicateClass models2.ClassLevel
+	var duplicateClass models.ClassLevel
 	db := config.DB
 	if duplicate := config.DB.
 		Where("class_number = ?", classNumber).
@@ -156,7 +141,7 @@ func AddClassToLevel(context *gin.Context) {
 	}
 
 	number := uuid.NewV4().String()
-	saveClass := models2.ClassLevel{
+	saveClass := models.ClassLevel{
 		Number:       number,
 		ClassNumber:  classNumber,
 		CampusNumber: campusNumber,
@@ -172,15 +157,15 @@ func FetchClasses(context *gin.Context) {
 
 	level := context.Query("level")
 
-	/*	var levelsInfo models4.Level
-		if err := config.DB.
-			Where("number = ?", level).
-			First(&levelsInfo).Error; err != nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
-			return
-		}*/
+	/*var levelsInfo campusModels.Level
+	if err := config.DB.
+		Where("number = ?", level).
+		First(&levelsInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}*/
 
-	var classes []models2.Class
+	var classes []models.Class
 	if err := config.DB.
 		Scopes(levelFilter(level)).
 		Order("created_at desc").
@@ -216,27 +201,27 @@ func FetchClassLevel(context *gin.Context) {
 		return
 	}
 
-	var classLvl []models2.ClassLevel
-	var classLvl_ []models2.ClassLevelInfo
+	var classLevel []models.ClassLevel
+	var classLevels []responses.ClassLevelInfo
 	if err := config.DB.
 		Where("level_number = ?", levelNumber).
 		Where("campus_number = ?", campusNumber).
 		Preload("Class").
 		Order("created_at desc").
-		Find(&classLvl).Error; err != nil {
+		Find(&classLevel).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
 	}
 
-	for _, lst := range classLvl {
-		classLvl_ = append(classLvl_, models2.ClassLevelInfo{
+	for _, lst := range classLevel {
+		classLevels = append(classLevels, responses.ClassLevelInfo{
 			Number:       lst.Class.Number,
 			Name:         lst.Class.Name,
 			Abbreviation: lst.Class.Abbreviation,
 		})
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classLvl_})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classLevels})
 }
 
 func FetchClassSubjects(context *gin.Context) {
@@ -248,8 +233,8 @@ func FetchClassSubjects(context *gin.Context) {
 		return
 	}
 
-	var classes []models2.Class
-	var classes_ []models2.ClassInfo
+	var classes []models.Class
+	var classes_ []models.ClassInfo
 	if err := config.DB.
 		Where("level_number = ?", levelNumber).
 		Order("created_at desc").
@@ -262,8 +247,8 @@ func FetchClassSubjects(context *gin.Context) {
 
 		//fetch subjects under a learning area
 
-		var subjClass []models2.SubjectCLass
-		var subjects_ []models2.SubjectsInfo
+		var subjClass []models.SubjectCLass
+		var subjects_ []models.SubjectsInfo
 
 		if err := config.DB.
 			Where("class_number = ?", item.Number).
@@ -275,13 +260,13 @@ func FetchClassSubjects(context *gin.Context) {
 		}
 
 		for _, lst := range subjClass {
-			subjects_ = append(subjects_, models2.SubjectsInfo{
+			subjects_ = append(subjects_, models.SubjectsInfo{
 				Number: lst.Subject.Number,
 				Name:   lst.Subject.Name,
 			})
 		}
 
-		classes_ = append(classes_, models2.ClassInfo{
+		classes_ = append(classes_, models.ClassInfo{
 			Number:   item.Number,
 			Name:     item.Name,
 			Subjects: subjects_,
@@ -313,13 +298,7 @@ func NewClassSubjects(context *gin.Context) {
 	levelNumber := subjectClassInfo.LevelNumber
 	subjectNumbers := subjectClassInfo.SubjectNumbers
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Not Authenticated!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
@@ -341,7 +320,7 @@ func NewClassSubjects(context *gin.Context) {
 		return
 	}
 
-	var userData models.User
+	var userData authModels.User
 	//check if user is a valid user
 	validateUser := config.DB.
 		Where("number = ?", userNumber).
@@ -353,7 +332,7 @@ func NewClassSubjects(context *gin.Context) {
 
 	for _, item := range subjectNumbers {
 
-		var duplicateSubjectClass models2.SubjectCLass
+		var duplicateSubjectClass models.SubjectCLass
 		if duplicate := config.DB.
 			Where("campus_number = ?", campusNumber).
 			Where("level_number = ?", levelNumber).
@@ -362,7 +341,7 @@ func NewClassSubjects(context *gin.Context) {
 
 			//		add a subject to a learning area once no duplicates
 			number := uuid.NewV4().String()
-			saveLevel := models2.SubjectCLass{
+			saveLevel := models.SubjectCLass{
 				Number:        number,
 				ClassNumber:   classNumber,
 				CampusNumber:  campusNumber,
