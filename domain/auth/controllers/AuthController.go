@@ -460,7 +460,7 @@ func UserPassword(context *gin.Context) {
 	var userPass UserPassword
 	err := context.BindJSON(&userPass)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 

@@ -7,16 +7,17 @@ import (
 	authController "github.com/hamsoftug/wholesomeEd/domain/auth/controllers"
 	"github.com/hamsoftug/wholesomeEd/domain/auth/middleware"
 	"github.com/hamsoftug/wholesomeEd/domain/campus/controllers"
-	controllers3 "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
-	controllers10 "github.com/hamsoftug/wholesomeEd/domain/curriculum/concept/controllers"
-	controllers11 "github.com/hamsoftug/wholesomeEd/domain/curriculum/importCurriculum/controllers"
-	controllers5 "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/controllers"
-	controllers7 "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/controllers"
-	controllers6 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/controllers"
-	controllers9 "github.com/hamsoftug/wholesomeEd/domain/curriculum/subtopic/controllers"
-	controllers8 "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/controllers"
-	controllers2 "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
-	controllers4 "github.com/hamsoftug/wholesomeEd/domain/subject/controllers"
+	classController "github.com/hamsoftug/wholesomeEd/domain/class/controllers"
+	conceptController "github.com/hamsoftug/wholesomeEd/domain/curriculum/concept/controllers"
+	curricullumController "github.com/hamsoftug/wholesomeEd/domain/curriculum/importCurriculum/controllers"
+	learningAreaController "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/controllers"
+	strandController "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/controllers"
+	subjectClusterController "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/controllers"
+	subTopicController "github.com/hamsoftug/wholesomeEd/domain/curriculum/subtopic/controllers"
+	topicController "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/controllers"
+	schoolController "github.com/hamsoftug/wholesomeEd/domain/school/controllers"
+	subjectController "github.com/hamsoftug/wholesomeEd/domain/subject/controllers"
+	timetableController "github.com/hamsoftug/wholesomeEd/domain/timetable/controllers"
 	"time"
 )
 
@@ -59,15 +60,15 @@ func SetupRoute() *gin.Engine {
 		main.GET("profile", authController.Profile)
 
 		//manage School
-		main.POST("upload-curriculum", controllers11.ImportCurriculum)
-		main.GET("uploaded-curriculum", controllers11.FetchUploadedCurriculum)
+		main.POST("upload-curriculum", curricullumController.ImportCurriculum)
+		main.GET("uploaded-curriculum", curricullumController.FetchUploadedCurriculum)
 
 		//manage School
-		main.POST("new-school", controllers2.NewSchool)
-		main.POST("edit-school", controllers2.EditSchool)
-		main.POST("delete-school", controllers2.DeleteSchool)
-		main.GET("schools", controllers2.FetchSchools)
-		main.GET("school-info", controllers2.FetchSchoolInfo)
+		main.POST("new-school", schoolController.NewSchool)
+		main.POST("edit-school", schoolController.EditSchool)
+		main.POST("delete-school", schoolController.DeleteSchool)
+		main.GET("schools", schoolController.FetchSchools)
+		main.GET("school-info", schoolController.FetchSchoolInfo)
 
 		//manage campus
 		main.POST("new-campus", controllers.NewCampus)
@@ -78,40 +79,42 @@ func SetupRoute() *gin.Engine {
 		main.GET("level", controllers.FetchLevel)
 
 		//	manage class
-		main.POST("new-class", controllers3.NewClass)
-		main.POST("new-class-level", controllers3.AddClassToLevel)
-		main.GET("classes", controllers3.FetchClasses)
-		main.GET("class-level", controllers3.FetchClassLevel)
-		main.GET("class-subjects", controllers3.FetchClassSubjects)
-		main.POST("subject-to-class", controllers3.NewClassSubjects)
+		main.POST("new-class", classController.NewClass)
+		main.POST("new-class-level", classController.AddClassToLevel)
+		main.GET("classes", classController.FetchClasses)
+		main.GET("class-level", classController.FetchClassLevel)
+		main.GET("class-subjects", classController.FetchClassSubjects)
+		main.POST("subject-to-class", classController.NewClassSubjects)
 
 		//manage subject
-		main.POST("new-subject", controllers4.NewSubject)
-		main.GET("subjects", controllers4.FetchSubject)
+		main.POST("new-subject", subjectController.NewSubject)
+		main.GET("subjects", subjectController.FetchSubject)
 
 		//manage Learning Area
-		main.POST("new-learning-area", controllers5.NewLearningArea)
-		main.GET("learning-areas", controllers5.FetchLearningArea)
+		main.POST("new-learning-area", learningAreaController.NewLearningArea)
+		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 
 		//subject cluster
-		main.POST("new-subject-cluster", controllers6.NewSubjectCluster)
-		main.GET("subject-clusters", controllers6.FetchSubjectCluster)
+		main.POST("new-subject-cluster", subjectClusterController.NewSubjectCluster)
+		main.GET("subject-clusters", subjectClusterController.FetchSubjectCluster)
 
 		//strand
-		main.POST("new-strand", controllers7.NewStrand)
-		main.GET("strands", controllers7.FetchStrand)
+		main.POST("new-strand", strandController.NewStrand)
+		main.GET("strands", strandController.FetchStrand)
 
 		//topic
-		main.POST("new-topic", controllers8.NewTopic)
-		main.GET("topics", controllers8.FetchTopic)
+		main.POST("new-topic", topicController.NewTopic)
+		main.GET("topics", topicController.FetchTopic)
 
 		//sub topic
-		main.POST("new-sub-topic", controllers9.NewSubTopic)
-		main.GET("sub-topics", controllers9.FetchSubTopic)
+		main.POST("new-sub-topic", subTopicController.NewSubTopic)
+		main.GET("sub-topics", subTopicController.FetchSubTopic)
 
 		//concepts
-		main.POST("new-concept", controllers10.NewConcept)
-		main.GET("concepts", controllers10.FetchConcept)
+		main.POST("new-concept", conceptController.NewConcept)
+		main.GET("concepts", conceptController.FetchConcept)
+
+		main.POST("add-timetable-period", timetableController.AddPeriod)
 
 	}
 	//router.GET("/profile/:name", profile)
