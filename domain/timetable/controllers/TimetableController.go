@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/api/config"
-	"github.com/hamsoftug/wholesomeEd/domain/timetable/api/requests"
-	"github.com/hamsoftug/wholesomeEd/domain/timetable/models"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 	"time"

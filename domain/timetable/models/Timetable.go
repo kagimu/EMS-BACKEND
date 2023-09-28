@@ -1,8 +1,8 @@
 package models
 
 import (
-	classModels "github.com/hamsoftug/wholesomeEd/domain/class/models"
-	subjectModels "github.com/hamsoftug/wholesomeEd/domain/subject/models"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"gorm.io/gorm"
 	"time"
 )

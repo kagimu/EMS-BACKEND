@@ -2,8 +2,8 @@ package implementation
 
 import (
 	"errors"
-	"github.com/hamsoftug/wholesomeEd/api/config"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/jinzhu/gorm"
 )
 

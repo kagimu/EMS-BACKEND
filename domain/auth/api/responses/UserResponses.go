@@ -1,7 +1,7 @@
 package responses
 
 import "time"
-import "github.com/hamsoftug/wholesomeEd/domain/auth/models"
+import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 
 type GetUserList struct {
 	ID         uint                 `json:"id"`

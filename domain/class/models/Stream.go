@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"gorm.io/gorm"
 )
 

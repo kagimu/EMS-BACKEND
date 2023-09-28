@@ -1,12 +1,12 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/api/config"
-	authModels "github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	"github.com/hamsoftug/wholesomeEd/domain/class/api/requests"
-	"github.com/hamsoftug/wholesomeEd/domain/class/api/responses"
-	"github.com/hamsoftug/wholesomeEd/domain/class/models"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"

@@ -1,8 +1,8 @@
 package models
 
 import (
-	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	models2 "github.com/hamsoftug/wholesomeEd/domain/school/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"time"
 )
 

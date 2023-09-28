@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/api/config"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	models2 "github.com/hamsoftug/wholesomeEd/domain/curriculum/importCurriculum/controllers/models"
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
 	"net/http"

@@ -1,8 +1,8 @@
 package models
 
 import (
-	authModels "github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	learningAreaModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/models"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	"time"
 )
 

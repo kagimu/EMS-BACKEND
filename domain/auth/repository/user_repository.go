@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 )
 
 type UserRepository interface {

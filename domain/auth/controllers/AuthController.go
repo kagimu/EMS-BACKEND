@@ -1,15 +1,15 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/hassPassTokenGen"
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/api/config"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/api/requests"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/api/responses"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/services"
-	"github.com/hamsoftug/wholesomeEd/domain/commons"
-	"github.com/hamsoftug/wholesomeEd/domain/commons/emailSender"
-	"github.com/hamsoftug/wholesomeEd/domain/commons/hassPassTokenGen"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 	"regexp"

@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/services"
 	"github.com/gin-gonic/gin"
-	"github.com/hamsoftug/wholesomeEd/domain/auth/services"
 	"net/http"
 )
 

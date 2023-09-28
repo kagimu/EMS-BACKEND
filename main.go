@@ -4,28 +4,35 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/hamsoftug/wholesomeEd/api/config"
-	"github.com/hamsoftug/wholesomeEd/api/routes"
-	authModels "github.com/hamsoftug/wholesomeEd/domain/auth/models"
-	"github.com/hamsoftug/wholesomeEd/domain/campus/models"
-	classModels "github.com/hamsoftug/wholesomeEd/domain/class/models"
-	conceptModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/concept/models"
-	models12 "github.com/hamsoftug/wholesomeEd/domain/curriculum/importCurriculum/controllers/models"
-	learningAreaModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/learningarea/models"
-	strandModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/strand/models"
-	subjectClusterModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/subjectcluster/models"
-	subTopicModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/subtopic/models"
-	topicModels "github.com/hamsoftug/wholesomeEd/domain/curriculum/topic/models"
-	schoolModels "github.com/hamsoftug/wholesomeEd/domain/school/models"
-	subjectModels "github.com/hamsoftug/wholesomeEd/domain/subject/models"
-	timetableModels "github.com/hamsoftug/wholesomeEd/domain/timetable/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	models12 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
+	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
+	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
+	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
+	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
+	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
+	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"log"
 )
 
 var err error
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	//config.DB, err = gorm.Open("mysql", config.DbURL(config.BuildDBConfig()))
 	config.DB, err = gorm.Open(mysql.Open(config.DbURL(config.BuildDBConfig())), &gorm.Config{})
 
