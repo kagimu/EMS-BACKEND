@@ -6,18 +6,7 @@ services:
     ports:
       - "2053:80"
     environment:
-      - VIRTUAL_HOST=157.230.219.216
-#      - LETSENCRYPT_HOST=157.230.219.216
-#  nginx-proxy:
-#    restart: unless-stopped
-#    image: jwilder/nginx-proxy
-#    ports:
-#      - "81:81"
-#      - "444:444"
-#    volumes:
-#      - "/etc/nginx/vhost.d"
-#      - "/usr/share/nginx/html"
-#      - "/var/run/docker.sock:/tmp/docker.sock:ro"
-#      - "/etc/nginx/certs"
+      - VIRTUAL_HOST=104.248.175.232
+
 
 
