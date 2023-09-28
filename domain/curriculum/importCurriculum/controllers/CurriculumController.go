@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hamsoftug/wholesomeEd/api/config"
 	"github.com/hamsoftug/wholesomeEd/domain/auth/models"
 	models2 "github.com/hamsoftug/wholesomeEd/domain/curriculum/importCurriculum/controllers/models"
 	uuid "github.com/satori/go.uuid"
+	"github.com/xuri/excelize/v2"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -111,7 +113,49 @@ func ImportCurriculum(context *gin.Context) {
 	}
 	config.DB.Save(&saveFileData)
 
+	//read now the excel file
+	readExcelFile(path)
+
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
+}
+
+func readExcelFile(filePath string) {
+	//f, err := excelize.OpenFile("Book1.xlsx")
+	f, err := excelize.OpenFile(filePath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer func() {
+		// Close the spreadsheet.
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	// Get value from cell by given worksheet name and cell reference.
+	//cell, err := f.GetCellValue("Sheet1", "B2")
+	/*cell, err := f.GetCellValue("Sheet1", "A1")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(cell)*/
+	// Get all the rows in the Sheet1.
+	rows, err := f.GetRows("Sheet1")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for idx, row := range rows {
+		if idx == 1 {
+			for _, colCell := range row {
+				fmt.Print(colCell, "\t")
+			}
+			//fmt.Println()
+		}
+	}
+
 }
 
 func FetchUploadedCurriculum(context *gin.Context) {
