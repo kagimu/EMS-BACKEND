@@ -18,16 +18,21 @@ type (
 		User       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 
-	/*	LearningAreaInfo struct {
-			Number   string         `json:"number"`
-			Name     string         `json:"name"`
-			Subjects []SubjectsInfo `json:"subjects"`
-		}
+	ExcelCurriculumInfo struct {
+		LearningArea   string
+		SubjectCluster string
+		Subject        string
+		Class          string
+		Strand         string
+		Topic          string
+		SubTopic       string
+		Concept        string
+	}
 
-		SubjectsInfo struct {
-			Number string `json:"number"`
-			Name   string `json:"name"`
-		}*/
+	/*SubjectsInfo struct {
+		Number string `json:"number"`
+		Name   string `json:"name"`
+	}*/
 )
 
 func (u *ImportCurriculum) TableName() string {

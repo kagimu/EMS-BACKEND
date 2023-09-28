@@ -147,15 +147,33 @@ func readExcelFile(filePath string) {
 		return
 	}
 
+	var curriculumInfo []models2.ExcelCurriculumInfo
+
 	for idx, row := range rows {
 		if idx == 1 {
-			for _, colCell := range row {
-				fmt.Print(colCell, "\t")
-			}
-			//fmt.Println()
+			curriculumInfo = append(curriculumInfo, models2.ExcelCurriculumInfo{
+				LearningArea:   getValueAtIndex(row, 0),
+				SubjectCluster: getValueAtIndex(row, 1),
+				Subject:        getValueAtIndex(row, 2),
+				Class:          getValueAtIndex(row, 3),
+				Strand:         getValueAtIndex(row, 4),
+				Topic:          getValueAtIndex(row, 5),
+				SubTopic:       getValueAtIndex(row, 6),
+				Concept:        getValueAtIndex(row, 7),
+			})
 		}
 	}
 
+	fmt.Println(curriculumInfo)
+
+}
+
+func getValueAtIndex(row []string, i int) string {
+	if len(row) > i {
+		return row[i]
+	} else {
+		return ""
+	}
 }
 
 func FetchUploadedCurriculum(context *gin.Context) {
