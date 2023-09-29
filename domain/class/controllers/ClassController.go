@@ -169,7 +169,7 @@ func FetchClasses(context *gin.Context) {
 		Scopes(levelFilter(level)).
 		Order("created_at desc").
 		Find(&classes).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus!"})
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
 	}
 

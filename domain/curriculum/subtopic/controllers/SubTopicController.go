@@ -67,16 +67,16 @@ func NewSubTopic(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveStrand := models2.SubTopic{
+	saveSubtopic := models2.SubTopic{
 		Number:        number,
 		Name:          name,
 		EstimatedTime: estimatedTime,
 		TopicNumber:   topicNumber,
 		UserNumber:    userNumber,
 	}
-	config.DB.Save(&saveStrand)
+	config.DB.Save(&saveSubtopic)
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Subtopic Added Successfully!", "data": saveStrand})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Subtopic Added Successfully!", "data": saveSubtopic})
 }
 
 func FetchSubTopic(context *gin.Context) {
