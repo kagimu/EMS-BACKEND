@@ -5,6 +5,6 @@ git checkout staging
 echo "\n * Pulling code updates\n"
 git pull
 
-docker-compose  up -d --build
+docker-compose -f go-app-compose.yaml  up -d --build
 
 docker run -it -d --env-file ./.env --restart unless-stopped --net=host -v "$(pwd)"/fileRepo:/fileRepo:rw -p 2053:2053 wholesome-app
