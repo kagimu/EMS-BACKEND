@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
+	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
@@ -16,13 +17,7 @@ import (
 
 func ImportCurriculum(context *gin.Context) {
 
-	userNumber := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userNumber = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found!"})
-		return
-	}
+	userNumber := context.Request.Header["User-Number"][0]
 
 	//validate maximum file size
 	excelFile, fileError := context.FormFile("excel_file")
@@ -114,12 +109,12 @@ func ImportCurriculum(context *gin.Context) {
 	config.DB.Save(&saveFileData)
 
 	//read now the excel file
-	readExcelFile(path)
+	readExcelFile(path, userNumber)
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
 }
 
-func readExcelFile(filePath string) {
+func readExcelFile(filePath string, userNumber string) {
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
@@ -147,11 +142,9 @@ func readExcelFile(filePath string) {
 		return
 	}
 
-	var curriculumInfo []models2.ExcelCurriculumInfo
-
 	for idx, row := range rows {
-		if idx == 1 {
-			curriculumInfo = append(curriculumInfo, models2.ExcelCurriculumInfo{
+		if idx > 0 {
+			curriculumInfo := models2.ExcelCurriculumInfo{
 				LearningArea:   getValueAtIndex(row, 0),
 				SubjectCluster: getValueAtIndex(row, 1),
 				Subject:        getValueAtIndex(row, 2),
@@ -160,11 +153,39 @@ func readExcelFile(filePath string) {
 				Topic:          getValueAtIndex(row, 5),
 				SubTopic:       getValueAtIndex(row, 6),
 				Concept:        getValueAtIndex(row, 7),
-			})
+			}
+			saveCurriculumData(curriculumInfo, idx, userNumber)
 		}
 	}
 
-	fmt.Println(curriculumInfo)
+	//fmt.Println(curriculumInfo)
+
+}
+
+func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber string) {
+
+	//	save learning area
+	learningAreaNo := uuid.NewV4().String()
+
+	///save user data
+	saveLearningArea := learningAreaModels.LearningArea{
+		Number:     learningAreaNo,
+		Name:       info.LearningArea,
+		Code:       strconv.Itoa(idx),
+		UserNumber: userNumber,
+	}
+
+	//check if learning area exists
+	//if it does not exist add it
+	var learningAreaInfo learningAreaModels.LearningArea
+	learningAreaDup := config.DB.
+		Where("name = ?", info.LearningArea).
+		First(&learningAreaInfo)
+	if learningAreaDup.Error != nil {
+		config.DB.Save(&saveLearningArea)
+	}
+
+	//	adds subject cluster
 
 }
 
