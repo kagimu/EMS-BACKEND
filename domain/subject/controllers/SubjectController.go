@@ -60,15 +60,15 @@ func NewSubject(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveCampus := models3.Subject{
+	saveSubject := models3.Subject{
 		Number:               number,
 		Name:                 name,
 		UserNumber:           userNumber,
 		SubjectClusterNumber: subjectClusterNumber,
 	}
 
-	config.DB.Save(&saveCampus)
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveCampus})
+	config.DB.Save(&saveSubject)
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveSubject})
 }
 
 func FetchSubject(context *gin.Context) {

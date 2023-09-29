@@ -68,16 +68,16 @@ func NewTopic(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveStrand := models3.Topic{
+	saveTopic := models3.Topic{
 		Number:       number,
 		Name:         name,
 		StrandNumber: strandNumber,
 		UserNumber:   userNumber,
 		ClassNumber:  classNumber,
 	}
-	config.DB.Save(&saveStrand)
+	config.DB.Save(&saveTopic)
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Subject cluster Added Successfully!", "data": saveStrand})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Topic Added Successfully!", "data": saveTopic})
 }
 
 func FetchTopic(context *gin.Context) {
