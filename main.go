@@ -19,18 +19,31 @@ import (
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
+	"os"
 )
 
 var err error
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if os.Getenv("ENVIRONMENT") != "production" {
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+	}
+
+	if os.Getenv("ENVIRONMENT") == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	errZone := os.Setenv("TZ", "Africa/Nairobi")
+	if errZone != nil {
+		return
 	}
 
 	//config.DB, err = gorm.Open("mysql", config.DbURL(config.BuildDBConfig()))
@@ -83,8 +96,8 @@ func main() {
 	}
 
 	router := routes.SetupRoute()
-
-	errPort := router.Run(":2054")
+	port := os.Getenv("APP_PORT")
+	errPort := router.Run(":" + port)
 	if errPort != nil {
 		fmt.Println("Error starting server:", errPort)
 	}
