@@ -24,7 +24,7 @@ func BuildDBConfig() *DBConfig {
 			fmt.Println("Error getting port: ", err)
 		}*/
 	dbConfig := DBConfig{
-		Port:     2053,
+		Port:     3306,
 		Host:     "localhost",
 		User:     "base",
 		Password: "Serve@2022.Cloud",
