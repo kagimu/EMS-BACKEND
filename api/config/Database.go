@@ -3,8 +3,6 @@ package config
 import (
 	"fmt"
 	"gorm.io/gorm"
-	"os"
-	"strconv"
 )
 
 var DB *gorm.DB
@@ -20,17 +18,17 @@ type DBConfig struct {
 }
 
 func BuildDBConfig() *DBConfig {
-	port, err := strconv.Atoi(os.Getenv("APP_DB_PORT"))
-
-	if err != nil {
-		fmt.Println("Error getting port: ", err)
-	}
+	//port, err := strconv.Atoi(os.Getenv("APP_DB_PORT"))
+	/*
+		if err != nil {
+			fmt.Println("Error getting port: ", err)
+		}*/
 	dbConfig := DBConfig{
-		Port:     port,
-		Host:     os.Getenv("APP_DB_HOST"),
-		User:     os.Getenv("APP_DB_USERNAME"),
-		Password: os.Getenv("APP_DB_PASSWORD"),
-		DBName:   os.Getenv("APP_DB_NAME"),
+		Port:     2053,
+		Host:     "localhost",
+		User:     "base",
+		Password: "Serve@2022.Cloud",
+		DBName:   "wholesome_ed_db",
 	}
 	return &dbConfig
 }
