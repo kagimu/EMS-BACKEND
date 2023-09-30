@@ -11,7 +11,7 @@ type (
 	Topic struct {
 		ID           uint           `gorm:"primaryKey"`
 		Number       string         `json:"number" gorm:"size:36;unique;not null"`
-		Name         string         `json:"name" form:"name" binding:"required" gorm:"size:500;unique;not null"`
+		Name         string         `json:"name" form:"name" binding:"required" gorm:"size:2000;unique;not null"`
 		UserNumber   string         `json:"user_number" gorm:"size:36;not null"`
 		StrandNumber string         `json:"strand_number" gorm:"size:36;not null"`
 		ClassNumber  string         `json:"class_number" gorm:"size:36;not null"`
