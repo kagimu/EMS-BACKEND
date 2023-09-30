@@ -5,8 +5,8 @@ import "time"
 type (
 	PasswordReset struct {
 		ID         uint   `gorm:"primaryKey"`
-		Number     string `json:"number" gorm:"size:40;unique;not null"`
-		UserNumber string `json:"user_number" gorm:"size:100;index;not null"`
+		Number     string `json:"number" gorm:"size:36;unique;not null"`
+		UserNumber string `json:"user_number" gorm:"size:36;index;not null"`
 		Token      string `json:"token" gorm:"size:80;not null"`
 		Status     string `json:"status" gorm:"size:10;not null"`
 		CreatedAt  time.Time

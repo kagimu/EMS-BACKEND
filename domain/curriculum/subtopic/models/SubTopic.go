@@ -9,11 +9,11 @@ import (
 type (
 	SubTopic struct {
 		ID            uint              `gorm:"primaryKey"`
-		Number        string            `json:"number" gorm:"size:100;unique;not null"`
-		Name          string            `json:"name" form:"name" binding:"required" gorm:"size:60;unique;not null"`
-		UserNumber    string            `json:"user_number" gorm:"size:40;not null"`
+		Number        string            `json:"number" gorm:"size:36;unique;not null"`
+		Name          string            `json:"name" form:"name" binding:"required" gorm:"size:500;unique;not null"`
+		UserNumber    string            `json:"user_number" gorm:"size:36;not null"`
 		EstimatedTime string            `json:"estimated_time" gorm:"size:10;not null"`
-		TopicNumber   string            `json:"topic_number" gorm:"size:40;not null"`
+		TopicNumber   string            `json:"topic_number" gorm:"size:36;not null"`
 		CreatedAt     time.Time         `json:"created_at"`
 		UpdatedAt     time.Time         `json:"updated_at"`
 		DeletedAt     *time.Time        `sql:"index"`
