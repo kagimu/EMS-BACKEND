@@ -5,4 +5,6 @@ type TimetableRequest struct {
 	StreamNumber  string `json:"stream_number"`
 	StartTime     string `json:"start_time"`
 	EndTime       string `json:"end_time"`
+	Day           string `json:"day"`
+	CampusNumber  string `json:"campus_number"`
 }
