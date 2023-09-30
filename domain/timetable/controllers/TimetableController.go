@@ -30,9 +30,17 @@ func AddPeriod(context *gin.Context) {
 		EndTime:       endTime,
 		SubjectNumber: timetableRequest.SubjectNumber,
 		StreamNumber:  timetable.StreamNumber,
+		Day:           timetableRequest.Day,
+		CampusNumber:  timetableRequest.CampusNumber,
 	}
 
+	config.DB.Begin()
+
 	config.DB.Save(&period)
+
+	config.DB.Commit()
+
+	context.JSON(http.StatusOK, gin.H{"message": "Period added successfully"})
 
 }
 
