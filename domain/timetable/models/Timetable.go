@@ -15,8 +15,8 @@ type Timetable struct {
 	Day           string                `json:"day" gorm:"size:36;not null"`
 	StartTime     time.Time             `json:"start_time" gorm:"type:time;not null"`
 	EndTime       time.Time             `json:"end_time" gorm:"type:time;not null"`
-	SubjectNumber string                `json:"subject_number" gorm:"size:40;not null"`
-	CampusNumber  string                `json:"campus_number" gorm:"size:40;not null"`
+	SubjectNumber string                `json:"subject_number" gorm:"size:36;not null"`
+	CampusNumber  string                `json:"campus_number" gorm:"size:36;not null"`
 	Campus        campusModels.Campus   `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Subject       subjectModels.Subject `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Stream        classModels.Stream    `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
