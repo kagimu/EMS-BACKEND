@@ -11,6 +11,6 @@ type Stream struct {
 	Name             string      `json:"name" gorm:"size:200;not null"`
 	UserNumber       string      `json:"user_number" gorm:"size:36;not null"`
 	User             models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	ClassLevelNumber string      `json:"class_number" gorm:"size:36;not null"`
+	ClassLevelNumber string      `json:"class_level_number" gorm:"size:36;not null"`
 	ClassLevel       ClassLevel  `gorm:"foreignKey:ClassLevelNumber;references:Number;constraint: onUpdate:CASCADE, onDelete:CASCADE"`
 }
