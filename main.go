@@ -79,7 +79,7 @@ func main() {
 		&models.Level{},
 		&classModels.Class{},
 		&learningAreaModels.LearningArea{},
-		&classModels.SubjectCLass{},
+		&classModels.ClassLevelSubject{},
 		&subjectClusterModels.SubjectCluster{},
 		&subjectModels.Subject{},
 		&strandModels.Strand{},

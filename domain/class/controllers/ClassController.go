@@ -270,7 +270,7 @@ func FetchClassSubjects(context *gin.Context) {
 
 		//fetch subjects under a learning area
 
-		var subjClass []models.SubjectCLass
+		var subjClass []models.ClassLevelSubject
 		var subjects_ []models.SubjectsInfo
 
 		if err := config.DB.
@@ -355,7 +355,7 @@ func NewClassSubjects(context *gin.Context) {
 
 	for _, item := range subjectNumbers {
 
-		var duplicateSubjectClass models.SubjectCLass
+		var duplicateSubjectClass models.ClassLevelSubject
 		if duplicate := config.DB.
 			Where("campus_number = ?", campusNumber).
 			Where("level_number = ?", levelNumber).
@@ -364,13 +364,11 @@ func NewClassSubjects(context *gin.Context) {
 
 			//		add a subject to a learning area once no duplicates
 			number := uuid.NewV4().String()
-			saveLevel := models.SubjectCLass{
-				Number:        number,
-				ClassNumber:   classNumber,
-				CampusNumber:  campusNumber,
-				LevelNumber:   levelNumber,
-				SubjectNumber: item,
-				UserNumber:    userNumber,
+			saveLevel := models.ClassLevelSubject{
+				Number:           number,
+				ClassLevelNumber: classNumber,
+				SubjectNumber:    item,
+				UserNumber:       userNumber,
 			}
 			config.DB.Save(&saveLevel)
 
