@@ -315,22 +315,6 @@ func FetchCampusLevel(context *gin.Context) {
 		})
 	}
 
-	/*	var levelInfo []struct {
-			Name   string `json:"name"`
-			Number int    `json:"number"`
-		}
-
-		if err := config.DB.
-			Model(&campusModel.Level{}).
-			Select("name", "number").
-			Where("campus_number = ?", campusNumber).
-			Order("created_at desc").
-			Find(&levelInfo).
-			Error; err != nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found"})
-			return
-		}*/
-
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levelInfo_})
 
 }
