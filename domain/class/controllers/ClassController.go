@@ -11,6 +11,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
+	"strings"
 )
 
 func NewClass(context *gin.Context) {
@@ -230,10 +231,16 @@ func FetchClassLevel(context *gin.Context) {
 	}
 
 	for _, lst := range classLevel {
+
+		var streams []models.Stream
+
+		config.DB.Where("class_level_number = ?", lst.Number).Find(&streams)
+
 		classLevels = append(classLevels, responses.ClassLevelInfo{
-			Number:       lst.Class.Number,
+			Number:       lst.Number,
 			Name:         lst.Class.Name,
 			Abbreviation: lst.Class.Abbreviation,
+			Streams:      streams,
 		})
 	}
 
@@ -372,5 +379,50 @@ func NewClassSubjects(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": "Subjects added"})
+
+}
+
+func AddClassStream(ctx *gin.Context) {
+
+	var streamRequest requests.StreamRequest
+
+	err := ctx.BindJSON(&streamRequest)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to serialize  request error!"})
+		return
+	}
+
+	streams := strings.Split(streamRequest.Name, ",")
+
+	//add streams to the class
+	if streams != nil {
+		for _, stream := range streams {
+			streamObj := models.Stream{
+				Number:           uuid.NewV4().String(),
+				Name:             stream,
+				ClassLevelNumber: streamRequest.ClassLevelNumber,
+				UserNumber:       ctx.GetHeader("User-Number"),
+			}
+
+			err = config.DB.Save(&streamObj).Error
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusOK, "message": "Failed to add stream !"})
+				return
+			}
+
+		}
+	}
+	/*} else {
+		streamObj := models.Stream{
+			Number:      uuid.NewV4().String(),
+			Name:        saveClass.Name,
+			ClassNumber: saveClass.Number,
+			UserNumber:  userNumber,
+		}
+
+		tx.Save(&streamObj)
+	}*/
+
+	ctx.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream Added Successfully!"})
 
 }

@@ -44,14 +44,14 @@ func AddPeriod(context *gin.Context) {
 
 }
 
-func getDistinctDays(ctx *gin.Context) {
+func GetDistinctDays(ctx *gin.Context) {
 	var days []string
 	config.DB.Model(&models.Timetable{}).Select("DISTINCT day").Scan(&days)
 	ctx.JSON(http.StatusOK, gin.H{"days": days})
 
 }
 
-func getPeriodsByDay(ctx *gin.Context) {
+func GetPeriodsByDay(ctx *gin.Context) {
 	day := ctx.Param("day")
 	var periods []models.Timetable
 	config.DB.Where("day = ?", day).Find(&periods)

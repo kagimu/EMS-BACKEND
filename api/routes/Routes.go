@@ -115,7 +115,19 @@ func SetupRoute() *gin.Engine {
 		main.POST("new-concept", conceptController.NewConcept)
 		main.GET("concepts", conceptController.FetchConcept)
 
-		main.POST("add-timetable-period", timetableController.AddPeriod)
+		//timetable routes
+		timetable := main.Group("/timetable")
+		{
+			timetable.POST("add-timetable-period", timetableController.AddPeriod)
+			timetable.GET("get-distinct-days", timetableController.GetDistinctDays)
+			timetable.GET("get-periods-by-day/:day", timetableController.GetPeriodsByDay)
+		}
+
+		stream := main.Group("/stream")
+		{
+			stream.POST("new", classController.AddClassStream)
+
+		}
 
 	}
 	//router.GET("/profile/:name", profile)
