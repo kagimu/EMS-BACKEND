@@ -12,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
-	"time"
 )
 
 func AddPeriod(context *gin.Context) {
@@ -24,26 +23,47 @@ func AddPeriod(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	var timetableRequestDayCode int32
+	// assign day code	1 to monday , 2 to tuesday and so on
+	switch timetableRequest.Day {
+	case "Monday":
+		timetableRequestDayCode = 1
+	case "Tuesday":
+		timetableRequestDayCode = 2
+	case "Wednesday":
+		timetableRequestDayCode = 3
+	case "Thursday":
+		timetableRequestDayCode = 4
+	case "Friday":
+		timetableRequestDayCode = 5
+	case "Saturday":
+		timetableRequestDayCode = 6
+	case "Sunday":
+		timetableRequestDayCode = 7
+	default:
+		timetableRequestDayCode = 0
+
+	}
 
 	timetable.Number = uuid.NewV4().String()
-	startTime, err := time.Parse("15:04:05", timetableRequest.StartTime)
+	/*startTime, err := time.Parse("15:04:05", timetableRequest.StartTime)
 	endTime, err := time.Parse("15:04:05", timetableRequest.EndTime)
 
+	fmt.Println("start time", startTime)
+	fmt.Println("start time", startTime)
+	fmt.Println("end time", endTime)*/
 	period := models.Timetable{
 		Number:        timetable.Number,
-		StartTime:     startTime,
-		EndTime:       endTime,
+		StartTime:     timetableRequest.StartTime,
+		EndTime:       timetableRequest.EndTime,
 		SubjectNumber: timetableRequest.SubjectNumber,
-		StreamNumber:  timetable.StreamNumber,
+		StreamNumber:  timetableRequest.StreamNumber,
 		Day:           timetableRequest.Day,
+		DayCode:       timetableRequestDayCode,
 		CampusNumber:  timetableRequest.CampusNumber,
 	}
 
-	config.DB.Begin()
-
 	config.DB.Save(&period)
-
-	config.DB.Commit()
 
 	context.JSON(http.StatusOK, gin.H{"message": "Period added successfully"})
 
@@ -51,7 +71,10 @@ func AddPeriod(context *gin.Context) {
 
 func GetDistinctDays(ctx *gin.Context) {
 	var days []string
-	config.DB.Model(&models.Timetable{}).Select("DISTINCT day").Scan(&days)
+	config.DB.Model(&models.Timetable{}).
+		Select("DISTINCT day").
+		Order("day_code asc").
+		Scan(&days)
 	ctx.JSON(http.StatusOK, gin.H{"days": days})
 
 }
@@ -60,6 +83,21 @@ func GetPeriodsByDay(ctx *gin.Context) {
 	day := ctx.Param("day")
 	var periods []models.Timetable
 	config.DB.Where("day = ?", day).Find(&periods)
+	ctx.JSON(http.StatusOK, gin.H{"data": periods})
+}
+
+func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
+	var periods []models.Timetable
+	config.DB.
+		//Model(&models.Timetable{}).
+		//Select("stream_number,day").
+		Preload("Subject").
+		Preload("Stream").
+		Group("day_code").
+		Order("day_code asc").
+		Joins("left join subjects on subjects.number=timetables.subject_number").
+		Find(&periods)
+
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
 

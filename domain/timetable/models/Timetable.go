@@ -5,7 +5,6 @@ import (
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Timetable struct {
@@ -13,8 +12,9 @@ type Timetable struct {
 	Number        string                `json:"number" gorm:"size:36;unique;not null"`
 	StreamNumber  string                `json:"stream_number" gorm:"size:36;not null"`
 	Day           string                `json:"day" gorm:"size:36;not null"`
-	StartTime     time.Time             `json:"start_time" gorm:"type:time;not null"`
-	EndTime       time.Time             `json:"end_time" gorm:"type:time;not null"`
+	DayCode       int32                 `json:"day_code" gorm:"size:36;not null"`
+	StartTime     string                `json:"start_time" gorm:"size:10;not null"`
+	EndTime       string                `json:"end_time" gorm:"size:10;not null"`
 	SubjectNumber string                `json:"subject_number" gorm:"size:36;not null"`
 	CampusNumber  string                `json:"campus_number" gorm:"size:36;not null"`
 	Campus        campusModels.Campus   `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
