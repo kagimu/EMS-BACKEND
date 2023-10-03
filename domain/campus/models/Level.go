@@ -14,6 +14,10 @@ type (
 		UpdatedAt    time.Time  `json:"updated_at"`
 		DeletedAt    *time.Time `sql:"index"`
 	}
+	LevelDataInfo struct {
+		Name   string `json:"name"`
+		Number string `json:"number"`
+	}
 )
 
 func (u *Level) TableName() string {

@@ -3,7 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -77,7 +77,7 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
-	var duplicateCampus models2.Campus
+	var duplicateCampus campusModel.Campus
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("school_number = ?", schoolNumber).
@@ -87,7 +87,7 @@ func NewCampus(context *gin.Context) {
 	}
 
 	number := uuid.NewV4().String()
-	saveCampus := models2.Campus{
+	saveCampus := campusModel.Campus{
 		Number:       number,
 		UserNumber:   userNumber,
 		Name:         name,
@@ -102,7 +102,7 @@ func NewCampus(context *gin.Context) {
 	//save Level
 	for _, item := range level {
 		levelNumber := uuid.NewV4().String()
-		saveLevel := models2.Level{
+		saveLevel := campusModel.Level{
 			Number:       levelNumber,
 			Name:         item,
 			CampusNumber: saveCampus.Number,
@@ -186,7 +186,7 @@ func EditCampus(context *gin.Context) {
 		return
 	}
 
-	var duplicateCampus models2.Campus
+	var duplicateCampus campusModel.Campus
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("school_number = ?", schoolNumber).
@@ -196,10 +196,10 @@ func EditCampus(context *gin.Context) {
 		return
 	}
 
-	var campusDataInfo models2.Campus
+	var campusDataInfo campusModel.Campus
 	updateLevel := config.DB.Model(&campusDataInfo).
 		Where("number = ?", campusNumber).
-		Updates(models2.Campus{Name: name, Phone: phone, UserNumber: userNumber, Email: email, Location: location})
+		Updates(campusModel.Campus{Name: name, Phone: phone, UserNumber: userNumber, Email: email, Location: location})
 	if updateLevel.Error != nil {
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
 		return
@@ -208,7 +208,7 @@ func EditCampus(context *gin.Context) {
 	//save Level
 	/*	for _, item := range level {
 		levelNumber := uuid.NewV4().String()
-		saveLevel := models2.Level{
+		saveLevel := campusModel.Level{
 			Number:       levelNumber,
 			Name:         item,
 			CampusNumber: saveCampus.Number,
@@ -228,7 +228,7 @@ func FetchCampuses(context *gin.Context) {
 		return
 	}
 
-	var campuses []models2.Campus
+	var campuses []campusModel.Campus
 	if err := config.DB.
 		Where("school_number = ?", schoolNumber).
 		Order("created_at desc").
@@ -250,7 +250,7 @@ func CampusInfo(context *gin.Context) {
 		return
 	}
 
-	var campuses models2.Campus
+	var campuses campusModel.Campus
 	if err := config.DB.
 		Where("number = ?", campusNumber).
 		Preload("Level").
@@ -273,7 +273,7 @@ func FetchLevel(context *gin.Context) {
 		return
 	}
 
-	var campus models2.Campus
+	var campus campusModel.Campus
 	if err := config.DB.
 		Where("number = ?", campusNumber).
 		Preload("Level").
@@ -284,6 +284,38 @@ func FetchLevel(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus})
+
+}
+
+func FetchCampusLevel(context *gin.Context) {
+
+	campusNumber := context.Query("campus_number")
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Campus Number is required!"})
+		return
+	}
+
+	var levelInfo []campusModel.Level
+	var levelInfo_ []campusModel.LevelDataInfo
+	if err := config.DB.
+		//Select("name", "number").
+		Where("campus_number = ?", campusNumber).
+		Order("created_at desc").
+		Find(&levelInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found"})
+		return
+	}
+
+	// Populate the selected columns from the fetched data
+	for _, level := range levelInfo {
+		levelInfo_ = append(levelInfo_, campusModel.LevelDataInfo{
+			Name:   level.Name,
+			Number: level.Number,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levelInfo_})
 
 }
 
@@ -324,7 +356,7 @@ func DeleteCampus(context *gin.Context) {
 		return
 	}
 
-	var campusData models2.Campus
+	var campusData campusModel.Campus
 
 	campusDataInfo := config.DB.
 		Where("number = ?", campusNumber).
@@ -335,7 +367,7 @@ func DeleteCampus(context *gin.Context) {
 	}
 
 	//delete Campus
-	var levelData models2.Level
+	var levelData campusModel.Level
 	db.Where("campus_number = ?", campusNumber).Delete(&levelData)
 
 	//delete Campus
