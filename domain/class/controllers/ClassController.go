@@ -231,9 +231,11 @@ func FetchClassLevel(context *gin.Context) {
 
 	var classLevel []models.ClassLevel
 	var classLevels []responses.ClassLevelInfo
+
 	if err := config.DB.
 		Where("level_number = ?", levelNumber).
 		Where("campus_number = ?", campusNumber).
+		Preload("Streams").
 		Preload("Class").
 		Order("created_at desc").
 		Find(&classLevel).Error; err != nil {
@@ -242,16 +244,23 @@ func FetchClassLevel(context *gin.Context) {
 	}
 
 	for _, lst := range classLevel {
+		var stream_ []responses.StreamInfo
+		/*var streams []models.Stream
+		config.DB.Where("class_level_number = ?", lst.Number).Find(&streams)*/
 
-		var streams []models.Stream
-		config.DB.Where("class_level_number = ?", lst.Number).Find(&streams)
+		for _, list := range lst.Streams {
+			stream_ = append(stream_, responses.StreamInfo{
+				StreamNumber: list.Number,
+				Name:         list.Name,
+			})
+		}
 
 		classLevels = append(classLevels, responses.ClassLevelInfo{
 			Number:       lst.Number,
 			Name:         lst.Class.Name,
 			ClassNumber:  lst.Class.Number,
 			Abbreviation: lst.Class.Abbreviation,
-			Streams:      streams,
+			Streams:      stream_,
 		})
 	}
 
