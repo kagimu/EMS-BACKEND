@@ -18,9 +18,19 @@ type (
 		Campus       models2.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Level        models2.Level  `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User         models.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		ClassName    string         `json:"class_name"`
+		LevelName    string         `json:"level_name"`
 	}
 )
 
 func (u *ClassLevel) TableName() string {
 	return "class_levels"
+}
+
+func (classLevel *ClassLevel) AfterFind(tx *gorm.DB) (err error) {
+	var class Class
+	tx.Model(&classLevel.Class).Where("number = ?", classLevel.ClassNumber).First(&class)
+	classLevel.ClassName = class.Name
+
+	return
 }
