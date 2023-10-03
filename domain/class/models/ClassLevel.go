@@ -18,8 +18,9 @@ type (
 		Campus       models2.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Level        models2.Level  `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User         models.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-		ClassName    string         `json:"class_name"`
-		LevelName    string         `json:"level_name"`
+		ClassName    string         `json:"class_name" gorm:" - :migration"`
+		LevelName    string         `json:"level_name" gorm:" - :migration"`
+		Streams      []Stream       `gorm:"foreignKey:ClassLevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )
 
