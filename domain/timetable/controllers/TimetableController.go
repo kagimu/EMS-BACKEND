@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	classLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	subjectModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
@@ -73,13 +75,14 @@ func FetchClassLevelsByCampusNumberAndLevelNumber(ctx *gin.Context) {
 	campusNumber := ctx.Query("campus_number")
 	levelNumber := ctx.Query("level_number")
 
-	var classLevels []responses.Classes
+	fmt.Println(campusNumber, levelNumber)
 
-	config.DB.Model(classLevelModels.ClassLevel{}).
-		Select("class_levels.number number,class.name name").
-		Joins("left join class on classes.number=class_levels.class_number").
-		Where("class_levels.campus_number = ? AND class_levels.level_number = ?", campusNumber, levelNumber).
-		Scan(&classLevels)
+	var classLevels []classModels.ClassLevel
+
+	config.DB.
+		Where("campus_number = ? AND level_number = ?", campusNumber, levelNumber).
+		Preload("Class").
+		Find(&classLevels)
 	ctx.JSON(http.StatusOK, gin.H{"data": classLevels})
 
 }
@@ -94,4 +97,15 @@ func FetchSubjectsByClassLevelNumber(ctx *gin.Context) {
 		Where("class_level_subjects.class_level_number = ?", classLevelNumber).
 		Scan(&subjects)
 	ctx.JSON(http.StatusOK, gin.H{"data": subjects})
+}
+
+func FetchLevelsByCampusNumber(ctx *gin.Context) {
+	campusNumber := ctx.Param("campus_number")
+	var levels []campusModes.Level
+
+	config.DB.
+		Where("campus_number = ?", campusNumber).
+		Find(&levels)
+
+	ctx.JSON(http.StatusOK, gin.H{"data": levels})
 }

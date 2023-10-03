@@ -123,11 +123,13 @@ func SetupRoute() *gin.Engine {
 			timetable.GET("get-periods-by-day/:day", timetableController.GetPeriodsByDay)
 			timetable.GET("subjects-by-class-level-number/:class_level_number", timetableController.FetchSubjectsByClassLevelNumber)
 			timetable.GET("get-classes-by-campus-number-and-level-number", timetableController.FetchClassLevelsByCampusNumberAndLevelNumber)
+			timetable.GET("fetch-levels-by-campus-number/:campus_number", timetableController.FetchLevelsByCampusNumber)
 		}
 
 		stream := main.Group("/stream")
 		{
 			stream.POST("new", classController.AddClassStream)
+			stream.GET("fetch", classController.FetchStreamsByClassLevelNumber)
 
 		}
 

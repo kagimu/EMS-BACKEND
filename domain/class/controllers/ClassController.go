@@ -424,3 +424,23 @@ func AddClassStream(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream Added Successfully!"})
 
 }
+
+func FetchStreamsByClassLevelNumber(ctx *gin.Context) {
+	var streams []models.Stream
+	classLevelNumber := ctx.Query("class_level_number")
+
+	if classLevelNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Class Level Number is required!"})
+		return
+	}
+
+	if err := config.DB.
+		Where("class_level_number = ?", classLevelNumber).
+		Find(&streams).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Streams!"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": streams})
+
+}
