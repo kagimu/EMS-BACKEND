@@ -77,6 +77,7 @@ func SetupRoute() *gin.Engine {
 		main.GET("campuses", controllers.FetchCampuses)
 		main.GET("campus-info", controllers.CampusInfo)
 		main.GET("level", controllers.FetchLevel)
+		main.GET("campus-level", controllers.FetchCampusLevel)
 
 		//	manage class
 		main.POST("new-class", classController.NewClass)

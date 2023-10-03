@@ -303,10 +303,8 @@ func FetchClassSubjects(context *gin.Context) {
 func NewClassSubjects(context *gin.Context) {
 
 	type CLassSubjectInfo struct {
-		ClassNumber    string   `json:"class_number"`
-		CampusNumber   string   `json:"campus_number"`
-		LevelNumber    string   `json:"level_number"`
-		SubjectNumbers []string `json:"subject_number"`
+		ClassNumber    string `json:"class_number"`
+		SubjectNumbers string `json:"subject_number"`
 	}
 
 	var subjectClassInfo CLassSubjectInfo
@@ -317,8 +315,6 @@ func NewClassSubjects(context *gin.Context) {
 	}
 
 	classNumber := subjectClassInfo.ClassNumber
-	campusNumber := subjectClassInfo.CampusNumber
-	levelNumber := subjectClassInfo.LevelNumber
 	subjectNumbers := subjectClassInfo.SubjectNumbers
 
 	userNumber := context.Request.Header["User-Number"][0]
@@ -328,18 +324,8 @@ func NewClassSubjects(context *gin.Context) {
 		return
 	}
 
-	if campusNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning Area is required!"})
-		return
-	}
-
-	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
-		return
-	}
-
-	if len(subjectNumbers) == 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject Area is required!"})
+	if subjectNumbers == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
 		return
 	}
 
@@ -353,26 +339,21 @@ func NewClassSubjects(context *gin.Context) {
 		return
 	}
 
-	for _, item := range subjectNumbers {
+	var duplicateSubjectClass models.ClassLevelSubject
+	if duplicate := config.DB.
+		Where("class_level_number = ?", classNumber).
+		Where("subject_number = ?", subjectNumbers).
+		First(&duplicateSubjectClass).Error; duplicate != nil {
 
-		var duplicateSubjectClass models.ClassLevelSubject
-		if duplicate := config.DB.
-			Where("campus_number = ?", campusNumber).
-			Where("level_number = ?", levelNumber).
-			Where("subject_number = ?", item).
-			First(&duplicateSubjectClass).Error; duplicate != nil {
-
-			//		add a subject to a learning area once no duplicates
-			number := uuid.NewV4().String()
-			saveLevel := models.ClassLevelSubject{
-				Number:           number,
-				ClassLevelNumber: classNumber,
-				SubjectNumber:    item,
-				UserNumber:       userNumber,
-			}
-			config.DB.Save(&saveLevel)
-
+		//		add a subject to a learning area once no duplicates
+		number := uuid.NewV4().String()
+		saveLevel := models.ClassLevelSubject{
+			Number:           number,
+			ClassLevelNumber: classNumber,
+			SubjectNumber:    subjectNumbers,
+			UserNumber:       userNumber,
 		}
+		config.DB.Save(&saveLevel)
 
 	}
 
