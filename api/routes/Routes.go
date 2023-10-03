@@ -120,6 +120,7 @@ func SetupRoute() *gin.Engine {
 		timetable := main.Group("/timetable")
 		{
 			timetable.POST("add-timetable-period", timetableController.AddPeriod)
+			timetable.GET("get-timetable-periods", timetableController.FetchTimetablePeriodsGroupedByDay)
 			timetable.GET("get-distinct-days", timetableController.GetDistinctDays)
 			timetable.GET("get-periods-by-day/:day", timetableController.GetPeriodsByDay)
 			timetable.GET("subjects-by-class-level-number/:class_level_number", timetableController.FetchSubjectsByClassLevelNumber)
