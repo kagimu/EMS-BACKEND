@@ -130,7 +130,18 @@ func AddClassToLevel(context *gin.Context) {
 		Where("level_number = ?", levelNumber).
 		First(&duplicateClass).Error; duplicate == nil {
 
-		//delete classs if it is removed from the level
+		//check if this class has children such that it is not deleted
+
+		var classChildrenChecker models.ClassLevelSubject
+		if err := db.
+			Where("class_level_number = ?", duplicateClass.Number).
+			First(&classChildrenChecker).Error; err == nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Class, it has Children"})
+			return
+		}
+
+		//------------------------------------------------------
+		//delete class if it is removed from the level
 		db.Where("class_number = ?", classNumber).
 			Where("campus_number = ?", campusNumber).
 			Where("level_number = ?", levelNumber).
@@ -233,12 +244,12 @@ func FetchClassLevel(context *gin.Context) {
 	for _, lst := range classLevel {
 
 		var streams []models.Stream
-
 		config.DB.Where("class_level_number = ?", lst.Number).Find(&streams)
 
 		classLevels = append(classLevels, responses.ClassLevelInfo{
 			Number:       lst.Number,
 			Name:         lst.Class.Name,
+			ClassNumber:  lst.Class.Number,
 			Abbreviation: lst.Class.Abbreviation,
 			Streams:      streams,
 		})
