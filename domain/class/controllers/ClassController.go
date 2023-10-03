@@ -399,7 +399,7 @@ func AddClassStream(ctx *gin.Context) {
 
 			err = config.DB.Save(&streamObj).Error
 			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusOK, "message": "Failed to add stream !"})
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to add stream !"})
 				return
 			}
 
@@ -416,7 +416,7 @@ func AddClassStream(ctx *gin.Context) {
 		tx.Save(&streamObj)
 	}*/
 
-	ctx.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream Added Successfully!"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Stream Added Successfully!"})
 
 }
 
