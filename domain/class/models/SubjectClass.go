@@ -17,4 +17,11 @@ type (
 		User             authModels.User      `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Subject          subjectModel.Subject `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
+
+	SubjectInfo struct {
+		SubjectNumber string `json:"subject_number"`
+		Name          string `json:"name"`
+		Class         string `json:"class"`
+		Abbreviation  string `json:"abbreviation"`
+	}
 )

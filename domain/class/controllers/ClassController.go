@@ -250,54 +250,48 @@ func FetchClassLevel(context *gin.Context) {
 func FetchClassSubjects(context *gin.Context) {
 
 	levelNumber := context.Query("level_number")
+	classNumber := context.Query("class_number")
 
-	if levelNumber == "" {
+	/*	if levelNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
-	}
+	}*/
 
-	var classes []models.Class
-	var classes_ []models.ClassInfo
+	var classSubjects []models.ClassLevelSubject
+	var subjects_ []models.SubjectInfo
 	if err := config.DB.
-		Where("level_number = ?", levelNumber).
+		Scopes(classFilter(classNumber)).
+		Where("class_levels.level_number = ?", levelNumber).
+		Joins("join class_levels on class_levels.number = class_level_subjects.class_level_number").
+		Preload("ClassLevel.Class").
+		Preload("ClassLevel").
+		Preload("Subject").
 		Order("created_at desc").
-		Find(&classes).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Campus!"})
+		Find(&classSubjects).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
 		return
 	}
 
-	for _, item := range classes {
-
-		//fetch subjects under a learning area
-
-		var subjClass []models.ClassLevelSubject
-		var subjects_ []models.SubjectsInfo
-
-		if err := config.DB.
-			Where("class_number = ?", item.Number).
-			Where("level_number = ?", levelNumber).
-			Preload("Subject").
-			Find(&subjClass).Error; err != nil {
-			//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Subj found"})
-			//return
-		}
-
-		for _, lst := range subjClass {
-			subjects_ = append(subjects_, models.SubjectsInfo{
-				Number: lst.Subject.Number,
-				Name:   lst.Subject.Name,
-			})
-		}
-
-		classes_ = append(classes_, models.ClassInfo{
-			Number:   item.Number,
-			Name:     item.Name,
-			Subjects: subjects_,
+	for _, item := range classSubjects {
+		subjects_ = append(subjects_, models.SubjectInfo{
+			SubjectNumber: item.Subject.Number,
+			Name:          item.Subject.Name,
+			Class:         item.ClassLevel.Class.Name,
+			Abbreviation:  item.ClassLevel.Class.Abbreviation,
 		})
 
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjects_})
+}
+
+func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if classNumber != "" {
+			return db.Where("class_level_number = ?", classNumber)
+		}
+		return db
+	}
 }
 
 func NewClassSubjects(context *gin.Context) {
