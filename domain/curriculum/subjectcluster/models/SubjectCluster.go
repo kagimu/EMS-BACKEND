@@ -10,7 +10,7 @@ type (
 	SubjectCluster struct {
 		ID                 uint                            `gorm:"primaryKey"`
 		Number             string                          `json:"number" gorm:"size:36;unique;not null"`
-		Name               string                          `json:"name" form:"name" binding:"required" gorm:"type:longtext;unique;not null"`
+		Name               string                          `json:"name" form:"name" binding:"required" gorm:"type:longtext;not null"`
 		UserNumber         string                          `json:"user_number" gorm:"size:40;not null"`
 		LearningAreaNumber string                          `json:"learning_area_number" gorm:"size:40;not null"`
 		CreatedAt          time.Time                       `json:"created_at"`
