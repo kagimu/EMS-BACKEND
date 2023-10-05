@@ -17,7 +17,6 @@ type Stream struct {
 }
 
 func (stream *Stream) AfterFind(tx *gorm.DB) (err error) {
-
 	stream.ClassLevel = ClassLevel{}
 	tx.Model(&stream.ClassLevel).Where("number = ?", stream.ClassLevelNumber).First(&stream.ClassLevel)
 	stream.ClassName = stream.ClassLevel.ClassName
