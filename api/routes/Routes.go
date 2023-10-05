@@ -77,11 +77,13 @@ func SetupRoute() *gin.Engine {
 		main.GET("campuses", controllers.FetchCampuses)
 		main.GET("campus-info", controllers.CampusInfo)
 		main.GET("level", controllers.FetchLevel)
+		main.GET("campus-level", controllers.FetchCampusLevel)
 
 		//	manage class
 		main.POST("new-class", classController.NewClass)
 		main.POST("new-class-level", classController.AddClassToLevel)
 		main.GET("classes", classController.FetchClasses)
+		main.GET("classes-to-add", classController.FetchClassesToAdd)
 		main.GET("class-level", classController.FetchClassLevel)
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
@@ -114,7 +116,24 @@ func SetupRoute() *gin.Engine {
 		main.POST("new-concept", conceptController.NewConcept)
 		main.GET("concepts", conceptController.FetchConcept)
 
-		main.POST("add-timetable-period", timetableController.AddPeriod)
+		//timetable routes
+		timetable := main.Group("/timetable")
+		{
+			timetable.POST("add-timetable-period", timetableController.AddPeriod)
+			timetable.GET("get-timetable-periods", timetableController.FetchTimetablePeriodsGroupedByDay)
+			timetable.GET("get-distinct-days", timetableController.GetDistinctDays)
+			timetable.GET("get-periods-by-day/:day", timetableController.GetPeriodsByDay)
+			timetable.GET("subjects-by-class-level-number/:class_level_number", timetableController.FetchSubjectsByClassLevelNumber)
+			timetable.GET("get-classes-by-campus-number-and-level-number", timetableController.FetchClassLevelsByCampusNumberAndLevelNumber)
+			timetable.GET("fetch-levels-by-campus-number/:campus_number", timetableController.FetchLevelsByCampusNumber)
+		}
+
+		stream := main.Group("/stream")
+		{
+			stream.POST("new", classController.AddClassStream)
+			stream.GET("fetch", classController.FetchStreamsByClassLevelNumber)
+
+		}
 
 	}
 	//router.GET("/profile/:name", profile)

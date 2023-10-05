@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -99,4 +100,17 @@ func subjectCluster(subjectClusterNumber string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+func FetchSubjectsByClassLevelNumber(ctx *gin.Context) {
+
+	classLevelNumber := ctx.Param("class_level_number")
+
+	var subjects []classModels.ClassLevelSubject
+	config.DB.
+		Where("class_level_number = ?", classLevelNumber).
+		Preload("Subject").
+		Find(&subjects)
+	ctx.JSON(http.StatusOK, gin.H{"data": subjects})
+
 }
