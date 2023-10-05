@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
@@ -32,6 +33,12 @@ func (classLevel *ClassLevel) AfterFind(tx *gorm.DB) (err error) {
 	var class Class
 	tx.Model(&classLevel.Class).Where("number = ?", classLevel.ClassNumber).First(&class)
 	classLevel.ClassName = class.Name
+
+	return
+}
+
+func (classLevel *ClassLevel) PreInsert(tx *gorm.DB) (err error) {
+	classLevel.Number = uuid.NewV4().String()
 
 	return
 }
