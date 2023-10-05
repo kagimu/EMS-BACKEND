@@ -7,4 +7,4 @@ git pull
 
 docker-compose -f go-app-compose.yaml  up -d --build
 
-docker run -it -d --env-file ./.env --restart unless-stopped --net=host -v "$(pwd)"/fileRepo:/fileRepo:rw -p 2053:2053 wholesome-app
+docker run -it -d --env-file ./.env --restart unless-stopped --net=host -v "$(pwd)"/fileRepo:/fileRepo:rw -p 2053:2053 wholesomeedbackend_wholesome-app
