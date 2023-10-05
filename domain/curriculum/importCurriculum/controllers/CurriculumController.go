@@ -106,7 +106,7 @@ func ImportCurriculum(context *gin.Context) {
 			return
 		}*/
 
-	fileNumber := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
+	fileNumber := uuid.NewV4().String()
 	saveFileData := models2.ImportCurriculum{
 		Number:     fileNumber,
 		Name:       excelName,
@@ -194,8 +194,21 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Where("name = ?", info.LearningArea).
 		First(&learningAreaInfo)
 	if learningAreaDup.Error != nil {
-		config.DB.Save(&saveLearningArea)
+		err := config.DB.Save(&saveLearningArea).Error
+		if err != nil {
+			fmt.Println("Insertion failed:", err)
+			return
+		}
 	}
+
+	learningAreaNumber := ""
+
+	if learningAreaInfo.Number != "" {
+		learningAreaNumber = learningAreaInfo.Number
+	} else {
+		learningAreaNumber = saveLearningArea.Number
+	}
+
 	//-------------------------------------------
 
 	//----------------------------------------
@@ -209,7 +222,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveSubjectCluster := models3.SubjectCluster{
 		Number:             subjectClusterNo,
 		Name:               info.SubjectCluster,
-		LearningAreaNumber: learningAreaInfo.Number,
+		LearningAreaNumber: learningAreaNumber,
 		UserNumber:         userNumber,
 	}
 
@@ -219,12 +232,24 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Where("learning_area_number = ?", learningAreaInfo.Number).
 		First(&subjectClusterInfo)
 	if subjectClusterDup.Error != nil {
-		config.DB.Save(&saveSubjectCluster)
+		err := config.DB.Save(&saveSubjectCluster).Error
+		if err != nil {
+			fmt.Println("Insertion failed:", err)
+			return
+		}
 	}
 
 	//--------------------------------
-
 	//	adds subject
+
+	subjectClusterNumber := ""
+
+	if subjectClusterInfo.Number != "" {
+		subjectClusterNumber = subjectClusterInfo.Number
+	} else {
+		subjectClusterNumber = saveSubjectCluster.Number
+	}
+
 	if info.Subject == "" {
 		return
 	}
@@ -234,7 +259,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Number:               subjectNo,
 		Name:                 info.Subject,
 		UserNumber:           userNumber,
-		SubjectClusterNumber: subjectClusterInfo.Number,
+		SubjectClusterNumber: subjectClusterNumber,
 	}
 
 	var subjectInfo models4.Subject
@@ -243,11 +268,24 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Where("subject_cluster_number = ?", subjectClusterInfo.Number).
 		First(&subjectInfo)
 	if subjectDup.Error != nil {
-		config.DB.Save(&saveSubject)
+		err := config.DB.Save(&saveSubject).Error
+		if err != nil {
+			fmt.Println("Insertion failed:", err)
+			return
+		}
 	}
 	//------------------------------
 
 	//	adds Strand
+
+	subjectNumber := ""
+
+	if subjectInfo.Number != "" {
+		subjectNumber = subjectInfo.Number
+	} else {
+		subjectNumber = saveSubject.Number
+	}
+
 	if info.Strand == "" {
 		return
 	}
@@ -256,7 +294,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveStrand := strandModels.Strand{
 		Number:        strandNo,
 		Name:          info.Strand,
-		SubjectNumber: subjectInfo.Number,
+		SubjectNumber: subjectNumber,
 		UserNumber:    userNumber,
 	}
 
@@ -266,18 +304,22 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Where("subject_number = ?", subjectInfo.Number).
 		First(&strandInfo)
 	if strandDup.Error != nil {
-		config.DB.Save(&saveStrand)
+		err := config.DB.Save(&saveStrand).Error
+		if err != nil {
+			fmt.Println("Insertion failed:", err)
+			return
+		}
 	}
 
 	//	---------------
-
 	// adds Class
+
 	if info.Class == "" {
 		return
 	}
 	var classes classModels.Class
 	if err := config.DB.
-		Where("name = ?", info.Class).
+		Where("abbreviation = ?", info.Class).
 		First(&classes).Error; err != nil {
 		//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
@@ -286,6 +328,15 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	//---------------------
 
 	//Adds a Topic
+
+	strandNumber := ""
+
+	if strandInfo.Number != "" {
+		strandNumber = strandInfo.Number
+	} else {
+		strandNumber = saveStrand.Number
+	}
+
 	if info.Topic == "" {
 		return
 	}
@@ -294,7 +345,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveTopic := topicModels.Topic{
 		Number:       topicNo,
 		Name:         info.Topic,
-		StrandNumber: strandInfo.Number,
+		StrandNumber: strandNumber,
 		UserNumber:   userNumber,
 		ClassNumber:  classes.Number,
 	}
@@ -306,12 +357,24 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Where("class_number = ?", classes.Number).
 		First(&topicInfo)
 	if topicDup.Error != nil {
-		config.DB.Save(&saveTopic)
+		err := config.DB.Save(&saveTopic).Error
+		if err != nil {
+			fmt.Println("Insertion failed:", err)
+			return
+		}
 	}
 
 	//------------------
 
 	//	adds sub topic
+
+	topicNumber := ""
+	if topicInfo.Number != "" {
+		topicNumber = topicInfo.Number
+	} else {
+		topicNumber = saveTopic.Number
+	}
+
 	if info.SubTopic == "" {
 		return
 	}
@@ -321,7 +384,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Number:        subtopicNo,
 		Name:          info.SubTopic,
 		EstimatedTime: strconv.Itoa(60),
-		TopicNumber:   topicInfo.Number,
+		TopicNumber:   topicNumber,
 		UserNumber:    userNumber,
 	}
 
@@ -331,12 +394,23 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Where("topic_number = ?", topicInfo.Number).
 		First(&subtopicInfo)
 	if subtopicDup.Error != nil {
-		config.DB.Save(&saveSubTopic)
+		err := config.DB.Save(&saveSubTopic).Error
+		if err != nil {
+			fmt.Println("Insertion failed:", err)
+			return
+		}
 	}
 
 	//-------------
-
 	//	adds concept
+
+	subTopicNumber := ""
+	if subtopicInfo.Number != "" {
+		subTopicNumber = subtopicInfo.Number
+	} else {
+		subTopicNumber = saveSubTopic.Number
+	}
+
 	if info.Concept == "" {
 		return
 	}
@@ -345,7 +419,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveConcept := conceptModels.Concept{
 		Number:         conceptNo,
 		Name:           info.Concept,
-		SubTopicNumber: subtopicInfo.Number,
+		SubTopicNumber: subTopicNumber,
 		UserNumber:     userNumber,
 	}
 
@@ -355,7 +429,11 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Where("sub_topic_number = ?", subtopicInfo.Number).
 		First(&conceptInfo)
 	if conceptDup.Error != nil {
-		config.DB.Save(&saveConcept)
+		err := config.DB.Save(&saveConcept).Error
+		if err != nil {
+			fmt.Println("Insertion failed:", err)
+			return
+		}
 	}
 
 	//--------------

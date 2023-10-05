@@ -8,10 +8,10 @@ import (
 type (
 	ImportCurriculum struct {
 		ID         uint        `gorm:"primaryKey"`
-		Number     string      `json:"number" gorm:"size:100;unique;not null"`
-		Name       string      `json:"name" form:"name" binding:"required" gorm:"size:120;not null"`
-		FileName   string      `json:"file_name" form:"file_name" binding:"required" gorm:"size:100;not null"`
-		UserNumber string      `json:"user_number" gorm:"size:40;not null"`
+		Number     string      `json:"number" gorm:"size:36;unique;not null"`
+		Name       string      `json:"name" form:"name" binding:"required" gorm:"size:200;not null"`
+		FileName   string      `json:"file_name" form:"file_name" binding:"required" gorm:"size:200;not null"`
+		UserNumber string      `json:"user_number" gorm:"size:36;not null"`
 		CreatedAt  time.Time   `json:"created_at"`
 		UpdatedAt  time.Time   `json:"updated_at"`
 		DeletedAt  *time.Time  `sql:"index"`
