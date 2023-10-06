@@ -24,6 +24,7 @@ type (
 	SubjectClusterInfo struct {
 		Number             string `json:"number"`
 		Name               string `json:"name"`
+		Code               string `json:"code"`
 		LearningAreaNumber string `json:"learning_area_number"`
 		LearningAreaName   string `json:"learning_area_name"`
 	}

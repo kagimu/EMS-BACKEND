@@ -92,7 +92,7 @@ func FetchTopic(context *gin.Context) {
 	var topic []models3.Topic
 	if err := config.DB.
 		Scopes(strand(strandNumber)).
-		Order("created_at desc").
+		Order("code asc").
 		Find(&topic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No topic found!"})
 		return

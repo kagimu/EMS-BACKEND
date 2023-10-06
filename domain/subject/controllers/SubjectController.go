@@ -84,7 +84,7 @@ func FetchSubject(context *gin.Context) {
 	var subjects []models3.Subject
 	if err := config.DB.
 		Scopes(subjectCluster(subjectClusterNumber)).
-		Order("created_at desc").
+		Order("code asc").
 		Find(&subjects).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
 		return

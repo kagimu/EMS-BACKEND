@@ -80,7 +80,7 @@ func FetchSubjectCluster(context *gin.Context) {
 	if err := config.DB.
 		Scopes(learningArea(learningAreaNumber)).
 		Preload("LearningArea").
-		Order("created_at desc").
+		Order("code asc").
 		Find(&subjectCluster).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject Cluster!"})
 		return
@@ -90,6 +90,7 @@ func FetchSubjectCluster(context *gin.Context) {
 		subjectCluster_ = append(subjectCluster_, models3.SubjectClusterInfo{
 			Number:             lst.Number,
 			Name:               lst.Name,
+			Code:               lst.Code,
 			LearningAreaNumber: lst.LearningAreaNumber,
 			LearningAreaName:   lst.LearningArea.Name,
 		})

@@ -99,7 +99,7 @@ func FetchSubTopic(context *gin.Context) {
 	var subtopic []models2.SubTopic
 	if err := config.DB.
 		Scopes(topic(topicNumber)).
-		Order("created_at desc").
+		Order("code asc").
 		Find(&subtopic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
 		return
