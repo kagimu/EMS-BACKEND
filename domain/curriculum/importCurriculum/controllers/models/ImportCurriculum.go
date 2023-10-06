@@ -19,14 +19,22 @@ type (
 	}
 
 	ExcelCurriculumInfo struct {
-		LearningArea   string
-		SubjectCluster string
-		Subject        string
-		Class          string
-		Strand         string
-		Topic          string
-		SubTopic       string
-		Concept        string
+		LearningArea       string
+		SubjectCluster     string
+		Subject            string
+		Class              string
+		Strand             string
+		Topic              string
+		SubTopic           string
+		Concept            string
+		LearningAreaCode   string
+		SubjectClusterCode string
+		SubjectCode        string
+		StrandCode         string
+		TopicCode          string
+		SubTopicCode       string
+		EstimatedTime      string
+		ConceptCode        string
 	}
 
 	/*SubjectsInfo struct {

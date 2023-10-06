@@ -11,8 +11,9 @@ type (
 		ID            uint              `gorm:"primaryKey"`
 		Number        string            `json:"number" gorm:"size:36;unique;not null"`
 		Name          string            `json:"name" form:"name" binding:"required" gorm:"type:longtext;not null"`
+		Code          string            `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
 		UserNumber    string            `json:"user_number" gorm:"size:36;not null"`
-		EstimatedTime string            `json:"estimated_time" gorm:"size:10;not null"`
+		EstimatedTime int64             `json:"estimated_time"`
 		TopicNumber   string            `json:"topic_number" gorm:"size:36;not null"`
 		CreatedAt     time.Time         `json:"created_at"`
 		UpdatedAt     time.Time         `json:"updated_at"`

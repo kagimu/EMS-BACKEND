@@ -152,14 +152,22 @@ func readExcelFile(filePath string, userNumber string) {
 	for idx, row := range rows {
 		if idx > 0 {
 			curriculumInfo := models2.ExcelCurriculumInfo{
-				LearningArea:   getValueAtIndex(row, 0),
-				SubjectCluster: getValueAtIndex(row, 1),
-				Subject:        getValueAtIndex(row, 2),
-				Class:          getValueAtIndex(row, 3),
-				Strand:         getValueAtIndex(row, 4),
-				Topic:          getValueAtIndex(row, 5),
-				SubTopic:       getValueAtIndex(row, 6),
-				Concept:        getValueAtIndex(row, 7),
+				LearningAreaCode:   getValueAtIndex(row, 0),
+				LearningArea:       getValueAtIndex(row, 1),
+				SubjectClusterCode: getValueAtIndex(row, 2),
+				SubjectCluster:     getValueAtIndex(row, 3),
+				SubjectCode:        getValueAtIndex(row, 4),
+				Subject:            getValueAtIndex(row, 5),
+				Class:              getValueAtIndex(row, 6),
+				StrandCode:         getValueAtIndex(row, 7),
+				Strand:             getValueAtIndex(row, 8),
+				TopicCode:          getValueAtIndex(row, 9),
+				Topic:              getValueAtIndex(row, 10),
+				SubTopicCode:       getValueAtIndex(row, 11),
+				SubTopic:           getValueAtIndex(row, 12),
+				EstimatedTime:      getValueAtIndex(row, 13),
+				ConceptCode:        getValueAtIndex(row, 14),
+				Concept:            getValueAtIndex(row, 15),
 			}
 			saveCurriculumData(curriculumInfo, idx, userNumber)
 		}
@@ -183,7 +191,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveLearningArea := learningAreaModels.LearningArea{
 		Number:     learningAreaNo,
 		Name:       info.LearningArea,
-		Code:       strconv.Itoa(idx),
+		Code:       info.LearningAreaCode,
 		UserNumber: userNumber,
 	}
 
@@ -222,6 +230,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveSubjectCluster := models3.SubjectCluster{
 		Number:             subjectClusterNo,
 		Name:               info.SubjectCluster,
+		Code:               info.SubjectClusterCode,
 		LearningAreaNumber: learningAreaNumber,
 		UserNumber:         userNumber,
 	}
@@ -258,6 +267,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveSubject := models4.Subject{
 		Number:               subjectNo,
 		Name:                 info.Subject,
+		Code:                 info.SubjectCode,
 		UserNumber:           userNumber,
 		SubjectClusterNumber: subjectClusterNumber,
 	}
@@ -294,6 +304,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveStrand := strandModels.Strand{
 		Number:        strandNo,
 		Name:          info.Strand,
+		Code:          info.StrandCode,
 		SubjectNumber: subjectNumber,
 		UserNumber:    userNumber,
 	}
@@ -345,6 +356,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveTopic := topicModels.Topic{
 		Number:       topicNo,
 		Name:         info.Topic,
+		Code:         info.TopicCode,
 		StrandNumber: strandNumber,
 		UserNumber:   userNumber,
 		ClassNumber:  classes.Number,
@@ -379,11 +391,26 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		return
 	}
 	subtopicNo := uuid.NewV4().String()
+
+	estimatedTimeData := info.EstimatedTime
+
+	if estimatedTimeData == "" {
+		estimatedTimeData = "0"
+	}
+
+	estTime, err := strconv.ParseInt(estimatedTimeData, 10, 64)
+
+	if err != nil {
+		// Handle the error if the string cannot be converted to int64
+		//return err
+	}
+
 	///save user data
 	saveSubTopic := subTopicModels.SubTopic{
 		Number:        subtopicNo,
 		Name:          info.SubTopic,
-		EstimatedTime: strconv.Itoa(60),
+		Code:          info.SubTopicCode,
+		EstimatedTime: estTime,
 		TopicNumber:   topicNumber,
 		UserNumber:    userNumber,
 	}
@@ -419,6 +446,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	saveConcept := conceptModels.Concept{
 		Number:         conceptNo,
 		Name:           info.Concept,
+		Code:           info.ConceptCode,
 		SubTopicNumber: subTopicNumber,
 		UserNumber:     userNumber,
 	}
