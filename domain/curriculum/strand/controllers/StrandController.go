@@ -83,7 +83,7 @@ func FetchStrand(context *gin.Context) {
 	var strand []models2.Strand
 	if err := config.DB.
 		Scopes(subject(subjectNumber)).
-		Order("created_at desc").
+		Order("code asc").
 		Find(&strand).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No strand found!"})
 		return

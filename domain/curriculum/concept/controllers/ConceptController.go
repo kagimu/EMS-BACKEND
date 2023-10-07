@@ -83,7 +83,7 @@ func FetchConcept(context *gin.Context) {
 	var concept []models3.Concept
 	if err := config.DB.
 		Scopes(subTopic(subtopicNumber)).
-		Order("created_at desc").
+		Order("code asc").
 		Find(&concept).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Concept found!"})
 		return

@@ -8,6 +8,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func NewSubTopic(context *gin.Context) {
@@ -65,12 +66,19 @@ func NewSubTopic(context *gin.Context) {
 		return
 	}
 
+	estTime, err := strconv.ParseInt(estimatedTime, 10, 64)
+
+	if err != nil {
+		// Handle the error if the string cannot be converted to int64
+		//return err
+	}
+
 	number := uuid.NewV4().String()
 	///save user data
 	saveSubtopic := models2.SubTopic{
 		Number:        number,
 		Name:          name,
-		EstimatedTime: estimatedTime,
+		EstimatedTime: estTime,
 		TopicNumber:   topicNumber,
 		UserNumber:    userNumber,
 	}
@@ -91,7 +99,7 @@ func FetchSubTopic(context *gin.Context) {
 	var subtopic []models2.SubTopic
 	if err := config.DB.
 		Scopes(topic(topicNumber)).
-		Order("created_at desc").
+		Order("code asc").
 		Find(&subtopic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
 		return
