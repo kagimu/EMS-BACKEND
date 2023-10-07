@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
+	"time"
 )
 
 func AddPeriod(context *gin.Context) {
@@ -46,12 +47,7 @@ func AddPeriod(context *gin.Context) {
 	}
 
 	timetable.Number = uuid.NewV4().String()
-	/*startTime, err := time.Parse("15:04:05", timetableRequest.StartTime)
-	endTime, err := time.Parse("15:04:05", timetableRequest.EndTime)
 
-	fmt.Println("start time", startTime)
-	fmt.Println("start time", startTime)
-	fmt.Println("end time", endTime)*/
 	period := models.Timetable{
 		Number:        timetable.Number,
 		StartTime:     timetableRequest.StartTime,
@@ -146,4 +142,44 @@ func FetchLevelsByCampusNumber(ctx *gin.Context) {
 		Find(&levels)
 
 	ctx.JSON(http.StatusOK, gin.H{"data": levels})
+}
+
+func AddCalendarEvent(ctx *gin.Context) {
+
+	var calendarEvent models.CalendarEvent
+	var calendarEventRequest requests.CalendarEventRequest
+
+	err := ctx.BindJSON(&calendarEventRequest)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	calendarEvent.Number = uuid.NewV4().String()
+
+	//convert date to time
+	layout := "2006-01-02"
+	startDate, err := time.Parse(layout, calendarEventRequest.StartDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	endDate, _ := time.Parse(layout, calendarEventRequest.EndDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	event := models.CalendarEvent{
+		Number:    calendarEvent.Number,
+		StartDate: startDate,
+		EndDate:   endDate,
+		StartTime: calendarEventRequest.StartTime,
+		EndTime:   calendarEventRequest.EndTime,
+	}
+
+	config.DB.Save(&event)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
 }
