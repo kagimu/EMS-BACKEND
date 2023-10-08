@@ -118,7 +118,8 @@ func SetupRoute() *gin.Engine {
 		main.GET("concepts", conceptController.FetchConcept)
 
 		//adds academic year
-		main.POST("new-academic-year", controllers2.NewAcademicYearController)
+		main.POST("new-academic-year", controllers2.NewAcademicYear)
+		main.GET("fetch-academic-year", controllers2.FetchAcademicYear)
 
 		//timetable routes
 		timetable := main.Group("/timetable")
