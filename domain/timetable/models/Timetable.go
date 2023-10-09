@@ -33,6 +33,8 @@ type TimetableController struct {
 	LevelNumber  string `json:"level_number" gorm:"size:36;not null"`
 	Type         string `json:"type" gorm:"size:36;not null"`
 	Day          string `json:"day" gorm:"size:36;not null"`
+	StartTime    string `json:"start_time" gorm:"size:10;not null"`
+	EndTime      string `json:"end_time" gorm:"size:10;not null"`
 }
 
 type GeneralCalendar struct {

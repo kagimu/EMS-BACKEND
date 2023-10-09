@@ -1,4 +1,4 @@
-//package tutorView
+// package tutorView
 package main
 
 import (
@@ -90,6 +90,9 @@ func main() {
 		&models12.ImportCurriculum{},
 		&classModels.Stream{},
 		&timetableModels.Timetable{},
+		&timetableModels.TimetableController{},
+		&timetableModels.GeneralCalendar{},
+		&timetableModels.CalendarEvent{},
 	)
 	if errMigrate != nil {
 		return

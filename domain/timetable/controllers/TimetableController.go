@@ -183,3 +183,41 @@ func AddCalendarEvent(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
 }
+
+func CreateGeneralCalendar(ctx *gin.Context) {
+	var generalCalendar models.GeneralCalendar
+	var generalCalendarRequest requests.GeneralCalendarRequest
+
+	err := ctx.BindJSON(&generalCalendarRequest)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	generalCalendar.Number = uuid.NewV4().String()
+
+	//convert date to time
+	layout := "2006-01-02"
+	startDate, err := time.Parse(layout, generalCalendarRequest.StartDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	endDate, _ := time.Parse(layout, generalCalendarRequest.EndDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	event := models.GeneralCalendar{
+		Number:    generalCalendar.Number,
+		StartDate: startDate,
+		EndDate:   endDate,
+		Name:      generalCalendarRequest.Name,
+	}
+
+	config.DB.Save(&event)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
+}
