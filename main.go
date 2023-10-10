@@ -1,4 +1,3 @@
-// package tutorView
 package main
 
 import (
@@ -6,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
+	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -93,6 +93,7 @@ func main() {
 		&timetableModels.TimetableController{},
 		&timetableModels.GeneralCalendar{},
 		&timetableModels.CalendarEvent{},
+		&academicYearModels.AcademicYear{},
 	)
 	if errMigrate != nil {
 		return

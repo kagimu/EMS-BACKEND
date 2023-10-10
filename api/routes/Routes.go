@@ -1,6 +1,7 @@
 package routes
 
 import (
+	controllers2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -115,6 +116,10 @@ func SetupRoute() *gin.Engine {
 		//concepts
 		main.POST("new-concept", conceptController.NewConcept)
 		main.GET("concepts", conceptController.FetchConcept)
+
+		//adds academic year
+		main.POST("new-academic-year", controllers2.NewAcademicYear)
+		main.GET("fetch-academic-year", controllers2.FetchAcademicYear)
 
 		//timetable routes
 		timetable := main.Group("/timetable")
