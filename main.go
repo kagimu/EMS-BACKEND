@@ -1,4 +1,3 @@
-// package tutorView
 package main
 
 import (
@@ -17,10 +16,11 @@ import (
 	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
-	timetableModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
@@ -91,16 +91,15 @@ func main() {
 		&classModel.ClassLevel{},
 		&curriculumModel.ImportCurriculum{},
 		&classModel.Stream{},
-		&timetableModel.Timetable{},
 		&academicYearModel.AcademicYear{},
 		&studyPeriodModel.StudyPeriod{},
 		&classModel.ClassLevel{},
 		&curriculumModel.ImportCurriculum{},
 		&classModel.Stream{},
-		&timetableModel.Timetable{},
-		&timetableModel.TimetableController{},
-		&timetableModel.GeneralCalendar{},
-		&timetableModel.CalendarEvent{},
+		&timetableModels.Timetable{},
+		&timetableModels.TimetableController{},
+		&eosModels.GeneralCalendar{},
+		&eosModels.CalendarEvent{},
 		&academicYearModel.AcademicYear{},
 	)
 	if errMigrate != nil {

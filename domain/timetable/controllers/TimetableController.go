@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	subjectModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
@@ -146,7 +147,7 @@ func FetchLevelsByCampusNumber(ctx *gin.Context) {
 
 func AddCalendarEvent(ctx *gin.Context) {
 
-	var calendarEvent models.CalendarEvent
+	var calendarEvent eosModels.CalendarEvent
 	var calendarEventRequest requests.CalendarEventRequest
 
 	err := ctx.BindJSON(&calendarEventRequest)
@@ -171,7 +172,7 @@ func AddCalendarEvent(ctx *gin.Context) {
 		return
 	}
 
-	event := models.CalendarEvent{
+	event := eosModels.CalendarEvent{
 		Number:    calendarEvent.Number,
 		StartDate: startDate,
 		EndDate:   endDate,
@@ -185,7 +186,7 @@ func AddCalendarEvent(ctx *gin.Context) {
 }
 
 func CreateGeneralCalendar(ctx *gin.Context) {
-	var generalCalendar models.GeneralCalendar
+	var generalCalendar eosModels.GeneralCalendar
 	var generalCalendarRequest requests.GeneralCalendarRequest
 
 	err := ctx.BindJSON(&generalCalendarRequest)
@@ -210,7 +211,7 @@ func CreateGeneralCalendar(ctx *gin.Context) {
 		return
 	}
 
-	event := models.GeneralCalendar{
+	event := eosModels.GeneralCalendar{
 		Number:    generalCalendar.Number,
 		StartDate: startDate,
 		EndDate:   endDate,
