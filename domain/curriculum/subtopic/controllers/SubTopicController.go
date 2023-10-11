@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -97,6 +98,7 @@ func FetchSubTopic(context *gin.Context) {
 	}*/
 
 	var subtopic []models2.SubTopic
+	var subTopicInfo_ []responses.SubTopicList
 	if err := config.DB.
 		Scopes(topic(topicNumber)).
 		Order("code asc").
@@ -105,7 +107,19 @@ func FetchSubTopic(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subtopic})
+	for idx, subtopicList := range subtopic {
+		subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
+			Number:        subtopicList.Number,
+			Code:          subtopicList.Code,
+			SortCode:      strconv.Itoa(idx + 1),
+			Name:          subtopicList.Name,
+			UserNumber:    subtopicList.UserNumber,
+			EstimatedTime: subtopicList.EstimatedTime,
+			TopicNumber:   subtopicList.TopicNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subTopicInfo_})
 }
 
 func topic(topicNumber string) func(db *gorm.DB) *gorm.DB {

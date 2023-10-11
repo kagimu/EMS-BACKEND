@@ -1,7 +1,7 @@
 package routes
 
 import (
-	controllers2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
+	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -14,6 +14,7 @@ import (
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
 	"github.com/gin-contrib/cors"
@@ -118,8 +119,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("concepts", conceptController.FetchConcept)
 
 		//adds academic year
-		main.POST("new-academic-year", controllers2.NewAcademicYear)
-		main.GET("fetch-academic-year", controllers2.FetchAcademicYear)
+		main.POST("new-academic-year", academicYearController.NewAcademicYear)
+		main.GET("fetch-academic-year", academicYearController.FetchAcademicYear)
+
+		//adds study period
+		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
+		main.GET("fetch-study-period", studyPeriodController.FetchStudyPeriod)
 
 		//timetable routes
 		timetable := main.Group("/timetable")
