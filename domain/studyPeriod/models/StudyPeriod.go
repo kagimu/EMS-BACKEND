@@ -4,7 +4,7 @@ import (
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 	"time"
 )
 
