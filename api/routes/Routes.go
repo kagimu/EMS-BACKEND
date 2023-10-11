@@ -113,6 +113,7 @@ func SetupRoute() *gin.Engine {
 		//sub topic
 		main.POST("new-sub-topic", subTopicController.NewSubTopic)
 		main.GET("sub-topics", subTopicController.FetchSubTopic)
+		main.GET("sub-topics-by-class", subTopicController.FetchSubTopicByClass)
 
 		//concepts
 		main.POST("new-concept", conceptController.NewConcept)
