@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+type Company struct {
+	gorm.Model
+	Number  string `json:"number" gorm:"size:36;unique;not null"`
+	Name    string `json:"name" gorm:"size:100;not null"`
+	Email   string `json:"email" gorm:"size:100"`
+	Phone   string `json:"phone" gorm:"size:100"`
+	Address string `json:"address" gorm:"size:100"`
+}
+
 type GeneralCalendar struct {
 	gorm.Model
 	Number    string    `json:"number" gorm:"size:36;unique;not null"`
