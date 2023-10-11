@@ -1,6 +1,6 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import "gorm.io/gorm"
 
 // RolePermission stores the relationship between roles and permissions
 type RolePermission struct {

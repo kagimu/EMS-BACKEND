@@ -16,6 +16,7 @@ import (
 	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
@@ -91,8 +92,8 @@ func main() {
 		&classModels.Stream{},
 		&timetableModels.Timetable{},
 		&timetableModels.TimetableController{},
-		&timetableModels.GeneralCalendar{},
-		&timetableModels.CalendarEvent{},
+		&eosModels.GeneralCalendar{},
+		&eosModels.CalendarEvent{},
 		&academicYearModels.AcademicYear{},
 	)
 	if errMigrate != nil {
