@@ -15,3 +15,9 @@ type CalendarEventRequest struct {
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
 }
+
+type GeneralCalendarRequest struct {
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
+	Name      string `json:"name"`
+}

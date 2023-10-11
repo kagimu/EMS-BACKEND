@@ -79,9 +79,9 @@ func main() {
 		&schoolModels.School{},
 		&models.Campus{},
 		&models.Level{},
-		&classModel.Class{},
+		&classModels.Class{},
 		&learningAreaModels.LearningArea{},
-		&classModel.ClassLevelSubject{},
+		&classModels.ClassLevelSubject{},
 		&subjectClusterModels.SubjectCluster{},
 		&subjectModels.Subject{},
 		&strandModels.Strand{},
@@ -94,6 +94,14 @@ func main() {
 		&timetableModel.Timetable{},
 		&academicYearModel.AcademicYear{},
 		&studyPeriodModel.StudyPeriod{},
+		&classModels.ClassLevel{},
+		&models12.ImportCurriculum{},
+		&classModels.Stream{},
+		&timetableModels.Timetable{},
+		&timetableModels.TimetableController{},
+		&timetableModels.GeneralCalendar{},
+		&timetableModels.CalendarEvent{},
+		&academicYearModels.AcademicYear{},
 	)
 	if errMigrate != nil {
 		return
