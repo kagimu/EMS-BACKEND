@@ -130,3 +130,43 @@ func topic(topicNumber string) func(db *gorm.DB) *gorm.DB {
 		return db
 	}
 }
+
+func FetchSubTopicByClass(context *gin.Context) {
+
+	classNumber := context.Query("class_number")
+
+	var subtopic []models2.SubTopic
+	var subTopicInfo_ []responses.SubTopicList
+	if err := config.DB.
+		Scopes(classFilter(classNumber)).
+		Joins("join topics on topics.number = sub_topics.topic_number").
+		Preload("Topic").
+		Order("code asc").
+		Find(&subtopic).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
+		return
+	}
+
+	for idx, subtopicList := range subtopic {
+		subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
+			Number:        subtopicList.Number,
+			Code:          subtopicList.Code,
+			SortCode:      strconv.Itoa(idx + 1),
+			Name:          subtopicList.Name,
+			UserNumber:    subtopicList.UserNumber,
+			EstimatedTime: subtopicList.EstimatedTime,
+			TopicNumber:   subtopicList.TopicNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subTopicInfo_})
+}
+
+func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if classNumber != "" {
+			return db.Where("topics.class_number = ?", classNumber)
+		}
+		return db
+	}
+}
