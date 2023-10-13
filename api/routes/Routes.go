@@ -13,6 +13,7 @@ import (
 	subjectClusterController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/controllers"
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
+	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
@@ -126,6 +127,9 @@ func SetupRoute() *gin.Engine {
 		//adds study period
 		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
 		main.GET("fetch-study-period", studyPeriodController.FetchStudyPeriod)
+
+		//adds scheme of work
+		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
 
 		//timetable routes
 		timetable := main.Group("/timetable")
