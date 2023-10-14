@@ -12,7 +12,7 @@ type (
 	StudyPeriod struct {
 		gorm.Model
 		Number               string                          `json:"number" gorm:"size:36;unique;not null"`
-		Code                 string                          `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
+		Code                 int64                           `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
 		StudyPeriodName      string                          `json:"study_period_name" form:"name" binding:"required" gorm:"size:100;not null"`
 		StudyPeriodStartDate time.Time                       `json:"academic_year_start_date" form:"name" binding:"required" gorm:"not null"`
 		StudyPeriodEndDate   time.Time                       `json:"academic_year_end_date" form:"name" binding:"required" gorm:"not null"`

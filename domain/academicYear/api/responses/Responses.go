@@ -3,7 +3,7 @@ package responses
 type (
 	AcademicYearList struct {
 		Number                string `json:"number"`
-		Code                  string `json:"code"`
+		Code                  int64  `json:"code"`
 		AcademicYearName      string `json:"academic_year_name"`
 		NoOfStudyPeriod       int32  `json:"no_of_study_period"`
 		AcademicYearStartDate string `json:"academic_year_start_date"`

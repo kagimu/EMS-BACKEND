@@ -111,7 +111,7 @@ func FetchSubTopic(context *gin.Context) {
 		subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
 			Number:        subtopicList.Number,
 			Code:          subtopicList.Code,
-			SortCode:      strconv.Itoa(idx + 1),
+			SortCode:      int64(idx + 1),
 			Name:          subtopicList.Name,
 			UserNumber:    subtopicList.UserNumber,
 			EstimatedTime: subtopicList.EstimatedTime,
@@ -151,7 +151,7 @@ func FetchSubTopicByClass(context *gin.Context) {
 		subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
 			Number:        subtopicList.Number,
 			Code:          subtopicList.Code,
-			SortCode:      strconv.Itoa(idx + 1),
+			SortCode:      int64(idx + 1),
 			Name:          subtopicList.Name,
 			UserNumber:    subtopicList.UserNumber,
 			EstimatedTime: subtopicList.EstimatedTime,

@@ -187,11 +187,17 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	}
 
 	learningAreaNo := uuid.NewV4().String()
+
+	learningAreaCode, err := strconv.ParseInt(info.LearningAreaCode, 10, 64)
+	if err != nil {
+		//fmt.Println("Error:", err)
+	}
+
 	///save user data
 	saveLearningArea := learningAreaModels.LearningArea{
 		Number:     learningAreaNo,
 		Name:       info.LearningArea,
-		Code:       info.LearningAreaCode,
+		Code:       learningAreaCode,
 		UserNumber: userNumber,
 	}
 
@@ -225,12 +231,18 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	if info.SubjectCluster == "" {
 		return
 	}
+
+	subjectClusterCode, err := strconv.ParseInt(info.SubjectClusterCode, 10, 64)
+	if err != nil {
+		//fmt.Println("Error:", err)
+	}
+
 	subjectClusterNo := uuid.NewV4().String()
 	///save user data
 	saveSubjectCluster := models3.SubjectCluster{
 		Number:             subjectClusterNo,
 		Name:               info.SubjectCluster,
-		Code:               info.SubjectClusterCode,
+		Code:               subjectClusterCode,
 		LearningAreaNumber: learningAreaNumber,
 		UserNumber:         userNumber,
 	}
@@ -262,12 +274,18 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	if info.Subject == "" {
 		return
 	}
+
+	subjectCode, err := strconv.ParseInt(info.SubjectCode, 10, 64)
+	if err != nil {
+		//fmt.Println("Error:", err)
+	}
+
 	subjectNo := uuid.NewV4().String()
 	///save user data
 	saveSubject := models4.Subject{
 		Number:               subjectNo,
 		Name:                 info.Subject,
-		Code:                 info.SubjectCode,
+		Code:                 subjectCode,
 		UserNumber:           userNumber,
 		SubjectClusterNumber: subjectClusterNumber,
 	}
@@ -299,12 +317,18 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	if info.Strand == "" {
 		return
 	}
+
+	strandCode, err := strconv.ParseInt(info.StrandCode, 10, 64)
+	if err != nil {
+		//fmt.Println("Error:", err)
+	}
+
 	strandNo := uuid.NewV4().String()
 	///save user data
 	saveStrand := strandModels.Strand{
 		Number:        strandNo,
 		Name:          info.Strand,
-		Code:          info.StrandCode,
+		Code:          strandCode,
 		SubjectNumber: subjectNumber,
 		UserNumber:    userNumber,
 	}
@@ -351,12 +375,18 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	if info.Topic == "" {
 		return
 	}
+
+	topicCode, err := strconv.ParseInt(info.TopicCode, 10, 64)
+	if err != nil {
+		//fmt.Println("Error:", err)
+	}
+
 	topicNo := uuid.NewV4().String()
 	///save user data
 	saveTopic := topicModels.Topic{
 		Number:       topicNo,
 		Name:         info.Topic,
-		Code:         info.TopicCode,
+		Code:         topicCode,
 		StrandNumber: strandNumber,
 		UserNumber:   userNumber,
 		ClassNumber:  classes.Number,
@@ -405,11 +435,16 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		//return err
 	}
 
+	subTopicCode, err := strconv.ParseInt(info.SubTopicCode, 10, 64)
+	if err != nil {
+		//fmt.Println("Error:", err)
+	}
+
 	///save user data
 	saveSubTopic := subTopicModels.SubTopic{
 		Number:        subtopicNo,
 		Name:          info.SubTopic,
-		Code:          info.SubTopicCode,
+		Code:          subTopicCode,
 		EstimatedTime: estTime,
 		TopicNumber:   topicNumber,
 		UserNumber:    userNumber,
@@ -441,12 +476,18 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	if info.Concept == "" {
 		return
 	}
+
+	conceptCode, err := strconv.ParseInt(info.ConceptCode, 10, 64)
+	if err != nil {
+		//fmt.Println("Error:", err)
+	}
+
 	conceptNo := uuid.NewV4().String()
 	///save user data
 	saveConcept := conceptModels.Concept{
 		Number:         conceptNo,
 		Name:           info.Concept,
-		Code:           info.ConceptCode,
+		Code:           conceptCode,
 		SubTopicNumber: subTopicNumber,
 		UserNumber:     userNumber,
 	}

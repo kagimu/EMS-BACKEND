@@ -11,7 +11,7 @@ type (
 	AcademicYear struct {
 		gorm.Model
 		Number                string        `json:"number" gorm:"size:36;unique;not null"`
-		Code                  string        `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
+		Code                  int64         `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
 		AcademicYearName      string        `json:"academic_year_name" form:"name" binding:"required" gorm:"size:100;not null"`
 		NoOfStudyPeriod       int32         `json:"no_of_study_period" form:"name" binding:"required" gorm:"not null"`
 		AcademicYearStartDate time.Time     `json:"academic_year_start_date" form:"name" binding:"required" gorm:"not null"`

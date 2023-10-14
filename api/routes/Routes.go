@@ -130,6 +130,7 @@ func SetupRoute() *gin.Engine {
 
 		//adds scheme of work
 		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
+		main.GET("fetch-scheme-of-work-by-class", schemeOfWorkControllers.FetchSchemeOfWork)
 
 		//timetable routes
 		timetable := main.Group("/timetable")

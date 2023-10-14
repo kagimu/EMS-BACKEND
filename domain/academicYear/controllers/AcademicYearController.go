@@ -19,7 +19,7 @@ func NewAcademicYear(context *gin.Context) {
 		NoOfStudyPeriod  string   `json:"no_of_study_period"`
 		AcademicYear     []string `json:"academic_year"`
 		LevelNumber      string   `json:"level_number"`
-		Code             string   `json:"code"`
+		Code             int64    `json:"code"`
 	}
 
 	var academicYearInfo AcademicYearInfo
@@ -56,7 +56,7 @@ func NewAcademicYear(context *gin.Context) {
 		return
 	}
 
-	if code == "" {
+	if strconv.FormatInt(code, 10) == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
 		return
 	}

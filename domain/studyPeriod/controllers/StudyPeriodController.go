@@ -9,13 +9,14 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 func NewStudyPeriod(context *gin.Context) {
 
 	type StudyPeriodInfo struct {
-		Code                 string   `json:"code"`
+		Code                 int64    `json:"code"`
 		StudyPeriodName      string   `json:"study_period_name"`
 		AcademicYearNumber   string   `json:"academic_year_number"`
 		StudyPeriodDateRange []string `json:"study_period_date_range"`
@@ -56,7 +57,7 @@ func NewStudyPeriod(context *gin.Context) {
 		return
 	}
 
-	if code == "" {
+	if strconv.FormatInt(code, 10) == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
 		return
 	}

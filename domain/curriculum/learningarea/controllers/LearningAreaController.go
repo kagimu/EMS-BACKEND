@@ -7,13 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
+	"strconv"
 )
 
 func NewLearningArea(context *gin.Context) {
 
 	type LearningAreaInfo struct {
 		Name string `json:"name"`
-		Code string `json:"code"`
+		Code int64  `json:"code"`
 	}
 
 	var learningAreaInfo LearningAreaInfo
@@ -33,7 +34,7 @@ func NewLearningArea(context *gin.Context) {
 		return
 	}
 
-	if code == "" {
+	if strconv.FormatInt(code, 10) == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
 		return
 	}
