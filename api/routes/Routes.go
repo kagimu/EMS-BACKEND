@@ -13,6 +13,7 @@ import (
 	subjectClusterController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/controllers"
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
+	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
@@ -149,6 +150,15 @@ func SetupRoute() *gin.Engine {
 			stream.POST("new", classController.AddClassStream)
 			stream.GET("fetch", classController.FetchStreamsByClassLevelNumber)
 
+		}
+
+		eos := main.Group("/eos")
+		{
+			eos.GET("calendars", eosController.AddCalendarEvent)
+			eos.POST("calendar/add", eosController.AddGeneralCalendar)
+			eos.GET("calendar/:calendar_number", eosController.GetCalendarDetails)
+			eos.POST("calendar/update", eosController.AddCalendarEvent)
+			eos.POST("calendar/add-event", eosController.AddCalendarEvent)
 		}
 
 	}

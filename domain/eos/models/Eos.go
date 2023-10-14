@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type Company struct {
+type Entity struct {
 	gorm.Model
 	Number  string `json:"number" gorm:"size:36;unique;not null"`
 	Name    string `json:"name" gorm:"size:100;not null"`
@@ -16,17 +16,21 @@ type Company struct {
 
 type GeneralCalendar struct {
 	gorm.Model
-	Number    string    `json:"number" gorm:"size:36;unique;not null"`
-	StartDate time.Time `json:"start_date" gorm:"not null"`
-	EndDate   time.Time `json:"end_date" gorm:"not null"`
-	Name      string    `json:"name" gorm:"size:36;not null"`
+	EntityNumber string    `json:"entity_number" gorm:"size:36"`
+	Number       string    `json:"number" gorm:"size:36;unique;not null"`
+	StartDate    time.Time `json:"start_date" gorm:"not null"`
+	EndDate      time.Time `json:"end_date" gorm:"not null"`
+	Name         string    `json:"name" gorm:"size:36;not null"`
+	USerNumber   string    `json:"user_number" gorm:"size:36;not null"`
 }
 
 type CalendarEvent struct {
 	gorm.Model
-	Number    string    `json:"number" gorm:"size:36;unique;not null"`
-	StartDate time.Time `json:"start_date" gorm:"not null"`
-	EndDate   time.Time `json:"end_date" gorm:"not null"`
-	StartTime string    `json:"start_time" gorm:"size:10;not null"`
-	EndTime   string    `json:"end_time" gorm:"size:10;not null"`
+	Number         string    `json:"number" gorm:"size:36;unique;not null"`
+	Name           string    `json:"name" gorm:"size:100;not null"`
+	CalendarNumber string    `json:"calendar_number" gorm:"size:36;not null"`
+	StartDate      time.Time `json:"start_date" gorm:"not null"`
+	EndDate        time.Time `json:"end_date" gorm:"not null"`
+	StartTime      string    `json:"start_time" gorm:"size:10;not null"`
+	EndTime        string    `json:"end_time" gorm:"size:10;not null"`
 }
