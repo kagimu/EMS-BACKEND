@@ -5,7 +5,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
-	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	subjectModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
@@ -13,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
-	"time"
 )
 
 func AddPeriod(context *gin.Context) {
@@ -145,7 +143,7 @@ func FetchLevelsByCampusNumber(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"data": levels})
 }
 
-func AddCalendarEvent(ctx *gin.Context) {
+/*func AddCalendarEvent(ctx *gin.Context) {
 
 	var calendarEvent eosModels.CalendarEvent
 	var calendarEventRequest requests.CalendarEventRequest
@@ -221,4 +219,4 @@ func CreateGeneralCalendar(ctx *gin.Context) {
 	config.DB.Save(&event)
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
-}
+}*/

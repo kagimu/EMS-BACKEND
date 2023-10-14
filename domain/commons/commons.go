@@ -77,3 +77,9 @@ func CheckValidPhone(phone string) string {
 	}
 
 }
+
+func Feedback(message string) map[string]any {
+	response := make(map[string]any)
+	response["message"] = message
+	return response
+}
