@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -108,7 +107,7 @@ func FetchClassLevelsByCampusNumberAndLevelNumber(ctx *gin.Context) {
 	campusNumber := ctx.Query("campus_number")
 	levelNumber := ctx.Query("level_number")
 
-	fmt.Println(campusNumber, levelNumber)
+	//fmt.Println(campusNumber, levelNumber)
 
 	var classLevels []classModels.ClassLevel
 

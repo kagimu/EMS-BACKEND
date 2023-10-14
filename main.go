@@ -17,6 +17,7 @@ import (
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
@@ -101,6 +102,8 @@ func main() {
 		&eosModels.GeneralCalendar{},
 		&eosModels.CalendarEvent{},
 		&academicYearModel.AcademicYear{},
+		&schemeOfWorkmodel.SchemeOfWork{},
+		&schemeOfWorkmodel.SchemeOfWorkSubTopic{},
 	)
 	if errMigrate != nil {
 		return
