@@ -17,7 +17,7 @@ func AddPeriod(context *gin.Context) {
 	var timetable models.Timetable
 	var timetableRequest requests.TimetableRequest
 
-	err := context.BindJSON(&timetableRequest)
+	err := context.ShouldBind(&timetableRequest)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -55,6 +55,7 @@ func AddPeriod(context *gin.Context) {
 		Day:           timetableRequest.Day,
 		DayCode:       timetableRequestDayCode,
 		CampusNumber:  timetableRequest.CampusNumber,
+		UserNumber:    context.GetHeader("User-Number"),
 	}
 
 	config.DB.Save(&period)
