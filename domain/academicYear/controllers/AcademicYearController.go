@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
@@ -19,7 +20,7 @@ func NewAcademicYear(context *gin.Context) {
 		NoOfStudyPeriod  string   `json:"no_of_study_period"`
 		AcademicYear     []string `json:"academic_year"`
 		LevelNumber      string   `json:"level_number"`
-		Code             int64    `json:"code"`
+		Code             string   `json:"code"`
 	}
 
 	var academicYearInfo AcademicYearInfo
@@ -56,8 +57,14 @@ func NewAcademicYear(context *gin.Context) {
 		return
 	}
 
-	if strconv.FormatInt(code, 10) == "" {
+	if code == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -114,7 +121,7 @@ func NewAcademicYear(context *gin.Context) {
 	///save user data
 	saveAcademicYear := academicYearModels.AcademicYear{
 		Number:                number,
-		Code:                  code,
+		Code:                  codeNo,
 		AcademicYearName:      academicYearName,
 		NoOfStudyPeriod:       int32(noOfStudyPeriodData),
 		AcademicYearStartDate: startDate,
