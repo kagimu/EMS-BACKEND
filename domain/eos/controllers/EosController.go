@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	. "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/requests"
@@ -8,17 +11,16 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
-	"time"
+	"gorm.io/gorm"
 )
 
-func AddCompany(ctx *gin.Context) {
+func AddEntity(ctx *gin.Context) {
 	var entity models.Entity
 	var entityRequest requests.EntityRequest
 
 	err := ctx.BindJSON(&entityRequest)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, Feedback(err.Error()))
 		return
 	}
 
@@ -26,14 +28,15 @@ func AddCompany(ctx *gin.Context) {
 	entity.Phone = entityRequest.Phone
 	entity.Email = entityRequest.Email
 	entity.Address = entityRequest.Address
+	entity.Number = uuid.NewV4().String()
 
 	err = config.DB.Create(&entity).Error
 
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, Feedback(err.Error()))
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Entity added successfully"})
+	ctx.JSON(http.StatusOK, Feedback("Entity added successfully"))
 
 }
 
@@ -43,15 +46,19 @@ func AddGeneralCalendar(context *gin.Context) {
 
 	err := context.BindJSON(&generalCalendarRequest)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		context.JSON(http.StatusBadRequest, Feedback(err.Error()))
 		return
 	}
 
 	// convert start date and end date to time.Time
 	startTime, err := time.Parse("2006-01-02", generalCalendarRequest.StartDate)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, Feedback(err.Error()))
+		return
+	}
 	endDate, err := time.Parse("2006-01-02", generalCalendarRequest.EndDate)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		context.JSON(http.StatusBadRequest, Feedback(err.Error()))
 		return
 	}
 
@@ -59,14 +66,16 @@ func AddGeneralCalendar(context *gin.Context) {
 	generalCalendar.Name = generalCalendarRequest.Name
 	generalCalendar.StartDate = startTime
 	generalCalendar.EndDate = endDate
+	generalCalendar.UserNumber = context.GetHeader("User-Number")
+	generalCalendar.Description = generalCalendarRequest.Description
 
 	err = config.DB.Create(&generalCalendar).Error
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		context.JSON(http.StatusBadRequest, Feedback(err.Error()))
 		return
 	}
 
-	context.JSON(http.StatusCreated, generalCalendar)
+	context.JSON(http.StatusCreated, Feedback("Calendar added successfully"))
 }
 
 func AddCalendarEvent(ctx *gin.Context) {
@@ -75,7 +84,7 @@ func AddCalendarEvent(ctx *gin.Context) {
 
 	err := ctx.BindJSON(&calendarEventRequest)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, Feedback(err.Error()))
 		return
 	}
 
@@ -91,7 +100,7 @@ func AddCalendarEvent(ctx *gin.Context) {
 
 	err = config.DB.Create(&calendarEvent).Error
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error "})
+		ctx.JSON(http.StatusInternalServerError, Feedback(err.Error()))
 		return
 	}
 
@@ -101,30 +110,44 @@ func GetCalendarDetails(ctx *gin.Context) {
 
 	calendarNumber := ctx.Param("calendar_number")
 
-	var calendar models.GeneralCalendar
+	var calendar models.GeneralCalendar = models.GeneralCalendar{}
 
-	err := config.DB.Where("number", calendarNumber).First(&calendar).Error
+	err := config.DB.Preload("CalendarEvents").Where("number", calendarNumber).First(&calendar).Error
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, Feedback(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": responses.Calendar{
-		Name:         calendar.Name,
-		StartDate:    calendar.StartDate,
-		EndDate:      calendar.EndDate,
-		Number:       calendar.Name,
-		EntityNumber: calendar.EntityNumber,
-	}})
+	ctx.JSON(http.StatusOK, calendar)
 
 }
 
 func GetAllCalendars(ctx *gin.Context) {
-	var calendars []responses.Calendar
+	var calendars []responses.Calendar = []responses.Calendar{}
+	var generalCalendars []models.GeneralCalendar
 
-	err := config.DB.Find(&calendars).Error
+	err := config.DB.Find(&generalCalendars).Error
 
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusOK, calendars)
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, Feedback(err.Error()))
+		return
 	}
+
+	for _, calendar := range generalCalendars {
+		calendars = append(calendars, responses.Calendar{
+			Name:         calendar.Name,
+			Description:  calendar.Description,
+			StartDate:    calendar.StartDate,
+			EndDate:      calendar.EndDate,
+			Number:       calendar.Number,
+			EntityNumber: calendar.EntityNumber,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, calendars)
+
 }

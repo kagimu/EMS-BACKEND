@@ -14,7 +14,7 @@ import (
 )
 
 func AddPeriod(context *gin.Context) {
-	var timetable models.Timetable
+	var timetable models.StudyTimetablePeriods
 	var timetableRequest requests.TimetableRequest
 
 	err := context.ShouldBind(&timetableRequest)
@@ -46,7 +46,7 @@ func AddPeriod(context *gin.Context) {
 
 	timetable.Number = uuid.NewV4().String()
 
-	period := models.Timetable{
+	period := models.StudyTimetablePeriods{
 		Number:        timetable.Number,
 		StartTime:     timetableRequest.StartTime,
 		EndTime:       timetableRequest.EndTime,
@@ -66,7 +66,7 @@ func AddPeriod(context *gin.Context) {
 
 func GetDistinctDays(ctx *gin.Context) {
 	var days []string
-	config.DB.Model(&models.Timetable{}).
+	config.DB.Model(&models.StudyTimetablePeriods{}).
 		Select("DISTINCT day").
 		Order("day_code asc").
 		Scan(&days)
@@ -76,15 +76,15 @@ func GetDistinctDays(ctx *gin.Context) {
 
 func GetPeriodsByDay(ctx *gin.Context) {
 	day := ctx.Param("day")
-	var periods []models.Timetable
+	var periods []models.StudyTimetablePeriods
 	config.DB.Where("day = ?", day).Find(&periods)
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
 
 func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
-	var periods []models.Timetable
+	var periods []models.StudyTimetablePeriods
 	config.DB.
-		//Model(&models.Timetable{}).
+		//Model(&models.StudyTimetablePeriods{}).
 		//Select("stream_number,day").
 		Preload("Subject").
 		Preload("Stream").
@@ -98,7 +98,7 @@ func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
 
 func GetPeriodsByStream(ctx *gin.Context) {
 	streamNumber := ctx.Param("stream_number")
-	var periods []models.Timetable
+	var periods []models.StudyTimetablePeriods
 	config.DB.Where("stream_number = ?", streamNumber).Find(&periods)
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
