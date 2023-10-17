@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
@@ -14,7 +15,7 @@ func NewLearningArea(context *gin.Context) {
 
 	type LearningAreaInfo struct {
 		Name string `json:"name"`
-		Code int64  `json:"code"`
+		Code string `json:"code"`
 	}
 
 	var learningAreaInfo LearningAreaInfo
@@ -34,8 +35,14 @@ func NewLearningArea(context *gin.Context) {
 		return
 	}
 
-	if strconv.FormatInt(code, 10) == "" {
+	if code == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -52,7 +59,7 @@ func NewLearningArea(context *gin.Context) {
 	var duplicateLearningArea models2.LearningArea
 	if duplicate := config.DB.
 		//Where("name = ?", name).
-		Where("name = ? OR code = ?", name, code).
+		Where("name = ? OR code = ?", name, codeNo).
 		First(&duplicateLearningArea).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area or Code already exists"})
 		return
@@ -63,7 +70,7 @@ func NewLearningArea(context *gin.Context) {
 	saveLearningArea := models2.LearningArea{
 		Number:     number,
 		Name:       name,
-		Code:       code,
+		Code:       codeNo,
 		UserNumber: userNumber,
 	}
 	config.DB.Save(&saveLearningArea)
@@ -74,7 +81,7 @@ func FetchLearningArea(context *gin.Context) {
 
 	var learningAreas []models2.LearningArea
 	if err := config.DB.
-		Order("code desc").
+		Order("code asc").
 		Find(&learningAreas).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Learning Area!"})
 		return
