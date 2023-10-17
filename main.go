@@ -75,6 +75,7 @@ func main() {
 
 	errMigrate := config.DB.AutoMigrate(
 		&authModels.User{},
+		&eosModels.Entity{},
 		&authModels.Contact{},
 		&authModels.PasswordReset{},
 		&authModels.UserPassword{},

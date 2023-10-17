@@ -97,12 +97,15 @@ func AddCalendarEvent(ctx *gin.Context) {
 	calendarEvent.StartTime = calendarEventRequest.StartTime
 	calendarEvent.StartDate = startDate
 	calendarEvent.EndDate = endDate
+	calendarEvent.Number = uuid.NewV4().String()
 
 	err = config.DB.Create(&calendarEvent).Error
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Feedback(err.Error()))
 		return
 	}
+
+	ctx.JSON(http.StatusOK, Feedback("Calendar event added successfully"))
 
 }
 
