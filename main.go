@@ -97,7 +97,7 @@ func main() {
 		&classModel.ClassLevel{},
 		&curriculumModel.ImportCurriculum{},
 		&classModel.Stream{},
-		&timetableModels.Timetable{},
+		&timetableModels.StudyTimetablePeriods{},
 		&timetableModels.TimetableController{},
 		&eosModels.GeneralCalendar{},
 		&eosModels.CalendarEvent{},

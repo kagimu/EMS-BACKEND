@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Timetable struct {
+type StudyTimetablePeriods struct {
 	gorm.Model
 	Number        string                `json:"number" gorm:"size:36;unique;not null"`
 	StreamNumber  string                `json:"stream_number" gorm:"size:36;not null"`
@@ -23,6 +23,14 @@ type Timetable struct {
 	Campus        campusModels.Campus   `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Subject       subjectModels.Subject `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Stream        classModels.Stream    `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+}
+
+type StudyTimetable struct {
+	gorm.Model
+	Number         string `json:"number" gorm:"size:36;unique;not null"`
+	CalendarNumber string `json:"calendar_number" gorm:"size:36;not null"`
+	Status         string `json:"status" gorm:"size:36;not null"`
+	UsserNumber    string `json:"user_number" gorm:"size:36;not null"`
 }
 
 type TimetableController struct {

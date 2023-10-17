@@ -21,7 +21,7 @@ type GeneralCalendar struct {
 	StartDate    time.Time `json:"start_date" gorm:"not null"`
 	EndDate      time.Time `json:"end_date" gorm:"not null"`
 	Name         string    `json:"name" gorm:"size:36;not null"`
-	USerNumber   string    `json:"user_number" gorm:"size:36;not null"`
+	UserNumber   string    `json:"user_number" gorm:"size:36;not null"`
 }
 
 type CalendarEvent struct {

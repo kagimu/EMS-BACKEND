@@ -154,6 +154,7 @@ func SetupRoute() *gin.Engine {
 
 		eos := main.Group("/eos")
 		{
+			eos.POST("entity/add", eosController.AddEntity)
 			eos.GET("calendars", eosController.AddCalendarEvent)
 			eos.POST("calendar/add", eosController.AddGeneralCalendar)
 			eos.GET("calendar/:calendar_number", eosController.GetCalendarDetails)
