@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
@@ -16,7 +17,7 @@ import (
 func NewStudyPeriod(context *gin.Context) {
 
 	type StudyPeriodInfo struct {
-		Code                 int64    `json:"code"`
+		Code                 string   `json:"code"`
 		StudyPeriodName      string   `json:"study_period_name"`
 		AcademicYearNumber   string   `json:"academic_year_number"`
 		StudyPeriodDateRange []string `json:"study_period_date_range"`
@@ -57,11 +58,16 @@ func NewStudyPeriod(context *gin.Context) {
 		return
 	}
 
-	if strconv.FormatInt(code, 10) == "" {
+	if code == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
 		return
 	}
 
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
 	var userData models.User
 	//check if user is a valid user
 	validateUser := config.DB.
@@ -109,7 +115,7 @@ func NewStudyPeriod(context *gin.Context) {
 	///save user data
 	saveStudyPeriod := studyPeriodModel.StudyPeriod{
 		Number:               number,
-		Code:                 code,
+		Code:                 codeNo,
 		StudyPeriodName:      studyPeriodName,
 		StudyPeriodStartDate: startDate,
 		StudyPeriodEndDate:   endDate,
