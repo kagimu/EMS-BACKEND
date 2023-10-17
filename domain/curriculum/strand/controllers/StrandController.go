@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
@@ -8,11 +9,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func NewStrand(context *gin.Context) {
 
 	type SubjectClusterInfo struct {
+		Code          string `json:"code"`
 		Name          string `json:"name"`
 		SubjectNumber string `json:"subject_number"`
 	}
@@ -24,10 +27,16 @@ func NewStrand(context *gin.Context) {
 		return
 	}
 
+	code := subjectClusterInfo.Code
 	name := subjectClusterInfo.Name
 	subjectNumber := subjectClusterInfo.SubjectNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -36,6 +45,12 @@ func NewStrand(context *gin.Context) {
 
 	if subjectNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -65,6 +80,7 @@ func NewStrand(context *gin.Context) {
 		Name:          name,
 		SubjectNumber: subjectNumber,
 		UserNumber:    userNumber,
+		Code:          codeNo,
 	}
 	config.DB.Save(&saveStrand)
 
