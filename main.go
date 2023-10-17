@@ -3,6 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
@@ -26,8 +29,6 @@ import (
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
-	"os"
 )
 
 var err error
@@ -97,8 +98,9 @@ func main() {
 		&classModel.ClassLevel{},
 		&curriculumModel.ImportCurriculum{},
 		&classModel.Stream{},
+		&timetableModels.StudyTimetable{},
 		&timetableModels.StudyTimetablePeriods{},
-		&timetableModels.TimetableController{},
+		&timetableModels.TimetableSlots{},
 		&eosModels.GeneralCalendar{},
 		&eosModels.CalendarEvent{},
 		&academicYearModel.AcademicYear{},

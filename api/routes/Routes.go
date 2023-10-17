@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"time"
+
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
@@ -22,7 +24,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"time"
 )
 
 func SetupRoute() *gin.Engine {
@@ -155,11 +156,11 @@ func SetupRoute() *gin.Engine {
 		eos := main.Group("/eos")
 		{
 			eos.POST("entity/add", eosController.AddEntity)
-			eos.GET("calendars", eosController.AddCalendarEvent)
-			eos.POST("calendar/add", eosController.AddGeneralCalendar)
-			eos.GET("calendar/:calendar_number", eosController.GetCalendarDetails)
-			eos.POST("calendar/update", eosController.AddCalendarEvent)
-			eos.POST("calendar/add-event", eosController.AddCalendarEvent)
+			eos.GET("calendars", eosController.GetAllCalendars)
+			eos.POST("calendars", eosController.AddGeneralCalendar)
+			eos.GET("calendars/:calendar_number", eosController.GetCalendarDetails)
+			eos.POST("calendars/update", eosController.AddCalendarEvent)
+			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 		}
 
 	}
