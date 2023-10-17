@@ -10,7 +10,7 @@ type (
 	Subject struct {
 		ID                   uint                   `gorm:"primaryKey"`
 		Number               string                 `json:"number" gorm:"size:36;unique;not null"`
-		Name                 string                 `json:"name" form:"name" binding:"required" gorm:"size:200;unique;not null"`
+		Name                 string                 `json:"name" form:"name" binding:"required" gorm:"size:200;not null"`
 		Code                 int64                  `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
 		SubjectClusterNumber string                 `json:"subject_cluster_number" gorm:"size:36;not null"`
 		UserNumber           string                 `json:"user_number" gorm:"size:36;not null"`

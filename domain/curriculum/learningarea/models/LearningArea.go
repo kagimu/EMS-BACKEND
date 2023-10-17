@@ -9,7 +9,7 @@ type (
 	LearningArea struct {
 		gorm.Model
 		Number     string      `json:"number" gorm:"size:36;unique;not null"`
-		Name       string      `json:"name" form:"name" binding:"required" gorm:"size:200;unique;not null"`
+		Name       string      `json:"name" form:"name" binding:"required" gorm:"size:200;not null"`
 		Code       int64       `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
 		UserNumber string      `json:"user_number" gorm:"size:36;not null"`
 		User       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

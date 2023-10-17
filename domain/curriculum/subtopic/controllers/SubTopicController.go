@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
@@ -15,6 +16,7 @@ import (
 func NewSubTopic(context *gin.Context) {
 
 	type TopicInfo struct {
+		Code          string `json:"code"`
 		Name          string `json:"name"`
 		TopicNumber   string `json:"topic_number"`
 		EstimatedTime string `json:"estimated_time"`
@@ -27,11 +29,17 @@ func NewSubTopic(context *gin.Context) {
 		return
 	}
 
+	code := topicInfo.Code
 	name := topicInfo.Name
 	topicNumber := topicInfo.TopicNumber
 	estimatedTime := topicInfo.EstimatedTime
 
 	userNumber := context.Request.Header["User-Number"][0]
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -45,6 +53,12 @@ func NewSubTopic(context *gin.Context) {
 
 	if estimatedTime == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Estimated time is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -82,6 +96,7 @@ func NewSubTopic(context *gin.Context) {
 		EstimatedTime: estTime,
 		TopicNumber:   topicNumber,
 		UserNumber:    userNumber,
+		Code:          codeNo,
 	}
 	config.DB.Save(&saveSubtopic)
 

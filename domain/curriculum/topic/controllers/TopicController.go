@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
@@ -8,11 +9,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func NewTopic(context *gin.Context) {
 
 	type TopicInfo struct {
+		Code         string `json:"code"`
 		Name         string `json:"name"`
 		StrandNumber string `json:"strand_number"`
 		ClassNumber  string `json:"Class_number"`
@@ -25,11 +28,17 @@ func NewTopic(context *gin.Context) {
 		return
 	}
 
+	code := topicInfo.Code
 	name := topicInfo.Name
 	strandNumber := topicInfo.StrandNumber
 	classNumber := topicInfo.ClassNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -43,6 +52,12 @@ func NewTopic(context *gin.Context) {
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -74,6 +89,7 @@ func NewTopic(context *gin.Context) {
 		StrandNumber: strandNumber,
 		UserNumber:   userNumber,
 		ClassNumber:  classNumber,
+		Code:         codeNo,
 	}
 	config.DB.Save(&saveTopic)
 
