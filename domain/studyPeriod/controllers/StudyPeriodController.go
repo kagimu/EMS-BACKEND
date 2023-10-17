@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -111,6 +112,40 @@ func NewStudyPeriod(context *gin.Context) {
 		return
 	}
 
+	//validate academic year scope validation (Boundary)
+	//academicYearNumber
+
+	var academicYearData academicYearModels.AcademicYear
+	//check if user is a valid user
+	validateAcademicYr := config.DB.
+		Where("number = ?", academicYearNumber).
+		First(&academicYearData)
+	if validateAcademicYr.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year not found"})
+		return
+	}
+
+	startDateAcademicYr := academicYearData.AcademicYearStartDate
+	endDateAcademicYr := academicYearData.AcademicYearEndDate
+
+	/*fmt.Println(startDateAcademicYr)
+	fmt.Println("<==>")
+	fmt.Println(startDate)*/
+
+	//validate start date
+	startDate = startDate.Add(3 * time.Hour) // Converting UTC to EAT for comparison
+	if startDateAcademicYr.After(startDate) {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Start date on Study Period is out of bounds"})
+		return
+	}
+
+	//validate end date
+	endDate = endDate.Add(3 * time.Hour) // Converting UTC to EAT for comparison
+	if endDateAcademicYr.Before(endDate) {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "End date on Study Period is out of bounds"})
+		return
+	}
+
 	number := uuid.NewV4().String()
 	///save user data
 	saveStudyPeriod := studyPeriodModel.StudyPeriod{
@@ -123,7 +158,7 @@ func NewStudyPeriod(context *gin.Context) {
 		UserNumber:           userNumber,
 		LevelNumber:          levelNumber,
 	}
-	config.DB.Save(&saveStudyPeriod)
+	//config.DB.Save(&saveStudyPeriod)
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Study Period Successfully!", "data": saveStudyPeriod})
 }
