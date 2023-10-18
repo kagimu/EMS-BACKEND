@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -9,11 +10,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func NewSubject(context *gin.Context) {
 
 	type SubjectInfo struct {
+		Code                 string `json:"code"`
 		Name                 string `json:"name"`
 		SubjectClusterNumber string `json:"subject_cluster_number"`
 	}
@@ -25,10 +28,16 @@ func NewSubject(context *gin.Context) {
 		return
 	}
 
+	code := subjectInfo.Code
 	name := subjectInfo.Name
 	subjectClusterNumber := subjectInfo.SubjectClusterNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -37,6 +46,12 @@ func NewSubject(context *gin.Context) {
 
 	if subjectClusterNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -66,6 +81,7 @@ func NewSubject(context *gin.Context) {
 		Name:                 name,
 		UserNumber:           userNumber,
 		SubjectClusterNumber: subjectClusterNumber,
+		Code:                 codeNo,
 	}
 
 	config.DB.Save(&saveSubject)

@@ -1,6 +1,9 @@
 package routes
 
 import (
+	"time"
+
+	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -12,13 +15,15 @@ import (
 	subjectClusterController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/controllers"
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
+	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
+	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"time"
 )
 
 func SetupRoute() *gin.Engine {
@@ -111,10 +116,23 @@ func SetupRoute() *gin.Engine {
 		//sub topic
 		main.POST("new-sub-topic", subTopicController.NewSubTopic)
 		main.GET("sub-topics", subTopicController.FetchSubTopic)
+		main.GET("sub-topics-by-class", subTopicController.FetchSubTopicByClass)
 
 		//concepts
 		main.POST("new-concept", conceptController.NewConcept)
 		main.GET("concepts", conceptController.FetchConcept)
+
+		//adds academic year
+		main.POST("new-academic-year", academicYearController.NewAcademicYear)
+		main.GET("fetch-academic-year", academicYearController.FetchAcademicYear)
+
+		//adds study period
+		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
+		main.GET("fetch-study-period", studyPeriodController.FetchStudyPeriod)
+
+		//adds scheme of work
+		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
+		main.GET("fetch-scheme-of-work-by-class", schemeOfWorkControllers.FetchSchemeOfWork)
 
 		//timetable routes
 		timetable := main.Group("/timetable")
@@ -133,6 +151,16 @@ func SetupRoute() *gin.Engine {
 			stream.POST("new", classController.AddClassStream)
 			stream.GET("fetch", classController.FetchStreamsByClassLevelNumber)
 
+		}
+
+		eos := main.Group("/eos")
+		{
+			eos.POST("entity/add", eosController.AddEntity)
+			eos.GET("calendars", eosController.GetAllCalendars)
+			eos.POST("calendars", eosController.AddGeneralCalendar)
+			eos.GET("calendars/:calendar_number", eosController.GetCalendarDetails)
+			eos.POST("calendars/update", eosController.AddCalendarEvent)
+			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 		}
 
 	}

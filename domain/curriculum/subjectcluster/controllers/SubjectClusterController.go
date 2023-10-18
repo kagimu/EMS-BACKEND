@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
@@ -8,11 +9,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func NewSubjectCluster(context *gin.Context) {
 
 	type SubjectClusterInfo struct {
+		Code               string `json:"code"`
 		Name               string `json:"name"`
 		LearningAreaNumber string `json:"learning_area_number"`
 	}
@@ -24,6 +27,7 @@ func NewSubjectCluster(context *gin.Context) {
 		return
 	}
 
+	code := subjectClusterInfo.Code
 	name := subjectClusterInfo.Name
 	learningAreaNumber := subjectClusterInfo.LearningAreaNumber
 
@@ -36,6 +40,17 @@ func NewSubjectCluster(context *gin.Context) {
 
 	if learningAreaNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area is required!"})
+		return
+	}
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -65,6 +80,7 @@ func NewSubjectCluster(context *gin.Context) {
 		Name:               name,
 		LearningAreaNumber: learningAreaNumber,
 		UserNumber:         userNumber,
+		Code:               codeNo,
 	}
 	config.DB.Save(&saveSubjectCluster)
 

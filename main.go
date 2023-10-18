@@ -1,4 +1,3 @@
-//package tutorView
 package main
 
 import (
@@ -6,17 +5,21 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
+	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
-	models12 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
+	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"gorm.io/driver/mysql"
@@ -68,25 +71,38 @@ func main() {
 
 	errMigrate := config.DB.AutoMigrate(
 		&authModels.User{},
+		&eosModels.Entity{},
 		&authModels.Contact{},
 		&authModels.PasswordReset{},
 		&authModels.UserPassword{},
 		&schoolModels.School{},
 		&models.Campus{},
 		&models.Level{},
-		&classModels.Class{},
+		&classModel.Class{},
 		&learningAreaModels.LearningArea{},
-		&classModels.ClassLevelSubject{},
+		&classModel.ClassLevelSubject{},
 		&subjectClusterModels.SubjectCluster{},
 		&subjectModels.Subject{},
 		&strandModels.Strand{},
 		&topicModels.Topic{},
 		&subTopicModels.SubTopic{},
 		&conceptModels.Concept{},
-		&classModels.ClassLevel{},
-		&models12.ImportCurriculum{},
-		&classModels.Stream{},
-		&timetableModels.Timetable{},
+		&classModel.ClassLevel{},
+		&curriculumModel.ImportCurriculum{},
+		&classModel.Stream{},
+		&academicYearModel.AcademicYear{},
+		&studyPeriodModel.StudyPeriod{},
+		&classModel.ClassLevel{},
+		&curriculumModel.ImportCurriculum{},
+		&classModel.Stream{},
+		&timetableModels.StudyTimetable{},
+		&timetableModels.StudyTimetablePeriods{},
+		&timetableModels.TimetableSlots{},
+		&eosModels.GeneralCalendar{},
+		&eosModels.CalendarEvent{},
+		&academicYearModel.AcademicYear{},
+		&schemeOfWorkmodel.SchemeOfWork{},
+		&schemeOfWorkmodel.SchemeOfWorkSubTopic{},
 	)
 	if errMigrate != nil {
 		return

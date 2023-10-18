@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -15,10 +14,10 @@ import (
 )
 
 func AddPeriod(context *gin.Context) {
-	var timetable models.Timetable
+	var timetable models.StudyTimetablePeriods
 	var timetableRequest requests.TimetableRequest
 
-	err := context.BindJSON(&timetableRequest)
+	err := context.ShouldBind(&timetableRequest)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -46,13 +45,8 @@ func AddPeriod(context *gin.Context) {
 	}
 
 	timetable.Number = uuid.NewV4().String()
-	/*startTime, err := time.Parse("15:04:05", timetableRequest.StartTime)
-	endTime, err := time.Parse("15:04:05", timetableRequest.EndTime)
 
-	fmt.Println("start time", startTime)
-	fmt.Println("start time", startTime)
-	fmt.Println("end time", endTime)*/
-	period := models.Timetable{
+	period := models.StudyTimetablePeriods{
 		Number:        timetable.Number,
 		StartTime:     timetableRequest.StartTime,
 		EndTime:       timetableRequest.EndTime,
@@ -61,6 +55,7 @@ func AddPeriod(context *gin.Context) {
 		Day:           timetableRequest.Day,
 		DayCode:       timetableRequestDayCode,
 		CampusNumber:  timetableRequest.CampusNumber,
+		UserNumber:    context.GetHeader("User-Number"),
 	}
 
 	config.DB.Save(&period)
@@ -71,7 +66,7 @@ func AddPeriod(context *gin.Context) {
 
 func GetDistinctDays(ctx *gin.Context) {
 	var days []string
-	config.DB.Model(&models.Timetable{}).
+	config.DB.Model(&models.StudyTimetablePeriods{}).
 		Select("DISTINCT day").
 		Order("day_code asc").
 		Scan(&days)
@@ -81,15 +76,15 @@ func GetDistinctDays(ctx *gin.Context) {
 
 func GetPeriodsByDay(ctx *gin.Context) {
 	day := ctx.Param("day")
-	var periods []models.Timetable
+	var periods []models.StudyTimetablePeriods
 	config.DB.Where("day = ?", day).Find(&periods)
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
 
 func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
-	var periods []models.Timetable
+	var periods []models.StudyTimetablePeriods
 	config.DB.
-		//Model(&models.Timetable{}).
+		//Model(&models.StudyTimetablePeriods{}).
 		//Select("stream_number,day").
 		Preload("Subject").
 		Preload("Stream").
@@ -103,7 +98,7 @@ func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
 
 func GetPeriodsByStream(ctx *gin.Context) {
 	streamNumber := ctx.Param("stream_number")
-	var periods []models.Timetable
+	var periods []models.StudyTimetablePeriods
 	config.DB.Where("stream_number = ?", streamNumber).Find(&periods)
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
@@ -113,7 +108,7 @@ func FetchClassLevelsByCampusNumberAndLevelNumber(ctx *gin.Context) {
 	campusNumber := ctx.Query("campus_number")
 	levelNumber := ctx.Query("level_number")
 
-	fmt.Println(campusNumber, levelNumber)
+	//fmt.Println(campusNumber, levelNumber)
 
 	var classLevels []classModels.ClassLevel
 
@@ -147,3 +142,81 @@ func FetchLevelsByCampusNumber(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": levels})
 }
+
+/*func AddCalendarEvent(ctx *gin.Context) {
+
+	var calendarEvent eosModels.CalendarEvent
+	var calendarEventRequest requests.CalendarEventRequest
+
+	err := ctx.BindJSON(&calendarEventRequest)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	calendarEvent.Number = uuid.NewV4().String()
+
+	//convert date to time
+	layout := "2006-01-02"
+	startDate, err := time.Parse(layout, calendarEventRequest.StartDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	endDate, _ := time.Parse(layout, calendarEventRequest.EndDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	event := eosModels.CalendarEvent{
+		Number:    calendarEvent.Number,
+		StartDate: startDate,
+		EndDate:   endDate,
+		StartTime: calendarEventRequest.StartTime,
+		EndTime:   calendarEventRequest.EndTime,
+	}
+
+	config.DB.Save(&event)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
+}
+
+func CreateGeneralCalendar(ctx *gin.Context) {
+	var generalCalendar eosModels.GeneralCalendar
+	var generalCalendarRequest requests.GeneralCalendarRequest
+
+	err := ctx.BindJSON(&generalCalendarRequest)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	generalCalendar.Number = uuid.NewV4().String()
+
+	//convert date to time
+	layout := "2006-01-02"
+	startDate, err := time.Parse(layout, generalCalendarRequest.StartDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	endDate, _ := time.Parse(layout, generalCalendarRequest.EndDate)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	event := eosModels.GeneralCalendar{
+		Number:    generalCalendar.Number,
+		StartDate: startDate,
+		EndDate:   endDate,
+		Name:      generalCalendarRequest.Name,
+	}
+
+	config.DB.Save(&event)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
+}*/
