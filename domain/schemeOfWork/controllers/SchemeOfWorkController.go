@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
@@ -151,12 +152,18 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	}
 
 	name := schemeOfWorkInfo.Name
+	schemeNumber := schemeOfWorkInfo.SchemeNumber
 	classNumber := schemeOfWorkInfo.ClassNumber
 	subtopicList := schemeOfWorkInfo.SubtopicList
 	userNumber := context.Request.Header["User-Number"][0]
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if schemeNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme number is required!"})
 		return
 	}
 
@@ -180,37 +187,49 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		return
 	}
 
-	var duplicateScheme schemeOfWorkModel.SchemeOfWork
-	if duplicate := config.DB.
-		Where("name = ?", name).
-		Where("class_number = ?", classNumber).
-		First(&duplicateScheme).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
+	/*	var duplicateScheme schemeOfWorkModel.SchemeOfWork
+		if duplicate := config.DB.
+			Where("number != ?", schemeNumber).
+			Where("name = ?", name).
+			Where("class_number = ?", classNumber).
+			First(&duplicateScheme).Error; duplicate == nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
+			return
+		}
+	*/
+	tx := config.DB.Begin()
+	var schemeUpdate schemeOfWorkModel.SchemeOfWork
+	updateScheme := tx.Model(&schemeUpdate).
+		Where("number = ?", schemeNumber).
+		Updates(schemeOfWorkModel.SchemeOfWork{Name: name})
+	if updateScheme.Error != nil {
+		fmt.Println("Update Error:", updateScheme.Error)
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to commit!"})
 		return
 	}
 
 	// Begin the transaction
-	tx := config.DB.Begin()
+	/*	tx := config.DB.Begin()
 
-	number := uuid.NewV4().String()
-	///save sheme of work data
-	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
-		Number:      number,
-		Name:        name,
-		Status:      "Pending",
-		ClassNumber: classNumber,
-		UserNumber:  userNumber,
-	}
+		var schemeInfo schemeOfWorkModel.SchemeOfWork
+		updateSchemeOfWork := tx.Model(&schemeInfo).
+			Where("number = ?", schemeNumber).
+			Updates(schemeOfWorkModel.SchemeOfWork{Name: name, ClassNumber: classNumber})
+		if updateSchemeOfWork.Error != nil {
+			tx.Rollback()
+			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update! "})
+			//context.JSON(http.StatusNotFound, gin.H{"message": updateSchemeOfWork.Error})
+			return
+		}*/
 
-	if err := tx.Create(&saveSchemeOfWork).Error; err != nil {
-		// If any error occurs, rollback the transaction
-		tx.Rollback()
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
-		return
-	}
-
-	for _, schemeList := range subtopicList {
+	/*for _, schemeList := range subtopicList {
 		schemeNo := uuid.NewV4().String()
 		saveSchemeOfWorkSubtopic := schemeOfWorkModel.SchemeOfWorkSubTopic{
 			Number:             schemeNo,
@@ -234,9 +253,9 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		// Handle or return the error as needed
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
 		return
-	}
+	}*/
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Scheme Added Successfully!", "data": saveSchemeOfWork})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schemeUpdate})
 
 }
 
