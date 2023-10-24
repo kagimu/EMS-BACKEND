@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
@@ -11,6 +12,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -23,11 +25,17 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
+	code := classInfo.Code
 	name := classInfo.Name
 	abbreviation := classInfo.Abbreviation
 	level := classInfo.Level
 
 	userNumber := context.Request.Header["User-Number"][0]
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
@@ -41,6 +49,12 @@ func NewClass(context *gin.Context) {
 
 	if abbreviation == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -70,6 +84,7 @@ func NewClass(context *gin.Context) {
 		Abbreviation: abbreviation,
 		UserNumber:   userNumber,
 		Level:        level,
+		Code:         codeNo,
 	}
 	config.DB.Save(&saveClass)
 
@@ -172,7 +187,7 @@ func FetchClasses(context *gin.Context) {
 	var classes []models.Class
 	if err := config.DB.
 		Scopes(levelFilter(level)).
-		Order("created_at desc").
+		Order("code asc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
@@ -382,6 +397,16 @@ func AddClassStream(ctx *gin.Context) {
 	err := ctx.BindJSON(&streamRequest)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to serialize  request error!"})
+		return
+	}
+
+	if streamRequest.Name == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if streamRequest.ClassLevelNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Class Level Number is required!"})
 		return
 	}
 
