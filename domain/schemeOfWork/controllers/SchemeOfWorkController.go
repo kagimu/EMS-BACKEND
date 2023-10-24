@@ -233,7 +233,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schemeUpdate})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subtopicList})
 }
 
 func FetchSchemeOfWork(context *gin.Context) {
