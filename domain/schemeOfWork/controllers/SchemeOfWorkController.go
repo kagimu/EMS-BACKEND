@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
+	"strconv"
 )
 
 func NewSchemeOfWork(context *gin.Context) {
@@ -122,6 +124,116 @@ func NewSchemeOfWork(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Scheme Added Successfully!", "data": saveSchemeOfWork})
+}
+
+func UpdateSchemeOfWork(context *gin.Context) {
+
+	type SubtopicListInfo struct {
+		Code               int    `json:"code"`
+		EstimatedTime      int    `json:"estimated_time"`
+		Name               string `json:"name"`
+		Number             string `json:"number"`
+		UserNumber         string `json:"user_number"`
+		SchemeOfWorkNumber string `json:"scheme_of_work_number"`
+		SubTopicNumber     string `json:"sub_topic_number"`
+	}
+
+	type SchemeOfWorkInfo struct {
+		Name         string             `json:"name"`
+		ClassNumber  string             `json:"class_number"`
+		SchemeNumber string             `json:"scheme_number"`
+		SubtopicList []SubtopicListInfo `json:"subtopicList"`
+	}
+
+	var schemeOfWorkInfo SchemeOfWorkInfo
+	err := context.BindJSON(&schemeOfWorkInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
+		return
+	}
+
+	name := schemeOfWorkInfo.Name
+	schemeNumber := schemeOfWorkInfo.SchemeNumber
+	classNumber := schemeOfWorkInfo.ClassNumber
+	subtopicList := schemeOfWorkInfo.SubtopicList
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if name == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if schemeNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme number is required!"})
+		return
+	}
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if len(subtopicList) == 0 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic list is required!"})
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateScheme schemeOfWorkModel.SchemeOfWork
+	if duplicate := config.DB.
+		Where("number != ?", schemeNumber).
+		Where("name = ?", name).
+		Where("class_number = ?", classNumber).
+		First(&duplicateScheme).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
+		return
+	}
+
+	tx := config.DB.Begin()
+	var schemeUpdate schemeOfWorkModel.SchemeOfWork
+	updateScheme := tx.Model(&schemeUpdate).
+		Where("number = ?", schemeNumber).
+		Updates(schemeOfWorkModel.SchemeOfWork{Name: name})
+	if updateScheme.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	for _, schemeList := range subtopicList {
+		codeNo, err := strconv.ParseInt(strconv.Itoa(schemeList.Code), 10, 64)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		var schemeSubtopicUpdate schemeOfWorkModel.SchemeOfWorkSubTopic
+		updateScheme := tx.Model(&schemeSubtopicUpdate).
+			Where("scheme_of_work_number = ?", schemeNumber).
+			Where("number = ?", schemeList.Number).
+			Updates(schemeOfWorkModel.SchemeOfWorkSubTopic{Code: codeNo})
+		if updateScheme.Error != nil {
+			tx.Rollback()
+			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+			return
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to commit!"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subtopicList})
 }
 
 func FetchSchemeOfWork(context *gin.Context) {
