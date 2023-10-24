@@ -385,6 +385,16 @@ func AddClassStream(ctx *gin.Context) {
 		return
 	}
 
+	if streamRequest.Name == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if streamRequest.ClassLevelNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Class Level Number is required!"})
+		return
+	}
+
 	streams := strings.Split(streamRequest.Name, ",")
 
 	//add streams to the class
