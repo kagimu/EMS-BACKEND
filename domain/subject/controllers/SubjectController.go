@@ -5,7 +5,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
-	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
+	topicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -65,7 +66,7 @@ func NewSubject(context *gin.Context) {
 		return
 	}
 
-	var duplicateSubject models3.Subject
+	var duplicateSubject subjectModel.Subject
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("level_number = ?", subjectClusterNumber).
@@ -76,7 +77,7 @@ func NewSubject(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveSubject := models3.Subject{
+	saveSubject := subjectModel.Subject{
 		Number:               number,
 		Name:                 name,
 		UserNumber:           userNumber,
@@ -97,7 +98,7 @@ func FetchSubject(context *gin.Context) {
 		return
 	}*/
 
-	var subjects []models3.Subject
+	var subjects []subjectModel.Subject
 	if err := config.DB.
 		Scopes(subjectCluster(subjectClusterNumber)).
 		Order("code asc").
@@ -116,6 +117,62 @@ func subjectCluster(subjectClusterNumber string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+type SubjectData struct {
+	ID   string `json:"ID"`
+	Name string `json:"name"`
+}
+
+func FetchSubjectByClass(context *gin.Context) {
+
+	classNumber := context.Query("class_number")
+
+	/*	if subjectClusterNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject cluster is required!"})
+		return
+	}*/
+
+	var topic []topicModel.Topic
+	if err := config.DB.
+		Where("topics.class_number = ?", classNumber).
+		Joins("join strands on strands.number = topics.strand_number").
+		Preload("Strand.Subject").
+		Preload("Strand").
+		Order("created_at desc").
+		Find(&topic).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No topic found!"})
+		return
+	}
+
+	//subjects := make(map[int]string)
+
+	var subjectData []SubjectData
+	for _, item := range topic {
+		subjectData = append(subjectData, SubjectData{
+			ID:   item.Strand.Subject.Number,
+			Name: item.Strand.Subject.Name,
+		})
+	}
+
+	subjectData = removeDuplicates(subjectData)
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjectData})
+}
+
+func removeDuplicates(data []SubjectData) []SubjectData {
+
+	encountered := map[SubjectData]bool{}
+	var result []SubjectData
+
+	for _, person := range data {
+		if !encountered[person] {
+			encountered[person] = true
+			result = append(result, person)
+		}
+	}
+
+	return result
 }
 
 func FetchSubjectsByClassLevelNumber(ctx *gin.Context) {

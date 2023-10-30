@@ -96,6 +96,7 @@ func SetupRoute() *gin.Engine {
 		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
 		main.GET("subjects", subjectController.FetchSubject)
+		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
 
 		//manage Learning Area
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
