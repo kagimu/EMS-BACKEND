@@ -248,15 +248,22 @@ func UpdateSchemeOfWork(context *gin.Context) {
 func FetchSchemeOfWork(context *gin.Context) {
 
 	classNumber := context.Query("class_number")
+	subjectNumber := context.Query("subject_number")
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
 		return
 	}
 
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
+		return
+	}
+
 	var schemeOfWrkInfo schemeOfWorkModel.SchemeOfWork
 	if err := config.DB.
 		Where("class_number = ?", classNumber).
+		Where("subject_number = ?", subjectNumber).
 		Order("created_at desc").
 		First(&schemeOfWrkInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
