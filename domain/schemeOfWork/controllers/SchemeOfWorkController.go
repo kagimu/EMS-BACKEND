@@ -139,6 +139,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 
 	type SubtopicListInfo struct {
 		Code               int    `json:"code"`
+		SortCode           int    `json:"sort_code"`
 		EstimatedTime      int    `json:"estimated_time"`
 		Name               string `json:"name"`
 		Number             string `json:"number"`
@@ -148,10 +149,11 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	}
 
 	type SchemeOfWorkInfo struct {
-		Name         string             `json:"name"`
-		ClassNumber  string             `json:"class_number"`
-		SchemeNumber string             `json:"scheme_number"`
-		SubtopicList []SubtopicListInfo `json:"subtopicList"`
+		Name          string             `json:"name"`
+		ClassNumber   string             `json:"class_number"`
+		SubjectNumber string             `json:"subject_number"`
+		SchemeNumber  string             `json:"scheme_number"`
+		SubtopicList  []SubtopicListInfo `json:"subtopicList"`
 	}
 
 	var schemeOfWorkInfo SchemeOfWorkInfo
@@ -164,6 +166,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	name := schemeOfWorkInfo.Name
 	schemeNumber := schemeOfWorkInfo.SchemeNumber
 	classNumber := schemeOfWorkInfo.ClassNumber
+	subjectNumber := schemeOfWorkInfo.SubjectNumber
 	subtopicList := schemeOfWorkInfo.SubtopicList
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -179,6 +182,11 @@ func UpdateSchemeOfWork(context *gin.Context) {
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
 		return
 	}
 
@@ -202,6 +210,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		Where("number != ?", schemeNumber).
 		Where("name = ?", name).
 		Where("class_number = ?", classNumber).
+		Where("subject_number = ?", subjectNumber).
 		First(&duplicateScheme).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
 		return
@@ -219,7 +228,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	}
 
 	for _, schemeList := range subtopicList {
-		codeNo, err := strconv.ParseInt(strconv.Itoa(schemeList.Code), 10, 64)
+		codeNo, err := strconv.ParseInt(strconv.Itoa(schemeList.SortCode), 10, 64)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -264,6 +273,8 @@ func FetchSchemeOfWork(context *gin.Context) {
 	if err := config.DB.
 		Where("class_number = ?", classNumber).
 		Where("subject_number = ?", subjectNumber).
+		Preload("Class").
+		Preload("Subject").
 		Order("created_at desc").
 		First(&schemeOfWrkInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
@@ -274,6 +285,8 @@ func FetchSchemeOfWork(context *gin.Context) {
 	var schemeOfWrkSubTopicInfo_ []responses2.SchemeOfWorkSubtopicInfo
 	if err := config.DB.
 		Where("scheme_of_work_number = ?", schemeOfWrkInfo.Number).
+		Preload("SubTopic.Topic.Strand").
+		Preload("SubTopic.Topic").
 		Preload("SubTopic").
 		Order("code asc").
 		Find(&schemeOfWrkSubTopicInfo).Error; err != nil {
@@ -285,7 +298,10 @@ func FetchSchemeOfWork(context *gin.Context) {
 		schemeOfWrkSubTopicInfo_ = append(schemeOfWrkSubTopicInfo_, responses2.SchemeOfWorkSubtopicInfo{
 			Number:             subTopicList.Number,
 			Code:               subTopicList.Code,
+			SortCode:           subTopicList.Code,
 			Name:               subTopicList.SubTopic.Name,
+			TopicName:          subTopicList.SubTopic.Topic.Name,
+			StrandName:         subTopicList.SubTopic.Topic.Strand.Name,
 			EstimatedTime:      subTopicList.EstimatedTime,
 			SchemeOfWorkNumber: subTopicList.SchemeOfWorkNumber,
 			SubtopicNumber:     subTopicList.SubtopicNumber,
@@ -298,6 +314,9 @@ func FetchSchemeOfWork(context *gin.Context) {
 		Name:                     schemeOfWrkInfo.Name,
 		Status:                   schemeOfWrkInfo.Status,
 		ClassNumber:              schemeOfWrkInfo.ClassNumber,
+		ClassName:                schemeOfWrkInfo.Class.Name,
+		SubjectNumber:            schemeOfWrkInfo.SubjectNumber,
+		SubjectName:              schemeOfWrkInfo.Subject.Name,
 		UserNumber:               schemeOfWrkInfo.UserNumber,
 		SchemeOfWorkSubtopicInfo: schemeOfWrkSubTopicInfo_,
 	}
