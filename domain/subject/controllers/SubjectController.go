@@ -120,18 +120,13 @@ func subjectCluster(subjectClusterNumber string) func(db *gorm.DB) *gorm.DB {
 }
 
 type SubjectData struct {
-	ID   string `json:"ID"`
-	Name string `json:"name"`
+	Number string `json:"number"`
+	Name   string `json:"name"`
 }
 
 func FetchSubjectByClass(context *gin.Context) {
 
 	classNumber := context.Query("class_number")
-
-	/*	if subjectClusterNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject cluster is required!"})
-		return
-	}*/
 
 	var topic []topicModel.Topic
 	if err := config.DB.
@@ -145,13 +140,11 @@ func FetchSubjectByClass(context *gin.Context) {
 		return
 	}
 
-	//subjects := make(map[int]string)
-
 	var subjectData []SubjectData
 	for _, item := range topic {
 		subjectData = append(subjectData, SubjectData{
-			ID:   item.Strand.Subject.Number,
-			Name: item.Strand.Subject.Name,
+			Number: item.Strand.Subject.Number,
+			Name:   item.Strand.Subject.Name,
 		})
 	}
 
@@ -162,16 +155,15 @@ func FetchSubjectByClass(context *gin.Context) {
 
 func removeDuplicates(data []SubjectData) []SubjectData {
 
-	encountered := map[SubjectData]bool{}
+	subjectMap := map[SubjectData]bool{}
 	var result []SubjectData
 
-	for _, person := range data {
-		if !encountered[person] {
-			encountered[person] = true
-			result = append(result, person)
+	for _, subject := range data {
+		if !subjectMap[subject] {
+			subjectMap[subject] = true
+			result = append(result, subject)
 		}
 	}
-
 	return result
 }
 

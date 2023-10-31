@@ -149,12 +149,16 @@ func topic(topicNumber string) func(db *gorm.DB) *gorm.DB {
 func FetchSubTopicByClass(context *gin.Context) {
 
 	classNumber := context.Query("class_number")
+	subjectNumber := context.Query("subject_number")
 
 	var subtopic []models2.SubTopic
 	var subTopicInfo_ []responses.SubTopicList
 	if err := config.DB.
 		Scopes(classFilter(classNumber)).
+		//Scopes(subjectFilter(subjectNumber)).
 		Joins("join topics on topics.number = sub_topics.topic_number").
+		Preload("Topic.Strand.Subject").
+		Preload("Topic.Strand").
 		Preload("Topic").
 		Order("code asc").
 		Find(&subtopic).Error; err != nil {
@@ -163,15 +167,17 @@ func FetchSubTopicByClass(context *gin.Context) {
 	}
 
 	for idx, subtopicList := range subtopic {
-		subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
-			Number:        subtopicList.Number,
-			Code:          subtopicList.Code,
-			SortCode:      int64(idx + 1),
-			Name:          subtopicList.Name,
-			UserNumber:    subtopicList.UserNumber,
-			EstimatedTime: subtopicList.EstimatedTime,
-			TopicNumber:   subtopicList.TopicNumber,
-		})
+		if subjectNumber == subtopicList.Topic.Strand.Subject.Number {
+			subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
+				Number:        subtopicList.Number,
+				Code:          subtopicList.Code,
+				SortCode:      int64(idx + 1),
+				Name:          subtopicList.Name,
+				UserNumber:    subtopicList.UserNumber,
+				EstimatedTime: subtopicList.EstimatedTime,
+				TopicNumber:   subtopicList.TopicNumber,
+			})
+		}
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subTopicInfo_})
@@ -185,3 +191,12 @@ func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
 		return db
 	}
 }
+
+/*func subjectFilter(subjectNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if subjectNumber != "" {
+			//return db.Where("topics.class_number = ?", subjectNumber)
+		}
+		return db
+	}
+}*/

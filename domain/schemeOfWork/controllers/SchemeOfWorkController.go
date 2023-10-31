@@ -25,9 +25,10 @@ func NewSchemeOfWork(context *gin.Context) {
 	}
 
 	type SchemeOfWorkInfo struct {
-		Name         string             `json:"name"`
-		ClassNumber  string             `json:"class_number"`
-		SubtopicList []SubtopicListInfo `json:"subtopicList"`
+		Name          string             `json:"name"`
+		ClassNumber   string             `json:"class_number"`
+		SubjectNumber string             `json:"subject_number"`
+		SubtopicList  []SubtopicListInfo `json:"subtopicList"`
 	}
 
 	var schemeOfWorkInfo SchemeOfWorkInfo
@@ -39,6 +40,7 @@ func NewSchemeOfWork(context *gin.Context) {
 
 	name := schemeOfWorkInfo.Name
 	classNumber := schemeOfWorkInfo.ClassNumber
+	subjectNumber := schemeOfWorkInfo.SubjectNumber
 	subtopicList := schemeOfWorkInfo.SubtopicList
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -49,6 +51,11 @@ func NewSchemeOfWork(context *gin.Context) {
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
 		return
 	}
 
@@ -71,6 +78,7 @@ func NewSchemeOfWork(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("class_number = ?", classNumber).
+		Where("subject_number = ?", subjectNumber).
 		First(&duplicateScheme).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
 		return
@@ -82,11 +90,12 @@ func NewSchemeOfWork(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save sheme of work data
 	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
-		Number:      number,
-		Name:        name,
-		Status:      "Pending",
-		ClassNumber: classNumber,
-		UserNumber:  userNumber,
+		Number:        number,
+		Name:          name,
+		Status:        "Pending",
+		ClassNumber:   classNumber,
+		SubjectNumber: subjectNumber,
+		UserNumber:    userNumber,
 	}
 
 	if err := tx.Create(&saveSchemeOfWork).Error; err != nil {
