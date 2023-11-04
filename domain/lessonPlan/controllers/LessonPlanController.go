@@ -14,7 +14,7 @@ import (
 func NewLessonPlan(context *gin.Context) {
 
 	type Steps struct {
-		Code string `json:"code"`
+		Code int64  `json:"code"`
 		Step string `json:"step"`
 	}
 
@@ -88,8 +88,8 @@ func NewLessonPlan(context *gin.Context) {
 	tx := config.DB.Begin()
 
 	number := uuid.NewV4().String()
-	///save sheme of work data
-	saveSchemeOfWork := lessonPlanModel.LessonPlan{
+	///save lesson plan data
+	saveLessonPlan := lessonPlanModel.LessonPlan{
 		Number:                  number,
 		LessonPlanConceptNumber: lessonPlanConceptNumber,
 		SchemeSubTopicNumber:    schemeSubTopicNumber,
@@ -97,27 +97,22 @@ func NewLessonPlan(context *gin.Context) {
 		UserNumber:              userNumber,
 	}
 
-	if err := tx.Create(&saveSchemeOfWork).Error; err != nil {
+	if err := tx.Create(&saveLessonPlan).Error; err != nil {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Lesson plan"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		//context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Lesson plan"})
 		return
 	}
 
 	for _, step := range stepList {
 		stepNo := uuid.NewV4().String()
-
-		codeNo, err := strconv.ParseInt(step.Code, 10, 64)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
-		}
-
 		saveSchemeOfWorkSubtopic := lessonPlanModel.LessonPlanSteps{
-			Number: stepNo,
-			Code:   codeNo,
-			Step:   step.Step,
+			Number:           stepNo,
+			LessonPlanNumber: saveLessonPlan.Number,
+			Code:             step.Code,
+			Step:             step.Step,
 		}
 		if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {
 			// If any error occurs, rollback the transaction
@@ -135,5 +130,5 @@ func NewLessonPlan(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Scheme Added Successfully!", "data": lessonPlanInfo})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Lesson Plan Added Successfully!", "data": lessonPlanInfo})
 }
