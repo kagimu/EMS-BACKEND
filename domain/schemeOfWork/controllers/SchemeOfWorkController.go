@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	"github.com/gin-gonic/gin"
@@ -295,6 +297,28 @@ func FetchSchemeOfWork(context *gin.Context) {
 	}
 
 	for _, subTopicList := range schemeOfWrkSubTopicInfo {
+
+		//fetch lesson plan
+		var lessonPlanInfo []models2.LessonPlan
+		var lessonPlanInfo_ []responses.LessonPlanResponseInfo
+		if err := config.DB.
+			Where("scheme_sub_topic_number = ?", subTopicList.Number).
+			Order("code asc").
+			Find(&lessonPlanInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
+			return
+		}
+
+		for _, lessonPlanList := range lessonPlanInfo {
+			lessonPlanInfo_ = append(lessonPlanInfo_, responses.LessonPlanResponseInfo{
+				Number:                  lessonPlanList.Number,
+				LessonPlanConceptNumber: lessonPlanList.LessonPlanConceptNumber,
+				SchemeSubTopicNumber:    lessonPlanList.SchemeSubTopicNumber,
+				Code:                    lessonPlanList.Code,
+				UserNumber:              lessonPlanList.UserNumber,
+			})
+		}
+
 		schemeOfWrkSubTopicInfo_ = append(schemeOfWrkSubTopicInfo_, responses2.SchemeOfWorkSubtopicInfo{
 			Number:             subTopicList.Number,
 			Code:               subTopicList.Code,
@@ -306,6 +330,7 @@ func FetchSchemeOfWork(context *gin.Context) {
 			SchemeOfWorkNumber: subTopicList.SchemeOfWorkNumber,
 			SubtopicNumber:     subTopicList.SubtopicNumber,
 			UserNumber:         subTopicList.UserNumber,
+			LessonPlan:         lessonPlanInfo_,
 		})
 	}
 
