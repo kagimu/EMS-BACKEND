@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/api/responses"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -97,6 +98,7 @@ func FetchConcept(context *gin.Context) {
 	}*/
 
 	var concept []models3.Concept
+	var concept_ []responses.ConceptList
 	if err := config.DB.
 		Scopes(subTopic(subtopicNumber)).
 		Order("code asc").
@@ -105,7 +107,49 @@ func FetchConcept(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": concept})
+	for _, list := range concept {
+		concept_ = append(concept_, responses.ConceptList{
+			Number:         list.Number,
+			Name:           list.Name,
+			Code:           list.Code,
+			UserNumber:     list.UserNumber,
+			SubTopicNumber: list.SubTopicNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": concept_})
+}
+
+func FetchConceptBySubTopic(context *gin.Context) {
+
+	subtopicNumber := context.Query("sub_topic_number")
+
+	/*	if subtopicNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic is required!"})
+		return
+	}*/
+
+	var concept []models3.Concept
+	var concept_ []responses.ConceptList
+	if err := config.DB.
+		Scopes(subTopic(subtopicNumber)).
+		Order("code asc").
+		Find(&concept).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Concept found!"})
+		return
+	}
+
+	for _, list := range concept {
+		concept_ = append(concept_, responses.ConceptList{
+			Number:         list.Number,
+			Name:           list.Name,
+			Code:           list.Code,
+			UserNumber:     list.UserNumber,
+			SubTopicNumber: list.SubTopicNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": concept_})
 }
 
 func subTopic(subtopicNumber string) func(db *gorm.DB) *gorm.DB {

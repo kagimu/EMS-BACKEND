@@ -1,6 +1,7 @@
 package routes
 
 import (
+	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
@@ -96,6 +97,7 @@ func SetupRoute() *gin.Engine {
 		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
 		main.GET("subjects", subjectController.FetchSubject)
+		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
 
 		//manage Learning Area
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
@@ -133,7 +135,11 @@ func SetupRoute() *gin.Engine {
 		//adds scheme of work
 		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
 		main.POST("update-scheme-of-work", schemeOfWorkControllers.UpdateSchemeOfWork)
-		main.GET("fetch-scheme-of-work-by-class", schemeOfWorkControllers.FetchSchemeOfWork)
+		main.GET("fetch-scheme-of-work-by-class-and-subject", schemeOfWorkControllers.FetchSchemeOfWork)
+
+		//lesson notes
+		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
+		main.POST("new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
 
 		//timetable routes
 		timetable := main.Group("/timetable")

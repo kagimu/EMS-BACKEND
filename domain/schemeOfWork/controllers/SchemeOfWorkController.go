@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	"github.com/gin-gonic/gin"
@@ -25,9 +27,10 @@ func NewSchemeOfWork(context *gin.Context) {
 	}
 
 	type SchemeOfWorkInfo struct {
-		Name         string             `json:"name"`
-		ClassNumber  string             `json:"class_number"`
-		SubtopicList []SubtopicListInfo `json:"subtopicList"`
+		Name          string             `json:"name"`
+		ClassNumber   string             `json:"class_number"`
+		SubjectNumber string             `json:"subject_number"`
+		SubtopicList  []SubtopicListInfo `json:"subtopicList"`
 	}
 
 	var schemeOfWorkInfo SchemeOfWorkInfo
@@ -39,6 +42,7 @@ func NewSchemeOfWork(context *gin.Context) {
 
 	name := schemeOfWorkInfo.Name
 	classNumber := schemeOfWorkInfo.ClassNumber
+	subjectNumber := schemeOfWorkInfo.SubjectNumber
 	subtopicList := schemeOfWorkInfo.SubtopicList
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -49,6 +53,11 @@ func NewSchemeOfWork(context *gin.Context) {
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
 		return
 	}
 
@@ -71,6 +80,7 @@ func NewSchemeOfWork(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("class_number = ?", classNumber).
+		Where("subject_number = ?", subjectNumber).
 		First(&duplicateScheme).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
 		return
@@ -82,11 +92,12 @@ func NewSchemeOfWork(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save sheme of work data
 	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
-		Number:      number,
-		Name:        name,
-		Status:      "Pending",
-		ClassNumber: classNumber,
-		UserNumber:  userNumber,
+		Number:        number,
+		Name:          name,
+		Status:        "Pending",
+		ClassNumber:   classNumber,
+		SubjectNumber: subjectNumber,
+		UserNumber:    userNumber,
 	}
 
 	if err := tx.Create(&saveSchemeOfWork).Error; err != nil {
@@ -130,6 +141,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 
 	type SubtopicListInfo struct {
 		Code               int    `json:"code"`
+		SortCode           int    `json:"sort_code"`
 		EstimatedTime      int    `json:"estimated_time"`
 		Name               string `json:"name"`
 		Number             string `json:"number"`
@@ -139,10 +151,11 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	}
 
 	type SchemeOfWorkInfo struct {
-		Name         string             `json:"name"`
-		ClassNumber  string             `json:"class_number"`
-		SchemeNumber string             `json:"scheme_number"`
-		SubtopicList []SubtopicListInfo `json:"subtopicList"`
+		Name          string             `json:"name"`
+		ClassNumber   string             `json:"class_number"`
+		SubjectNumber string             `json:"subject_number"`
+		SchemeNumber  string             `json:"scheme_number"`
+		SubtopicList  []SubtopicListInfo `json:"subtopicList"`
 	}
 
 	var schemeOfWorkInfo SchemeOfWorkInfo
@@ -155,6 +168,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	name := schemeOfWorkInfo.Name
 	schemeNumber := schemeOfWorkInfo.SchemeNumber
 	classNumber := schemeOfWorkInfo.ClassNumber
+	subjectNumber := schemeOfWorkInfo.SubjectNumber
 	subtopicList := schemeOfWorkInfo.SubtopicList
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -170,6 +184,11 @@ func UpdateSchemeOfWork(context *gin.Context) {
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
 		return
 	}
 
@@ -193,6 +212,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		Where("number != ?", schemeNumber).
 		Where("name = ?", name).
 		Where("class_number = ?", classNumber).
+		Where("subject_number = ?", subjectNumber).
 		First(&duplicateScheme).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
 		return
@@ -210,7 +230,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	}
 
 	for _, schemeList := range subtopicList {
-		codeNo, err := strconv.ParseInt(strconv.Itoa(schemeList.Code), 10, 64)
+		codeNo, err := strconv.ParseInt(strconv.Itoa(schemeList.SortCode), 10, 64)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -239,15 +259,24 @@ func UpdateSchemeOfWork(context *gin.Context) {
 func FetchSchemeOfWork(context *gin.Context) {
 
 	classNumber := context.Query("class_number")
+	subjectNumber := context.Query("subject_number")
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
 		return
 	}
 
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
+		return
+	}
+
 	var schemeOfWrkInfo schemeOfWorkModel.SchemeOfWork
 	if err := config.DB.
 		Where("class_number = ?", classNumber).
+		Where("subject_number = ?", subjectNumber).
+		Preload("Class").
+		Preload("Subject").
 		Order("created_at desc").
 		First(&schemeOfWrkInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
@@ -258,6 +287,8 @@ func FetchSchemeOfWork(context *gin.Context) {
 	var schemeOfWrkSubTopicInfo_ []responses2.SchemeOfWorkSubtopicInfo
 	if err := config.DB.
 		Where("scheme_of_work_number = ?", schemeOfWrkInfo.Number).
+		Preload("SubTopic.Topic.Strand").
+		Preload("SubTopic.Topic").
 		Preload("SubTopic").
 		Order("code asc").
 		Find(&schemeOfWrkSubTopicInfo).Error; err != nil {
@@ -266,14 +297,65 @@ func FetchSchemeOfWork(context *gin.Context) {
 	}
 
 	for _, subTopicList := range schemeOfWrkSubTopicInfo {
+
+		//fetch lesson plan
+		var lessonPlanInfo []models2.LessonPlan
+		var lessonPlanInfo_ []responses.LessonPlanResponseInfo
+		if err := config.DB.
+			Where("scheme_sub_topic_number = ?", subTopicList.Number).
+			Preload("Concept").
+			Order("code asc").
+			Find(&lessonPlanInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
+			return
+		}
+
+		for _, lessonPlanList := range lessonPlanInfo {
+
+			//fetch lesson plan steps
+			var lessonPlanStepsInfo []models2.LessonPlanSteps
+			var lessonPlanStepsInfo_ []responses.LessonPlanStepsInfo
+			//var lessonPlanInfo_ []responses.LessonPlanResponseInfo
+			if err := config.DB.
+				Where("lesson_plan_number = ?", lessonPlanList.Number).
+				Order("code asc").
+				Find(&lessonPlanStepsInfo).Error; err != nil {
+				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
+				return
+			}
+
+			for _, lessonPlanSteps := range lessonPlanStepsInfo {
+				lessonPlanStepsInfo_ = append(lessonPlanStepsInfo_, responses.LessonPlanStepsInfo{
+					Number:           lessonPlanSteps.Number,
+					Code:             lessonPlanSteps.Code,
+					Step:             lessonPlanSteps.Step,
+					LessonPlanNumber: lessonPlanSteps.LessonPlanNumber,
+				})
+			}
+
+			lessonPlanInfo_ = append(lessonPlanInfo_, responses.LessonPlanResponseInfo{
+				Number:                  lessonPlanList.Number,
+				LessonPlanConceptNumber: lessonPlanList.LessonPlanConceptNumber,
+				SchemeSubTopicNumber:    lessonPlanList.SchemeSubTopicNumber,
+				ConceptName:             lessonPlanList.Concept.Name,
+				Code:                    lessonPlanList.Code,
+				UserNumber:              lessonPlanList.UserNumber,
+				LessonPlanSteps:         lessonPlanStepsInfo_,
+			})
+		}
+
 		schemeOfWrkSubTopicInfo_ = append(schemeOfWrkSubTopicInfo_, responses2.SchemeOfWorkSubtopicInfo{
 			Number:             subTopicList.Number,
 			Code:               subTopicList.Code,
+			SortCode:           subTopicList.Code,
 			Name:               subTopicList.SubTopic.Name,
+			TopicName:          subTopicList.SubTopic.Topic.Name,
+			StrandName:         subTopicList.SubTopic.Topic.Strand.Name,
 			EstimatedTime:      subTopicList.EstimatedTime,
 			SchemeOfWorkNumber: subTopicList.SchemeOfWorkNumber,
 			SubtopicNumber:     subTopicList.SubtopicNumber,
 			UserNumber:         subTopicList.UserNumber,
+			LessonPlan:         lessonPlanInfo_,
 		})
 	}
 
@@ -282,6 +364,9 @@ func FetchSchemeOfWork(context *gin.Context) {
 		Name:                     schemeOfWrkInfo.Name,
 		Status:                   schemeOfWrkInfo.Status,
 		ClassNumber:              schemeOfWrkInfo.ClassNumber,
+		ClassName:                schemeOfWrkInfo.Class.Name,
+		SubjectNumber:            schemeOfWrkInfo.SubjectNumber,
+		SubjectName:              schemeOfWrkInfo.Subject.Name,
 		UserNumber:               schemeOfWrkInfo.UserNumber,
 		SchemeOfWorkSubtopicInfo: schemeOfWrkSubTopicInfo_,
 	}
