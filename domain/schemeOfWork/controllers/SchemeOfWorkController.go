@@ -303,6 +303,7 @@ func FetchSchemeOfWork(context *gin.Context) {
 		var lessonPlanInfo_ []responses.LessonPlanResponseInfo
 		if err := config.DB.
 			Where("scheme_sub_topic_number = ?", subTopicList.Number).
+			Preload("Concept").
 			Order("code asc").
 			Find(&lessonPlanInfo).Error; err != nil {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
@@ -310,12 +311,36 @@ func FetchSchemeOfWork(context *gin.Context) {
 		}
 
 		for _, lessonPlanList := range lessonPlanInfo {
+
+			//fetch lesson plan steps
+			var lessonPlanStepsInfo []models2.LessonPlanSteps
+			var lessonPlanStepsInfo_ []responses.LessonPlanStepsInfo
+			//var lessonPlanInfo_ []responses.LessonPlanResponseInfo
+			if err := config.DB.
+				Where("lesson_plan_number = ?", lessonPlanList.Number).
+				Order("code asc").
+				Find(&lessonPlanStepsInfo).Error; err != nil {
+				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
+				return
+			}
+
+			for _, lessonPlanSteps := range lessonPlanStepsInfo {
+				lessonPlanStepsInfo_ = append(lessonPlanStepsInfo_, responses.LessonPlanStepsInfo{
+					Number:           lessonPlanSteps.Number,
+					Code:             lessonPlanSteps.Code,
+					Step:             lessonPlanSteps.Step,
+					LessonPlanNumber: lessonPlanSteps.LessonPlanNumber,
+				})
+			}
+
 			lessonPlanInfo_ = append(lessonPlanInfo_, responses.LessonPlanResponseInfo{
 				Number:                  lessonPlanList.Number,
 				LessonPlanConceptNumber: lessonPlanList.LessonPlanConceptNumber,
 				SchemeSubTopicNumber:    lessonPlanList.SchemeSubTopicNumber,
+				ConceptName:             lessonPlanList.Concept.Name,
 				Code:                    lessonPlanList.Code,
 				UserNumber:              lessonPlanList.UserNumber,
+				LessonPlanSteps:         lessonPlanStepsInfo_,
 			})
 		}
 
