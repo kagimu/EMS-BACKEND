@@ -101,8 +101,8 @@ func NewLessonPlan(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		//context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Lesson plan"})
+		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Lesson plan"})
 		return
 	}
 

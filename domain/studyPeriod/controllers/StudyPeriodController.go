@@ -146,6 +146,7 @@ func NewStudyPeriod(context *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin()
 	number := uuid.NewV4().String()
 	///save user data
 	saveStudyPeriod := studyPeriodModel.StudyPeriod{
@@ -159,6 +160,22 @@ func NewStudyPeriod(context *gin.Context) {
 		LevelNumber:          levelNumber,
 	}
 	//config.DB.Save(&saveStudyPeriod)
+
+	if err := tx.Create(&saveStudyPeriod).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Study Period"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Study Period"})
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Study Period Successfully!", "data": saveStudyPeriod})
 }
