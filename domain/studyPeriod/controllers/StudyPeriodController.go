@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"github.com/gin-gonic/gin"
@@ -147,6 +148,31 @@ func NewStudyPeriod(context *gin.Context) {
 	}
 
 	tx := config.DB.Begin()
+
+	// create calendar event
+
+	var calendarEvent = eosModels.CalendarEvent{}
+
+	// Format the time as "15:04" (24-hour format)
+	startTime := startDate.Format("15:04")
+	endTime := endDate.Format("15:04")
+
+	calendarEvent.Number = uuid.NewV4().String()
+	calendarEvent.StartDate = startDate
+	calendarEvent.EndDate = endDate
+	calendarEvent.StartTime = startTime
+	calendarEvent.EndTime = endTime
+	calendarEvent.CalendarNumber = academicYearData.CalendarNumber
+	calendarEvent.Name = studyPeriodName
+
+	if err := tx.Create(&calendarEvent).Error; err != nil {
+
+		tx.Rollback()
+
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create calendar event"})
+		return
+	}
+
 	number := uuid.NewV4().String()
 	///save user data
 	saveStudyPeriod := studyPeriodModel.StudyPeriod{
@@ -158,6 +184,7 @@ func NewStudyPeriod(context *gin.Context) {
 		AcademicYearNumber:   academicYearNumber,
 		UserNumber:           userNumber,
 		LevelNumber:          levelNumber,
+		CalendarEventNumber:  calendarEvent.Number,
 	}
 	//config.DB.Save(&saveStudyPeriod)
 

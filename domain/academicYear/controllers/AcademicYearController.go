@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -116,12 +117,34 @@ func NewAcademicYear(context *gin.Context) {
 		//fmt.Println("Error:", err)
 		//return
 	}
+	config.DB.Begin()
+
+	// create EOS calendar
+	var generalCalendar = eosModels.GeneralCalendar{}
+
+	generalCalendar.Number = uuid.NewV4().String()
+	generalCalendar.EntityNumber = "TBD"
+	generalCalendar.StartDate = startDate
+	generalCalendar.EndDate = endDate
+	generalCalendar.Name = academicYearName
+	generalCalendar.UserNumber = userNumber
+	generalCalendar.Description = "Academic Year"
+
+	result := config.DB.Create(&generalCalendar)
+
+	if result.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create calendar with " + result.Error.Error()})
+		config.DB.Rollback()
+		return
+
+	}
 
 	number := uuid.NewV4().String()
 	///save user data
 	saveAcademicYear := academicYearModels.AcademicYear{
 		Number:                number,
 		Code:                  codeNo,
+		CalendarNumber:        generalCalendar.Number,
 		AcademicYearName:      academicYearName,
 		NoOfStudyPeriod:       int32(noOfStudyPeriodData),
 		AcademicYearStartDate: startDate,
@@ -129,9 +152,17 @@ func NewAcademicYear(context *gin.Context) {
 		UserNumber:            userNumber,
 		LevelNumber:           levelNumber,
 	}
-	config.DB.Save(&saveAcademicYear)
+	save := config.DB.Save(&saveAcademicYear)
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Concept Added Successfully!", "data": saveAcademicYear})
+	if save.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to save academic year"})
+		config.DB.Rollback()
+		return
+	}
+
+	config.DB.Commit()
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Academic year Added Successfully!", "data": saveAcademicYear})
 }
 
 func FetchAcademicYear(context *gin.Context) {
