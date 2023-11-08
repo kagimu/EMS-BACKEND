@@ -126,7 +126,7 @@ func GetCalendarDetails(ctx *gin.Context) {
 }
 
 func GetAllCalendars(ctx *gin.Context) {
-	var calendars []responses.Calendar = []responses.Calendar{}
+	var calendars []responses.Calendar
 	var generalCalendars []models.GeneralCalendar
 
 	err := config.DB.Find(&generalCalendars).Error
