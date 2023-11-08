@@ -12,6 +12,8 @@ type (
 		SubjectNumber            string                     `json:"subject_number"`
 		SubjectName              string                     `json:"subject_name"`
 		UserNumber               string                     `json:"user_number"`
+		AcademicYearNumber       string                     `json:"academic_year_number"`
+		AcademicYearName         string                     `json:"academic_year_name"`
 		SchemeOfWorkSubtopicInfo []SchemeOfWorkSubtopicInfo `json:"subtopic"`
 	}
 	SchemeOfWorkSubtopicInfo struct {

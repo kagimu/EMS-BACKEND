@@ -1,6 +1,7 @@
 package routes
 
 import (
+	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	"time"
 
@@ -126,7 +127,8 @@ func SetupRoute() *gin.Engine {
 
 		//adds academic year
 		main.POST("new-academic-year", academicYearController.NewAcademicYear)
-		main.GET("fetch-academic-year", academicYearController.FetchAcademicYear)
+		main.GET("fetch-academic-year", academicYearController.FetchAcademicYearInfo)
+		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
 
 		//adds study period
 		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
@@ -140,6 +142,9 @@ func SetupRoute() *gin.Engine {
 		//lesson notes
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
 		main.POST("new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+
+		//Student Admission
+		main.POST("new-student-details-admission", admissionController.NewStudentDetails)
 
 		//timetable routes
 		timetable := main.Group("/timetable")

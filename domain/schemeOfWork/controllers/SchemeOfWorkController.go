@@ -27,10 +27,11 @@ func NewSchemeOfWork(context *gin.Context) {
 	}
 
 	type SchemeOfWorkInfo struct {
-		Name          string             `json:"name"`
-		ClassNumber   string             `json:"class_number"`
-		SubjectNumber string             `json:"subject_number"`
-		SubtopicList  []SubtopicListInfo `json:"subtopicList"`
+		Name               string             `json:"name"`
+		ClassNumber        string             `json:"class_number"`
+		SubjectNumber      string             `json:"subject_number"`
+		AcademicYearNumber string             `json:"academic_year_number"`
+		SubtopicList       []SubtopicListInfo `json:"subtopicList"`
 	}
 
 	var schemeOfWorkInfo SchemeOfWorkInfo
@@ -43,6 +44,7 @@ func NewSchemeOfWork(context *gin.Context) {
 	name := schemeOfWorkInfo.Name
 	classNumber := schemeOfWorkInfo.ClassNumber
 	subjectNumber := schemeOfWorkInfo.SubjectNumber
+	academicYearNumber := schemeOfWorkInfo.AcademicYearNumber
 	subtopicList := schemeOfWorkInfo.SubtopicList
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -58,6 +60,11 @@ func NewSchemeOfWork(context *gin.Context) {
 
 	if subjectNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
+		return
+	}
+
+	if academicYearNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year is required!"})
 		return
 	}
 
@@ -81,6 +88,7 @@ func NewSchemeOfWork(context *gin.Context) {
 		Where("name = ?", name).
 		Where("class_number = ?", classNumber).
 		Where("subject_number = ?", subjectNumber).
+		Where("academic_year_number = ?", academicYearNumber).
 		First(&duplicateScheme).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
 		return
@@ -92,12 +100,13 @@ func NewSchemeOfWork(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save sheme of work data
 	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
-		Number:        number,
-		Name:          name,
-		Status:        "Pending",
-		ClassNumber:   classNumber,
-		SubjectNumber: subjectNumber,
-		UserNumber:    userNumber,
+		Number:             number,
+		Name:               name,
+		Status:             "Pending",
+		ClassNumber:        classNumber,
+		SubjectNumber:      subjectNumber,
+		AcademicYearNumber: academicYearNumber,
+		UserNumber:         userNumber,
 	}
 
 	if err := tx.Create(&saveSchemeOfWork).Error; err != nil {
@@ -258,6 +267,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 
 func FetchSchemeOfWork(context *gin.Context) {
 
+	academicYearNumber := context.Query("academic_year_number")
 	classNumber := context.Query("class_number")
 	subjectNumber := context.Query("subject_number")
 
@@ -273,8 +283,10 @@ func FetchSchemeOfWork(context *gin.Context) {
 
 	var schemeOfWrkInfo schemeOfWorkModel.SchemeOfWork
 	if err := config.DB.
+		Where("academic_year_number = ?", academicYearNumber).
 		Where("class_number = ?", classNumber).
 		Where("subject_number = ?", subjectNumber).
+		Preload("AcademicYear").
 		Preload("Class").
 		Preload("Subject").
 		Order("created_at desc").
@@ -368,6 +380,8 @@ func FetchSchemeOfWork(context *gin.Context) {
 		SubjectNumber:            schemeOfWrkInfo.SubjectNumber,
 		SubjectName:              schemeOfWrkInfo.Subject.Name,
 		UserNumber:               schemeOfWrkInfo.UserNumber,
+		AcademicYearNumber:       schemeOfWrkInfo.AcademicYearNumber,
+		AcademicYearName:         schemeOfWrkInfo.AcademicYear.AcademicYearName,
 		SchemeOfWorkSubtopicInfo: schemeOfWrkSubTopicInfo_,
 	}
 
