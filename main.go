@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"log"
 	"os"
@@ -110,6 +111,7 @@ func main() {
 		&schemeOfWorkmodel.SchemeOfWorkSubTopic{},
 		&lessonPlanModel.LessonPlan{},
 		&lessonPlanModel.LessonPlanSteps{},
+		&studentDetailsModels.StudentDetail{},
 	)
 	if errMigrate != nil {
 		return

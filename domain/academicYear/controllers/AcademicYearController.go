@@ -6,6 +6,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -205,46 +207,58 @@ func FetchAcademicYearInfo(context *gin.Context) {
 
 func FetchAcademicByClass(context *gin.Context) {
 
-	/*	classNumber := context.Query("class_number")
+	classNumber := context.Query("class_number")
 
-		if classNumber == "" {
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Class number is required!"})
-			return
-		}
-
-		var classes classModels.Class
-		if err := config.DB.
-			Where("number = ?", classNumber).
-			First(&classes).Error; err != nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
-			return
-		}*/
-
-	var academicYearInfo []academicYearModels.AcademicYear
-	var academicYearInfo_ []responses.AcademicYearListByClass
-	if err := config.DB.
-		//Select("name", "number").
-		//Where("level_number = ?", levelNumber).
-		Preload("Level").
-		Order("code asc").
-		Find(&academicYearInfo).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class number is required!"})
 		return
 	}
 
-	// Populate the selected columns from the fetched data
-	for _, academicList := range academicYearInfo {
-		academicYearInfo_ = append(academicYearInfo_, responses.AcademicYearListByClass{
-			Number:                academicList.Number,
-			Code:                  academicList.Code,
-			AcademicYearName:      academicList.AcademicYearName,
-			NoOfStudyPeriod:       academicList.NoOfStudyPeriod,
-			AcademicYearStartDate: (academicList.AcademicYearStartDate).Format("2-Jan-2006 15:04:05"),
-			AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
-			UserNumber:            academicList.UserNumber,
-			LevelNumber:           academicList.LevelNumber,
-			LevelName:             academicList.Level.Name,
-		})
+	var classes classModels.Class
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		First(&classes).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
+	var levelsInfo []campusModels.Level
+	if err := config.DB.
+		Where("name = ?", classes.Level).
+		Find(&levelsInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}
+
+	var academicYearInfo_ []responses.AcademicYearListByClass
+
+	for _, lvlList := range levelsInfo {
+
+		var academicYearInfo []academicYearModels.AcademicYear
+		if err := config.DB.
+			//Select("name", "number").
+			Where("level_number = ?", lvlList.Number).
+			Preload("Level").
+			Order("code asc").
+			Find(&academicYearInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
+			return
+		}
+
+		// Populate the selected columns from the fetched data
+		for _, academicList := range academicYearInfo {
+			academicYearInfo_ = append(academicYearInfo_, responses.AcademicYearListByClass{
+				Number:                academicList.Number,
+				Code:                  academicList.Code,
+				AcademicYearName:      academicList.AcademicYearName,
+				NoOfStudyPeriod:       academicList.NoOfStudyPeriod,
+				AcademicYearStartDate: (academicList.AcademicYearStartDate).Format("2-Jan-2006 15:04:05"),
+				AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
+				UserNumber:            academicList.UserNumber,
+				LevelNumber:           academicList.LevelNumber,
+				LevelName:             academicList.Level.Name,
+			})
+		}
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": academicYearInfo_})
