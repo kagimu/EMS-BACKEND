@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	topicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -99,15 +100,29 @@ func FetchSubject(context *gin.Context) {
 	}*/
 
 	var subjects []subjectModel.Subject
+	var subjects_ []responses.SubjectInfoList
 	if err := config.DB.
 		Scopes(subjectCluster(subjectClusterNumber)).
+		Preload("SubjectCluster").
 		Order("code asc").
 		Find(&subjects).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjects})
+	for _, item := range subjects {
+		subjects_ = append(subjects_, responses.SubjectInfoList{
+			Number:               item.Number,
+			Name:                 item.Name,
+			Code:                 item.Code,
+			UserNumber:           item.UserNumber,
+			SubjectClusterNumber: item.SubjectClusterNumber,
+			SubjectClusterName:   item.SubjectCluster.Name,
+		})
+
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjects_})
 }
 
 func subjectCluster(subjectClusterNumber string) func(db *gorm.DB) *gorm.DB {
