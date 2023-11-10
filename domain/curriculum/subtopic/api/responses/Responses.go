@@ -9,5 +9,8 @@ type (
 		UserNumber    string `json:"user_number"`
 		EstimatedTime int64  `json:"estimated_time"`
 		TopicNumber   string `json:"topic_number"`
+		TopicName     string `json:"topic_name"`
+		StrandNumber  string `json:"strand_number"`
+		StrandName    string `json:"strand_name"`
 	}
 )

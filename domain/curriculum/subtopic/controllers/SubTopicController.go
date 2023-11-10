@@ -176,6 +176,9 @@ func FetchSubTopicByClass(context *gin.Context) {
 				UserNumber:    subtopicList.UserNumber,
 				EstimatedTime: subtopicList.EstimatedTime,
 				TopicNumber:   subtopicList.TopicNumber,
+				TopicName:     subtopicList.Topic.Name,
+				StrandNumber:  subtopicList.Topic.Strand.Number,
+				StrandName:    subtopicList.Topic.Strand.Name,
 			})
 		}
 	}
