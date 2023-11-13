@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/api/responses"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -100,21 +101,34 @@ func FetchTopic(context *gin.Context) {
 
 	strandNumber := context.Query("strand_number")
 
-	/*	if strandNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
-		return
-	}*/
-
 	var topic []models3.Topic
+	var topic_ []responses.TopicDataList
+
 	if err := config.DB.
 		Scopes(strand(strandNumber)).
+		Preload("Strand.Subject").
+		Preload("Strand").
 		Order("code asc").
 		Find(&topic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No topic found!"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": topic})
+	for _, list := range topic {
+		topic_ = append(topic_, responses.TopicDataList{
+			Number:        list.Number,
+			Name:          list.Name,
+			Code:          list.Code,
+			UserNumber:    list.UserNumber,
+			ClassNumber:   list.ClassNumber,
+			StrandNumber:  list.StrandNumber,
+			StrandName:    list.Strand.Name,
+			SubjectNumber: list.Strand.Subject.Number,
+			SubjectName:   list.Strand.Subject.Name,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": topic_})
 }
 
 func strand(strandNumber string) func(db *gorm.DB) *gorm.DB {

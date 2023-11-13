@@ -107,15 +107,13 @@ func FetchSubTopic(context *gin.Context) {
 
 	topicNumber := context.Query("topic_number")
 
-	/*if topicNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Topic is required!"})
-		return
-	}*/
-
 	var subtopic []models2.SubTopic
 	var subTopicInfo_ []responses.SubTopicList
 	if err := config.DB.
 		Scopes(topic(topicNumber)).
+		Preload("Topic.Strand.Subject").
+		Preload("Topic.Strand").
+		Preload("Topic").
 		Order("code asc").
 		Find(&subtopic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
@@ -131,6 +129,11 @@ func FetchSubTopic(context *gin.Context) {
 			UserNumber:    subtopicList.UserNumber,
 			EstimatedTime: subtopicList.EstimatedTime,
 			TopicNumber:   subtopicList.TopicNumber,
+			TopicName:     subtopicList.Topic.Name,
+			StrandNumber:  subtopicList.Topic.Strand.SubjectNumber,
+			StrandName:    subtopicList.Topic.Strand.Name,
+			SubjectNumber: subtopicList.Topic.Strand.Subject.Number,
+			SubjectName:   subtopicList.Topic.Strand.Subject.Name,
 		})
 	}
 

@@ -92,15 +92,14 @@ func FetchConcept(context *gin.Context) {
 
 	subtopicNumber := context.Query("sub_topic_number")
 
-	/*	if subtopicNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic is required!"})
-		return
-	}*/
-
 	var concept []models3.Concept
 	var concept_ []responses.ConceptList
 	if err := config.DB.
 		Scopes(subTopic(subtopicNumber)).
+		Preload("SubTopic.Topic.Strand.Subject").
+		Preload("SubTopic.Topic.Strand").
+		Preload("SubTopic.Topic").
+		Preload("SubTopic").
 		Order("code asc").
 		Find(&concept).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Concept found!"})
@@ -114,6 +113,13 @@ func FetchConcept(context *gin.Context) {
 			Code:           list.Code,
 			UserNumber:     list.UserNumber,
 			SubTopicNumber: list.SubTopicNumber,
+			SubTopicName:   list.SubTopic.Name,
+			TopicNumber:    list.SubTopic.Topic.Number,
+			TopicName:      list.SubTopic.Topic.Name,
+			StrandNumber:   list.SubTopic.Topic.Strand.Number,
+			StrandName:     list.SubTopic.Topic.Strand.Name,
+			SubjectNumber:  list.SubTopic.Topic.Strand.Subject.Number,
+			SubjectName:    list.SubTopic.Topic.Strand.Subject.Name,
 		})
 	}
 
