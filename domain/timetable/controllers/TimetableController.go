@@ -6,6 +6,7 @@ import (
 	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	subjectModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
@@ -237,6 +238,7 @@ func CreateStudyTimetable(ctx *gin.Context) {
 
 	StudyTimetable.Number = uuid.NewV4().String()
 	StudyTimetable.UserNumber = ctx.GetHeader("User-Number")
+	StudyTimetable.Status = constants.STATUS_PENDING
 	err = config.DB.Create(&StudyTimetable).Error
 
 	if err != nil {
