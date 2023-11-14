@@ -4,6 +4,7 @@ import (
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"gorm.io/gorm"
 )
@@ -28,10 +29,11 @@ type StudyTimetablePeriods struct {
 
 type StudyTimetable struct {
 	gorm.Model
-	Number         string `json:"number" gorm:"size:36;unique;not null"`
-	CalendarNumber string `json:"calendar_number" gorm:"size:36;not null"`
-	Status         string `json:"status" gorm:"size:36;not null"`
-	UserNumber     string `json:"user_number" gorm:"size:36;not null"`
+	Number            string             `json:"number" gorm:"size:36;unique;not null"`
+	StudyPeriodNumber string             `json:"study_period_number" gorm:"size:36;not null"`
+	Status            string             `json:"status" gorm:"size:36;not null"`
+	UserNumber        string             `json:"user_number" gorm:"size:36;not null"`
+	StudyPeriod       models.StudyPeriod `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 type TimetableSlots struct {
