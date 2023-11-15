@@ -8,3 +8,7 @@ type TimetableRequest struct {
 	Day           string `json:"day"`
 	CampusNumber  string `json:"campus_number"`
 }
+
+type StudyTimetableRequest struct {
+	StudyPeriodNumber string `json:"study_period_number"`
+}

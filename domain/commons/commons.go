@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+type Constants struct {
+}
+
 func DeleteFileFromPath(path string, context *gin.Context) {
 	//path := "/fileRepo/excelFile/" + pdfDel.FileName
 	// detect file if it exists

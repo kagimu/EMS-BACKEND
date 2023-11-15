@@ -1,9 +1,12 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	subjectModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
@@ -220,3 +223,29 @@ func CreateGeneralCalendar(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
 }*/
+
+func CreateStudyTimetable(ctx *gin.Context) {
+
+	var request = requests.StudyTimetableRequest{}
+	var StudyTimetable = models.StudyTimetable{}
+
+	err := ctx.Bind(&request)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Failed to unwrap request"))
+		return
+	}
+
+	StudyTimetable.Number = uuid.NewV4().String()
+	StudyTimetable.UserNumber = ctx.GetHeader("User-Number")
+	StudyTimetable.Status = constants.STATUS_PENDING
+	err = config.DB.Create(&StudyTimetable).Error
+
+	if err != nil {
+		fmt.Println("Error", err.Error())
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Failed to save timetable"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, commons.Feedback("Timetable added successfully"))
+}
