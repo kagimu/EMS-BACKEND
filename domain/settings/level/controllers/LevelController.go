@@ -94,14 +94,14 @@ func NewLevel(context *gin.Context) {
 		tx.Rollback()
 		// Handle or return the error as needed
 		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create  Student details"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create class"})
 		return
 	}
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add student details"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add class"})
 		return
 	}
 
