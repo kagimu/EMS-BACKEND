@@ -37,6 +37,11 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
 		return
@@ -76,6 +81,8 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
+	// Begin the transaction
+	tx := config.DB.Begin()
 	number := uuid.NewV4().String()
 	///save user data
 	saveClass := models.Class{
@@ -83,10 +90,25 @@ func NewClass(context *gin.Context) {
 		Name:         name,
 		Abbreviation: abbreviation,
 		UserNumber:   userNumber,
-		Level:        level,
+		LevelNumber:  level,
 		Code:         codeNo,
 	}
-	config.DB.Save(&saveClass)
+
+	if err := tx.Create(&saveClass).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create class"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add class"})
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
 }

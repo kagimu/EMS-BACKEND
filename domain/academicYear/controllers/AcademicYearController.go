@@ -224,7 +224,7 @@ func FetchAcademicByClass(context *gin.Context) {
 
 	var levelsInfo []campusModels.Level
 	if err := config.DB.
-		Where("name = ?", classes.Level).
+		Where("name = ?", classes.LevelNumber).
 		Find(&levelsInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
 		return
