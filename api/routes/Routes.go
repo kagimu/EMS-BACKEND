@@ -3,6 +3,7 @@ package routes
 import (
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
+	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
@@ -85,6 +86,10 @@ func SetupRoute() *gin.Engine {
 		main.GET("campus-info", controllers.CampusInfo)
 		main.GET("level", controllers.FetchLevel)
 		main.GET("campus-level", controllers.FetchCampusLevel)
+
+		//level
+		main.POST("new-level", learningLevelControllers.NewLevel)
+		main.GET("fetch-level", learningLevelControllers.FetchLearningLevel)
 
 		//	manage class
 		main.POST("new-class", classController.NewClass)

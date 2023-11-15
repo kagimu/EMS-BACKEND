@@ -5,6 +5,7 @@ import (
 	"fmt"
 	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
+	learningLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"log"
 	"os"
 
@@ -81,6 +82,7 @@ func main() {
 		&authModels.Contact{},
 		&authModels.PasswordReset{},
 		&authModels.UserPassword{},
+		&learningLevelModels.LearningLevel{},
 		&schoolModels.School{},
 		&models.Campus{},
 		&models.Level{},
