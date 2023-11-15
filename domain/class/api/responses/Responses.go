@@ -12,4 +12,21 @@ type (
 		StreamNumber string `json:"stream_number"`
 		Name         string `json:"name"`
 	}
+
+	ClassDataList struct {
+		Number       string `json:"number"`
+		Name         string `json:"name"`
+		Code         int64  `json:"code"`
+		Abbreviation string `json:"abbreviation"`
+		UserNumber   string `json:"user_number"`
+		LevelNumber  string `json:"level_number"`
+	}
+
+	LearningLevelDataList struct {
+		Number        string          `json:"number"`
+		Name          string          `json:"name"`
+		Code          int64           `json:"code"`
+		UserNumber    string          `json:"user_number"`
+		ClassDataList []ClassDataList `json:"class"`
+	}
 )

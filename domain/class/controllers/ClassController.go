@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -70,6 +71,15 @@ func NewClass(context *gin.Context) {
 		First(&userData)
 	if validateUser.Error != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateCode models.Class
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("level_number = ?", level).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
 	}
 
@@ -206,16 +216,51 @@ func FetchClasses(context *gin.Context) {
 
 	level := context.Query("level")
 
-	var classes []models.Class
+	var levels []levelModels.LearningLevel
+	var levels_ []responses.LearningLevelDataList
 	if err := config.DB.
-		Scopes(levelFilter(level)).
+		Scopes(levelDataFilter(level)).
 		Order("code asc").
-		Find(&classes).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		Find(&levels).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+	for _, list := range levels {
+
+		var classes []models.Class
+		var classes_ []responses.ClassDataList
+		if err := config.DB.
+			Where("level_number = ?", list.Number).
+			Order("code asc").
+			Find(&classes).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+			return
+		}
+
+		if len(classes) > 0 {
+			for _, lst := range classes {
+				classes_ = append(classes_, responses.ClassDataList{
+					Number:       lst.Number,
+					Name:         lst.Name,
+					Code:         lst.Code,
+					Abbreviation: lst.Abbreviation,
+					UserNumber:   lst.UserNumber,
+					LevelNumber:  lst.LevelNumber,
+				})
+			}
+
+			levels_ = append(levels_, responses.LearningLevelDataList{
+				Number:        list.Number,
+				Name:          list.Name,
+				Code:          list.Code,
+				UserNumber:    list.UserNumber,
+				ClassDataList: classes_,
+			})
+		}
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levels_})
 }
 
 func FetchClassesToAdd(context *gin.Context) {
@@ -240,6 +285,15 @@ func FetchClassesToAdd(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+}
+
+func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if level != "" {
+			return db.Where("number = ?", level)
+		}
+		return db
+	}
 }
 
 func levelFilter(level string) func(db *gorm.DB) *gorm.DB {
