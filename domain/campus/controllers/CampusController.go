@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/gin-gonic/gin"
@@ -301,6 +302,7 @@ func FetchLevel(context *gin.Context) {
 	var campus campusModel.Campus
 	if err := config.DB.
 		Where("number = ?", campusNumber).
+		Preload("Level.LearningLevel").
 		Preload("Level").
 		Order("created_at desc").
 		First(&campus).Error; err != nil {
@@ -308,7 +310,28 @@ func FetchLevel(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus})
+	var level_ []responses.CampusLevelList
+	for _, lvl := range campus.Level {
+		level_ = append(level_, responses.CampusLevelList{
+			Number:              lvl.Number,
+			LearningLevelNumber: lvl.LearningLevelNumber,
+			LevelName:           lvl.LearningLevel.Name,
+			CampusNumber:        lvl.CampusNumber,
+		})
+	}
+
+	campus_ := responses.CampusDataList{
+		Number:       campus.Number,
+		Name:         campus.Name,
+		Phone:        campus.Phone,
+		Email:        campus.Email,
+		Location:     campus.Location,
+		UserNumber:   campus.UserNumber,
+		SchoolNumber: campus.SchoolNumber,
+		Level:        level_,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
 
 }
 
