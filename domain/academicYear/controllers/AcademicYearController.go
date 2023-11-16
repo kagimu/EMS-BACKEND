@@ -256,7 +256,7 @@ func FetchAcademicByClass(context *gin.Context) {
 				AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
 				UserNumber:            academicList.UserNumber,
 				LevelNumber:           academicList.LevelNumber,
-				LevelName:             academicList.Level.Name,
+				LevelName:             academicList.Level.LearningLevelNumber,
 			})
 		}
 	}

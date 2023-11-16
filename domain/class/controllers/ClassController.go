@@ -277,7 +277,7 @@ func FetchClassesToAdd(context *gin.Context) {
 
 	var classes []models.Class
 	if err := config.DB.
-		Scopes(levelFilter(levelsInfo.Name)).
+		Scopes(levelFilter(levelsInfo.LearningLevelNumber)).
 		Order("created_at desc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
