@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -267,17 +266,9 @@ func FetchClassesToAdd(context *gin.Context) {
 
 	level := context.Query("level")
 
-	var levelsInfo campusModels.Level
-	if err := config.DB.
-		Where("number = ?", level).
-		First(&levelsInfo).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
-		return
-	}
-
 	var classes []models.Class
 	if err := config.DB.
-		Scopes(levelFilter(levelsInfo.LearningLevelNumber)).
+		Scopes(levelFilter(level)).
 		Order("created_at desc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
@@ -299,7 +290,7 @@ func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
 func levelFilter(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if level != "" {
-			return db.Where("level like ?", "%"+level+"%")
+			return db.Where("level_number = ?", level)
 		}
 		return db
 	}
