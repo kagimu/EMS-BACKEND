@@ -349,6 +349,7 @@ func FetchCampusLevel(context *gin.Context) {
 	if err := config.DB.
 		//Select("name", "number").
 		Where("campus_number = ?", campusNumber).
+		Preload("LearningLevel").
 		Order("created_at desc").
 		Find(&levelInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found"})
@@ -358,7 +359,7 @@ func FetchCampusLevel(context *gin.Context) {
 	// Populate the selected columns from the fetched data
 	for _, level := range levelInfo {
 		levelInfo_ = append(levelInfo_, campusModel.LevelDataInfo{
-			Name:   level.LearningLevelNumber,
+			Name:   level.LearningLevel.Name,
 			Number: level.Number,
 		})
 	}

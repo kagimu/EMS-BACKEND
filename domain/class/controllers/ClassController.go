@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -128,6 +129,7 @@ func AddClassToLevel(context *gin.Context) {
 		ClassNumber  string `json:"class_number"`
 		CampusNumber string `json:"campus_number"`
 		LevelNumber  string `json:"level_number"`
+		Code         int64  `json:"class_code"`
 	}
 
 	var classInfo ClassInfo
@@ -140,6 +142,7 @@ func AddClassToLevel(context *gin.Context) {
 	classNumber := classInfo.ClassNumber
 	campusNumber := classInfo.CampusNumber
 	levelNumber := classInfo.LevelNumber
+	code := classInfo.Code
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -193,8 +196,6 @@ func AddClassToLevel(context *gin.Context) {
 			Where("level_number = ?", levelNumber).
 			Delete(&duplicateClass)
 		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
-
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists"})
 		return
 	}
 
@@ -205,6 +206,7 @@ func AddClassToLevel(context *gin.Context) {
 		CampusNumber: campusNumber,
 		LevelNumber:  levelNumber,
 		UserNumber:   userNumber,
+		Code:         code,
 	}
 	config.DB.Save(&saveClass)
 
@@ -266,10 +268,18 @@ func FetchClassesToAdd(context *gin.Context) {
 
 	level := context.Query("level")
 
+	var levelData models2.Level
+	if err := config.DB.
+		Where("number = ?", level).
+		First(&levelData).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}
+
 	var classes []models.Class
 	if err := config.DB.
-		Scopes(levelFilter(level)).
-		Order("created_at desc").
+		Scopes(levelFilter(levelData.LearningLevelNumber)).
+		Order("code asc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
@@ -319,7 +329,7 @@ func FetchClassLevel(context *gin.Context) {
 		Where("campus_number = ?", campusNumber).
 		Preload("Streams").
 		Preload("Class").
-		Order("created_at desc").
+		Order("code asc").
 		Find(&classLevel).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
@@ -327,8 +337,6 @@ func FetchClassLevel(context *gin.Context) {
 
 	for _, lst := range classLevel {
 		var stream_ []responses.StreamInfo
-		/*var streams []models.Stream
-		config.DB.Where("class_level_number = ?", lst.Number).Find(&streams)*/
 
 		for _, list := range lst.Streams {
 			stream_ = append(stream_, responses.StreamInfo{
