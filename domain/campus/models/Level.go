@@ -11,7 +11,7 @@ type (
 		Number              string                `json:"number" gorm:"size:36;unique;not null"`
 		LearningLevelNumber string                `json:"learning_level_number" gorm:"size:36;not null"`
 		CampusNumber        string                `json:"campus_number" gorm:"size:36;not null"`
-		User                models2.LearningLevel `gorm:"foreignKey:LearningLevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		LearningLevel       models2.LearningLevel `gorm:"foreignKey:LearningLevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 	LevelDataInfo struct {
 		Name   string `json:"name"`
