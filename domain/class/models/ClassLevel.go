@@ -14,6 +14,7 @@ type (
 		ClassNumber  string         `json:"class_number" gorm:"size:36;not null"`
 		CampusNumber string         `json:"campus_number" gorm:"size:36;not null"`
 		LevelNumber  string         `json:"level_number" gorm:"size:36;not null"`
+		Code         int64          `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
 		UserNumber   string         `json:"user_number" gorm:"size:36;not null"`
 		Class        Class          `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Campus       models2.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
