@@ -11,7 +11,7 @@ func FetchLearningAreaCurriculum(learningAreaNumber string) ([]learningAreaModel
 	var learningAreas []learningAreaModels.LearningArea
 	var errInfo string
 	if err := config.DB.
-		Scopes(filterLearningArea(learningAreaNumber)).
+		Scopes(scopeFilter("number", learningAreaNumber)).
 		Order("code asc").
 		Find(&learningAreas).Error; err != nil {
 		errInfo = "Learning area not found!!!"
@@ -19,23 +19,23 @@ func FetchLearningAreaCurriculum(learningAreaNumber string) ([]learningAreaModel
 	return learningAreas, errInfo
 }
 
-func filterLearningArea(learningAreaNumber string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if learningAreaNumber != "" {
-			return db.Where("number = ?", learningAreaNumber)
-		}
-		return db
-	}
-}
-
 func FetchSubjectClusterCurriculum(learningAreaNumber string) ([]models3.SubjectCluster, string) {
 	var subjectCluster []models3.SubjectCluster
 	var errInfo string
 	if err := config.DB.
-		Where("learning_area_number = ?", learningAreaNumber).
+		Scopes(scopeFilter("learning_area_number", learningAreaNumber)).
 		Order("code asc").
 		Find(&subjectCluster).Error; err != nil {
 		errInfo = "No Subject Cluster!"
 	}
 	return subjectCluster, errInfo
+}
+
+func scopeFilter(tableType, number string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if number != "" {
+			return db.Where(tableType+" = ?", number)
+		}
+		return db
+	}
 }
