@@ -249,3 +249,25 @@ func CreateStudyTimetable(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, commons.Feedback("Timetable added successfully"))
 }
+
+func FetchStudyTimetables(ctx *gin.Context) {
+
+	var timetables []models.StudyTimetable
+	studyTimetables := []responses.StudyTimetables{}
+
+	err := config.DB.Find(&timetables).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Failed to fetch timetables"))
+		return
+	}
+
+	for _, timetable := range timetables {
+		studyTimetables = append(studyTimetables, responses.StudyTimetables{
+			Number: timetable.Number,
+			Name:   timetable.Name,
+			Status: timetable.Status,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, studyTimetables)
+}

@@ -30,6 +30,7 @@ type StudyTimetablePeriods struct {
 type StudyTimetable struct {
 	gorm.Model
 	Number            string             `json:"number" gorm:"size:36;unique;not null"`
+	Name              string             `json:"name"`
 	StudyPeriodNumber string             `json:"study_period_number" gorm:"size:36;not null"`
 	Status            string             `json:"status" gorm:"size:36;not null"`
 	UserNumber        string             `json:"user_number" gorm:"size:36;not null"`
