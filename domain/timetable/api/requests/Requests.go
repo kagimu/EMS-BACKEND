@@ -11,4 +11,5 @@ type TimetableRequest struct {
 
 type StudyTimetableRequest struct {
 	StudyPeriodNumber string `json:"study_period_number"`
+	Name              string `json:"name"`
 }

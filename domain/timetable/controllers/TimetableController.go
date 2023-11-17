@@ -239,6 +239,8 @@ func CreateStudyTimetable(ctx *gin.Context) {
 	StudyTimetable.Number = uuid.NewV4().String()
 	StudyTimetable.UserNumber = ctx.GetHeader("User-Number")
 	StudyTimetable.Status = constants.STATUS_PENDING
+	StudyTimetable.StudyPeriodNumber = request.StudyPeriodNumber
+	StudyTimetable.Name = request.Name
 	err = config.DB.Create(&StudyTimetable).Error
 
 	if err != nil {
