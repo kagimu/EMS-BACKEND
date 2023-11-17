@@ -350,7 +350,7 @@ func FetchCampusLevel(context *gin.Context) {
 		//Select("name", "number").
 		Where("campus_number = ?", campusNumber).
 		Preload("LearningLevel").
-		Order("code asc").
+		Order("created_at desc").
 		Find(&levelInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found"})
 		return
