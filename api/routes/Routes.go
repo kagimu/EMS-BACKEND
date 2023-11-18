@@ -112,6 +112,7 @@ func SetupRoute() *gin.Engine {
 		//subject cluster
 		main.POST("new-subject-cluster", subjectClusterController.NewSubjectCluster)
 		main.GET("subject-clusters", subjectClusterController.FetchSubjectCluster)
+		main.GET("subject-cluster-filter", subjectClusterController.FetchSubjectClusterList)
 
 		//strand
 		main.POST("new-strand", strandController.NewStrand)
