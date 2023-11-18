@@ -4,6 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
+	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"gorm.io/gorm"
 )
 
@@ -19,16 +20,29 @@ func FetchLearningAreaCurriculum(learningAreaNumber string) ([]learningAreaModel
 	return learningAreas, errInfo
 }
 
-func FetchSubjectClusterCurriculum(learningAreaNumber string) ([]models3.SubjectCluster, string) {
+func FetchSubjectClusterCurriculum(learningAreaNumber string, subjectClusterNumber string) ([]models3.SubjectCluster, string) {
 	var subjectCluster []models3.SubjectCluster
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("number", subjectClusterNumber)).
 		Scopes(scopeFilter("learning_area_number", learningAreaNumber)).
 		Order("code asc").
 		Find(&subjectCluster).Error; err != nil {
 		errInfo = "No Subject Cluster!"
 	}
 	return subjectCluster, errInfo
+}
+
+func FetchSubjectCurriculum(subjectClusterNumber string) ([]subjectModel.Subject, string) {
+	var subjects []subjectModel.Subject
+	var errInfo string
+	if err := config.DB.
+		Scopes(scopeFilter("subject_cluster_number", subjectClusterNumber)).
+		Order("code asc").
+		Find(&subjects).Error; err != nil {
+		errInfo = "No Subject!"
+	}
+	return subjects, errInfo
 }
 
 func scopeFilter(tableType, number string) func(db *gorm.DB) *gorm.DB {

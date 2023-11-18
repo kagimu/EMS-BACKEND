@@ -101,6 +101,7 @@ func NewSubjectCluster(context *gin.Context) {
 func FetchSubjectCluster(context *gin.Context) {
 
 	learningAreaNumber := context.Query("learning_area_number")
+
 	//fetch learning area
 	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum(learningAreaNumber)
 	if err != "" {
@@ -110,34 +111,34 @@ func FetchSubjectCluster(context *gin.Context) {
 
 	var learningAreas_ []responses2.LearningAreaInfoData
 
-	for _, lst := range learningAreaResp {
+	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lst.Number)
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, "")
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
 		}
 
 		var subjectCluster_ []responses.SubjectClusterInfo
-		if len(subjectClusterResp) > 0 {
-			for _, lst := range subjectClusterResp {
-				subjectCluster_ = append(subjectCluster_, responses.SubjectClusterInfo{
-					Number:             lst.Number,
-					Name:               lst.Name,
-					Code:               lst.Code,
-					LearningAreaNumber: lst.LearningAreaNumber,
-				})
-			}
-
-			learningAreas_ = append(learningAreas_, responses2.LearningAreaInfoData{
-				Number:         lst.Number,
-				Name:           lst.Name,
-				Code:           lst.Code,
-				UserNumber:     lst.UserNumber,
-				SubjectCluster: subjectCluster_,
+		//if len(subjectClusterResp) > 0 {
+		for _, lstSC := range subjectClusterResp {
+			subjectCluster_ = append(subjectCluster_, responses.SubjectClusterInfo{
+				Number:             lstSC.Number,
+				Name:               lstSC.Name,
+				Code:               lstSC.Code,
+				LearningAreaNumber: lstSC.LearningAreaNumber,
 			})
 		}
+
+		learningAreas_ = append(learningAreas_, responses2.LearningAreaInfoData{
+			Number:         lstLA.Number,
+			Name:           lstLA.Name,
+			Code:           lstLA.Code,
+			UserNumber:     lstLA.UserNumber,
+			SubjectCluster: subjectCluster_,
+		})
+		//}
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})

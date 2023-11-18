@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -79,13 +81,22 @@ func NewLearningArea(context *gin.Context) {
 
 func FetchLearningArea(context *gin.Context) {
 
-	var learningAreas []models2.LearningArea
-	if err := config.DB.
-		Order("code asc").
-		Find(&learningAreas).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Learning Area!"})
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas})
+	var learningAreas_ []responses2.LearningAreaInfoData
+
+	for _, lst := range learningAreaResp {
+		learningAreas_ = append(learningAreas_, responses2.LearningAreaInfoData{
+			Number:     lst.Number,
+			Name:       lst.Name,
+			Code:       lst.Code,
+			UserNumber: lst.UserNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})
 }

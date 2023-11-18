@@ -5,12 +5,14 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
+	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
 	topicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 )
@@ -92,46 +94,70 @@ func NewSubject(context *gin.Context) {
 
 func FetchSubject(context *gin.Context) {
 
+	//learningAreaNumber := context.Query("learning_area_number")
 	subjectClusterNumber := context.Query("subject_cluster_number")
 
-	/*	if subjectClusterNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject cluster is required!"})
-		return
-	}*/
-
-	var subjects []subjectModel.Subject
-	var subjects_ []responses.SubjectInfoList
-	if err := config.DB.
-		Scopes(subjectCluster(subjectClusterNumber)).
-		Preload("SubjectCluster").
-		Order("code asc").
-		Find(&subjects).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
+	//fetch learning area
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
 	}
 
-	for _, item := range subjects {
-		subjects_ = append(subjects_, responses.SubjectInfoList{
-			Number:               item.Number,
-			Name:                 item.Name,
-			Code:                 item.Code,
-			UserNumber:           item.UserNumber,
-			SubjectClusterNumber: item.SubjectClusterNumber,
-			SubjectClusterName:   item.SubjectCluster.Name,
+	var learningAreas_ []responses2.LearningAreaInfoData
+
+	for _, lstLA := range learningAreaResp {
+
+		//fetch subject cluster
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
+		if err != "" {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+			return
+		}
+
+		var subjectCluster_ []responses3.SubjectClusterInfo
+		for _, lstSC := range subjectClusterResp {
+
+			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number)
+			if err != "" {
+				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+				return
+			}
+
+			var subjects_ []responses.SubjectInfoList
+			for _, item := range subjectResp {
+				subjects_ = append(subjects_, responses.SubjectInfoList{
+					Number:               item.Number,
+					Name:                 item.Name,
+					Code:                 item.Code,
+					UserNumber:           item.UserNumber,
+					SubjectClusterNumber: item.SubjectClusterNumber,
+				})
+
+			}
+
+			subjectCluster_ = append(subjectCluster_, responses3.SubjectClusterInfo{
+				Number:             lstSC.Number,
+				Name:               lstSC.Name,
+				Code:               lstSC.Code,
+				LearningAreaNumber: lstSC.LearningAreaNumber,
+				Subject:            subjects_,
+			})
+
+		}
+
+		learningAreas_ = append(learningAreas_, responses2.LearningAreaInfoData{
+			Number:         lstLA.Number,
+			Name:           lstLA.Name,
+			Code:           lstLA.Code,
+			UserNumber:     lstLA.UserNumber,
+			SubjectCluster: subjectCluster_,
 		})
 
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjects_})
-}
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})
 
-func subjectCluster(subjectClusterNumber string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if subjectClusterNumber != "" {
-			return db.Where("subject_cluster_number = ?", subjectClusterNumber)
-		}
-		return db
-	}
 }
 
 type SubjectData struct {
