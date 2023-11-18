@@ -103,6 +103,7 @@ func SetupRoute() *gin.Engine {
 		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
 		main.GET("subjects", subjectController.FetchSubject)
+		main.GET("subject-list", subjectController.FetchSubjectList)
 		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
 
 		//manage Learning Area
@@ -117,14 +118,17 @@ func SetupRoute() *gin.Engine {
 		//strand
 		main.POST("new-strand", strandController.NewStrand)
 		main.GET("strands", strandController.FetchStrand)
+		main.GET("strand-list", strandController.FetchStrandList)
 
 		//topic
 		main.POST("new-topic", topicController.NewTopic)
 		main.GET("topics", topicController.FetchTopic)
+		main.GET("topic-list", topicController.FetchTopicList)
 
 		//sub topic
 		main.POST("new-sub-topic", subTopicController.NewSubTopic)
 		main.GET("sub-topics", subTopicController.FetchSubTopic)
+		main.GET("sub-topic-list", subTopicController.FetchSubTopiList)
 		main.GET("sub-topics-by-class", subTopicController.FetchSubTopicByClass)
 
 		//concepts

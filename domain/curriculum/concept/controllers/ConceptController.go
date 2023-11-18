@@ -98,10 +98,10 @@ func NewConcept(context *gin.Context) {
 func FetchConcept(context *gin.Context) {
 
 	learningAreaNumber := context.Query("learning_area_number")
-	//subjectClusterNumber := context.Query("subject_cluster_number")
-	//subjectNumber := context.Query("subject_number")
-	//strandNumber := context.Query("strand_number")
-	//topicNumber := context.Query("topic_number")
+	subjectClusterNumber := context.Query("subject_cluster_number")
+	subjectNumber := context.Query("subject_number")
+	strandNumber := context.Query("strand_number")
+	topicNumber := context.Query("topic_number")
 	subtopicNumber := context.Query("sub_topic_number")
 
 	//fetch learning area
@@ -116,7 +116,7 @@ func FetchConcept(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, "")
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
@@ -125,7 +125,7 @@ func FetchConcept(context *gin.Context) {
 		var subjectCluster_ []responses3.SubjectClusterInfo
 		for _, lstSC := range subjectClusterResp {
 
-			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, "")
+			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, subjectNumber)
 			if err != "" {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 				return
@@ -134,7 +134,7 @@ func FetchConcept(context *gin.Context) {
 			var subjects_ []responses5.SubjectInfoList
 			for _, lstSB := range subjectResp {
 
-				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number, "")
+				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number, strandNumber)
 				if err != "" {
 					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 					return
@@ -143,7 +143,7 @@ func FetchConcept(context *gin.Context) {
 				var strand_ []responses2.StrandDataList
 				for _, lstST := range strandResp {
 
-					topicResp, err := curriculum.FetchTopicCurriculum(lstST.Number, "")
+					topicResp, err := curriculum.FetchTopicCurriculum(lstST.Number, topicNumber)
 					if err != "" {
 						context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 						return

@@ -160,6 +160,31 @@ func FetchSubject(context *gin.Context) {
 
 }
 
+func FetchSubjectList(context *gin.Context) {
+
+	subjectClusterNumber := context.Query("subject_cluster_number")
+
+	subjectResp, err := curriculum.FetchSubjectCurriculum(subjectClusterNumber, "")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	var subjects_ []responses.SubjectInfoList
+	for _, item := range subjectResp {
+		subjects_ = append(subjects_, responses.SubjectInfoList{
+			Number:               item.Number,
+			Name:                 item.Name,
+			Code:                 item.Code,
+			UserNumber:           item.UserNumber,
+			SubjectClusterNumber: item.SubjectClusterNumber,
+		})
+
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjects_})
+}
+
 type SubjectData struct {
 	Number string `json:"number"`
 	Name   string `json:"name"`

@@ -238,6 +238,32 @@ func FetchSubTopic(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})
 }
 
+func FetchSubTopiList(context *gin.Context) {
+
+	topicNumber := context.Query("topic_number")
+
+	subtopicResp, err := curriculum.FetchSubtopicCurriculum(topicNumber, "")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	var subTopicInfo_ []responses.SubTopicList
+	for idx, subtopicList := range subtopicResp {
+		subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
+			Number:        subtopicList.Number,
+			Code:          subtopicList.Code,
+			SortCode:      int64(idx + 1),
+			Name:          subtopicList.Name,
+			UserNumber:    subtopicList.UserNumber,
+			EstimatedTime: subtopicList.EstimatedTime,
+			TopicNumber:   subtopicList.TopicNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subTopicInfo_})
+}
+
 func topic(topicNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if topicNumber != "" {

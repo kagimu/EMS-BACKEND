@@ -180,6 +180,30 @@ func FetchStrand(context *gin.Context) {
 
 }
 
+func FetchStrandList(context *gin.Context) {
+
+	subjectNumber := context.Query("subject_number")
+
+	strandResp, err := curriculum.FetchStrandCurriculum(subjectNumber, "")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	var strand_ []responses2.StrandDataList
+	for _, lstST := range strandResp {
+		strand_ = append(strand_, responses2.StrandDataList{
+			Number:        lstST.Number,
+			Name:          lstST.Name,
+			Code:          lstST.Code,
+			UserNumber:    lstST.UserNumber,
+			SubjectNumber: lstST.SubjectNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": strand_})
+}
+
 func subject(subjectNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if subjectNumber != "" {

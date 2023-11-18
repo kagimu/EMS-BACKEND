@@ -209,6 +209,30 @@ func FetchTopic(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})
 }
 
+func FetchTopicList(context *gin.Context) {
+
+	strandNumber := context.Query("strand_number")
+
+	topicResp, err := curriculum.FetchTopicCurriculum(strandNumber, "")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	var topic_ []responses.TopicDataList
+	for _, list := range topicResp {
+		topic_ = append(topic_, responses.TopicDataList{
+			Number:      list.Number,
+			Name:        list.Name,
+			Code:        list.Code,
+			UserNumber:  list.UserNumber,
+			ClassNumber: list.ClassNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": topic_})
+}
+
 func strand(strandNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if strandNumber != "" {
