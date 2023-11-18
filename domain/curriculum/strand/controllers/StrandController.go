@@ -128,7 +128,7 @@ func FetchStrand(context *gin.Context) {
 			var subjects_ []responses.SubjectInfoList
 			for _, lstSB := range subjectResp {
 
-				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number)
+				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number, "")
 				if err != "" {
 					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 					return
