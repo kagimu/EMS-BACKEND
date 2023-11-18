@@ -4,8 +4,15 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/api/responses"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	responses4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/api/responses"
+	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
+	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
+	responses6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/api/responses"
+	responses5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -90,40 +97,152 @@ func NewConcept(context *gin.Context) {
 
 func FetchConcept(context *gin.Context) {
 
+	//learningAreaNumber := context.Query("learning_area_number")
+	//subjectClusterNumber := context.Query("subject_cluster_number")
+	//subjectNumber := context.Query("subject_number")
+	//strandNumber := context.Query("strand_number")
+	//topicNumber := context.Query("topic_number")
 	subtopicNumber := context.Query("sub_topic_number")
 
-	var concept []models3.Concept
-	var concept_ []responses.ConceptList
-	if err := config.DB.
-		Scopes(subTopic(subtopicNumber)).
-		Preload("SubTopic.Topic.Strand.Subject").
-		Preload("SubTopic.Topic.Strand").
-		Preload("SubTopic.Topic").
-		Preload("SubTopic").
-		Order("code asc").
-		Find(&concept).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Concept found!"})
+	//fetch learning area
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
 	}
 
-	for _, list := range concept {
-		concept_ = append(concept_, responses.ConceptList{
-			Number:         list.Number,
-			Name:           list.Name,
-			Code:           list.Code,
-			UserNumber:     list.UserNumber,
-			SubTopicNumber: list.SubTopicNumber,
-			SubTopicName:   list.SubTopic.Name,
-			TopicNumber:    list.SubTopic.Topic.Number,
-			TopicName:      list.SubTopic.Topic.Name,
-			StrandNumber:   list.SubTopic.Topic.Strand.Number,
-			StrandName:     list.SubTopic.Topic.Strand.Name,
-			SubjectNumber:  list.SubTopic.Topic.Strand.Subject.Number,
-			SubjectName:    list.SubTopic.Topic.Strand.Subject.Name,
+	var learningAreas_ []responses4.LearningAreaInfoData
+
+	for _, lstLA := range learningAreaResp {
+
+		//fetch subject cluster
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, "")
+		if err != "" {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+			return
+		}
+
+		var subjectCluster_ []responses3.SubjectClusterInfo
+		for _, lstSC := range subjectClusterResp {
+
+			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, "")
+			if err != "" {
+				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+				return
+			}
+
+			var subjects_ []responses5.SubjectInfoList
+			for _, lstSB := range subjectResp {
+
+				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number, "")
+				if err != "" {
+					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+					return
+				}
+
+				var strand_ []responses2.StrandDataList
+				for _, lstST := range strandResp {
+
+					topicResp, err := curriculum.FetchTopicCurriculum(lstST.Number, "")
+					if err != "" {
+						context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+						return
+					}
+
+					var topic_ []responses6.TopicDataList
+					for _, list := range topicResp {
+
+						subtopicResp, err := curriculum.FetchSubtopicCurriculum(list.Number, subtopicNumber)
+						if err != "" {
+							context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+							return
+						}
+
+						var subTopicInfo_ []responses7.SubTopicList
+						for idx, subtopicList := range subtopicResp {
+
+							conceptResp, err := curriculum.FetchConceptCurriculum(subtopicList.Number)
+							if err != "" {
+								context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+								return
+							}
+
+							var concept_ []responses.ConceptList
+							for _, list := range conceptResp {
+								concept_ = append(concept_, responses.ConceptList{
+									Number:         list.Number,
+									Name:           list.Name,
+									Code:           list.Code,
+									UserNumber:     list.UserNumber,
+									SubTopicNumber: list.SubTopicNumber,
+									SubTopicName:   list.SubTopic.Name,
+								})
+							}
+
+							subTopicInfo_ = append(subTopicInfo_, responses7.SubTopicList{
+								Number:        subtopicList.Number,
+								Code:          subtopicList.Code,
+								SortCode:      int64(idx + 1),
+								Name:          subtopicList.Name,
+								UserNumber:    subtopicList.UserNumber,
+								EstimatedTime: subtopicList.EstimatedTime,
+								TopicNumber:   subtopicList.TopicNumber,
+								Concept:       concept_,
+							})
+						}
+
+						topic_ = append(topic_, responses6.TopicDataList{
+							Number:      list.Number,
+							Name:        list.Name,
+							Code:        list.Code,
+							UserNumber:  list.UserNumber,
+							ClassNumber: list.ClassNumber,
+							SubTopic:    subTopicInfo_,
+						})
+					}
+
+					strand_ = append(strand_, responses2.StrandDataList{
+						Number:        lstST.Number,
+						Name:          lstST.Name,
+						Code:          lstST.Code,
+						UserNumber:    lstST.UserNumber,
+						SubjectNumber: lstST.SubjectNumber,
+						Topic:         topic_,
+					})
+				}
+
+				subjects_ = append(subjects_, responses5.SubjectInfoList{
+					Number:               lstSB.Number,
+					Name:                 lstSB.Name,
+					Code:                 lstSB.Code,
+					UserNumber:           lstSB.UserNumber,
+					SubjectClusterNumber: lstSB.SubjectClusterNumber,
+					Strand:               strand_,
+				})
+
+			}
+
+			subjectCluster_ = append(subjectCluster_, responses3.SubjectClusterInfo{
+				Number:             lstSC.Number,
+				Name:               lstSC.Name,
+				Code:               lstSC.Code,
+				LearningAreaNumber: lstSC.LearningAreaNumber,
+				Subject:            subjects_,
+			})
+
+		}
+
+		learningAreas_ = append(learningAreas_, responses4.LearningAreaInfoData{
+			Number:         lstLA.Number,
+			Name:           lstLA.Name,
+			Code:           lstLA.Code,
+			UserNumber:     lstLA.UserNumber,
+			SubjectCluster: subjectCluster_,
 		})
+
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": concept_})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})
 }
 
 func FetchConceptBySubTopic(context *gin.Context) {
