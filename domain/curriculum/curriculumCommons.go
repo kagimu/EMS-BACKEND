@@ -5,6 +5,7 @@ import (
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
+	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"gorm.io/gorm"
@@ -61,16 +62,29 @@ func FetchStrandCurriculum(subjectNumber string, strandNumber string) ([]models2
 	return strand, errInfo
 }
 
-func FetchTopicCurriculum(strandNumber string) ([]topicModels.Topic, string) {
+func FetchTopicCurriculum(strandNumber string, topicNumber string) ([]topicModels.Topic, string) {
 	var topic []topicModels.Topic
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("number", topicNumber)).
 		Scopes(scopeFilter("strand_number", strandNumber)).
 		Order("code asc").
 		Find(&topic).Error; err != nil {
 		errInfo = "No topic found!"
 	}
 	return topic, errInfo
+}
+
+func FetchSubtopicCurriculum(topicNumber string) ([]subTopicModels.SubTopic, string) {
+	var subtopic []subTopicModels.SubTopic
+	var errInfo string
+	if err := config.DB.
+		Scopes(scopeFilter("topic_number", topicNumber)).
+		Order("code asc").
+		Find(&subtopic).Error; err != nil {
+		errInfo = "No Sub topic found!"
+	}
+	return subtopic, errInfo
 }
 
 func scopeFilter(tableType, number string) func(db *gorm.DB) *gorm.DB {
