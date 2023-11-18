@@ -2,13 +2,10 @@ package responses
 
 type (
 	StrandDataList struct {
-		Number               string `json:"number"`
-		Name                 string `json:"name"`
-		Code                 int64  `json:"code"`
-		UserNumber           string `json:"user_number"`
-		SubjectNumber        string `json:"subject_number"`
-		SubjectName          string `json:"subject_name"`
-		SubjectClusterNumber string `json:"subject_cluster_number"`
-		SubjectClusterName   string `json:"subject_cluster_name"`
+		Number        string `json:"number"`
+		Name          string `json:"name"`
+		Code          int64  `json:"code"`
+		UserNumber    string `json:"user_number"`
+		SubjectNumber string `json:"subject_number"`
 	}
 )

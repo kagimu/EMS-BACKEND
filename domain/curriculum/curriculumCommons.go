@@ -3,6 +3,7 @@ package curriculum
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"gorm.io/gorm"
@@ -33,16 +34,29 @@ func FetchSubjectClusterCurriculum(learningAreaNumber string, subjectClusterNumb
 	return subjectCluster, errInfo
 }
 
-func FetchSubjectCurriculum(subjectClusterNumber string) ([]subjectModel.Subject, string) {
+func FetchSubjectCurriculum(subjectClusterNumber string, subjectNumber string) ([]subjectModel.Subject, string) {
 	var subjects []subjectModel.Subject
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("number", subjectNumber)).
 		Scopes(scopeFilter("subject_cluster_number", subjectClusterNumber)).
 		Order("code asc").
 		Find(&subjects).Error; err != nil {
 		errInfo = "No Subject!"
 	}
 	return subjects, errInfo
+}
+
+func FetchStrandCurriculum(subjectNumber string) ([]models2.Strand, string) {
+	var strand []models2.Strand
+	var errInfo string
+	if err := config.DB.
+		Scopes(scopeFilter("subject_number", subjectNumber)).
+		Order("code asc").
+		Find(&strand).Error; err != nil {
+		errInfo = "No strand found!"
+	}
+	return strand, errInfo
 }
 
 func scopeFilter(tableType, number string) func(db *gorm.DB) *gorm.DB {
