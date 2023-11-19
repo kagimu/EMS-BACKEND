@@ -82,6 +82,16 @@ func NewTopic(context *gin.Context) {
 		return
 	}
 
+	var duplicateCode models3.Topic
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("strand_number = ?", strandNumber).
+		Where("class_number = ?", classNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
 	var duplicateTopic models3.Topic
 	if duplicate := config.DB.
 		Where("name = ?", name).

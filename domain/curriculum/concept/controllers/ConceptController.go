@@ -77,6 +77,15 @@ func NewConcept(context *gin.Context) {
 		return
 	}
 
+	var duplicateCode models3.Concept
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("sub_topic_number = ?", subtopicNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
 	var duplicateConcept models3.Concept
 	if duplicate := config.DB.
 		Where("name = ?", name).

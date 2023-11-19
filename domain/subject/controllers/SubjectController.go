@@ -74,10 +74,19 @@ func NewSubject(context *gin.Context) {
 		return
 	}
 
+	var duplicateCode subjectModel.Subject
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("subject_cluster_number = ?", subjectClusterNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
 	var duplicateSubject subjectModel.Subject
 	if duplicate := config.DB.
 		Where("name = ?", name).
-		Where("level_number = ?", subjectClusterNumber).
+		Where("subject_cluster_number = ?", subjectClusterNumber).
 		First(&duplicateSubject).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject already exists"})
 		return

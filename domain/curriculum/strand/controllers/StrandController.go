@@ -74,6 +74,15 @@ func NewStrand(context *gin.Context) {
 		return
 	}
 
+	var duplicateCode models2.Strand
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("subject_number = ?", subjectNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
 	var duplicateStrand models2.Strand
 	if duplicate := config.DB.
 		Where("name = ?", name).

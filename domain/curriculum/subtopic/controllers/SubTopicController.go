@@ -83,6 +83,15 @@ func NewSubTopic(context *gin.Context) {
 		return
 	}
 
+	var duplicateCode models2.SubTopic
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("topic_number = ?", topicNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
 	var duplicateSubTopic models2.SubTopic
 	if duplicate := config.DB.
 		Where("name = ?", name).
