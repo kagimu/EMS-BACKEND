@@ -65,6 +65,11 @@ func NewStudyPeriod(context *gin.Context) {
 		return
 	}
 
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)

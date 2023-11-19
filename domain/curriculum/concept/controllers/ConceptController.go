@@ -46,6 +46,11 @@ func NewConcept(context *gin.Context) {
 		return
 	}
 
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
 		return

@@ -42,6 +42,11 @@ func NewLearningArea(context *gin.Context) {
 		return
 	}
 
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -58,12 +63,19 @@ func NewLearningArea(context *gin.Context) {
 		return
 	}
 
+	var duplicateCode models2.LearningArea
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
 	var duplicateLearningArea models2.LearningArea
 	if duplicate := config.DB.
-		//Where("name = ?", name).
-		Where("name = ? OR code = ?", name, codeNo).
+		Where("name = ?", name).
 		First(&duplicateLearningArea).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area or Code already exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area already exists!!"})
 		return
 	}
 
