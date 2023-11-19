@@ -104,13 +104,14 @@ func NewTopic(context *gin.Context) {
 
 func FetchTopic(context *gin.Context) {
 
-	//learningAreaNumber := context.Query("learning_area_number")
-	//subjectClusterNumber := context.Query("subject_cluster_number")
-	//subjectNumber := context.Query("subject_number")
+	learningAreaNumber := context.Query("learning_area_number")
+	subjectClusterNumber := context.Query("subject_cluster_number")
+	subjectNumber := context.Query("subject_number")
 	strandNumber := context.Query("strand_number")
+	classNumber := context.Query("class_number")
 
 	//fetch learning area
-	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("")
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum(learningAreaNumber)
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
@@ -121,7 +122,7 @@ func FetchTopic(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, "")
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
@@ -130,7 +131,7 @@ func FetchTopic(context *gin.Context) {
 		var subjectCluster_ []responses3.SubjectClusterInfo
 		for _, lstSC := range subjectClusterResp {
 
-			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, "")
+			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, subjectNumber)
 			if err != "" {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 				return
@@ -148,7 +149,7 @@ func FetchTopic(context *gin.Context) {
 				var strand_ []responses2.StrandDataList
 				for _, lstST := range strandResp {
 
-					topicResp, err := curriculum.FetchTopicCurriculum(lstST.Number, "")
+					topicResp, err := curriculum.FetchTopicCurriculum(lstST.Number, "", classNumber)
 					if err != "" {
 						context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 						return
@@ -213,7 +214,7 @@ func FetchTopicList(context *gin.Context) {
 
 	strandNumber := context.Query("strand_number")
 
-	topicResp, err := curriculum.FetchTopicCurriculum(strandNumber, "")
+	topicResp, err := curriculum.FetchTopicCurriculum(strandNumber, "", "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return

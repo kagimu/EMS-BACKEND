@@ -63,11 +63,12 @@ func FetchStrandCurriculum(subjectNumber string, strandNumber string) ([]models2
 	return strand, errInfo
 }
 
-func FetchTopicCurriculum(strandNumber string, topicNumber string) ([]topicModels.Topic, string) {
+func FetchTopicCurriculum(strandNumber string, topicNumber string, classNumber string) ([]topicModels.Topic, string) {
 	var topic []topicModels.Topic
 	var errInfo string
 	if err := config.DB.
 		Scopes(scopeFilter("number", topicNumber)).
+		Scopes(scopeFilter("class_number", classNumber)).
 		Scopes(scopeFilter("strand_number", strandNumber)).
 		Order("code asc").
 		Find(&topic).Error; err != nil {
