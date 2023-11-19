@@ -94,11 +94,11 @@ func NewSubject(context *gin.Context) {
 
 func FetchSubject(context *gin.Context) {
 
-	//learningAreaNumber := context.Query("learning_area_number")
+	learningAreaNumber := context.Query("learning_area_number")
 	subjectClusterNumber := context.Query("subject_cluster_number")
 
 	//fetch learning area
-	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("")
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum(learningAreaNumber)
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return

@@ -94,12 +94,12 @@ func NewStrand(context *gin.Context) {
 
 func FetchStrand(context *gin.Context) {
 
-	//learningAreaNumber := context.Query("learning_area_number")
-	//subjectClusterNumber := context.Query("subject_cluster_number")
+	learningAreaNumber := context.Query("learning_area_number")
+	subjectClusterNumber := context.Query("subject_cluster_number")
 	subjectNumber := context.Query("subject_number")
 
 	//fetch learning area
-	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("")
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum(learningAreaNumber)
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
@@ -110,7 +110,7 @@ func FetchStrand(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, "")
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
