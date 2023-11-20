@@ -229,7 +229,7 @@ func FetchAcademicByClass(context *gin.Context) {
 
 	var levelsInfo []campusModels.Level
 	if err := config.DB.
-		Where("name = ?", classes.LevelNumber).
+		Where("learning_level_number = ?", classes.LevelNumber).
 		Find(&levelsInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
 		return
@@ -243,6 +243,7 @@ func FetchAcademicByClass(context *gin.Context) {
 		if err := config.DB.
 			//Select("name", "number").
 			Where("level_number = ?", lvlList.Number).
+			Preload("Level.LearningLevel").
 			Preload("Level").
 			Order("code asc").
 			Find(&academicYearInfo).Error; err != nil {
@@ -261,7 +262,7 @@ func FetchAcademicByClass(context *gin.Context) {
 				AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
 				UserNumber:            academicList.UserNumber,
 				LevelNumber:           academicList.LevelNumber,
-				LevelName:             academicList.Level.LearningLevelNumber,
+				LevelName:             academicList.Level.LearningLevel.Name,
 			})
 		}
 	}
