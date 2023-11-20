@@ -264,33 +264,68 @@ func FetchClasses(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levels_})
 }
 
-func FetchClassesCurriculum(context *gin.Context) {
+func FetchSchemeOfWorkClasses(context *gin.Context) {
 
-	/*	level := context.Query("level")
+	level := context.Query("level")
 
-		var levels []levelModels.LearningLevel
-		var levels_ []responses.LearningLevelDataList
+	var levels []levelModels.LearningLevel
+	if err := config.DB.
+		Scopes(levelDataFilter(level)).
+		Order("code asc").
+		Find(&levels).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}
+
+	var classes_ []responses.ClassDataList
+	for _, list := range levels {
+
+		var classes []models.Class
+
 		if err := config.DB.
-			Scopes(levelDataFilter(level)).
+			Where("level_number = ?", list.Number).
 			Order("code asc").
-			Find(&levels).Error; err != nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+			Find(&classes).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 			return
 		}
 
-		for _, list := range levels {*/
+		if len(classes) > 0 {
+			for _, lst := range classes {
+				classes_ = append(classes_, responses.ClassDataList{
+					Number:       lst.Number,
+					Name:         lst.Name,
+					Code:         lst.Code,
+					Abbreviation: lst.Abbreviation,
+					UserNumber:   lst.UserNumber,
+					LevelNumber:  lst.LevelNumber,
+				})
+			}
+
+			/*levels_ = append(levels_, responses.LearningLevelDataList{
+				Number:        list.Number,
+				Name:          list.Name,
+				Code:          list.Code,
+				UserNumber:    list.UserNumber,
+				ClassDataList: classes_,
+			})*/
+		}
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
+}
+
+func FetchClassesCurriculum(context *gin.Context) {
 
 	var classes []models.Class
 	var classes_ []responses.ClassDataList
 	if err := config.DB.
-		//Where("level_number = ?", list.Number).
 		Order("code asc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
 	}
 
-	//if len(classes) > 0 {
 	for _, lst := range classes {
 		classes_ = append(classes_, responses.ClassDataList{
 			Number:       lst.Number,
@@ -301,16 +336,6 @@ func FetchClassesCurriculum(context *gin.Context) {
 			LevelNumber:  lst.LevelNumber,
 		})
 	}
-
-	/*levels_ = append(levels_, responses.LearningLevelDataList{
-				Number:        list.Number,
-				Name:          list.Name,
-				Code:          list.Code,
-				UserNumber:    list.UserNumber,
-				ClassDataList: classes_,
-			})
-		}
-	}*/
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
 }
