@@ -255,6 +255,18 @@ func UpdateSchemeOfWork(context *gin.Context) {
 			fmt.Println("Error:", err)
 			return
 		}
+
+		var duplicateSchemeCode schemeOfWorkModel.SchemeOfWorkSubTopic
+		if duplicate := tx.
+			Where("code = ?", codeNo).
+			Where("scheme_of_work_number = ?", schemeNumber).
+			Where("number != ?", schemeList.Number).
+			First(&duplicateSchemeCode).Error; duplicate == nil {
+			tx.Rollback()
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate codes are not allowed!!!, Code: " + strconv.FormatInt(codeNo, 10)})
+			return
+		}
+
 		var schemeSubtopicUpdate schemeOfWorkModel.SchemeOfWorkSubTopic
 		updateScheme := tx.Model(&schemeSubtopicUpdate).
 			Where("scheme_of_work_number = ?", schemeNumber).
