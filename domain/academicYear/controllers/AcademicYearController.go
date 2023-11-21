@@ -147,15 +147,6 @@ func NewAcademicYear(context *gin.Context) {
 		return
 	}
 
-	/*	result := config.DB.Create(&generalCalendar)
-
-		if result.Error != nil {
-			context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create calendar with " + result.Error.Error()})
-			config.DB.Rollback()
-			return
-
-		}*/
-
 	///save user data
 	saveAcademicYear := academicYearModels.AcademicYear{
 		Number:                uuid.NewV4().String(),
@@ -176,16 +167,6 @@ func NewAcademicYear(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save academic year"})
 		return
 	}
-
-	/*save := config.DB.Save(&saveAcademicYear)
-
-	if save.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to save academic year"})
-		config.DB.Rollback()
-		return
-	}*/
-
-	/*config.DB.Commit()*/
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
