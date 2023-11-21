@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -40,6 +42,11 @@ func NewLearningArea(context *gin.Context) {
 		return
 	}
 
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -56,12 +63,19 @@ func NewLearningArea(context *gin.Context) {
 		return
 	}
 
+	var duplicateCode models2.LearningArea
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
 	var duplicateLearningArea models2.LearningArea
 	if duplicate := config.DB.
-		//Where("name = ?", name).
-		Where("name = ? OR code = ?", name, codeNo).
+		Where("name = ?", name).
 		First(&duplicateLearningArea).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area or Code already exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area already exists!!"})
 		return
 	}
 
@@ -79,13 +93,22 @@ func NewLearningArea(context *gin.Context) {
 
 func FetchLearningArea(context *gin.Context) {
 
-	var learningAreas []models2.LearningArea
-	if err := config.DB.
-		Order("code asc").
-		Find(&learningAreas).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Learning Area!"})
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas})
+	var learningAreas_ []responses2.LearningAreaInfoData
+
+	for _, lst := range learningAreaResp {
+		learningAreas_ = append(learningAreas_, responses2.LearningAreaInfoData{
+			Number:     lst.Number,
+			Name:       lst.Name,
+			Code:       lst.Code,
+			UserNumber: lst.UserNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})
 }

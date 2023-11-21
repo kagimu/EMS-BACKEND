@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/gin-gonic/gin"
@@ -86,6 +87,8 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
+	// Begin the transaction
+	tx := config.DB.Begin()
 	number := uuid.NewV4().String()
 	saveCampus := campusModel.Campus{
 		Number:       number,
@@ -97,17 +100,40 @@ func NewCampus(context *gin.Context) {
 		SchoolNumber: schoolNumber,
 	}
 
-	config.DB.Save(&saveCampus)
+	if err := tx.Create(&saveCampus).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create campus"})
+		return
+	}
 
 	//save Level
 	for _, item := range level {
 		levelNumber := uuid.NewV4().String()
 		saveLevel := campusModel.Level{
-			Number:       levelNumber,
-			Name:         item,
-			CampusNumber: saveCampus.Number,
+			Number:              levelNumber,
+			LearningLevelNumber: item,
+			CampusNumber:        saveCampus.Number,
 		}
-		config.DB.Save(&saveLevel)
+
+		if err := tx.Create(&saveLevel).Error; err != nil {
+			// If any error occurs, rollback the transaction
+			tx.Rollback()
+			// Handle or return the error as needed
+			//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create level"})
+			return
+		}
+
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add campus!!"})
+		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveCampus})
@@ -276,6 +302,7 @@ func FetchLevel(context *gin.Context) {
 	var campus campusModel.Campus
 	if err := config.DB.
 		Where("number = ?", campusNumber).
+		Preload("Level.LearningLevel").
 		Preload("Level").
 		Order("created_at desc").
 		First(&campus).Error; err != nil {
@@ -283,7 +310,28 @@ func FetchLevel(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus})
+	var level_ []responses.CampusLevelList
+	for _, lvl := range campus.Level {
+		level_ = append(level_, responses.CampusLevelList{
+			Number:              lvl.Number,
+			LearningLevelNumber: lvl.LearningLevelNumber,
+			LevelName:           lvl.LearningLevel.Name,
+			CampusNumber:        lvl.CampusNumber,
+		})
+	}
+
+	campus_ := responses.CampusDataList{
+		Number:       campus.Number,
+		Name:         campus.Name,
+		Phone:        campus.Phone,
+		Email:        campus.Email,
+		Location:     campus.Location,
+		UserNumber:   campus.UserNumber,
+		SchoolNumber: campus.SchoolNumber,
+		Level:        level_,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
 
 }
 
@@ -301,6 +349,7 @@ func FetchCampusLevel(context *gin.Context) {
 	if err := config.DB.
 		//Select("name", "number").
 		Where("campus_number = ?", campusNumber).
+		Preload("LearningLevel").
 		Order("created_at desc").
 		Find(&levelInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found"})
@@ -310,7 +359,8 @@ func FetchCampusLevel(context *gin.Context) {
 	// Populate the selected columns from the fetched data
 	for _, level := range levelInfo {
 		levelInfo_ = append(levelInfo_, campusModel.LevelDataInfo{
-			Name:   level.Name,
+			Name:   level.LearningLevel.Name,
+			Code:   level.LearningLevel.Code,
 			Number: level.Number,
 		})
 	}

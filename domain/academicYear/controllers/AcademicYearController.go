@@ -6,6 +6,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -63,6 +65,11 @@ func NewAcademicYear(context *gin.Context) {
 		return
 	}
 
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -82,6 +89,7 @@ func NewAcademicYear(context *gin.Context) {
 	var duplicateCode academicYearModels.AcademicYear
 	if duplicate := config.DB.
 		Where("code = ?", code).
+		Where("level_number = ?", levelNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -117,32 +125,31 @@ func NewAcademicYear(context *gin.Context) {
 		//fmt.Println("Error:", err)
 		//return
 	}
-	config.DB.Begin()
+
+	tx := config.DB.Begin()
 
 	// create EOS calendar
-	var generalCalendar = eosModels.GeneralCalendar{}
-
-	generalCalendar.Number = uuid.NewV4().String()
-	generalCalendar.EntityNumber = "TBD"
-	generalCalendar.StartDate = startDate
-	generalCalendar.EndDate = endDate
-	generalCalendar.Name = academicYearName
-	generalCalendar.UserNumber = userNumber
-	generalCalendar.Description = "Academic Year"
-
-	result := config.DB.Create(&generalCalendar)
-
-	if result.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create calendar with " + result.Error.Error()})
-		config.DB.Rollback()
-		return
-
+	var generalCalendar = eosModels.GeneralCalendar{
+		Number:       uuid.NewV4().String(),
+		EntityNumber: "TBD",
+		StartDate:    startDate,
+		EndDate:      endDate,
+		Name:         academicYearName,
+		UserNumber:   userNumber,
+		Description:  "Academic Year",
 	}
 
-	number := uuid.NewV4().String()
+	if err := tx.Create(&generalCalendar).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create calendar with " + err.Error()})
+		return
+	}
+
 	///save user data
 	saveAcademicYear := academicYearModels.AcademicYear{
-		Number:                number,
+		Number:                uuid.NewV4().String(),
 		Code:                  codeNo,
 		CalendarNumber:        generalCalendar.Number,
 		AcademicYearName:      academicYearName,
@@ -152,20 +159,26 @@ func NewAcademicYear(context *gin.Context) {
 		UserNumber:            userNumber,
 		LevelNumber:           levelNumber,
 	}
-	save := config.DB.Save(&saveAcademicYear)
 
-	if save.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to save academic year"})
-		config.DB.Rollback()
+	if err := tx.Create(&saveAcademicYear).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save academic year"})
 		return
 	}
 
-	config.DB.Commit()
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create academic year!"})
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Academic year Added Successfully!", "data": saveAcademicYear})
 }
 
-func FetchAcademicYear(context *gin.Context) {
+func FetchAcademicYearInfo(context *gin.Context) {
 
 	levelNumber := context.Query("level")
 
@@ -197,6 +210,67 @@ func FetchAcademicYear(context *gin.Context) {
 			UserNumber:            academicList.UserNumber,
 			LevelNumber:           academicList.LevelNumber,
 		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": academicYearInfo_})
+
+}
+
+func FetchAcademicByClass(context *gin.Context) {
+
+	classNumber := context.Query("class_number")
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class number is required!"})
+		return
+	}
+
+	var classes classModels.Class
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		First(&classes).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
+	var levelsInfo []campusModels.Level
+	if err := config.DB.
+		Where("learning_level_number = ?", classes.LevelNumber).
+		Find(&levelsInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}
+
+	var academicYearInfo_ []responses.AcademicYearListByClass
+
+	for _, lvlList := range levelsInfo {
+
+		var academicYearInfo []academicYearModels.AcademicYear
+		if err := config.DB.
+			//Select("name", "number").
+			Where("level_number = ?", lvlList.Number).
+			Preload("Level.LearningLevel").
+			Preload("Level").
+			Order("code asc").
+			Find(&academicYearInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
+			return
+		}
+
+		// Populate the selected columns from the fetched data
+		for _, academicList := range academicYearInfo {
+			academicYearInfo_ = append(academicYearInfo_, responses.AcademicYearListByClass{
+				Number:                academicList.Number,
+				Code:                  academicList.Code,
+				AcademicYearName:      academicList.AcademicYearName,
+				NoOfStudyPeriod:       academicList.NoOfStudyPeriod,
+				AcademicYearStartDate: (academicList.AcademicYearStartDate).Format("2-Jan-2006 15:04:05"),
+				AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
+				UserNumber:            academicList.UserNumber,
+				LevelNumber:           academicList.LevelNumber,
+				LevelName:             academicList.Level.LearningLevel.Name,
+			})
+		}
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": academicYearInfo_})

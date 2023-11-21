@@ -1,7 +1,9 @@
 package routes
 
 import (
+	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
+	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
@@ -85,10 +87,16 @@ func SetupRoute() *gin.Engine {
 		main.GET("level", controllers.FetchLevel)
 		main.GET("campus-level", controllers.FetchCampusLevel)
 
+		//level
+		main.POST("new-level", learningLevelControllers.NewLevel)
+		main.GET("fetch-level", learningLevelControllers.FetchLearningLevel)
+
 		//	manage class
 		main.POST("new-class", classController.NewClass)
 		main.POST("new-class-level", classController.AddClassToLevel)
 		main.GET("classes", classController.FetchClasses)
+		main.GET("scheme-of-work-classes", classController.FetchSchemeOfWorkClasses)
+		main.GET("classes-curriculum", classController.FetchClassesCurriculum)
 		main.GET("classes-to-add", classController.FetchClassesToAdd)
 		main.GET("class-level", classController.FetchClassLevel)
 		main.GET("class-subjects", classController.FetchClassSubjects)
@@ -97,6 +105,7 @@ func SetupRoute() *gin.Engine {
 		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
 		main.GET("subjects", subjectController.FetchSubject)
+		main.GET("subject-list", subjectController.FetchSubjectList)
 		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
 
 		//manage Learning Area
@@ -106,18 +115,22 @@ func SetupRoute() *gin.Engine {
 		//subject cluster
 		main.POST("new-subject-cluster", subjectClusterController.NewSubjectCluster)
 		main.GET("subject-clusters", subjectClusterController.FetchSubjectCluster)
+		main.GET("subject-cluster-filter", subjectClusterController.FetchSubjectClusterList)
 
 		//strand
 		main.POST("new-strand", strandController.NewStrand)
 		main.GET("strands", strandController.FetchStrand)
+		main.GET("strand-list", strandController.FetchStrandList)
 
 		//topic
 		main.POST("new-topic", topicController.NewTopic)
 		main.GET("topics", topicController.FetchTopic)
+		main.GET("topic-list", topicController.FetchTopicList)
 
 		//sub topic
 		main.POST("new-sub-topic", subTopicController.NewSubTopic)
 		main.GET("sub-topics", subTopicController.FetchSubTopic)
+		main.GET("sub-topic-list", subTopicController.FetchSubTopiList)
 		main.GET("sub-topics-by-class", subTopicController.FetchSubTopicByClass)
 
 		//concepts
@@ -126,7 +139,8 @@ func SetupRoute() *gin.Engine {
 
 		//adds academic year
 		main.POST("new-academic-year", academicYearController.NewAcademicYear)
-		main.GET("fetch-academic-year", academicYearController.FetchAcademicYear)
+		main.GET("fetch-academic-year", academicYearController.FetchAcademicYearInfo)
+		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
 
 		//adds study period
 		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
@@ -141,9 +155,14 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
 		main.POST("new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
 
+		//Student Admission
+		main.POST("new-student-details-admission", admissionController.NewStudentDetails)
+
 		//timetable routes
 		timetable := main.Group("/timetable")
 		{
+			timetable.GET("all-study-timetables", timetableController.FetchStudyTimetables)
+			timetable.POST("create-study-timetable", timetableController.CreateStudyTimetable)
 			timetable.POST("add-timetable-period", timetableController.AddPeriod)
 			timetable.GET("get-timetable-periods", timetableController.FetchTimetablePeriodsGroupedByDay)
 			timetable.GET("get-distinct-days", timetableController.GetDistinctDays)
