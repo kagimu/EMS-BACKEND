@@ -360,6 +360,7 @@ func FetchCampusLevel(context *gin.Context) {
 	for _, level := range levelInfo {
 		levelInfo_ = append(levelInfo_, campusModel.LevelDataInfo{
 			Name:   level.LearningLevel.Name,
+			Code:   level.LearningLevel.Code,
 			Number: level.Number,
 		})
 	}

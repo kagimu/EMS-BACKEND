@@ -202,6 +202,7 @@ func FetchSubjectList(context *gin.Context) {
 type SubjectData struct {
 	Number string `json:"number"`
 	Name   string `json:"name"`
+	Code   int64  `json:"code"`
 }
 
 func FetchSubjectByClass(context *gin.Context) {
@@ -225,6 +226,7 @@ func FetchSubjectByClass(context *gin.Context) {
 		subjectData = append(subjectData, SubjectData{
 			Number: item.Strand.Subject.Number,
 			Name:   item.Strand.Subject.Name,
+			Code:   item.Strand.Subject.Code,
 		})
 	}
 

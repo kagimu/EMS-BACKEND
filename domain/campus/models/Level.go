@@ -16,6 +16,7 @@ type (
 	}
 	LevelDataInfo struct {
 		Name   string `json:"name"`
+		Code   int64  `json:"code"`
 		Number string `json:"number"`
 	}
 )
