@@ -125,32 +125,40 @@ func NewAcademicYear(context *gin.Context) {
 		//fmt.Println("Error:", err)
 		//return
 	}
-	config.DB.Begin()
+
+	tx := config.DB.Begin()
 
 	// create EOS calendar
-	var generalCalendar = eosModels.GeneralCalendar{}
-
-	generalCalendar.Number = uuid.NewV4().String()
-	generalCalendar.EntityNumber = "TBD"
-	generalCalendar.StartDate = startDate
-	generalCalendar.EndDate = endDate
-	generalCalendar.Name = academicYearName
-	generalCalendar.UserNumber = userNumber
-	generalCalendar.Description = "Academic Year"
-
-	result := config.DB.Create(&generalCalendar)
-
-	if result.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create calendar with " + result.Error.Error()})
-		config.DB.Rollback()
-		return
-
+	var generalCalendar = eosModels.GeneralCalendar{
+		Number:       uuid.NewV4().String(),
+		EntityNumber: "TBD",
+		StartDate:    startDate,
+		EndDate:      endDate,
+		Name:         academicYearName,
+		UserNumber:   userNumber,
+		Description:  "Academic Year",
 	}
 
-	number := uuid.NewV4().String()
+	if err := tx.Create(&generalCalendar).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create calendar with " + err.Error()})
+		return
+	}
+
+	/*	result := config.DB.Create(&generalCalendar)
+
+		if result.Error != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create calendar with " + result.Error.Error()})
+			config.DB.Rollback()
+			return
+
+		}*/
+
 	///save user data
 	saveAcademicYear := academicYearModels.AcademicYear{
-		Number:                number,
+		Number:                uuid.NewV4().String(),
 		Code:                  codeNo,
 		CalendarNumber:        generalCalendar.Number,
 		AcademicYearName:      academicYearName,
@@ -160,15 +168,31 @@ func NewAcademicYear(context *gin.Context) {
 		UserNumber:            userNumber,
 		LevelNumber:           levelNumber,
 	}
-	save := config.DB.Save(&saveAcademicYear)
+
+	if err := tx.Create(&saveAcademicYear).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save academic year"})
+		return
+	}
+
+	/*save := config.DB.Save(&saveAcademicYear)
 
 	if save.Error != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to save academic year"})
 		config.DB.Rollback()
 		return
-	}
+	}*/
 
-	config.DB.Commit()
+	/*config.DB.Commit()*/
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create academic year!"})
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Academic year Added Successfully!", "data": saveAcademicYear})
 }
