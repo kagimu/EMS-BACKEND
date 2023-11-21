@@ -89,6 +89,7 @@ func NewAcademicYear(context *gin.Context) {
 	var duplicateCode academicYearModels.AcademicYear
 	if duplicate := config.DB.
 		Where("code = ?", code).
+		Where("level_number = ?", levelNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
