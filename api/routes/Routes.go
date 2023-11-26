@@ -67,7 +67,9 @@ func SetupRoute() *gin.Engine {
 		//main.GET("profile/:id", middlewares.JWTMiddleware(), controllers.Profile)
 		main.GET("profile", authController.Profile)
 
-		//manage School
+		//manage curriculum
+		main.POST("new-curriculum", curricullumController.NewCurriculum)
+		main.GET("curriculum-list", curricullumController.FetchCurriculum)
 		main.POST("upload-curriculum", curricullumController.ImportCurriculum)
 		main.GET("uploaded-curriculum", curricullumController.FetchUploadedCurriculum)
 

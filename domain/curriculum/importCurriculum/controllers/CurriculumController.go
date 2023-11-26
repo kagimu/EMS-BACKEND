@@ -22,6 +22,76 @@ import (
 	"time"
 )
 
+func NewCurriculum(context *gin.Context) {
+
+	type CurriculumInfo struct {
+		Name string `json:"name"`
+	}
+
+	var curriculumInfo CurriculumInfo
+	err := context.BindJSON(&curriculumInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	name := curriculumInfo.Name
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if name == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateSchool models2.Curriculum
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("user_number = ?", userNumber).
+		First(&duplicateSchool).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum already exists!!!"})
+		return
+	}
+
+	// Begin the transaction
+	tx := config.DB.Begin()
+	///save user data
+	saveCurriculum := models2.Curriculum{
+		Number:     uuid.NewV4().String(),
+		Name:       name,
+		UserNumber: userNumber,
+	}
+
+	if err := tx.Create(&saveCurriculum).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Curriculum"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Curriculum"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Curriculum Added Successfully!", "data": saveCurriculum})
+}
+
 func ImportCurriculum(context *gin.Context) {
 
 	userNumber := context.Request.Header["User-Number"][0]
@@ -515,6 +585,19 @@ func getValueAtIndex(row []string, i int) string {
 	} else {
 		return ""
 	}
+}
+
+func FetchCurriculum(context *gin.Context) {
+
+	var curriculum []models2.Curriculum
+	if err := config.DB.
+		Order("created_at desc").
+		Find(&curriculum).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculum})
 }
 
 func FetchUploadedCurriculum(context *gin.Context) {

@@ -119,7 +119,7 @@ func FetchConcept(context *gin.Context) {
 	subtopicNumber := context.Query("sub_topic_number")
 
 	//fetch learning area
-	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum(learningAreaNumber)
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum(learningAreaNumber, "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return

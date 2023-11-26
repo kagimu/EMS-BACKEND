@@ -12,11 +12,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func FetchLearningAreaCurriculum(learningAreaNumber string) ([]learningAreaModels.LearningArea, string) {
+func FetchLearningAreaCurriculum(learningAreaNumber string, curriculumNumber string) ([]learningAreaModels.LearningArea, string) {
 	var learningAreas []learningAreaModels.LearningArea
 	var errInfo string
 	if err := config.DB.
 		Scopes(scopeFilter("number", learningAreaNumber)).
+		Scopes(scopeFilter("curriculum_number", curriculumNumber)).
 		Order("code asc").
 		Find(&learningAreas).Error; err != nil {
 		errInfo = "Learning area not found!!!"
