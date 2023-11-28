@@ -93,10 +93,9 @@ func NewClass(context *gin.Context) {
 
 	// Begin the transaction
 	tx := config.DB.Begin()
-	number := uuid.NewV4().String()
 	///save user data
 	saveClass := models.Class{
-		Number:       number,
+		Number:       uuid.NewV4().String(),
 		Name:         name,
 		Abbreviation: abbreviation,
 		UserNumber:   userNumber,

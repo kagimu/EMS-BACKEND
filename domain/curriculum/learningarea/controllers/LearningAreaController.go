@@ -16,8 +16,9 @@ import (
 func NewLearningArea(context *gin.Context) {
 
 	type LearningAreaInfo struct {
-		Name string `json:"name"`
-		Code string `json:"code"`
+		Name             string `json:"name"`
+		Code             string `json:"code"`
+		CurriculumNumber string `json:"curriculum_number"`
 	}
 
 	var learningAreaInfo LearningAreaInfo
@@ -29,6 +30,7 @@ func NewLearningArea(context *gin.Context) {
 
 	name := learningAreaInfo.Name
 	code := learningAreaInfo.Code
+	curriculumNumber := learningAreaInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -44,6 +46,11 @@ func NewLearningArea(context *gin.Context) {
 
 	if code == "0" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -66,6 +73,7 @@ func NewLearningArea(context *gin.Context) {
 	var duplicateCode models2.LearningArea
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -74,6 +82,7 @@ func NewLearningArea(context *gin.Context) {
 	var duplicateLearningArea models2.LearningArea
 	if duplicate := config.DB.
 		Where("name = ?", name).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateLearningArea).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area already exists!!"})
 		return
@@ -82,18 +91,19 @@ func NewLearningArea(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveLearningArea := models2.LearningArea{
-		Number:     number,
-		Name:       name,
-		Code:       codeNo,
-		UserNumber: userNumber,
+		Number:           number,
+		Name:             name,
+		Code:             codeNo,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 	config.DB.Save(&saveLearningArea)
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Learning Area Added Successfully!", "data": saveLearningArea})
 }
 
 func FetchLearningArea(context *gin.Context) {
-
-	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("")
+	curriculumNumber := context.Query("curriculum_number")
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum("", curriculumNumber)
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
