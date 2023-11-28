@@ -601,10 +601,10 @@ func FetchCurriculum(context *gin.Context) {
 }
 
 func FetchCurriculumInfo(context *gin.Context) {
-
+	curriculumNumber := context.Query("curriculum_number")
 	var curriculum models2.Curriculum
 	if err := config.DB.
-		//Where("number = ?", info.Strand).
+		Where("number = ?", curriculumNumber).
 		First(&curriculum).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
 		return
