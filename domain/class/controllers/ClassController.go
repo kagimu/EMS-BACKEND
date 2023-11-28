@@ -30,6 +30,7 @@ func NewClass(context *gin.Context) {
 	name := classInfo.Name
 	abbreviation := classInfo.Abbreviation
 	level := classInfo.Level
+	curriculumNumber := classInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -76,8 +77,10 @@ func NewClass(context *gin.Context) {
 
 	var duplicateCode models.Class
 	if duplicate := config.DB.
+		Where("learning_levels.curriculum_number = ?", curriculumNumber).
 		Where("code = ?", codeNo).
 		//Where("level_number = ?", level).
+		Preload("LearningLevel").
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -85,7 +88,9 @@ func NewClass(context *gin.Context) {
 
 	var duplicateClass models.Class
 	if duplicate := config.DB.
+		Where("learning_levels.curriculum_number = ?", curriculumNumber).
 		Where("name = ? OR abbreviation = ?", name, abbreviation).
+		Preload("LearningLevel").
 		First(&duplicateClass).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class cant be added exists"})
 		return

@@ -10,9 +10,9 @@ type (
 	Class struct {
 		ID            uint                  `gorm:"primaryKey"`
 		Number        string                `json:"number" gorm:"size:36;unique;not null"`
-		Name          string                `json:"name" form:"name" binding:"required" gorm:"size:100;unique;not null"`
+		Name          string                `json:"name" form:"name" binding:"required" gorm:"size:100;not null"`
 		Code          int64                 `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
-		Abbreviation  string                `json:"abbreviation" form:"abbreviation" binding:"required" gorm:"size:60;unique;not null"`
+		Abbreviation  string                `json:"abbreviation" form:"abbreviation" binding:"required" gorm:"size:60;not null"`
 		UserNumber    string                `json:"user_number" gorm:"size:36;not null"`
 		LevelNumber   string                `json:"level_number" gorm:"size:36;not null"`
 		CreatedAt     time.Time             `json:"created_at"`
