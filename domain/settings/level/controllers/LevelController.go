@@ -177,7 +177,7 @@ func NewCurriculumLevel(context *gin.Context) {
 			Where("level_number = ?", levelNumber).
 			Delete(&duplicateLevel)
 
-		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
+		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level removed successfully!"})
 
 		//context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
 		return
