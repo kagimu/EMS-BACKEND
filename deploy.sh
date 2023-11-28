@@ -9,6 +9,8 @@ echo "Listing available running containers: "
 
 docker ps
 docker stop  wholesome_backend_cont
+docker rm wholesome_backend_cont
+docker system prune -f
 
 docker-compose -f go-app-compose.yaml  build
 
