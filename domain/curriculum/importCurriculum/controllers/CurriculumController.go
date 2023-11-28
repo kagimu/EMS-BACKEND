@@ -600,6 +600,19 @@ func FetchCurriculum(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculum})
 }
 
+func FetchCurriculumInfo(context *gin.Context) {
+
+	var curriculum models2.Curriculum
+	if err := config.DB.
+		//Where("number = ?", info.Strand).
+		First(&curriculum).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculum})
+}
+
 func FetchUploadedCurriculum(context *gin.Context) {
 
 	var curriculumImport []models2.ImportCurriculum

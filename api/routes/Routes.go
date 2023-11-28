@@ -70,6 +70,7 @@ func SetupRoute() *gin.Engine {
 		//manage curriculum
 		main.POST("new-curriculum", curricullumController.NewCurriculum)
 		main.GET("curriculum-list", curricullumController.FetchCurriculum)
+		main.GET("curriculum-info", curricullumController.FetchCurriculumInfo)
 		main.POST("upload-curriculum", curricullumController.ImportCurriculum)
 		main.GET("uploaded-curriculum", curricullumController.FetchUploadedCurriculum)
 
