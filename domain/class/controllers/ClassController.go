@@ -308,13 +308,6 @@ func FetchSchemeOfWorkClasses(context *gin.Context) {
 				})
 			}
 
-			/*levels_ = append(levels_, responses.LearningLevelDataList{
-				Number:        list.Number,
-				Name:          list.Name,
-				Code:          list.Code,
-				UserNumber:    list.UserNumber,
-				ClassDataList: classes_,
-			})*/
 		}
 	}
 
@@ -322,10 +315,13 @@ func FetchSchemeOfWorkClasses(context *gin.Context) {
 }
 
 func FetchClassesCurriculum(context *gin.Context) {
-
+	curriculumNumber := context.Query("curriculum_number")
 	var classes []models.Class
 	var classes_ []responses.ClassDataList
 	if err := config.DB.
+		Where("learning_levels.curriculum_number = ?", curriculumNumber).
+		Joins("join learning_levels on classes.level_number = learning_levels.number").
+		Preload("LearningLevel").
 		Order("code asc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
