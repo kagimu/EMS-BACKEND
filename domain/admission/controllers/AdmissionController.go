@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
@@ -167,18 +169,48 @@ func NewStudentDetails(context *gin.Context) {
 		return
 	}*/
 
-	/*	number := uuid.NewV4().String()
-		saveCampus := studentDetailsModel.StudentDetail{
-			Number:       number,
-			UserNumber:   userNumber,
-			Name:         name,
-			Phone:        phone,
-			Email:        email,
-			Location:     location,
-			SchoolNumber: schoolNumber,
-		}
+	// Begin the transaction
+	tx := config.DB.Begin()
 
-		config.DB.Save(&saveCampus)*/
+	number := uuid.NewV4().String()
+	saveCampus := models2.StudentDetail{
+		Number:             number,
+		UserNumber:         userNumber,
+		Surname:            surname,
+		SecondName:         secondName,
+		OtherName:          otherName,
+		DateOfBirth:        dateOfBirth,
+		BirthCertificateNo: birthCertificateNo,
+		CountryOfBirth:     countryOfBirth,
+		HomeDistrict:       homeDistrict,
+		HomeSubCounty:      homeSubCounty,
+		HomeVillage:        homeVillage,
+		HomePhone1:         homePhone1,
+		HomePhone2:         homePhone2,
+		HomeEmail1:         homeEmail1,
+		HomeEmail2:         homeEmail2,
+		Religion:           religion,
+		HomeCountry:        homeCountry,
+		HomeCounty:         homeCounty,
+		HomeParish:         homeParish,
+		NearestTown:        nearestTown,
+	}
 
-	//context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveCampus})
+	if err := tx.Create(&saveCampus).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create  Student details"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add student details"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student details Added Successfully!", "data": saveCampus})
 }

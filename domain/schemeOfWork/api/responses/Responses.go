@@ -25,7 +25,7 @@ type (
 		StrandName         string                             `json:"strand_name"`
 		EstimatedTime      int64                              `json:"estimated_time"`
 		SchemeOfWorkNumber string                             `json:"scheme_of_work_number"`
-		SubtopicNumber     string                             `json:"sub_topic_number"`
+		SubTopicNumber     string                             `json:"sub_topic_number"`
 		UserNumber         string                             `json:"user_number"`
 		LessonPlan         []responses.LessonPlanResponseInfo `json:"lesson_plan"`
 	}

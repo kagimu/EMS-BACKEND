@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 )
@@ -48,6 +50,11 @@ func NewSubjectCluster(context *gin.Context) {
 		return
 	}
 
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -61,6 +68,15 @@ func NewSubjectCluster(context *gin.Context) {
 		First(&userData)
 	if validateUser.Error != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateCode models3.SubjectCluster
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("learning_area_number = ?", learningAreaNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
 	}
 
@@ -90,36 +106,71 @@ func NewSubjectCluster(context *gin.Context) {
 func FetchSubjectCluster(context *gin.Context) {
 
 	learningAreaNumber := context.Query("learning_area_number")
+	curriculumNumber := context.Query("curriculum_number")
 
-	var subjectCluster []models3.SubjectCluster
-	var subjectCluster_ []models3.SubjectClusterInfo
-	if err := config.DB.
-		Scopes(learningArea(learningAreaNumber)).
-		Preload("LearningArea").
-		Order("code asc").
-		Find(&subjectCluster).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject Cluster!"})
+	//fetch learning area
+	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum(learningAreaNumber, curriculumNumber)
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
 	}
 
-	for _, lst := range subjectCluster {
-		subjectCluster_ = append(subjectCluster_, models3.SubjectClusterInfo{
-			Number:             lst.Number,
-			Name:               lst.Name,
-			Code:               lst.Code,
-			LearningAreaNumber: lst.LearningAreaNumber,
-			LearningAreaName:   lst.LearningArea.Name,
+	var learningAreas_ []responses2.LearningAreaInfoData
+
+	for _, lstLA := range learningAreaResp {
+
+		//fetch subject cluster
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, "")
+		if err != "" {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+			return
+		}
+
+		var subjectCluster_ []responses.SubjectClusterInfo
+		//if len(subjectClusterResp) > 0 {
+		for _, lstSC := range subjectClusterResp {
+			subjectCluster_ = append(subjectCluster_, responses.SubjectClusterInfo{
+				Number:             lstSC.Number,
+				Name:               lstSC.Name,
+				Code:               lstSC.Code,
+				LearningAreaNumber: lstSC.LearningAreaNumber,
+			})
+		}
+
+		learningAreas_ = append(learningAreas_, responses2.LearningAreaInfoData{
+			Number:         lstLA.Number,
+			Name:           lstLA.Name,
+			Code:           lstLA.Code,
+			UserNumber:     lstLA.UserNumber,
+			SubjectCluster: subjectCluster_,
+		})
+		//}
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": learningAreas_})
+
+}
+
+func FetchSubjectClusterList(context *gin.Context) {
+
+	learningAreaNumber := context.Query("learning_area_number")
+
+	//fetch subject cluster
+	subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(learningAreaNumber, "")
+	if err != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	var subjectCluster_ []responses.SubjectClusterInfo
+	for _, lstSC := range subjectClusterResp {
+		subjectCluster_ = append(subjectCluster_, responses.SubjectClusterInfo{
+			Number:             lstSC.Number,
+			Name:               lstSC.Name,
+			Code:               lstSC.Code,
+			LearningAreaNumber: lstSC.LearningAreaNumber,
 		})
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjectCluster_})
-}
-
-func learningArea(learningAreaNumber string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if learningAreaNumber != "" {
-			return db.Where("learning_area_number = ?", learningAreaNumber)
-		}
-		return db
-	}
 }

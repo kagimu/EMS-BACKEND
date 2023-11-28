@@ -44,6 +44,11 @@ func NewLessonPlan(context *gin.Context) {
 		return
 	}
 
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	if lessonPlanConceptNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Concept is required!"})
 		return

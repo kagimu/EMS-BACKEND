@@ -26,3 +26,7 @@ type (
 		User               models.User                     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )
+
+func (u *SchemeOfWork) TableName() string {
+	return "scheme_of_work"
+}
