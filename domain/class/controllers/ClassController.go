@@ -74,12 +74,13 @@ func NewClass(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
 		return
 	}
-
+	fmt.Println(codeNo)
+	fmt.Println(curriculumNumber)
 	var duplicateCode models.Class
 	if duplicate := config.DB.
+		Where("classes.code = ?", codeNo).
 		Where("learning_levels.curriculum_number = ?", curriculumNumber).
-		Where("code = ?", codeNo).
-		//Where("level_number = ?", level).
+		Joins("join learning_levels on classes.level_number = learning_levels.number").
 		Preload("LearningLevel").
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
@@ -220,11 +221,13 @@ func AddClassToLevel(context *gin.Context) {
 func FetchClasses(context *gin.Context) {
 
 	level := context.Query("level")
+	curriculumNumber := context.Query("curriculum_number")
 
 	var levels []levelModels.LearningLevel
 	var levels_ []responses.LearningLevelDataList
 	if err := config.DB.
 		Scopes(levelDataFilter(level)).
+		Where("curriculum_number = ?", curriculumNumber).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
