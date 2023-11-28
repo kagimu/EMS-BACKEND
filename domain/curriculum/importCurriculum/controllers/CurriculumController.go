@@ -99,6 +99,8 @@ func ImportCurriculum(context *gin.Context) {
 	//validate maximum file size
 	excelFile, fileError := context.FormFile("excel_file")
 
+	curriculumNumber := context.PostForm("curriculum_number")
+
 	//validate if file is not uploaded
 	if fileError != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
@@ -118,6 +120,11 @@ func ImportCurriculum(context *gin.Context) {
 
 	if userNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "user number is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -178,20 +185,21 @@ func ImportCurriculum(context *gin.Context) {
 
 	fileNumber := uuid.NewV4().String()
 	saveFileData := models2.ImportCurriculum{
-		Number:     fileNumber,
-		Name:       excelName,
-		FileName:   fileName,
-		UserNumber: userNumber,
+		Number:           fileNumber,
+		Name:             excelName,
+		FileName:         fileName,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 	config.DB.Save(&saveFileData)
 
 	//read now the excel file
-	readExcelFile(path, userNumber)
+	readExcelFile(path, userNumber, curriculumNumber)
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
 }
 
-func readExcelFile(filePath string, userNumber string) {
+func readExcelFile(filePath string, userNumber string, curriculumNumber string) {
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
@@ -239,7 +247,7 @@ func readExcelFile(filePath string, userNumber string) {
 				ConceptCode:        getValueAtIndex(row, 14),
 				Concept:            getValueAtIndex(row, 15),
 			}
-			saveCurriculumData(curriculumInfo, idx, userNumber)
+			saveCurriculumData(curriculumInfo, idx, userNumber, curriculumNumber)
 		}
 	}
 
@@ -247,7 +255,7 @@ func readExcelFile(filePath string, userNumber string) {
 
 }
 
-func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber string) {
+func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber string, curriculumNumber string) {
 
 	//----------------------------------------------
 	//	save learning area
@@ -265,10 +273,11 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 
 	///save user data
 	saveLearningArea := learningAreaModels.LearningArea{
-		Number:     learningAreaNo,
-		Name:       info.LearningArea,
-		Code:       learningAreaCode,
-		UserNumber: userNumber,
+		Number:           learningAreaNo,
+		Name:             info.LearningArea,
+		Code:             learningAreaCode,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 
 	//check if learning area exists
@@ -276,6 +285,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	var learningAreaInfo learningAreaModels.LearningArea
 	learningAreaDup := config.DB.
 		Where("name = ?", info.LearningArea).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&learningAreaInfo)
 	if learningAreaDup.Error != nil {
 		err := config.DB.Save(&saveLearningArea).Error
@@ -422,9 +432,13 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	if info.Class == "" {
 		return
 	}
+
 	var classes classModels.Class
 	if err := config.DB.
 		Where("abbreviation = ?", info.Class).
+		Where("learning_levels.curriculum_number = ?", curriculumNumber).
+		Joins("join learning_levels on classes.level_number = learning_levels.number").
+		Preload("LearningLevel").
 		First(&classes).Error; err != nil {
 		//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
@@ -614,9 +628,10 @@ func FetchCurriculumInfo(context *gin.Context) {
 }
 
 func FetchUploadedCurriculum(context *gin.Context) {
-
+	curriculumNumber := context.Query("curriculum_number")
 	var curriculumImport []models2.ImportCurriculum
 	if err := config.DB.
+		Where("curriculum_number = ?", curriculumNumber).
 		Order("created_at desc").
 		Find(&curriculumImport).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})

@@ -74,8 +74,7 @@ func NewClass(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
 		return
 	}
-	fmt.Println(codeNo)
-	fmt.Println(curriculumNumber)
+
 	var duplicateCode models.Class
 	if duplicate := config.DB.
 		Where("classes.code = ?", codeNo).
