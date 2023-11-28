@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -346,7 +345,7 @@ func FetchClassesToAdd(context *gin.Context) {
 
 	level := context.Query("level")
 
-	var levelData models2.Level
+	var levelData levelModels.Level
 	if err := config.DB.
 		Where("number = ?", level).
 		First(&levelData).Error; err != nil {
@@ -356,7 +355,7 @@ func FetchClassesToAdd(context *gin.Context) {
 
 	var classes []models.Class
 	if err := config.DB.
-		Scopes(levelFilter(levelData.LearningLevelNumber)).
+		//Scopes(levelFilter(levelData.LearningLevelNumber)).
 		Order("code asc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})

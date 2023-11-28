@@ -92,6 +92,7 @@ func SetupRoute() *gin.Engine {
 
 		//level
 		main.POST("new-level", learningLevelControllers.NewLevel)
+		main.POST("new-curriculum-level", learningLevelControllers.NewCurriculumLevel)
 		main.GET("fetch-level", learningLevelControllers.FetchLearningLevel)
 
 		//	manage class

@@ -5,7 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
-	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	curriculumLevelModels2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -29,7 +29,6 @@ func NewLevel(context *gin.Context) {
 
 	code := levelInfo.Code
 	name := levelInfo.Name
-	curriculumNumber := levelInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -40,11 +39,6 @@ func NewLevel(context *gin.Context) {
 
 	if code == "0" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if curriculumNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -59,6 +53,11 @@ func NewLevel(context *gin.Context) {
 		return
 	}
 
+	if codeNo == 0 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
 	var userData models.User
 	//check if user is a valid user
 	validateUser := config.DB.
@@ -69,19 +68,17 @@ func NewLevel(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode levelModels.LearningLevel
+	var duplicateCode curriculumLevelModels2.Level
 	if duplicate := config.DB.
 		Where("code = ?", code).
-		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
 	}
 
-	var duplicateLevel levelModels.LearningLevel
+	var duplicateLevel curriculumLevelModels2.Level
 	if duplicate := config.DB.
 		Where("name = ?", name).
-		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateLevel).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
 		return
@@ -89,12 +86,110 @@ func NewLevel(context *gin.Context) {
 
 	// Begin the transaction
 	tx := config.DB.Begin()
-	number := uuid.NewV4().String()
 	///save user data
-	saveLevel := levelModels.LearningLevel{
-		Number:           number,
-		Name:             name,
-		Code:             codeNo,
+	saveLevel := curriculumLevelModels2.Level{
+		Number:     uuid.NewV4().String(),
+		Name:       name,
+		Code:       codeNo,
+		UserNumber: userNumber,
+	}
+
+	if err := tx.Create(&saveLevel).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		//context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create level"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add level"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level Added Successfully!", "data": saveLevel})
+}
+
+func NewCurriculumLevel(context *gin.Context) {
+
+	type LevelInfo struct {
+		Code             int64  `json:"code"`
+		LevelNumber      string `json:"level_number"`
+		CurriculumNumber string `json:"curriculum_number"`
+	}
+
+	var levelInfo LevelInfo
+	err := context.BindJSON(&levelInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	code := levelInfo.Code
+	levelNumber := levelInfo.LevelNumber
+	curriculumNumber := levelInfo.CurriculumNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	/*var duplicateCode curriculumLevelModels2.CurriculumLevel
+	if duplicate := config.DB.
+		Where("code = ?", code).
+		Where("level_number = ?", levelNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}*/
+
+	db := config.DB
+
+	var duplicateLevel curriculumLevelModels2.CurriculumLevel
+	if duplicate := db.
+		Where("level_number = ?", levelNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		First(&duplicateLevel).Error; duplicate == nil {
+
+		//	delete level on curriculum
+		db.Unscoped().Where("curriculum_number = ?", curriculumNumber).
+			Where("level_number = ?", levelNumber).
+			Delete(&duplicateLevel)
+
+		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
+
+		//context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
+		return
+	}
+
+	// Begin the transaction
+	tx := config.DB.Begin()
+	///save user data
+	saveLevel := curriculumLevelModels2.CurriculumLevel{
+		Number:           uuid.NewV4().String(),
+		Code:             code,
+		LevelNumber:      levelNumber,
 		CurriculumNumber: curriculumNumber,
 		UserNumber:       userNumber,
 	}
@@ -103,8 +198,8 @@ func NewLevel(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create level"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		//context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create level"})
 		return
 	}
 
@@ -120,11 +215,9 @@ func NewLevel(context *gin.Context) {
 
 func FetchLearningLevel(context *gin.Context) {
 
-	curriculumNumber := context.Query("curriculum_number")
-	var levels []levelModels.LearningLevel
-	var levels_ []responses2.LearningLevelList
+	var levels []curriculumLevelModels2.Level
+	var levels_ []responses2.LevelList
 	if err := config.DB.
-		Where("curriculum_number = ?", curriculumNumber).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
@@ -132,7 +225,7 @@ func FetchLearningLevel(context *gin.Context) {
 	}
 
 	for _, list := range levels {
-		levels_ = append(levels_, responses2.LearningLevelList{
+		levels_ = append(levels_, responses2.LevelList{
 			Number:     list.Number,
 			Name:       list.Name,
 			Code:       list.Code,

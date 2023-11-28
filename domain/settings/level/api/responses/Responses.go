@@ -1,7 +1,7 @@
 package responses
 
 type (
-	LearningLevelList struct {
+	LevelList struct {
 		Number     string `json:"number"`
 		Name       string `json:"name"`
 		Code       int64  `json:"code"`
