@@ -116,6 +116,7 @@ func main() {
 		&lessonPlanModel.LessonPlan{},
 		&lessonPlanModel.LessonPlanSteps{},
 		&studentDetailsModels.StudentDetail{},
+		&classModel.CurriculumClass{},
 	)
 	if errMigrate != nil {
 		return

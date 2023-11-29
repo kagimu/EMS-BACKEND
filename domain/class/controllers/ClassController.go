@@ -219,6 +219,85 @@ func AddClassToLevel(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
 }
 
+func AddCurriculumClass(context *gin.Context) {
+
+	type CurriculumClassInfo struct {
+		LevelNumber string `json:"level_number"`
+		ClassNumber string `json:"class_number"`
+		Code        int64  `json:"class_code"`
+	}
+
+	var curriculumClassInfo CurriculumClassInfo
+	err := context.BindJSON(&curriculumClassInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	classNumber := curriculumClassInfo.ClassNumber
+	levelNumber := curriculumClassInfo.LevelNumber
+	code := curriculumClassInfo.Code
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	var userData authModels.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateClass models.CurriculumClass
+	db := config.DB
+	if duplicate := config.DB.
+		Where("class_number = ?", classNumber).
+		Where("curriculum_level_number = ?", levelNumber).
+		First(&duplicateClass).Error; duplicate == nil {
+
+		//check if this class has children such that it is not deleted
+
+		/*var classChildrenChecker models.ClassLevelSubject
+		if err := db.
+			Where("class_level_number = ?", duplicateClass.Number).
+			First(&classChildrenChecker).Error; err == nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Class, it has Children"})
+			return
+		}*/
+
+		//------------------------------------------------------
+		//delete class if it is removed from the level
+		db.Unscoped().Where("class_number = ?", classNumber).
+			Where("curriculum_level_number = ?", levelNumber).
+			Delete(&duplicateClass)
+		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
+		return
+	}
+
+	saveClass := models.CurriculumClass{
+		Number:                uuid.NewV4().String(),
+		ClassNumber:           classNumber,
+		CurriculumLevelNumber: levelNumber,
+		UserNumber:            userNumber,
+		Code:                  code,
+	}
+	config.DB.Save(&saveClass)
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+}
+
 func FetchClasses(context *gin.Context) {
 
 	level := context.Query("level")

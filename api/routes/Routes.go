@@ -99,6 +99,7 @@ func SetupRoute() *gin.Engine {
 		//	manage class
 		main.POST("new-class", classController.NewClass)
 		main.POST("new-class-level", classController.AddClassToLevel)
+		main.POST("new-curriculum-class", classController.AddCurriculumClass)
 		main.GET("classes", classController.FetchClasses)
 		main.GET("filter-curriculum-classes", classController.FilterCurriculumClasses)
 		main.GET("scheme-of-work-classes", classController.FetchSchemeOfWorkClasses)
