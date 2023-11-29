@@ -255,6 +255,7 @@ func FetchCurriculumLevel(context *gin.Context) {
 		curriculumLevels_ = append(curriculumLevels_, responses2.CurriculumLevelList{
 			Number:           list.Number,
 			Name:             list.Level.Name,
+			LevelNumber:      list.Level.Number,
 			Code:             list.Code,
 			UserNumber:       list.UserNumber,
 			CurriculumName:   list.Curriculum.Name,

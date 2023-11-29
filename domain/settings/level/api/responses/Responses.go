@@ -23,6 +23,7 @@ type (
 		Name             string `json:"name"`
 		Code             int64  `json:"code"`
 		UserNumber       string `json:"user_number"`
+		LevelNumber      string `json:"level_number"`
 		CurriculumName   string `json:"curriculum_name"`
 		CurriculumNumber string `json:"curriculum_number"`
 	}
