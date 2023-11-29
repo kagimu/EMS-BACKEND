@@ -270,6 +270,34 @@ func FetchClasses(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levels_})
 }
 
+func FilterCurriculumClasses(context *gin.Context) {
+
+	level := context.Query("level")
+
+	var classes []models.Class
+	var classes_ []responses.ClassDataList
+	if err := config.DB.
+		Where("level_number = ?", level).
+		Order("code asc").
+		Find(&classes).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
+	for _, lst := range classes {
+		classes_ = append(classes_, responses.ClassDataList{
+			Number:       lst.Number,
+			Name:         lst.Name,
+			Code:         lst.Code,
+			Abbreviation: lst.Abbreviation,
+			UserNumber:   lst.UserNumber,
+			LevelNumber:  lst.LevelNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
+}
+
 func FetchSchemeOfWorkClasses(context *gin.Context) {
 
 	level := context.Query("level")

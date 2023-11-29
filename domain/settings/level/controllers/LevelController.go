@@ -154,16 +154,6 @@ func NewCurriculumLevel(context *gin.Context) {
 		return
 	}
 
-	/*var duplicateCode curriculumLevelModels2.CurriculumLevel
-	if duplicate := config.DB.
-		Where("code = ?", code).
-		Where("level_number = ?", levelNumber).
-		Where("curriculum_number = ?", curriculumNumber).
-		First(&duplicateCode).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
-		return
-	}*/
-
 	db := config.DB
 
 	var duplicateLevel curriculumLevelModels2.CurriculumLevel
@@ -171,6 +161,14 @@ func NewCurriculumLevel(context *gin.Context) {
 		Where("level_number = ?", levelNumber).
 		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateLevel).Error; duplicate == nil {
+
+		/*var classChildrenChecker models2.ClassLevel
+		if err := db.
+			Where("class_level_number = ?", levelNumber).
+			First(&classChildrenChecker).Error; err == nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Level, it has Children"})
+			return
+		}*/
 
 		//	delete level on curriculum
 		db.Unscoped().Where("curriculum_number = ?", curriculumNumber).
