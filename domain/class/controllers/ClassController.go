@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -29,7 +30,6 @@ func NewClass(context *gin.Context) {
 	name := classInfo.Name
 	abbreviation := classInfo.Abbreviation
 	level := classInfo.Level
-	curriculumNumber := classInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -76,22 +76,25 @@ func NewClass(context *gin.Context) {
 
 	var duplicateCode models.Class
 	if duplicate := config.DB.
-		Where("classes.code = ?", codeNo).
-		Where("learning_levels.curriculum_number = ?", curriculumNumber).
-		Joins("join learning_levels on classes.level_number = learning_levels.number").
-		Preload("LearningLevel").
+		Where("code = ?", codeNo).
 		First(&duplicateCode).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists!"})
 		return
 	}
 
 	var duplicateClass models.Class
 	if duplicate := config.DB.
-		Where("learning_levels.curriculum_number = ?", curriculumNumber).
-		Where("name = ? OR abbreviation = ?", name, abbreviation).
-		Preload("LearningLevel").
+		Where("name = ?", name).
 		First(&duplicateClass).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Class cant be added exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists!"})
+		return
+	}
+
+	var duplicateAbbreviation models.Class
+	if duplicate := config.DB.
+		Where("abbreviation = ?", abbreviation).
+		First(&duplicateAbbreviation).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation already exists!"})
 		return
 	}
 
@@ -219,13 +222,11 @@ func AddClassToLevel(context *gin.Context) {
 func FetchClasses(context *gin.Context) {
 
 	level := context.Query("level")
-	curriculumNumber := context.Query("curriculum_number")
 
-	var levels []levelModels.LearningLevel
-	var levels_ []responses.LearningLevelDataList
+	var levels []levelModels.Level
+	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
 		Scopes(levelDataFilter(level)).
-		Where("curriculum_number = ?", curriculumNumber).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
@@ -256,7 +257,7 @@ func FetchClasses(context *gin.Context) {
 				})
 			}
 
-			levels_ = append(levels_, responses.LearningLevelDataList{
+			levels_ = append(levels_, responses2.ClassLevelList{
 				Number:        list.Number,
 				Name:          list.Name,
 				Code:          list.Code,

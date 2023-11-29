@@ -210,7 +210,7 @@ func NewCurriculumLevel(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level Added Successfully!", "data": saveLevel})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level Added Successfully!"})
 }
 
 func FetchLearningLevel(context *gin.Context) {
@@ -234,4 +234,33 @@ func FetchLearningLevel(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levels_})
+}
+
+func FetchCurriculumLevel(context *gin.Context) {
+
+	curriculumNumber := context.Query("curriculum_number")
+	var curriculumLevels []curriculumLevelModels2.CurriculumLevel
+	var curriculumLevels_ []responses2.CurriculumLevelList
+	if err := config.DB.
+		Where("curriculum_number = ?", curriculumNumber).
+		Preload("Level").
+		Preload("Curriculum").
+		Order("code asc").
+		Find(&curriculumLevels).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found!"})
+		return
+	}
+
+	for _, list := range curriculumLevels {
+		curriculumLevels_ = append(curriculumLevels_, responses2.CurriculumLevelList{
+			Number:           list.Number,
+			Name:             list.Level.Name,
+			Code:             list.Code,
+			UserNumber:       list.UserNumber,
+			CurriculumName:   list.Curriculum.Name,
+			CurriculumNumber: list.Curriculum.Number,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculumLevels_})
 }

@@ -103,7 +103,6 @@ func main() {
 		&classModel.Stream{},
 		&academicYearModel.AcademicYear{},
 		&studyPeriodModel.StudyPeriod{},
-		&classModel.ClassLevel{},
 		&curriculumModel.ImportCurriculum{},
 		&classModel.Stream{},
 		&timetableModels.StudyTimetable{},
