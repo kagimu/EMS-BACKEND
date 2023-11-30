@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
 	curriculumLevelModels2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
@@ -162,13 +163,13 @@ func NewCurriculumLevel(context *gin.Context) {
 		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateLevel).Error; duplicate == nil {
 
-		/*var classChildrenChecker models2.ClassLevel
+		var levelChildrenChecker models2.CurriculumClass
 		if err := db.
-			Where("class_level_number = ?", levelNumber).
-			First(&classChildrenChecker).Error; err == nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Level, it has Children"})
+			Where("curriculum_level_number = ?", duplicateLevel.Number).
+			First(&levelChildrenChecker).Error; err == nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not remove this Level, it has Children"})
 			return
-		}*/
+		}
 
 		//	delete level on curriculum
 		db.Unscoped().Where("curriculum_number = ?", curriculumNumber).
