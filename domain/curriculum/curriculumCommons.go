@@ -69,8 +69,10 @@ func FetchTopicCurriculum(strandNumber string, topicNumber string, classNumber s
 	var errInfo string
 	if err := config.DB.
 		Scopes(scopeFilter("number", topicNumber)).
-		Scopes(scopeFilter("class_number", classNumber)).
+		Scopes(scopeFilter("curriculum_class_number", classNumber)).
 		Scopes(scopeFilter("strand_number", strandNumber)).
+		//Preload("CurriculumClass.CurriculumLevel").
+		//Preload("CurriculumClass").
 		Order("code asc").
 		Find(&topic).Error; err != nil {
 		errInfo = "No topic found!"
