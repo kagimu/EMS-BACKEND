@@ -384,6 +384,7 @@ func FetchCurriculumClasses(context *gin.Context) {
 				classes_ = append(classes_, responses.ClassDataList{
 					Number:       lst.Number,
 					Name:         lst.Class.Name,
+					ClassNumber:  lst.Class.Number,
 					Code:         lst.Code,
 					Abbreviation: lst.Class.Abbreviation,
 					UserNumber:   lst.UserNumber,
