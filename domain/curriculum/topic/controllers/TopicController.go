@@ -109,8 +109,8 @@ func NewTopic(context *gin.Context) {
 		Name:         name,
 		StrandNumber: strandNumber,
 		UserNumber:   userNumber,
-		ClassNumber:  classNumber,
-		Code:         codeNo,
+		//ClassNumber:  classNumber,
+		Code: codeNo,
 	}
 	config.DB.Save(&saveTopic)
 
@@ -174,11 +174,11 @@ func FetchTopic(context *gin.Context) {
 					var topic_ []responses.TopicDataList
 					for _, list := range topicResp {
 						topic_ = append(topic_, responses.TopicDataList{
-							Number:      list.Number,
-							Name:        list.Name,
-							Code:        list.Code,
-							UserNumber:  list.UserNumber,
-							ClassNumber: list.ClassNumber,
+							Number:     list.Number,
+							Name:       list.Name,
+							Code:       list.Code,
+							UserNumber: list.UserNumber,
+							//ClassNumber: list.ClassNumber,
 						})
 					}
 
@@ -239,11 +239,11 @@ func FetchTopicList(context *gin.Context) {
 	var topic_ []responses.TopicDataList
 	for _, list := range topicResp {
 		topic_ = append(topic_, responses.TopicDataList{
-			Number:      list.Number,
-			Name:        list.Name,
-			Code:        list.Code,
-			UserNumber:  list.UserNumber,
-			ClassNumber: list.ClassNumber,
+			Number:     list.Number,
+			Name:       list.Name,
+			Code:       list.Code,
+			UserNumber: list.UserNumber,
+			//ClassNumber: list.ClassNumber,
 		})
 	}
 

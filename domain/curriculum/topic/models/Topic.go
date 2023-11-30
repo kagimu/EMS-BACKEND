@@ -9,19 +9,19 @@ import (
 
 type (
 	Topic struct {
-		ID           uint           `gorm:"primaryKey"`
-		Number       string         `json:"number" gorm:"size:36;unique;not null"`
-		Name         string         `json:"name" form:"name" binding:"required" gorm:"type:longtext;not null"`
-		Code         int64          `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
-		UserNumber   string         `json:"user_number" gorm:"size:36;not null"`
-		StrandNumber string         `json:"strand_number" gorm:"size:36;not null"`
-		ClassNumber  string         `json:"class_number" gorm:"size:36;not null"`
-		CreatedAt    time.Time      `json:"created_at"`
-		UpdatedAt    time.Time      `json:"updated_at"`
-		DeletedAt    *time.Time     `sql:"index"`
-		Strand       models3.Strand `gorm:"foreignKey:StrandNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-		Class        models2.Class  `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-		User         models.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		ID                    uint                    `gorm:"primaryKey"`
+		Number                string                  `json:"number" gorm:"size:36;unique;not null"`
+		Name                  string                  `json:"name" form:"name" binding:"required" gorm:"type:longtext;not null"`
+		Code                  int64                   `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
+		UserNumber            string                  `json:"user_number" gorm:"size:36;not null"`
+		StrandNumber          string                  `json:"strand_number" gorm:"size:36;not null"`
+		CurriculumClassNumber string                  `json:"curriculum_class_number" gorm:"size:36;not null"`
+		CreatedAt             time.Time               `json:"created_at"`
+		UpdatedAt             time.Time               `json:"updated_at"`
+		DeletedAt             *time.Time              `sql:"index"`
+		Strand                models3.Strand          `gorm:"foreignKey:StrandNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		CurriculumClass       models2.CurriculumClass `gorm:"foreignKey:CurriculumClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		User                  models.User             `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )
 

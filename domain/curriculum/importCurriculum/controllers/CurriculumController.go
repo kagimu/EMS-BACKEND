@@ -433,12 +433,14 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		return
 	}
 
-	var classes classModels.Class
+	var classes classModels.CurriculumClass
 	if err := config.DB.
-		Where("abbreviation = ?", info.Class).
-		Where("learning_levels.curriculum_number = ?", curriculumNumber).
-		Joins("join learning_levels on classes.level_number = learning_levels.number").
-		Preload("LearningLevel").
+		Where("classes.abbreviation = ?", info.Class).
+		Where("curriculum_levels.curriculum_number = ?", curriculumNumber).
+		Joins("join curriculum_levels on curriculum_levels.number = curriculum_classes.curriculum_level_number").
+		Joins("join classes on classes.number = curriculum_classes.class_number").
+		Preload("CurriculumLevel").
+		Preload("Class").
 		First(&classes).Error; err != nil {
 		//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
@@ -468,12 +470,12 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	topicNo := uuid.NewV4().String()
 	///save user data
 	saveTopic := topicModels.Topic{
-		Number:       topicNo,
-		Name:         info.Topic,
-		Code:         topicCode,
-		StrandNumber: strandNumber,
-		UserNumber:   userNumber,
-		ClassNumber:  classes.Number,
+		Number:                topicNo,
+		Name:                  info.Topic,
+		Code:                  topicCode,
+		StrandNumber:          strandNumber,
+		UserNumber:            userNumber,
+		CurriculumClassNumber: classes.Number,
 	}
 
 	var topicInfo topicModels.Topic

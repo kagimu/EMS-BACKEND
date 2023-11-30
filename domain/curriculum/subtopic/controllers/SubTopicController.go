@@ -201,12 +201,12 @@ func FetchSubTopic(context *gin.Context) {
 						}
 
 						topic_ = append(topic_, responses6.TopicDataList{
-							Number:      list.Number,
-							Name:        list.Name,
-							Code:        list.Code,
-							UserNumber:  list.UserNumber,
-							ClassNumber: list.ClassNumber,
-							SubTopic:    subTopicInfo_,
+							Number:     list.Number,
+							Name:       list.Name,
+							Code:       list.Code,
+							UserNumber: list.UserNumber,
+							//ClassNumber: list.ClassNumber,
+							SubTopic: subTopicInfo_,
 						})
 					}
 
