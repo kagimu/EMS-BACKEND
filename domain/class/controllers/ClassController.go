@@ -224,7 +224,7 @@ func AddCurriculumClass(context *gin.Context) {
 	type CurriculumClassInfo struct {
 		LevelNumber string `json:"level_number"`
 		ClassNumber string `json:"class_number"`
-		Code        int64  `json:"class_code"`
+		Code        int64  `json:"code"`
 	}
 
 	var curriculumClassInfo CurriculumClassInfo
@@ -339,6 +339,60 @@ func FetchClasses(context *gin.Context) {
 			levels_ = append(levels_, responses2.ClassLevelList{
 				Number:        list.Number,
 				Name:          list.Name,
+				Code:          list.Code,
+				UserNumber:    list.UserNumber,
+				ClassDataList: classes_,
+			})
+		}
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levels_})
+}
+
+func FetchCurriculumClasses(context *gin.Context) {
+
+	level := context.Query("level")
+	curriculumNumber := context.Query("curriculum_number")
+
+	var levels []levelModels.CurriculumLevel
+	var levels_ []responses2.ClassLevelList
+	if err := config.DB.
+		Scopes(levelInfoFilter(level)).
+		Where("curriculum_Number = ?", curriculumNumber).
+		Preload("Level").
+		Order("code asc").
+		Find(&levels).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}
+
+	for _, list := range levels {
+
+		var classes []models.CurriculumClass
+		var classes_ []responses.ClassDataList
+		if err := config.DB.
+			Where("curriculum_level_number = ?", list.Number).
+			Preload("Class").
+			Order("code asc").
+			Find(&classes).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+			return
+		}
+
+		if len(classes) > 0 {
+			for _, lst := range classes {
+				classes_ = append(classes_, responses.ClassDataList{
+					Number:       lst.Number,
+					Name:         lst.Class.Name,
+					Code:         lst.Code,
+					Abbreviation: lst.Class.Abbreviation,
+					UserNumber:   lst.UserNumber,
+				})
+			}
+
+			levels_ = append(levels_, responses2.ClassLevelList{
+				Number:        list.Number,
+				Name:          list.Level.Name,
 				Code:          list.Code,
 				UserNumber:    list.UserNumber,
 				ClassDataList: classes_,
@@ -482,7 +536,7 @@ func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func levelFilter(level string) func(db *gorm.DB) *gorm.DB {
+func levelInfoFilter(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if level != "" {
 			return db.Where("level_number = ?", level)
