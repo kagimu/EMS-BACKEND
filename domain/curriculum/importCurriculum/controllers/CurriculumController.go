@@ -482,7 +482,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	topicDup := config.DB.
 		Where("name = ?", info.Topic).
 		Where("strand_number = ?", strandInfo.Number).
-		Where("class_number = ?", classes.Number).
+		Where("curriculum_class_number = ?", classes.Number).
 		First(&topicInfo)
 	if topicDup.Error != nil {
 		err := config.DB.Save(&saveTopic).Error
