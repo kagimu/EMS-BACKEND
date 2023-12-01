@@ -435,42 +435,31 @@ func FilterCurriculumClasses(context *gin.Context) {
 func FetchSchemeOfWorkClasses(context *gin.Context) {
 
 	level := context.Query("level")
+	curriculumNumber := context.Query("curriculum_number")
 
-	var levels []levelModels.LearningLevel
+	var classes []models.CurriculumClass
+	var classes_ []responses.ClassDataList
 	if err := config.DB.
 		Scopes(levelDataFilter(level)).
+		Where("curriculum_levels.curriculum_number = ?", curriculumNumber).
+		Joins("join curriculum_levels on curriculum_levels.number = curriculum_classes.curriculum_level_number").
+		Joins("join classes on curriculum_classes.class_number = classes.number").
+		Preload("CurriculumLevel").
+		Preload("Class").
 		Order("code asc").
-		Find(&levels).Error; err != nil {
+		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
 		return
 	}
 
-	var classes_ []responses.ClassDataList
-	for _, list := range levels {
-
-		var classes []models.Class
-
-		if err := config.DB.
-			Where("level_number = ?", list.Number).
-			Order("code asc").
-			Find(&classes).Error; err != nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
-			return
-		}
-
-		if len(classes) > 0 {
-			for _, lst := range classes {
-				classes_ = append(classes_, responses.ClassDataList{
-					Number:       lst.Number,
-					Name:         lst.Name,
-					Code:         lst.Code,
-					Abbreviation: lst.Abbreviation,
-					UserNumber:   lst.UserNumber,
-					LevelNumber:  lst.LevelNumber,
-				})
-			}
-
-		}
+	for _, lst := range classes {
+		classes_ = append(classes_, responses.ClassDataList{
+			Number:       lst.Number,
+			Name:         lst.Class.Name,
+			Code:         lst.Code,
+			Abbreviation: lst.Class.Abbreviation,
+			UserNumber:   lst.UserNumber,
+		})
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
@@ -533,7 +522,7 @@ func FetchClassesToAdd(context *gin.Context) {
 func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if level != "" {
-			return db.Where("number = ?", level)
+			return db.Where("curriculum_levels.number = ?", level)
 		}
 		return db
 	}
