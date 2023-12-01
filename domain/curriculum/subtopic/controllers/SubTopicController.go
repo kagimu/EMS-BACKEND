@@ -298,7 +298,6 @@ func FetchSubTopicByClass(context *gin.Context) {
 	var subTopicInfo_ []responses.SubTopicList
 	if err := config.DB.
 		Scopes(classFilter(classNumber)).
-		//Scopes(subjectFilter(subjectNumber)).
 		Joins("join topics on topics.number = sub_topics.topic_number").
 		Preload("Topic.Strand.Subject").
 		Preload("Topic.Strand").
@@ -332,17 +331,8 @@ func FetchSubTopicByClass(context *gin.Context) {
 func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if classNumber != "" {
-			return db.Where("topics.class_number = ?", classNumber)
+			return db.Where("topics.curriculum_class_number = ?", classNumber)
 		}
 		return db
 	}
 }
-
-/*func subjectFilter(subjectNumber string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if subjectNumber != "" {
-			//return db.Where("topics.class_number = ?", subjectNumber)
-		}
-		return db
-	}
-}*/
