@@ -11,7 +11,7 @@ type (
 		Number           string                     `json:"number" gorm:"size:36;unique;not null"`
 		CurriculumNumber string                     `json:"curriculum_number" gorm:"size:36;index;not null"`
 		SchoolNumber     string                     `json:"school_number" gorm:"size:36;index;not null"`
-		Curriculum       curriculumModel.Curriculum `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Curriculum       curriculumModel.Curriculum `gorm:"foreignKey:CurriculumNumber;references:Number;"`
 		School           School                     `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )

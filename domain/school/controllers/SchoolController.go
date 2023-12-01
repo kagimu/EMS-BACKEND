@@ -4,6 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -226,14 +227,30 @@ func FetchSchoolInfo(context *gin.Context) {
 	}
 
 	var schools schoolCurriculumModels.School
+	var curriculum_ []responses.SchoolCurriculumResponseInfo
 	if err := config.DB.
 		Where("number = ?", schoolNumber).
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
 		First(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools})
+	for _, schoolCurr := range schools.SchoolCurriculum {
+		curriculum_ = append(curriculum_, responses.SchoolCurriculumResponseInfo{
+			Name:   schoolCurr.Curriculum.Name,
+			Number: schoolCurr.Number,
+		})
+	}
+
+	schools_ := responses.SchoolResponseInfo{
+		Number:           schools.Number,
+		Name:             schools.Name,
+		SchoolCurriculum: curriculum_,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
 }
 
 func FetchSchools(context *gin.Context) {
