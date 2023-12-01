@@ -84,6 +84,7 @@ func main() {
 		&authModels.PasswordReset{},
 		&authModels.UserPassword{},
 		&schoolModels.School{},
+		&schoolModels.SchoolCurriculum{},
 		&curriculumModel.Curriculum{},
 		&models.Campus{},
 		&LearningLevelModels.LearningLevel{},
