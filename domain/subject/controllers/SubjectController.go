@@ -212,7 +212,7 @@ func FetchSubjectByClass(context *gin.Context) {
 
 	var topic []topicModel.Topic
 	if err := config.DB.
-		Where("topics.class_number = ?", classNumber).
+		Where("topics.curriculum_class_number = ?", classNumber).
 		Joins("join strands on strands.number = topics.strand_number").
 		Preload("Strand.Subject").
 		Preload("Strand").
