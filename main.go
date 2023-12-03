@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	"log"
 	"os"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
-	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
@@ -26,10 +26,10 @@ import (
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	LearningLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
-	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -87,7 +87,7 @@ func main() {
 		&authModels.UserPassword{},
 		&schoolModels.School{},
 		&schoolModels.SchoolCurriculum{},
-		&curriculumModel.Curriculum{},
+		&models2.Curriculum{},
 		&models.Campus{},
 		&LearningLevelModels.LearningLevel{},
 		&LearningLevelModels.Level{},
@@ -102,11 +102,11 @@ func main() {
 		&subTopicModels.SubTopic{},
 		&conceptModels.Concept{},
 		&classModel.ClassLevel{},
-		&curriculumModel.ImportCurriculum{},
+		&models2.ImportCurriculum{},
 		&classModel.Stream{},
 		&academicYearModel.AcademicYear{},
 		&studyPeriodModel.StudyPeriod{},
-		&curriculumModel.ImportCurriculum{},
+		&models2.ImportCurriculum{},
 		&classModel.Stream{},
 		&timetableModels.StudyTimetable{},
 		&timetableModels.StudyTimetablePeriods{},

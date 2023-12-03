@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
+	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	"gorm.io/gorm"
 )
 
