@@ -2,8 +2,8 @@ package models
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"gorm.io/gorm"
 	"time"
 )

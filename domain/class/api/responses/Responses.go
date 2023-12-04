@@ -19,6 +19,7 @@ type (
 		Code         int64  `json:"code"`
 		Abbreviation string `json:"abbreviation"`
 		UserNumber   string `json:"user_number"`
+		ClassNumber  string `json:"class_number"`
 		LevelNumber  string `json:"level_number"`
 	}
 

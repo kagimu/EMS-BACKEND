@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -110,7 +111,7 @@ func NewCampus(context *gin.Context) {
 	}
 
 	//save Level
-	for _, item := range level {
+	/*for _, item := range level {
 		levelNumber := uuid.NewV4().String()
 		saveLevel := campusModel.Level{
 			Number:              levelNumber,
@@ -127,7 +128,7 @@ func NewCampus(context *gin.Context) {
 			return
 		}
 
-	}
+	}*/
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
@@ -310,15 +311,15 @@ func FetchLevel(context *gin.Context) {
 		return
 	}
 
-	var level_ []responses.CampusLevelList
-	for _, lvl := range campus.Level {
-		level_ = append(level_, responses.CampusLevelList{
-			Number:              lvl.Number,
-			LearningLevelNumber: lvl.LearningLevelNumber,
-			LevelName:           lvl.LearningLevel.Name,
-			CampusNumber:        lvl.CampusNumber,
-		})
-	}
+	/*	var level_ []responses.CampusLevelList
+		for _, lvl := range campus.Level {
+			level_ = append(level_, responses.CampusLevelList{
+				Number:              lvl.Number,
+				LearningLevelNumber: lvl.LearningLevelNumber,
+				LevelName:           lvl.LearningLevel.Name,
+				CampusNumber:        lvl.CampusNumber,
+			})
+		}*/
 
 	campus_ := responses.CampusDataList{
 		Number:       campus.Number,
@@ -328,7 +329,7 @@ func FetchLevel(context *gin.Context) {
 		Location:     campus.Location,
 		UserNumber:   campus.UserNumber,
 		SchoolNumber: campus.SchoolNumber,
-		Level:        level_,
+		//Level:        level_,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
@@ -344,8 +345,8 @@ func FetchCampusLevel(context *gin.Context) {
 		return
 	}
 
-	var levelInfo []campusModel.Level
-	var levelInfo_ []campusModel.LevelDataInfo
+	var levelInfo []models2.Level
+	var levelInfo_ []models2.LevelDataInfo
 	if err := config.DB.
 		//Select("name", "number").
 		Where("campus_number = ?", campusNumber).
@@ -357,13 +358,13 @@ func FetchCampusLevel(context *gin.Context) {
 	}
 
 	// Populate the selected columns from the fetched data
-	for _, level := range levelInfo {
+	/*for _, level := range levelInfo {
 		levelInfo_ = append(levelInfo_, campusModel.LevelDataInfo{
 			Name:   level.LearningLevel.Name,
 			Code:   level.LearningLevel.Code,
 			Number: level.Number,
 		})
-	}
+	}*/
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levelInfo_})
 
@@ -417,7 +418,7 @@ func DeleteCampus(context *gin.Context) {
 	}
 
 	//delete Campus
-	var levelData campusModel.Level
+	var levelData models2.Level
 	db.Where("campus_number = ?", campusNumber).Delete(&levelData)
 
 	//delete Campus
