@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
-	"log"
 	"os"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -32,8 +31,7 @@ import (
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
