@@ -6,9 +6,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -268,7 +268,7 @@ func FetchAcademicByClass(context *gin.Context) {
 				AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
 				UserNumber:            academicList.UserNumber,
 				LevelNumber:           academicList.LevelNumber,
-				LevelName:             academicList.Level.LearningLevel.Name,
+				//LevelName:             academicList.Level.LearningLevel.Name,
 			})
 		}
 	}

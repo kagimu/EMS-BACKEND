@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -18,7 +19,7 @@ type (
 		UserNumber   string         `json:"user_number" gorm:"size:36;not null"`
 		Class        Class          `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Campus       models2.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-		Level        models2.Level  `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Level        models3.Level  `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User         models.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		ClassName    string         `json:"class_name" gorm:"-"`
 		LevelName    string         `json:"level_name" gorm:"-"`

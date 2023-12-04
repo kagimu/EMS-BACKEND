@@ -1,11 +1,10 @@
 package requests
 
 type ClassInfo struct {
-	Name             string `json:"name"`
-	Code             string `json:"code"`
-	Abbreviation     string `json:"abbreviation"`
-	Level            string `json:"level"`
-	CurriculumNumber string `json:"curriculum_number"`
+	Name         string `json:"name"`
+	Code         string `json:"code"`
+	Abbreviation string `json:"abbreviation"`
+	Level        string `json:"level"`
 }
 
 type StreamRequest struct {

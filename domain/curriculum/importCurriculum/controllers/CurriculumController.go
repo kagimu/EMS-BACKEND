@@ -6,12 +6,16 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
+	models5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	schoolCurriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
+	curriculumLevelModels2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -54,7 +58,7 @@ func NewCurriculum(context *gin.Context) {
 		return
 	}
 
-	var duplicateSchool models2.Curriculum
+	var duplicateSchool models5.Curriculum
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("user_number = ?", userNumber).
@@ -66,7 +70,7 @@ func NewCurriculum(context *gin.Context) {
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
-	saveCurriculum := models2.Curriculum{
+	saveCurriculum := models5.Curriculum{
 		Number:     uuid.NewV4().String(),
 		Name:       name,
 		UserNumber: userNumber,
@@ -184,7 +188,7 @@ func ImportCurriculum(context *gin.Context) {
 		}*/
 
 	fileNumber := uuid.NewV4().String()
-	saveFileData := models2.ImportCurriculum{
+	saveFileData := models5.ImportCurriculum{
 		Number:           fileNumber,
 		Name:             excelName,
 		FileName:         fileName,
@@ -229,7 +233,7 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 
 	for idx, row := range rows {
 		if idx > 0 {
-			curriculumInfo := models2.ExcelCurriculumInfo{
+			curriculumInfo := models5.ExcelCurriculumInfo{
 				LearningAreaCode:   getValueAtIndex(row, 0),
 				LearningArea:       getValueAtIndex(row, 1),
 				SubjectClusterCode: getValueAtIndex(row, 2),
@@ -255,7 +259,7 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 
 }
 
-func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber string, curriculumNumber string) {
+func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber string, curriculumNumber string) {
 
 	//----------------------------------------------
 	//	save learning area
@@ -433,12 +437,14 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		return
 	}
 
-	var classes classModels.Class
+	var classes classModels.CurriculumClass
 	if err := config.DB.
-		Where("abbreviation = ?", info.Class).
-		Where("learning_levels.curriculum_number = ?", curriculumNumber).
-		Joins("join learning_levels on classes.level_number = learning_levels.number").
-		Preload("LearningLevel").
+		Where("classes.abbreviation = ?", info.Class).
+		Where("curriculum_levels.curriculum_number = ?", curriculumNumber).
+		Joins("join curriculum_levels on curriculum_levels.number = curriculum_classes.curriculum_level_number").
+		Joins("join classes on classes.number = curriculum_classes.class_number").
+		Preload("CurriculumLevel").
+		Preload("Class").
 		First(&classes).Error; err != nil {
 		//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
@@ -468,19 +474,19 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	topicNo := uuid.NewV4().String()
 	///save user data
 	saveTopic := topicModels.Topic{
-		Number:       topicNo,
-		Name:         info.Topic,
-		Code:         topicCode,
-		StrandNumber: strandNumber,
-		UserNumber:   userNumber,
-		ClassNumber:  classes.Number,
+		Number:                topicNo,
+		Name:                  info.Topic,
+		Code:                  topicCode,
+		StrandNumber:          strandNumber,
+		UserNumber:            userNumber,
+		CurriculumClassNumber: classes.Number,
 	}
 
 	var topicInfo topicModels.Topic
 	topicDup := config.DB.
 		Where("name = ?", info.Topic).
 		Where("strand_number = ?", strandInfo.Number).
-		Where("class_number = ?", classes.Number).
+		Where("curriculum_class_number = ?", classes.Number).
 		First(&topicInfo)
 	if topicDup.Error != nil {
 		err := config.DB.Save(&saveTopic).Error
@@ -603,7 +609,7 @@ func getValueAtIndex(row []string, i int) string {
 
 func FetchCurriculum(context *gin.Context) {
 
-	var curriculum []models2.Curriculum
+	var curriculum []models5.Curriculum
 	if err := config.DB.
 		Order("created_at desc").
 		Find(&curriculum).Error; err != nil {
@@ -616,7 +622,7 @@ func FetchCurriculum(context *gin.Context) {
 
 func FetchCurriculumInfo(context *gin.Context) {
 	curriculumNumber := context.Query("curriculum_number")
-	var curriculum models2.Curriculum
+	var curriculum models5.Curriculum
 	if err := config.DB.
 		Where("number = ?", curriculumNumber).
 		First(&curriculum).Error; err != nil {
@@ -629,7 +635,7 @@ func FetchCurriculumInfo(context *gin.Context) {
 
 func FetchUploadedCurriculum(context *gin.Context) {
 	curriculumNumber := context.Query("curriculum_number")
-	var curriculumImport []models2.ImportCurriculum
+	var curriculumImport []models5.ImportCurriculum
 	if err := config.DB.
 		Where("curriculum_number = ?", curriculumNumber).
 		Order("created_at desc").
@@ -639,4 +645,66 @@ func FetchUploadedCurriculum(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculumImport})
+}
+
+func FetchSchoolCurriculum(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	var schoolCurriculum []schoolCurriculumModel.SchoolCurriculum
+	var schoolCurriculum_ []responses.SchoolCurriculumDataList
+	if err := config.DB.
+		Where("school_number = ?", schoolNumber).
+		Preload("Curriculum").
+		Order("created_at desc").
+		Find(&schoolCurriculum).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
+		return
+	}
+
+	for _, item := range schoolCurriculum {
+		schoolCurriculum_ = append(schoolCurriculum_, responses.SchoolCurriculumDataList{
+			Name:   item.Curriculum.Name,
+			Number: item.Number,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schoolCurriculum_})
+}
+
+func FetchSchoolCurriculumLevel(context *gin.Context) {
+	schoolCurriculumNumber := context.Query("school_curriculum_number")
+
+	var schoolCurriculumInfo schoolCurriculumModel.SchoolCurriculum
+	if err := config.DB.
+		Where("number = ?", schoolCurriculumNumber).
+		Order("created_at desc").
+		First(&schoolCurriculumInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No School curriculum found!"})
+		return
+	}
+
+	var schoolCurriculumLevel []curriculumLevelModels2.CurriculumLevel
+	var schoolCurriculumLevel_ []responses2.CurriculumLevelList
+	if err := config.DB.
+		Where("curriculum_number = ?", schoolCurriculumInfo.CurriculumNumber).
+		Preload("Level").
+		Preload("Curriculum").
+		Order("created_at desc").
+		Find(&schoolCurriculumLevel).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
+		return
+	}
+
+	for _, item := range schoolCurriculumLevel {
+		schoolCurriculumLevel_ = append(schoolCurriculumLevel_, responses2.CurriculumLevelList{
+			Number:           item.Number,
+			Name:             item.Level.Name,
+			Code:             item.Code,
+			UserNumber:       item.UserNumber,
+			LevelNumber:      item.LevelNumber,
+			CurriculumName:   item.Curriculum.Name,
+			CurriculumNumber: item.CurriculumNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schoolCurriculumLevel_})
 }

@@ -86,7 +86,7 @@ func NewTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("strand_number = ?", strandNumber).
-		Where("class_number = ?", classNumber).
+		Where("curriculum_class_number = ?", classNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -96,7 +96,7 @@ func NewTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("strand_number = ?", strandNumber).
-		Where("class_number = ?", classNumber).
+		Where("curriculum_class_number = ?", classNumber).
 		First(&duplicateTopic).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand already exists"})
 		return
@@ -105,12 +105,12 @@ func NewTopic(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveTopic := models3.Topic{
-		Number:       number,
-		Name:         name,
-		StrandNumber: strandNumber,
-		UserNumber:   userNumber,
-		ClassNumber:  classNumber,
-		Code:         codeNo,
+		Number:                number,
+		Name:                  name,
+		StrandNumber:          strandNumber,
+		UserNumber:            userNumber,
+		CurriculumClassNumber: classNumber,
+		Code:                  codeNo,
 	}
 	config.DB.Save(&saveTopic)
 
@@ -174,11 +174,11 @@ func FetchTopic(context *gin.Context) {
 					var topic_ []responses.TopicDataList
 					for _, list := range topicResp {
 						topic_ = append(topic_, responses.TopicDataList{
-							Number:      list.Number,
-							Name:        list.Name,
-							Code:        list.Code,
-							UserNumber:  list.UserNumber,
-							ClassNumber: list.ClassNumber,
+							Number:                list.Number,
+							Name:                  list.Name,
+							Code:                  list.Code,
+							UserNumber:            list.UserNumber,
+							CurriculumClassNumber: list.CurriculumClassNumber,
 						})
 					}
 
@@ -239,11 +239,11 @@ func FetchTopicList(context *gin.Context) {
 	var topic_ []responses.TopicDataList
 	for _, list := range topicResp {
 		topic_ = append(topic_, responses.TopicDataList{
-			Number:      list.Number,
-			Name:        list.Name,
-			Code:        list.Code,
-			UserNumber:  list.UserNumber,
-			ClassNumber: list.ClassNumber,
+			Number:     list.Number,
+			Name:       list.Name,
+			Code:       list.Code,
+			UserNumber: list.UserNumber,
+			//ClassNumber: list.ClassNumber,
 		})
 	}
 
