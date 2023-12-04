@@ -20,12 +20,15 @@ import (
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
+	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
-	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
+	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
+	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -201,10 +204,26 @@ func SetupRoute() *gin.Engine {
 			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 		}
 
-		// source of school info
-		main.POST("source-of-school-info", sourceOfSchoolInfoModels.NewSourceOfSchoolInfo)
-		main.GET("source-of-school-info", sourceOfSchoolInfoModels.GetSourcesOfSchoolInfo)
+		application := main.Group("/application")
+		{
+			// source of school info
+			application.POST("source-of-school-info", sourceOfSchoolController.NewSourceOfSchoolInfo)
+			application.GET("source-of-school-info", sourceOfSchoolController.GetSourcesOfSchoolInfo)
 
+			// parents
+			application.POST("parents", parentController.CreateParent)
+			application.GET("parents", parentController.FetchParents)
+			application.GET("parents/:id", parentController.FetchParentInfo)
+			application.PATCH("parents/:id", parentController.UpdateParent)
+			application.POST("parents/:id", parentController.DeleteParent)
+
+			// students
+			application.GET("/students/:apn", studentController.FetchStudent)
+			application.GET("/students", studentController.FetchAllStudents)
+			application.POST("/students", studentController.CreateStudent)
+			application.PATCH("/students/:apn", studentController.UpdateStudent)
+			application.POST("/students/:apn", studentController.DeleteStudent)
+		}
 	}
 	//router.GET("/profile/:name", profile)
 	return router
