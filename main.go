@@ -23,10 +23,12 @@ import (
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
+	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	LearningLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
+	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
@@ -121,6 +123,8 @@ func main() {
 		&studentDetailsModels.StudentDetail{},
 		&classModel.CurriculumClass{},
 		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},
+		&parentModels.Parent{},
+		&studentModels.Student{},
 	)
 	if errMigrate != nil {
 		return
