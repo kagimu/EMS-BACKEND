@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"log"
 	"os"
 
@@ -126,7 +127,7 @@ func main() {
 		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},
 		&parentModels.Parent{},
 		&studentModels.Student{},
-		//&applicationModel.Application{},
+		&applicationModel.Application{},
 	)
 
 	if errMigrate != nil {
