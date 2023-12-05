@@ -272,15 +272,32 @@ func FetchCampuses(context *gin.Context) {
 	}
 
 	var campuses []campusModel.Campus
+	var campuses_ []responses.CampusDataList
 	if err := config.DB.
 		Where("school_number = ?", schoolNumber).
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
 		Order("created_at desc").
 		Find(&campuses).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses})
+	for _, item := range campuses {
+		campuses_ = append(campuses_, responses.CampusDataList{
+			Number:                 item.Number,
+			Name:                   item.Name,
+			Phone:                  item.Phone,
+			Email:                  item.Email,
+			Location:               item.Location,
+			UserNumber:             item.UserNumber,
+			SchoolNumber:           item.SchoolNumber,
+			SchoolCurriculumNumber: item.SchoolCurriculumNumber,
+			CurriculumName:         item.SchoolCurriculum.Curriculum.Name,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses_})
 
 }
 
@@ -293,18 +310,30 @@ func CampusInfo(context *gin.Context) {
 		return
 	}
 
-	var campuses campusModel.Campus
+	var campus campusModel.Campus
 	if err := config.DB.
 		Where("number = ?", campusNumber).
-		Preload("Level").
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
 		Order("created_at desc").
-		First(&campuses).Error; err != nil {
+		First(&campus).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses})
+	campus_ := responses.CampusDataList{
+		Number:                 campus.Number,
+		Name:                   campus.Name,
+		Phone:                  campus.Phone,
+		Email:                  campus.Email,
+		Location:               campus.Location,
+		UserNumber:             campus.UserNumber,
+		SchoolNumber:           campus.SchoolNumber,
+		SchoolCurriculumNumber: campus.SchoolCurriculumNumber,
+		CurriculumName:         campus.SchoolCurriculum.Curriculum.Name,
+	}
 
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
 }
 
 func FetchLevel(context *gin.Context) {
