@@ -5,6 +5,7 @@ type (
 		Number       string       `json:"number"`
 		ClassNumber  string       `json:"class_number"`
 		Name         string       `json:"name"`
+		Code         int64        `json:"code"`
 		Abbreviation string       `json:"abbreviation"`
 		Streams      []StreamInfo `json:"streams"`
 	}

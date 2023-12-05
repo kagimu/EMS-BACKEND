@@ -509,6 +509,7 @@ func FetchClassesToAdd(context *gin.Context) {
 	}
 
 	var curriculumClasses []models.CurriculumClass
+	var curriculumClasses_ []responses.ClassLevelInfo
 	if err := config.DB.
 		Where("curriculum_level_number = ?", campusLevelData.CurriculumLevelNumber).
 		Preload("Class").
@@ -518,7 +519,17 @@ func FetchClassesToAdd(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculumClasses})
+	for _, lst := range curriculumClasses {
+		curriculumClasses_ = append(curriculumClasses_, responses.ClassLevelInfo{
+			Number:       lst.Number,
+			Name:         lst.Class.Name,
+			ClassNumber:  lst.Class.Number,
+			Code:         lst.Code,
+			Abbreviation: lst.Class.Abbreviation,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculumClasses_})
 }
 
 func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
