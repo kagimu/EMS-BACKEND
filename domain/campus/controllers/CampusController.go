@@ -6,7 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	schoolLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -15,12 +15,13 @@ import (
 func NewCampus(context *gin.Context) {
 
 	type CampusInfo struct {
-		Name         string   `json:"name"`
-		Phone        string   `json:"phone"`
-		Email        string   `json:"email"`
-		Location     string   `json:"location"`
-		Level        []string `json:"level"`
-		SchoolNumber string   `json:"school_number"`
+		Name                   string   `json:"name"`
+		Phone                  string   `json:"phone"`
+		Email                  string   `json:"email"`
+		Location               string   `json:"location"`
+		SchoolNumber           string   `json:"school_number"`
+		SchoolCurriculumNumber string   `json:"school_curriculum_number"`
+		CurriculumLevelNumber  []string `json:"curriculum_level_number"`
 	}
 
 	var campusInfo CampusInfo
@@ -34,8 +35,9 @@ func NewCampus(context *gin.Context) {
 	phone := campusInfo.Phone
 	email := campusInfo.Email
 	location := campusInfo.Location
-	level := campusInfo.Level
+	curriculumLevelNumber := campusInfo.CurriculumLevelNumber
 	schoolNumber := campusInfo.SchoolNumber
+	schoolCurriculumNumber := campusInfo.SchoolCurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -59,13 +61,18 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
-	if len(level) == 0 {
+	if len(curriculumLevelNumber) == 0 {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
 	}
 
 	if schoolNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "School number is required!"})
+		return
+	}
+
+	if schoolCurriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School Curriculum is required!"})
 		return
 	}
 
@@ -92,13 +99,14 @@ func NewCampus(context *gin.Context) {
 	tx := config.DB.Begin()
 	number := uuid.NewV4().String()
 	saveCampus := campusModel.Campus{
-		Number:       number,
-		UserNumber:   userNumber,
-		Name:         name,
-		Phone:        phone,
-		Email:        email,
-		Location:     location,
-		SchoolNumber: schoolNumber,
+		Number:                 number,
+		UserNumber:             userNumber,
+		Name:                   name,
+		Phone:                  phone,
+		Email:                  email,
+		Location:               location,
+		SchoolNumber:           schoolNumber,
+		SchoolCurriculumNumber: schoolCurriculumNumber,
 	}
 
 	if err := tx.Create(&saveCampus).Error; err != nil {
@@ -111,12 +119,21 @@ func NewCampus(context *gin.Context) {
 	}
 
 	//save Level
-	/*for _, item := range level {
-		levelNumber := uuid.NewV4().String()
-		saveLevel := campusModel.Level{
-			Number:              levelNumber,
-			LearningLevelNumber: item,
-			CampusNumber:        saveCampus.Number,
+	for _, item := range curriculumLevelNumber {
+
+		var curriculumLevel schoolLevelModels.CurriculumLevel
+		if err := tx.
+			Where("number = ?", item).
+			First(&curriculumLevel).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
+			return
+		}
+
+		saveLevel := schoolLevelModels.SchoolLevel{
+			Number:                uuid.NewV4().String(),
+			Code:                  curriculumLevel.Code,
+			CurriculumLevelNumber: item,
+			CampusNumber:          saveCampus.Number,
 		}
 
 		if err := tx.Create(&saveLevel).Error; err != nil {
@@ -128,7 +145,7 @@ func NewCampus(context *gin.Context) {
 			return
 		}
 
-	}*/
+	}
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
@@ -345,8 +362,8 @@ func FetchCampusLevel(context *gin.Context) {
 		return
 	}
 
-	var levelInfo []models2.Level
-	var levelInfo_ []models2.LevelDataInfo
+	var levelInfo []schoolLevelModels.Level
+	var levelInfo_ []schoolLevelModels.LevelDataInfo
 	if err := config.DB.
 		//Select("name", "number").
 		Where("campus_number = ?", campusNumber).
@@ -418,7 +435,7 @@ func DeleteCampus(context *gin.Context) {
 	}
 
 	//delete Campus
-	var levelData models2.Level
+	var levelData schoolLevelModels.Level
 	db.Where("campus_number = ?", campusNumber).Delete(&levelData)
 
 	//delete Campus

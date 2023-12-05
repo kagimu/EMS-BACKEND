@@ -25,7 +25,7 @@ import (
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
-	LearningLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
@@ -89,9 +89,9 @@ func main() {
 		&schoolModels.SchoolCurriculum{},
 		&models2.Curriculum{},
 		&models.Campus{},
-		&LearningLevelModels.LearningLevel{},
-		&LearningLevelModels.Level{},
-		&LearningLevelModels.CurriculumLevel{},
+		&LevelModels.SchoolLevel{},
+		&LevelModels.Level{},
+		&LevelModels.CurriculumLevel{},
 		&classModel.Class{},
 		&learningAreaModels.LearningArea{},
 		&classModel.ClassLevelSubject{},
