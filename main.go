@@ -128,7 +128,7 @@ func main() {
 		&parentModels.Parent{},
 		&studentModels.Student{},
 		&applicationModel.Application{},
-  )
+	)
   
 	if errMigrate != nil {
 		return
