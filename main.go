@@ -91,7 +91,7 @@ func main() {
 		&schoolModels.SchoolCurriculum{},
 		&models2.Curriculum{},
 		&models.Campus{},
-		&LevelModels.SchoolLevel{},
+		&LevelModels.CampusLevel{},
 		&LevelModels.Level{},
 		&LevelModels.CurriculumLevel{},
 		&classModel.Class{},

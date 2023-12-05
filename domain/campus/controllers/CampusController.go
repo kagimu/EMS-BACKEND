@@ -129,7 +129,7 @@ func NewCampus(context *gin.Context) {
 			return
 		}
 
-		saveLevel := schoolLevelModels.SchoolLevel{
+		saveLevel := schoolLevelModels.CampusLevel{
 			Number:                uuid.NewV4().String(),
 			Code:                  curriculumLevel.Code,
 			CurriculumLevelNumber: item,
@@ -144,7 +144,6 @@ func NewCampus(context *gin.Context) {
 			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create level"})
 			return
 		}
-
 	}
 
 	// Commit the transaction if there is no error
@@ -385,6 +384,39 @@ func FetchCampusLevel(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levelInfo_})
 
+}
+
+func FetchCampusLevelList(context *gin.Context) {
+
+	campusNumber := context.Query("campus_number")
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Campus Number is required!"})
+		return
+	}
+
+	var campusLevelInfo []schoolLevelModels.CampusLevel
+	var levelInfo_ []schoolLevelModels.LevelDataInfo
+	if err := config.DB.
+		Where("campus_number = ?", campusNumber).
+		Preload("CurriculumLevel.Level").
+		Preload("CurriculumLevel").
+		Order("code asc").
+		Find(&campusLevelInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found"})
+		return
+	}
+
+	// Populate the selected columns from the fetched data
+	for _, level := range campusLevelInfo {
+		levelInfo_ = append(levelInfo_, schoolLevelModels.LevelDataInfo{
+			Name:   level.CurriculumLevel.Level.Name,
+			Code:   level.Code,
+			Number: level.Number,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levelInfo_})
 }
 
 func DeleteCampus(context *gin.Context) {

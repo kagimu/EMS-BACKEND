@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	SchoolLevel struct {
+	CampusLevel struct {
 		gorm.Model
 		Number                string              `json:"number" gorm:"size:36;unique;not null"`
 		Code                  int64               `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
