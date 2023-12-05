@@ -499,7 +499,17 @@ func FetchClassesToAdd(context *gin.Context) {
 
 	level := context.Query("level")
 
-	var levelData levelModels.Level
+	var campusLevelData levelModels.CampusLevel
+	if err := config.DB.
+		Where("number = ?", level).
+		First(&campusLevelData).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campusLevelData})
+
+	/*var levelData levelModels.Level
 	if err := config.DB.
 		Where("number = ?", level).
 		First(&levelData).Error; err != nil {
@@ -516,7 +526,7 @@ func FetchClassesToAdd(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})*/
 }
 
 func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {

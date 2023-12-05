@@ -393,7 +393,6 @@ func FetchCampusLevel(context *gin.Context) {
 	var levelInfo []schoolLevelModels.Level
 	var levelInfo_ []schoolLevelModels.LevelDataInfo
 	if err := config.DB.
-		//Select("name", "number").
 		Where("campus_number = ?", campusNumber).
 		Preload("LearningLevel").
 		Order("created_at desc").
