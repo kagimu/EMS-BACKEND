@@ -28,7 +28,7 @@ func NewClass(context *gin.Context) {
 
 	code := classInfo.Code
 	name := classInfo.Name
-	abbreviation := classInfo.Abbreviation
+	abbreviation := strings.ToUpper(classInfo.Abbreviation)
 	level := classInfo.Level
 
 	userNumber := context.Request.Header["User-Number"][0]
