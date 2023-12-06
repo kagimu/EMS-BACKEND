@@ -688,7 +688,7 @@ func FetchSchoolCurriculumLevel(context *gin.Context) {
 		Where("curriculum_number = ?", schoolCurriculumInfo.CurriculumNumber).
 		Preload("Level").
 		Preload("Curriculum").
-		Order("created_at desc").
+		Order("code asc").
 		Find(&schoolCurriculumLevel).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
 		return

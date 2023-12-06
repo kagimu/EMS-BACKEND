@@ -7,15 +7,17 @@ import (
 	"sync"
 	"time"
 
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
+	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
 type Student struct {
 	gorm.Model
-	ID                 uint64                                        `gorm:"primaryKey"`
+	ID                 uuid.UUID                                     `gorm:"type:char(36);primary_key;" json:"id"`
 	APN                string                                        `gorm:"unique;" json:"apn"`
 	Surname            string                                        `json:"surname"`
 	SecondName         string                                        `json:"second_name"`
@@ -26,6 +28,7 @@ type Student struct {
 	Class              []classModels.Class                           `gorm:"many2many:student_class;"`
 	Reason             string                                        `json:"reason"`
 	SourceOfSchoolInfo []sourceOfSchoolInfoModels.SourceOfSchoolInfo `gorm:"many2many:student_source_of_school_info;" json:"source_of_school_info"`
+	Application        []applicationModel.Application                `gorm:"foreignkey:StudentID" json:"application"`
 }
 
 type APNGenerator struct {

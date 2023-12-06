@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	"log"
 	"os"
+
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
@@ -26,7 +27,7 @@ import (
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
-	LearningLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -91,9 +92,9 @@ func main() {
 		&schoolModels.SchoolCurriculum{},
 		&models2.Curriculum{},
 		&models.Campus{},
-		&LearningLevelModels.LearningLevel{},
-		&LearningLevelModels.Level{},
-		&LearningLevelModels.CurriculumLevel{},
+		&LevelModels.CampusLevel{},
+		&LevelModels.Level{},
+		&LevelModels.CurriculumLevel{},
 		&classModel.Class{},
 		&learningAreaModels.LearningArea{},
 		&classModel.ClassLevelSubject{},
@@ -125,7 +126,9 @@ func main() {
 		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},
 		&parentModels.Parent{},
 		&studentModels.Student{},
+		//&applicationModel.Application{},
 	)
+
 	if errMigrate != nil {
 		return
 	}

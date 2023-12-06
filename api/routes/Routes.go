@@ -8,6 +8,7 @@ import (
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
+	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -96,6 +97,7 @@ func SetupRoute() *gin.Engine {
 		main.GET("campus-info", controllers.CampusInfo)
 		main.GET("level", controllers.FetchLevel)
 		main.GET("campus-level", controllers.FetchCampusLevel)
+		main.GET("fetch-campus-level", controllers.FetchCampusLevelList)
 
 		//level
 		main.POST("new-level", learningLevelControllers.NewLevel)
@@ -223,6 +225,9 @@ func SetupRoute() *gin.Engine {
 			application.POST("/students", studentController.CreateStudent)
 			application.PATCH("/students/:apn", studentController.UpdateStudent)
 			application.POST("/students/:apn", studentController.DeleteStudent)
+
+			// application
+			application.POST("/", applicationController.CreateApplication)
 		}
 	}
 	//router.GET("/profile/:name", profile)

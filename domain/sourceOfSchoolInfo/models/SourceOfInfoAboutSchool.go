@@ -5,12 +5,14 @@ import (
 	"html"
 	"strings"
 
+	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
 type SourceOfSchoolInfo struct {
 	gorm.Model
-	Name string `json:"name" gorm:"size:100;unique;not null"`
+	ID   uuid.UUID `gorm:"type:char(36);primary_key" json:"id"`
+	Name string    `gorm:"size:100;unique;not null" json:"name" `
 }
 
 func (s *SourceOfSchoolInfo) TableName() string {
