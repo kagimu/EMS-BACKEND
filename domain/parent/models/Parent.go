@@ -14,7 +14,7 @@ import (
 
 type Parent struct {
 	gorm.Model
-	ID                         uuid.UUID                      `gorm:"type:uuid;primary_key;" json:"id"`
+	ID                         uuid.UUID                      `gorm:"type:char(36);;primary_key;" json:"id"`
 	Surname                    string                         `json:"surname"`
 	SecondName                 string                         `json:"second_name"`
 	OtherName                  string                         `json:"other_name"`

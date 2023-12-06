@@ -11,7 +11,7 @@ import (
 
 type SourceOfSchoolInfo struct {
 	gorm.Model
-	ID   uuid.UUID `gorm:"type:uuid;primary_key;" json:"id"`
+	ID   uuid.UUID `gorm:"type:char(36);primary_key" json:"id"`
 	Name string    `gorm:"size:100;unique;not null" json:"name" `
 }
 

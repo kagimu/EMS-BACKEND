@@ -28,7 +28,7 @@ func CreateApplication(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "parent created successfully",
+		"message": "application created successfully",
 		"data":    application,
 	})
 }
