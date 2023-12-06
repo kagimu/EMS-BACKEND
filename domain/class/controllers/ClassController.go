@@ -180,9 +180,9 @@ func AddClassToLevel(context *gin.Context) {
 	var duplicateClass models.ClassLevel
 	db := config.DB
 	if duplicate := config.DB.
-		Where("class_number = ?", classNumber).
+		Where("curriculum_class_number = ?", classNumber).
 		Where("campus_number = ?", campusNumber).
-		Where("level_number = ?", levelNumber).
+		Where("campus_level_number = ?", levelNumber).
 		First(&duplicateClass).Error; duplicate == nil {
 
 		//check if this class has children such that it is not deleted
@@ -197,9 +197,9 @@ func AddClassToLevel(context *gin.Context) {
 
 		//------------------------------------------------------
 		//delete class if it is removed from the level
-		db.Where("class_number = ?", classNumber).
+		db.Unscoped().Where("curriculum_class_number = ?", classNumber).
 			Where("campus_number = ?", campusNumber).
-			Where("level_number = ?", levelNumber).
+			Where("campus_level_number = ?", levelNumber).
 			Delete(&duplicateClass)
 		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
 		return
@@ -207,16 +207,16 @@ func AddClassToLevel(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	saveClass := models.ClassLevel{
-		Number:       number,
-		ClassNumber:  classNumber,
-		CampusNumber: campusNumber,
-		LevelNumber:  levelNumber,
-		UserNumber:   userNumber,
-		Code:         code,
+		Number:                number,
+		CurriculumClassNumber: classNumber,
+		CampusNumber:          campusNumber,
+		CampusLevelNumber:     levelNumber,
+		UserNumber:            userNumber,
+		Code:                  code,
 	}
 	config.DB.Save(&saveClass)
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
 
 func AddCurriculumClass(context *gin.Context) {
@@ -572,7 +572,8 @@ func FetchClassLevel(context *gin.Context) {
 		Where("level_number = ?", levelNumber).
 		Where("campus_number = ?", campusNumber).
 		Preload("Streams").
-		Preload("Class").
+		Preload("CurriculumClassNumber.Class").
+		Preload("CurriculumClassNumber").
 		Order("code asc").
 		Find(&classLevel).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
@@ -591,9 +592,9 @@ func FetchClassLevel(context *gin.Context) {
 
 		classLevels = append(classLevels, responses.ClassLevelInfo{
 			Number:       lst.Number,
-			Name:         lst.Class.Name,
-			ClassNumber:  lst.Class.Number,
-			Abbreviation: lst.Class.Abbreviation,
+			Name:         lst.CurriculumClass.Class.Name,
+			ClassNumber:  lst.CurriculumClass.Class.Number,
+			Abbreviation: lst.CurriculumClass.Class.Abbreviation,
 			Streams:      stream_,
 		})
 	}
@@ -617,7 +618,8 @@ func FetchClassSubjects(context *gin.Context) {
 		Scopes(classFilter(classNumber)).
 		Where("class_levels.level_number = ?", levelNumber).
 		Joins("join class_levels on class_levels.number = class_level_subjects.class_level_number").
-		Preload("ClassLevel.Class").
+		Preload("ClassLevel.CurriculumClass.Class").
+		Preload("ClassLevel.CurriculumClass").
 		Preload("ClassLevel").
 		Preload("Subject").
 		Order("created_at desc").
@@ -630,8 +632,8 @@ func FetchClassSubjects(context *gin.Context) {
 		subjects_ = append(subjects_, models.SubjectInfo{
 			SubjectNumber: item.Subject.Number,
 			Name:          item.Subject.Name,
-			Class:         item.ClassLevel.Class.Name,
-			Abbreviation:  item.ClassLevel.Class.Abbreviation,
+			Class:         item.ClassLevel.CurriculumClass.Class.Name,
+			Abbreviation:  item.ClassLevel.CurriculumClass.Class.Abbreviation,
 		})
 
 	}
