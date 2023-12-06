@@ -2,9 +2,10 @@ package emailSender
 
 import (
 	"bytes"
-	"gopkg.in/gomail.v2"
 	"html/template"
 	"log"
+
+	"gopkg.in/gomail.v2"
 )
 
 type Info struct {
@@ -19,9 +20,9 @@ type Info struct {
 func (i Info) SendEmail() {
 	templateUrl := ""
 	if i.Type == "registration" {
-		templateUrl = "/api/fileRepo/templates/registrationTemplate.html"
+		templateUrl = "./fileRepo/templates/registrationTemplate.html"
 	} else {
-		templateUrl = "/api/fileRepo/templates/resetPasswordTemplate.html"
+		templateUrl = "./fileRepo/templates/resetPasswordTemplate.html"
 	}
 
 	t, err := template.ParseFiles(templateUrl)
@@ -54,5 +55,4 @@ func (i Info) SendEmail() {
 	if err := d.DialAndSend(m); err != nil {
 		//panic(err)
 	}
-
 }
