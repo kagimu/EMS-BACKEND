@@ -227,7 +227,8 @@ func SetupRoute() *gin.Engine {
 			application.POST("/students/:id", studentController.DeleteStudent)
 
 			// application
-			application.POST("/", applicationController.CreateApplication)
+			application.POST(":parent_number/:student_number",
+				applicationController.CreateApplication)
 		}
 	}
 	//router.GET("/profile/:name", profile)

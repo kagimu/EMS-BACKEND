@@ -81,7 +81,7 @@ func CreateStudent(c *gin.Context) {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   err.Error(),
-			"message": "failed to save source of school info",
+			"message": "failed to save student",
 		})
 		return
 	}
@@ -92,8 +92,8 @@ func CreateStudent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "source of school information created successfully",
-		"data":    saveStudent,
+ 		"message": "student created successfully",
+ 		"data":    saveStudent,
 	})
 }
 

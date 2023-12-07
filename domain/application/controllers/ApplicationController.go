@@ -5,30 +5,63 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/gin-gonic/gin"
 )
 
 func CreateApplication(c *gin.Context) {
-	var application models.Application
-	var err error
 
-	err = c.ShouldBindJSON(&application)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Internal server errror"})
+	type ApplicationRequest struct {
+		Status string `json:"status"`
+	}
+
+	var application ApplicationRequest
+
+	if err := c.ShouldBindJSON(&application); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Internal server error"})
 		return
 	}
 
-	err = config.DB.Create(&application).Error
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": http.StatusInternalServerError,
-			"error":  err.Error(),
+	if application.Status == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "status is required"})
+		return
+	}
+
+	userNumber := c.Request.Header["User-Number"][0]
+	parentNumber := c.Param("parent_number")
+	studentNumber := c.Param("student_number")
+
+	var user authModel.User
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	tx := config.DB.Begin()
+	saveApplication := models.Application{
+		Status:        string(application.Status),
+		UserNumber:    userNumber,
+		StudentNumber: studentNumber,
+		ParentNumber:  parentNumber,
+	}
+
+	if err := tx.Create(&saveApplication).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "failed to save application",
 		})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to save application"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "application created successfully",
-		"data":    application,
+		"data":    saveApplication,
 	})
 }
