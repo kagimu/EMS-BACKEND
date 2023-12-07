@@ -4,47 +4,73 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	"github.com/badoux/checkmail"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 )
 
 func CreateParent(c *gin.Context) {
-	var parent models.Parent
-	var err error
+	var parent requests.ParentRequest
 
-	err = c.ShouldBindJSON(&parent)
-	if err != nil {
+	if err := c.ShouldBindJSON(&parent); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Internal server errror"})
 		return
 	}
 
 	parent.Prepare()
 
-	err = parent.Validate()
-	if err != nil {
+	if err := parent.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "input validation failed"})
 		return
 	}
 
-	err = checkmail.ValidateFormat(parent.Email)
-	if err != nil {
+	if err := checkmail.ValidateFormat(parent.Email); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "email is invalid"})
 		return
 	}
 
-	err = config.DB.Create(&parent).Error
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": http.StatusInternalServerError,
-			"error":  err.Error(),
+	userNumber := c.Request.Header["User-Number"][0]
+
+	var user authModel.User
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
+		return
+	}
+
+	tx := config.DB.Begin()
+	saveParent := models.Parent{
+		Number:                     uuid.NewV4().String(),
+		Surname:                    parent.Surname,
+		SecondName:                 parent.SecondName,
+		OtherName:                  parent.OtherName,
+		MainTelephoneNumber:        parent.MainTelephoneNumber,
+		AlternativeTelephoneNumber: parent.AlternativeEmail,
+		Email:                      parent.Email,
+		AlternativeEmail:           parent.AlternativeEmail,
+		UserNumber:                 userNumber,
+	}
+
+	if err := tx.Create(&saveParent).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to save parent",
+			"details": err.Error(),
 		})
 		return
 	}
 
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to parent"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "parent created successfully",
-		"data":    parent,
+		"message": "parent information created successfully",
+		"data":    saveParent,
 	})
 }
 

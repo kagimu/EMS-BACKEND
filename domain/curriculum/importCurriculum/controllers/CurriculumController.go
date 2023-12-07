@@ -1,7 +1,13 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"path/filepath"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -20,10 +26,7 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
-	"net/http"
-	"path/filepath"
-	"strconv"
-	"time"
+	"gorm.io/gorm"
 )
 
 func NewCurriculum(context *gin.Context) {
@@ -50,11 +53,12 @@ func NewCurriculum(context *gin.Context) {
 
 	var userData models.User
 	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+	if err := config.DB.Where("number = ?", userNumber).First(&userData).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			context.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		} else {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": "Error retrieving user data", "error": err.Error()})
+		}
 		return
 	}
 
