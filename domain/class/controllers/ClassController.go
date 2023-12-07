@@ -569,11 +569,11 @@ func FetchClassLevel(context *gin.Context) {
 	var classLevels []responses.ClassLevelInfo
 
 	if err := config.DB.
-		Where("level_number = ?", levelNumber).
-		Where("campus_number = ?", campusNumber).
+		Where("class_levels.campus_level_number = ?", levelNumber).
+		Where("class_levels.campus_number = ?", campusNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
 		Preload("Streams").
-		Preload("CurriculumClassNumber.Class").
-		Preload("CurriculumClassNumber").
 		Order("code asc").
 		Find(&classLevel).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
@@ -591,11 +591,12 @@ func FetchClassLevel(context *gin.Context) {
 		}
 
 		classLevels = append(classLevels, responses.ClassLevelInfo{
-			Number:       lst.Number,
-			Name:         lst.CurriculumClass.Class.Name,
-			ClassNumber:  lst.CurriculumClass.Class.Number,
-			Abbreviation: lst.CurriculumClass.Class.Abbreviation,
-			Streams:      stream_,
+			Number:                lst.Number,
+			Name:                  lst.CurriculumClass.Class.Name,
+			ClassNumber:           lst.CurriculumClass.Class.Number,
+			Abbreviation:          lst.CurriculumClass.Class.Abbreviation,
+			CurriculumClassNumber: lst.CurriculumClassNumber,
+			Streams:               stream_,
 		})
 	}
 
