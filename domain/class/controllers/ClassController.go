@@ -605,7 +605,7 @@ func FetchClassLevel(context *gin.Context) {
 
 func FetchClassSubjects(context *gin.Context) {
 
-	levelNumber := context.Query("level_number")
+	//levelNumber := context.Query("level_number")
 	classNumber := context.Query("class_number")
 
 	/*	if levelNumber == "" {
@@ -617,7 +617,7 @@ func FetchClassSubjects(context *gin.Context) {
 	var subjects_ []models.SubjectInfo
 	if err := config.DB.
 		Scopes(classFilter(classNumber)).
-		Where("class_levels.level_number = ?", levelNumber).
+		//Where("class_levels.level_number = ?", levelNumber).
 		Joins("join class_levels on class_levels.number = class_level_subjects.class_level_number").
 		Preload("ClassLevel.CurriculumClass.Class").
 		Preload("ClassLevel.CurriculumClass").
