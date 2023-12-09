@@ -2,6 +2,10 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
@@ -12,9 +16,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 func NewClass(context *gin.Context) {

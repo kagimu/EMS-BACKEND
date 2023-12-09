@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -9,8 +12,6 @@ import (
 	curriculumLevelModels2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
-	"strconv"
 )
 
 func NewLevel(context *gin.Context) {

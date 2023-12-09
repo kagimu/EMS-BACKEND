@@ -5,14 +5,16 @@ import (
 	"html"
 	"strings"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"gorm.io/gorm"
 )
 
 type SourceOfSchoolInfo struct {
 	gorm.Model
-	ID   uuid.UUID `gorm:"type:char(36);primary_key" json:"id"`
-	Name string    `gorm:"size:100;unique;not null" json:"name" `
+	Number     string      `json:"number" gorm:"size:36;unique;not null"`
+	Name       string      `gorm:"size:100;unique;not null" json:"name"`
+	UserNumber string      `json:"user_number" gorm:"size:36;index;not null"`
+	User       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 func (s *SourceOfSchoolInfo) TableName() string {
