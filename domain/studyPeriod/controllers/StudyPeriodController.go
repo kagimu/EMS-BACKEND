@@ -23,7 +23,6 @@ func NewStudyPeriod(context *gin.Context) {
 		StudyPeriodName      string   `json:"study_period_name"`
 		AcademicYearNumber   string   `json:"academic_year_number"`
 		StudyPeriodDateRange []string `json:"study_period_date_range"`
-		LevelNumber          string   `json:"level_number"`
 	}
 
 	var studyPeriodInfo StudyPeriodInfo
@@ -37,7 +36,6 @@ func NewStudyPeriod(context *gin.Context) {
 	studyPeriodName := studyPeriodInfo.StudyPeriodName
 	academicYearNumber := studyPeriodInfo.AcademicYearNumber
 	studyPeriodDateRange := studyPeriodInfo.StudyPeriodDateRange
-	levelNumber := studyPeriodInfo.LevelNumber
 	userNumber := context.Request.Header["User-Number"][0]
 
 	if academicYearNumber == "" {
@@ -52,11 +50,6 @@ func NewStudyPeriod(context *gin.Context) {
 
 	if len(studyPeriodDateRange) == 0 {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Study period range is required!"})
-		return
-	}
-
-	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level Year is required!"})
 		return
 	}
 
@@ -97,7 +90,6 @@ func NewStudyPeriod(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("study_period_name = ?", studyPeriodName).
 		Where("academic_year_number = ?", academicYearNumber).
-		Where("level_number = ?", levelNumber).
 		First(&duplicateStudyPeriod).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Study Period already exists"})
 		return
@@ -188,7 +180,6 @@ func NewStudyPeriod(context *gin.Context) {
 		StudyPeriodEndDate:   endDate,
 		AcademicYearNumber:   academicYearNumber,
 		UserNumber:           userNumber,
-		LevelNumber:          levelNumber,
 		CalendarEventNumber:  calendarEvent.Number,
 	}
 	//config.DB.Save(&saveStudyPeriod)
@@ -245,7 +236,6 @@ func FetchStudyPeriod(context *gin.Context) {
 			AcademicYearNumber:   academicList.AcademicYearNumber,
 			AcademicYearName:     academicList.AcademicYear.AcademicYearName,
 			UserNumber:           academicList.UserNumber,
-			LevelNumber:          academicList.LevelNumber,
 		})
 	}
 
