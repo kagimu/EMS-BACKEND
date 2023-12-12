@@ -113,7 +113,7 @@ func FetchClassLevelsByCampusNumberAndLevelNumber(ctx *gin.Context) {
 
 	//fmt.Println(campusNumber, levelNumber)
 
-	var classLevels []classModels.ClassLevel
+	var classLevels []classModels.CampusClass
 
 	config.DB.
 		Where("campus_number = ? AND level_number = ?", campusNumber, levelNumber).

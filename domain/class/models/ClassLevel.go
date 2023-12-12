@@ -9,7 +9,7 @@ import (
 )
 
 type (
-	ClassLevel struct {
+	CampusClass struct {
 		gorm.Model
 		Number                string              `json:"number" gorm:"size:36;unique;not null"`
 		CurriculumClassNumber string              `json:"curriculum_class_number" gorm:"size:36;not null"`
@@ -27,11 +27,7 @@ type (
 	}
 )
 
-func (u *ClassLevel) TableName() string {
-	return "class_levels"
-}
-
-func (classLevel *ClassLevel) AfterFind(tx *gorm.DB) (err error) {
+func (classLevel *CampusClass) AfterFind(tx *gorm.DB) (err error) {
 	var class Class
 	//tx.Model(&classLevel.Class).Where("number = ?", classLevel.ClassNumber).First(&class)
 	classLevel.ClassName = class.Name
@@ -39,7 +35,7 @@ func (classLevel *ClassLevel) AfterFind(tx *gorm.DB) (err error) {
 	return
 }
 
-func (classLevel *ClassLevel) PreInsert(tx *gorm.DB) (err error) {
+func (classLevel *CampusClass) PreInsert(tx *gorm.DB) (err error) {
 	classLevel.Number = uuid.NewV4().String()
 
 	return

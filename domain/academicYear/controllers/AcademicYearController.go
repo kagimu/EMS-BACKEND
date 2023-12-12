@@ -232,7 +232,7 @@ func FetchAcademicByClass(context *gin.Context) {
 		return
 	}
 
-	var classes models2.ClassLevel
+	var classes models2.CampusClass
 	if err := config.DB.
 		Where("number = ?", classNumber).
 		First(&classes).Error; err != nil {

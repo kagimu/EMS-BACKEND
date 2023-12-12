@@ -210,7 +210,7 @@ func FetchSubjectByClass(context *gin.Context) {
 
 	classNumber := context.Query("class_number")
 
-	var classInfo classModels.ClassLevel
+	var classInfo classModels.CampusClass
 
 	if err := config.DB.
 		Where("number = ?", classNumber).

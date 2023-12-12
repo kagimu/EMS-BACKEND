@@ -106,7 +106,7 @@ func SetupRoute() *gin.Engine {
 
 		//	manage class
 		main.POST("new-class", classController.NewClass)
-		main.POST("new-campus-class", classController.AddClassToLevel)
+		main.POST("new-campus-class", classController.AddCampusClass)
 		main.POST("new-curriculum-class", classController.AddCurriculumClass)
 		main.GET("classes", classController.FetchClasses)
 		main.GET("fetch-curriculum-classes", classController.FetchCurriculumClasses)
