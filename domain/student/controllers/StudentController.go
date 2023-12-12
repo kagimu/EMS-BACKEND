@@ -3,6 +3,9 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -31,26 +34,9 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	// change this
-	userNumber := "b7426afb-d114-479b-b83b-4ec59a2bbe64"
-	schoolNumber := c.Param("school_number")
+	userNumber := c.Request.Header["User-Number"][0]
 	classNumber := c.Param("class_number")
 	sourceOfSchoolInfoNumber := c.Param("source_of_school_info_number")
-
-	apnGenerator := models.NewAPNGenerator()
-
-	studentAPN, err := apnGenerator.GenerateAPN()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to generate APN",
-			"error":   err,
-		})
-
-		return
-	}
-
-	apn := studentAPN.APN
-	alternativeAPN := fmt.Sprintf("%d%05d", studentAPN.Year, studentAPN.Serial)
 
 	var user authModels.User
 	if err := config.DB.
@@ -60,11 +46,31 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	tx := config.DB.Begin()
+	studentNumber := uuid.NewV4().String()
+	year := strconv.Itoa(time.Now().Year())
+	month := time.Now().Format("01")
+
+	saveAPN := models.APN{
+		Year:  year,
+		Month: month,
+	}
+
+	if err := config.DB.Create(&saveAPN).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   err.Error(),
+			"Details": saveAPN,
+			"message": "failed to save APN",
+			"data":    saveAPN,
+		})
+		return
+	}
+
+	savedID := saveAPN.ID + 1
+	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%04s", strconv.FormatUint(savedID, 10))}, "")
+
 	saveStudent := models.Student{
-		Number:                   uuid.NewV4().String(),
-		APN:                      apn,
-		APNAlternative:           alternativeAPN,
+		Number:                   studentNumber,
+		APN:                      result,
 		Surname:                  payload.Surname,
 		OtherName:                payload.OtherName,
 		Age:                      payload.Age,
@@ -72,28 +78,47 @@ func CreateStudent(c *gin.Context) {
 		Reason:                   payload.Reason,
 		SecondName:               payload.SecondName,
 		UserNumber:               userNumber,
-		SchoolNumber:             schoolNumber,
 		ClassNumber:              classNumber,
 		SourceOfSchoolInfoNumber: sourceOfSchoolInfoNumber,
 	}
 
-	if err := tx.Create(&saveStudent).Error; err != nil {
-		tx.Rollback()
+	if err := config.DB.Create(&saveStudent).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   err.Error(),
+			"Details": saveAPN.ID,
 			"message": "failed to save student",
 		})
 		return
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to save school of school info"})
+	// Save previous schools
+	var previousSchools []models.PreviousSchools
+	var schoolNames []string
+
+	for _, schoolName := range payload.PreviousSchools {
+		schoolNames = append(schoolNames, schoolName)
+	}
+
+	pre := models.PreviousSchools{
+		Number:        uuid.NewV4().String(),
+		Name:          strings.Join(schoolNames, ""),
+		StudentNumber: saveStudent.Number,
+		UserNumber:    userNumber,
+	}
+
+	previousSchools = append(previousSchools, pre)
+
+	if err := config.DB.Create(&previousSchools).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"details": err.Error(),
+			"message": "failed to save previous school",
+		})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
- 		"message": "student created successfully",
- 		"data":    saveStudent,
+		"message": "student created successfully",
+		"data":    saveStudent,
 	})
 }
 

@@ -7,15 +7,14 @@ import (
 )
 
 type StudentRequest struct {
-	Surname        string `json:"surname"`
-	SecondName     string `json:"second_name"`
-	OtherName      string `json:"other_name"`
-	Age            uint   `json:"age"`
-	APN            string `json:"apn"`
-	APNAlternative string `json:"apn_alternative"`
-
-	Gender string `json:"gender"`
-	Reason string `json:"reason"`
+	Surname         string   `json:"surname"`
+	SecondName      string   `json:"second_name"`
+	OtherName       string   `json:"other_name"`
+	Age             uint     `json:"age"`
+	APN             string   `json:"apn"`
+	PreviousSchools []string `json:"previous_schools"`
+	Gender          string   `json:"gender"`
+	Reason          string   `json:"reason"`
 }
 
 func (s *StudentRequest) Validate() error {
