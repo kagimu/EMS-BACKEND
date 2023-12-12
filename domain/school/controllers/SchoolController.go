@@ -1,8 +1,7 @@
 package controllers
 
 import (
-	"net/http"
-
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
@@ -10,13 +9,16 @@ import (
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"net/http"
+	"time"
 )
 
 func NewSchool(context *gin.Context) {
 
 	type SchoolInfo struct {
-		Name       string   `json:"name"`
-		Curriculum []string `json:"curriculum"`
+		Name             string   `json:"name"`
+		CommencementDate string   `json:"commencement_date"`
+		Curriculum       []string `json:"curriculum"`
 	}
 
 	var schoolInfo SchoolInfo
@@ -28,11 +30,17 @@ func NewSchool(context *gin.Context) {
 
 	name := schoolInfo.Name
 	curriculum := schoolInfo.Curriculum
+	commencementDate := schoolInfo.CommencementDate
 
 	userNumber := context.Request.Header["User-Number"][0]
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if commencementDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Date of Commencement is required!"})
 		return
 	}
 
@@ -61,11 +69,20 @@ func NewSchool(context *gin.Context) {
 	}
 
 	tx := config.DB.Begin()
+
+	// Parse the string into a time.Time value
+	commencementDateData, err := time.Parse("2006-01-02", commencementDate)
+	if err != nil {
+		fmt.Println("Error parsing date:", err)
+		return
+	}
+
 	///save user data
 	saveSchool := schoolCurriculumModels.School{
-		Number:     uuid.NewV4().String(),
-		Name:       name,
-		UserNumber: userNumber,
+		Number:           uuid.NewV4().String(),
+		Name:             name,
+		CommencementDate: commencementDateData,
+		UserNumber:       userNumber,
 	}
 
 	if err := tx.Create(&saveSchool).Error; err != nil {
@@ -248,6 +265,7 @@ func FetchSchoolInfo(context *gin.Context) {
 	schools_ := responses.SchoolResponseInfo{
 		Number:           schools.Number,
 		Name:             schools.Name,
+		CommencementDate: schools.CommencementDate.Format("02-01-2006"),
 		SchoolCurriculum: curriculum_,
 	}
 
