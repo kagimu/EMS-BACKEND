@@ -12,7 +12,10 @@ import (
 func CreateApplication(c *gin.Context) {
 
 	type ApplicationRequest struct {
-		Status string `json:"status"`
+		Status                string `json:"status"`
+		ApplicationFeePayment bool   `json:"application_fee_payment"`
+		StudentNumber         string `json:"student_number"`
+		ParentNumber          string `json:"parent_number"`
 	}
 
 	var application ApplicationRequest
@@ -41,22 +44,27 @@ func CreateApplication(c *gin.Context) {
 
 	tx := config.DB.Begin()
 	saveApplication := models.Application{
-		Status:        string(application.Status),
-		UserNumber:    userNumber,
-		StudentNumber: studentNumber,
-		ParentNumber:  parentNumber,
+		Status:                string(application.Status),
+		UserNumber:            userNumber,
+		StudentNumber:         studentNumber,
+		ParentNumber:          parentNumber,
+		ApplicationFeePayment: application.ApplicationFeePayment,
 	}
 
 	if err := tx.Create(&saveApplication).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "failed to save application",
+			"details": err.Error(),
 		})
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to save application"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "failed to save application",
+			"details": err.Error(),
+		})
 		return
 	}
 
