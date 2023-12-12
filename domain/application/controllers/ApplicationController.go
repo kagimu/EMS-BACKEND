@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 )
 
 func CreateApplication(c *gin.Context) {
@@ -44,6 +45,7 @@ func CreateApplication(c *gin.Context) {
 
 	tx := config.DB.Begin()
 	saveApplication := models.Application{
+		Number:                uuid.NewV4().String(),
 		Status:                string(application.Status),
 		UserNumber:            userNumber,
 		StudentNumber:         studentNumber,
