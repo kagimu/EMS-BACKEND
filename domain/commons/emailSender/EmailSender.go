@@ -2,9 +2,10 @@ package emailSender
 
 import (
 	"bytes"
-	"gopkg.in/gomail.v2"
 	"html/template"
 	"log"
+
+	"gopkg.in/gomail.v2"
 )
 
 type Info struct {
@@ -19,9 +20,9 @@ type Info struct {
 func (i Info) SendEmail() {
 	templateUrl := ""
 	if i.Type == "registration" {
-		templateUrl = "/api/fileRepo/templates/registrationTemplate.html"
+		templateUrl = "./fileRepo/templates/registrationTemplate.html"
 	} else {
-		templateUrl = "/api/fileRepo/templates/resetPasswordTemplate.html"
+		templateUrl = "./fileRepo/templates/resetPasswordTemplate.html"
 	}
 
 	t, err := template.ParseFiles(templateUrl)
@@ -40,7 +41,7 @@ func (i Info) SendEmail() {
 	result := buff.String()
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", "andysteve2222@gmail.com")
+	m.SetHeader("From", "")
 	m.SetHeader("To", i.Email)
 	m.SetHeader("Subject", i.MailType)
 	//m.SetAddressHeader("Cc", "dan@example.com", "Dan")
@@ -48,11 +49,10 @@ func (i Info) SendEmail() {
 	m.SetBody("text/html", result)
 	//m.Attach("/home/Alex/lolcat.jpg")
 
-	d := gomail.NewDialer("smtp.gmail.com", 587, "andysteve2222@gmail.com", "rhknebyyuqbqfity")
+	d := gomail.NewDialer("smtp.gmail.com", 587, "", "")
 
 	// Send the email to Bob, Cora and Dan.
 	if err := d.DialAndSend(m); err != nil {
 		//panic(err)
 	}
-
 }

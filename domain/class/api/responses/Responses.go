@@ -2,12 +2,13 @@ package responses
 
 type (
 	ClassLevelInfo struct {
-		Number       string       `json:"number"`
-		ClassNumber  string       `json:"class_number"`
-		Name         string       `json:"name"`
-		Code         int64        `json:"code"`
-		Abbreviation string       `json:"abbreviation"`
-		Streams      []StreamInfo `json:"streams"`
+		Number                string       `json:"number"`
+		ClassNumber           string       `json:"class_number"`
+		Name                  string       `json:"name"`
+		Code                  int64        `json:"code"`
+		Abbreviation          string       `json:"abbreviation"`
+		CurriculumClassNumber string       `json:"curriculum_class_number"`
+		Streams               []StreamInfo `json:"streams"`
 	}
 	StreamInfo struct {
 		StreamNumber string `json:"stream_number"`

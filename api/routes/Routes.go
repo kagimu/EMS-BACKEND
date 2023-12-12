@@ -29,7 +29,6 @@ import (
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -209,7 +208,7 @@ func SetupRoute() *gin.Engine {
 		application := main.Group("/application")
 		{
 			// source of school info
-			application.POST("source-of-school-info", sourceOfSchoolController.NewSourceOfSchoolInfo)
+			application.POST("new-source-of-school-info", sourceOfSchoolController.NewSourceOfSchoolInfo)
 			application.GET("source-of-school-info", sourceOfSchoolController.GetSourcesOfSchoolInfo)
 
 			// parents
@@ -220,14 +219,16 @@ func SetupRoute() *gin.Engine {
 			application.POST("parents/:id", parentController.DeleteParent)
 
 			// students
-			application.GET("/students/:apn", studentController.FetchStudent)
+			application.POST("new-student/:class_number/:source_of_school_info_number",
+				studentController.CreateStudent)
+			application.GET("/students/:id", studentController.FetchStudent)
 			application.GET("/students", studentController.FetchAllStudents)
-			application.POST("/students", studentController.CreateStudent)
-			application.PATCH("/students/:apn", studentController.UpdateStudent)
-			application.POST("/students/:apn", studentController.DeleteStudent)
+			application.PATCH("/students/:id", studentController.UpdateStudent)
+			application.POST("/students/:id", studentController.DeleteStudent)
 
 			// application
-			application.POST("/", applicationController.CreateApplication)
+			application.POST(":parent_number/:student_number",
+				applicationController.CreateApplication)
 		}
 	}
 	//router.GET("/profile/:name", profile)

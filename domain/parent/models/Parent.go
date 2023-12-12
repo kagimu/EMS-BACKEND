@@ -5,27 +5,22 @@ import (
 	"html"
 	"strings"
 
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
-	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
 type Parent struct {
 	gorm.Model
-	ID                         uuid.UUID                      `gorm:"type:char(36);;primary_key;" json:"id"`
-	Surname                    string                         `json:"surname"`
-	SecondName                 string                         `json:"second_name"`
-	OtherName                  string                         `json:"other_name"`
-	MainTelephoneNumber        string                         `json:"main_telephone_number"`
-	AlternativeTelephoneNumber string                         `json:"alternative_telephone_number"`
-	Email                      string                         `json:"email"`
-	AlternativeEmail           string                         `json:"alternative_email"`
-	Learner                    []studentModel.Student         `gorm:"many2many:student_parents;" json:"students"`
-	UserNumber                 string                         `json:"user_number" gorm:"size:36;not null"`
-	User                       models.User                    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Application                []applicationModel.Application `gorm:"foreignkey:ParentID" json:"application"`
+	Number                     string      `json:"number" gorm:"size:36;unique;not null"`
+	Surname                    string      `json:"surname" gorm:"size:80;not null"`
+	SecondName                 string      `json:"second_name" gorm:"size:80;not null"`
+	OtherName                  string      `json:"other_name" gorm:"size:80;not null"`
+	MainTelephoneNumber        string      `json:"main_telephone_number" gorm:"unique;"`
+	AlternativeTelephoneNumber string      `json:"alternative_telephone_number" gorm:"size:20;not null"`
+	Email                      string      `json:"email" gorm:"size:80;not null;unique"`
+	AlternativeEmail           string      `json:"alternative_email" gorm:"size:80;not null"`
+	UserNumber                 string      `json:"user_number" gorm:"size:36;not null"`
+	User                       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 func (p *Parent) TableName() string {

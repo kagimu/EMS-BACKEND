@@ -10,6 +10,7 @@ type (
 		AcademicYearEndDate   string `json:"academic_year_end_date"`
 		UserNumber            string `json:"user_number"`
 		LevelNumber           string `json:"level_number"`
+		LevelName             string `json:"level_name"`
 	}
 
 	AcademicYearListByClass struct {

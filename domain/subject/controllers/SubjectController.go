@@ -210,9 +210,21 @@ func FetchSubjectByClass(context *gin.Context) {
 
 	classNumber := context.Query("class_number")
 
+	var classInfo classModels.ClassLevel
+
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
+		Order("code asc").
+		Find(&classInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
 	var topic []topicModel.Topic
 	if err := config.DB.
-		Where("topics.curriculum_class_number = ?", classNumber).
+		Where("topics.curriculum_class_number = ?", classInfo.CurriculumClassNumber).
 		Joins("join strands on strands.number = topics.strand_number").
 		Preload("Strand.Subject").
 		Preload("Strand").

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-//jwt service
+// jwt service
 type JWTService interface {
 	GenerateToken(UserNumber string) (string, error)
 	ValidateToken(token string) (*jwt.Token, error)
@@ -22,7 +22,7 @@ type jwtServices struct {
 	issure    string
 }
 
-//auth-jwt
+// auth-jwt
 func JWTAuthService() JWTService {
 	return &jwtServices{
 		secretKey: getSecretKey(),

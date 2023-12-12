@@ -1,22 +1,21 @@
 package models
 
 import (
-	uuid "github.com/satori/go.uuid"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	parentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"gorm.io/gorm"
-)
-
-type Status string
-
-const (
-	Pending  Status = "PENDING"
-	Paid     Status = "PAID"
-	Rejected Status = "REJECTED"
 )
 
 type Application struct {
 	gorm.Model
-	ID        uuid.UUID `gorm:"type:char(36);primary_key;" json:"id"`
-	Status    Status    `gorm:"type:varchar(255);not null;;default:'PENDING'" json:"status"`
-	StudentID uuid.UUID `gorm:"type:uuid;index" json:"student_id"`
-	ParentID  uuid.UUID `gorm:"type:uuid;index" json:"parent_id"`
+	Number                string               `json:"number" gorm:"size:36;unique;not null"`
+	Status                string               `gorm:"type:varchar(255);not null;default:'PENDING'" json:"status"`
+	ApplicationFeePayment bool                 `json:"application_fee_payment" gorm:"not null;default:false"`
+	StudentNumber         string               `json:"student_number" gorm:"size:36;index;not null"`
+	ParentNumber          string               `json:"parent_number" gorm:"size:36;index;not null"`
+	Parent                parentModel.Parent   `gorm:"foreignKey:ParentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Student               studentModel.Student `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	UserNumber            string               `json:"user_number" gorm:"size:36;index;not null"`
+	User                  models.User          `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
-	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
+	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 	"time"
@@ -86,19 +87,19 @@ func NewAcademicYear(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode academicYearModels.AcademicYear
+	var duplicateCode academicYearModel.AcademicYear
 	if duplicate := config.DB.
 		Where("code = ?", code).
-		Where("level_number = ?", levelNumber).
+		Where("campus_level_number = ?", levelNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
 	}
 
-	var duplicateAcademicYear academicYearModels.AcademicYear
+	var duplicateAcademicYear academicYearModel.AcademicYear
 	if duplicate := config.DB.
 		Where("academic_year_name = ?", academicYearName).
-		Where("level_number = ?", levelNumber).
+		Where("campus_level_number = ?", levelNumber).
 		First(&duplicateAcademicYear).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year already exists"})
 		return
@@ -148,7 +149,7 @@ func NewAcademicYear(context *gin.Context) {
 	}
 
 	///save user data
-	saveAcademicYear := academicYearModels.AcademicYear{
+	saveAcademicYear := academicYearModel.AcademicYear{
 		Number:                uuid.NewV4().String(),
 		Code:                  codeNo,
 		CalendarNumber:        generalCalendar.Number,
@@ -157,7 +158,7 @@ func NewAcademicYear(context *gin.Context) {
 		AcademicYearStartDate: startDate,
 		AcademicYearEndDate:   endDate,
 		UserNumber:            userNumber,
-		LevelNumber:           levelNumber,
+		CampusLevelNumber:     levelNumber,
 	}
 
 	if err := tx.Create(&saveAcademicYear).Error; err != nil {
@@ -182,16 +183,13 @@ func FetchAcademicYearInfo(context *gin.Context) {
 
 	levelNumber := context.Query("level")
 
-	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
-		return
-	}
-
-	var academicYearInfo []academicYearModels.AcademicYear
+	var academicYearInfo []academicYearModel.AcademicYear
 	var academicYearInfo_ []responses.AcademicYearList
 	if err := config.DB.
-		//Select("name", "number").
-		Where("level_number = ?", levelNumber).
+		Scopes(academicYearFilter(levelNumber)).
+		Preload("CampusLevel.CurriculumLevel.Level").
+		Preload("CampusLevel.CurriculumLevel").
+		Preload("CampusLevel").
 		Order("code asc").
 		Find(&academicYearInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
@@ -208,12 +206,22 @@ func FetchAcademicYearInfo(context *gin.Context) {
 			AcademicYearStartDate: (academicList.AcademicYearStartDate).Format("2-Jan-2006 15:04:05"),
 			AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
 			UserNumber:            academicList.UserNumber,
-			LevelNumber:           academicList.LevelNumber,
+			LevelNumber:           academicList.CampusLevelNumber,
+			LevelName:             academicList.CampusLevel.CurriculumLevel.Level.Name,
 		})
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": academicYearInfo_})
 
+}
+
+func academicYearFilter(levelNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if levelNumber != "" {
+			return db.Where("campus_level_number = ?", levelNumber)
+		}
+		return db
+	}
 }
 
 func FetchAcademicByClass(context *gin.Context) {
@@ -245,9 +253,8 @@ func FetchAcademicByClass(context *gin.Context) {
 
 	for _, lvlList := range levelsInfo {
 
-		var academicYearInfo []academicYearModels.AcademicYear
+		var academicYearInfo []academicYearModel.AcademicYear
 		if err := config.DB.
-			//Select("name", "number").
 			Where("level_number = ?", lvlList.Number).
 			Preload("Level.LearningLevel").
 			Preload("Level").
@@ -267,7 +274,7 @@ func FetchAcademicByClass(context *gin.Context) {
 				AcademicYearStartDate: (academicList.AcademicYearStartDate).Format("2-Jan-2006 15:04:05"),
 				AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
 				UserNumber:            academicList.UserNumber,
-				LevelNumber:           academicList.LevelNumber,
+				LevelNumber:           academicList.CampusLevelNumber,
 				//LevelName:             academicList.Level.LearningLevel.Name,
 			})
 		}
