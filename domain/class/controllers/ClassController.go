@@ -297,7 +297,7 @@ func AddCurriculumClass(context *gin.Context) {
 	}
 	config.DB.Save(&saveClass)
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
 
 func FetchClasses(context *gin.Context) {
