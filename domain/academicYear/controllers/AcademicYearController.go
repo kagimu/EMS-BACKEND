@@ -11,6 +11,7 @@ import (
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 	"time"
@@ -182,16 +183,13 @@ func FetchAcademicYearInfo(context *gin.Context) {
 
 	levelNumber := context.Query("level")
 
-	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
-		return
-	}
-
 	var academicYearInfo []academicYearModel.AcademicYear
 	var academicYearInfo_ []responses.AcademicYearList
 	if err := config.DB.
-		//Select("name", "number").
-		Where("campus_level_number = ?", levelNumber).
+		Scopes(academicYearFilter(levelNumber)).
+		Preload("CampusLevel.CurriculumLevel.Level").
+		Preload("CampusLevel.CurriculumLevel").
+		Preload("CampusLevel").
 		Order("code asc").
 		Find(&academicYearInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
@@ -209,11 +207,21 @@ func FetchAcademicYearInfo(context *gin.Context) {
 			AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
 			UserNumber:            academicList.UserNumber,
 			LevelNumber:           academicList.CampusLevelNumber,
+			LevelName:             academicList.CampusLevel.CurriculumLevel.Level.Name,
 		})
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": academicYearInfo_})
 
+}
+
+func academicYearFilter(levelNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if levelNumber != "" {
+			return db.Where("campus_level_number = ?", levelNumber)
+		}
+		return db
+	}
 }
 
 func FetchAcademicByClass(context *gin.Context) {
@@ -247,7 +255,6 @@ func FetchAcademicByClass(context *gin.Context) {
 
 		var academicYearInfo []academicYearModel.AcademicYear
 		if err := config.DB.
-			//Select("name", "number").
 			Where("level_number = ?", lvlList.Number).
 			Preload("Level.LearningLevel").
 			Preload("Level").
