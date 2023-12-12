@@ -104,7 +104,7 @@ func main() {
 		&topicModels.Topic{},
 		&subTopicModels.SubTopic{},
 		&conceptModels.Concept{},
-		&classModel.ClassLevel{},
+		&classModel.CampusClass{},
 		&models2.ImportCurriculum{},
 		&classModel.Stream{},
 		&academicYearModel.AcademicYear{},

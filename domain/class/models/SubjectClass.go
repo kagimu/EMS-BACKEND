@@ -13,7 +13,7 @@ type (
 		ClassLevelNumber string               `json:"class_level_number" gorm:"size:36;not null"`
 		SubjectNumber    string               `json:"subject_number" gorm:"size:36;not null"`
 		UserNumber       string               `json:"user_number" gorm:"size:36;not null"`
-		ClassLevel       ClassLevel           `gorm:"foreignKey:ClassLevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		ClassLevel       CampusClass          `gorm:"foreignKey:ClassLevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User             authModels.User      `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Subject          subjectModel.Subject `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}

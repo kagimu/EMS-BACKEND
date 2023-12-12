@@ -476,7 +476,7 @@ func DeleteCampus(context *gin.Context) {
 
 	db := config.DB
 
-	var campusChecker models3.ClassLevel
+	var campusChecker models3.CampusClass
 	if err := db.
 		Where("campus_number = ?", campusNumber).
 		First(&campusChecker).Error; err == nil {
