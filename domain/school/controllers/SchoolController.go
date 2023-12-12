@@ -265,7 +265,7 @@ func FetchSchoolInfo(context *gin.Context) {
 	schools_ := responses.SchoolResponseInfo{
 		Number:           schools.Number,
 		Name:             schools.Name,
-		CommencementDate: schools.CommencementDate.Format("02-01-2006"),
+		CommencementDate: schools.CommencementDate.Format("2-Jan-2006"),
 		SchoolCurriculum: curriculum_,
 	}
 
