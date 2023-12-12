@@ -73,7 +73,7 @@ func NewSchool(context *gin.Context) {
 		tx.Rollback()
 		// Handle or return the error as needed
 		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save school"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save school", "details": err.Error()})
 		return
 	}
 

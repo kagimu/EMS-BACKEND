@@ -12,13 +12,13 @@ import (
 type Parent struct {
 	gorm.Model
 	Number                     string      `json:"number" gorm:"size:36;unique;not null"`
-	Surname                    string      `json:"surname"`
-	SecondName                 string      `json:"second_name"`
-	OtherName                  string      `json:"other_name"`
+	Surname                    string      `json:"surname" gorm:"size:80;not null"`
+	SecondName                 string      `json:"second_name" gorm:"size:80;not null"`
+	OtherName                  string      `json:"other_name" gorm:"size:80;not null"`
 	MainTelephoneNumber        string      `json:"main_telephone_number" gorm:"unique;"`
-	AlternativeTelephoneNumber string      `json:"alternative_telephone_number"`
-	Email                      string      `json:"email" gorm:"unique;"`
-	AlternativeEmail           string      `json:"alternative_email"`
+	AlternativeTelephoneNumber string      `json:"alternative_telephone_number" gorm:"size:20;not null"`
+	Email                      string      `json:"email" gorm:"size:80;not null;unique"`
+	AlternativeEmail           string      `json:"alternative_email" gorm:"size:80;not null"`
 	UserNumber                 string      `json:"user_number" gorm:"size:36;not null"`
 	User                       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

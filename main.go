@@ -30,6 +30,7 @@ import (
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
+	previousSchoolsModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
@@ -128,6 +129,8 @@ func main() {
 		&parentModels.Parent{},
 		&studentModels.Student{},
 		&applicationModel.Application{},
+		&previousSchoolsModel.PreviousSchools{},
+		&studentModels.APN{},
 	)
 
 	if errMigrate != nil {

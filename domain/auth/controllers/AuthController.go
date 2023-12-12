@@ -1,6 +1,11 @@
 package controllers
 
 import (
+	"net/http"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
@@ -11,10 +16,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/hassPassTokenGen"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
-	"regexp"
-	"strings"
-	"time"
 )
 
 func Login(context *gin.Context) {
@@ -348,7 +349,12 @@ func Register(context *gin.Context) {
 		collection,
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Registered Successfully!", "data": UserDataInfo})
+	context.JSON(http.StatusOK, gin.H{
+		"status":    http.StatusOK,
+		"message":   "Registered Successfully!",
+		"data":      UserDataInfo,
+		"tokenInfo": saveUserPasswordToken.Token,
+	})
 
 }
 
