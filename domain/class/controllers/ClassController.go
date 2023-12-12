@@ -128,7 +128,7 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
 
 func AddCampusClass(context *gin.Context) {
@@ -307,7 +307,7 @@ func FetchClasses(context *gin.Context) {
 	var levels []levelModels.Level
 	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
-		Scopes(levelDataFilter(level)).
+		Scopes(levelInfoDataFilter(level)).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
@@ -565,6 +565,15 @@ func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if level != "" {
 			return db.Where("curriculum_level_number = ?", level)
+		}
+		return db
+	}
+}
+
+func levelInfoDataFilter(level string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if level != "" {
+			return db.Where("number = ?", level)
 		}
 		return db
 	}
