@@ -103,7 +103,7 @@ func NewSchemeOfWork(context *gin.Context) {
 		Number:             number,
 		Name:               name,
 		Status:             "Pending",
-		ClassNumber:        classNumber,
+		CampusClassNumber:  classNumber,
 		SubjectNumber:      subjectNumber,
 		AcademicYearNumber: academicYearNumber,
 		UserNumber:         userNumber,
@@ -307,10 +307,12 @@ func FetchSchemeOfWork(context *gin.Context) {
 	var schemeOfWrkInfo schemeOfWorkModel.SchemeOfWork
 	if err := config.DB.
 		Where("academic_year_number = ?", academicYearNumber).
-		Where("class_number = ?", classNumber).
+		Where("campus_class_number = ?", classNumber).
 		Where("subject_number = ?", subjectNumber).
 		Preload("AcademicYear").
-		Preload("Class").
+		Preload("CampusClass.CurriculumClass.Class").
+		Preload("CampusClass.CurriculumClass").
+		Preload("CampusClass").
 		Preload("Subject").
 		Order("created_at desc").
 		First(&schemeOfWrkInfo).Error; err != nil {
@@ -398,8 +400,8 @@ func FetchSchemeOfWork(context *gin.Context) {
 		Number:                   schemeOfWrkInfo.Number,
 		Name:                     schemeOfWrkInfo.Name,
 		Status:                   schemeOfWrkInfo.Status,
-		ClassNumber:              schemeOfWrkInfo.ClassNumber,
-		ClassName:                schemeOfWrkInfo.Class.Name,
+		ClassNumber:              schemeOfWrkInfo.CampusClassNumber,
+		ClassName:                schemeOfWrkInfo.CampusClass.CurriculumClass.Class.Name,
 		SubjectNumber:            schemeOfWrkInfo.SubjectNumber,
 		SubjectName:              schemeOfWrkInfo.Subject.Name,
 		UserNumber:               schemeOfWrkInfo.UserNumber,

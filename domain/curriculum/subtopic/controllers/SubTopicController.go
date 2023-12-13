@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"net/http"
 	"strconv"
 
@@ -295,10 +296,22 @@ func FetchSubTopicByClass(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	subjectNumber := context.Query("subject_number")
 
+	var campusClassInfo models3.CampusClass
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
+		Preload("Streams").
+		Order("code asc").
+		First(&campusClassInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
 	var subtopic []models2.SubTopic
 	var subTopicInfo_ []responses.SubTopicList
 	if err := config.DB.
-		Scopes(classFilter(classNumber)).
+		Scopes(classFilter(campusClassInfo.CurriculumClassNumber)).
 		Joins("join topics on topics.number = sub_topics.topic_number").
 		Preload("Topic.Strand.Subject").
 		Preload("Topic.Strand").
