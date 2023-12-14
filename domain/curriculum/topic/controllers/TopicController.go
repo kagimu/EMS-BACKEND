@@ -239,8 +239,9 @@ func FetchTopic(context *gin.Context) {
 func FetchTopicList(context *gin.Context) {
 
 	strandNumber := context.Query("strand_number")
+	curriculumNumber := context.Query("curriculum_number")
 
-	topicResp, err := curriculum.FetchTopicCurriculum("", strandNumber, "", "")
+	topicResp, err := curriculum.FetchTopicCurriculum(curriculumNumber, strandNumber, "", "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return

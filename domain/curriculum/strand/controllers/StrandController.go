@@ -208,8 +208,9 @@ func FetchStrand(context *gin.Context) {
 func FetchStrandList(context *gin.Context) {
 
 	subjectNumber := context.Query("subject_number")
+	curriculumNumber := context.Query("curriculum_number")
 
-	strandResp, err := curriculum.FetchStrandCurriculum("", subjectNumber, "")
+	strandResp, err := curriculum.FetchStrandCurriculum(curriculumNumber, subjectNumber, "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
