@@ -23,9 +23,10 @@ import (
 func NewConcept(context *gin.Context) {
 
 	type ConceptInfo struct {
-		Code           string `json:"code"`
-		Name           string `json:"name"`
-		SubTopicNumber string `json:"sub_topic_number"`
+		Code             string `json:"code"`
+		Name             string `json:"name"`
+		SubTopicNumber   string `json:"sub_topic_number"`
+		CurriculumNumber string `json:"curriculum_number"`
 	}
 
 	var conceptInfo ConceptInfo
@@ -38,6 +39,7 @@ func NewConcept(context *gin.Context) {
 	code := conceptInfo.Code
 	name := conceptInfo.Name
 	subtopicNumber := conceptInfo.SubTopicNumber
+	curriculumNumber := conceptInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -53,6 +55,11 @@ func NewConcept(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -81,6 +88,7 @@ func NewConcept(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("sub_topic_number = ?", subtopicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -90,6 +98,7 @@ func NewConcept(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("sub_topic_number = ?", subtopicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateConcept).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic already exists"})
 		return
@@ -98,11 +107,12 @@ func NewConcept(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveConcept := models3.Concept{
-		Number:         number,
-		Name:           name,
-		SubTopicNumber: subtopicNumber,
-		UserNumber:     userNumber,
-		Code:           codeNo,
+		Number:           number,
+		Name:             name,
+		SubTopicNumber:   subtopicNumber,
+		UserNumber:       userNumber,
+		Code:             codeNo,
+		CurriculumNumber: curriculumNumber,
 	}
 	config.DB.Save(&saveConcept)
 
