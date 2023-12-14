@@ -29,7 +29,7 @@ func FetchSubjectClusterCurriculum(curriculumNumber string, learningAreaNumber s
 	var subjectCluster []models3.SubjectCluster
 	var errInfo string
 	if err := config.DB.
-		Where("curriculum_number = ?", curriculumNumber).
+		Scopes(scopeFilter("curriculum_number", curriculumNumber)).
 		Scopes(scopeFilter("number", subjectClusterNumber)).
 		Scopes(scopeFilter("learning_area_number", learningAreaNumber)).
 		Preload("LearningArea").
