@@ -21,10 +21,11 @@ import (
 func NewTopic(context *gin.Context) {
 
 	type TopicInfo struct {
-		Code         string `json:"code"`
-		Name         string `json:"name"`
-		StrandNumber string `json:"strand_number"`
-		ClassNumber  string `json:"Class_number"`
+		Code             string `json:"code"`
+		Name             string `json:"name"`
+		StrandNumber     string `json:"strand_number"`
+		ClassNumber      string `json:"Class_number"`
+		CurriculumNumber string `json:"curriculum_number"`
 	}
 
 	var topicInfo TopicInfo
@@ -38,6 +39,7 @@ func NewTopic(context *gin.Context) {
 	name := topicInfo.Name
 	strandNumber := topicInfo.StrandNumber
 	classNumber := topicInfo.ClassNumber
+	curriculumNumber := topicInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -53,6 +55,11 @@ func NewTopic(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -87,6 +94,7 @@ func NewTopic(context *gin.Context) {
 		Where("code = ?", codeNo).
 		Where("strand_number = ?", strandNumber).
 		Where("curriculum_class_number = ?", classNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -97,6 +105,7 @@ func NewTopic(context *gin.Context) {
 		Where("name = ?", name).
 		Where("strand_number = ?", strandNumber).
 		Where("curriculum_class_number = ?", classNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateTopic).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand already exists"})
 		return
@@ -111,6 +120,7 @@ func NewTopic(context *gin.Context) {
 		UserNumber:            userNumber,
 		CurriculumClassNumber: classNumber,
 		Code:                  codeNo,
+		CurriculumNumber:      curriculumNumber,
 	}
 	config.DB.Save(&saveTopic)
 
