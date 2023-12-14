@@ -23,6 +23,7 @@ func NewSubject(context *gin.Context) {
 		Code                 string `json:"code"`
 		Name                 string `json:"name"`
 		SubjectClusterNumber string `json:"subject_cluster_number"`
+		CurriculumNumber     string `json:"curriculum_number"`
 	}
 
 	var subjectInfo SubjectInfo
@@ -35,6 +36,7 @@ func NewSubject(context *gin.Context) {
 	code := subjectInfo.Code
 	name := subjectInfo.Name
 	subjectClusterNumber := subjectInfo.SubjectClusterNumber
+	curriculumNumber := subjectInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -50,6 +52,11 @@ func NewSubject(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -78,6 +85,7 @@ func NewSubject(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("subject_cluster_number = ?", subjectClusterNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -87,6 +95,7 @@ func NewSubject(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("subject_cluster_number = ?", subjectClusterNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateSubject).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject already exists"})
 		return
@@ -100,6 +109,7 @@ func NewSubject(context *gin.Context) {
 		UserNumber:           userNumber,
 		SubjectClusterNumber: subjectClusterNumber,
 		Code:                 codeNo,
+		CurriculumNumber:     curriculumNumber,
 	}
 
 	config.DB.Save(&saveSubject)
