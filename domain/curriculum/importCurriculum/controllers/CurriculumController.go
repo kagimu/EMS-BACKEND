@@ -201,7 +201,7 @@ func ImportCurriculum(context *gin.Context) {
 	}
 	config.DB.Save(&saveFileData)
 
-	//read now the excel file
+	//read now the Excel file
 	readExcelFile(path, userNumber, curriculumNumber)
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
