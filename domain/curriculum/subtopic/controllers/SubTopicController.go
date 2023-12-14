@@ -24,10 +24,11 @@ import (
 func NewSubTopic(context *gin.Context) {
 
 	type TopicInfo struct {
-		Code          string `json:"code"`
-		Name          string `json:"name"`
-		TopicNumber   string `json:"topic_number"`
-		EstimatedTime string `json:"estimated_time"`
+		Code             string `json:"code"`
+		Name             string `json:"name"`
+		TopicNumber      string `json:"topic_number"`
+		EstimatedTime    string `json:"estimated_time"`
+		CurriculumNumber string `json:"curriculum_number"`
 	}
 
 	var topicInfo TopicInfo
@@ -41,6 +42,7 @@ func NewSubTopic(context *gin.Context) {
 	name := topicInfo.Name
 	topicNumber := topicInfo.TopicNumber
 	estimatedTime := topicInfo.EstimatedTime
+	curriculumNumber := topicInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -56,6 +58,11 @@ func NewSubTopic(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -89,6 +96,7 @@ func NewSubTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("topic_number = ?", topicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -98,6 +106,7 @@ func NewSubTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("topic_number = ?", topicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateSubTopic).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic already exists"})
 		return
@@ -113,12 +122,13 @@ func NewSubTopic(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveSubtopic := models2.SubTopic{
-		Number:        number,
-		Name:          name,
-		EstimatedTime: estTime,
-		TopicNumber:   topicNumber,
-		UserNumber:    userNumber,
-		Code:          codeNo,
+		Number:           number,
+		Name:             name,
+		EstimatedTime:    estTime,
+		TopicNumber:      topicNumber,
+		UserNumber:       userNumber,
+		Code:             codeNo,
+		CurriculumNumber: curriculumNumber,
 	}
 	config.DB.Save(&saveSubtopic)
 
