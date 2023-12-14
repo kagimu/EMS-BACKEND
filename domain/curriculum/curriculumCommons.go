@@ -25,12 +25,14 @@ func FetchLearningAreaCurriculum(learningAreaNumber string, curriculumNumber str
 	return learningAreas, errInfo
 }
 
-func FetchSubjectClusterCurriculum(learningAreaNumber string, subjectClusterNumber string) ([]models3.SubjectCluster, string) {
+func FetchSubjectClusterCurriculum(curriculumNumber string, learningAreaNumber string, subjectClusterNumber string) ([]models3.SubjectCluster, string) {
 	var subjectCluster []models3.SubjectCluster
 	var errInfo string
 	if err := config.DB.
+		Where("curriculum_number = ?", curriculumNumber).
 		Scopes(scopeFilter("number", subjectClusterNumber)).
 		Scopes(scopeFilter("learning_area_number", learningAreaNumber)).
+		Preload("LearningArea").
 		Order("code asc").
 		Find(&subjectCluster).Error; err != nil {
 		errInfo = "No Subject Cluster!"
