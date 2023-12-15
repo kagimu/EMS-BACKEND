@@ -133,6 +133,7 @@ func main() {
 		&previousSchoolsModel.PreviousSchools{},
 		&studentModels.APN{},
 		&learningMaterialsModels.LearningMaterial{},
+		&lessonPlanModel.LessonPlanReference{},
 	)
 
 	if errMigrate != nil {
