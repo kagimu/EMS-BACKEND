@@ -240,6 +240,7 @@ func SetupRoute() *gin.Engine {
 		learningMaterials := main.Group("/learning-materials")
 		{
 			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
 			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
 		}
 	}
