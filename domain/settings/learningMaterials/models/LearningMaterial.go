@@ -6,12 +6,13 @@ import "errors"
 
 type LearningMaterial struct {
 	gorm.Model
-	Number     string      `json:"number" gorm:"size:36;unique;not null;index"`
-	Code       int64       `json:"code" form:"code" binding:"required" gorm:"size:80;not null"`
-	Name       string      `json:"name" form:"name" binding:"required" gorm:"size:80;not null"`
-	Type       string      `json:"type" form:"type" binding:"required" gorm:"size:80;not null"`
-	UserNumber string      `json:"user_number" gorm:"size:36;not null"`
-	User       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Number        string      `json:"number" gorm:"size:36;unique;not null;index"`
+	Code          int64       `json:"code" form:"code" binding:"required" gorm:"size:80;not null"`
+	Name          string      `json:"name" form:"name" binding:"required" gorm:"size:80;not null"`
+	Type          string      `json:"type" form:"type" binding:"required" gorm:"size:80;not null"`
+	ReferenceType string      `json:"reference_type" gorm:"size:80 not null"`
+	UserNumber    string      `json:"user_number" gorm:"size:36;not null"`
+	User          models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 func (l *LearningMaterial) Validate() error {
@@ -27,6 +28,10 @@ func (l *LearningMaterial) Validate() error {
 
 	if l.UserNumber == "" {
 		return errors.New("user number is required")
+	}
+
+	if l.ReferenceType == "" {
+		return errors.New("reference type is required")
 	}
 
 	return nil

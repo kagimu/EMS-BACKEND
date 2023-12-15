@@ -170,7 +170,12 @@ func SetupRoute() *gin.Engine {
 
 		//lesson notes
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
-		main.POST("new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+
+		lessonPlan := main.Group("/lesson-plan")
+		{
+			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
+		}
 
 		//Student Admission
 		main.POST("new-student-details-admission", admissionController.NewStudentDetails)

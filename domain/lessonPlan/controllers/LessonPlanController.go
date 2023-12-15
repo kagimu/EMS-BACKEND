@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -136,4 +139,36 @@ func NewLessonPlan(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Lesson Plan Added Successfully!", "data": lessonPlanInfo})
+}
+
+func AddLessonPlanReference(ctx *gin.Context) {
+	var lessonPlanReferenceRequest requests.LessonPlanReferenceRequest
+	var lessonPlanReferences []responses.LessonPlanReferenceResponse
+	var references []lessonPlanModel.LessonPlanReference
+
+	err := ctx.Bind(&lessonPlanReferenceRequest)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+	}
+
+	err = lessonPlanReferenceRequest.Validate()
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+	}
+
+	config.DB.Find(&references)
+
+	for _, reference := range references {
+		lessonPlanReferences = append(lessonPlanReferences, responses.LessonPlanReferenceResponse{
+			LessonPlanNumber:       reference.LessonPlanNumber,
+			LearningMaterialNumber: reference.LearningMaterialNumber,
+			Name:                   reference.Name,
+			Code:                   reference.Code,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, lessonPlanReferences)
+
 }
