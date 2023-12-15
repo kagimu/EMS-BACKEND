@@ -143,8 +143,6 @@ func NewLessonPlan(context *gin.Context) {
 
 func AddLessonPlanReference(ctx *gin.Context) {
 	var lessonPlanReferenceRequest requests.LessonPlanReferenceRequest
-	var lessonPlanReferences []responses.LessonPlanReferenceResponse
-	var references []lessonPlanModel.LessonPlanReference
 
 	err := ctx.Bind(&lessonPlanReferenceRequest)
 
@@ -158,7 +156,36 @@ func AddLessonPlanReference(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 	}
 
-	config.DB.Find(&references)
+	code, err := strconv.Atoi(lessonPlanReferenceRequest.Code)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+	}
+
+	var lessonPlanReference = lessonPlanModel.LessonPlanReference{
+		LessonPlanNumber:       lessonPlanReferenceRequest.LessonPlanNumber,
+		LearningMaterialNumber: lessonPlanReferenceRequest.LearningMaterialNumber,
+		Name:                   lessonPlanReferenceRequest.Name,
+		Code:                   int64(code),
+	}
+
+	if config.DB.Create(&lessonPlanReference).Error != nil {
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add lesson plan reference"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, commons.Feedback("Lesson plan reference added successfully!"))
+
+}
+
+func FetchLessonPlanReferences(ctx *gin.Context) {
+	var lessonPlanReferences []responses.LessonPlanReferenceResponse
+	var references []lessonPlanModel.LessonPlanReference
+
+	if config.DB.Find(&references).Error != nil {
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to fetch lesson plan references"))
+		return
+	}
 
 	for _, reference := range references {
 		lessonPlanReferences = append(lessonPlanReferences, responses.LessonPlanReferenceResponse{
@@ -170,5 +197,4 @@ func AddLessonPlanReference(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, lessonPlanReferences)
-
 }
