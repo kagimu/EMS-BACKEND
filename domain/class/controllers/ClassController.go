@@ -608,7 +608,7 @@ func FetchClassLevel(context *gin.Context) {
 
 	if err := config.DB.
 		Scopes(levelClassFilter(levelNumber)).
-		Where("campus_classes.campus_number = ?", campusNumber).
+		Where("campus_number = ?", campusNumber).
 		Preload("CurriculumClass.Class").
 		Preload("CurriculumClass").
 		Preload("Streams").
@@ -645,7 +645,7 @@ func FetchClassLevel(context *gin.Context) {
 func levelClassFilter(levelNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if levelNumber != "" {
-			return db.Where("campus_classes.campus_level_number = ?", levelNumber)
+			return db.Where("campus_level_number = ?", levelNumber)
 		}
 		return db
 	}
