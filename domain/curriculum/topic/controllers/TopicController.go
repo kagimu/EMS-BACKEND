@@ -21,10 +21,11 @@ import (
 func NewTopic(context *gin.Context) {
 
 	type TopicInfo struct {
-		Code         string `json:"code"`
-		Name         string `json:"name"`
-		StrandNumber string `json:"strand_number"`
-		ClassNumber  string `json:"Class_number"`
+		Code             string `json:"code"`
+		Name             string `json:"name"`
+		StrandNumber     string `json:"strand_number"`
+		ClassNumber      string `json:"Class_number"`
+		CurriculumNumber string `json:"curriculum_number"`
 	}
 
 	var topicInfo TopicInfo
@@ -38,6 +39,7 @@ func NewTopic(context *gin.Context) {
 	name := topicInfo.Name
 	strandNumber := topicInfo.StrandNumber
 	classNumber := topicInfo.ClassNumber
+	curriculumNumber := topicInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -53,6 +55,11 @@ func NewTopic(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -87,6 +94,7 @@ func NewTopic(context *gin.Context) {
 		Where("code = ?", codeNo).
 		Where("strand_number = ?", strandNumber).
 		Where("curriculum_class_number = ?", classNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -97,6 +105,7 @@ func NewTopic(context *gin.Context) {
 		Where("name = ?", name).
 		Where("strand_number = ?", strandNumber).
 		Where("curriculum_class_number = ?", classNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateTopic).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand already exists"})
 		return
@@ -111,6 +120,7 @@ func NewTopic(context *gin.Context) {
 		UserNumber:            userNumber,
 		CurriculumClassNumber: classNumber,
 		Code:                  codeNo,
+		CurriculumNumber:      curriculumNumber,
 	}
 	config.DB.Save(&saveTopic)
 
@@ -138,7 +148,7 @@ func FetchTopic(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum("", lstLA.Number, subjectClusterNumber)
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
@@ -147,7 +157,7 @@ func FetchTopic(context *gin.Context) {
 		var subjectCluster_ []responses3.SubjectClusterInfo
 		for _, lstSC := range subjectClusterResp {
 
-			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, subjectNumber)
+			subjectResp, err := curriculum.FetchSubjectCurriculum("", lstSC.Number, subjectNumber)
 			if err != "" {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 				return
@@ -156,7 +166,7 @@ func FetchTopic(context *gin.Context) {
 			var subjects_ []responses5.SubjectInfoList
 			for _, lstSB := range subjectResp {
 
-				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number, strandNumber)
+				strandResp, err := curriculum.FetchStrandCurriculum("", lstSB.Number, strandNumber)
 				if err != "" {
 					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 					return
@@ -165,7 +175,7 @@ func FetchTopic(context *gin.Context) {
 				var strand_ []responses2.StrandDataList
 				for _, lstST := range strandResp {
 
-					topicResp, err := curriculum.FetchTopicCurriculum(lstST.Number, "", classNumber)
+					topicResp, err := curriculum.FetchTopicCurriculum("", lstST.Number, "", classNumber)
 					if err != "" {
 						context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 						return
@@ -229,8 +239,9 @@ func FetchTopic(context *gin.Context) {
 func FetchTopicList(context *gin.Context) {
 
 	strandNumber := context.Query("strand_number")
+	curriculumNumber := context.Query("curriculum_number")
 
-	topicResp, err := curriculum.FetchTopicCurriculum(strandNumber, "", "")
+	topicResp, err := curriculum.FetchTopicCurriculum(curriculumNumber, strandNumber, "", "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return

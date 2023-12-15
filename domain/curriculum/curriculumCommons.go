@@ -25,12 +25,14 @@ func FetchLearningAreaCurriculum(learningAreaNumber string, curriculumNumber str
 	return learningAreas, errInfo
 }
 
-func FetchSubjectClusterCurriculum(learningAreaNumber string, subjectClusterNumber string) ([]models3.SubjectCluster, string) {
+func FetchSubjectClusterCurriculum(curriculumNumber string, learningAreaNumber string, subjectClusterNumber string) ([]models3.SubjectCluster, string) {
 	var subjectCluster []models3.SubjectCluster
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("curriculum_number", curriculumNumber)).
 		Scopes(scopeFilter("number", subjectClusterNumber)).
 		Scopes(scopeFilter("learning_area_number", learningAreaNumber)).
+		Preload("LearningArea").
 		Order("code asc").
 		Find(&subjectCluster).Error; err != nil {
 		errInfo = "No Subject Cluster!"
@@ -38,10 +40,11 @@ func FetchSubjectClusterCurriculum(learningAreaNumber string, subjectClusterNumb
 	return subjectCluster, errInfo
 }
 
-func FetchSubjectCurriculum(subjectClusterNumber string, subjectNumber string) ([]subjectModel.Subject, string) {
+func FetchSubjectCurriculum(curriculumNumber string, subjectClusterNumber string, subjectNumber string) ([]subjectModel.Subject, string) {
 	var subjects []subjectModel.Subject
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("curriculum_number", curriculumNumber)).
 		Scopes(scopeFilter("number", subjectNumber)).
 		Scopes(scopeFilter("subject_cluster_number", subjectClusterNumber)).
 		Order("code asc").
@@ -51,10 +54,11 @@ func FetchSubjectCurriculum(subjectClusterNumber string, subjectNumber string) (
 	return subjects, errInfo
 }
 
-func FetchStrandCurriculum(subjectNumber string, strandNumber string) ([]models2.Strand, string) {
+func FetchStrandCurriculum(curriculumNumber string, subjectNumber string, strandNumber string) ([]models2.Strand, string) {
 	var strand []models2.Strand
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("curriculum_number", curriculumNumber)).
 		Scopes(scopeFilter("number", strandNumber)).
 		Scopes(scopeFilter("subject_number", subjectNumber)).
 		Order("code asc").
@@ -64,15 +68,14 @@ func FetchStrandCurriculum(subjectNumber string, strandNumber string) ([]models2
 	return strand, errInfo
 }
 
-func FetchTopicCurriculum(strandNumber string, topicNumber string, classNumber string) ([]topicModels.Topic, string) {
+func FetchTopicCurriculum(curriculumNumber string, strandNumber string, topicNumber string, classNumber string) ([]topicModels.Topic, string) {
 	var topic []topicModels.Topic
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("curriculum_number", curriculumNumber)).
 		Scopes(scopeFilter("number", topicNumber)).
 		Scopes(scopeFilter("curriculum_class_number", classNumber)).
 		Scopes(scopeFilter("strand_number", strandNumber)).
-		//Preload("CurriculumClass.CurriculumLevel").
-		//Preload("CurriculumClass").
 		Order("code asc").
 		Find(&topic).Error; err != nil {
 		errInfo = "No topic found!"
@@ -80,10 +83,11 @@ func FetchTopicCurriculum(strandNumber string, topicNumber string, classNumber s
 	return topic, errInfo
 }
 
-func FetchSubtopicCurriculum(topicNumber string, subtopicNumber string) ([]subTopicModels.SubTopic, string) {
+func FetchSubtopicCurriculum(curriculumNumber string, topicNumber string, subtopicNumber string) ([]subTopicModels.SubTopic, string) {
 	var subtopic []subTopicModels.SubTopic
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("curriculum_number", curriculumNumber)).
 		Scopes(scopeFilter("number", subtopicNumber)).
 		Scopes(scopeFilter("topic_number", topicNumber)).
 		Order("code asc").
@@ -93,11 +97,12 @@ func FetchSubtopicCurriculum(topicNumber string, subtopicNumber string) ([]subTo
 	return subtopic, errInfo
 }
 
-func FetchConceptCurriculum(subtopicNumber string) ([]conceptModels.Concept, string) {
+func FetchConceptCurriculum(curriculumNumber string, subtopicNumber string) ([]conceptModels.Concept, string) {
 
 	var concept []conceptModels.Concept
 	var errInfo string
 	if err := config.DB.
+		Scopes(scopeFilter("curriculum_number", curriculumNumber)).
 		Scopes(scopeFilter("sub_topic_number", subtopicNumber)).
 		Order("code asc").
 		Find(&concept).Error; err != nil {
