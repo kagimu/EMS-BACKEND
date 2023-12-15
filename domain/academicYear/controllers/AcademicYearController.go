@@ -19,11 +19,12 @@ import (
 func NewAcademicYear(context *gin.Context) {
 
 	type AcademicYearInfo struct {
-		AcademicYearName string   `json:"academic_year_name"`
-		NoOfStudyPeriod  string   `json:"no_of_study_period"`
-		AcademicYear     []string `json:"academic_year"`
-		LevelNumber      string   `json:"level_number"`
-		Code             string   `json:"code"`
+		AcademicYearName      string `json:"academic_year_name"`
+		NoOfStudyPeriod       string `json:"no_of_study_period"`
+		AcademicYearStartDate string `json:"academic_year_start_date"`
+		AcademicYearEndDate   string `json:"academic_year_end_date"`
+		LevelNumber           string `json:"level_number"`
+		Code                  string `json:"code"`
 	}
 
 	var academicYearInfo AcademicYearInfo
@@ -35,7 +36,8 @@ func NewAcademicYear(context *gin.Context) {
 
 	academicYearName := academicYearInfo.AcademicYearName
 	noOfStudyPeriod := academicYearInfo.NoOfStudyPeriod
-	academicYear := academicYearInfo.AcademicYear
+	academicYearStartDate := academicYearInfo.AcademicYearStartDate
+	academicYearEndDate := academicYearInfo.AcademicYearEndDate
 	levelNumber := academicYearInfo.LevelNumber
 	code := academicYearInfo.Code
 	userNumber := context.Request.Header["User-Number"][0]
@@ -50,8 +52,13 @@ func NewAcademicYear(context *gin.Context) {
 		return
 	}
 
-	if len(academicYear) == 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year is required!"})
+	if academicYearStartDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Start date is required!"})
+		return
+	}
+
+	if academicYearEndDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "End date is required!"})
 		return
 	}
 
@@ -105,14 +112,14 @@ func NewAcademicYear(context *gin.Context) {
 	}
 
 	layout := "2006-01-02T15:04:05.000Z"
-	startDate, errorDate := time.Parse(layout, academicYear[0])
+	startDate, errorDate := time.Parse(layout, academicYearStartDate)
 
 	if errorDate != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": errorDate.Error()})
 		return
 	}
 
-	endDate, errorDate := time.Parse(layout, academicYear[1])
+	endDate, errorDate := time.Parse(layout, academicYearEndDate)
 
 	if errorDate != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": errorDate.Error()})
