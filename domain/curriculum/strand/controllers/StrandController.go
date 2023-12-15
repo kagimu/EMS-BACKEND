@@ -20,9 +20,10 @@ import (
 func NewStrand(context *gin.Context) {
 
 	type SubjectClusterInfo struct {
-		Code          string `json:"code"`
-		Name          string `json:"name"`
-		SubjectNumber string `json:"subject_number"`
+		Code             string `json:"code"`
+		Name             string `json:"name"`
+		SubjectNumber    string `json:"subject_number"`
+		CurriculumNumber string `json:"curriculum_number"`
 	}
 
 	var subjectClusterInfo SubjectClusterInfo
@@ -35,6 +36,7 @@ func NewStrand(context *gin.Context) {
 	code := subjectClusterInfo.Code
 	name := subjectClusterInfo.Name
 	subjectNumber := subjectClusterInfo.SubjectNumber
+	curriculumNumber := subjectClusterInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -50,6 +52,11 @@ func NewStrand(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -78,6 +85,7 @@ func NewStrand(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("subject_number = ?", subjectNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -87,6 +95,7 @@ func NewStrand(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("subject_number = ?", subjectNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateStrand).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand already exists"})
 		return
@@ -95,11 +104,12 @@ func NewStrand(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveStrand := models2.Strand{
-		Number:        number,
-		Name:          name,
-		SubjectNumber: subjectNumber,
-		UserNumber:    userNumber,
-		Code:          codeNo,
+		Number:           number,
+		Name:             name,
+		SubjectNumber:    subjectNumber,
+		UserNumber:       userNumber,
+		Code:             codeNo,
+		CurriculumNumber: curriculumNumber,
 	}
 	config.DB.Save(&saveStrand)
 
@@ -125,7 +135,7 @@ func FetchStrand(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum("", lstLA.Number, subjectClusterNumber)
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
@@ -134,7 +144,7 @@ func FetchStrand(context *gin.Context) {
 		var subjectCluster_ []responses3.SubjectClusterInfo
 		for _, lstSC := range subjectClusterResp {
 
-			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, subjectNumber)
+			subjectResp, err := curriculum.FetchSubjectCurriculum("", lstSC.Number, subjectNumber)
 			if err != "" {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 				return
@@ -143,7 +153,7 @@ func FetchStrand(context *gin.Context) {
 			var subjects_ []responses.SubjectInfoList
 			for _, lstSB := range subjectResp {
 
-				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number, "")
+				strandResp, err := curriculum.FetchStrandCurriculum("", lstSB.Number, "")
 				if err != "" {
 					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 					return
@@ -198,8 +208,9 @@ func FetchStrand(context *gin.Context) {
 func FetchStrandList(context *gin.Context) {
 
 	subjectNumber := context.Query("subject_number")
+	curriculumNumber := context.Query("curriculum_number")
 
-	strandResp, err := curriculum.FetchStrandCurriculum(subjectNumber, "")
+	strandResp, err := curriculum.FetchStrandCurriculum(curriculumNumber, subjectNumber, "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return

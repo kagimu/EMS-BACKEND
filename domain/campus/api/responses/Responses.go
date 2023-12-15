@@ -11,6 +11,7 @@ type (
 		SchoolNumber           string `json:"school_number"`
 		SchoolCurriculumNumber string `json:"school_curriculum_number"`
 		CurriculumName         string `json:"curriculum_name"`
+		CommencementDate       string `json:"commencement_date"`
 	}
 
 	CampusLevelList struct {

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"net/http"
 	"strconv"
 
@@ -23,10 +24,11 @@ import (
 func NewSubTopic(context *gin.Context) {
 
 	type TopicInfo struct {
-		Code          string `json:"code"`
-		Name          string `json:"name"`
-		TopicNumber   string `json:"topic_number"`
-		EstimatedTime string `json:"estimated_time"`
+		Code             string `json:"code"`
+		Name             string `json:"name"`
+		TopicNumber      string `json:"topic_number"`
+		EstimatedTime    string `json:"estimated_time"`
+		CurriculumNumber string `json:"curriculum_number"`
 	}
 
 	var topicInfo TopicInfo
@@ -40,6 +42,7 @@ func NewSubTopic(context *gin.Context) {
 	name := topicInfo.Name
 	topicNumber := topicInfo.TopicNumber
 	estimatedTime := topicInfo.EstimatedTime
+	curriculumNumber := topicInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -55,6 +58,11 @@ func NewSubTopic(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -88,6 +96,7 @@ func NewSubTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("topic_number = ?", topicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -97,6 +106,7 @@ func NewSubTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("topic_number = ?", topicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateSubTopic).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic already exists"})
 		return
@@ -112,12 +122,13 @@ func NewSubTopic(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveSubtopic := models2.SubTopic{
-		Number:        number,
-		Name:          name,
-		EstimatedTime: estTime,
-		TopicNumber:   topicNumber,
-		UserNumber:    userNumber,
-		Code:          codeNo,
+		Number:           number,
+		Name:             name,
+		EstimatedTime:    estTime,
+		TopicNumber:      topicNumber,
+		UserNumber:       userNumber,
+		Code:             codeNo,
+		CurriculumNumber: curriculumNumber,
 	}
 	config.DB.Save(&saveSubtopic)
 
@@ -146,7 +157,7 @@ func FetchSubTopic(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum("", lstLA.Number, subjectClusterNumber)
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
@@ -155,7 +166,7 @@ func FetchSubTopic(context *gin.Context) {
 		var subjectCluster_ []responses3.SubjectClusterInfo
 		for _, lstSC := range subjectClusterResp {
 
-			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, subjectNumber)
+			subjectResp, err := curriculum.FetchSubjectCurriculum("", lstSC.Number, subjectNumber)
 			if err != "" {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 				return
@@ -164,7 +175,7 @@ func FetchSubTopic(context *gin.Context) {
 			var subjects_ []responses5.SubjectInfoList
 			for _, lstSB := range subjectResp {
 
-				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number, strandNumber)
+				strandResp, err := curriculum.FetchStrandCurriculum("", lstSB.Number, strandNumber)
 				if err != "" {
 					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 					return
@@ -173,7 +184,7 @@ func FetchSubTopic(context *gin.Context) {
 				var strand_ []responses2.StrandDataList
 				for _, lstST := range strandResp {
 
-					topicResp, err := curriculum.FetchTopicCurriculum(lstST.Number, topicNumber, classNumber)
+					topicResp, err := curriculum.FetchTopicCurriculum("", lstST.Number, topicNumber, classNumber)
 					if err != "" {
 						context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 						return
@@ -182,7 +193,7 @@ func FetchSubTopic(context *gin.Context) {
 					var topic_ []responses6.TopicDataList
 					for _, list := range topicResp {
 
-						subtopicResp, err := curriculum.FetchSubtopicCurriculum(list.Number, "")
+						subtopicResp, err := curriculum.FetchSubtopicCurriculum("", list.Number, "")
 						if err != "" {
 							context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 							return
@@ -258,8 +269,9 @@ func FetchSubTopic(context *gin.Context) {
 func FetchSubTopiList(context *gin.Context) {
 
 	topicNumber := context.Query("topic_number")
+	curriculumNumber := context.Query("curriculum_number")
 
-	subtopicResp, err := curriculum.FetchSubtopicCurriculum(topicNumber, "")
+	subtopicResp, err := curriculum.FetchSubtopicCurriculum(curriculumNumber, topicNumber, "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
@@ -295,10 +307,22 @@ func FetchSubTopicByClass(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	subjectNumber := context.Query("subject_number")
 
+	var campusClassInfo models3.CampusClass
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
+		Preload("Streams").
+		Order("code asc").
+		First(&campusClassInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
 	var subtopic []models2.SubTopic
 	var subTopicInfo_ []responses.SubTopicList
 	if err := config.DB.
-		Scopes(classFilter(classNumber)).
+		Scopes(classFilter(campusClassInfo.CurriculumClassNumber)).
 		Joins("join topics on topics.number = sub_topics.topic_number").
 		Preload("Topic.Strand.Subject").
 		Preload("Topic.Strand").

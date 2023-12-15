@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"net/http"
-
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
@@ -11,7 +11,8 @@ import (
 	schoolLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-)
+	"time"
+ )
 
 func NewCampus(context *gin.Context) {
 
@@ -20,6 +21,7 @@ func NewCampus(context *gin.Context) {
 		Phone                  string   `json:"phone"`
 		Email                  string   `json:"email"`
 		Location               string   `json:"location"`
+		CommencementDate       string   `json:"commencement_date"`
 		SchoolNumber           string   `json:"school_number"`
 		SchoolCurriculumNumber string   `json:"school_curriculum_number"`
 		CurriculumLevelNumber  []string `json:"curriculum_level_number"`
@@ -39,6 +41,7 @@ func NewCampus(context *gin.Context) {
 	curriculumLevelNumber := campusInfo.CurriculumLevelNumber
 	schoolNumber := campusInfo.SchoolNumber
 	schoolCurriculumNumber := campusInfo.SchoolCurriculumNumber
+	commencementDate := campusInfo.CommencementDate
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -49,6 +52,11 @@ func NewCampus(context *gin.Context) {
 
 	if phone == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Phone is required!"})
+		return
+	}
+
+	if commencementDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Commencement date is required!"})
 		return
 	}
 
@@ -96,6 +104,13 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
+	// Parse the string into a time.Time value
+	commencementDateData, err := time.Parse("2006-01-02", commencementDate)
+	if err != nil {
+		fmt.Println("Error parsing date:", err)
+		return
+	}
+
 	// Begin the transaction
 	tx := config.DB.Begin()
 	number := uuid.NewV4().String()
@@ -106,6 +121,7 @@ func NewCampus(context *gin.Context) {
 		Phone:                  phone,
 		Email:                  email,
 		Location:               location,
+		CommencementDate:       commencementDateData,
 		SchoolNumber:           schoolNumber,
 		SchoolCurriculumNumber: schoolCurriculumNumber,
 	}
@@ -252,17 +268,6 @@ func EditCampus(context *gin.Context) {
 		return
 	}
 
-	//save Level
-	/*	for _, item := range level {
-		levelNumber := uuid.NewV4().String()
-		saveLevel := campusModel.Level{
-			Number:       levelNumber,
-			Name:         item,
-			CampusNumber: saveCampus.Number,
-		}
-		config.DB.Save(&saveLevel)
-	}*/
-
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Edited Successfully!", "data": campusDataInfo})
 }
 
@@ -298,6 +303,7 @@ func FetchCampuses(context *gin.Context) {
 			SchoolNumber:           item.SchoolNumber,
 			SchoolCurriculumNumber: item.SchoolCurriculumNumber,
 			CurriculumName:         item.SchoolCurriculum.Curriculum.Name,
+			CommencementDate:       item.CommencementDate.Format("2-Jan-2006"),
 		})
 	}
 
@@ -335,6 +341,7 @@ func CampusInfo(context *gin.Context) {
 		SchoolNumber:           campus.SchoolNumber,
 		SchoolCurriculumNumber: campus.SchoolCurriculumNumber,
 		CurriculumName:         campus.SchoolCurriculum.Curriculum.Name,
+		CommencementDate:       campus.CommencementDate.Format("2-Jan-2006"),
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
@@ -480,7 +487,7 @@ func DeleteCampus(context *gin.Context) {
 
 	db := config.DB
 
-	var campusChecker models3.ClassLevel
+	var campusChecker models3.CampusClass
 	if err := db.
 		Where("campus_number = ?", campusNumber).
 		First(&campusChecker).Error; err == nil {

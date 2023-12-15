@@ -201,7 +201,7 @@ func ImportCurriculum(context *gin.Context) {
 	}
 	config.DB.Save(&saveFileData)
 
-	//read now the excel file
+	//read now the Excel file
 	readExcelFile(path, userNumber, curriculumNumber)
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
@@ -332,6 +332,7 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 		Name:               info.SubjectCluster,
 		Code:               subjectClusterCode,
 		LearningAreaNumber: learningAreaNumber,
+		CurriculumNumber:   curriculumNumber,
 		UserNumber:         userNumber,
 	}
 
@@ -339,6 +340,7 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 	subjectClusterDup := config.DB.
 		Where("name = ?", info.SubjectCluster).
 		Where("learning_area_number = ?", learningAreaInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&subjectClusterInfo)
 	if subjectClusterDup.Error != nil {
 		err := config.DB.Save(&saveSubjectCluster).Error
@@ -375,6 +377,7 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 		Name:                 info.Subject,
 		Code:                 subjectCode,
 		UserNumber:           userNumber,
+		CurriculumNumber:     curriculumNumber,
 		SubjectClusterNumber: subjectClusterNumber,
 	}
 
@@ -382,6 +385,7 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 	subjectDup := config.DB.
 		Where("name = ?", info.Subject).
 		Where("subject_cluster_number = ?", subjectClusterInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&subjectInfo)
 	if subjectDup.Error != nil {
 		err := config.DB.Save(&saveSubject).Error
@@ -414,17 +418,19 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 	strandNo := uuid.NewV4().String()
 	///save user data
 	saveStrand := strandModels.Strand{
-		Number:        strandNo,
-		Name:          info.Strand,
-		Code:          strandCode,
-		SubjectNumber: subjectNumber,
-		UserNumber:    userNumber,
+		Number:           strandNo,
+		Name:             info.Strand,
+		Code:             strandCode,
+		SubjectNumber:    subjectNumber,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 
 	var strandInfo strandModels.Strand
 	strandDup := config.DB.
 		Where("name = ?", info.Strand).
 		Where("subject_number = ?", subjectInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&strandInfo)
 	if strandDup.Error != nil {
 		err := config.DB.Save(&saveStrand).Error
@@ -483,6 +489,7 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 		Code:                  topicCode,
 		StrandNumber:          strandNumber,
 		UserNumber:            userNumber,
+		CurriculumNumber:      curriculumNumber,
 		CurriculumClassNumber: classes.Number,
 	}
 
@@ -491,6 +498,7 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 		Where("name = ?", info.Topic).
 		Where("strand_number = ?", strandInfo.Number).
 		Where("curriculum_class_number = ?", classes.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&topicInfo)
 	if topicDup.Error != nil {
 		err := config.DB.Save(&saveTopic).Error
@@ -536,18 +544,20 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 
 	///save user data
 	saveSubTopic := subTopicModels.SubTopic{
-		Number:        subtopicNo,
-		Name:          info.SubTopic,
-		Code:          subTopicCode,
-		EstimatedTime: estTime,
-		TopicNumber:   topicNumber,
-		UserNumber:    userNumber,
+		Number:           subtopicNo,
+		Name:             info.SubTopic,
+		Code:             subTopicCode,
+		EstimatedTime:    estTime,
+		TopicNumber:      topicNumber,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 
 	var subtopicInfo subTopicModels.SubTopic
 	subtopicDup := config.DB.
 		Where("name = ?", info.SubTopic).
 		Where("topic_number = ?", topicInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&subtopicInfo)
 	if subtopicDup.Error != nil {
 		err := config.DB.Save(&saveSubTopic).Error
@@ -579,17 +589,19 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 	conceptNo := uuid.NewV4().String()
 	///save user data
 	saveConcept := conceptModels.Concept{
-		Number:         conceptNo,
-		Name:           info.Concept,
-		Code:           conceptCode,
-		SubTopicNumber: subTopicNumber,
-		UserNumber:     userNumber,
+		Number:           conceptNo,
+		Name:             info.Concept,
+		Code:             conceptCode,
+		SubTopicNumber:   subTopicNumber,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 
 	var conceptInfo conceptModels.Concept
 	conceptDup := config.DB.
 		Where("name = ?", info.Concept).
 		Where("sub_topic_number = ?", subtopicInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&conceptInfo)
 	if conceptDup.Error != nil {
 		err := config.DB.Save(&saveConcept).Error

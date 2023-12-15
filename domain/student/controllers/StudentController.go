@@ -37,6 +37,7 @@ func CreateStudent(c *gin.Context) {
 	}
 
 	userNumber := c.Request.Header["User-Number"][0]
+	classNumber := c.Param("class_number")
 	sourceOfSchoolInfoNumber := c.Param("source_of_school_info_number")
 
 	var user authModels.User

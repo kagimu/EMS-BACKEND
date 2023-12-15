@@ -22,6 +22,7 @@ import (
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
+	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentDetails "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
@@ -105,7 +106,7 @@ func SetupRoute() *gin.Engine {
 
 		//	manage class
 		main.POST("new-class", classController.NewClass)
-		main.POST("new-class-level", classController.AddClassToLevel)
+		main.POST("new-campus-class", classController.AddCampusClass)
 		main.POST("new-curriculum-class", classController.AddCurriculumClass)
 		main.GET("classes", classController.FetchClasses)
 		main.GET("fetch-curriculum-classes", classController.FetchCurriculumClasses)
@@ -168,7 +169,13 @@ func SetupRoute() *gin.Engine {
 
 		//lesson notes
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
-		main.POST("new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+
+		lessonPlan := main.Group("/lesson-plan")
+		{
+			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
+			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
+		}
 
 		//Student Admission
 		main.POST("new-student-details-admission", studentDetails.NewStudentDetails)
@@ -228,6 +235,13 @@ func SetupRoute() *gin.Engine {
 			// application
 			application.POST(":parent_number/:student_number",
 				applicationController.CreateApplication)
+		}
+
+		learningMaterials := main.Group("/learning-materials")
+		{
+			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
+			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
 		}
 	}
 	//router.GET("/profile/:name", profile)

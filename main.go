@@ -31,8 +31,10 @@ import (
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	serviceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/models"
+	learningMaterialsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
+	previousSchoolsModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -110,7 +112,7 @@ func main() {
 		&topicModels.Topic{},
 		&subTopicModels.SubTopic{},
 		&conceptModels.Concept{},
-		&classModel.ClassLevel{},
+		&classModel.CampusClass{},
 		&models2.ImportCurriculum{},
 		&classModel.Stream{},
 		&academicYearModel.AcademicYear{},
