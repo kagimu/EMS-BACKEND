@@ -148,18 +148,22 @@ func AddLessonPlanReference(ctx *gin.Context) {
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+		return
 	}
 
 	err = lessonPlanReferenceRequest.Validate()
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
 	}
 
 	code, err := strconv.Atoi(lessonPlanReferenceRequest.Code)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+
+		return
 	}
 
 	var lessonPlanReference = lessonPlanModel.LessonPlanReference{
@@ -167,6 +171,8 @@ func AddLessonPlanReference(ctx *gin.Context) {
 		LearningMaterialNumber: lessonPlanReferenceRequest.LearningMaterialNumber,
 		Name:                   lessonPlanReferenceRequest.Name,
 		Code:                   int64(code),
+		UserNumber:             ctx.GetHeader("User-Number"),
+		Number:                 uuid.NewV4().String(),
 	}
 
 	if config.DB.Create(&lessonPlanReference).Error != nil {
