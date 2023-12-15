@@ -134,6 +134,7 @@ func main() {
 		&studentModels.APN{},
 		&learningMaterialsModels.LearningMaterial{},
 		&lessonPlanModel.LessonPlanReference{},
+		&learningMaterialsModels.CurriculumSubtopicReference{},
 	)
 
 	if errMigrate != nil {

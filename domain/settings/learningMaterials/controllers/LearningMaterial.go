@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -81,6 +83,7 @@ func CreateCurriculumReference(context *gin.Context) {
 	materialNumber := referenceInfo.MaterialNumber
 	curriculumNumber := referenceInfo.CurriculumNumber
 	subTopicNumber := referenceInfo.SubTopicNumber
+	userNumber := context.Request.Header["User-Number"][0]
 
 	if code == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
@@ -102,4 +105,48 @@ func CreateCurriculumReference(context *gin.Context) {
 		return
 	}
 
+	var userData models2.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	///save user data
+	saveReference := models.CurriculumSubtopicReference{
+		Number:                 uuid.NewV4().String(),
+		Code:                   codeNo,
+		LearningMaterialNumber: materialNumber,
+		CurriculumNumber:       curriculumNumber,
+		SubTopicNumber:         subTopicNumber,
+		UserNumber:             userNumber,
+	}
+
+	if err := tx.Create(&saveReference).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create reference!"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference Added Successfully!", "data": saveReference})
 }
