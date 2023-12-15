@@ -60,3 +60,46 @@ func FetchAllLearningMaterials(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"data": learningMaterials})
 
 }
+
+func CreateCurriculumReference(context *gin.Context) {
+
+	type ReferenceInfo struct {
+		Code             string `json:"material_code"`
+		MaterialNumber   string `json:"material_number"`
+		CurriculumNumber string `json:"curriculum_number"`
+		SubTopicNumber   string `json:"sub_topic_number"`
+	}
+
+	var referenceInfo ReferenceInfo
+	err := context.BindJSON(&referenceInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	code := referenceInfo.Code
+	materialNumber := referenceInfo.MaterialNumber
+	curriculumNumber := referenceInfo.CurriculumNumber
+	subTopicNumber := referenceInfo.SubTopicNumber
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
+
+	if materialNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Resource is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
+		return
+	}
+
+	if subTopicNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subtopic is required!"})
+		return
+	}
+
+}
