@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
@@ -66,7 +65,7 @@ func FetchAllLearningMaterials(ctx *gin.Context) {
 func CreateCurriculumReference(context *gin.Context) {
 
 	type ReferenceInfo struct {
-		Code             string `json:"material_code"`
+		Code             int64  `json:"material_code"`
 		MaterialNumber   string `json:"material_number"`
 		CurriculumNumber string `json:"curriculum_number"`
 		SubTopicNumber   string `json:"sub_topic_number"`
@@ -75,7 +74,8 @@ func CreateCurriculumReference(context *gin.Context) {
 	var referenceInfo ReferenceInfo
 	err := context.BindJSON(&referenceInfo)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		//context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
@@ -85,10 +85,10 @@ func CreateCurriculumReference(context *gin.Context) {
 	subTopicNumber := referenceInfo.SubTopicNumber
 	userNumber := context.Request.Header["User-Number"][0]
 
-	if code == "" {
+	/*if code > 0 {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
 		return
-	}
+	}*/
 
 	if materialNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Resource is required!"})
@@ -115,18 +115,18 @@ func CreateCurriculumReference(context *gin.Context) {
 		return
 	}
 
-	codeNo, err := strconv.ParseInt(code, 10, 64)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
+	/*	codeNo, err := strconv.ParseInt(code, 10, 64)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}*/
 
 	tx := config.DB.Begin()
 
 	///save user data
 	saveReference := models.CurriculumSubtopicReference{
 		Number:                 uuid.NewV4().String(),
-		Code:                   codeNo,
+		Code:                   code,
 		LearningMaterialNumber: materialNumber,
 		CurriculumNumber:       curriculumNumber,
 		SubTopicNumber:         subTopicNumber,
