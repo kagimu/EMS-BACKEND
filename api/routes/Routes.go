@@ -24,6 +24,7 @@ import (
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
@@ -229,6 +230,12 @@ func SetupRoute() *gin.Engine {
 			// application
 			application.POST(":parent_number/:student_number",
 				applicationController.CreateApplication)
+		}
+
+		learningMaterials := main.Group("/learning-materials")
+		{
+			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
 		}
 	}
 	//router.GET("/profile/:name", profile)
