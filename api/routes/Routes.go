@@ -221,7 +221,7 @@ func SetupRoute() *gin.Engine {
 			// students
 			application.POST("new-student/:class_number/:source_of_school_info_number",
 				studentController.CreateStudent)
-			application.GET("/students/:id", studentController.FetchStudent)
+			application.GET("/students/:apn", studentController.FetchStudentByAPN)
 			application.GET("/students", studentController.FetchAllStudents)
 			application.PATCH("/students/:id", studentController.UpdateStudent)
 			application.POST("/students/:id", studentController.DeleteStudent)

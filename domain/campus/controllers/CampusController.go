@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
@@ -9,7 +11,6 @@ import (
 	schoolLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
 )
 
 func NewCampus(context *gin.Context) {
@@ -114,7 +115,10 @@ func NewCampus(context *gin.Context) {
 		tx.Rollback()
 		// Handle or return the error as needed
 		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create campus"})
+		context.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to create campus",
+			"err":     err.Error(),
+		})
 		return
 	}
 
