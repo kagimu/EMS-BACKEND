@@ -4,6 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,6 +18,7 @@ func CreateNewLearningMaterial(ctx *gin.Context) {
 			return
 		}*/
 
+	learningMaterial.Number = uuid.NewV4().String()
 	learningMaterial.Name = ctx.PostForm("name")
 	learningMaterial.Type = ctx.PostForm("type")
 	Code, err := strconv.Atoi(ctx.PostForm("code"))

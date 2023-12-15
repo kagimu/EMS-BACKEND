@@ -6,7 +6,7 @@ import "errors"
 
 type LearningMaterial struct {
 	gorm.Model
-	Number     string      `json:"number" gorm:"size:36;unique;not null"`
+	Number     string      `json:"number" gorm:"size:36;unique;not null;index"`
 	Code       int64       `json:"code" form:"code" binding:"required" gorm:"size:80;not null"`
 	Name       string      `json:"name" form:"name" binding:"required" gorm:"size:80;not null"`
 	Type       string      `json:"type" form:"type" binding:"required" gorm:"size:80;not null"`
