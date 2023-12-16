@@ -65,6 +65,7 @@ func FetchAllLearningMaterials(ctx *gin.Context) {
 func CreateCurriculumReference(context *gin.Context) {
 
 	type References struct {
+		Number                 string `json:"number"`
 		Code                   int64  `json:"code"`
 		LearningMaterialNumber string `json:"learningMaterialNumber"`
 		Description            string `json:"description"`
@@ -112,21 +113,36 @@ func CreateCurriculumReference(context *gin.Context) {
 
 	for _, refs := range references {
 		///save user data
-		saveReference := models.CurriculumSubtopicReference{
-			Number:                 uuid.NewV4().String(),
-			Code:                   refs.Code,
-			LearningMaterialNumber: refs.LearningMaterialNumber,
-			Description:            refs.Description,
-			SubTopicNumber:         subTopicNumber,
-			UserNumber:             userNumber,
-		}
+		//if reference has a number we just update else we submit a new one
+		if refs.Number != "" {
 
-		if err := tx.Create(&saveReference).Error; err != nil {
-			// If any error occurs, rollback the transaction
-			tx.Rollback()
-			// Handle or return the error as needed
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference"})
-			return
+			var referenceDataInfo models.CurriculumSubtopicReference
+			updateRef := tx.Model(&referenceDataInfo).
+				Where("number = ?", refs.Number).
+				Updates(models.CurriculumSubtopicReference{Description: refs.Description, LearningMaterialNumber: refs.LearningMaterialNumber, Code: refs.Code})
+			if updateRef.Error != nil {
+				context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update Reference!"})
+				return
+			}
+
+		} else {
+
+			saveReference := models.CurriculumSubtopicReference{
+				Number:                 uuid.NewV4().String(),
+				Code:                   refs.Code,
+				LearningMaterialNumber: refs.LearningMaterialNumber,
+				Description:            refs.Description,
+				SubTopicNumber:         subTopicNumber,
+				UserNumber:             userNumber,
+			}
+
+			if err := tx.Create(&saveReference).Error; err != nil {
+				// If any error occurs, rollback the transaction
+				tx.Rollback()
+				// Handle or return the error as needed
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference"})
+				return
+			}
 		}
 	}
 
@@ -137,5 +153,5 @@ func CreateCurriculumReference(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference Added Successfully!"})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Success"})
 }

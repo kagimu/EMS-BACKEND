@@ -23,8 +23,7 @@ func CreateParent(c *gin.Context) {
 	parent.Prepare()
 
 	if err := parent.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err})
-		//c.JSON(http.StatusBadRequest, gin.H{"message": "input validation failed"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "input validation failed"})
 		return
 	}
 
