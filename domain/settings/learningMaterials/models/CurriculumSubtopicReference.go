@@ -10,7 +10,7 @@ type CurriculumSubtopicReference struct {
 	gorm.Model
 	Number                 string           `json:"number" gorm:"size:36;unique;not null;index"`
 	Code                   int64            `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
-	Description            string           `json:"name" form:"description" binding:"required" gorm:"type:longtext;not null"`
+	Description            string           `json:"description" form:"description" binding:"required" gorm:"type:longtext;not null"`
 	LearningMaterialNumber string           `json:"learning_material_number" gorm:"size:36;not null"`
 	SubTopicNumber         string           `json:"sub_topic_number" gorm:"size:36;not null"`
 	UserNumber             string           `json:"user_number" gorm:"size:36;not null"`
