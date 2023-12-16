@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/api/responses"
 	"net/http"
 	"strconv"
 
@@ -201,6 +202,25 @@ func FetchSubTopic(context *gin.Context) {
 
 						var subTopicInfo_ []responses.SubTopicList
 						for idx, subtopicList := range subtopicResp {
+
+							referenceResp, err := curriculum.FetchSubTopicReferences(subtopicList.Number)
+							if err != "" {
+								context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+								return
+							}
+
+							var referenceInfo_ []responses7.LearningMaterialList
+							for _, refList := range referenceResp {
+								referenceInfo_ = append(referenceInfo_, responses7.LearningMaterialList{
+									Number:                 refList.Number,
+									Code:                   refList.Code,
+									Description:            refList.Description,
+									LearningMaterialNumber: refList.LearningMaterialNumber,
+									SubTopicNumber:         refList.SubTopicNumber,
+									UserNumber:             refList.UserNumber,
+								})
+							}
+
 							subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
 								Number:        subtopicList.Number,
 								Code:          subtopicList.Code,
@@ -209,6 +229,7 @@ func FetchSubTopic(context *gin.Context) {
 								UserNumber:    subtopicList.UserNumber,
 								EstimatedTime: subtopicList.EstimatedTime,
 								TopicNumber:   subtopicList.TopicNumber,
+								ReferenceInfo: referenceInfo_,
 							})
 						}
 
