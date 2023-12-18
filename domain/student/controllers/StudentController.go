@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func CreateStudent(c *gin.Context) {
@@ -35,7 +37,6 @@ func CreateStudent(c *gin.Context) {
 	}
 
 	userNumber := c.Request.Header["User-Number"][0]
-	classNumber := c.Param("class_number")
 	sourceOfSchoolInfoNumber := c.Param("source_of_school_info_number")
 
 	var user authModels.User
@@ -58,7 +59,6 @@ func CreateStudent(c *gin.Context) {
 	if err := config.DB.Create(&saveAPN).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   err.Error(),
-			"Details": saveAPN,
 			"message": "failed to save APN",
 			"data":    saveAPN,
 		})
@@ -69,17 +69,17 @@ func CreateStudent(c *gin.Context) {
 	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%04s", strconv.FormatUint(savedID, 10))}, "")
 
 	saveStudent := models.Student{
-		Number:                   studentNumber,
-		APN:                      result,
-		Surname:                  payload.Surname,
-		OtherName:                payload.OtherName,
-		Age:                      payload.Age,
-		Gender:                   payload.Gender,
-		Reason:                   payload.Reason,
-		SecondName:               payload.SecondName,
-		UserNumber:               userNumber,
-		ClassNumber:              classNumber,
-		SourceOfSchoolInfoNumber: sourceOfSchoolInfoNumber,
+		Number:                    studentNumber,
+		APN:                       result,
+		Surname:                   payload.Surname,
+		OtherName:                 payload.OtherName,
+		Gender:                    payload.Gender,
+		DateOfBirth:               payload.DateOfBirth,
+		Reason:                    payload.Reason,
+		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+		SecondName:                payload.SecondName,
+		UserNumber:                userNumber,
+		SourceOfSchoolInfoNumber:  sourceOfSchoolInfoNumber,
 	}
 
 	if err := config.DB.Create(&saveStudent).Error; err != nil {
@@ -179,16 +179,40 @@ func DeleteStudent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "student deleted successfully"})
 }
 
-func FetchStudent(c *gin.Context) {
-	studentAPN := c.Param("id")
-	student := models.Student{}
+func FetchStudentByAPN(c *gin.Context) {
+	var student models.Student
+	studentAPN := c.Param("apn")
 
-	err := config.DB.First(&student, studentAPN).Error
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "no student found",
+	if studentAPN == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Internal server error!",
 		})
+		return
+	}
+
+	userNumber := c.Request.Header["User-Id"][0]
+
+	var user authModels.User
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	err := config.DB.First(&student, "apn = ?", studentAPN).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":  http.StatusNotFound,
+				"message": "no student found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "internal server error",
+			})
+		}
 		return
 	}
 
