@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -21,11 +20,15 @@ func NewLessonPlan(context *gin.Context) {
 		Step string `json:"step"`
 	}
 
-	type LessonPlanInfo struct {
-		Code                    string  `json:"code"`
+	type LessonPlanConceptInfo struct {
+		Code                    int64   `json:"code"`
 		LessonPlanConceptNumber string  `json:"lesson_plan_concept_number"`
-		SchemeSubTopicNumber    string  `json:"scheme_sub_topic_number"`
 		StepList                []Steps `json:"steps"`
+	}
+
+	type LessonPlanInfo struct {
+		SchemeSubTopicNumber  string                  `json:"scheme_sub_topic_number"`
+		LessonPlanConceptInfo []LessonPlanConceptInfo `json:"concepts"`
 	}
 
 	var lessonPlanInfo LessonPlanInfo
@@ -35,35 +38,18 @@ func NewLessonPlan(context *gin.Context) {
 		return
 	}
 
-	code := lessonPlanInfo.Code
-	lessonPlanConceptNumber := lessonPlanInfo.LessonPlanConceptNumber
 	schemeSubTopicNumber := lessonPlanInfo.SchemeSubTopicNumber
-	stepList := lessonPlanInfo.StepList
+	lessonPlanConceptInfo := lessonPlanInfo.LessonPlanConceptInfo
 
 	userNumber := context.Request.Header["User-Number"][0]
-	fmt.Println(userNumber)
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if lessonPlanConceptNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Concept is required!"})
-		return
-	}
 
 	if schemeSubTopicNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme is required!"})
 		return
 	}
 
-	if len(stepList) == 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Steps are required!"})
+	if len(lessonPlanConceptInfo) == 0 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Concepts are required!"})
 		return
 	}
 
@@ -79,18 +65,17 @@ func NewLessonPlan(context *gin.Context) {
 
 	var duplicateLessonPlan lessonPlanModel.LessonPlan
 	if duplicate := config.DB.
-		Where("lesson_plan_concept_number = ?", lessonPlanConceptNumber).
 		Where("scheme_sub_topic_number = ?", schemeSubTopicNumber).
 		First(&duplicateLessonPlan).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Concept already exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
 		return
 	}
 
-	codeNo, err := strconv.ParseInt(code, 10, 64)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
+	/*	codeNo, err := strconv.ParseInt(code, 10, 64)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}*/
 
 	// Begin the transaction
 	tx := config.DB.Begin()
@@ -98,11 +83,10 @@ func NewLessonPlan(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save lesson plan data
 	saveLessonPlan := lessonPlanModel.LessonPlan{
-		Number:                  number,
-		LessonPlanConceptNumber: lessonPlanConceptNumber,
-		SchemeSubTopicNumber:    schemeSubTopicNumber,
-		Code:                    codeNo,
-		UserNumber:              userNumber,
+		Number:               number,
+		SchemeSubTopicNumber: schemeSubTopicNumber,
+		Status:               "draft",
+		UserNumber:           userNumber,
 	}
 
 	if err := tx.Create(&saveLessonPlan).Error; err != nil {
@@ -110,25 +94,50 @@ func NewLessonPlan(context *gin.Context) {
 		tx.Rollback()
 		// Handle or return the error as needed
 		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Lesson plan"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save Lesson plan"})
 		return
 	}
 
-	for _, step := range stepList {
-		stepNo := uuid.NewV4().String()
-		saveSchemeOfWorkSubtopic := lessonPlanModel.LessonPlanSteps{
-			Number:           stepNo,
-			LessonPlanNumber: saveLessonPlan.Number,
-			Code:             step.Code,
-			Step:             step.Step,
+	for _, concept := range lessonPlanConceptInfo {
+		saveSchemeOfWorkSubtopic := lessonPlanModel.LessonPlanConcepts{
+			Number:                  uuid.NewV4().String(),
+			LessonPlanConceptNumber: concept.LessonPlanConceptNumber,
+			Code:                    concept.Code,
+			LessonPlanNumber:        saveLessonPlan.Number,
 		}
 		if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {
 			// If any error occurs, rollback the transaction
 			tx.Rollback()
 			// Handle or return the error as needed
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create steps"})
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save Lesson Plan"})
 			return
 		}
+
+		lessonPlanSteps := concept.StepList
+		if len(lessonPlanSteps) > 0 {
+
+			for _, step := range lessonPlanSteps {
+				if step.Step != "" {
+
+					saveLearningSteps := lessonPlanModel.LessonPlanSteps{
+						Number: uuid.NewV4().String(),
+						Code:   step.Code,
+						Step:   step.Step,
+					}
+
+					if err := tx.Create(&saveLearningSteps).Error; err != nil {
+						// If any error occurs, rollback the transaction
+						tx.Rollback()
+						// Handle or return the error as needed
+						context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save steps"})
+						return
+					}
+
+				}
+			}
+
+		}
+
 	}
 
 	// Commit the transaction if there is no error
