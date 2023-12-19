@@ -10,7 +10,7 @@ import (
 type Application struct {
 	gorm.Model
 	Number                string               `json:"number" gorm:"size:36;unique;not null"`
-	Status                string               `gorm:"type:varchar(255);not null;default:'PENDING'" json:"status"`
+	Status                string               `gorm:"type:varchar(255);not null;default:'DRAFT'" json:"status"`
 	ApplicationFeePayment bool                 `json:"application_fee_payment" gorm:"not null;default:false"`
 	StudentNumber         string               `json:"student_number" gorm:"size:36;index;not null"`
 	ParentNumber          string               `json:"parent_number" gorm:"size:36;index;not null"`
@@ -19,3 +19,5 @@ type Application struct {
 	UserNumber            string               `json:"user_number" gorm:"size:36;index;not null"`
 	User                  models.User          `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
+
+// Create a relationship between a parent and

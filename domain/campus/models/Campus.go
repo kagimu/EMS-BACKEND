@@ -18,7 +18,7 @@ type (
 		Location               string                   `json:"location" form:"location" binding:"required" gorm:"size:200;not null"`
 		UserNumber             string                   `json:"user_number" gorm:"size:36;not null"`
 		SchoolNumber           string                   `json:"school_number" gorm:"size:36;not null"`
-		CommencementDate       time.Time                `json:"commencement_date" form:"name" binding:"required" gorm:"not null"`
+		CommencementDate       time.Time                `json:"commencement_date" form:"commencement_date" binding:"required" gorm:"not null"`
 		SchoolCurriculumNumber string                   `json:"school_curriculum_number" gorm:"size:36;not null"`
 		SchoolCurriculum       models2.SchoolCurriculum `gorm:"foreignKey:SchoolCurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User                   models.User              `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

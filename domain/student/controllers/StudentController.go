@@ -37,7 +37,6 @@ func CreateStudent(c *gin.Context) {
 	}
 
 	userNumber := c.Request.Header["User-Number"][0]
-	sourceOfSchoolInfoNumber := c.Param("source_of_school_info_number")
 
 	var user authModels.User
 	if err := config.DB.
@@ -78,8 +77,11 @@ func CreateStudent(c *gin.Context) {
 		Reason:                    payload.Reason,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
+		PreferedCampusNumber:      payload.PreferredCampusNumber,
 		UserNumber:                userNumber,
-		SourceOfSchoolInfoNumber:  sourceOfSchoolInfoNumber,
+		SourceOfSchoolInfoNumber:  payload.SourceOfSchoolInfoNumber,
+		ParentNumber:              payload.ParentNumber,
+		ClassNumber:               payload.ClassNumber,
 	}
 
 	if err := config.DB.Create(&saveStudent).Error; err != nil {
@@ -87,31 +89,6 @@ func CreateStudent(c *gin.Context) {
 			"error":   err.Error(),
 			"Details": saveAPN.ID,
 			"message": "failed to save student",
-		})
-		return
-	}
-
-	// Save previous schools
-	var previousSchools []models.PreviousSchools
-	var schoolNames []string
-
-	for _, schoolName := range payload.PreviousSchools {
-		schoolNames = append(schoolNames, schoolName)
-	}
-
-	pre := models.PreviousSchools{
-		Number:        uuid.NewV4().String(),
-		Name:          strings.Join(schoolNames, ""),
-		StudentNumber: saveStudent.Number,
-		UserNumber:    userNumber,
-	}
-
-	previousSchools = append(previousSchools, pre)
-
-	if err := config.DB.Create(&previousSchools).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"details": err.Error(),
-			"message": "failed to save previous school",
 		})
 		return
 	}

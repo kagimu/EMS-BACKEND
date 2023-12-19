@@ -1,8 +1,10 @@
 package controllers
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
@@ -11,8 +13,7 @@ import (
 	schoolLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"time"
- )
+)
 
 func NewCampus(context *gin.Context) {
 
@@ -30,7 +31,7 @@ func NewCampus(context *gin.Context) {
 	var campusInfo CampusInfo
 	err := context.BindJSON(&campusInfo)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!", "err": err.Error()})
 		return
 	}
 
@@ -161,7 +162,9 @@ func NewCampus(context *gin.Context) {
 			tx.Rollback()
 			// Handle or return the error as needed
 			//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create level"})
+			context.JSON(http.StatusBadRequest, gin.H{
+				"err":     err.Error(),
+				"message": "Failed to create level"})
 			return
 		}
 	}
