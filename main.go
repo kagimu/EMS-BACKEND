@@ -128,7 +128,7 @@ func main() {
 		&schemeOfWorkmodel.SchemeOfWorkSubTopic{},
 		&lessonPlanModel.LessonPlan{},
 		&lessonPlanModel.LessonPlanConcepts{},
-		&lessonPlanModel.LessonPlanSteps{},
+		&lessonPlanModel.LessonPlanStep{},
 		&studentDetailsModels.StudentDetail{},
 		&classModel.CurriculumClass{},
 		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},

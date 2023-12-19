@@ -101,7 +101,7 @@ func NewLessonPlan(context *gin.Context) {
 
 	for _, concept := range lessonPlanConceptInfo {
 
-		saveSchemeOfWorkSubtopic := lessonPlanModel.LessonPlanConcepts{
+		saveLessonConcepts := lessonPlanModel.LessonPlanConcepts{
 			Number:           uuid.NewV4().String(),
 			ConceptNumber:    concept.LessonPlanConceptNumber,
 			Code:             concept.Code,
@@ -111,7 +111,7 @@ func NewLessonPlan(context *gin.Context) {
 
 		//	adds new concepts when Concept number doesnt exists
 		if concept.Number == "" {
-			if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {
+			if err := tx.Create(&saveLessonConcepts).Error; err != nil {
 				// If any error occurs, rollback the transaction
 				tx.Rollback()
 				// Handle or return the error as needed
@@ -120,22 +120,28 @@ func NewLessonPlan(context *gin.Context) {
 			}
 		}
 
+		var referenceDataInfo lessonPlanModel.LessonPlanStep
+		conceptNo := ""
+		if concept.Number == "" {
+			conceptNo = saveLessonConcepts.Number
+		} else {
+			conceptNo = concept.Number
+		}
+
+		tx.Unscoped().
+			Where("lesson_plan_concept_number = ?", conceptNo).
+			Delete(&referenceDataInfo)
+
 		lessonPlanSteps := concept.StepList
 		if len(lessonPlanSteps) > 0 {
 
 			for _, step := range lessonPlanSteps {
 
-				var referenceDataInfo lessonPlanModel.LessonPlanSteps
-
-				tx.Unscoped().
-					Where("number = ?", step.Number).
-					Delete(&referenceDataInfo)
-
-				saveLearningSteps := lessonPlanModel.LessonPlanSteps{
+				saveLearningSteps := lessonPlanModel.LessonPlanStep{
 					Number:                  uuid.NewV4().String(),
 					Code:                    step.Code,
 					Step:                    step.Step,
-					LessonPlanConceptNumber: saveSchemeOfWorkSubtopic.Number,
+					LessonPlanConceptNumber: conceptNo,
 				}
 
 				if err := tx.Create(&saveLearningSteps).Error; err != nil {
@@ -260,7 +266,7 @@ func FetchLessonPlan(context *gin.Context) {
 
 	for _, lessonPlanConcept := range lessonPlanConceptsInfo {
 
-		var lessonPlanStepsInfo []lessonPlanModel.LessonPlanSteps
+		var lessonPlanStepsInfo []lessonPlanModel.LessonPlanStep
 		var lessonPlanStepsInfo_ []responses.LessonPlanStepsData
 
 		if err := config.DB.
