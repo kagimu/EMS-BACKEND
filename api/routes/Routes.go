@@ -211,7 +211,7 @@ func SetupRoute() *gin.Engine {
 			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 		}
 
-		application := main.Group("/application")
+		application := main.Group("/applications")
 		{
 			// source of school info
 			application.POST("new-source-of-school-info", sourceOfSchoolController.NewSourceOfSchoolInfo)
@@ -234,6 +234,7 @@ func SetupRoute() *gin.Engine {
 			// application
 			application.POST(":parent_number/:student_number", applicationController.CreateApplication)
 			application.GET("/:application_number", applicationController.FetchApplication)
+			application.GET("all", applicationController.FetchApplications)
 		}
 
 		learningMaterials := main.Group("/learning-materials")
