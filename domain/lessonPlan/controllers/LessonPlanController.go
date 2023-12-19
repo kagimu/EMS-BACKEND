@@ -67,15 +67,9 @@ func NewLessonPlan(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("scheme_sub_topic_number = ?", schemeSubTopicNumber).
 		First(&duplicateLessonPlan).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Lesson plan already exists"})
 		return
 	}
-
-	/*	codeNo, err := strconv.ParseInt(code, 10, 64)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
-		}*/
 
 	// Begin the transaction
 	tx := config.DB.Begin()
@@ -100,16 +94,17 @@ func NewLessonPlan(context *gin.Context) {
 
 	for _, concept := range lessonPlanConceptInfo {
 		saveSchemeOfWorkSubtopic := lessonPlanModel.LessonPlanConcepts{
-			Number:                  uuid.NewV4().String(),
-			LessonPlanConceptNumber: concept.LessonPlanConceptNumber,
-			Code:                    concept.Code,
-			LessonPlanNumber:        saveLessonPlan.Number,
+			Number:           uuid.NewV4().String(),
+			ConceptNumber:    concept.LessonPlanConceptNumber,
+			Code:             concept.Code,
+			LessonPlanNumber: saveLessonPlan.Number,
+			UserNumber:       userNumber,
 		}
 		if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {
 			// If any error occurs, rollback the transaction
 			tx.Rollback()
 			// Handle or return the error as needed
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save Lesson Plan"})
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save Lesson Plan Concepts!"})
 			return
 		}
 
@@ -120,9 +115,10 @@ func NewLessonPlan(context *gin.Context) {
 				if step.Step != "" {
 
 					saveLearningSteps := lessonPlanModel.LessonPlanSteps{
-						Number: uuid.NewV4().String(),
-						Code:   step.Code,
-						Step:   step.Step,
+						Number:                  uuid.NewV4().String(),
+						Code:                    step.Code,
+						Step:                    step.Step,
+						LessonPlanConceptNumber: saveSchemeOfWorkSubtopic.Number,
 					}
 
 					if err := tx.Create(&saveLearningSteps).Error; err != nil {
