@@ -114,3 +114,30 @@ func FetchApplication(c *gin.Context) {
 	})
 
 }
+
+func FetchApplications(c *gin.Context) {
+	userNumber := c.Request.Header["User-Number"][0]
+	var user authModel.User
+
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "User not found"})
+		return
+	}
+
+	var applications []models.Application
+	if err := config.DB.Find(&applications).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "Applications not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":    applications,
+		"message": "applications fetched successfully",
+	})
+}
