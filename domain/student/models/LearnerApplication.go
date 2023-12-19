@@ -7,12 +7,10 @@ import (
 )
 
 type LearnerApplication struct {
-	Year               int
-	Code               int
-	Serial             int
-	APN                string
-	APNFormatOPtionOne string
-	APNFormatOptionTwo string
+	Year   int
+	Code   int
+	Serial int
+	APN    string
 }
 
 type APNGenerator struct {
@@ -41,13 +39,13 @@ func (g *APNGenerator) GenerateAPN() (*LearnerApplication, error) {
 	defer g.CodeCounterMutex.Unlock()
 
 	apn := &LearnerApplication{
-		Year:               currentYear,
-		Code:               3,
-		Serial:             serial,
-		APNFormatOPtionOne: "%d%04d",
+		Year:   currentYear,
+		Code:   3,
+		Serial: serial,
+		APN:    "%d%04d",
 	}
 
-	apn.APN = fmt.Sprintf(apn.APNFormatOPtionOne, apn.Year, apn.Code, apn.Serial)
+	apn.APN = fmt.Sprintf(apn.APN, apn.Year, apn.Code, apn.Serial)
 
 	return apn, nil
 }

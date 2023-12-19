@@ -7,26 +7,30 @@ import (
 )
 
 type StudentRequest struct {
-	Surname         string   `json:"surname"`
-	SecondName      string   `json:"second_name"`
-	OtherName       string   `json:"other_name"`
-	Age             uint     `json:"age"`
-	APN             string   `json:"apn"`
-	PreviousSchools []string `json:"previous_schools"`
-	Gender          string   `json:"gender"`
-	Reason          string   `json:"reason"`
+	Surname                   string   `json:"surname"`
+	SecondName                string   `json:"second_name"`
+	OtherName                 string   `json:"other_name"`
+	DateOfBirth               string   `json:"date_of_birth"`
+	APN                       string   `json:"apn"`
+	PreviousSchools           []string `json:"previous_schools"`
+	PreferredTypeOfEnrollment string   `json:"preferred_type_of_enrollment"`
+	PreferredCampusNumber     string   `json:"preferred_campus_number"`
+	Gender                    string   `json:"gender"`
+	Reason                    string   `json:"reason"`
+	SourceOfSchoolInfoNumber  string   `json:"source_of_school_info_number"`
+	ParentNumber              string   `json:"parent_number"`
+	ClassNumber               string   `json:"class_number"`
 }
 
 func (s *StudentRequest) Validate() error {
 	if s.Surname == "" {
 		return errors.New("surname is required")
 	}
-
 	if s.SecondName == "" {
 		return errors.New("second name is required")
 	}
-	if s.Age == 0 {
-		return errors.New("age must be greater than 0")
+	if s.DateOfBirth == "" {
+		return errors.New("date of birth is required")
 	}
 	if s.Gender == "" {
 		return errors.New("gender is required")

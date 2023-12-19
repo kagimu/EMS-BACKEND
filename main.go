@@ -12,7 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
-	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
@@ -24,18 +24,22 @@ import (
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
+	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
+	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
-	learningMaterialsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+	serviceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
-	previousSchoolsModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -130,11 +134,13 @@ func main() {
 		&parentModels.Parent{},
 		&studentModels.Student{},
 		&applicationModel.Application{},
-		&previousSchoolsModel.PreviousSchools{},
+		&previousSchoolModels.PreviousSchools{},
 		&studentModels.APN{},
-		&learningMaterialsModels.LearningMaterial{},
-		&lessonPlanModel.LessonPlanReference{},
-		&learningMaterialsModels.CurriculumSubtopicReference{},
+		&serviceModels.Service{},
+		&preInterviewModels.PreAdmissionInterviewTest{},
+		&gradeModel.Grade{},
+		&admissionModel.Admission{},
+		&admissionModel.ADN{},
 	)
 
 	if errMigrate != nil {
