@@ -14,9 +14,12 @@ type StudentRequest struct {
 	APN                       string   `json:"apn"`
 	PreviousSchools           []string `json:"previous_schools"`
 	PreferredTypeOfEnrollment string   `json:"preferred_type_of_enrollment"`
-	PreferredCampusID         string   `json:"preferred_campus_id"`
+	PreferredCampusNumber     string   `json:"preferred_campus_number"`
 	Gender                    string   `json:"gender"`
 	Reason                    string   `json:"reason"`
+	SourceOfSchoolInfoNumber  string   `json:"source_of_school_info_number"`
+	ParentNumber              string   `json:"parent_number"`
+	ClassNumber               string   `json:"class_number"`
 }
 
 func (s *StudentRequest) Validate() error {

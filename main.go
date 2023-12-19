@@ -28,6 +28,7 @@ import (
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
+	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	serviceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/models"
@@ -133,7 +134,7 @@ func main() {
 		&parentModels.Parent{},
 		&studentModels.Student{},
 		&applicationModel.Application{},
-		&studentModels.PreviousSchools{},
+		&previousSchoolModels.PreviousSchools{},
 		&studentModels.APN{},
 		&serviceModels.Service{},
 		&preInterviewModels.PreAdmissionInterviewTest{},

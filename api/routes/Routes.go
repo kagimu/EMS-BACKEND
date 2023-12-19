@@ -21,8 +21,8 @@ import (
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
-	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
+	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentDetails "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
@@ -225,16 +225,15 @@ func SetupRoute() *gin.Engine {
 			application.POST("parents/:id", parentController.DeleteParent)
 
 			// students
-			application.POST("new-student/:class_number/:source_of_school_info_number",
-				studentController.CreateStudent)
+			application.POST("new-student", studentController.CreateStudent)
 			application.GET("/students/:apn", studentController.FetchStudentByAPN)
 			application.GET("/students", studentController.FetchAllStudents)
 			application.PATCH("/students/:id", studentController.UpdateStudent)
 			application.POST("/students/:id", studentController.DeleteStudent)
 
 			// application
-			application.POST(":parent_number/:student_number",
-				applicationController.CreateApplication)
+			application.POST(":parent_number/:student_number", applicationController.CreateApplication)
+			application.GET("/:application_number", applicationController.FetchApplication)
 		}
 
 		learningMaterials := main.Group("/learning-materials")
