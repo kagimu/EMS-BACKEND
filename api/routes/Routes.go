@@ -174,6 +174,7 @@ func SetupRoute() *gin.Engine {
 		{
 			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
 			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
+			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
 		}
 

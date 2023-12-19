@@ -209,3 +209,79 @@ func FetchLessonPlanReferences(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, lessonPlanReferences)
 }
+
+func FetchLessonPlan(context *gin.Context) {
+
+	subTopicNumber := context.Query("sub_topic_number")
+
+	if subTopicNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subtopic is required!"})
+		return
+	}
+
+	var lessonPlanInfo lessonPlanModel.LessonPlan
+	if err := config.DB.
+		Where("scheme_sub_topic_number = ?", subTopicNumber).
+		//Preload("SchemeOfWork").
+		Order("created_at desc").
+		First(&lessonPlanInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Lesson plan found"})
+		return
+	}
+
+	var lessonPlanConceptsInfo []lessonPlanModel.LessonPlanConcepts
+	var lessonPlanConceptsInfo_ []responses.LessonPlanConceptData
+
+	if err := config.DB.
+		Where("lesson_plan_number = ?", lessonPlanInfo.Number).
+		Preload("Concept").
+		Order("code asc").
+		Find(&lessonPlanConceptsInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Lesson plan concept found"})
+		return
+	}
+
+	for _, lessonPlanConcept := range lessonPlanConceptsInfo {
+
+		var lessonPlanStepsInfo []lessonPlanModel.LessonPlanSteps
+		var lessonPlanStepsInfo_ []responses.LessonPlanStepsData
+
+		if err := config.DB.
+			Where("lesson_plan_concept_number = ?", lessonPlanConcept.Number).
+			Order("code asc").
+			Find(&lessonPlanStepsInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Lesson plan Steps found"})
+			return
+		}
+
+		for _, steps := range lessonPlanStepsInfo {
+			lessonPlanStepsInfo_ = append(lessonPlanStepsInfo_, responses.LessonPlanStepsData{
+				Number:                  steps.Number,
+				Code:                    steps.Code,
+				Step:                    steps.Step,
+				LessonPlanConceptNumber: steps.LessonPlanConceptNumber,
+			})
+		}
+
+		lessonPlanConceptsInfo_ = append(lessonPlanConceptsInfo_, responses.LessonPlanConceptData{
+			Number:           lessonPlanConcept.Number,
+			Code:             lessonPlanConcept.Code,
+			ConceptNumber:    lessonPlanConcept.ConceptNumber,
+			ConceptName:      lessonPlanConcept.Concept.Name,
+			LessonPlanNumber: lessonPlanConcept.LessonPlanNumber,
+			UserNumber:       lessonPlanConcept.UserNumber,
+			LessonPlanSteps:  lessonPlanStepsInfo_,
+		})
+	}
+
+	_lessonPlanResp := responses.LessonPlanData{
+		Number:               lessonPlanInfo.Number,
+		SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
+		Status:               lessonPlanInfo.Status,
+		UserNumber:           lessonPlanInfo.UserNumber,
+		LessonPlanConcepts:   lessonPlanConceptsInfo_,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _lessonPlanResp})
+
+}
