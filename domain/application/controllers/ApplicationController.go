@@ -75,3 +75,69 @@ func CreateApplication(c *gin.Context) {
 		"data":    saveApplication,
 	})
 }
+
+func FetchApplication(c *gin.Context) {
+	userNumber := c.Request.Header["User-Number"][0]
+
+	var user authModel.User
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "User not found"})
+		return
+	}
+
+	applicationNumber := c.Param("application_number")
+
+	var application models.Application
+
+	err := config.DB.
+		Where("number = ?", applicationNumber).
+		Preload("Parent").
+		Preload("Student").
+		Preload("Student.Class").
+		Preload("Student.PreferredCampus").
+		Preload("Student.SourceOfSchoolInfo").
+		First(&application).Error
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "Application not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "application fetched successfully",
+		"data":    application,
+	})
+
+}
+
+func FetchApplications(c *gin.Context) {
+	userNumber := c.Request.Header["User-Number"][0]
+	var user authModel.User
+
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "User not found"})
+		return
+	}
+
+	var applications []models.Application
+	if err := config.DB.Find(&applications).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "Applications not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":    applications,
+		"message": "applications fetched successfully",
+	})
+}

@@ -128,7 +128,7 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
 
 func AddCampusClass(context *gin.Context) {
@@ -297,7 +297,7 @@ func AddCurriculumClass(context *gin.Context) {
 	}
 	config.DB.Save(&saveClass)
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
 
 func FetchClasses(context *gin.Context) {
@@ -307,7 +307,7 @@ func FetchClasses(context *gin.Context) {
 	var levels []levelModels.Level
 	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
-		Scopes(levelDataFilter(level)).
+		Scopes(levelInfoDataFilter(level)).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
@@ -570,6 +570,15 @@ func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
+func levelInfoDataFilter(level string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if level != "" {
+			return db.Where("number = ?", level)
+		}
+		return db
+	}
+}
+
 func levelInfoFilter(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if level != "" {
@@ -599,7 +608,7 @@ func FetchClassLevel(context *gin.Context) {
 
 	if err := config.DB.
 		Scopes(levelClassFilter(levelNumber)).
-		Where("campus_classes.campus_number = ?", campusNumber).
+		Where("campus_number = ?", campusNumber).
 		Preload("CurriculumClass.Class").
 		Preload("CurriculumClass").
 		Preload("Streams").
@@ -636,7 +645,7 @@ func FetchClassLevel(context *gin.Context) {
 func levelClassFilter(levelNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if levelNumber != "" {
-			return db.Where("campus_classes.campus_level_number = ?", levelNumber)
+			return db.Where("campus_level_number = ?", levelNumber)
 		}
 		return db
 	}

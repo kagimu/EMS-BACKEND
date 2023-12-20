@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	"github.com/gin-gonic/gin"
@@ -103,7 +101,7 @@ func NewSchemeOfWork(context *gin.Context) {
 		Number:             number,
 		Name:               name,
 		Status:             "Pending",
-		ClassNumber:        classNumber,
+		CampusClassNumber:  classNumber,
 		SubjectNumber:      subjectNumber,
 		AcademicYearNumber: academicYearNumber,
 		UserNumber:         userNumber,
@@ -307,10 +305,12 @@ func FetchSchemeOfWork(context *gin.Context) {
 	var schemeOfWrkInfo schemeOfWorkModel.SchemeOfWork
 	if err := config.DB.
 		Where("academic_year_number = ?", academicYearNumber).
-		Where("class_number = ?", classNumber).
+		Where("campus_class_number = ?", classNumber).
 		Where("subject_number = ?", subjectNumber).
 		Preload("AcademicYear").
-		Preload("Class").
+		Preload("CampusClass.CurriculumClass.Class").
+		Preload("CampusClass.CurriculumClass").
+		Preload("CampusClass").
 		Preload("Subject").
 		Order("created_at desc").
 		First(&schemeOfWrkInfo).Error; err != nil {
@@ -334,18 +334,18 @@ func FetchSchemeOfWork(context *gin.Context) {
 	for _, subTopicList := range schemeOfWrkSubTopicInfo {
 
 		//fetch lesson plan
-		var lessonPlanInfo []models2.LessonPlan
-		var lessonPlanInfo_ []responses.LessonPlanResponseInfo
-		if err := config.DB.
-			Where("scheme_sub_topic_number = ?", subTopicList.Number).
-			Preload("Concept").
-			Order("code asc").
-			Find(&lessonPlanInfo).Error; err != nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
-			return
-		}
+		/*	var lessonPlanInfo []models2.LessonPlan
+			var lessonPlanInfo_ []responses.LessonPlanResponseInfo
+			if err := config.DB.
+				Where("scheme_sub_topic_number = ?", subTopicList.Number).
+				//Preload("Concept").
+				Order("created_at desc").
+				Find(&lessonPlanInfo).Error; err != nil {
+				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
+				return
+			}*/
 
-		for _, lessonPlanList := range lessonPlanInfo {
+		/*for _, lessonPlanList := range lessonPlanInfo {
 
 			//fetch lesson plan steps
 			var lessonPlanStepsInfo []models2.LessonPlanSteps
@@ -369,15 +369,15 @@ func FetchSchemeOfWork(context *gin.Context) {
 			}
 
 			lessonPlanInfo_ = append(lessonPlanInfo_, responses.LessonPlanResponseInfo{
-				Number:                  lessonPlanList.Number,
-				LessonPlanConceptNumber: lessonPlanList.LessonPlanConceptNumber,
-				SchemeSubTopicNumber:    lessonPlanList.SchemeSubTopicNumber,
-				ConceptName:             lessonPlanList.Concept.Name,
-				Code:                    lessonPlanList.Code,
-				UserNumber:              lessonPlanList.UserNumber,
-				LessonPlanSteps:         lessonPlanStepsInfo_,
+				Number: lessonPlanList.Number,
+				//LessonPlanConceptNumber: lessonPlanList.LessonPlanConceptNumber,
+				SchemeSubTopicNumber: lessonPlanList.SchemeSubTopicNumber,
+				//ConceptName:             lessonPlanList.Concept.Name,
+				//Code:                    lessonPlanList.Code,
+				UserNumber:      lessonPlanList.UserNumber,
+				LessonPlanSteps: lessonPlanStepsInfo_,
 			})
-		}
+		}*/
 
 		schemeOfWrkSubTopicInfo_ = append(schemeOfWrkSubTopicInfo_, responses2.SchemeOfWorkSubtopicInfo{
 			Number:             subTopicList.Number,
@@ -390,7 +390,7 @@ func FetchSchemeOfWork(context *gin.Context) {
 			SchemeOfWorkNumber: subTopicList.SchemeOfWorkNumber,
 			SubTopicNumber:     subTopicList.SubTopicNumber,
 			UserNumber:         subTopicList.UserNumber,
-			LessonPlan:         lessonPlanInfo_,
+			//LessonPlan:         lessonPlanInfo_,
 		})
 	}
 
@@ -398,8 +398,8 @@ func FetchSchemeOfWork(context *gin.Context) {
 		Number:                   schemeOfWrkInfo.Number,
 		Name:                     schemeOfWrkInfo.Name,
 		Status:                   schemeOfWrkInfo.Status,
-		ClassNumber:              schemeOfWrkInfo.ClassNumber,
-		ClassName:                schemeOfWrkInfo.Class.Name,
+		ClassNumber:              schemeOfWrkInfo.CampusClassNumber,
+		ClassName:                schemeOfWrkInfo.CampusClass.CurriculumClass.Class.Name,
 		SubjectNumber:            schemeOfWrkInfo.SubjectNumber,
 		SubjectName:              schemeOfWrkInfo.Subject.Name,
 		UserNumber:               schemeOfWrkInfo.UserNumber,

@@ -23,6 +23,7 @@ func NewSubject(context *gin.Context) {
 		Code                 string `json:"code"`
 		Name                 string `json:"name"`
 		SubjectClusterNumber string `json:"subject_cluster_number"`
+		CurriculumNumber     string `json:"curriculum_number"`
 	}
 
 	var subjectInfo SubjectInfo
@@ -35,6 +36,7 @@ func NewSubject(context *gin.Context) {
 	code := subjectInfo.Code
 	name := subjectInfo.Name
 	subjectClusterNumber := subjectInfo.SubjectClusterNumber
+	curriculumNumber := subjectInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -50,6 +52,11 @@ func NewSubject(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -78,6 +85,7 @@ func NewSubject(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("subject_cluster_number = ?", subjectClusterNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -87,6 +95,7 @@ func NewSubject(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("subject_cluster_number = ?", subjectClusterNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateSubject).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject already exists"})
 		return
@@ -100,6 +109,7 @@ func NewSubject(context *gin.Context) {
 		UserNumber:           userNumber,
 		SubjectClusterNumber: subjectClusterNumber,
 		Code:                 codeNo,
+		CurriculumNumber:     curriculumNumber,
 	}
 
 	config.DB.Save(&saveSubject)
@@ -124,7 +134,7 @@ func FetchSubject(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum("", lstLA.Number, subjectClusterNumber)
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
@@ -133,7 +143,7 @@ func FetchSubject(context *gin.Context) {
 		var subjectCluster_ []responses3.SubjectClusterInfo
 		for _, lstSC := range subjectClusterResp {
 
-			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, "")
+			subjectResp, err := curriculum.FetchSubjectCurriculum("", lstSC.Number, "")
 			if err != "" {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 				return
@@ -178,8 +188,9 @@ func FetchSubject(context *gin.Context) {
 func FetchSubjectList(context *gin.Context) {
 
 	subjectClusterNumber := context.Query("subject_cluster_number")
+	curriculumNumber := context.Query("curriculum_number")
 
-	subjectResp, err := curriculum.FetchSubjectCurriculum(subjectClusterNumber, "")
+	subjectResp, err := curriculum.FetchSubjectCurriculum(curriculumNumber, subjectClusterNumber, "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return

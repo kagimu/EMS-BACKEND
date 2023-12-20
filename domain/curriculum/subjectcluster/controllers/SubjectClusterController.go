@@ -20,6 +20,7 @@ func NewSubjectCluster(context *gin.Context) {
 		Code               string `json:"code"`
 		Name               string `json:"name"`
 		LearningAreaNumber string `json:"learning_area_number"`
+		CurriculumNumber   string `json:"curriculum_number"`
 	}
 
 	var subjectClusterInfo SubjectClusterInfo
@@ -32,6 +33,7 @@ func NewSubjectCluster(context *gin.Context) {
 	code := subjectClusterInfo.Code
 	name := subjectClusterInfo.Name
 	learningAreaNumber := subjectClusterInfo.LearningAreaNumber
+	curriculumNumber := subjectClusterInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -47,6 +49,11 @@ func NewSubjectCluster(context *gin.Context) {
 
 	if code == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -75,6 +82,7 @@ func NewSubjectCluster(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("learning_area_number = ?", learningAreaNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -84,6 +92,7 @@ func NewSubjectCluster(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("learning_area_number = ?", learningAreaNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateSubjectCluster).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Learning area already exists"})
 		return
@@ -97,6 +106,7 @@ func NewSubjectCluster(context *gin.Context) {
 		LearningAreaNumber: learningAreaNumber,
 		UserNumber:         userNumber,
 		Code:               codeNo,
+		CurriculumNumber:   curriculumNumber,
 	}
 	config.DB.Save(&saveSubjectCluster)
 
@@ -120,7 +130,7 @@ func FetchSubjectCluster(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, "")
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(curriculumNumber, lstLA.Number, "")
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
@@ -154,9 +164,10 @@ func FetchSubjectCluster(context *gin.Context) {
 func FetchSubjectClusterList(context *gin.Context) {
 
 	learningAreaNumber := context.Query("learning_area_number")
+	curriculumNumber := context.Query("curriculum_number")
 
 	//fetch subject cluster
-	subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(learningAreaNumber, "")
+	subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(curriculumNumber, learningAreaNumber, "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return

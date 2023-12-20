@@ -3,10 +3,6 @@ package routes
 import (
 	"time"
 
-	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
-	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
-	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
-
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
@@ -21,11 +17,15 @@ import (
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
+	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
+	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
+	studentDetails "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
@@ -169,10 +169,17 @@ func SetupRoute() *gin.Engine {
 
 		//lesson notes
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
-		main.POST("new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+
+		lessonPlan := main.Group("/lesson-plan")
+		{
+			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
+			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
+			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
+		}
 
 		//Student Admission
-		main.POST("new-student-details-admission", admissionController.NewStudentDetails)
+		main.POST("new-student-details-admission", studentDetails.NewStudentDetails)
 
 		//timetable routes
 		timetable := main.Group("/timetable")
@@ -205,7 +212,7 @@ func SetupRoute() *gin.Engine {
 			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 		}
 
-		application := main.Group("/application")
+		application := main.Group("/applications")
 		{
 			// source of school info
 			application.POST("new-source-of-school-info", sourceOfSchoolController.NewSourceOfSchoolInfo)
@@ -219,16 +226,23 @@ func SetupRoute() *gin.Engine {
 			application.POST("parents/:id", parentController.DeleteParent)
 
 			// students
-			application.POST("new-student/:class_number/:source_of_school_info_number",
-				studentController.CreateStudent)
-			application.GET("/students/:id", studentController.FetchStudent)
+			application.POST("new-student", studentController.CreateStudent)
+			application.GET("/students/:apn", studentController.FetchStudentByAPN)
 			application.GET("/students", studentController.FetchAllStudents)
 			application.PATCH("/students/:id", studentController.UpdateStudent)
 			application.POST("/students/:id", studentController.DeleteStudent)
 
 			// application
-			application.POST(":parent_number/:student_number",
-				applicationController.CreateApplication)
+			application.POST(":parent_number/:student_number", applicationController.CreateApplication)
+			application.GET("/:application_number", applicationController.FetchApplication)
+			application.GET("all", applicationController.FetchApplications)
+		}
+
+		learningMaterials := main.Group("/learning-materials")
+		{
+			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
+			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
 		}
 	}
 	//router.GET("/profile/:name", profile)

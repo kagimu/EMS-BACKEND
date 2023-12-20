@@ -16,9 +16,9 @@ type Parent struct {
 	SecondName                 string      `json:"second_name" gorm:"size:80;not null"`
 	OtherName                  string      `json:"other_name" gorm:"size:80;not null"`
 	MainTelephoneNumber        string      `json:"main_telephone_number" gorm:"unique;"`
-	AlternativeTelephoneNumber string      `json:"alternative_telephone_number" gorm:"size:20;not null"`
+	AlternativeTelephoneNumber string      `json:"alternative_telephone_number" gorm:"size:20;type:text"`
 	Email                      string      `json:"email" gorm:"size:80;not null;unique"`
-	AlternativeEmail           string      `json:"alternative_email" gorm:"size:80;not null"`
+	AlternativeEmail           string      `json:"alternative_email" gorm:"size:80"`
 	UserNumber                 string      `json:"user_number" gorm:"size:36;not null"`
 	User                       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
