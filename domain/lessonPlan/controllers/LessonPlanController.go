@@ -136,21 +136,22 @@ func NewLessonPlan(context *gin.Context) {
 		if len(lessonPlanSteps) > 0 {
 
 			for _, step := range lessonPlanSteps {
+				if step.Step != "" {
+					saveLearningSteps := lessonPlanModel.LessonPlanStep{
+						Number:                  uuid.NewV4().String(),
+						Code:                    step.Code,
+						Step:                    step.Step,
+						LessonPlanConceptNumber: conceptNo,
+					}
 
-				saveLearningSteps := lessonPlanModel.LessonPlanStep{
-					Number:                  uuid.NewV4().String(),
-					Code:                    step.Code,
-					Step:                    step.Step,
-					LessonPlanConceptNumber: conceptNo,
-				}
+					if err := tx.Create(&saveLearningSteps).Error; err != nil {
+						// If any error occurs, rollback the transaction
+						tx.Rollback()
+						// Handle or return the error as needed
+						context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save steps"})
+						return
 
-				if err := tx.Create(&saveLearningSteps).Error; err != nil {
-					// If any error occurs, rollback the transaction
-					tx.Rollback()
-					// Handle or return the error as needed
-					context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save steps"})
-					return
-
+					}
 				}
 
 			}
