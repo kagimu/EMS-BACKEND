@@ -90,24 +90,21 @@ func FetchApplication(c *gin.Context) {
 
 	var application models.Application
 
-	err := config.DB.
-		Select("students.*,  previous_schools.*").
-		Joins("LEFT JOIN students ON applications.number = students.application_number").
-		Joins("LEFT JOIN previous_schools ON students.application_number = previous_schools.application_number").
-		Where("applications.number = ?", applicationNumber).
-		First(&application).Error
+	err := config.DB.Raw(`SELECT applications.* FROM applications
+		LEFT JOIN parents ON applications.number = parents.application_number
+		WHERE applications.number = ?`, applicationNumber).Scan(&application).Error
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"err":     err.Error(),
 			"debug":   applicationNumber,
-			"message": "Application not found"})
+			"message": "Application not found",
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "application fetched successfully",
-		"debug":   applicationNumber,
 		"data":    application,
 	})
 
