@@ -8,6 +8,7 @@ import (
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"gorm.io/gorm"
 )
@@ -109,6 +110,19 @@ func FetchConceptCurriculum(curriculumNumber string, subtopicNumber string) ([]c
 		errInfo = "No Concept found!"
 	}
 	return concept, errInfo
+
+}
+
+func FetchSubTopicReferences(subtopicNumber string) ([]models.CurriculumSubtopicReference, string) {
+	var references []models.CurriculumSubtopicReference
+	var errInfo string
+	if err := config.DB.
+		Scopes(scopeFilter("sub_topic_number", subtopicNumber)).
+		Order("code asc").
+		Find(&references).Error; err != nil {
+		errInfo = "No Subtopic found!"
+	}
+	return references, errInfo
 
 }
 

@@ -64,11 +64,16 @@ func FetchAllLearningMaterials(ctx *gin.Context) {
 
 func CreateCurriculumReference(context *gin.Context) {
 
+	type References struct {
+		Number                 string `json:"number"`
+		Code                   int64  `json:"code"`
+		LearningMaterialNumber string `json:"learningMaterialNumber"`
+		Description            string `json:"description"`
+	}
+
 	type ReferenceInfo struct {
-		Code             int64  `json:"material_code"`
-		MaterialNumber   string `json:"material_number"`
-		CurriculumNumber string `json:"curriculum_number"`
-		SubTopicNumber   string `json:"sub_topic_number"`
+		SubTopicNumber string       `json:"sub_topic_number"`
+		References     []References `json:"references"`
 	}
 
 	var referenceInfo ReferenceInfo
@@ -79,29 +84,18 @@ func CreateCurriculumReference(context *gin.Context) {
 		return
 	}
 
-	code := referenceInfo.Code
-	materialNumber := referenceInfo.MaterialNumber
-	curriculumNumber := referenceInfo.CurriculumNumber
 	subTopicNumber := referenceInfo.SubTopicNumber
+	references := referenceInfo.References
+
 	userNumber := context.Request.Header["User-Number"][0]
-
-	/*if code > 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}*/
-
-	if materialNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Resource is required!"})
-		return
-	}
-
-	if curriculumNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
-		return
-	}
 
 	if subTopicNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Subtopic is required!"})
+		return
+	}
+
+	if len(references) == 0 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "References are required!"})
 		return
 	}
 
@@ -115,30 +109,41 @@ func CreateCurriculumReference(context *gin.Context) {
 		return
 	}
 
-	/*	codeNo, err := strconv.ParseInt(code, 10, 64)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
-		}*/
-
 	tx := config.DB.Begin()
 
-	///save user data
-	saveReference := models.CurriculumSubtopicReference{
-		Number:                 uuid.NewV4().String(),
-		Code:                   code,
-		LearningMaterialNumber: materialNumber,
-		CurriculumNumber:       curriculumNumber,
-		SubTopicNumber:         subTopicNumber,
-		UserNumber:             userNumber,
-	}
+	for _, refs := range references {
+		///save user data
+		//if reference has a number we just update else we submit a new one
+		if refs.Number != "" {
 
-	if err := tx.Create(&saveReference).Error; err != nil {
-		// If any error occurs, rollback the transaction
-		tx.Rollback()
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference"})
-		return
+			var referenceDataInfo models.CurriculumSubtopicReference
+			updateRef := tx.Model(&referenceDataInfo).
+				Where("number = ?", refs.Number).
+				Updates(models.CurriculumSubtopicReference{Description: refs.Description, LearningMaterialNumber: refs.LearningMaterialNumber, Code: refs.Code})
+			if updateRef.Error != nil {
+				context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update Reference!"})
+				return
+			}
+
+		} else {
+
+			saveReference := models.CurriculumSubtopicReference{
+				Number:                 uuid.NewV4().String(),
+				Code:                   refs.Code,
+				LearningMaterialNumber: refs.LearningMaterialNumber,
+				Description:            refs.Description,
+				SubTopicNumber:         subTopicNumber,
+				UserNumber:             userNumber,
+			}
+
+			if err := tx.Create(&saveReference).Error; err != nil {
+				// If any error occurs, rollback the transaction
+				tx.Rollback()
+				// Handle or return the error as needed
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference"})
+				return
+			}
+		}
 	}
 
 	// Commit the transaction if there is no error
@@ -148,5 +153,5 @@ func CreateCurriculumReference(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference Added Successfully!", "data": saveReference})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Success"})
 }

@@ -175,6 +175,7 @@ func SetupRoute() *gin.Engine {
 		{
 			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
 			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
+			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
 		}
 
@@ -239,7 +240,6 @@ func SetupRoute() *gin.Engine {
 			application.POST(":parent_number/:student_number", applicationController.CreateApplication)
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
-
 		}
 
 		learningMaterials := main.Group("/learning-materials")

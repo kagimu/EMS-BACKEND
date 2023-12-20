@@ -1,21 +1,29 @@
 package responses
 
 type (
-	LessonPlanResponseInfo struct {
-		Number                  string                `json:"number"`
-		LessonPlanConceptNumber string                `json:"lesson_plan_concept_number"`
-		ConceptName             string                `json:"concept_name"`
-		SchemeSubTopicNumber    string                `json:"scheme_sub_topic_number"`
-		Code                    int64                 `json:"code"`
-		UserNumber              string                `json:"user_number"`
-		LessonPlanSteps         []LessonPlanStepsInfo `json:"steps"`
-		//SchemeOfWorkSubtopicInfo []SchemeOfWorkSubtopicInfo `json:"subtopic"`
+	LessonPlanData struct {
+		Number               string                  `json:"number"`
+		SchemeSubTopicNumber string                  `json:"scheme_sub_topic_number"`
+		Status               string                  `json:"status"`
+		UserNumber           string                  `json:"user_number"`
+		LessonPlanConcepts   []LessonPlanConceptData `json:"concepts"`
 	}
-	LessonPlanStepsInfo struct {
-		Number           string `json:"number"`
-		Code             int64  `json:"code"`
-		Step             string `json:"step"`
-		LessonPlanNumber string `json:"lesson_plan_number"`
+
+	LessonPlanConceptData struct {
+		Number           string                `json:"number"`
+		Code             int64                 `json:"code"`
+		ConceptNumber    string                `json:"lesson_plan_concept_number"`
+		ConceptName      string                `json:"concept_name"`
+		LessonPlanNumber string                `json:"lesson_plan_number"`
+		UserNumber       string                `json:"user_number"`
+		LessonPlanSteps  []LessonPlanStepsData `json:"steps"`
+	}
+
+	LessonPlanStepsData struct {
+		Number                  string `json:"number"`
+		Code                    int64  `json:"code"`
+		Step                    string `json:"step"`
+		LessonPlanConceptNumber string `json:"lesson_plan_concept_number"`
 	}
 
 	LessonPlanReferenceResponse struct {
