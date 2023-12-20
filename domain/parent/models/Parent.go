@@ -15,6 +15,7 @@ type Parent struct {
 	Surname                    string      `json:"surname" gorm:"size:80;not null"`
 	SecondName                 string      `json:"second_name" gorm:"size:80;not null"`
 	OtherName                  string      `json:"other_name" gorm:"size:80;not null"`
+	ApplicationNumber          string      `json:"application_number" gorm:"size:36;unique;not null"`
 	MainTelephoneNumber        string      `json:"main_telephone_number" gorm:"unique;"`
 	AlternativeTelephoneNumber string      `json:"alternative_telephone_number" gorm:"size:20;type:text"`
 	Email                      string      `json:"email" gorm:"size:80;not null;unique"`
