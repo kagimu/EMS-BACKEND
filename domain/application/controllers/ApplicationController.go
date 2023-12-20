@@ -32,8 +32,6 @@ func CreateApplication(c *gin.Context) {
 	}
 
 	userNumber := c.Request.Header["User-Number"][0]
-	parentNumber := c.Param("parent_number")
-	studentNumber := c.Param("student_number")
 
 	var user authModel.User
 	if err := config.DB.
@@ -48,8 +46,6 @@ func CreateApplication(c *gin.Context) {
 		Number:                uuid.NewV4().String(),
 		Status:                string(application.Status),
 		UserNumber:            userNumber,
-		StudentNumber:         studentNumber,
-		ParentNumber:          parentNumber,
 		ApplicationFeePayment: application.ApplicationFeePayment,
 	}
 

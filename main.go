@@ -134,13 +134,14 @@ func main() {
 		&parentModels.Parent{},
 		&studentModels.Student{},
 		&applicationModel.Application{},
-		&previousSchoolModels.PreviousSchools{},
+		&previousSchoolModels.PreviousSchool{},
 		&studentModels.APN{},
 		&serviceModels.Service{},
 		&preInterviewModels.PreAdmissionInterviewTest{},
 		&gradeModel.Grade{},
 		&admissionModel.Admission{},
 		&admissionModel.ADN{},
+		&previousSchoolModels.PreviousSchoolClass{},
 	)
 
 	if errMigrate != nil {
