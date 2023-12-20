@@ -19,6 +19,7 @@ import (
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
+	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
@@ -231,6 +232,9 @@ func SetupRoute() *gin.Engine {
 			application.GET("/students", studentController.FetchAllStudents)
 			application.PATCH("/students/:id", studentController.UpdateStudent)
 			application.POST("/students/:id", studentController.DeleteStudent)
+
+			// previous schools
+			application.POST("previous-schools/:application_number/:student_number", previousSchoolController.CreatePreviousSchool)
 
 			// application
 			application.POST(":parent_number/:student_number", applicationController.CreateApplication)

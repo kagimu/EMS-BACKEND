@@ -10,6 +10,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -36,6 +37,7 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
+	previousSchools := payload.PreviousSchool
 	userNumber := c.Request.Header["User-Number"][0]
 
 	var user authModels.User
@@ -67,7 +69,7 @@ func CreateStudent(c *gin.Context) {
 	savedID := saveAPN.ID + 1
 	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%04s", strconv.FormatUint(savedID, 10))}, "")
 
-	saveStudent := models.Student{
+	savedStudent := models.Student{
 		Number:                    studentNumber,
 		APN:                       result,
 		Surname:                   payload.Surname,
@@ -84,18 +86,46 @@ func CreateStudent(c *gin.Context) {
 		ClassNumber:               payload.ClassNumber,
 	}
 
-	if err := config.DB.Create(&saveStudent).Error; err != nil {
+	tx := config.DB.Begin()
+
+	if err := tx.Create(&savedStudent).Error; err != nil {
+		tx.Rollback()
+
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   err.Error(),
-			"Details": saveAPN.ID,
 			"message": "failed to save student",
 		})
 		return
 	}
 
+	for _, item := range previousSchools {
+		savePreviousSchool := previousSchoolModels.PreviousSchool{
+			Number:        uuid.NewV4().String(),
+			Name:          item.Name,
+			StudentNumber: studentNumber,
+			StartYear:     item.StartYear,
+			EndYear:       item.EndYear,
+			UserNumber:    userNumber,
+		}
+
+		if err := tx.Create(&savePreviousSchool).Error; err != nil {
+			tx.Rollback()
+
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "failed to save previous school",
+				"data":    savePreviousSchool,
+			})
+			return
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save student"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "student created successfully",
-		"data":    saveStudent,
+		"data":    savedStudent,
 	})
 }
 

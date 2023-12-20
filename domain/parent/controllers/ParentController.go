@@ -64,7 +64,7 @@ func CreateParent(c *gin.Context) {
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to parent"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to save parent"})
 		return
 	}
 
