@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	"github.com/gin-gonic/gin"
@@ -11,7 +12,6 @@ import (
 )
 
 func CreatePreviousSchool(c *gin.Context) {
-
 	type PreviousSchoolInfo struct {
 		Name        string   `json:"name"`
 		StartYear   string   `json:"start_year"`
@@ -40,12 +40,19 @@ func CreatePreviousSchool(c *gin.Context) {
 		return
 	}
 
-	applicationNumber := c.Param("application_number")
 	studentNumber := c.Param("student_number")
-	previousSchoolNumber := uuid.NewV4().String()
+	applicationNumber := c.Param("application_number")
+
+	var application applicationModel.Application
+	if err := config.DB.
+		Where("number = ?", applicationNumber).
+		First(&application).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "application not found"})
+		return
+	}
 
 	savePreviousSchool := models.PreviousSchool{
-		Number:            previousSchoolNumber,
+		Number:            uuid.NewV4().String(),
 		Name:              previousSchoolInfo.Name,
 		StartYear:         previousSchoolInfo.StartYear,
 		EndYear:           previousSchoolInfo.EndYear,

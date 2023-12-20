@@ -73,6 +73,7 @@ func CreateApplication(c *gin.Context) {
 }
 
 func FetchApplication(c *gin.Context) {
+
 	userNumber := c.Request.Header["User-Number"][0]
 
 	var user authModel.User
@@ -90,22 +91,23 @@ func FetchApplication(c *gin.Context) {
 	var application models.Application
 
 	err := config.DB.
-		Where("number = ?", applicationNumber).
-		Preload("Parent").
-		Preload("Student").
-		Preload("Student.Class").
-		Preload("Student.PreferredCampus").
-		Preload("Student.SourceOfSchoolInfo").
+		Select("students.*,  previous_schools.*").
+		Joins("LEFT JOIN students ON applications.number = students.application_number").
+		Joins("LEFT JOIN previous_schools ON students.application_number = previous_schools.application_number").
+		Where("applications.number = ?", applicationNumber).
 		First(&application).Error
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"err":     err.Error(),
+			"debug":   applicationNumber,
 			"message": "Application not found"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "application fetched successfully",
+		"debug":   applicationNumber,
 		"data":    application,
 	})
 
@@ -128,7 +130,7 @@ func FetchApplications(c *gin.Context) {
 	if err := config.DB.Find(&applications).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"err":     err.Error(),
-			"message": "Applications not found"})
+			"message": "Application fetching failed"})
 		return
 	}
 

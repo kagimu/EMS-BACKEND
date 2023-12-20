@@ -220,7 +220,7 @@ func SetupRoute() *gin.Engine {
 			application.GET("source-of-school-info", sourceOfSchoolController.GetSourcesOfSchoolInfo)
 
 			// parents
-			application.POST("parents", parentController.CreateParent)
+			application.POST(":application_number/parents", parentController.CreateParent)
 			application.GET("parents", parentController.FetchParents)
 			application.GET("parents/:id", parentController.FetchParentInfo)
 			application.PATCH("parents/:id", parentController.UpdateParent)
@@ -237,7 +237,7 @@ func SetupRoute() *gin.Engine {
 			application.POST("previous-schools/:application_number/:student_number", previousSchoolController.CreatePreviousSchool)
 
 			// application
-			application.POST(":parent_number/:student_number", applicationController.CreateApplication)
+			application.POST("", applicationController.CreateApplication)
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
 		}

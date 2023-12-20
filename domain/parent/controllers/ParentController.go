@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
@@ -42,6 +43,16 @@ func CreateParent(c *gin.Context) {
 		return
 	}
 
+	applicationNumber := c.Param("application_number")
+
+	var application applicationModel.Application
+	if err := config.DB.
+		Where("number = ?", applicationNumber).
+		First(&application).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "application not found"})
+		return
+	}
+
 	tx := config.DB.Begin()
 	saveParent := models.Parent{
 		Number:                     uuid.NewV4().String(),
@@ -53,6 +64,7 @@ func CreateParent(c *gin.Context) {
 		Email:                      parent.Email,
 		AlternativeEmail:           parent.AlternativeEmail,
 		UserNumber:                 userNumber,
+		ApplicationNumber:          applicationNumber,
 	}
 
 	if err := tx.Create(&saveParent).Error; err != nil {
