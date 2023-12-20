@@ -6,6 +6,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
+	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -87,27 +90,51 @@ func FetchApplication(c *gin.Context) {
 	}
 
 	applicationNumber := c.Param("application_number")
-
 	var application models.Application
 
-	err := config.DB.Raw(`SELECT applications.* FROM applications
-		LEFT JOIN parents ON applications.number = parents.application_number
-		WHERE applications.number = ?`, applicationNumber).Scan(&application).Error
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"err":     err.Error(),
-			"debug":   applicationNumber,
-			"message": "Application not found",
-		})
+	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "application not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "application fetched successfully",
-		"data":    application,
-	})
+	// TODO: Improve this
+	var parents parentModels.Parent
+	config.DB.Raw(`
+	SELECT * FROM parents WHERE parents.application_number = ?`, applicationNumber).Scan(&parents)
 
+	var student studentModel.Student
+	err := config.DB.Raw(`
+	SELECT * FROM previous_schools WHERE previous_schools.application_number = ?`, applicationNumber).Scan(&student).Error
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "student   not found"})
+		return
+	}
+
+	var previousSchool previousSchoolModel.PreviousSchool
+	config.DB.Raw(`
+	SELECT * FROM previous_schools WHERE previous_schools.application_number = ?`, applicationNumber).Scan(&previousSchool)
+
+	var previousSchoolClasses []previousSchoolModel.PreviousSchoolClass
+	err = config.DB.Raw(`
+	SELECT * FROM previous_school_classes WHERE previous_school_classes.student_number = ?`, student.Number).Preload("PreviousSchoolClass").Scan(&previousSchoolClasses).Error
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Err":     student.Number,
+			"message": "application   not found"})
+		return
+	}
+	responseData := gin.H{
+		"message": "application fetched successfully",
+		"data": gin.H{
+			"parents":                 parents,
+			"application":             application,
+			"student":                 student,
+			"previous_school_classes": previousSchoolClasses,
+			"previous_school":         previousSchool,
+		},
+	}
+
+	c.JSON(http.StatusOK, responseData)
 }
 
 func FetchApplications(c *gin.Context) {

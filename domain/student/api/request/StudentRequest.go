@@ -20,6 +20,7 @@ type StudentRequest struct {
 	Gender                    string                  `json:"gender"`
 	Reason                    string                  `json:"reason"`
 	SourceOfSchoolInfoNumber  string                  `json:"source_of_school_info_number"`
+	ApplicationNumber         string                  `json:"application_number"`
 	ParentNumber              string                  `json:"parent_number"`
 	ClassNumber               string                  `json:"class_number"`
 }

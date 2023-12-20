@@ -40,6 +40,7 @@ func CreateStudent(c *gin.Context) {
 
 	previousSchools := payload.PreviousSchool
 	userNumber := c.Request.Header["User-Number"][0]
+	applicationNumber := payload.ApplicationNumber
 
 	var user authModels.User
 	if err := config.DB.
@@ -69,8 +70,6 @@ func CreateStudent(c *gin.Context) {
 
 	savedID := saveAPN.ID + 1
 	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%04s", strconv.FormatUint(savedID, 10))}, "")
-
-	applicationNumber := c.Param("application_number")
 
 	var application applicationModel.Application
 	if err := config.DB.

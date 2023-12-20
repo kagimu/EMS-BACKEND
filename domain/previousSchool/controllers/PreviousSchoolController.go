@@ -70,8 +70,9 @@ func CreatePreviousSchool(c *gin.Context) {
 
 	for _, class := range classes {
 		saveClasses := models.PreviousSchoolClass{
-			Number:      uuid.NewV4().String(),
-			ClassNumber: class,
+			StudentNumber: studentNumber,
+			Number:        uuid.NewV4().String(),
+			ClassNumber:   class,
 		}
 
 		err := config.DB.Create(&saveClasses).Error
