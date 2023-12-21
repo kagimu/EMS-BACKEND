@@ -15,29 +15,16 @@ import (
 
 func NewLessonPlan(context *gin.Context) {
 
-	type Steps struct {
-		Number string `json:"number"`
-		Code   int64  `json:"code"`
-		Step   string `json:"step"`
-	}
+	var lessonPlanInfo requests.LessonPlanInfo
 
-	type LessonPlanConceptInfo struct {
-		Number                  string  `json:"number"`
-		Code                    int64   `json:"code"`
-		LessonPlanConceptNumber string  `json:"lesson_plan_concept_number"`
-		StepList                []Steps `json:"steps"`
-	}
-
-	type LessonPlanInfo struct {
-		SchemeSubTopicNumber  string                  `json:"scheme_sub_topic_number"`
-		LessonPlanNumber      string                  `json:"lesson_plan_number"`
-		LessonPlanConceptInfo []LessonPlanConceptInfo `json:"concepts"`
-	}
-
-	var lessonPlanInfo LessonPlanInfo
 	err := context.BindJSON(&lessonPlanInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
+		return
+	}
+
+	if err := lessonPlanInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -46,16 +33,6 @@ func NewLessonPlan(context *gin.Context) {
 	lessonPlanConceptInfo := lessonPlanInfo.LessonPlanConceptInfo
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if schemeSubTopicNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme is required!"})
-		return
-	}
-
-	if len(lessonPlanConceptInfo) == 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Concepts are required!"})
-		return
-	}
 
 	var userData models.User
 	//check if user is a valid user
