@@ -5,54 +5,36 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"html"
 	"net/http"
 	"strconv"
 )
 
 func NewLearningArea(context *gin.Context) {
 
-	type LearningAreaInfo struct {
-		Name             string `json:"name"`
-		Code             string `json:"code"`
-		CurriculumNumber string `json:"curriculum_number"`
-	}
-
-	var learningAreaInfo LearningAreaInfo
+	var learningAreaInfo requests.LearningAreaInfo
 	err := context.BindJSON(&learningAreaInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
+	learningAreaInfo.Prepare()
+
+	if err := learningAreaInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	name := learningAreaInfo.Name
 	code := learningAreaInfo.Code
 	curriculumNumber := learningAreaInfo.CurriculumNumber
-
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if curriculumNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
-		return
-	}
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
@@ -114,7 +96,7 @@ func FetchLearningArea(context *gin.Context) {
 	for _, lst := range learningAreaResp {
 		learningAreas_ = append(learningAreas_, responses2.LearningAreaInfoData{
 			Number:     lst.Number,
-			Name:       lst.Name,
+			Name:       html.UnescapeString(lst.Name),
 			Code:       lst.Code,
 			UserNumber: lst.UserNumber,
 		})
