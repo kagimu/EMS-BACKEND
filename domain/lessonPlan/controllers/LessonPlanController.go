@@ -101,6 +101,16 @@ func NewLessonPlan(context *gin.Context) {
 
 	for _, concept := range lessonPlanConceptInfo {
 
+		var duplicateLessonPlanConcept lessonPlanModel.LessonPlanConcepts
+		if duplicate := tx.
+			Where("concept_number = ?", concept.LessonPlanConceptNumber).
+			Where("lesson_plan_number = ?", saveLessonPlan.Number).
+			First(&duplicateLessonPlanConcept).Error; duplicate == nil {
+			tx.Rollback()
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicates Concepts not allowed"})
+			return
+		}
+
 		saveLessonConcepts := lessonPlanModel.LessonPlanConcepts{
 			Number:           uuid.NewV4().String(),
 			ConceptNumber:    concept.LessonPlanConceptNumber,
