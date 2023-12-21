@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	parentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
+	previousModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -92,15 +93,18 @@ func FetchApplication(c *gin.Context) {
 	var applicationNumber = c.Param("application_number")
 	var student studentModel.Student
 	var parent parentModel.Parent
+	var previousSchools previousModel.PreviousSchool
 
 	if err := config.DB.Table("applications").
 		Select("applications.*, students.*, parents.*").
 		Joins("RIGHT JOIN students ON students.application_number = applications.number").
-		Joins("RIGHT JOIN parents ON parents.application_number = applications.number").
-		Where("applications.number = ?", applicationNumber).
+		Joins("RIGHT JOIN parents ON parents.application_number = students.application_number").
+		Joins("RIGHT JOIN previous_schools ON previous_schools.application_number = ?").
+		Where("applications.number = ?", applicationNumber, applicationNumber).
 		Scan(&student).
-		Scan(&parent).
-		Scan(&application).
+		First(&parent).
+		First(&previousSchools).
+		First(&application).
 		Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"err":     err.Error(),
@@ -111,12 +115,12 @@ func FetchApplication(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": gin.H{
-			"application": application,
-			"student":     student,
-			"parent":      parent,
+			"application":    application,
+			"student":        student,
+			"parent":         parent,
+			"previousSchool": previousSchools,
 		},
 	})
-
 }
 
 func FetchApplications(c *gin.Context) {
