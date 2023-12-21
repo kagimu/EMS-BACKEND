@@ -70,16 +70,31 @@ func NewLearningArea(context *gin.Context) {
 		return
 	}
 
-	number := uuid.NewV4().String()
 	///save user data
+	tx := config.DB.Begin()
 	saveLearningArea := models2.LearningArea{
-		Number:           number,
+		Number:           uuid.NewV4().String(),
 		Name:             name,
 		Code:             codeNo,
 		CurriculumNumber: curriculumNumber,
 		UserNumber:       userNumber,
 	}
-	config.DB.Save(&saveLearningArea)
+
+	if err := tx.Create(&saveLearningArea).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create Learning area"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create learning area"})
+		return
+	}
+
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Learning Area Added Successfully!", "data": saveLearningArea})
 }
 
