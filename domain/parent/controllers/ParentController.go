@@ -60,7 +60,7 @@ func CreateParent(c *gin.Context) {
 		SecondName:                 parent.SecondName,
 		OtherName:                  parent.OtherName,
 		MainTelephoneNumber:        parent.MainTelephoneNumber,
-		AlternativeTelephoneNumber: parent.AlternativeEmail,
+		AlternativeTelephoneNumber: parent.AlternativeTelephoneNumber,
 		Email:                      parent.Email,
 		AlternativeEmail:           parent.AlternativeEmail,
 		UserNumber:                 userNumber,

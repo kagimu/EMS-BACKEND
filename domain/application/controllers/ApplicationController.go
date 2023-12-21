@@ -6,8 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
-	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
+	parentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -89,52 +88,35 @@ func FetchApplication(c *gin.Context) {
 		return
 	}
 
-	applicationNumber := c.Param("application_number")
 	var application models.Application
-
-	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "application not found"})
-		return
-	}
-
-	// TODO: Improve this
-	var parents parentModels.Parent
-	config.DB.Raw(`
-	SELECT * FROM parents WHERE parents.application_number = ?`, applicationNumber).Scan(&parents)
-
+	var applicationNumber = c.Param("application_number")
 	var student studentModel.Student
-	err := config.DB.Raw(`
-	SELECT * FROM previous_schools WHERE previous_schools.application_number = ?`, applicationNumber).Scan(&student).Error
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "student   not found"})
-		return
-	}
+	var parent parentModel.Parent
 
-	var previousSchool previousSchoolModel.PreviousSchool
-	config.DB.Raw(`
-	SELECT * FROM previous_schools WHERE previous_schools.application_number = ?`, applicationNumber).Scan(&previousSchool)
-
-	var previousSchoolClasses []previousSchoolModel.PreviousSchoolClass
-	err = config.DB.Raw(`
-	SELECT * FROM previous_school_classes WHERE previous_school_classes.student_number = ?`, student.Number).Preload("PreviousSchoolClass").Scan(&previousSchoolClasses).Error
-	if err != nil {
+	if err := config.DB.Table("applications").
+		Select("applications.*, students.*, parents.*").
+		Joins("RIGHT JOIN students ON students.application_number = applications.number").
+		Joins("RIGHT JOIN parents ON parents.application_number = applications.number").
+		Where("applications.number = ?", applicationNumber).
+		Scan(&student).
+		Scan(&parent).
+		Scan(&application).
+		Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"Err":     student.Number,
-			"message": "application   not found"})
+			"err":     err.Error(),
+			"message": "Application not found",
+		})
 		return
 	}
-	responseData := gin.H{
-		"message": "application fetched successfully",
-		"data": gin.H{
-			"parents":                 parents,
-			"application":             application,
-			"student":                 student,
-			"previous_school_classes": previousSchoolClasses,
-			"previous_school":         previousSchool,
-		},
-	}
 
-	c.JSON(http.StatusOK, responseData)
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"application": application,
+			"student":     student,
+			"parent":      parent,
+		},
+	})
+
 }
 
 func FetchApplications(c *gin.Context) {
