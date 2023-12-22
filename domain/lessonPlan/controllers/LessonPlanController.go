@@ -15,29 +15,16 @@ import (
 
 func NewLessonPlan(context *gin.Context) {
 
-	type Steps struct {
-		Number string `json:"number"`
-		Code   int64  `json:"code"`
-		Step   string `json:"step"`
-	}
+	var lessonPlanInfo requests.LessonPlanInfo
 
-	type LessonPlanConceptInfo struct {
-		Number                  string  `json:"number"`
-		Code                    int64   `json:"code"`
-		LessonPlanConceptNumber string  `json:"lesson_plan_concept_number"`
-		StepList                []Steps `json:"steps"`
-	}
-
-	type LessonPlanInfo struct {
-		SchemeSubTopicNumber  string                  `json:"scheme_sub_topic_number"`
-		LessonPlanNumber      string                  `json:"lesson_plan_number"`
-		LessonPlanConceptInfo []LessonPlanConceptInfo `json:"concepts"`
-	}
-
-	var lessonPlanInfo LessonPlanInfo
 	err := context.BindJSON(&lessonPlanInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
+		return
+	}
+
+	if err := lessonPlanInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -46,16 +33,6 @@ func NewLessonPlan(context *gin.Context) {
 	lessonPlanConceptInfo := lessonPlanInfo.LessonPlanConceptInfo
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if schemeSubTopicNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme is required!"})
-		return
-	}
-
-	if len(lessonPlanConceptInfo) == 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Concepts are required!"})
-		return
-	}
 
 	var userData models.User
 	//check if user is a valid user
@@ -101,6 +78,16 @@ func NewLessonPlan(context *gin.Context) {
 
 	for _, concept := range lessonPlanConceptInfo {
 
+		var duplicateLessonPlanConcept lessonPlanModel.LessonPlanConcepts
+		if duplicate := tx.
+			Where("concept_number = ?", concept.LessonPlanConceptNumber).
+			Where("lesson_plan_number = ?", saveLessonPlan.Number).
+			First(&duplicateLessonPlanConcept).Error; duplicate == nil {
+			tx.Rollback()
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicates Concepts not allowed"})
+			return
+		}
+
 		saveLessonConcepts := lessonPlanModel.LessonPlanConcepts{
 			Number:           uuid.NewV4().String(),
 			ConceptNumber:    concept.LessonPlanConceptNumber,
@@ -136,21 +123,22 @@ func NewLessonPlan(context *gin.Context) {
 		if len(lessonPlanSteps) > 0 {
 
 			for _, step := range lessonPlanSteps {
+				if step.Step != "" {
+					saveLearningSteps := lessonPlanModel.LessonPlanStep{
+						Number:                  uuid.NewV4().String(),
+						Code:                    step.Code,
+						Step:                    step.Step,
+						LessonPlanConceptNumber: conceptNo,
+					}
 
-				saveLearningSteps := lessonPlanModel.LessonPlanStep{
-					Number:                  uuid.NewV4().String(),
-					Code:                    step.Code,
-					Step:                    step.Step,
-					LessonPlanConceptNumber: conceptNo,
-				}
+					if err := tx.Create(&saveLearningSteps).Error; err != nil {
+						// If any error occurs, rollback the transaction
+						tx.Rollback()
+						// Handle or return the error as needed
+						context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save steps"})
+						return
 
-				if err := tx.Create(&saveLearningSteps).Error; err != nil {
-					// If any error occurs, rollback the transaction
-					tx.Rollback()
-					// Handle or return the error as needed
-					context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save steps"})
-					return
-
+					}
 				}
 
 			}
