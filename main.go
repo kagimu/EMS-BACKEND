@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"log"
 	"os"
 
@@ -131,6 +132,7 @@ func main() {
 		&lessonPlanModel.LessonPlanStep{},
 		&studentDetailsModels.StudentDetail{},
 		&classModel.CurriculumClass{},
+		&models3.CurriculumSubtopicReference{},
 		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},
 		&parentModels.Parent{},
 		&studentModels.Student{},
