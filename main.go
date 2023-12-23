@@ -132,7 +132,6 @@ func main() {
 		&lessonPlanModel.LessonPlanStep{},
 		&studentDetailsModels.StudentDetail{},
 		&classModel.CurriculumClass{},
-		&models3.CurriculumSubtopicReference{},
 		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},
 		&parentModels.Parent{},
 		&studentModels.Student{},
@@ -145,6 +144,7 @@ func main() {
 		&admissionModel.Admission{},
 		&admissionModel.ADN{},
 		&previousSchoolModels.PreviousSchoolClass{},
+		&models3.CurriculumSubtopicReference{},
 	)
 
 	if errMigrate != nil {
