@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
-	"log"
 	"os"
 
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
@@ -42,7 +41,6 @@ import (
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -51,12 +49,12 @@ import (
 var err error
 
 func main() {
-	if os.Getenv("ENVIRONMENT") != "production" {
+	/*if os.Getenv("ENVIRONMENT") != "production" {
 		err := godotenv.Load(".env")
 		if err != nil {
 			log.Fatal("Error loading .env file")
 		}
-	}
+	}*/
 
 	if os.Getenv("ENVIRONMENT") == "production" {
 		gin.SetMode(gin.ReleaseMode)
