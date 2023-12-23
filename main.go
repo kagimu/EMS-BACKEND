@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+	"log"
 	"os"
 
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
@@ -39,7 +41,8 @@ import (
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 
-
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -48,7 +51,7 @@ import (
 var err error
 
 func main() {
-	/*if os.Getenv("ENVIRONMENT") != "production" {
+	if os.Getenv("ENVIRONMENT") != "production" {
 		err := godotenv.Load(".env")
 		if err != nil {
 			log.Fatal("Error loading .env file")
@@ -62,7 +65,7 @@ func main() {
 	errZone := os.Setenv("TZ", "Africa/Nairobi")
 	if errZone != nil {
 		return
-	}*/
+	}
 
 	//config.DB, err = gorm.Open("mysql", config.DbURL(config.BuildDBConfig()))
 	config.DB, err = gorm.Open(mysql.Open(config.DbURL(config.BuildDBConfig())), &gorm.Config{})
@@ -141,6 +144,7 @@ func main() {
 		&admissionModel.Admission{},
 		&admissionModel.ADN{},
 		&previousSchoolModels.PreviousSchoolClass{},
+		&models3.CurriculumSubtopicReference{},
 	)
 
 	if errMigrate != nil {

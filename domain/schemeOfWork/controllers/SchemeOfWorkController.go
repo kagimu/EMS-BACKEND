@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"github.com/xuri/excelize/v2"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 )
@@ -410,4 +415,127 @@ func FetchSchemeOfWork(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schemeOfWrk_})
 
+}
+
+func DownloadSchemeOfWork(context *gin.Context) {
+
+	classNumber := context.Query("class_number")
+	subjectNumber := context.Query("subject_number")
+
+	var campusClassInfo models3.CampusClass
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
+		Preload("Streams").
+		Order("code asc").
+		First(&campusClassInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
+	var subtopic []models2.SubTopic
+	var subTopicInfo_ []responses.SubTopicList
+	if err := config.DB.
+		Scopes(classFilter(campusClassInfo.CurriculumClassNumber)).
+		Joins("join topics on topics.number = sub_topics.topic_number").
+		Preload("Topic.Strand.Subject").
+		Preload("Topic.Strand").
+		Preload("Topic").
+		Order("code asc").
+		Find(&subtopic).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
+		return
+	}
+
+	for idx, subtopicList := range subtopic {
+		if subjectNumber == subtopicList.Topic.Strand.Subject.Number {
+			subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
+				Number:        subtopicList.Number,
+				Code:          subtopicList.Code,
+				SortCode:      int64(idx + 1),
+				Name:          subtopicList.Name,
+				UserNumber:    subtopicList.UserNumber,
+				EstimatedTime: subtopicList.EstimatedTime,
+				TopicNumber:   subtopicList.TopicNumber,
+				TopicName:     subtopicList.Topic.Name,
+				StrandNumber:  subtopicList.Topic.Strand.Number,
+				StrandName:    subtopicList.Topic.Strand.Name,
+			})
+		}
+	}
+	templatePath, err := generateSchemeTemplate(subTopicInfo_)
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Error saving Excel file:" + err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": templatePath})
+
+}
+
+func generateSchemeTemplate(dataInfo []responses.SubTopicList) (string, error) {
+
+	// Create a new Excel file
+	xlsx := excelize.NewFile()
+	var err error
+
+	// Set the sheet name
+	sheetName := "Sheet1"
+
+	// Iterate through the JSON data and write to the Excel file
+	row := 2
+	col := 1
+
+	for _, lst := range dataInfo {
+		// Write the key (JSON field) to the first column
+		err := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.Name)
+		if err != nil {
+			return "", err
+		}
+		col++
+
+		// Write the value to the second column
+		err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.SortCode)
+		if err1 != nil {
+			return "", err1
+		}
+		col++
+
+		// Move to the next row
+		row++
+		col = 1
+	}
+
+	// Save the Excel file
+	//outputFilePath := "output.xlsx"
+	path := "fileRepo/excelFile/" + dataInfo[0].Number + ".xlsx"
+	err = xlsx.SaveAs(path)
+	if err != nil {
+		//fmt.Println("Error saving Excel file:", err)
+		return "", err
+	}
+	return path, err
+	//fmt.Println("Excel file generated successfully:", path)
+
+}
+
+func columnIndexToLetters(index int) string {
+	// Convert column index to Excel-style column letters
+	letters := ""
+	for index > 0 {
+		index--
+		letters = string(rune('A'+index%26)) + letters
+		index /= 26
+	}
+	return letters
+}
+
+func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if classNumber != "" {
+			return db.Where("topics.curriculum_class_number = ?", classNumber)
+		}
+		return db
+	}
 }

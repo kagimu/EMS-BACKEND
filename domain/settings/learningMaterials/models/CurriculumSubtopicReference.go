@@ -18,25 +18,3 @@ type CurriculumSubtopicReference struct {
 	SubTopic               models3.SubTopic `gorm:"foreignKey:SubTopicNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	User                   models.User      `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
-
-/*func (l *CurriculumSubtopicReference) Validate() error {
-	//validate all the required fields here
-
-	if l.Name == "" {
-		return errors.New("name is required")
-	}
-
-	if l.Type == "" {
-		return errors.New("type is required")
-	}
-
-	if l.UserNumber == "" {
-		return errors.New("user number is required")
-	}
-
-	if l.ReferenceType == "" {
-		return errors.New("reference type is required")
-	}
-
-	return nil
-}*/
