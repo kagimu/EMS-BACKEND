@@ -470,7 +470,10 @@ func DownloadSchemeOfWork(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": templatePath})
+	//path := "https://" + context.Request.Host + templatePath
+	path := "http://" + context.Request.Host + "/" + templatePath
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": path})
 
 }
 
@@ -482,6 +485,16 @@ func generateSchemeTemplate(dataInfo []responses.SubTopicList) (string, error) {
 
 	// Set the sheet name
 	sheetName := "Sheet1"
+
+	err11 := xlsx.SetCellValue(sheetName, columnIndexToLetters(1)+fmt.Sprint(1), "Subtopic")
+	if err11 != nil {
+		return "", err
+	}
+
+	err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(2)+fmt.Sprint(1), "sorting Code")
+	if err1 != nil {
+		return "", err1
+	}
 
 	// Iterate through the JSON data and write to the Excel file
 	row := 2
