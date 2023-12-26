@@ -40,7 +40,7 @@ func SetupRoute() *gin.Engine {
 
 	//setting cors in the system
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:2054", "https://wholesomeed.com"},
+		AllowOrigins:     []string{"http://localhost:2054", "https://wholesome-api.noregrets.ug"},
 		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Access-Control-Allow-Origin", "Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host", "Token", "Authorization", "Accept-Encoding", "X-CSRF-Token", "Access-Control-Allow-Headers", "Content-Type", "user-number"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -56,9 +56,7 @@ func SetupRoute() *gin.Engine {
 	//router.Use(middlewares.JWTMiddleware())
 	router.MaxMultipartMemory = 20 << 20 // 20 MiB
 	//router.Static("/", "./fileRepo")
-	//router.Use(static.Serve("/api/fileRepo", static.LocalFile("/api/fileRepo", true)))
-	//router.Use(static.Serve("/fileRepo", static.LocalFile("/fileRepo", true)))
-	router.Use(static.Serve("fileRepo", static.LocalFile("fileRepo", true)))
+	router.Use(static.Serve("/fileRepo", static.LocalFile("/fileRepo", true)))
 
 	auth := router.Group("/auth")
 	{
