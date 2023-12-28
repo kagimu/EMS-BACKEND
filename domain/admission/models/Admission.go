@@ -25,11 +25,3 @@ type Admission struct {
 	UserNumber   string               `json:"user_number" gorm:"size:36;not null"`
 	User         authModels.User      `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
-
-// Add an application
-// Use the APN as the join foreign key
-// Track application whether draft or complete
-// Every form step makes an api call.
-// All I do is create a parent numner, appn number
-// STudent number, application number
-// Query the appn, join paremt, join student, join class, join school, classes as an array, classes attendend, capture the periods attending the schools attended,

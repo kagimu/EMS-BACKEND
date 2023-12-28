@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
@@ -39,6 +40,7 @@ func CreateStudent(c *gin.Context) {
 
 	previousSchools := payload.PreviousSchool
 	userNumber := c.Request.Header["User-Number"][0]
+	applicationNumber := payload.ApplicationNumber
 
 	var user authModels.User
 	if err := config.DB.
@@ -69,6 +71,16 @@ func CreateStudent(c *gin.Context) {
 	savedID := saveAPN.ID + 1
 	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%04s", strconv.FormatUint(savedID, 10))}, "")
 
+	var application applicationModel.Application
+	if err := config.DB.
+		Where("number = ?", applicationNumber).
+		First(&application).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     applicationNumber,
+			"message": "application not found"})
+		return
+	}
+
 	savedStudent := models.Student{
 		Number:                    studentNumber,
 		APN:                       result,
@@ -83,6 +95,7 @@ func CreateStudent(c *gin.Context) {
 		UserNumber:                userNumber,
 		SourceOfSchoolInfoNumber:  payload.SourceOfSchoolInfoNumber,
 		ParentNumber:              payload.ParentNumber,
+		ApplicationNumber:         applicationNumber,
 		ClassNumber:               payload.ClassNumber,
 	}
 
