@@ -165,6 +165,7 @@ func SetupRoute() *gin.Engine {
 		schemeOfWork := main.Group("/scheme-of-work")
 		{
 			schemeOfWork.GET("download-scheme-template", schemeOfWorkControllers.DownloadSchemeOfWork)
+			schemeOfWork.GET("upload-scheme-of-work", schemeOfWorkControllers.ImportSchemeOfWork)
 		}
 		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
 		main.POST("update-scheme-of-work", schemeOfWorkControllers.UpdateSchemeOfWork)
@@ -222,14 +223,14 @@ func SetupRoute() *gin.Engine {
 			application.GET("source-of-school-info", sourceOfSchoolController.GetSourcesOfSchoolInfo)
 
 			// parents
-			application.POST(":application_number/parents", parentController.CreateParent)
+			application.PUT("new-parent", parentController.CreateParent)
 			application.GET("parents", parentController.FetchParents)
 			application.GET("parents/:id", parentController.FetchParentInfo)
 			application.PATCH("parents/:id", parentController.UpdateParent)
 			application.POST("parents/:id", parentController.DeleteParent)
 
 			// students
-			application.POST("new-student", studentController.CreateStudent)
+			application.PUT("new-student", studentController.CreateStudent)
 			application.GET("/students/:apn", studentController.FetchStudentByAPN)
 			application.GET("/students", studentController.FetchAllStudents)
 			application.PATCH("/students/:id", studentController.UpdateStudent)

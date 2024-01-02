@@ -14,7 +14,9 @@ import (
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"time"
 )
 
 func NewSchemeOfWork(context *gin.Context) {
@@ -422,6 +424,16 @@ func DownloadSchemeOfWork(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	subjectNumber := context.Query("subject_number")
 
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
+		return
+	}
+
 	var campusClassInfo models3.CampusClass
 	if err := config.DB.
 		Where("number = ?", classNumber).
@@ -551,4 +563,96 @@ func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+func ImportSchemeOfWork(context *gin.Context) {
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	excelFile, fileError := context.FormFile("scheme_excel_file")
+
+	schemeName := context.PostForm("name")
+	classNumber := context.PostForm("class_number")
+	subjectNumber := context.PostForm("subject_number")
+	academicYearNumber := context.PostForm("academic_year_number")
+
+	//validate if file is not uploaded
+	if fileError != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
+		return
+	}
+
+	// upload size must not exceed 20 megabytes
+	if excelFile.Size > 20971520 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Pdf file must not exceed 20 mbs!"})
+		return
+	}
+
+	if excelFile.Size < 1 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Pdf"})
+		return
+	}
+
+	if userNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "user number is required!"})
+		return
+	}
+
+	if schemeName == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
+		return
+	}
+
+	if academicYearNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year is required!"})
+		return
+	}
+
+	//	validate user number
+	var user models.User
+	if validateUserNumber := config.DB.Where("number = ?", userNumber).First(&user).Error; validateUserNumber != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User Not found!"})
+		return
+	}
+
+	//handle file upload
+	t := time.Now()
+	name := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
+	excelName := excelFile.Filename
+	extension := filepath.Ext(excelFile.Filename)
+	fileName := name + extension
+	path := "fileRepo/schemeOfWork/" + fileName
+
+	err := context.SaveUploadedFile(excelFile, path)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
+		return
+	}
+
+	/*fileNumber := uuid.NewV4().String()
+	saveFileData := models5.ImportCurriculum{
+		Number:   fileNumber,
+		Name:     excelName,
+		FileName: fileName,
+		//CurriculumNumber: curriculumNumber,
+		UserNumber: userNumber,
+	}
+	config.DB.Save(&saveFileData)*/
+
+	//read now the Excel file
+	//readExcelFile(path, userNumber, curriculumNumber)
+
+	//context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": excelName})
+
 }
