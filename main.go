@@ -145,6 +145,7 @@ func main() {
 		&admissionModel.ADN{},
 		&previousSchoolModels.PreviousSchoolClass{},
 		&models3.CurriculumSubtopicReference{},
+		//&schemeOfWorkmodel.ImportSchemeOfWork{},
 	)
 
 	if errMigrate != nil {

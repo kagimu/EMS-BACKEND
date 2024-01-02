@@ -149,47 +149,13 @@ func ImportCurriculum(context *gin.Context) {
 	excelName := excelFile.Filename
 	extension := filepath.Ext(excelFile.Filename)
 	fileName := name + extension
-	//jpgName := name + ".png"
-	//path := "/fileRepo/excelFile/" + fileName
-	//path := "/fileRepo/excelFile/" + fileName
 	path := "fileRepo/excelFile/" + fileName
-	//jpgPath := "/fileRepo/jpgFile/" + jpgName
-
-	/*if extension != ".pdf" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Only pdf files allowed!!"})
-		return
-	}*/
-
-	/*if excelFile.Header.Get("Content-Type") != "application/pdf" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid file type"})
-		return
-	}*/
 
 	err := context.SaveUploadedFile(excelFile, path)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
 		return
 	}
-
-	//check mime type of file
-	/*	mType, err2 := mimetype.DetectFile(path)
-		if err2 != nil {
-			fmt.Println("Error detecting file path:", err2)
-		}
-
-		if mType.String() != "application/pdf" {
-
-			//if the file  type is invalid the pdf file should be removed immediately
-			errRemove := os.Remove(path)
-			if errRemove != nil {
-				context.JSON(http.StatusBadRequest, gin.H{"message": errRemove})
-				return
-			}
-			/////////////////////////////////////////////////////////////////////////
-
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid file type " + mType.String()})
-			return
-		}*/
 
 	fileNumber := uuid.NewV4().String()
 	saveFileData := models5.ImportCurriculum{
