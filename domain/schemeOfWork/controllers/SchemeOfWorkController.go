@@ -7,6 +7,7 @@ import (
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	"github.com/gin-gonic/gin"
@@ -625,6 +626,40 @@ func ImportSchemeOfWork(context *gin.Context) {
 		return
 	}
 
+	//first generate scheme of work
+
+	var duplicateScheme schemeOfWorkModel.SchemeOfWork
+	if duplicate := config.DB.
+		Where("name = ?", schemeName).
+		Where("class_number = ?", classNumber).
+		Where("subject_number = ?", subjectNumber).
+		Where("academic_year_number = ?", academicYearNumber).
+		First(&duplicateScheme).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
+		return
+	}
+
+	// Begin the transaction
+	tx := config.DB.Begin()
+	///save scheme of work data
+	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
+		Number:             uuid.NewV4().String(),
+		Name:               schemeName,
+		Status:             "Pending",
+		CampusClassNumber:  classNumber,
+		SubjectNumber:      subjectNumber,
+		AcademicYearNumber: academicYearNumber,
+		UserNumber:         userNumber,
+	}
+
+	if err := tx.Create(&saveSchemeOfWork).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
+		return
+	}
+
 	//handle file upload
 	t := time.Now()
 	name := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
@@ -639,20 +674,147 @@ func ImportSchemeOfWork(context *gin.Context) {
 		return
 	}
 
-	/*fileNumber := uuid.NewV4().String()
-	saveFileData := models5.ImportCurriculum{
-		Number:   fileNumber,
-		Name:     excelName,
-		FileName: fileName,
-		//CurriculumNumber: curriculumNumber,
-		UserNumber: userNumber,
+	schemeNumber := saveSchemeOfWork.Number
+
+	saveFileData := schemeOfWorkModel.SchemeOfWorkImport{
+		Number:             uuid.NewV4().String(),
+		Name:               excelName,
+		FileName:           fileName,
+		SchemeOfWorkNumber: schemeNumber,
+		UserNumber:         userNumber,
 	}
-	config.DB.Save(&saveFileData)*/
+
+	if err := tx.Create(&saveFileData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save file details"})
+		return
+	}
 
 	//read now the Excel file
-	//readExcelFile(path, userNumber, curriculumNumber)
+	readSchemeExcelFile(path, userNumber, schemeNumber, classNumber, tx, context)
 
-	//context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": excelName})
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
+		return
+	}
 
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Scheme uploaded Successfully!"})
+
+}
+
+func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, classNumber string, tx *gorm.DB, context *gin.Context) {
+
+	//f, err := excelize.OpenFile("Book1.xlsx")
+	f, err := excelize.OpenFile(filePath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer func() {
+		// Close the spreadsheet.
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	// Get all the rows in the Sheet1.
+	rows, err := f.GetRows("Sheet1")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for idx, row := range rows {
+		if idx > 0 {
+			schemeInfo := requests.ExcelSchemeOfWorkInfo{
+				SubTopic:    getValueAtIndex(row, 0),
+				SortingCode: getValueAtIndex(row, 1),
+			}
+			saveSchemeOfWorkData(schemeInfo, idx, userNumber, schemeNumber, classNumber, tx, context)
+		}
+	}
+
+}
+
+func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, userNumber string, schemeNumber string, classNumber string, tx *gorm.DB, context *gin.Context) {
+
+	//for _, schemeList := range subtopicList {
+	codeNo, err := strconv.ParseInt(schemeInfo.SortingCode, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	var duplicateSchemeCode schemeOfWorkModel.SchemeOfWorkSubTopic
+	if duplicate := tx.
+		Where("code = ?", codeNo).
+		Where("scheme_of_work_number = ?", schemeNumber).
+		First(&duplicateSchemeCode).Error; duplicate == nil {
+		tx.Rollback()
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate codes are not allowed!!!, Code: " + strconv.FormatInt(codeNo, 10)})
+		return
+	}
+
+	//fetch scheme of work
+	//----------------
+	var subtopic models2.SubTopic
+	var subTopicInfo_ responses.SubTopicList
+	if err := config.DB.
+		Scopes(classFilter(classNumber)).
+		Where("name = ?", schemeInfo.SubTopic).
+		Joins("join topics on topics.number = sub_topics.topic_number").
+		Preload("Topic.Strand.Subject").
+		Preload("Topic.Strand").
+		Preload("Topic").
+		Order("code asc").
+		First(&subtopic).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
+		return
+	}
+
+	subTopicInfo_ = responses.SubTopicList{
+		Number:        subtopic.Number,
+		Code:          subtopic.Code,
+		SortCode:      int64(idx + 1),
+		Name:          subtopic.Name,
+		UserNumber:    subtopic.UserNumber,
+		EstimatedTime: subtopic.EstimatedTime,
+		TopicNumber:   subtopic.TopicNumber,
+		TopicName:     subtopic.Topic.Name,
+		StrandNumber:  subtopic.Topic.Strand.Number,
+		StrandName:    subtopic.Topic.Strand.Name,
+	}
+
+	//-----------------------
+
+	schemeNo := uuid.NewV4().String()
+	saveSchemeOfWorkSubtopic := schemeOfWorkModel.SchemeOfWorkSubTopic{
+		Number:             schemeNo,
+		Code:               codeNo,
+		EstimatedTime:      subTopicInfo_.EstimatedTime,
+		SchemeOfWorkNumber: subTopicInfo_.Number,
+		SubTopicNumber:     schemeNumber,
+		UserNumber:         userNumber,
+	}
+	if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
+		return
+	}
+	//}
+
+}
+
+func getValueAtIndex(row []string, i int) string {
+	if len(row) > i {
+		return row[i]
+	} else {
+		return ""
+	}
 }

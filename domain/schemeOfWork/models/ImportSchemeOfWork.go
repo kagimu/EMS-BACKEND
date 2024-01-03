@@ -6,14 +6,14 @@ import (
 )
 
 type (
-	ImportSchemeOfWork struct {
+	SchemeOfWorkImport struct {
 		gorm.Model
-		Number   string `json:"number" gorm:"size:36;unique;not null"`
-		Name     string `json:"name" form:"name" binding:"required" gorm:"size:200;not null"`
-		FileName string `json:"file_name" form:"file_name" binding:"required" gorm:"size:200;not null"`
-		//CurriculumNumber string      `json:"curriculum_number" gorm:"size:36;not null"`
-		UserNumber string `json:"user_number" gorm:"size:36;not null"`
-		//Curriculum       Curriculum  `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-		User models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Number             string       `json:"number" gorm:"size:36;unique;not null"`
+		Name               string       `json:"name" form:"name" binding:"required" gorm:"size:200;not null"`
+		FileName           string       `json:"file_name" form:"file_name" binding:"required" gorm:"size:200;not null"`
+		SchemeOfWorkNumber string       `json:"scheme_of_work_number" gorm:"size:36;not null"`
+		UserNumber         string       `json:"user_number" gorm:"size:36;not null"`
+		Curriculum         SchemeOfWork `gorm:"foreignKey:SchemeOfWorkNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		User               models.User  `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )

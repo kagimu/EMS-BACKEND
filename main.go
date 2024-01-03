@@ -143,7 +143,7 @@ func main() {
 		&admissionModel.ADN{},
 		&previousSchoolModels.PreviousSchoolClass{},
 		&models3.CurriculumSubtopicReference{},
-		//&schemeOfWorkmodel.ImportSchemeOfWork{},
+		&schemeOfWorkmodel.SchemeOfWorkImport{},
 	)
 
 	if errMigrate != nil {
