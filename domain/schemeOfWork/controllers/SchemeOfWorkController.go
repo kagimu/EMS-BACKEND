@@ -579,7 +579,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 
 	//validate if file is not uploaded
 	if fileError != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing " + fileError.Error()})
 		return
 	}
 
