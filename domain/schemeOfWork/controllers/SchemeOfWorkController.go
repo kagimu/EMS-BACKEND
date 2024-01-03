@@ -600,7 +600,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 	}
 
 	if schemeName == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme title is required!"})
 		return
 	}
 
