@@ -165,7 +165,7 @@ func SetupRoute() *gin.Engine {
 		schemeOfWork := main.Group("/scheme-of-work")
 		{
 			schemeOfWork.GET("download-scheme-template", schemeOfWorkControllers.DownloadSchemeOfWork)
-			schemeOfWork.GET("upload-scheme-of-work", schemeOfWorkControllers.ImportSchemeOfWork)
+			schemeOfWork.POST("upload-scheme-of-work", schemeOfWorkControllers.ImportSchemeOfWork)
 		}
 		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
 		main.POST("update-scheme-of-work", schemeOfWorkControllers.UpdateSchemeOfWork)
