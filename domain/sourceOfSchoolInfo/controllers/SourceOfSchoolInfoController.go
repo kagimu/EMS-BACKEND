@@ -11,7 +11,6 @@ import (
 )
 
 func NewSourceOfSchoolInfo(c *gin.Context) {
-
 	type SourceOfSchoolInfoRequest struct {
 		Name string `json:"name"`
 	}
@@ -20,7 +19,6 @@ func NewSourceOfSchoolInfo(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&sourceOfSchoolInfo)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Internal server error"})
 		return
 	}
@@ -77,4 +75,114 @@ func GetSourcesOfSchoolInfo(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": sourcesOfSchoolInfo})
+}
+
+func EditSourceOfSchoolInfo(c *gin.Context) {
+	type SourceOfSchoolInfo struct {
+		Name string `json:"name"`
+	}
+
+	var sourceOfSchoolInfo SourceOfSchoolInfo
+	err := c.BindJSON(&sourceOfSchoolInfo)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	name := sourceOfSchoolInfo.Name
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+	userNumber := c.Request.Header["User-Number"][0]
+	var user authModels.User
+
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "User not found"})
+		return
+	}
+
+	var sourceOfSchoolInfoModel models.SourceOfSchoolInfo
+	sourceOfSchoolInfoNumber := c.Param("source_of_school_info_number")
+
+	if err := config.DB.
+		Where("number = ?", sourceOfSchoolInfoNumber).
+		First(&sourceOfSchoolInfoModel).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "source of school info not found"})
+		return
+	}
+
+	var duplicateSourceOfSchoolInfoModel models.SourceOfSchoolInfo
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("user_number = ?", userNumber).
+		First(&duplicateSourceOfSchoolInfoModel).Error; duplicate == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "source of school info already exists"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	if err := tx.Model(&sourceOfSchoolInfoModel).Where("number = ?", sourceOfSchoolInfoNumber).Update("name", sourceOfSchoolInfo.Name).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save source of school", "details": err.Error()})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save school!!"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "source of school info edited successfully", "data": sourceOfSchoolInfoModel})
+}
+
+func DeleteSourceOfSchoolInfo(c *gin.Context) {
+	userNumber := c.Request.Header["User-Number"][0]
+	var user authModels.User
+
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "User not found"})
+		return
+	}
+
+	var sourceOfSchoolInfoModel models.SourceOfSchoolInfo
+	sourceOfSchoolInfoNumber := c.Param("source_of_school_info_number")
+
+	if err := config.DB.
+		Where("number = ?", sourceOfSchoolInfoNumber).
+		First(&sourceOfSchoolInfoModel).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "source of school info not found"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	if err := tx.Delete(&sourceOfSchoolInfoModel).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to delete source of school info",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save school!!"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Source of school info deleted successfully"})
+
 }

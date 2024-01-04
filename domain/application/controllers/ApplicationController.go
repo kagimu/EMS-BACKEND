@@ -10,73 +10,9 @@ import (
 	previousModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
-func CreateApplication(c *gin.Context) {
-
-	type ApplicationRequest struct {
-		Status                string `json:"status"`
-		ApplicationFeePayment bool   `json:"application_fee_payment"`
-		StudentNumber         string `json:"student_number"`
-		ParentNumber          string `json:"parent_number"`
-	}
-
-	var application ApplicationRequest
-
-	if err := c.ShouldBindJSON(&application); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Internal server error"})
-		return
-	}
-
-	if application.Status == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "status is required"})
-		return
-	}
-
-	userNumber := c.Request.Header["User-Number"][0]
-
-	var user authModel.User
-	if err := config.DB.
-		Where("number = ?", userNumber).
-		First(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	tx := config.DB.Begin()
-	saveApplication := models.Application{
-		Number:                uuid.NewV4().String(),
-		Status:                string(application.Status),
-		UserNumber:            userNumber,
-		ApplicationFeePayment: application.ApplicationFeePayment,
-	}
-
-	if err := tx.Create(&saveApplication).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "failed to save application",
-			"details": err.Error(),
-		})
-		return
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "failed to save application",
-			"details": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "application created successfully",
-		"data":    saveApplication,
-	})
-}
-
 func FetchApplication(c *gin.Context) {
-
 	userNumber := c.Request.Header["User-Number"][0]
 
 	var user authModel.User
@@ -84,7 +20,6 @@ func FetchApplication(c *gin.Context) {
 		Where("number = ?", userNumber).
 		First(&user).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"err":     err.Error(),
 			"message": "User not found"})
 		return
 	}
@@ -93,14 +28,14 @@ func FetchApplication(c *gin.Context) {
 	var applicationNumber = c.Param("application_number")
 	var student studentModel.Student
 	var parent parentModel.Parent
-	var previousSchools previousModel.PreviousSchool
+	var previousSchools []previousModel.PreviousSchool
 
 	if err := config.DB.Table("applications").
-		Select("applications.*, students.*, parents.*").
+		Select("applications.*, students.*, parents.*, previous_schools.*").
 		Joins("RIGHT JOIN students ON students.application_number = applications.number").
 		Joins("RIGHT JOIN parents ON parents.application_number = students.application_number").
-		Joins("RIGHT JOIN previous_schools ON previous_schools.application_number = ?").
-		Where("applications.number = ?", applicationNumber, applicationNumber).
+		Joins("RIGHT JOIN previous_schools ON previous_schools.application_number = applications.number").
+		Where("applications.number = ?", applicationNumber).
 		Scan(&student).
 		First(&parent).
 		First(&previousSchools).
@@ -115,10 +50,10 @@ func FetchApplication(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": gin.H{
-			"application":    application,
-			"student":        student,
-			"parent":         parent,
-			"previousSchool": previousSchools,
+			"application":     application,
+			"student":         student,
+			"parent":          parent,
+			"previousSchools": previousSchools,
 		},
 	})
 }
@@ -137,10 +72,13 @@ func FetchApplications(c *gin.Context) {
 	}
 
 	var applications []models.Application
-	if err := config.DB.Find(&applications).Error; err != nil {
+	if err := config.DB.Table("applications").
+		Joins("LEFT JOIN students ON students.application_number = applications.number").
+		Find(&applications).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"err":     err.Error(),
-			"message": "Application fetching failed"})
+			"message": "application fetching failed",
+		})
 		return
 	}
 
