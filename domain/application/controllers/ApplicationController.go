@@ -5,7 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	userfromheader "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/userFromHeader"
 	parentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	previousModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -13,14 +13,11 @@ import (
 )
 
 func FetchApplication(c *gin.Context) {
-	userNumber := c.Request.Header["User-Number"][0]
-
-	var user authModel.User
-	if err := config.DB.
-		Where("number = ?", userNumber).
-		First(&user).Error; err != nil {
+	_, err := userfromheader.GetUserFromHeader(c)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "User not found"})
+			"message": "User not found",
+		})
 		return
 	}
 
@@ -59,15 +56,11 @@ func FetchApplication(c *gin.Context) {
 }
 
 func FetchApplications(c *gin.Context) {
-	userNumber := c.Request.Header["User-Number"][0]
-	var user authModel.User
-
-	if err := config.DB.
-		Where("number = ?", userNumber).
-		First(&user).Error; err != nil {
+	_, err := userfromheader.GetUserFromHeader(c)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"err":     err.Error(),
-			"message": "User not found"})
+			"message": "User not found",
+		})
 		return
 	}
 
@@ -76,7 +69,31 @@ func FetchApplications(c *gin.Context) {
 		Joins("LEFT JOIN students ON students.application_number = applications.number").
 		Find(&applications).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"err":     err.Error(),
+			"message": "application fetching failed",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":    applications,
+		"message": "applications fetched successfully",
+	})
+}
+
+func FetchApplicationsByStatus(c *gin.Context) {
+	_, err := userfromheader.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "User not found",
+		})
+		return
+	}
+
+	status := c.Query("status")
+
+	var applications []models.Application
+	if err := config.DB.Where("status = ?", status).Find(&applications).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "application fetching failed",
 		})
 		return

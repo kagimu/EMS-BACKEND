@@ -244,6 +244,7 @@ func SetupRoute() *gin.Engine {
 			// application
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
+			application.GET("", applicationController.FetchApplicationsByStatus)
 		}
 
 		learningMaterials := main.Group("/learning-materials")
