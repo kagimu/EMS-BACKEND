@@ -11,7 +11,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -33,12 +32,11 @@ func CreateStudent(c *gin.Context) {
 	payload.Prepare()
 	if err := payload.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "failed to validate input",
+			"message": fmt.Sprintf("failed to validate input %s:", err.Error()),
 		})
 		return
 	}
 
-	previousSchools := payload.PreviousSchool
 	userNumber := c.Request.Header["User-Number"][0]
 	applicationNumber := payload.ApplicationNumber
 
@@ -76,7 +74,6 @@ func CreateStudent(c *gin.Context) {
 		Where("number = ?", applicationNumber).
 		First(&application).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"err":     applicationNumber,
 			"message": "application not found"})
 		return
 	}
@@ -93,8 +90,7 @@ func CreateStudent(c *gin.Context) {
 		SecondName:                payload.SecondName,
 		PreferedCampusNumber:      payload.PreferredCampusNumber,
 		UserNumber:                userNumber,
-		SourceOfSchoolInfoNumber:  payload.SourceOfSchoolInfoNumber,
-		ParentNumber:              payload.ParentNumber,
+		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 		ApplicationNumber:         applicationNumber,
 		ClassNumber:               payload.ClassNumber,
 	}
@@ -105,30 +101,10 @@ func CreateStudent(c *gin.Context) {
 		tx.Rollback()
 
 		c.JSON(http.StatusBadRequest, gin.H{
+			"details": err.Error(),
 			"message": "failed to save student",
 		})
 		return
-	}
-
-	for _, item := range previousSchools {
-		savePreviousSchool := previousSchoolModels.PreviousSchool{
-			Number:        uuid.NewV4().String(),
-			Name:          item.Name,
-			StudentNumber: studentNumber,
-			StartYear:     item.StartYear,
-			EndYear:       item.EndYear,
-			UserNumber:    userNumber,
-		}
-
-		if err := tx.Create(&savePreviousSchool).Error; err != nil {
-			tx.Rollback()
-
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "failed to save previous school",
-				"data":    savePreviousSchool,
-			})
-			return
-		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
