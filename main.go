@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"log"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -133,9 +133,9 @@ func main() {
 		&studentDetailsModels.StudentDetail{},
 		&classModel.CurriculumClass{},
 		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},
+		&applicationModel.Application{},
 		&parentModels.Parent{},
 		&studentModels.Student{},
-		&applicationModel.Application{},
 		&previousSchoolModels.PreviousSchool{},
 		&studentModels.APN{},
 		&serviceModels.Service{},

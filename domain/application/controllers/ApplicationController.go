@@ -69,8 +69,8 @@ func FetchApplications(c *gin.Context) {
 	// Using the Student model and append the associated application
 	// instead of the other way round
 
-	var students []studentModel.Student
-	query := config.DB.Preload("Application").Find(&students)
+	var applications []models.Application
+	query := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchool").Find(&applications)
 
 	_, err := helpers.Paginate(query, paginationParams)
 	if err != nil {
@@ -82,7 +82,7 @@ func FetchApplications(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
-		"data":    students,
+		"data":    applications,
 		"message": "applications fetched successfully",
 	})
 }
