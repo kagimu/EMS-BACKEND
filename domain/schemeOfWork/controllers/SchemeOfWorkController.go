@@ -693,7 +693,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 	}
 
 	//read now the Excel file
-	readSchemeExcelFile(path, userNumber, schemeNumber, classNumber, tx, context)
+	readSchemeExcelFile(path, userNumber, schemeNumber, classNumber, subjectNumber, tx, context)
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
@@ -706,7 +706,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 
 }
 
-func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, classNumber string, tx *gorm.DB, context *gin.Context) {
+func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, classNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
 
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
@@ -734,13 +734,13 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 				SubTopic:    getValueAtIndex(row, 0),
 				SortingCode: getValueAtIndex(row, 1),
 			}
-			saveSchemeOfWorkData(schemeInfo, idx, userNumber, schemeNumber, classNumber, tx, context)
+			saveSchemeOfWorkData(schemeInfo, idx, userNumber, schemeNumber, classNumber, subjectNumber, tx, context)
 		}
 	}
 
 }
 
-func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, userNumber string, schemeNumber string, classNumber string, tx *gorm.DB, context *gin.Context) {
+func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, userNumber string, schemeNumber string, classNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
 
 	//for _, schemeList := range subtopicList {
 	codeNo, err := strconv.ParseInt(schemeInfo.SortingCode, 10, 64)
@@ -790,17 +790,19 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 		return
 	}
 
-	subTopicInfo_ = responses.SubTopicList{
-		Number:        subtopic.Number,
-		Code:          subtopic.Code,
-		SortCode:      int64(idx + 1),
-		Name:          subtopic.Name,
-		UserNumber:    subtopic.UserNumber,
-		EstimatedTime: subtopic.EstimatedTime,
-		TopicNumber:   subtopic.TopicNumber,
-		TopicName:     subtopic.Topic.Name,
-		StrandNumber:  subtopic.Topic.Strand.Number,
-		StrandName:    subtopic.Topic.Strand.Name,
+	if subjectNumber == subtopic.Topic.Strand.Subject.Number {
+		subTopicInfo_ = responses.SubTopicList{
+			Number:        subtopic.Number,
+			Code:          subtopic.Code,
+			SortCode:      int64(idx + 1),
+			Name:          subtopic.Name,
+			UserNumber:    subtopic.UserNumber,
+			EstimatedTime: subtopic.EstimatedTime,
+			TopicNumber:   subtopic.TopicNumber,
+			TopicName:     subtopic.Topic.Name,
+			StrandNumber:  subtopic.Topic.Strand.Number,
+			StrandName:    subtopic.Topic.Strand.Name,
+		}
 	}
 
 	//-----------------------
@@ -818,7 +820,7 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme of work sub topic"})
 		return
 	}
 	//}
