@@ -761,10 +761,23 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 
 	//fetch scheme of work
 	//----------------
+
+	var campusClassInfo models3.CampusClass
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
+		Preload("Streams").
+		Order("code asc").
+		First(&campusClassInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
 	var subtopic models2.SubTopic
 	var subTopicInfo_ responses.SubTopicList
-	if err := config.DB.
-		Scopes(classFilter(classNumber)).
+	if err := tx.
+		Where("topics.curriculum_class_number = ?", campusClassInfo.CurriculumClassNumber).
 		Where("name = ?", schemeInfo.SubTopic).
 		Joins("join topics on topics.number = sub_topics.topic_number").
 		Preload("Topic.Strand.Subject").
@@ -772,6 +785,7 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 		Preload("Topic").
 		Order("code asc").
 		First(&subtopic).Error; err != nil {
+		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
 		return
 	}
