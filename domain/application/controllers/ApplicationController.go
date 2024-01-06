@@ -5,6 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	userfromheader "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/userFromHeader"
 	parentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	previousModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
@@ -56,26 +57,32 @@ func FetchApplication(c *gin.Context) {
 }
 
 func FetchApplications(c *gin.Context) {
-	_, err := userfromheader.GetUserFromHeader(c)
-	if err != nil {
+	if _, err := userfromheader.GetUserFromHeader(c); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
 		})
 		return
 	}
 
-	var applications []models.Application
-	if err := config.DB.Table("applications").
-		Joins("LEFT JOIN students ON students.application_number = applications.number").
-		Find(&applications).Error; err != nil {
+	paginationParams := helpers.ParsePaginationParams(c)
+
+	// Using the Student model and append the associated application
+	// instead of the other way round
+
+	var students []studentModel.Student
+	query := config.DB.Preload("Application").Find(&students)
+
+	_, err := helpers.Paginate(query, paginationParams)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "application fetching failed",
+			"message": "Pagination failed",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":    applications,
+		"status":  http.StatusOK,
+		"data":    students,
 		"message": "applications fetched successfully",
 	})
 }
