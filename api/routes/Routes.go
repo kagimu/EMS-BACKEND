@@ -221,28 +221,30 @@ func SetupRoute() *gin.Engine {
 			// source of school info
 			application.POST("new-source-of-school-info", sourceOfSchoolController.NewSourceOfSchoolInfo)
 			application.GET("source-of-school-info", sourceOfSchoolController.GetSourcesOfSchoolInfo)
+			application.PUT("edit-source-of-school-info/:source_of_school_info_number", sourceOfSchoolController.EditSourceOfSchoolInfo)
+			application.DELETE("source-of-school-info/:source_of_school_info_number", sourceOfSchoolController.DeleteSourceOfSchoolInfo)
 
 			// parents
-			application.PUT("new-parent", parentController.CreateParent)
+			application.POST("new-parent", parentController.CreateParent)
 			application.GET("parents", parentController.FetchParents)
 			application.GET("parents/:id", parentController.FetchParentInfo)
 			application.PATCH("parents/:id", parentController.UpdateParent)
 			application.POST("parents/:id", parentController.DeleteParent)
 
 			// students
-			application.PUT("new-student", studentController.CreateStudent)
+			application.POST("/new-student", studentController.CreateStudent)
 			application.GET("/students/:apn", studentController.FetchStudentByAPN)
 			application.GET("/students", studentController.FetchAllStudents)
 			application.PATCH("/students/:id", studentController.UpdateStudent)
 			application.POST("/students/:id", studentController.DeleteStudent)
 
 			// previous schools
-			application.POST("previous-schools/:application_number/:student_number", previousSchoolController.CreatePreviousSchool)
+			application.POST(":application_number/previous-schools", previousSchoolController.CreatePreviousSchools)
 
 			// application
-			application.POST("", applicationController.CreateApplication)
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
+			application.GET("", applicationController.FetchApplicationsByStatus)
 		}
 
 		learningMaterials := main.Group("/learning-materials")

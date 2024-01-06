@@ -43,17 +43,21 @@ func CreateParent(c *gin.Context) {
 		return
 	}
 
-	applicationNumber := c.Param("application_number")
+	tx := config.DB.Begin()
+	saveApplication := applicationModel.Application{
+		Number:     uuid.NewV4().String(),
+		UserNumber: userNumber,
+	}
 
-	var application applicationModel.Application
-	if err := config.DB.
-		Where("number = ?", applicationNumber).
-		First(&application).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "application not found"})
+	if err := tx.Create(&saveApplication).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "failed to create application",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	tx := config.DB.Begin()
 	saveParent := models.Parent{
 		Number:                     uuid.NewV4().String(),
 		Surname:                    parent.Surname,
@@ -64,7 +68,17 @@ func CreateParent(c *gin.Context) {
 		Email:                      parent.Email,
 		AlternativeEmail:           parent.AlternativeEmail,
 		UserNumber:                 userNumber,
-		ApplicationNumber:          applicationNumber,
+		ApplicationNumber:          saveApplication.Number,
+	}
+
+	if parent.AlternativeEmail == parent.Email {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "email and alternative email should not be the same "})
+		return
+	}
+
+	if parent.AlternativeTelephoneNumber == parent.MainTelephoneNumber {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "telephone and alternative telephone should not be the same "})
+		return
 	}
 
 	if err := tx.Create(&saveParent).Error; err != nil {
