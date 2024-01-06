@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
@@ -832,5 +833,23 @@ func FetchStreamsByClassLevelNumber(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": streams})
+
+}
+
+func FetchClassesByCampusNumber(ctx *gin.Context) {
+
+	campusNumber := ctx.Param("campus_number")
+
+	var campusClasses []classModel.CampusClass
+
+	err := config.DB.
+		Where("campus_number = ?", campusNumber).
+		Find(&campusClasses).Error
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Classes!"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": campusClasses})
 
 }

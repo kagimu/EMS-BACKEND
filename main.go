@@ -137,6 +137,7 @@ func main() {
 		&parentModels.Parent{},
 		&studentModels.Student{},
 		&previousSchoolModels.PreviousSchool{},
+		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&serviceModels.Service{},
 		&preInterviewModels.PreAdmissionInterviewTest{},
