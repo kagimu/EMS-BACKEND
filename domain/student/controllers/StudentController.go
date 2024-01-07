@@ -4,13 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -20,6 +16,13 @@ import (
 )
 
 func CreateStudent(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "User not found in header",
+		})
+		return
+	}
 	var payload request.StudentRequest
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -38,55 +41,33 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	userNumber := c.Request.Header["User-Number"][0]
 	applicationNumber := payload.ApplicationNumber
-
-	var user authModels.User
-	if err := config.DB.
-		Where("number = ?", userNumber).
-		First(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	studentNumber := uuid.NewV4().String()
-	year := strconv.Itoa(time.Now().Year())
-	month := time.Now().Format("01")
-
-	saveAPN := models.APN{
-		Year:  year,
-		Month: month,
-	}
-
-	if err := config.DB.Create(&saveAPN).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   err.Error(),
-			"message": "failed to save APN",
-			"data":    saveAPN,
-		})
-		return
-	}
-
-	savedID := saveAPN.ID + 1
-	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%04s", strconv.FormatUint(savedID, 10))}, "")
-
 	var application applicationModel.Application
 	if err := config.DB.
 		Where("number = ?", applicationNumber).
 		First(&application).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "application not found"})
+			"message": "Application not found"})
 		return
 	}
 
+	studentAPN, err := CreateAPN()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to create APN"})
+		return
+	}
+
+	studentNumber := uuid.NewV4().String()
+	userNumber := user.Number
 	savedStudent := models.Student{
 		Number:                    studentNumber,
-		APN:                       result,
+		APN:                       studentAPN,
 		Surname:                   payload.Surname,
 		OtherName:                 payload.OtherName,
 		Gender:                    payload.Gender,
 		DateOfBirth:               payload.DateOfBirth,
-		Reason:                    payload.Reason,
+		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
 		PreferedCampusNumber:      payload.PreferredCampusNumber,
@@ -119,28 +100,60 @@ func CreateStudent(c *gin.Context) {
 	})
 }
 
-func UpdateStudent(c *gin.Context) {
-	student := models.Student{}
-	studentAPN := c.Param("id")
+func EditStudent(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "User not found",
+		})
+		return
+	}
 
-	err := config.DB.First(&student, studentAPN).Error
-	if err != nil {
+	var payload request.StudentUpdateRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to process input",
+		})
+		return
+	}
+
+	payload.Prepare()
+
+	var student models.Student
+	studentAPN := c.Param("apn")
+	if err := config.DB.First(&student, "apn = ?", studentAPN).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  http.StatusNotFound,
-			"message": "no student found",
+			"message": "No student found with the specified APN",
 		})
 		return
 	}
 
-	if err := c.BindJSON(&student); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "invalid request",
-		})
+	// TODO: ADN table should not update. Also student ADN should not update
+	studentADN, err := CreateADN()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create APN"})
 		return
 	}
 
-	if err := config.DB.Save(&student).Error; err != nil {
+	if payload.APNStatus == "Archive" {
+		student.ADN = studentADN
+	} else {
+		studentADN = ""
+	}
+
+	savedStudent := models.Student{
+		Surname:                   payload.Surname,
+		OtherName:                 payload.OtherName,
+		SecondName:                payload.SecondName,
+		ADN:                       studentADN,
+		APNStatus:                 payload.APNStatus,
+		DateOfBirth:               payload.DateOfBirth,
+		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
+		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+		ClassNumber:               payload.ClassNumber,
+	}
+
+	if err := config.DB.Model(&student).Where("apn = ?", studentAPN).Updates(savedStudent).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "failed to update student",
@@ -149,7 +162,6 @@ func UpdateStudent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": student})
-
 }
 
 func DeleteStudent(c *gin.Context) {
@@ -177,8 +189,7 @@ func DeleteStudent(c *gin.Context) {
 }
 
 func FetchStudentByAPN(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
-	if err != nil {
+	if user, err := commons.GetUserFromHeader(c); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"debug":   user,
 			"message": "User not found"})
@@ -190,13 +201,12 @@ func FetchStudentByAPN(c *gin.Context) {
 
 	if studentAPN == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Internal server error!",
+			"message": "Student API is missing",
 		})
 		return
 	}
 
-	err = config.DB.First(&student, "apn = ?", studentAPN).Error
-	if err != nil {
+	if err := config.DB.First(&student, "apn = ?", studentAPN).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":  http.StatusNotFound,
