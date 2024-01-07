@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+
 	"log"
 	"os"
 
@@ -139,11 +141,11 @@ func main() {
 		&previousSchoolModels.PreviousSchool{},
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
+		&studentModels.ADN{},
 		&serviceModels.Service{},
 		&preInterviewModels.PreAdmissionInterviewTest{},
 		&gradeModel.Grade{},
 		&admissionModel.Admission{},
-		&admissionModel.ADN{},
 		&previousSchoolModels.PreviousSchoolClass{},
 		&models3.CurriculumSubtopicReference{},
 		&schemeOfWorkmodel.SchemeOfWorkImport{},
