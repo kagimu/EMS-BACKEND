@@ -11,6 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -176,6 +177,14 @@ func DeleteStudent(c *gin.Context) {
 }
 
 func FetchStudentByAPN(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"debug":   user,
+			"message": "User not found"})
+		return
+	}
+
 	var student models.Student
 	studentAPN := c.Param("apn")
 
@@ -186,17 +195,7 @@ func FetchStudentByAPN(c *gin.Context) {
 		return
 	}
 
-	userNumber := c.Request.Header["User-Id"][0]
-
-	var user authModels.User
-	if err := config.DB.
-		Where("number = ?", userNumber).
-		First(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	err := config.DB.First(&student, "apn = ?", studentAPN).Error
+	err = config.DB.First(&student, "apn = ?", studentAPN).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{

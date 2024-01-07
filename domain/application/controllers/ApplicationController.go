@@ -5,13 +5,13 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
-	userfromheader "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/userFromHeader"
 	"github.com/gin-gonic/gin"
 )
 
 func FetchApplication(c *gin.Context) {
-	_, err := userfromheader.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
@@ -40,7 +40,7 @@ func FetchApplication(c *gin.Context) {
 }
 
 func FetchApplications(c *gin.Context) {
-	if _, err := userfromheader.GetUserFromHeader(c); err != nil {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
 		})
@@ -48,9 +48,6 @@ func FetchApplications(c *gin.Context) {
 	}
 
 	paginationParams := helpers.ParsePaginationParams(c)
-
-	// Using the Student model and append the associated application
-	// instead of the other way round
 
 	var applications []models.Application
 	query := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications)
@@ -71,7 +68,7 @@ func FetchApplications(c *gin.Context) {
 }
 
 func FetchApplicationsByStatus(c *gin.Context) {
-	_, err := userfromheader.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
