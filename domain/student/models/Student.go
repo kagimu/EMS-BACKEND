@@ -9,16 +9,17 @@ import (
 
 type Student struct {
 	gorm.Model
-	Number            string `json:"number" gorm:"size:36;unique;not null"`
-	APN               string `gorm:"unique;size:100;unique" json:"apn"`
-	APNStatus         string `gorm:"size:20;default:Inactive" json:"apn_status"`
-	Surname           string `json:"surname" `
-	SecondName        string `json:"second_name"`
-	OtherName         string `json:"other_name"`
-	AcademicReport    string `json:"academic_report"`
-	Gender            string `json:"gender"  binding:"required" gorm:"size:8;not null"`
-	Reason            string `json:"reason" gorm:"type:text"`
-	ApplicationNumber string `json:"application_number" gorm:"size:36;not null"`
+	Number                  string `json:"number" gorm:"size:36;unique;not null"`
+	APN                     string `gorm:"unique;size:100; " json:"apn"`
+	ADN                     string `gorm:"unique;size:100; " json:"adn-"`
+	APNStatus               string `gorm:"size:20;default:Inactive" json:"apn_status"`
+	Surname                 string `json:"surname" `
+	SecondName              string `json:"second_name"`
+	OtherName               string `json:"other_name"`
+	AcademicReport          string `json:"academic_report"`
+	Gender                  string `json:"gender"  binding:"required" gorm:"size:8;not null"`
+	ReasonForChoosingSchool string `json:"reason_for_choosing_school" gorm:"type:text"`
+	ApplicationNumber       string `json:"application_number" gorm:"size:36;not null"`
 	//Application               applicationModel.Application `gorm:"foreignKey:ApplicationNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	ReasonForAdmissionDenial  string              `json:"reason_for_admission_denial"`
 	AttentionNeeded           string              `json:"attention_needed"`
