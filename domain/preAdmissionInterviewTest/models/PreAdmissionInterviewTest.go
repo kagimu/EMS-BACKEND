@@ -1,12 +1,16 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"gorm.io/gorm"
+)
 
 type PreAdmissionInterviewTest struct {
 	gorm.Model
-	Number     string `json:"number" gorm:"size:36;unique;not null"`
-	StudentAPN string `json:"student_apn" gorm:"size:36;not null"`
-	Scores     string
+	Number          string         `json:"number" gorm:"size:36;unique;not null"`
+	StudentNumber   string         `json:"student_number" gorm:"size:36;not null"`
+	Student         models.Student `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	AdmissionStatus string         `json:"admission_status"`
 }
 
 type Subject struct {
