@@ -50,12 +50,19 @@ func FetchApplications(c *gin.Context) {
 	paginationParams := helpers.ParsePaginationParams(c)
 
 	var applications []models.Application
-	query := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications)
+	query := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchools")
 
 	_, err := helpers.Paginate(query, paginationParams)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Pagination failed",
+		})
+		return
+	}
+
+	if err := query.Find(&applications).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "application fetching failed",
 		})
 		return
 	}
