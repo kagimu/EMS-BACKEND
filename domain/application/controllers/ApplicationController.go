@@ -91,3 +91,61 @@ func FetchApplicationsByStatus(c *gin.Context) {
 		"message": "applications fetched successfully",
 	})
 }
+
+func EditApplication(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "User not found",
+		})
+		return
+	}
+
+	type ApplicationInfo struct {
+		Status                string `json:"status"`
+		ApplicationFeePayment bool   `json:"application_fee_payment"`
+	}
+
+	var payload ApplicationInfo
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to process input",
+		})
+		return
+	}
+
+	if payload.Status == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Status is required",
+		})
+		return
+	}
+
+	var application models.Application
+	var applicationNumber = c.Param("application_number")
+
+	if err := config.DB.First(&application, "number = ?", applicationNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": "No application found with the specified number",
+		})
+		return
+	}
+
+	updateApplication := models.Application{
+		Status:                payload.Status,
+		ApplicationFeePayment: payload.ApplicationFeePayment,
+	}
+
+	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplication).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "application updating failed",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":    application,
+		"message": "Application updated successfully",
+	})
+}
