@@ -4,7 +4,7 @@ import "gorm.io/gorm"
 
 type PreviousSchoolClass struct {
 	gorm.Model
-	StudentNumber string `json:"student_number" gorm:"size:36;not null"`
-	Number        string `json:"number" gorm:"size:36;unique;not null"`
-	ClassNumber   string `json:"class_number" gorm:"size:36;not null"`
+	PreviousSchoolNumber string `json:"previous_school_number" gorm:"size:36;not null"`
+	Year                 string `json:"year" gorm:"size:10;not null"`
+	Class                string `json:"class" gorm:"size:10;not null"`
 }
