@@ -18,7 +18,7 @@ type StudentRequest struct {
 	PreferredTypeOfEnrollment string                  `json:"preferred_type_of_enrollment"`
 	PreferredCampusNumber     string                  `json:"preferred_campus_number"`
 	Gender                    string                  `json:"gender"`
-	ReasonForChoosingSchool   string                  `json:"reason"`
+	ReasonForChoosingSchool   string                  `json:"reason_for_choosing_school"`
 	SourceOfSchoolInfo        string                  `json:"source_of_school_info"`
 	ApplicationNumber         string                  `json:"application_number"`
 	ParentNumber              string                  `json:"parent_number"`
