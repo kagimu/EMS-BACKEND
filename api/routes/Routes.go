@@ -268,9 +268,11 @@ func SetupRoute() *gin.Engine {
 			payments.POST("", paymentsController.CreatePayment)
 		}
 
-		preAdmissionInterview := main.Group("/pre-interview")
+		preAdmissionInterview := main.Group("/pre-interview-reports")
 		{
 			preAdmissionInterview.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
+			preAdmissionInterview.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
+			preAdmissionInterview.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
 		}
 	}
 	//router.GET("/profile/:name", profile)
