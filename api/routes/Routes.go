@@ -20,6 +20,7 @@ import (
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
+	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
@@ -265,6 +266,11 @@ func SetupRoute() *gin.Engine {
 		payments := main.Group("/payments")
 		{
 			payments.POST("", paymentsController.CreatePayment)
+		}
+
+		preAdmissionInterview := main.Group("/pre-interview")
+		{
+			preAdmissionInterview.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
 		}
 	}
 	//router.GET("/profile/:name", profile)

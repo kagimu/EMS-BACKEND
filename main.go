@@ -151,6 +151,7 @@ func main() {
 		&models3.CurriculumSubtopicReference{},
 		&schemeOfWorkmodel.SchemeOfWorkImport{},
 		&paymentModels.Payment{},
+		&preInterviewModels.PreAdmissionInterviewTestReport{},
 	)
 
 	if errMigrate != nil {
