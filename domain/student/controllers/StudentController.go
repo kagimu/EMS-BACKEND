@@ -128,17 +128,21 @@ func EditStudent(c *gin.Context) {
 		return
 	}
 
-	// TODO: ADN table should not update. Also student ADN should not update
-	studentADN, err := CreateADN()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create APN"})
-		return
-	}
+	apnStatusIsArchive := true
+	studentADN := ""
 
 	if payload.APNStatus == "Archive" {
-		student.ADN = studentADN
-	} else {
-		studentADN = ""
+		apnStatusIsArchive = false
+	}
+
+	// TODO: ADN does not get created if the status is Archive for the first time.
+	if apnStatusIsArchive {
+		var err error
+		studentADN, err = CreateADN()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create ADN"})
+			return
+		}
 	}
 
 	savedStudent := models.Student{
