@@ -12,16 +12,19 @@ import (
 )
 
 func CreatePreviousSchools(c *gin.Context) {
+	type Class struct {
+		Name string `json:"name"`
+		Year string `json:"year"`
+	}
 	type PreviousSchoolInfo struct {
-		Name      string `json:"name"`
-		StartYear string `json:"start_year"`
-		EndYear   string `json:"end_year"`
+		Name    string  `json:"name"`
+		Classes []Class `json:"classes"`
 	}
 
 	var previousSchoolInfo []PreviousSchoolInfo
 
 	if err := c.ShouldBindJSON(&previousSchoolInfo); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Internal server errror"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please format the correct request body"})
 		return
 	}
 
@@ -47,10 +50,7 @@ func CreatePreviousSchools(c *gin.Context) {
 		savePreviousSchool := previousSchoolModel.PreviousSchool{
 			Number:            uuid.NewV4().String(),
 			Name:              item.Name,
-			StartYear:         item.StartYear,
-			EndYear:           item.EndYear,
 			ApplicationNumber: applicationNumber,
-			UserNumber:        userNumber,
 		}
 
 		if err := config.DB.Create(&savePreviousSchool).Error; err != nil {
