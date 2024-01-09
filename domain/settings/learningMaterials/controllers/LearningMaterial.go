@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -22,6 +23,8 @@ func CreateNewLearningMaterial(ctx *gin.Context) {
 	learningMaterial.Number = uuid.NewV4().String()
 	learningMaterial.Name = ctx.PostForm("name")
 	learningMaterial.Type = ctx.PostForm("type")
+	learningMaterial.Category = ctx.PostForm("category")
+	learningMaterial.SubCategoryNumber = ctx.PostForm("sub_category")
 	Code, err := strconv.Atoi(ctx.PostForm("code"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -154,4 +157,42 @@ func CreateCurriculumReference(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Success"})
+}
+
+func CreateMaterialSubType(context *gin.Context) {
+	var materialSubType = models.MaterialSubType{}
+	var request = requests.MaterialSubTypeRequest{}
+	err := context.BindJSON(&request)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	materialSubType.UserNumber = context.Request.Header["User-Number"][0]
+	materialSubType.Name = request.Name
+	materialSubType.Category = request.Category
+	materialSubType.Number = uuid.NewV4().String()
+	// convert string to int64
+	materialSubType.Code, _ = strconv.ParseInt(request.Code, 10, 64)
+
+	config.DB.Create(&materialSubType)
+
+	context.JSON(http.StatusOK, gin.H{"message": "Material sub type created successfully!"})
+
+}
+
+func FetchMaterialSubTypesByCategory(context *gin.Context) {
+	var category = context.Param("category")
+
+	var materialSubTypes []models.MaterialSubType
+	config.DB.Where("category = ? ", category).Find(&materialSubTypes)
+
+	context.JSON(http.StatusOK, gin.H{"data": materialSubTypes})
+
 }

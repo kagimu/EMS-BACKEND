@@ -1,18 +1,26 @@
 package requests
 
-/*type TimetableRequest struct {
-	SubjectNumber string `json:"subject_number"`
-	StreamNumber  string `json:"stream_number"`
-	StartTime     string `json:"start_time"`
-	EndTime       string `json:"end_time"`
-	Day           string `json:"day"`
-	CampusNumber  string `json:"campus_number"`
+import "errors"
+
+type MaterialSubTypeRequest struct {
+	Name     string `json:"name" form:"name" binding:"required"`
+	Category string `json:"category" form:"category" binding:"required"`
+	Code     string `json:"code" form:"code" binding:"required"`
 }
 
-type CalendarEventRequest struct {
-	StartDate string `json:"start_date"`
-	EndDate   string `json:"end_date"`
-	StartTime string `json:"start_time"`
-	EndTime   string `json:"end_time"`
+func (mt *MaterialSubTypeRequest) Validate() error {
+
+	if mt.Name == "" {
+		return errors.New("name is required")
+	}
+
+	if mt.Category == "" {
+		return errors.New("category is required")
+	}
+
+	if mt.Code == "" {
+		return errors.New("code is required")
+	}
+
+	return nil
 }
-*/

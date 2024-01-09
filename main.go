@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"log"
 	"os"
 
@@ -145,8 +145,9 @@ func main() {
 		&admissionModel.Admission{},
 		&admissionModel.ADN{},
 		&previousSchoolModels.PreviousSchoolClass{},
-		&models3.CurriculumSubtopicReference{},
+		&materialModels.CurriculumSubtopicReference{},
 		&schemeOfWorkmodel.SchemeOfWorkImport{},
+		&materialModels.MaterialSubType{},
 	)
 
 	if errMigrate != nil {
