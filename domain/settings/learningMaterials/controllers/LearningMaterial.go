@@ -1,14 +1,15 @@
 package controllers
 
 import (
+	"log"
+	"net/http"
+	"strconv"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"log"
-	"net/http"
-	"strconv"
 )
 
 func CreateNewLearningMaterial(ctx *gin.Context) {
@@ -48,7 +49,10 @@ func CreateNewLearningMaterial(ctx *gin.Context) {
 
 	}
 
-	config.DB.Create(&learningMaterial)
+	if err := config.DB.Create(&learningMaterial).Error; err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred. Learning material not saved"})
+		return
+	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Learning material created successfully!"})
 
