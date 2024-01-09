@@ -761,7 +761,6 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 
 	//fetch scheme of work
 	//----------------
-
 	//first identify which curriculum is on this subject
 	var subjectInfo subjectModel.Subject
 	if err := tx.
