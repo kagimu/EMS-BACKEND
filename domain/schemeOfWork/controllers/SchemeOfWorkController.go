@@ -772,11 +772,6 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 		return
 	}
 
-	fmt.Println("---------------------------------")
-	fmt.Println("======1==>" + schemeInfo.SubTopic + " >==1=====")
-	fmt.Println("===2===>" + subjectInfo.CurriculumNumber + " >==2===")
-	fmt.Println("---------------------------------")
-
 	//then fetch subtopic by curriculum and its  name
 	var subtopic models2.SubTopic
 	if err := tx.
