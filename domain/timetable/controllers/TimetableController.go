@@ -3,10 +3,10 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	subjectModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
@@ -113,7 +113,7 @@ func FetchClassLevelsByCampusNumberAndLevelNumber(ctx *gin.Context) {
 
 	//fmt.Println(campusNumber, levelNumber)
 
-	var classLevels []classModels.ClassLevel
+	var classLevels []classModels.CampusClass
 
 	config.DB.
 		Where("campus_number = ? AND level_number = ?", campusNumber, levelNumber).

@@ -10,3 +10,8 @@ type StreamRequest struct {
 	Name             string `json:"name"`
 	ClassLevelNumber string `json:"class_level_number"`
 }
+
+type ExcelSchemeOfWorkInfo struct {
+	SubTopic    string
+	SortingCode string
+}

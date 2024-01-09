@@ -19,11 +19,11 @@ import (
 func NewStudyPeriod(context *gin.Context) {
 
 	type StudyPeriodInfo struct {
-		Code                 string   `json:"code"`
-		StudyPeriodName      string   `json:"study_period_name"`
-		AcademicYearNumber   string   `json:"academic_year_number"`
-		StudyPeriodDateRange []string `json:"study_period_date_range"`
-		LevelNumber          string   `json:"level_number"`
+		Code                 string `json:"code"`
+		StudyPeriodName      string `json:"study_period_name"`
+		AcademicYearNumber   string `json:"academic_year_number"`
+		StudyPeriodStartDate string `json:"study_period_start_date"`
+		StudyPeriodEndDate   string `json:"study_period_end_date"`
 	}
 
 	var studyPeriodInfo StudyPeriodInfo
@@ -36,8 +36,8 @@ func NewStudyPeriod(context *gin.Context) {
 	code := studyPeriodInfo.Code
 	studyPeriodName := studyPeriodInfo.StudyPeriodName
 	academicYearNumber := studyPeriodInfo.AcademicYearNumber
-	studyPeriodDateRange := studyPeriodInfo.StudyPeriodDateRange
-	levelNumber := studyPeriodInfo.LevelNumber
+	studyPeriodStartDate := studyPeriodInfo.StudyPeriodStartDate
+	studyPeriodEndDate := studyPeriodInfo.StudyPeriodEndDate
 	userNumber := context.Request.Header["User-Number"][0]
 
 	if academicYearNumber == "" {
@@ -50,13 +50,13 @@ func NewStudyPeriod(context *gin.Context) {
 		return
 	}
 
-	if len(studyPeriodDateRange) == 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Study period range is required!"})
+	if studyPeriodStartDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Start date is required!"})
 		return
 	}
 
-	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level Year is required!"})
+	if studyPeriodEndDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "End date is required!"})
 		return
 	}
 
@@ -97,21 +97,20 @@ func NewStudyPeriod(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("study_period_name = ?", studyPeriodName).
 		Where("academic_year_number = ?", academicYearNumber).
-		Where("level_number = ?", levelNumber).
 		First(&duplicateStudyPeriod).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Study Period already exists"})
 		return
 	}
 
 	layout := "2006-01-02T15:04:05.000Z"
-	startDate, errorDate := time.Parse(layout, studyPeriodDateRange[0])
+	startDate, errorDate := time.Parse(layout, studyPeriodStartDate)
 
 	if errorDate != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": errorDate.Error()})
 		return
 	}
 
-	endDate, errorDate := time.Parse(layout, studyPeriodDateRange[1])
+	endDate, errorDate := time.Parse(layout, studyPeriodEndDate)
 
 	if errorDate != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": errorDate.Error()})
@@ -133,10 +132,6 @@ func NewStudyPeriod(context *gin.Context) {
 
 	startDateAcademicYr := academicYearData.AcademicYearStartDate
 	endDateAcademicYr := academicYearData.AcademicYearEndDate
-
-	/*fmt.Println(startDateAcademicYr)
-	fmt.Println("<==>")
-	fmt.Println(startDate)*/
 
 	//validate start date
 	startDate = startDate.Add(3 * time.Hour) // Converting UTC to EAT for comparison
@@ -188,7 +183,6 @@ func NewStudyPeriod(context *gin.Context) {
 		StudyPeriodEndDate:   endDate,
 		AcademicYearNumber:   academicYearNumber,
 		UserNumber:           userNumber,
-		LevelNumber:          levelNumber,
 		CalendarEventNumber:  calendarEvent.Number,
 	}
 	//config.DB.Save(&saveStudyPeriod)
@@ -226,9 +220,10 @@ func FetchStudyPeriod(context *gin.Context) {
 	var studyPeriodInfo_ []responses2.StudyPeriodList
 	if err := config.DB.
 		Scopes(academicYearFilter(academicYearNumber)).
-		Where("level_number = ?", levelNumber).
-		Order("code asc").
+		Where("academic_years.campus_level_number = ?", levelNumber).
+		Joins("join academic_years on academic_years.number = study_periods.academic_year_number").
 		Preload("AcademicYear").
+		Order("code asc").
 		Find(&studyPeriodInfo).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
 		return
@@ -245,7 +240,6 @@ func FetchStudyPeriod(context *gin.Context) {
 			AcademicYearNumber:   academicList.AcademicYearNumber,
 			AcademicYearName:     academicList.AcademicYear.AcademicYearName,
 			UserNumber:           academicList.UserNumber,
-			LevelNumber:          academicList.LevelNumber,
 		})
 	}
 

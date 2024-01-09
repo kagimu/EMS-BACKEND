@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/services"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func AuthorizeJWT() gin.HandlerFunc {

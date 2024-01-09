@@ -2,6 +2,11 @@ package controllers
 
 import (
 	"fmt"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/api/responses"
+	"net/http"
+	"strconv"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
@@ -15,17 +20,16 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 )
 
 func NewSubTopic(context *gin.Context) {
 
 	type TopicInfo struct {
-		Code          string `json:"code"`
-		Name          string `json:"name"`
-		TopicNumber   string `json:"topic_number"`
-		EstimatedTime string `json:"estimated_time"`
+		Code             string `json:"code"`
+		Name             string `json:"name"`
+		TopicNumber      string `json:"topic_number"`
+		EstimatedTime    string `json:"estimated_time"`
+		CurriculumNumber string `json:"curriculum_number"`
 	}
 
 	var topicInfo TopicInfo
@@ -39,6 +43,7 @@ func NewSubTopic(context *gin.Context) {
 	name := topicInfo.Name
 	topicNumber := topicInfo.TopicNumber
 	estimatedTime := topicInfo.EstimatedTime
+	curriculumNumber := topicInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -54,6 +59,11 @@ func NewSubTopic(context *gin.Context) {
 
 	if name == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
@@ -87,6 +97,7 @@ func NewSubTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("topic_number = ?", topicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -96,6 +107,7 @@ func NewSubTopic(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("topic_number = ?", topicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateSubTopic).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic already exists"})
 		return
@@ -111,12 +123,13 @@ func NewSubTopic(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveSubtopic := models2.SubTopic{
-		Number:        number,
-		Name:          name,
-		EstimatedTime: estTime,
-		TopicNumber:   topicNumber,
-		UserNumber:    userNumber,
-		Code:          codeNo,
+		Number:           number,
+		Name:             name,
+		EstimatedTime:    estTime,
+		TopicNumber:      topicNumber,
+		UserNumber:       userNumber,
+		Code:             codeNo,
+		CurriculumNumber: curriculumNumber,
 	}
 	config.DB.Save(&saveSubtopic)
 
@@ -131,6 +144,7 @@ func FetchSubTopic(context *gin.Context) {
 	strandNumber := context.Query("strand_number")
 	topicNumber := context.Query("topic_number")
 	curriculumNumber := context.Query("curriculum_number")
+	classNumber := context.Query("class_number")
 
 	//fetch learning area
 	learningAreaResp, err := curriculum.FetchLearningAreaCurriculum(learningAreaNumber, curriculumNumber)
@@ -144,7 +158,7 @@ func FetchSubTopic(context *gin.Context) {
 	for _, lstLA := range learningAreaResp {
 
 		//fetch subject cluster
-		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum(lstLA.Number, subjectClusterNumber)
+		subjectClusterResp, err := curriculum.FetchSubjectClusterCurriculum("", lstLA.Number, subjectClusterNumber)
 		if err != "" {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 			return
@@ -153,7 +167,7 @@ func FetchSubTopic(context *gin.Context) {
 		var subjectCluster_ []responses3.SubjectClusterInfo
 		for _, lstSC := range subjectClusterResp {
 
-			subjectResp, err := curriculum.FetchSubjectCurriculum(lstSC.Number, subjectNumber)
+			subjectResp, err := curriculum.FetchSubjectCurriculum("", lstSC.Number, subjectNumber)
 			if err != "" {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 				return
@@ -162,7 +176,7 @@ func FetchSubTopic(context *gin.Context) {
 			var subjects_ []responses5.SubjectInfoList
 			for _, lstSB := range subjectResp {
 
-				strandResp, err := curriculum.FetchStrandCurriculum(lstSB.Number, strandNumber)
+				strandResp, err := curriculum.FetchStrandCurriculum("", lstSB.Number, strandNumber)
 				if err != "" {
 					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 					return
@@ -171,7 +185,7 @@ func FetchSubTopic(context *gin.Context) {
 				var strand_ []responses2.StrandDataList
 				for _, lstST := range strandResp {
 
-					topicResp, err := curriculum.FetchTopicCurriculum(lstST.Number, topicNumber, "")
+					topicResp, err := curriculum.FetchTopicCurriculum("", lstST.Number, topicNumber, classNumber)
 					if err != "" {
 						context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 						return
@@ -180,7 +194,7 @@ func FetchSubTopic(context *gin.Context) {
 					var topic_ []responses6.TopicDataList
 					for _, list := range topicResp {
 
-						subtopicResp, err := curriculum.FetchSubtopicCurriculum(list.Number, "")
+						subtopicResp, err := curriculum.FetchSubtopicCurriculum("", list.Number, "")
 						if err != "" {
 							context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 							return
@@ -188,6 +202,25 @@ func FetchSubTopic(context *gin.Context) {
 
 						var subTopicInfo_ []responses.SubTopicList
 						for idx, subtopicList := range subtopicResp {
+
+							referenceResp, err := curriculum.FetchSubTopicReferences(subtopicList.Number)
+							if err != "" {
+								context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+								return
+							}
+
+							var referenceInfo_ []responses7.LearningMaterialList
+							for _, refList := range referenceResp {
+								referenceInfo_ = append(referenceInfo_, responses7.LearningMaterialList{
+									Number:                 refList.Number,
+									Code:                   refList.Code,
+									Description:            refList.Description,
+									LearningMaterialNumber: refList.LearningMaterialNumber,
+									SubTopicNumber:         refList.SubTopicNumber,
+									UserNumber:             refList.UserNumber,
+								})
+							}
+
 							subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
 								Number:        subtopicList.Number,
 								Code:          subtopicList.Code,
@@ -196,16 +229,17 @@ func FetchSubTopic(context *gin.Context) {
 								UserNumber:    subtopicList.UserNumber,
 								EstimatedTime: subtopicList.EstimatedTime,
 								TopicNumber:   subtopicList.TopicNumber,
+								ReferenceInfo: referenceInfo_,
 							})
 						}
 
 						topic_ = append(topic_, responses6.TopicDataList{
-							Number:      list.Number,
-							Name:        list.Name,
-							Code:        list.Code,
-							UserNumber:  list.UserNumber,
-							ClassNumber: list.ClassNumber,
-							SubTopic:    subTopicInfo_,
+							Number:     list.Number,
+							Name:       list.Name,
+							Code:       list.Code,
+							UserNumber: list.UserNumber,
+							//ClassNumber: list.ClassNumber,
+							SubTopic: subTopicInfo_,
 						})
 					}
 
@@ -256,8 +290,9 @@ func FetchSubTopic(context *gin.Context) {
 func FetchSubTopiList(context *gin.Context) {
 
 	topicNumber := context.Query("topic_number")
+	curriculumNumber := context.Query("curriculum_number")
 
-	subtopicResp, err := curriculum.FetchSubtopicCurriculum(topicNumber, "")
+	subtopicResp, err := curriculum.FetchSubtopicCurriculum(curriculumNumber, topicNumber, "")
 	if err != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
@@ -293,11 +328,22 @@ func FetchSubTopicByClass(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	subjectNumber := context.Query("subject_number")
 
+	var campusClassInfo models3.CampusClass
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
+		Preload("Streams").
+		Order("code asc").
+		First(&campusClassInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
 	var subtopic []models2.SubTopic
 	var subTopicInfo_ []responses.SubTopicList
 	if err := config.DB.
-		Scopes(classFilter(classNumber)).
-		//Scopes(subjectFilter(subjectNumber)).
+		Scopes(classFilter(campusClassInfo.CurriculumClassNumber)).
 		Joins("join topics on topics.number = sub_topics.topic_number").
 		Preload("Topic.Strand.Subject").
 		Preload("Topic.Strand").
@@ -331,17 +377,8 @@ func FetchSubTopicByClass(context *gin.Context) {
 func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if classNumber != "" {
-			return db.Where("topics.class_number = ?", classNumber)
+			return db.Where("topics.curriculum_class_number = ?", classNumber)
 		}
 		return db
 	}
 }
-
-/*func subjectFilter(subjectNumber string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if subjectNumber != "" {
-			//return db.Where("topics.class_number = ?", subjectNumber)
-		}
-		return db
-	}
-}*/

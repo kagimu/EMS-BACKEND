@@ -1,31 +1,37 @@
 package controllers
 
 import (
+	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	schoolLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
 )
 
 func NewCampus(context *gin.Context) {
 
 	type CampusInfo struct {
-		Name         string   `json:"name"`
-		Phone        string   `json:"phone"`
-		Email        string   `json:"email"`
-		Location     string   `json:"location"`
-		Level        []string `json:"level"`
-		SchoolNumber string   `json:"school_number"`
+		Name                   string   `json:"name"`
+		Phone                  string   `json:"phone"`
+		Email                  string   `json:"email"`
+		Location               string   `json:"location"`
+		CommencementDate       string   `json:"commencement_date"`
+		SchoolNumber           string   `json:"school_number"`
+		SchoolCurriculumNumber string   `json:"school_curriculum_number"`
+		CurriculumLevelNumber  []string `json:"curriculum_level_number"`
 	}
 
 	var campusInfo CampusInfo
 	err := context.BindJSON(&campusInfo)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!", "err": err.Error()})
 		return
 	}
 
@@ -33,8 +39,10 @@ func NewCampus(context *gin.Context) {
 	phone := campusInfo.Phone
 	email := campusInfo.Email
 	location := campusInfo.Location
-	level := campusInfo.Level
+	curriculumLevelNumber := campusInfo.CurriculumLevelNumber
 	schoolNumber := campusInfo.SchoolNumber
+	schoolCurriculumNumber := campusInfo.SchoolCurriculumNumber
+	commencementDate := campusInfo.CommencementDate
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -48,6 +56,11 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
+	if commencementDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Commencement date is required!"})
+		return
+	}
+
 	if email == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Email is required!"})
 		return
@@ -58,13 +71,18 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
-	if len(level) == 0 {
+	if len(curriculumLevelNumber) == 0 {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
 	}
 
 	if schoolNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "School number is required!"})
+		return
+	}
+
+	if schoolCurriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School Curriculum is required!"})
 		return
 	}
 
@@ -87,17 +105,26 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
+	// Parse the string into a time.Time value
+	commencementDateData, err := time.Parse("2006-01-02", commencementDate)
+	if err != nil {
+		fmt.Println("Error parsing date:", err)
+		return
+	}
+
 	// Begin the transaction
 	tx := config.DB.Begin()
 	number := uuid.NewV4().String()
 	saveCampus := campusModel.Campus{
-		Number:       number,
-		UserNumber:   userNumber,
-		Name:         name,
-		Phone:        phone,
-		Email:        email,
-		Location:     location,
-		SchoolNumber: schoolNumber,
+		Number:                 number,
+		UserNumber:             userNumber,
+		Name:                   name,
+		Phone:                  phone,
+		Email:                  email,
+		Location:               location,
+		CommencementDate:       commencementDateData,
+		SchoolNumber:           schoolNumber,
+		SchoolCurriculumNumber: schoolCurriculumNumber,
 	}
 
 	if err := tx.Create(&saveCampus).Error; err != nil {
@@ -105,17 +132,29 @@ func NewCampus(context *gin.Context) {
 		tx.Rollback()
 		// Handle or return the error as needed
 		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create campus"})
+		context.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to create campus",
+			"err":     err.Error(),
+		})
 		return
 	}
 
 	//save Level
-	for _, item := range level {
-		levelNumber := uuid.NewV4().String()
-		saveLevel := campusModel.Level{
-			Number:              levelNumber,
-			LearningLevelNumber: item,
-			CampusNumber:        saveCampus.Number,
+	for _, item := range curriculumLevelNumber {
+
+		var curriculumLevel schoolLevelModels.CurriculumLevel
+		if err := tx.
+			Where("number = ?", item).
+			First(&curriculumLevel).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
+			return
+		}
+
+		saveLevel := schoolLevelModels.CampusLevel{
+			Number:                uuid.NewV4().String(),
+			Code:                  curriculumLevel.Code,
+			CurriculumLevelNumber: item,
+			CampusNumber:          saveCampus.Number,
 		}
 
 		if err := tx.Create(&saveLevel).Error; err != nil {
@@ -123,10 +162,11 @@ func NewCampus(context *gin.Context) {
 			tx.Rollback()
 			// Handle or return the error as needed
 			//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create level"})
+			context.JSON(http.StatusBadRequest, gin.H{
+				"err":     err.Error(),
+				"message": "Failed to create level"})
 			return
 		}
-
 	}
 
 	// Commit the transaction if there is no error
@@ -231,17 +271,6 @@ func EditCampus(context *gin.Context) {
 		return
 	}
 
-	//save Level
-	/*	for _, item := range level {
-		levelNumber := uuid.NewV4().String()
-		saveLevel := campusModel.Level{
-			Number:       levelNumber,
-			Name:         item,
-			CampusNumber: saveCampus.Number,
-		}
-		config.DB.Save(&saveLevel)
-	}*/
-
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Edited Successfully!", "data": campusDataInfo})
 }
 
@@ -255,15 +284,33 @@ func FetchCampuses(context *gin.Context) {
 	}
 
 	var campuses []campusModel.Campus
+	var campuses_ []responses.CampusDataList
 	if err := config.DB.
 		Where("school_number = ?", schoolNumber).
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
 		Order("created_at desc").
 		Find(&campuses).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses})
+	for _, item := range campuses {
+		campuses_ = append(campuses_, responses.CampusDataList{
+			Number:                 item.Number,
+			Name:                   item.Name,
+			Phone:                  item.Phone,
+			Email:                  item.Email,
+			Location:               item.Location,
+			UserNumber:             item.UserNumber,
+			SchoolNumber:           item.SchoolNumber,
+			SchoolCurriculumNumber: item.SchoolCurriculumNumber,
+			CurriculumName:         item.SchoolCurriculum.Curriculum.Name,
+			CommencementDate:       item.CommencementDate.Format("2-Jan-2006"),
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses_})
 
 }
 
@@ -276,18 +323,31 @@ func CampusInfo(context *gin.Context) {
 		return
 	}
 
-	var campuses campusModel.Campus
+	var campus campusModel.Campus
 	if err := config.DB.
 		Where("number = ?", campusNumber).
-		Preload("Level").
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
 		Order("created_at desc").
-		First(&campuses).Error; err != nil {
+		First(&campus).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses})
+	campus_ := responses.CampusDataList{
+		Number:                 campus.Number,
+		Name:                   campus.Name,
+		Phone:                  campus.Phone,
+		Email:                  campus.Email,
+		Location:               campus.Location,
+		UserNumber:             campus.UserNumber,
+		SchoolNumber:           campus.SchoolNumber,
+		SchoolCurriculumNumber: campus.SchoolCurriculumNumber,
+		CurriculumName:         campus.SchoolCurriculum.Curriculum.Name,
+		CommencementDate:       campus.CommencementDate.Format("2-Jan-2006"),
+	}
 
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
 }
 
 func FetchLevel(context *gin.Context) {
@@ -310,15 +370,15 @@ func FetchLevel(context *gin.Context) {
 		return
 	}
 
-	var level_ []responses.CampusLevelList
-	for _, lvl := range campus.Level {
-		level_ = append(level_, responses.CampusLevelList{
-			Number:              lvl.Number,
-			LearningLevelNumber: lvl.LearningLevelNumber,
-			LevelName:           lvl.LearningLevel.Name,
-			CampusNumber:        lvl.CampusNumber,
-		})
-	}
+	/*	var level_ []responses.CampusLevelList
+		for _, lvl := range campus.Level {
+			level_ = append(level_, responses.CampusLevelList{
+				Number:              lvl.Number,
+				LearningLevelNumber: lvl.LearningLevelNumber,
+				LevelName:           lvl.LearningLevel.Name,
+				CampusNumber:        lvl.CampusNumber,
+			})
+		}*/
 
 	campus_ := responses.CampusDataList{
 		Number:       campus.Number,
@@ -328,7 +388,7 @@ func FetchLevel(context *gin.Context) {
 		Location:     campus.Location,
 		UserNumber:   campus.UserNumber,
 		SchoolNumber: campus.SchoolNumber,
-		Level:        level_,
+		//Level:        level_,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
@@ -344,10 +404,9 @@ func FetchCampusLevel(context *gin.Context) {
 		return
 	}
 
-	var levelInfo []campusModel.Level
-	var levelInfo_ []campusModel.LevelDataInfo
+	var levelInfo []schoolLevelModels.Level
+	var levelInfo_ []schoolLevelModels.LevelDataInfo
 	if err := config.DB.
-		//Select("name", "number").
 		Where("campus_number = ?", campusNumber).
 		Preload("LearningLevel").
 		Order("created_at desc").
@@ -357,16 +416,49 @@ func FetchCampusLevel(context *gin.Context) {
 	}
 
 	// Populate the selected columns from the fetched data
-	for _, level := range levelInfo {
+	/*for _, level := range levelInfo {
 		levelInfo_ = append(levelInfo_, campusModel.LevelDataInfo{
 			Name:   level.LearningLevel.Name,
 			Code:   level.LearningLevel.Code,
 			Number: level.Number,
 		})
-	}
+	}*/
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levelInfo_})
 
+}
+
+func FetchCampusLevelList(context *gin.Context) {
+
+	campusNumber := context.Query("campus_number")
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Campus Number is required!"})
+		return
+	}
+
+	var campusLevelInfo []schoolLevelModels.CampusLevel
+	var levelInfo_ []schoolLevelModels.LevelDataInfo
+	if err := config.DB.
+		Where("campus_number = ?", campusNumber).
+		Preload("CurriculumLevel.Level").
+		Preload("CurriculumLevel").
+		Order("code asc").
+		Find(&campusLevelInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found"})
+		return
+	}
+
+	// Populate the selected columns from the fetched data
+	for _, level := range campusLevelInfo {
+		levelInfo_ = append(levelInfo_, schoolLevelModels.LevelDataInfo{
+			Name:   level.CurriculumLevel.Level.Name,
+			Code:   level.Code,
+			Number: level.Number,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levelInfo_})
 }
 
 func DeleteCampus(context *gin.Context) {
@@ -398,7 +490,7 @@ func DeleteCampus(context *gin.Context) {
 
 	db := config.DB
 
-	var campusChecker models3.ClassLevel
+	var campusChecker models3.CampusClass
 	if err := db.
 		Where("campus_number = ?", campusNumber).
 		First(&campusChecker).Error; err == nil {
@@ -417,7 +509,7 @@ func DeleteCampus(context *gin.Context) {
 	}
 
 	//delete Campus
-	var levelData campusModel.Level
+	var levelData schoolLevelModels.Level
 	db.Where("campus_number = ?", campusNumber).Delete(&levelData)
 
 	//delete Campus

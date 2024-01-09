@@ -1,12 +1,10 @@
 package routes
 
 import (
-	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
-	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
-	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
+	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -19,8 +17,16 @@ import (
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
+	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
+	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
+	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
+	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
+	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
+	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
+	studentDetails "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
@@ -34,7 +40,7 @@ func SetupRoute() *gin.Engine {
 
 	//setting cors in the system
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:2054", "https://wholesomeed.com"},
+		AllowOrigins:     []string{"http://localhost:2054", "https://wholesome-api.noregrets.ug"},
 		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Access-Control-Allow-Origin", "Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host", "Token", "Authorization", "Accept-Encoding", "X-CSRF-Token", "Access-Control-Allow-Headers", "Content-Type", "user-number"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -50,9 +56,7 @@ func SetupRoute() *gin.Engine {
 	//router.Use(middlewares.JWTMiddleware())
 	router.MaxMultipartMemory = 20 << 20 // 20 MiB
 	//router.Static("/", "./fileRepo")
-	//router.Use(static.Serve("/api/fileRepo", static.LocalFile("/api/fileRepo", true)))
-	//router.Use(static.Serve("/fileRepo", static.LocalFile("/fileRepo", true)))
-	router.Use(static.Serve("fileRepo", static.LocalFile("fileRepo", true)))
+	router.Use(static.Serve("/fileRepo", static.LocalFile("/fileRepo", true)))
 
 	auth := router.Group("/auth")
 	{
@@ -73,6 +77,8 @@ func SetupRoute() *gin.Engine {
 		main.GET("curriculum-info", curricullumController.FetchCurriculumInfo)
 		main.POST("upload-curriculum", curricullumController.ImportCurriculum)
 		main.GET("uploaded-curriculum", curricullumController.FetchUploadedCurriculum)
+		main.GET("fetch-school-curriculum", curricullumController.FetchSchoolCurriculum)
+		main.GET("fetch-school-curriculum-level", curricullumController.FetchSchoolCurriculumLevel)
 
 		//manage School
 		main.POST("new-school", schoolController.NewSchool)
@@ -89,21 +95,33 @@ func SetupRoute() *gin.Engine {
 		main.GET("campus-info", controllers.CampusInfo)
 		main.GET("level", controllers.FetchLevel)
 		main.GET("campus-level", controllers.FetchCampusLevel)
+		main.GET("fetch-campus-level", controllers.FetchCampusLevelList)
 
 		//level
 		main.POST("new-level", learningLevelControllers.NewLevel)
+		main.POST("new-curriculum-level", learningLevelControllers.NewCurriculumLevel)
 		main.GET("fetch-level", learningLevelControllers.FetchLearningLevel)
+		main.GET("fetch-curriculum-level", learningLevelControllers.FetchCurriculumLevel)
 
 		//	manage class
 		main.POST("new-class", classController.NewClass)
-		main.POST("new-class-level", classController.AddClassToLevel)
+		main.POST("new-campus-class", classController.AddCampusClass)
+		main.POST("new-curriculum-class", classController.AddCurriculumClass)
 		main.GET("classes", classController.FetchClasses)
+		main.GET("fetch-curriculum-classes", classController.FetchCurriculumClasses)
+		main.GET("filter-curriculum-classes", classController.FilterCurriculumClasses)
 		main.GET("scheme-of-work-classes", classController.FetchSchemeOfWorkClasses)
 		main.GET("classes-curriculum", classController.FetchClassesCurriculum)
 		main.GET("classes-to-add", classController.FetchClassesToAdd)
 		main.GET("class-level", classController.FetchClassLevel)
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
+
+		class := main.Group("/class")
+		{
+			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
+
+		}
 
 		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
@@ -150,16 +168,28 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-study-period", studyPeriodController.FetchStudyPeriod)
 
 		//adds scheme of work
+		schemeOfWork := main.Group("/scheme-of-work")
+		{
+			schemeOfWork.GET("download-scheme-template", schemeOfWorkControllers.DownloadSchemeOfWork)
+			schemeOfWork.POST("upload-scheme-of-work", schemeOfWorkControllers.ImportSchemeOfWork)
+		}
 		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
 		main.POST("update-scheme-of-work", schemeOfWorkControllers.UpdateSchemeOfWork)
 		main.GET("fetch-scheme-of-work-by-class-and-subject", schemeOfWorkControllers.FetchSchemeOfWork)
 
 		//lesson notes
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
-		main.POST("new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+
+		lessonPlan := main.Group("/lesson-plan")
+		{
+			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
+			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
+			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
+		}
 
 		//Student Admission
-		main.POST("new-student-details-admission", admissionController.NewStudentDetails)
+		main.POST("new-student-details-admission", studentDetails.NewStudentDetails)
 
 		//timetable routes
 		timetable := main.Group("/timetable")
@@ -192,6 +222,43 @@ func SetupRoute() *gin.Engine {
 			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 		}
 
+		application := main.Group("/applications")
+		{
+			// source of school info
+			application.POST("new-source-of-school-info", sourceOfSchoolController.NewSourceOfSchoolInfo)
+			application.GET("source-of-school-info", sourceOfSchoolController.GetSourcesOfSchoolInfo)
+			application.PUT("edit-source-of-school-info/:source_of_school_info_number", sourceOfSchoolController.EditSourceOfSchoolInfo)
+			application.DELETE("source-of-school-info/:source_of_school_info_number", sourceOfSchoolController.DeleteSourceOfSchoolInfo)
+
+			// parents
+			application.POST("new-parent", parentController.CreateParent)
+			application.GET("parents", parentController.FetchParents)
+			application.GET("parents/:id", parentController.FetchParentInfo)
+			application.PATCH("parents/:id", parentController.UpdateParent)
+			application.POST("parents/:id", parentController.DeleteParent)
+
+			// students
+			application.POST("/new-student", studentController.CreateStudent)
+			application.GET("/students/:apn", studentController.FetchStudentByAPN)
+			application.GET("/students", studentController.FetchAllStudents)
+			application.PATCH("/students/:id", studentController.UpdateStudent)
+			application.POST("/students/:id", studentController.DeleteStudent)
+
+			// previous schools
+			application.POST(":application_number/previous-schools", previousSchoolController.CreatePreviousSchools)
+
+			// application
+			application.GET("/:application_number", applicationController.FetchApplication)
+			application.GET("all", applicationController.FetchApplications)
+			application.GET("", applicationController.FetchApplicationsByStatus)
+		}
+
+		learningMaterials := main.Group("/learning-materials")
+		{
+			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
+			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
+		}
 	}
 	//router.GET("/profile/:name", profile)
 	return router

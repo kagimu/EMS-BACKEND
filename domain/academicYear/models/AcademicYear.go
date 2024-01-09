@@ -2,8 +2,8 @@ package models
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"gorm.io/gorm"
 	"time"
 )
@@ -19,9 +19,9 @@ type (
 		AcademicYearStartDate time.Time                 `json:"academic_year_start_date" form:"name" binding:"required" gorm:"not null"`
 		AcademicYearEndDate   time.Time                 `json:"academic_year_end_date" form:"name" binding:"required" gorm:"not null"`
 		UserNumber            string                    `json:"user_number" gorm:"size:36;not null"`
-		LevelNumber           string                    `json:"level_number" gorm:"size:36;not null"`
+		CampusLevelNumber     string                    `json:"campus_level_number" gorm:"size:36;not null"`
 		User                  models.User               `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-		Level                 models2.Level             `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		CampusLevel           models2.CampusLevel       `gorm:"foreignKey:CampusLevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		GeneralCalendar       eosModels.GeneralCalendar `gorm:"foreignKey:CalendarNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )

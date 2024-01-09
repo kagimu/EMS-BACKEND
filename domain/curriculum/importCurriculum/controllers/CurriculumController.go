@@ -1,25 +1,32 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"path/filepath"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
+	models5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	schoolCurriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
+	curriculumLevelModels2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
-	"net/http"
-	"path/filepath"
-	"strconv"
-	"time"
+	"gorm.io/gorm"
 )
 
 func NewCurriculum(context *gin.Context) {
@@ -46,15 +53,16 @@ func NewCurriculum(context *gin.Context) {
 
 	var userData models.User
 	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+	if err := config.DB.Where("number = ?", userNumber).First(&userData).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			context.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		} else {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": "Error retrieving user data", "error": err.Error()})
+		}
 		return
 	}
 
-	var duplicateSchool models2.Curriculum
+	var duplicateSchool models5.Curriculum
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("user_number = ?", userNumber).
@@ -66,7 +74,7 @@ func NewCurriculum(context *gin.Context) {
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
-	saveCurriculum := models2.Curriculum{
+	saveCurriculum := models5.Curriculum{
 		Number:     uuid.NewV4().String(),
 		Name:       name,
 		UserNumber: userNumber,
@@ -99,6 +107,8 @@ func ImportCurriculum(context *gin.Context) {
 	//validate maximum file size
 	excelFile, fileError := context.FormFile("excel_file")
 
+	curriculumNumber := context.PostForm("curriculum_number")
+
 	//validate if file is not uploaded
 	if fileError != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
@@ -121,6 +131,11 @@ func ImportCurriculum(context *gin.Context) {
 		return
 	}
 
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
+		return
+	}
+
 	//	validate user number
 	var user models.User
 	if validateUserNumber := config.DB.Where("number = ?", userNumber).First(&user).Error; validateUserNumber != nil {
@@ -134,21 +149,7 @@ func ImportCurriculum(context *gin.Context) {
 	excelName := excelFile.Filename
 	extension := filepath.Ext(excelFile.Filename)
 	fileName := name + extension
-	//jpgName := name + ".png"
-	//path := "/fileRepo/excelFile/" + fileName
-	//path := "/fileRepo/excelFile/" + fileName
 	path := "fileRepo/excelFile/" + fileName
-	//jpgPath := "/fileRepo/jpgFile/" + jpgName
-
-	/*if extension != ".pdf" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Only pdf files allowed!!"})
-		return
-	}*/
-
-	/*if excelFile.Header.Get("Content-Type") != "application/pdf" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid file type"})
-		return
-	}*/
 
 	err := context.SaveUploadedFile(excelFile, path)
 	if err != nil {
@@ -156,42 +157,23 @@ func ImportCurriculum(context *gin.Context) {
 		return
 	}
 
-	//check mime type of file
-	/*	mType, err2 := mimetype.DetectFile(path)
-		if err2 != nil {
-			fmt.Println("Error detecting file path:", err2)
-		}
-
-		if mType.String() != "application/pdf" {
-
-			//if the file  type is invalid the pdf file should be removed immediately
-			errRemove := os.Remove(path)
-			if errRemove != nil {
-				context.JSON(http.StatusBadRequest, gin.H{"message": errRemove})
-				return
-			}
-			/////////////////////////////////////////////////////////////////////////
-
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid file type " + mType.String()})
-			return
-		}*/
-
 	fileNumber := uuid.NewV4().String()
-	saveFileData := models2.ImportCurriculum{
-		Number:     fileNumber,
-		Name:       excelName,
-		FileName:   fileName,
-		UserNumber: userNumber,
+	saveFileData := models5.ImportCurriculum{
+		Number:           fileNumber,
+		Name:             excelName,
+		FileName:         fileName,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 	config.DB.Save(&saveFileData)
 
-	//read now the excel file
-	readExcelFile(path, userNumber)
+	//read now the Excel file
+	readExcelFile(path, userNumber, curriculumNumber)
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
 }
 
-func readExcelFile(filePath string, userNumber string) {
+func readExcelFile(filePath string, userNumber string, curriculumNumber string) {
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
@@ -221,7 +203,7 @@ func readExcelFile(filePath string, userNumber string) {
 
 	for idx, row := range rows {
 		if idx > 0 {
-			curriculumInfo := models2.ExcelCurriculumInfo{
+			curriculumInfo := models5.ExcelCurriculumInfo{
 				LearningAreaCode:   getValueAtIndex(row, 0),
 				LearningArea:       getValueAtIndex(row, 1),
 				SubjectClusterCode: getValueAtIndex(row, 2),
@@ -239,7 +221,7 @@ func readExcelFile(filePath string, userNumber string) {
 				ConceptCode:        getValueAtIndex(row, 14),
 				Concept:            getValueAtIndex(row, 15),
 			}
-			saveCurriculumData(curriculumInfo, idx, userNumber)
+			saveCurriculumData(curriculumInfo, idx, userNumber, curriculumNumber)
 		}
 	}
 
@@ -247,7 +229,7 @@ func readExcelFile(filePath string, userNumber string) {
 
 }
 
-func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber string) {
+func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber string, curriculumNumber string) {
 
 	//----------------------------------------------
 	//	save learning area
@@ -265,10 +247,11 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 
 	///save user data
 	saveLearningArea := learningAreaModels.LearningArea{
-		Number:     learningAreaNo,
-		Name:       info.LearningArea,
-		Code:       learningAreaCode,
-		UserNumber: userNumber,
+		Number:           learningAreaNo,
+		Name:             info.LearningArea,
+		Code:             learningAreaCode,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 
 	//check if learning area exists
@@ -276,6 +259,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	var learningAreaInfo learningAreaModels.LearningArea
 	learningAreaDup := config.DB.
 		Where("name = ?", info.LearningArea).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&learningAreaInfo)
 	if learningAreaDup.Error != nil {
 		err := config.DB.Save(&saveLearningArea).Error
@@ -314,6 +298,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Name:               info.SubjectCluster,
 		Code:               subjectClusterCode,
 		LearningAreaNumber: learningAreaNumber,
+		CurriculumNumber:   curriculumNumber,
 		UserNumber:         userNumber,
 	}
 
@@ -321,6 +306,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	subjectClusterDup := config.DB.
 		Where("name = ?", info.SubjectCluster).
 		Where("learning_area_number = ?", learningAreaInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&subjectClusterInfo)
 	if subjectClusterDup.Error != nil {
 		err := config.DB.Save(&saveSubjectCluster).Error
@@ -357,6 +343,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 		Name:                 info.Subject,
 		Code:                 subjectCode,
 		UserNumber:           userNumber,
+		CurriculumNumber:     curriculumNumber,
 		SubjectClusterNumber: subjectClusterNumber,
 	}
 
@@ -364,6 +351,7 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	subjectDup := config.DB.
 		Where("name = ?", info.Subject).
 		Where("subject_cluster_number = ?", subjectClusterInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&subjectInfo)
 	if subjectDup.Error != nil {
 		err := config.DB.Save(&saveSubject).Error
@@ -396,17 +384,19 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	strandNo := uuid.NewV4().String()
 	///save user data
 	saveStrand := strandModels.Strand{
-		Number:        strandNo,
-		Name:          info.Strand,
-		Code:          strandCode,
-		SubjectNumber: subjectNumber,
-		UserNumber:    userNumber,
+		Number:           strandNo,
+		Name:             info.Strand,
+		Code:             strandCode,
+		SubjectNumber:    subjectNumber,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 
 	var strandInfo strandModels.Strand
 	strandDup := config.DB.
 		Where("name = ?", info.Strand).
 		Where("subject_number = ?", subjectInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&strandInfo)
 	if strandDup.Error != nil {
 		err := config.DB.Save(&saveStrand).Error
@@ -422,9 +412,15 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	if info.Class == "" {
 		return
 	}
-	var classes classModels.Class
+
+	var classes classModels.CurriculumClass
 	if err := config.DB.
-		Where("abbreviation = ?", info.Class).
+		Where("classes.abbreviation = ?", info.Class).
+		Where("curriculum_levels.curriculum_number = ?", curriculumNumber).
+		Joins("join curriculum_levels on curriculum_levels.number = curriculum_classes.curriculum_level_number").
+		Joins("join classes on classes.number = curriculum_classes.class_number").
+		Preload("CurriculumLevel").
+		Preload("Class").
 		First(&classes).Error; err != nil {
 		//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
@@ -454,19 +450,21 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	topicNo := uuid.NewV4().String()
 	///save user data
 	saveTopic := topicModels.Topic{
-		Number:       topicNo,
-		Name:         info.Topic,
-		Code:         topicCode,
-		StrandNumber: strandNumber,
-		UserNumber:   userNumber,
-		ClassNumber:  classes.Number,
+		Number:                topicNo,
+		Name:                  info.Topic,
+		Code:                  topicCode,
+		StrandNumber:          strandNumber,
+		UserNumber:            userNumber,
+		CurriculumNumber:      curriculumNumber,
+		CurriculumClassNumber: classes.Number,
 	}
 
 	var topicInfo topicModels.Topic
 	topicDup := config.DB.
 		Where("name = ?", info.Topic).
 		Where("strand_number = ?", strandInfo.Number).
-		Where("class_number = ?", classes.Number).
+		Where("curriculum_class_number = ?", classes.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&topicInfo)
 	if topicDup.Error != nil {
 		err := config.DB.Save(&saveTopic).Error
@@ -512,18 +510,20 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 
 	///save user data
 	saveSubTopic := subTopicModels.SubTopic{
-		Number:        subtopicNo,
-		Name:          info.SubTopic,
-		Code:          subTopicCode,
-		EstimatedTime: estTime,
-		TopicNumber:   topicNumber,
-		UserNumber:    userNumber,
+		Number:           subtopicNo,
+		Name:             info.SubTopic,
+		Code:             subTopicCode,
+		EstimatedTime:    estTime,
+		TopicNumber:      topicNumber,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 
 	var subtopicInfo subTopicModels.SubTopic
 	subtopicDup := config.DB.
 		Where("name = ?", info.SubTopic).
 		Where("topic_number = ?", topicInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&subtopicInfo)
 	if subtopicDup.Error != nil {
 		err := config.DB.Save(&saveSubTopic).Error
@@ -555,17 +555,19 @@ func saveCurriculumData(info models2.ExcelCurriculumInfo, idx int, userNumber st
 	conceptNo := uuid.NewV4().String()
 	///save user data
 	saveConcept := conceptModels.Concept{
-		Number:         conceptNo,
-		Name:           info.Concept,
-		Code:           conceptCode,
-		SubTopicNumber: subTopicNumber,
-		UserNumber:     userNumber,
+		Number:           conceptNo,
+		Name:             info.Concept,
+		Code:             conceptCode,
+		SubTopicNumber:   subTopicNumber,
+		CurriculumNumber: curriculumNumber,
+		UserNumber:       userNumber,
 	}
 
 	var conceptInfo conceptModels.Concept
 	conceptDup := config.DB.
 		Where("name = ?", info.Concept).
 		Where("sub_topic_number = ?", subtopicInfo.Number).
+		Where("curriculum_number = ?", curriculumNumber).
 		First(&conceptInfo)
 	if conceptDup.Error != nil {
 		err := config.DB.Save(&saveConcept).Error
@@ -589,7 +591,7 @@ func getValueAtIndex(row []string, i int) string {
 
 func FetchCurriculum(context *gin.Context) {
 
-	var curriculum []models2.Curriculum
+	var curriculum []models5.Curriculum
 	if err := config.DB.
 		Order("created_at desc").
 		Find(&curriculum).Error; err != nil {
@@ -601,10 +603,10 @@ func FetchCurriculum(context *gin.Context) {
 }
 
 func FetchCurriculumInfo(context *gin.Context) {
-
-	var curriculum models2.Curriculum
+	curriculumNumber := context.Query("curriculum_number")
+	var curriculum models5.Curriculum
 	if err := config.DB.
-		//Where("number = ?", info.Strand).
+		Where("number = ?", curriculumNumber).
 		First(&curriculum).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
 		return
@@ -614,9 +616,10 @@ func FetchCurriculumInfo(context *gin.Context) {
 }
 
 func FetchUploadedCurriculum(context *gin.Context) {
-
-	var curriculumImport []models2.ImportCurriculum
+	curriculumNumber := context.Query("curriculum_number")
+	var curriculumImport []models5.ImportCurriculum
 	if err := config.DB.
+		Where("curriculum_number = ?", curriculumNumber).
 		Order("created_at desc").
 		Find(&curriculumImport).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
@@ -624,4 +627,66 @@ func FetchUploadedCurriculum(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculumImport})
+}
+
+func FetchSchoolCurriculum(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	var schoolCurriculum []schoolCurriculumModel.SchoolCurriculum
+	var schoolCurriculum_ []responses.SchoolCurriculumDataList
+	if err := config.DB.
+		Where("school_number = ?", schoolNumber).
+		Preload("Curriculum").
+		Order("created_at desc").
+		Find(&schoolCurriculum).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
+		return
+	}
+
+	for _, item := range schoolCurriculum {
+		schoolCurriculum_ = append(schoolCurriculum_, responses.SchoolCurriculumDataList{
+			Name:   item.Curriculum.Name,
+			Number: item.Number,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schoolCurriculum_})
+}
+
+func FetchSchoolCurriculumLevel(context *gin.Context) {
+	schoolCurriculumNumber := context.Query("school_curriculum_number")
+
+	var schoolCurriculumInfo schoolCurriculumModel.SchoolCurriculum
+	if err := config.DB.
+		Where("number = ?", schoolCurriculumNumber).
+		Order("created_at desc").
+		First(&schoolCurriculumInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No School curriculum found!"})
+		return
+	}
+
+	var schoolCurriculumLevel []curriculumLevelModels2.CurriculumLevel
+	var schoolCurriculumLevel_ []responses2.CurriculumLevelList
+	if err := config.DB.
+		Where("curriculum_number = ?", schoolCurriculumInfo.CurriculumNumber).
+		Preload("Level").
+		Preload("Curriculum").
+		Order("code asc").
+		Find(&schoolCurriculumLevel).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
+		return
+	}
+
+	for _, item := range schoolCurriculumLevel {
+		schoolCurriculumLevel_ = append(schoolCurriculumLevel_, responses2.CurriculumLevelList{
+			Number:           item.Number,
+			Name:             item.Level.Name,
+			Code:             item.Code,
+			UserNumber:       item.UserNumber,
+			LevelNumber:      item.LevelNumber,
+			CurriculumName:   item.Curriculum.Name,
+			CurriculumNumber: item.CurriculumNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schoolCurriculumLevel_})
 }

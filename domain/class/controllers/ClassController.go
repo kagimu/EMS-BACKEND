@@ -2,19 +2,22 @@ package controllers
 
 import (
 	"fmt"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 func NewClass(context *gin.Context) {
@@ -28,7 +31,7 @@ func NewClass(context *gin.Context) {
 
 	code := classInfo.Code
 	name := classInfo.Name
-	abbreviation := classInfo.Abbreviation
+	abbreviation := strings.ToUpper(classInfo.Abbreviation)
 	level := classInfo.Level
 
 	userNumber := context.Request.Header["User-Number"][0]
@@ -77,17 +80,24 @@ func NewClass(context *gin.Context) {
 	var duplicateCode models.Class
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
-		//Where("level_number = ?", level).
 		First(&duplicateCode).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists!"})
 		return
 	}
 
 	var duplicateClass models.Class
 	if duplicate := config.DB.
-		Where("name = ? OR abbreviation = ?", name, abbreviation).
+		Where("name = ?", name).
 		First(&duplicateClass).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Class cant be added exists"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists!"})
+		return
+	}
+
+	var duplicateAbbreviation models.Class
+	if duplicate := config.DB.
+		Where("abbreviation = ?", abbreviation).
+		First(&duplicateAbbreviation).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation already exists!"})
 		return
 	}
 
@@ -119,10 +129,10 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
 
-func AddClassToLevel(context *gin.Context) {
+func AddCampusClass(context *gin.Context) {
 
 	type ClassInfo struct {
 		ClassNumber  string `json:"class_number"`
@@ -170,12 +180,12 @@ func AddClassToLevel(context *gin.Context) {
 		return
 	}
 
-	var duplicateClass models.ClassLevel
+	var duplicateClass models.CampusClass
 	db := config.DB
 	if duplicate := config.DB.
-		Where("class_number = ?", classNumber).
+		Where("curriculum_class_number = ?", classNumber).
 		Where("campus_number = ?", campusNumber).
-		Where("level_number = ?", levelNumber).
+		Where("campus_level_number = ?", levelNumber).
 		First(&duplicateClass).Error; duplicate == nil {
 
 		//check if this class has children such that it is not deleted
@@ -190,36 +200,115 @@ func AddClassToLevel(context *gin.Context) {
 
 		//------------------------------------------------------
 		//delete class if it is removed from the level
-		db.Where("class_number = ?", classNumber).
+		db.Unscoped().Where("curriculum_class_number = ?", classNumber).
 			Where("campus_number = ?", campusNumber).
-			Where("level_number = ?", levelNumber).
+			Where("campus_level_number = ?", levelNumber).
 			Delete(&duplicateClass)
 		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
 		return
 	}
 
 	number := uuid.NewV4().String()
-	saveClass := models.ClassLevel{
-		Number:       number,
-		ClassNumber:  classNumber,
-		CampusNumber: campusNumber,
-		LevelNumber:  levelNumber,
-		UserNumber:   userNumber,
-		Code:         code,
+	saveClass := models.CampusClass{
+		Number:                number,
+		CurriculumClassNumber: classNumber,
+		CampusNumber:          campusNumber,
+		CampusLevelNumber:     levelNumber,
+		UserNumber:            userNumber,
+		Code:                  code,
 	}
 	config.DB.Save(&saveClass)
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveClass})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
+}
+
+func AddCurriculumClass(context *gin.Context) {
+
+	type CurriculumClassInfo struct {
+		LevelNumber string `json:"level_number"`
+		ClassNumber string `json:"class_number"`
+		Code        int64  `json:"code"`
+	}
+
+	var curriculumClassInfo CurriculumClassInfo
+	err := context.BindJSON(&curriculumClassInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	classNumber := curriculumClassInfo.ClassNumber
+	levelNumber := curriculumClassInfo.LevelNumber
+	code := curriculumClassInfo.Code
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	var userData authModels.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateClass models.CurriculumClass
+	db := config.DB
+	if duplicate := config.DB.
+		Where("class_number = ?", classNumber).
+		Where("curriculum_level_number = ?", levelNumber).
+		First(&duplicateClass).Error; duplicate == nil {
+
+		//check if this class has children such that it is not deleted
+
+		/*var classChildrenChecker models.ClassLevelSubject
+		if err := db.
+			Where("class_level_number = ?", duplicateClass.Number).
+			First(&classChildrenChecker).Error; err == nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Class, it has Children"})
+			return
+		}*/
+
+		//------------------------------------------------------
+		//delete class if it is removed from the level
+		db.Unscoped().Where("class_number = ?", classNumber).
+			Where("curriculum_level_number = ?", levelNumber).
+			Delete(&duplicateClass)
+		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
+		return
+	}
+
+	saveClass := models.CurriculumClass{
+		Number:                uuid.NewV4().String(),
+		ClassNumber:           classNumber,
+		CurriculumLevelNumber: levelNumber,
+		UserNumber:            userNumber,
+		Code:                  code,
+	}
+	config.DB.Save(&saveClass)
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
 
 func FetchClasses(context *gin.Context) {
 
 	level := context.Query("level")
 
-	var levels []levelModels.LearningLevel
-	var levels_ []responses.LearningLevelDataList
+	var levels []levelModels.Level
+	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
-		Scopes(levelDataFilter(level)).
+		Scopes(levelInfoDataFilter(level)).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
@@ -250,7 +339,7 @@ func FetchClasses(context *gin.Context) {
 				})
 			}
 
-			levels_ = append(levels_, responses.LearningLevelDataList{
+			levels_ = append(levels_, responses2.ClassLevelList{
 				Number:        list.Number,
 				Name:          list.Name,
 				Code:          list.Code,
@@ -263,26 +352,30 @@ func FetchClasses(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levels_})
 }
 
-func FetchSchemeOfWorkClasses(context *gin.Context) {
+func FetchCurriculumClasses(context *gin.Context) {
 
 	level := context.Query("level")
+	curriculumNumber := context.Query("curriculum_number")
 
-	var levels []levelModels.LearningLevel
+	var levels []levelModels.CurriculumLevel
+	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
-		Scopes(levelDataFilter(level)).
+		Scopes(levelInfoFilter(level)).
+		Where("curriculum_Number = ?", curriculumNumber).
+		Preload("Level").
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
 		return
 	}
 
-	var classes_ []responses.ClassDataList
 	for _, list := range levels {
 
-		var classes []models.Class
-
+		var classes []models.CurriculumClass
+		var classes_ []responses.ClassDataList
 		if err := config.DB.
-			Where("level_number = ?", list.Number).
+			Where("curriculum_level_number = ?", list.Number).
+			Preload("Class").
 			Order("code asc").
 			Find(&classes).Error; err != nil {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
@@ -293,32 +386,35 @@ func FetchSchemeOfWorkClasses(context *gin.Context) {
 			for _, lst := range classes {
 				classes_ = append(classes_, responses.ClassDataList{
 					Number:       lst.Number,
-					Name:         lst.Name,
+					Name:         lst.Class.Name,
+					ClassNumber:  lst.Class.Number,
 					Code:         lst.Code,
-					Abbreviation: lst.Abbreviation,
+					Abbreviation: lst.Class.Abbreviation,
 					UserNumber:   lst.UserNumber,
-					LevelNumber:  lst.LevelNumber,
 				})
 			}
 
-			/*levels_ = append(levels_, responses.LearningLevelDataList{
+			levels_ = append(levels_, responses2.ClassLevelList{
 				Number:        list.Number,
-				Name:          list.Name,
+				Name:          list.Level.Name,
 				Code:          list.Code,
 				UserNumber:    list.UserNumber,
 				ClassDataList: classes_,
-			})*/
+			})
 		}
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": levels_})
 }
 
-func FetchClassesCurriculum(context *gin.Context) {
+func FilterCurriculumClasses(context *gin.Context) {
+
+	level := context.Query("level")
 
 	var classes []models.Class
 	var classes_ []responses.ClassDataList
 	if err := config.DB.
+		Where("level_number = ?", level).
 		Order("code asc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
@@ -339,31 +435,143 @@ func FetchClassesCurriculum(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
 }
 
-func FetchClassesToAdd(context *gin.Context) {
+func FetchSchemeOfWorkClasses(context *gin.Context) {
 
 	level := context.Query("level")
+	campusNumber := context.Query("campus_number")
 
-	var levelData models2.Level
+	//fetch curriculum under campus
+	var campus campusModel.Campus
 	if err := config.DB.
-		Where("number = ?", level).
-		First(&levelData).Error; err != nil {
+		Where("number = ?", campusNumber).
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
+		Order("created_at desc").
+		First(&campus).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})
+		return
+	}
+
+	levelNo := ""
+
+	if level != "" {
+		//fetch levels under campus
+		var campusLevelInfo levelModels.CampusLevel
+		if err := config.DB.
+			Where("number = ?", level).
+			First(&campusLevelInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level found"})
+			return
+		}
+		levelNo = campusLevelInfo.CurriculumLevelNumber
+	}
+
+	//fetch curriculum classes
+	var classes []models.CurriculumClass
+	var classes_ []responses.ClassDataList
+	if err := config.DB.
+		Scopes(levelDataFilter(levelNo)).
+		Where("curriculum_levels.curriculum_number = ?", campus.SchoolCurriculum.CurriculumNumber).
+		Joins("join curriculum_levels on curriculum_levels.number = curriculum_classes.curriculum_level_number").
+		Joins("join classes on curriculum_classes.class_number = classes.number").
+		Preload("CurriculumLevel").
+		Preload("Class").
+		Order("code asc").
+		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
 		return
 	}
 
-	var classes []models.Class
+	for _, lst := range classes {
+		classes_ = append(classes_, responses.ClassDataList{
+			Number:       lst.Number,
+			Name:         lst.Class.Name,
+			Code:         lst.Code,
+			Abbreviation: lst.Class.Abbreviation,
+			UserNumber:   lst.UserNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
+}
+
+func FetchClassesCurriculum(context *gin.Context) {
+	curriculumNumber := context.Query("curriculum_number")
+	var classes []models.CurriculumClass
+	var classes_ []responses.ClassDataList
 	if err := config.DB.
-		Scopes(levelFilter(levelData.LearningLevelNumber)).
+		Where("curriculum_levels.curriculum_number = ?", curriculumNumber).
+		Joins("join curriculum_levels on curriculum_levels.number = curriculum_classes.curriculum_level_number").
+		Joins("join classes on curriculum_classes.class_number = classes.number").
+		Preload("CurriculumLevel").
+		Preload("Class").
 		Order("code asc").
 		Find(&classes).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+	for _, lst := range classes {
+		classes_ = append(classes_, responses.ClassDataList{
+			Number:       lst.Number,
+			Name:         lst.Class.Name,
+			ClassNumber:  lst.Class.Number,
+			Code:         lst.Code,
+			Abbreviation: lst.Class.Abbreviation,
+			UserNumber:   lst.UserNumber,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
+}
+
+func FetchClassesToAdd(context *gin.Context) {
+
+	level := context.Query("level")
+
+	var campusLevelData levelModels.CampusLevel
+	if err := config.DB.
+		Where("number = ?", level).
+		Preload("CurriculumLevel").
+		First(&campusLevelData).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
+		return
+	}
+
+	var curriculumClasses []models.CurriculumClass
+	var curriculumClasses_ []responses.ClassLevelInfo
+	if err := config.DB.
+		Where("curriculum_level_number = ?", campusLevelData.CurriculumLevelNumber).
+		Preload("Class").
+		Order("code asc").
+		Find(&curriculumClasses).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
+	for _, lst := range curriculumClasses {
+		curriculumClasses_ = append(curriculumClasses_, responses.ClassLevelInfo{
+			Number:       lst.Number,
+			Name:         lst.Class.Name,
+			ClassNumber:  lst.Class.Number,
+			Code:         lst.Code,
+			Abbreviation: lst.Class.Abbreviation,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculumClasses_})
 }
 
 func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if level != "" {
+			return db.Where("curriculum_level_number = ?", level)
+		}
+		return db
+	}
+}
+
+func levelInfoDataFilter(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if level != "" {
 			return db.Where("number = ?", level)
@@ -372,7 +580,7 @@ func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func levelFilter(level string) func(db *gorm.DB) *gorm.DB {
+func levelInfoFilter(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if level != "" {
 			return db.Where("level_number = ?", level)
@@ -386,24 +594,25 @@ func FetchClassLevel(context *gin.Context) {
 	levelNumber := context.Query("level_number")
 	campusNumber := context.Query("campus_number")
 
-	if levelNumber == "" {
+	/*	if levelNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level Number is required!"})
 		return
-	}
+	}*/
 
 	if campusNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "campus Number is required!"})
 		return
 	}
 
-	var classLevel []models.ClassLevel
+	var classLevel []models.CampusClass
 	var classLevels []responses.ClassLevelInfo
 
 	if err := config.DB.
-		Where("level_number = ?", levelNumber).
+		Scopes(levelClassFilter(levelNumber)).
 		Where("campus_number = ?", campusNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
 		Preload("Streams").
-		Preload("Class").
 		Order("code asc").
 		Find(&classLevel).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
@@ -421,20 +630,31 @@ func FetchClassLevel(context *gin.Context) {
 		}
 
 		classLevels = append(classLevels, responses.ClassLevelInfo{
-			Number:       lst.Number,
-			Name:         lst.Class.Name,
-			ClassNumber:  lst.Class.Number,
-			Abbreviation: lst.Class.Abbreviation,
-			Streams:      stream_,
+			Number:                lst.Number,
+			Name:                  lst.CurriculumClass.Class.Name,
+			ClassNumber:           lst.CurriculumClass.Class.Number,
+			Abbreviation:          lst.CurriculumClass.Class.Abbreviation,
+			CurriculumClassNumber: lst.CurriculumClassNumber,
+			Code:                  lst.Code,
+			Streams:               stream_,
 		})
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classLevels})
 }
 
+func levelClassFilter(levelNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if levelNumber != "" {
+			return db.Where("campus_level_number = ?", levelNumber)
+		}
+		return db
+	}
+}
+
 func FetchClassSubjects(context *gin.Context) {
 
-	levelNumber := context.Query("level_number")
+	//levelNumber := context.Query("level_number")
 	classNumber := context.Query("class_number")
 
 	/*	if levelNumber == "" {
@@ -446,10 +666,11 @@ func FetchClassSubjects(context *gin.Context) {
 	var subjects_ []models.SubjectInfo
 	if err := config.DB.
 		Scopes(classFilter(classNumber)).
-		Where("class_levels.level_number = ?", levelNumber).
-		Joins("join class_levels on class_levels.number = class_level_subjects.class_level_number").
-		Preload("ClassLevel.Class").
-		Preload("ClassLevel").
+		//Where("campus_classes.level_number = ?", levelNumber).
+		Joins("join campus_classes on campus_classes.number = class_level_subjects.class_level_number").
+		Preload("CampusClass.CurriculumClass.Class").
+		Preload("CampusClass.CurriculumClass").
+		Preload("CampusClass").
 		Preload("Subject").
 		Order("created_at desc").
 		Find(&classSubjects).Error; err != nil {
@@ -461,8 +682,8 @@ func FetchClassSubjects(context *gin.Context) {
 		subjects_ = append(subjects_, models.SubjectInfo{
 			SubjectNumber: item.Subject.Number,
 			Name:          item.Subject.Name,
-			Class:         item.ClassLevel.Class.Name,
-			Abbreviation:  item.ClassLevel.Class.Abbreviation,
+			Class:         item.ClassLevel.CurriculumClass.Class.Name,
+			Abbreviation:  item.ClassLevel.CurriculumClass.Class.Abbreviation,
 		})
 
 	}
@@ -612,5 +833,23 @@ func FetchStreamsByClassLevelNumber(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": streams})
+
+}
+
+func FetchClassesByCampusNumber(ctx *gin.Context) {
+
+	campusNumber := ctx.Param("campus_number")
+
+	var campusClasses []classModel.CampusClass
+
+	err := config.DB.
+		Where("campus_number = ?", campusNumber).
+		Find(&campusClasses).Error
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Classes!"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": campusClasses})
 
 }
