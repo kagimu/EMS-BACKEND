@@ -772,6 +772,11 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 		return
 	}
 
+	fmt.Println("---------------------------------")
+	fmt.Println("======1==>" + schemeInfo.SubTopic + " >==1=====")
+	fmt.Println("===2===>" + subjectInfo.CurriculumNumber + " >==2===")
+	fmt.Println("---------------------------------")
+
 	//then fetch subtopic by curriculum and its  name
 	var subtopic models2.SubTopic
 	if err := tx.
@@ -779,7 +784,7 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 		Where("curriculum_number = ?", subjectInfo.CurriculumNumber).
 		First(&subtopic).Error; err != nil {
 		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!!"})
 		return
 	}
 
