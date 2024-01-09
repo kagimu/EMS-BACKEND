@@ -256,6 +256,8 @@ func SetupRoute() *gin.Engine {
 		learningMaterials := main.Group("/learning-materials")
 		{
 			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.POST("sub-type", learningMaterialsControllers.CreateMaterialSubType)
+			learningMaterials.GET("sub-types/:category", learningMaterialsControllers.FetchMaterialSubTypesByCategory)
 			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
 			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
 		}
