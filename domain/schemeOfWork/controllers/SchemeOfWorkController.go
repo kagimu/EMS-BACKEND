@@ -10,6 +10,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
+	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
@@ -742,7 +743,6 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 
 func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, userNumber string, schemeNumber string, classNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
 
-	//for _, schemeList := range subtopicList {
 	codeNo, err := strconv.ParseInt(schemeInfo.SortingCode, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -761,59 +761,35 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 
 	//fetch scheme of work
 	//----------------
-
-	var campusClassInfo models3.CampusClass
-	if err := config.DB.
-		Where("number = ?", classNumber).
-		Preload("CurriculumClass.Class").
-		Preload("CurriculumClass").
-		Preload("Streams").
-		Order("code asc").
-		First(&campusClassInfo).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+	//first identify which curriculum is on this subject
+	var subjectInfo subjectModel.Subject
+	if err := tx.
+		Where("number = ?", subjectNumber).
+		First(&subjectInfo).Error; err != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
 		return
 	}
 
+	//then fetch subtopic by curriculum and its  name
 	var subtopic models2.SubTopic
-	var subTopicInfo_ responses.SubTopicList
 	if err := tx.
-		Where("topics.curriculum_class_number = ?", campusClassInfo.CurriculumClassNumber).
 		Where("name = ?", schemeInfo.SubTopic).
-		Joins("join topics on topics.number = sub_topics.topic_number").
-		Preload("Topic.Strand.Subject").
-		Preload("Topic.Strand").
-		Preload("Topic").
-		Order("code asc").
+		Where("curriculum_number = ?", subjectInfo.CurriculumNumber).
 		First(&subtopic).Error; err != nil {
 		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!!"})
 		return
-	}
-
-	if subjectNumber == subtopic.Topic.Strand.Subject.Number {
-		subTopicInfo_ = responses.SubTopicList{
-			Number:        subtopic.Number,
-			Code:          subtopic.Code,
-			SortCode:      int64(idx + 1),
-			Name:          subtopic.Name,
-			UserNumber:    subtopic.UserNumber,
-			EstimatedTime: subtopic.EstimatedTime,
-			TopicNumber:   subtopic.TopicNumber,
-			TopicName:     subtopic.Topic.Name,
-			StrandNumber:  subtopic.Topic.Strand.Number,
-			StrandName:    subtopic.Topic.Strand.Name,
-		}
 	}
 
 	//-----------------------
-
 	schemeNo := uuid.NewV4().String()
 	saveSchemeOfWorkSubtopic := schemeOfWorkModel.SchemeOfWorkSubTopic{
 		Number:             schemeNo,
 		Code:               codeNo,
-		EstimatedTime:      subTopicInfo_.EstimatedTime,
-		SchemeOfWorkNumber: subTopicInfo_.Number,
-		SubTopicNumber:     schemeNumber,
+		SubTopicNumber:     subtopic.Number,
+		EstimatedTime:      subtopic.EstimatedTime,
+		SchemeOfWorkNumber: schemeNumber,
 		UserNumber:         userNumber,
 	}
 	if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {

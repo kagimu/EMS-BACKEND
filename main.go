@@ -6,6 +6,7 @@ import (
 	"fmt"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 
@@ -42,7 +43,6 @@ import (
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
