@@ -41,6 +41,8 @@ func CreatePayment(c *gin.Context) {
 		ApplicationNumber: applicationNumber,
 		Amount:            payload.Amount,
 		Status:            payload.Status,
+		SlipSerialNumber:  payload.SlipSerialNumber,
+		ApprovedBy:        payload.ApprovedBy,
 		Details:           payload.Details,
 		Date:              payload.Date,
 		Method:            payload.Method,
