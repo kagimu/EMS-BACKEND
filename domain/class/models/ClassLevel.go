@@ -23,14 +23,16 @@ type (
 		User                  models.User         `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		ClassName             string              `json:"class_name" gorm:"-"`
 		LevelName             string              `json:"level_name" gorm:"-"`
+		ClassNumber           string              `json:"class_number" gorm:"-"`
 		Streams               []Stream            `gorm:"foreignKey:ClassLevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )
 
 func (classLevel *CampusClass) AfterFind(tx *gorm.DB) (err error) {
-	var class Class
-	//tx.Model(&classLevel.Class).Where("number = ?", classLevel.ClassNumber).First(&class)
-	classLevel.ClassName = class.Name
+	var class CurriculumClass
+	tx.Model(&CurriculumClass{}).Where("number = ?", classLevel.CurriculumClassNumber).Preload("Class").First(&class)
+	classLevel.ClassName = class.Class.Name
+	classLevel.ClassNumber = class.Class.Number
 
 	return
 }
