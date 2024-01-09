@@ -762,6 +762,7 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 	//fetch scheme of work
 	//----------------
 
+	//first identify which curriculum is on this subject
 	var subjectInfo subjectModel.Subject
 	if err := tx.
 		Where("number = ?", subjectNumber).
@@ -771,6 +772,7 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 		return
 	}
 
+	//then fetch subtopic by curriculum and its  name
 	var subtopic models2.SubTopic
 	if err := tx.
 		Where("name = ?", schemeInfo.SubTopic).
