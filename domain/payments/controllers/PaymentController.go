@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
-	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -28,22 +28,22 @@ func CreatePayment(c *gin.Context) {
 		return
 	}
 
-	studentNumber := payload.StudentNumber
-	var student studentModel.Student
-	if err := config.DB.Where("number = ?", studentNumber).First(&student).Error; err != nil {
+	applicationNumber := payload.ApplicationNumber
+	var application applicationModel.Application
+	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Student not found"})
 		return
 	}
 
 	savePayment := models.Payment{
-		Number:        uuid.NewV4().String(),
-		StudentNumber: studentNumber,
-		Amount:        payload.Amount,
-		Status:        payload.Status,
-		Details:       payload.Details,
-		Date:          payload.Date,
-		Method:        payload.Method,
+		Number:            uuid.NewV4().String(),
+		ApplicationNumber: applicationNumber,
+		Amount:            payload.Amount,
+		Status:            payload.Status,
+		Details:           payload.Details,
+		Date:              payload.Date,
+		Method:            payload.Method,
 	}
 
 	tx := config.DB.Begin()
