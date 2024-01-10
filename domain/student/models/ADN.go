@@ -2,7 +2,7 @@ package models
 
 import "gorm.io/gorm"
 
-// Tracks the ADN unique string in the Admission model
+// Tracks and generates the ADN string in the Student model
 // DO NOT INSERT TO THIS TABLE
 type ADN struct {
 	gorm.Model

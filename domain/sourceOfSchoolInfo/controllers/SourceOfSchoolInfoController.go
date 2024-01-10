@@ -5,6 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -82,27 +83,21 @@ func EditSourceOfSchoolInfo(c *gin.Context) {
 		Name string `json:"name"`
 	}
 
-	var sourceOfSchoolInfo SourceOfSchoolInfo
-	err := c.BindJSON(&sourceOfSchoolInfo)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var sourceOfSchoolInfo SourceOfSchoolInfo
+	if err := c.BindJSON(&sourceOfSchoolInfo); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
 	name := sourceOfSchoolInfo.Name
 	if name == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-	userNumber := c.Request.Header["User-Number"][0]
-	var user authModels.User
-
-	if err := config.DB.
-		Where("number = ?", userNumber).
-		First(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"err":     err.Error(),
-			"message": "User not found"})
 		return
 	}
 
@@ -114,11 +109,12 @@ func EditSourceOfSchoolInfo(c *gin.Context) {
 		First(&sourceOfSchoolInfoModel).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"err":     err.Error(),
-			"message": "source of school info not found"})
+			"message": "Source of school info not found"})
 		return
 	}
 
 	var duplicateSourceOfSchoolInfoModel models.SourceOfSchoolInfo
+	userNumber := user.Number
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("user_number = ?", userNumber).
