@@ -187,6 +187,7 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 		}
 	}()
 
+	//get sheet name dynamically
 	sheetName := f.GetSheetList()
 
 	// Get all the rows in the Sheet1.
