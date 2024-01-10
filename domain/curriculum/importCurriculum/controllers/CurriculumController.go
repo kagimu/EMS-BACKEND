@@ -221,6 +221,7 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 				ConceptCode:        getValueAtIndex(row, 14),
 				Concept:            getValueAtIndex(row, 15),
 			}
+			curriculumInfo.Prepare()
 			saveCurriculumData(curriculumInfo, idx, userNumber, curriculumNumber)
 		}
 	}
