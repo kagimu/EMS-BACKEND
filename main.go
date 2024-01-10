@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+
 	"log"
 	"os"
 
@@ -28,6 +30,7 @@ import (
 	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
+	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
 	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
@@ -139,14 +142,16 @@ func main() {
 		&previousSchoolModels.PreviousSchool{},
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
+		&studentModels.ADN{},
 		&serviceModels.Service{},
 		&preInterviewModels.PreAdmissionInterviewTest{},
 		&gradeModel.Grade{},
 		&admissionModel.Admission{},
-		&admissionModel.ADN{},
 		&previousSchoolModels.PreviousSchoolClass{},
 		&models3.CurriculumSubtopicReference{},
 		&schemeOfWorkmodel.SchemeOfWorkImport{},
+		&paymentModels.Payment{},
+		&preInterviewModels.PreAdmissionInterviewTestReport{},
 	)
 
 	if errMigrate != nil {

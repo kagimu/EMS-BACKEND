@@ -19,6 +19,8 @@ import (
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
+	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
+	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
@@ -241,7 +243,7 @@ func SetupRoute() *gin.Engine {
 			application.POST("/new-student", studentController.CreateStudent)
 			application.GET("/students/:apn", studentController.FetchStudentByAPN)
 			application.GET("/students", studentController.FetchAllStudents)
-			application.PATCH("/students/:id", studentController.UpdateStudent)
+			application.PUT("/students/:apn", studentController.EditStudent)
 			application.POST("/students/:id", studentController.DeleteStudent)
 
 			// previous schools
@@ -251,6 +253,7 @@ func SetupRoute() *gin.Engine {
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
 			application.GET("", applicationController.FetchApplicationsByStatus)
+			application.PUT("/:application_number", applicationController.EditApplication)
 		}
 
 		learningMaterials := main.Group("/learning-materials")
@@ -258,6 +261,18 @@ func SetupRoute() *gin.Engine {
 			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
 			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
 			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
+		}
+
+		payments := main.Group("/payments")
+		{
+			payments.POST("", paymentsController.CreatePayment)
+		}
+
+		preAdmissionInterview := main.Group("/pre-interview-reports")
+		{
+			preAdmissionInterview.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
+			preAdmissionInterview.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
+			preAdmissionInterview.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
 		}
 	}
 	//router.GET("/profile/:name", profile)
