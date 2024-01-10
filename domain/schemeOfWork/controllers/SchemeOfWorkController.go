@@ -722,8 +722,11 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 		}
 	}()
 
+	//get sheet name dynamically
+	sheetName := f.GetSheetList()
+
 	// Get all the rows in the Sheet1.
-	rows, err := f.GetRows("Sheet1")
+	rows, err := f.GetRows(sheetName[0])
 	if err != nil {
 		fmt.Println(err)
 		return

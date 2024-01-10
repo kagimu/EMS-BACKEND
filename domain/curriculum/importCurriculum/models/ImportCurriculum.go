@@ -2,20 +2,19 @@ package models
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"time"
+	"gorm.io/gorm"
+	"html"
+	"strings"
 )
 
 type (
 	ImportCurriculum struct {
-		ID               uint        `gorm:"primaryKey"`
+		gorm.Model
 		Number           string      `json:"number" gorm:"size:36;unique;not null"`
 		Name             string      `json:"name" form:"name" binding:"required" gorm:"size:200;not null"`
 		FileName         string      `json:"file_name" form:"file_name" binding:"required" gorm:"size:200;not null"`
 		CurriculumNumber string      `json:"curriculum_number" gorm:"size:36;not null"`
 		UserNumber       string      `json:"user_number" gorm:"size:36;not null"`
-		CreatedAt        time.Time   `json:"created_at"`
-		UpdatedAt        time.Time   `json:"updated_at"`
-		DeletedAt        *time.Time  `sql:"index"`
 		Curriculum       Curriculum  `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User             models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
@@ -38,12 +37,26 @@ type (
 		EstimatedTime      string
 		ConceptCode        string
 	}
-
-	/*SubjectsInfo struct {
-		Number string `json:"number"`
-		Name   string `json:"name"`
-	}*/
 )
+
+func (p *ExcelCurriculumInfo) Prepare() {
+	p.LearningArea = html.EscapeString(strings.TrimSpace(strings.ToLower(p.LearningArea)))
+	p.SubjectCluster = html.EscapeString(strings.TrimSpace(strings.ToLower(p.SubjectCluster)))
+	p.Subject = html.EscapeString(strings.TrimSpace(strings.ToLower(p.Subject)))
+	p.Class = html.EscapeString(strings.TrimSpace(strings.ToLower(p.Class)))
+	p.Strand = html.EscapeString(strings.TrimSpace(strings.ToLower(p.Strand)))
+	p.Topic = html.EscapeString(strings.TrimSpace(strings.ToLower(p.Topic)))
+	p.SubTopic = html.EscapeString(strings.TrimSpace(strings.ToLower(p.SubTopic)))
+	p.Concept = html.EscapeString(strings.TrimSpace(strings.ToLower(p.Concept)))
+	p.LearningAreaCode = html.EscapeString(strings.TrimSpace(strings.ToLower(p.LearningAreaCode)))
+	p.SubjectClusterCode = html.EscapeString(strings.TrimSpace(strings.ToLower(p.SubjectClusterCode)))
+	p.SubjectCode = html.EscapeString(strings.TrimSpace(strings.ToLower(p.SubjectCode)))
+	p.StrandCode = html.EscapeString(strings.TrimSpace(strings.ToLower(p.StrandCode)))
+	p.TopicCode = html.EscapeString(strings.TrimSpace(strings.ToLower(p.TopicCode)))
+	p.SubTopicCode = html.EscapeString(strings.TrimSpace(strings.ToLower(p.SubTopicCode)))
+	p.EstimatedTime = html.EscapeString(strings.TrimSpace(strings.ToLower(p.EstimatedTime)))
+	p.ConceptCode = html.EscapeString(strings.TrimSpace(strings.ToLower(p.ConceptCode)))
+}
 
 func (u *ImportCurriculum) TableName() string {
 	return "import_curriculums"
