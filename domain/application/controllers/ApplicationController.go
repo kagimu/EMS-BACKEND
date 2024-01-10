@@ -5,13 +5,13 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
-	userfromheader "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/userFromHeader"
 	"github.com/gin-gonic/gin"
 )
 
 func FetchApplication(c *gin.Context) {
-	_, err := userfromheader.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
@@ -40,7 +40,7 @@ func FetchApplication(c *gin.Context) {
 }
 
 func FetchApplications(c *gin.Context) {
-	if _, err := userfromheader.GetUserFromHeader(c); err != nil {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
 		})
@@ -49,16 +49,20 @@ func FetchApplications(c *gin.Context) {
 
 	paginationParams := helpers.ParsePaginationParams(c)
 
-	// Using the Student model and append the associated application
-	// instead of the other way round
-
 	var applications []models.Application
-	query := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications)
+	query := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchools")
 
 	_, err := helpers.Paginate(query, paginationParams)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Pagination failed",
+		})
+		return
+	}
+
+	if err := query.Find(&applications).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "application fetching failed",
 		})
 		return
 	}
@@ -71,7 +75,7 @@ func FetchApplications(c *gin.Context) {
 }
 
 func FetchApplicationsByStatus(c *gin.Context) {
-	_, err := userfromheader.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
@@ -92,5 +96,63 @@ func FetchApplicationsByStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"data":    applications,
 		"message": "applications fetched successfully",
+	})
+}
+
+func EditApplication(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "User not found",
+		})
+		return
+	}
+
+	type ApplicationInfo struct {
+		Status                string `json:"status"`
+		ApplicationFeePayment bool   `json:"application_fee_payment"`
+	}
+
+	var payload ApplicationInfo
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to process input",
+		})
+		return
+	}
+
+	if payload.Status == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Status is required",
+		})
+		return
+	}
+
+	var application models.Application
+	var applicationNumber = c.Param("application_number")
+
+	if err := config.DB.First(&application, "number = ?", applicationNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  http.StatusNotFound,
+			"message": "No application found with the specified number",
+		})
+		return
+	}
+
+	updateApplication := models.Application{
+		Status:                payload.Status,
+		ApplicationFeePayment: payload.ApplicationFeePayment,
+	}
+
+	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplication).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "application updating failed",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":    application,
+		"message": "Application updated successfully",
 	})
 }
