@@ -186,16 +186,11 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 			fmt.Println(err)
 		}
 	}()
-	// Get value from cell by given worksheet name and cell reference.
-	//cell, err := f.GetCellValue("Sheet1", "B2")
-	/*cell, err := f.GetCellValue("Sheet1", "A1")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(cell)*/
+
+	sheetName := f.GetSheetList()
+
 	// Get all the rows in the Sheet1.
-	rows, err := f.GetRows("Sheet1")
+	rows, err := f.GetRows(sheetName[0])
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -225,8 +220,6 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 			saveCurriculumData(curriculumInfo, idx, userNumber, curriculumNumber)
 		}
 	}
-
-	//fmt.Println(curriculumInfo)
 
 }
 
