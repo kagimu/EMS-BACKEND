@@ -41,7 +41,7 @@ func (i Info) SendEmail() {
 	result := buff.String()
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", "")
+	m.SetHeader("From", "andysteve2222@gmail.com")
 	m.SetHeader("To", i.Email)
 	m.SetHeader("Subject", i.MailType)
 	//m.SetAddressHeader("Cc", "dan@example.com", "Dan")
@@ -49,7 +49,7 @@ func (i Info) SendEmail() {
 	m.SetBody("text/html", result)
 	//m.Attach("/home/Alex/lolcat.jpg")
 
-	d := gomail.NewDialer("smtp.gmail.com", 587, "", "")
+	d := gomail.NewDialer("smtp.gmail.com", 587, "andysteve2222@gmail.com", "rhknebyyuqbqfity")
 
 	// Send the email to Bob, Cora and Dan.
 	if err := d.DialAndSend(m); err != nil {
