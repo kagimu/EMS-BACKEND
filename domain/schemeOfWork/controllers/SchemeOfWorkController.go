@@ -784,9 +784,7 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber 
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!!"})
 		return
 	}
-	fmt.Println("--------------------------------------")
-	fmt.Println(subtopic)
-	fmt.Println("--------------------------------------")
+
 	//-----------------------
 	schemeNo := uuid.NewV4().String()
 	saveSchemeOfWorkSubtopic := schemeOfWorkModel.SchemeOfWorkSubTopic{
