@@ -4,6 +4,7 @@ import (
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
+	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
@@ -17,9 +18,11 @@ import (
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
+	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
+	preAdmissionInterviewTestController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
@@ -28,7 +31,7 @@ import (
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
-	studentDetails "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
+	studentDetailsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
@@ -190,8 +193,12 @@ func SetupRoute() *gin.Engine {
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
 		}
 
-		//Student Admission
-		main.POST("new-student-details-admission", studentDetails.NewStudentDetails)
+		// Student details
+		studentDetails := main.Group("/student-details")
+		{
+			studentDetails.POST("/:student_number", studentDetailsController.CreateStudentDetails)
+			studentDetails.PUT("/:student_number", studentDetailsController.EditStudentDetails)
+		}
 
 		//timetable routes
 		timetable := main.Group("/timetable")
@@ -270,13 +277,30 @@ func SetupRoute() *gin.Engine {
 			payments.POST("", paymentsController.CreatePayment)
 		}
 
-		preAdmissionInterview := main.Group("/pre-interview-reports")
+		preAdmissionInterviewTestReport := main.Group("/pre-admission-test-interview-reports")
 		{
-			preAdmissionInterview.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
-			preAdmissionInterview.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
-			preAdmissionInterview.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
+			preAdmissionInterviewTestReport.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
+			preAdmissionInterviewTestReport.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
+			preAdmissionInterviewTestReport.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
+		}
+
+		preAdmissionInterviewTest := main.Group("/pre-admission-interview-tests")
+		{
+			preAdmissionInterviewTest.POST("", preInterviewController.CreatePreAdmissionInterviewTest)
+		}
+
+		interview := main.Group("/interviews")
+		{
+			interview.POST("", interviewController.CreateInterview)
+			interview.GET("/all", interviewController.FetchAllInterviews)
+			interview.GET("/:interview_number", interviewController.FetchAnInterview)
+			interview.PUT("/:interview_number", interviewController.EditInterview)
+		}
+
+		admission := main.Group("/admission")
+		{
+			admission.POST("", admissionController.CreateAdmission)
 		}
 	}
-	//router.GET("/profile/:name", profile)
 	return router
 }

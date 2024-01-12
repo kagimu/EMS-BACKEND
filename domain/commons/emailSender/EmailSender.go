@@ -15,12 +15,15 @@ type Info struct {
 	UserName    string
 	CurrentYear int
 	Type        string
+	Data        interface{}
 }
 
-func (i Info) SendEmail() {
+func (i Info) SendEmail() error {
 	templateUrl := ""
 	if i.Type == "registration" {
 		templateUrl = "./fileRepo/templates/registrationTemplate.html"
+	} else if i.Type == "scheduled-interview" {
+		templateUrl = "./fileRepo/templates/notifyInterview.html"
 	} else {
 		templateUrl = "./fileRepo/templates/resetPasswordTemplate.html"
 	}
@@ -51,8 +54,9 @@ func (i Info) SendEmail() {
 
 	d := gomail.NewDialer("smtp.gmail.com", 587, "andysteve2222@gmail.com", "rhknebyyuqbqfity")
 
-	// Send the email to Bob, Cora and Dan.
 	if err := d.DialAndSend(m); err != nil {
-		//panic(err)
+		log.Println("Error sending email:", err)
 	}
+
+	return nil
 }
