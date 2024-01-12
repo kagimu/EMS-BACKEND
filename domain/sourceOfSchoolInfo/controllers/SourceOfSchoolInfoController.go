@@ -90,7 +90,7 @@ func EditSourceOfSchoolInfo(c *gin.Context) {
 	}
 
 	var sourceOfSchoolInfo SourceOfSchoolInfo
-	if err := c.BindJSON(&sourceOfSchoolInfo); err != nil {
+	if err := c.ShouldBindJSON(&sourceOfSchoolInfo); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
