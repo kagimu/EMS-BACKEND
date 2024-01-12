@@ -182,6 +182,8 @@ func Profile(context *gin.Context) {
 		LastName:   userProfile.LastName,
 		Gender:     userProfile.Gender,
 		Contacts:   contactListInfo,
+		Type:       userProfile.Type,
+		Status:     userProfile.Status,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _userProfile})
