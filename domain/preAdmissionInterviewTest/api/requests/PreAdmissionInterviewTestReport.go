@@ -1,6 +1,6 @@
 package requests
 
-type PreAdmissionInterviewTestRequest struct {
+type PreAdmissionInterviewTestReportRequest struct {
 	AdmissionStatus                 string `json:"admission_status"`
 	ApplicationNumber               string `json:"application_number"`
 	ClassNumber                     string `json:"class_number"`

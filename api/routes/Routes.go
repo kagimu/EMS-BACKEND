@@ -20,6 +20,7 @@ import (
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
+	preAdmissionInterviewTestController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
@@ -270,11 +271,16 @@ func SetupRoute() *gin.Engine {
 			payments.POST("", paymentsController.CreatePayment)
 		}
 
-		preAdmissionInterview := main.Group("/pre-interview-reports")
+		preAdmissionInterviewTestReport := main.Group("/pre-admission-test-interview-reports")
 		{
-			preAdmissionInterview.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
-			preAdmissionInterview.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
-			preAdmissionInterview.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
+			preAdmissionInterviewTestReport.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
+			preAdmissionInterviewTestReport.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
+			preAdmissionInterviewTestReport.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
+		}
+
+		preAdmissionInterviewTest := main.Group("/pre-admission-interview-tests")
+		{
+			preAdmissionInterviewTest.POST("", preAdmissionInterviewTestController.CreatePreAdmissionInterviewTest)
 		}
 	}
 	//router.GET("/profile/:name", profile)

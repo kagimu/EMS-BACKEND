@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func FetchApplication(c *gin.Context) {
@@ -29,11 +30,15 @@ func FetchApplication(c *gin.Context) {
 		Where("number = ?", applicationNumber).
 		First(&application).
 		Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"err":     err.Error(),
-			"message": "Application not found",
-		})
-		return
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal server error",
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, application)

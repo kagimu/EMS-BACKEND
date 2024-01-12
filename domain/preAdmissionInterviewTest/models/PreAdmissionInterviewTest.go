@@ -15,12 +15,14 @@ type PreAdmissionInterviewTest struct {
 	StudentNumber string               `json:"student_number" gorm:"size:36;not null"`
 	SubjectNumber string               `json:"subject_number" gorm:"size:36;not null"`
 	Subject       subjectModel.Subject `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Marks         string               `json:"marks" gorm:"size:36;not null"`
+	Marks         int                  `json:"marks" gorm:"size:36;not null"`
 	GradeNumber   string               `json:"grade_number" gorm:"size:36;not null"`
 	Grade         gradeModel.Grade     `gorm:"foreignKey:GradeNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	ClassNumber   string               `json:"preferred_class" gorm:"size:36;not null"`
 	Class         classModel.Class     `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Student       models.Student       `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Location      string               `json:"location" gorm:"size:36;not null"`
+	InterviewDate string               `json:"interview_date" gorm:"size:36;not null"`
 	UserNumber    string               `json:"user_number" gorm:"size:36;not null"`
 	User          authModel.User       `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
