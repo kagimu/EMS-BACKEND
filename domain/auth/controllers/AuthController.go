@@ -50,9 +50,9 @@ func Login(context *gin.Context) {
 	Email = strings.TrimSpace(strings.ToLower(Email))
 
 	//email validation
-	var rxEmail = regexp.MustCompile(".+@.+\\..+")
+	var rxEmail = regexp.MustCompile(`.+@.+\\..+`)
 	match := rxEmail.Match([]byte(Email))
-	if match == false {
+	if !match {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Email!"})
 		return
 	}
@@ -136,6 +136,10 @@ func Login(context *gin.Context) {
 	}*/
 
 	token, err := services.JWTAuthService().GenerateToken(user.Number)
+	if err != nil {
+		context.JSON(http.StatusUnprocessableEntity, gin.H{"message": "An error occurred while generating the token"})
+		return
+	}
 
 	//context.SetCookie("token", token, 60*60*24*7, "/", "", false, true)
 	//context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "data": user, "expires_in": date, "token": token})
@@ -246,9 +250,9 @@ func Register(context *gin.Context) {
 	userEmail = strings.TrimSpace(strings.ToLower(userEmail))
 
 	//email validation
-	var rxEmail = regexp.MustCompile(".+@.+\\..+")
+	var rxEmail = regexp.MustCompile(`.+@.+\\..+`)
 	match := rxEmail.Match([]byte(userEmail))
-	if match == false {
+	if !match {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Email!"})
 		return
 	}
@@ -334,7 +338,7 @@ func Register(context *gin.Context) {
 
 	//email sender
 	Token := userToken
-	d := emailSender.Info{Email: userEmail, Token: Token, MailType: "WholesomeEd: User Account Confirmation", UserName: secondName, CurrentYear: time.Now().Year(), Type: "registration"}
+	d := emailSender.Info{Email: userEmail, Token: Token, MailType: "WholesomeEd: User Account Confirmation", UserName: secondName, CurrentYear: time.Now().Year(), Type: "registration", Data: ""}
 	d.SendEmail()
 
 	var collection []interface{}
@@ -382,9 +386,9 @@ func ResetPassword(context *gin.Context) {
 	Email = strings.TrimSpace(strings.ToLower(Email))
 
 	//email validation
-	var rxEmail = regexp.MustCompile(".+@.+\\..+")
+	var rxEmail = regexp.MustCompile(`.+@.+\\..+`)
 	match := rxEmail.Match([]byte(Email))
-	if match == false {
+	if !match {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Email!"})
 		return
 	}
@@ -449,12 +453,12 @@ func ResetPassword(context *gin.Context) {
 
 	}
 
-	//email sender
 	d := emailSender.Info{Email: Email, Token: userToken, MailType: "TutorView: User Account Confirmation", UserName: contact.User.SecondName, CurrentYear: time.Now().Year(), Type: "reset-password"}
-	d.SendEmail()
+	if err := d.SendEmail(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email"})
+	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Please check your email to continue resetting your password", "token": userToken})
-
 }
 
 func UserPassword(context *gin.Context) {
