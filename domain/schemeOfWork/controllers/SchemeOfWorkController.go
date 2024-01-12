@@ -738,13 +738,13 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 				SubTopic:    getValueAtIndex(row, 0),
 				SortingCode: getValueAtIndex(row, 1),
 			}
-			saveSchemeOfWorkData(schemeInfo, idx, userNumber, schemeNumber, classNumber, subjectNumber, tx, context)
+			saveSchemeOfWorkData(schemeInfo, userNumber, schemeNumber, subjectNumber, tx, context)
 		}
 	}
 
 }
 
-func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, userNumber string, schemeNumber string, classNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
+func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
 
 	codeNo, err := strconv.ParseInt(schemeInfo.SortingCode, 10, 64)
 	if err != nil {
@@ -784,7 +784,9 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!!"})
 		return
 	}
-
+	fmt.Println("--------------------------------------")
+	fmt.Println(subtopic)
+	fmt.Println("--------------------------------------")
 	//-----------------------
 	schemeNo := uuid.NewV4().String()
 	saveSchemeOfWorkSubtopic := schemeOfWorkModel.SchemeOfWorkSubTopic{
