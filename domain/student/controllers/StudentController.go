@@ -43,9 +43,7 @@ func CreateStudent(c *gin.Context) {
 
 	applicationNumber := payload.ApplicationNumber
 	var application applicationModel.Application
-	if err := config.DB.
-		Where("number = ?", applicationNumber).
-		First(&application).Error; err != nil {
+	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Application not found"})
 		return

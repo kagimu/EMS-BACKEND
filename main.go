@@ -28,6 +28,7 @@ import (
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
+	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
@@ -151,6 +152,7 @@ func main() {
 		&schemeOfWorkmodel.SchemeOfWorkImport{},
 		&paymentModels.Payment{},
 		&preInterviewModels.PreAdmissionInterviewTestReport{},
+		&interviewModel.Interview{},
 		&materialModels.MaterialSubType{},
 	)
 

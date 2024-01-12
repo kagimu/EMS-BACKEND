@@ -5,7 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	"github.com/badoux/checkmail"
@@ -14,6 +14,12 @@ import (
 )
 
 func CreateParent(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+		return
+	}
+
 	var parent requests.ParentRequest
 
 	if err := c.ShouldBindJSON(&parent); err != nil {
@@ -33,20 +39,10 @@ func CreateParent(c *gin.Context) {
 		return
 	}
 
-	userNumber := c.Request.Header["User-Number"][0]
-
-	var user authModel.User
-	if err := config.DB.
-		Where("number = ?", userNumber).
-		First(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
-		return
-	}
-
 	tx := config.DB.Begin()
 	saveApplication := applicationModel.Application{
 		Number:     uuid.NewV4().String(),
-		UserNumber: userNumber,
+		UserNumber: user.Number,
 	}
 
 	if err := tx.Create(&saveApplication).Error; err != nil {
@@ -67,7 +63,7 @@ func CreateParent(c *gin.Context) {
 		AlternativeTelephoneNumber: parent.AlternativeTelephoneNumber,
 		Email:                      parent.Email,
 		AlternativeEmail:           parent.AlternativeEmail,
-		UserNumber:                 userNumber,
+		UserNumber:                 user.Number,
 		ApplicationNumber:          saveApplication.Number,
 	}
 

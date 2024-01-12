@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 )
 
 func CreatePreAdmissionInterviewTest(c *gin.Context) {
@@ -79,13 +80,13 @@ func CreatePreAdmissionInterviewTest(c *gin.Context) {
 	}
 
 	savePreAdmissionInterviewTest := models.PreAdmissionInterviewTest{
-		UserNumber:    user.Number,
-		SubjectNumber: payload.SubjectNumber,
-		Marks:         payload.Marks,
-		GradeNumber:   payload.GradeNumber,
-		ClassNumber:   classNumber,
-		Location:      payload.Location,
-		InterviewDate: payload.InterviewDate,
+		Number:          uuid.NewV4().String(),
+		UserNumber:      user.Number,
+		SubjectNumber:   payload.SubjectNumber,
+		Marks:           payload.Marks,
+		GradeNumber:     payload.GradeNumber,
+		ClassNumber:     classNumber,
+		InterviewNumber: payload.InterviewNumber,
 	}
 
 	if err := config.DB.Create(&savePreAdmissionInterviewTest).Error; err != nil {
