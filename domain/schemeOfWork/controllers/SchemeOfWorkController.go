@@ -785,10 +785,6 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber 
 		return
 	}
 
-	fmt.Println("-------------------------------")
-	fmt.Println(subtopic)
-	fmt.Println("-------------------------------")
-
 	//-----------------------
 	schemeNo := uuid.NewV4().String()
 	saveSchemeOfWorkSubtopic := schemeOfWorkModel.SchemeOfWorkSubTopic{
