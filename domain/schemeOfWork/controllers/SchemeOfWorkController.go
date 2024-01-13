@@ -475,6 +475,8 @@ func DownloadSchemeOfWork(context *gin.Context) {
 				TopicName:     subtopicList.Topic.Name,
 				StrandNumber:  subtopicList.Topic.Strand.Number,
 				StrandName:    subtopicList.Topic.Strand.Name,
+				SubjectNumber: subtopicList.Topic.Strand.Subject.Number,
+				SubjectName:   subtopicList.Topic.Strand.Subject.Name,
 			})
 		}
 	}
@@ -500,34 +502,17 @@ func generateSchemeTemplate(dataInfo []responses.SubTopicList) (string, error) {
 	// Set the sheet name
 	sheetName := "Sheet1"
 
-	err11 := xlsx.SetCellValue(sheetName, columnIndexToLetters(1)+fmt.Sprint(1), "Subtopic")
-	if err11 != nil {
-		return "", err
-	}
-
-	err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(2)+fmt.Sprint(1), "sorting Code")
-	if err1 != nil {
-		return "", err1
-	}
+	//this function will set all headers for excel
+	excelHeaders(sheetName, xlsx)
 
 	// Iterate through the JSON data and write to the Excel file
 	row := 2
 	col := 1
 
 	for _, lst := range dataInfo {
-		// Write the key (JSON field) to the first column
-		err := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.Name)
-		if err != nil {
-			return "", err
-		}
-		col++
 
-		// Write the value to the second column
-		err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.SortCode)
-		if err1 != nil {
-			return "", err1
-		}
-		col++
+		//this function will add data to excel document
+		addExcelInfoData(sheetName, col, row, lst, xlsx)
 
 		// Move to the next row
 		row++
@@ -544,6 +529,90 @@ func generateSchemeTemplate(dataInfo []responses.SubTopicList) (string, error) {
 	}
 	return path, err
 	//fmt.Println("Excel file generated successfully:", path)
+
+}
+
+func addExcelInfoData(sheetName string, col int, row int, lst responses.SubTopicList, xlsx *excelize.File) {
+	//Subject
+	err := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.SubjectName)
+	if err != nil {
+		//return "", err
+	}
+	col++
+	//------------------
+
+	//Strand
+	err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.StrandName)
+	if err1 != nil {
+		//return "", err1
+	}
+	col++
+	//------------------
+
+	//topic
+	err2 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.TopicName)
+	if err2 != nil {
+		//return "", err2
+	}
+	col++
+	//------------------
+
+	//subtopic
+	err3 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.Name)
+	if err3 != nil {
+		//return "", err3
+	}
+	col++
+	//------------------
+
+	//Estimated Time
+	err4 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.EstimatedTime)
+	if err4 != nil {
+		//return "", err4
+	}
+	col++
+	//------------------------
+
+	//sorting code
+	err5 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.SortCode)
+	if err5 != nil {
+		//return "", err5
+	}
+	col++
+	//---------------------------
+}
+
+func excelHeaders(sheetName string, xlsx *excelize.File) {
+
+	err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(1)+fmt.Sprint(1), "Subject")
+	if err1 != nil {
+		//return "", err
+	}
+
+	err2 := xlsx.SetCellValue(sheetName, columnIndexToLetters(2)+fmt.Sprint(1), "Strand")
+	if err2 != nil {
+		//return "", err
+	}
+
+	err3 := xlsx.SetCellValue(sheetName, columnIndexToLetters(3)+fmt.Sprint(1), "Topic")
+	if err3 != nil {
+		//return "", err
+	}
+
+	err4 := xlsx.SetCellValue(sheetName, columnIndexToLetters(4)+fmt.Sprint(1), "Subtopic")
+	if err4 != nil {
+		//return "", err
+	}
+
+	err5 := xlsx.SetCellValue(sheetName, columnIndexToLetters(5)+fmt.Sprint(1), "Estimated Time")
+	if err5 != nil {
+		//return "", err1
+	}
+
+	err6 := xlsx.SetCellValue(sheetName, columnIndexToLetters(6)+fmt.Sprint(1), "sorting Code")
+	if err6 != nil {
+		//return "", err1
+	}
 
 }
 

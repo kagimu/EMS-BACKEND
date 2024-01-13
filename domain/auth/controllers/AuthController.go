@@ -85,7 +85,7 @@ func Login(context *gin.Context) {
 	var user models.User
 	config.DB.Where("number = ?", userNumber).First(&user)
 	if user.Status != "Active" {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Account not Active, please reset password to activate your account"})
+		context.JSON(http.StatusNotFound, gin.H{"message": "Account not Active, please reset password to activate your account!"})
 		return
 	}
 
@@ -554,7 +554,7 @@ func UserPassword(context *gin.Context) {
 		config.DB.Save(&userPasswordData)
 
 	}
-	////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////
 
 	//then we proceed to update the user status
 	updateUserStatus := config.DB.Model(&userData).
@@ -565,7 +565,7 @@ func UserPassword(context *gin.Context) {
 		return
 	}
 
-	/////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////
 
 	//then we update status of the token as well
 	updateTokenStatus := config.DB.Model(&passwordReset).
