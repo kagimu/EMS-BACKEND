@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -117,7 +118,6 @@ func Login(context *gin.Context) {
 	}
 
 	_userProfile := responses.GetUserList{
-		ID:         userProfile.ID,
 		Number:     userProfile.Number,
 		FirstName:  userProfile.FirstName,
 		SecondName: userProfile.SecondName,
@@ -125,6 +125,7 @@ func Login(context *gin.Context) {
 		Gender:     userProfile.Gender,
 		Type:       userProfile.Type,
 	}
+	fmt.Println(_userProfile.Type)
 
 	//we generate jwt token
 	//serialized := user.Serialize()
@@ -175,13 +176,14 @@ func Profile(context *gin.Context) {
 	}
 
 	_userProfile := responses.GetUserList{
-		ID:         userProfile.ID,
 		Number:     userProfile.Number,
 		FirstName:  userProfile.FirstName,
 		SecondName: userProfile.SecondName,
 		LastName:   userProfile.LastName,
 		Gender:     userProfile.Gender,
 		Contacts:   contactListInfo,
+		Type:       userProfile.Type,
+		Status:     userProfile.Status,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _userProfile})
