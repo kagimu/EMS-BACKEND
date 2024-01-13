@@ -84,7 +84,7 @@ func Login(context *gin.Context) {
 	var user models.User
 	config.DB.Where("number = ?", userNumber).First(&user)
 	if user.Status != "Active" {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Account not Active, please reset password to activate your account"})
+		context.JSON(http.StatusNotFound, gin.H{"message": "Account not Active, please reset password to activate your account!"})
 		return
 	}
 
