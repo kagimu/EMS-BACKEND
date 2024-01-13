@@ -804,8 +804,8 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 	for idx, row := range rows {
 		if idx > 0 {
 			schemeInfo := requests.ExcelSchemeOfWorkInfo{
-				SubTopic:    getValueAtIndex(row, 0),
-				SortingCode: getValueAtIndex(row, 1),
+				SubTopic:    getValueAtIndex(row, 3),
+				SortingCode: getValueAtIndex(row, 5),
 			}
 			saveSchemeOfWorkData(schemeInfo, userNumber, schemeNumber, subjectNumber, tx, context)
 		}
