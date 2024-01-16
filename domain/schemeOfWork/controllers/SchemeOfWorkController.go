@@ -23,25 +23,7 @@ import (
 
 func NewSchemeOfWork(context *gin.Context) {
 
-	type SubtopicListInfo struct {
-		Number        string `json:"number"`
-		Name          string `json:"name"`
-		Code          int64  `json:"code"`
-		SortCode      int64  `json:"sort_code"`
-		UserNumber    string `json:"user_number"`
-		EstimatedTime int64  `json:"estimated_time"`
-		TopicNumber   string `json:"topic_number"`
-	}
-
-	type SchemeOfWorkInfo struct {
-		Name               string             `json:"name"`
-		ClassNumber        string             `json:"class_number"`
-		SubjectNumber      string             `json:"subject_number"`
-		AcademicYearNumber string             `json:"academic_year_number"`
-		SubtopicList       []SubtopicListInfo `json:"subtopicList"`
-	}
-
-	var schemeOfWorkInfo SchemeOfWorkInfo
+	var schemeOfWorkInfo requests.SchemeOfWorkInfo
 	err := context.BindJSON(&schemeOfWorkInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
@@ -166,26 +148,7 @@ func NewSchemeOfWork(context *gin.Context) {
 
 func UpdateSchemeOfWork(context *gin.Context) {
 
-	type SubtopicListInfo struct {
-		Code               int    `json:"code"`
-		SortCode           int    `json:"sort_code"`
-		EstimatedTime      int    `json:"estimated_time"`
-		Name               string `json:"name"`
-		Number             string `json:"number"`
-		UserNumber         string `json:"user_number"`
-		SchemeOfWorkNumber string `json:"scheme_of_work_number"`
-		SubTopicNumber     string `json:"sub_topic_number"`
-	}
-
-	type SchemeOfWorkInfo struct {
-		Name          string             `json:"name"`
-		ClassNumber   string             `json:"class_number"`
-		SubjectNumber string             `json:"subject_number"`
-		SchemeNumber  string             `json:"scheme_number"`
-		SubtopicList  []SubtopicListInfo `json:"subtopicList"`
-	}
-
-	var schemeOfWorkInfo SchemeOfWorkInfo
+	var schemeOfWorkInfo requests.SchemeOfWorkInfo
 	err := context.BindJSON(&schemeOfWorkInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
@@ -257,7 +220,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	}
 
 	for _, schemeList := range subtopicList {
-		codeNo, err := strconv.ParseInt(strconv.Itoa(schemeList.SortCode), 10, 64)
+		codeNo, err := strconv.ParseInt(strconv.Itoa(int(schemeList.SortCode)), 10, 64)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
