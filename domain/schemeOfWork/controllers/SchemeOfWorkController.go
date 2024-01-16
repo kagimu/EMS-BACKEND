@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/requests"
@@ -305,51 +306,11 @@ func FetchSchemeOfWork(context *gin.Context) {
 
 	for _, subTopicList := range schemeOfWrkSubTopicInfo {
 
-		//fetch lesson plan
-		/*	var lessonPlanInfo []models2.LessonPlan
-			var lessonPlanInfo_ []responses.LessonPlanResponseInfo
-			if err := config.DB.
-				Where("scheme_sub_topic_number = ?", subTopicList.Number).
-				//Preload("Concept").
-				Order("created_at desc").
-				Find(&lessonPlanInfo).Error; err != nil {
-				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
-				return
-			}*/
-
-		/*for _, lessonPlanList := range lessonPlanInfo {
-
-			//fetch lesson plan steps
-			var lessonPlanStepsInfo []models2.LessonPlanSteps
-			var lessonPlanStepsInfo_ []responses.LessonPlanStepsInfo
-			//var lessonPlanInfo_ []responses.LessonPlanResponseInfo
-			if err := config.DB.
-				Where("lesson_plan_number = ?", lessonPlanList.Number).
-				Order("code asc").
-				Find(&lessonPlanStepsInfo).Error; err != nil {
-				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
-				return
-			}
-
-			for _, lessonPlanSteps := range lessonPlanStepsInfo {
-				lessonPlanStepsInfo_ = append(lessonPlanStepsInfo_, responses.LessonPlanStepsInfo{
-					Number:           lessonPlanSteps.Number,
-					Code:             lessonPlanSteps.Code,
-					Step:             lessonPlanSteps.Step,
-					LessonPlanNumber: lessonPlanSteps.LessonPlanNumber,
-				})
-			}
-
-			lessonPlanInfo_ = append(lessonPlanInfo_, responses.LessonPlanResponseInfo{
-				Number: lessonPlanList.Number,
-				//LessonPlanConceptNumber: lessonPlanList.LessonPlanConceptNumber,
-				SchemeSubTopicNumber: lessonPlanList.SchemeSubTopicNumber,
-				//ConceptName:             lessonPlanList.Concept.Name,
-				//Code:                    lessonPlanList.Code,
-				UserNumber:      lessonPlanList.UserNumber,
-				LessonPlanSteps: lessonPlanStepsInfo_,
-			})
-		}*/
+		var conceptCount int64
+		var conceptModel models4.Concept
+		config.DB.Model(&conceptModel).
+			Where("sub_topic_number = ?", subTopicList.Number).
+			Count(&conceptCount)
 
 		schemeOfWrkSubTopicInfo_ = append(schemeOfWrkSubTopicInfo_, responses2.SchemeOfWorkSubtopicInfo{
 			Number:             subTopicList.Number,
@@ -362,7 +323,7 @@ func FetchSchemeOfWork(context *gin.Context) {
 			SchemeOfWorkNumber: subTopicList.SchemeOfWorkNumber,
 			SubTopicNumber:     subTopicList.SubTopicNumber,
 			UserNumber:         subTopicList.UserNumber,
-			//LessonPlan:         lessonPlanInfo_,
+			ConceptCount:       conceptCount,
 		})
 	}
 

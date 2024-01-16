@@ -25,5 +25,6 @@ type (
 		SchemeOfWorkNumber string `json:"scheme_of_work_number"`
 		SubTopicNumber     string `json:"sub_topic_number"`
 		UserNumber         string `json:"user_number"`
+		ConceptCount       int64  `json:"concept_count"`
 	}
 )
