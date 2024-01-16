@@ -2,11 +2,12 @@ package responses
 
 type (
 	LessonPlanData struct {
-		Number               string                  `json:"number"`
-		SchemeSubTopicNumber string                  `json:"scheme_sub_topic_number"`
-		Status               string                  `json:"status"`
-		UserNumber           string                  `json:"user_number"`
-		LessonPlanConcepts   []LessonPlanConceptData `json:"concepts"`
+		Number               string                        `json:"number"`
+		SchemeSubTopicNumber string                        `json:"scheme_sub_topic_number"`
+		Status               string                        `json:"status"`
+		UserNumber           string                        `json:"user_number"`
+		LessonPlanConcepts   []LessonPlanConceptData       `json:"concepts"`
+		References           []LessonPlanReferenceResponse `json:"references"`
 	}
 
 	LessonPlanConceptData struct {
