@@ -241,7 +241,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		updateScheme := tx.Model(&schemeSubtopicUpdate).
 			Where("scheme_of_work_number = ?", schemeNumber).
 			Where("number = ?", schemeList.Number).
-			Updates(schemeOfWorkModel.SchemeOfWorkSubTopic{Code: codeNo})
+			Updates(schemeOfWorkModel.SchemeOfWorkSubTopic{Code: codeNo, EstimatedTime: schemeList.EstimatedTime})
 		if updateScheme.Error != nil {
 			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
