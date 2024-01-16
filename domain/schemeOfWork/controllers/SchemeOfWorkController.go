@@ -309,7 +309,7 @@ func FetchSchemeOfWork(context *gin.Context) {
 		var conceptCount int64
 		var conceptModel models4.Concept
 		config.DB.Model(&conceptModel).
-			Where("sub_topic_number = ?", subTopicList.Number).
+			Where("sub_topic_number = ?", subTopicList.SubTopicNumber).
 			Count(&conceptCount)
 
 		schemeOfWrkSubTopicInfo_ = append(schemeOfWrkSubTopicInfo_, responses2.SchemeOfWorkSubtopicInfo{
