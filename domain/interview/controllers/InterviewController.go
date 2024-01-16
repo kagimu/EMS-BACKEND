@@ -56,11 +56,14 @@ func CreateInterview(c *gin.Context) {
 		UserNumber:    user.Number,
 	}
 
-	if err := config.DB.Create(&saveInterview).Error; err != nil {
+	tx := config.DB.Begin()
+
+	if err := tx.Create(&saveInterview).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "Failed to create interview",
 		})
+		tx.Rollback()
 		return
 	}
 
@@ -71,7 +74,11 @@ func CreateInterview(c *gin.Context) {
 		return
 	}
 
-	sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "TutorView: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
+	// update application status to INTERVIEW_SCHEDULED
+
+	tx.Commit()
+
+	sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "Wholesome: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
 	if err := sendEmail.SendEmail(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})
 	}
