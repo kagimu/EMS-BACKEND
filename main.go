@@ -154,6 +154,7 @@ func main() {
 		&preInterviewModels.PreAdmissionInterviewTestReport{},
 		&interviewModel.Interview{},
 		&materialModels.MaterialSubType{},
+		&lessonPlanModel.LessonPlanReference{},
 	)
 
 	if errMigrate != nil {
