@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/requests"
@@ -23,25 +24,7 @@ import (
 
 func NewSchemeOfWork(context *gin.Context) {
 
-	type SubtopicListInfo struct {
-		Number        string `json:"number"`
-		Name          string `json:"name"`
-		Code          int64  `json:"code"`
-		SortCode      int64  `json:"sort_code"`
-		UserNumber    string `json:"user_number"`
-		EstimatedTime int64  `json:"estimated_time"`
-		TopicNumber   string `json:"topic_number"`
-	}
-
-	type SchemeOfWorkInfo struct {
-		Name               string             `json:"name"`
-		ClassNumber        string             `json:"class_number"`
-		SubjectNumber      string             `json:"subject_number"`
-		AcademicYearNumber string             `json:"academic_year_number"`
-		SubtopicList       []SubtopicListInfo `json:"subtopicList"`
-	}
-
-	var schemeOfWorkInfo SchemeOfWorkInfo
+	var schemeOfWorkInfo requests.SchemeOfWorkInfo
 	err := context.BindJSON(&schemeOfWorkInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
@@ -166,26 +149,7 @@ func NewSchemeOfWork(context *gin.Context) {
 
 func UpdateSchemeOfWork(context *gin.Context) {
 
-	type SubtopicListInfo struct {
-		Code               int    `json:"code"`
-		SortCode           int    `json:"sort_code"`
-		EstimatedTime      int    `json:"estimated_time"`
-		Name               string `json:"name"`
-		Number             string `json:"number"`
-		UserNumber         string `json:"user_number"`
-		SchemeOfWorkNumber string `json:"scheme_of_work_number"`
-		SubTopicNumber     string `json:"sub_topic_number"`
-	}
-
-	type SchemeOfWorkInfo struct {
-		Name          string             `json:"name"`
-		ClassNumber   string             `json:"class_number"`
-		SubjectNumber string             `json:"subject_number"`
-		SchemeNumber  string             `json:"scheme_number"`
-		SubtopicList  []SubtopicListInfo `json:"subtopicList"`
-	}
-
-	var schemeOfWorkInfo SchemeOfWorkInfo
+	var schemeOfWorkInfo requests.SchemeOfWorkInfo
 	err := context.BindJSON(&schemeOfWorkInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
@@ -257,7 +221,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	}
 
 	for _, schemeList := range subtopicList {
-		codeNo, err := strconv.ParseInt(strconv.Itoa(schemeList.SortCode), 10, 64)
+		codeNo, err := strconv.ParseInt(strconv.Itoa(int(schemeList.SortCode)), 10, 64)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -278,7 +242,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		updateScheme := tx.Model(&schemeSubtopicUpdate).
 			Where("scheme_of_work_number = ?", schemeNumber).
 			Where("number = ?", schemeList.Number).
-			Updates(schemeOfWorkModel.SchemeOfWorkSubTopic{Code: codeNo})
+			Updates(schemeOfWorkModel.SchemeOfWorkSubTopic{Code: codeNo, EstimatedTime: schemeList.EstimatedTime})
 		if updateScheme.Error != nil {
 			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
@@ -342,51 +306,11 @@ func FetchSchemeOfWork(context *gin.Context) {
 
 	for _, subTopicList := range schemeOfWrkSubTopicInfo {
 
-		//fetch lesson plan
-		/*	var lessonPlanInfo []models2.LessonPlan
-			var lessonPlanInfo_ []responses.LessonPlanResponseInfo
-			if err := config.DB.
-				Where("scheme_sub_topic_number = ?", subTopicList.Number).
-				//Preload("Concept").
-				Order("created_at desc").
-				Find(&lessonPlanInfo).Error; err != nil {
-				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
-				return
-			}*/
-
-		/*for _, lessonPlanList := range lessonPlanInfo {
-
-			//fetch lesson plan steps
-			var lessonPlanStepsInfo []models2.LessonPlanSteps
-			var lessonPlanStepsInfo_ []responses.LessonPlanStepsInfo
-			//var lessonPlanInfo_ []responses.LessonPlanResponseInfo
-			if err := config.DB.
-				Where("lesson_plan_number = ?", lessonPlanList.Number).
-				Order("code asc").
-				Find(&lessonPlanStepsInfo).Error; err != nil {
-				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
-				return
-			}
-
-			for _, lessonPlanSteps := range lessonPlanStepsInfo {
-				lessonPlanStepsInfo_ = append(lessonPlanStepsInfo_, responses.LessonPlanStepsInfo{
-					Number:           lessonPlanSteps.Number,
-					Code:             lessonPlanSteps.Code,
-					Step:             lessonPlanSteps.Step,
-					LessonPlanNumber: lessonPlanSteps.LessonPlanNumber,
-				})
-			}
-
-			lessonPlanInfo_ = append(lessonPlanInfo_, responses.LessonPlanResponseInfo{
-				Number: lessonPlanList.Number,
-				//LessonPlanConceptNumber: lessonPlanList.LessonPlanConceptNumber,
-				SchemeSubTopicNumber: lessonPlanList.SchemeSubTopicNumber,
-				//ConceptName:             lessonPlanList.Concept.Name,
-				//Code:                    lessonPlanList.Code,
-				UserNumber:      lessonPlanList.UserNumber,
-				LessonPlanSteps: lessonPlanStepsInfo_,
-			})
-		}*/
+		var conceptCount int64
+		var conceptModel models4.Concept
+		config.DB.Model(&conceptModel).
+			Where("sub_topic_number = ?", subTopicList.Number).
+			Count(&conceptCount)
 
 		schemeOfWrkSubTopicInfo_ = append(schemeOfWrkSubTopicInfo_, responses2.SchemeOfWorkSubtopicInfo{
 			Number:             subTopicList.Number,
@@ -399,7 +323,7 @@ func FetchSchemeOfWork(context *gin.Context) {
 			SchemeOfWorkNumber: subTopicList.SchemeOfWorkNumber,
 			SubTopicNumber:     subTopicList.SubTopicNumber,
 			UserNumber:         subTopicList.UserNumber,
-			//LessonPlan:         lessonPlanInfo_,
+			ConceptCount:       conceptCount,
 		})
 	}
 
