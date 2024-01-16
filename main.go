@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"log"
+	"os"
+
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"github.com/joho/godotenv"
-	"log"
-	"os"
 
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 
@@ -29,6 +30,7 @@ import (
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
+	interviewQuestionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interviewQuestion/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
@@ -155,6 +157,7 @@ func main() {
 		&interviewModel.Interview{},
 		&materialModels.MaterialSubType{},
 		&lessonPlanModel.LessonPlanReference{},
+		&interviewQuestionModel.InterviewQuestion{},
 	)
 
 	if errMigrate != nil {
