@@ -12,6 +12,7 @@ type StreamRequest struct {
 }
 
 type ExcelSchemeOfWorkInfo struct {
-	SubTopic    string
-	SortingCode string
+	SubTopic      string
+	SortingCode   string
+	EstimatedTime string
 }

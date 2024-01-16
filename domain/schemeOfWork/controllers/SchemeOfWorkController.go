@@ -804,8 +804,9 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 	for idx, row := range rows {
 		if idx > 0 {
 			schemeInfo := requests.ExcelSchemeOfWorkInfo{
-				SubTopic:    getValueAtIndex(row, 3),
-				SortingCode: getValueAtIndex(row, 5),
+				SubTopic:      getValueAtIndex(row, 3),
+				EstimatedTime: getValueAtIndex(row, 4),
+				SortingCode:   getValueAtIndex(row, 5),
 			}
 			saveSchemeOfWorkData(schemeInfo, userNumber, schemeNumber, subjectNumber, tx, context)
 		}
@@ -816,6 +817,12 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
 
 	codeNo, err := strconv.ParseInt(schemeInfo.SortingCode, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	estimatedTime, err := strconv.ParseInt(schemeInfo.EstimatedTime, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
@@ -860,7 +867,7 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber 
 		Number:             schemeNo,
 		Code:               codeNo,
 		SubTopicNumber:     subtopic.Number,
-		EstimatedTime:      subtopic.EstimatedTime,
+		EstimatedTime:      estimatedTime,
 		SchemeOfWorkNumber: schemeNumber,
 		UserNumber:         userNumber,
 	}
