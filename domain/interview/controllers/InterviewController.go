@@ -7,6 +7,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
@@ -56,14 +57,11 @@ func CreateInterview(c *gin.Context) {
 		UserNumber:    user.Number,
 	}
 
-	tx := config.DB.Begin()
-
-	if err := tx.Create(&saveInterview).Error; err != nil {
+	if err := config.DB.Create(&saveInterview).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "Failed to create interview",
 		})
-		tx.Rollback()
 		return
 	}
 
@@ -74,11 +72,18 @@ func CreateInterview(c *gin.Context) {
 		return
 	}
 
-	// update application status to INTERVIEW_SCHEDULED
+	updateApplicationStatus := applicationModel.Application{
+		Status: "INTERVIEW_SCHEDULED",
+	}
 
-	tx.Commit()
+	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "application updating failed",
+		})
+		return
+	}
 
-	sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "Wholesome: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
+	sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "TutorView: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
 	if err := sendEmail.SendEmail(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})
 	}
