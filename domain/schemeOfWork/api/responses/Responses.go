@@ -66,7 +66,13 @@ func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
 
-	err := pdf.SetFont("Arial", "", 14)
+	/*err := pdf.SetFont("Arial", "", 14)
+	if err != nil {
+		return err
+	}*/
+
+	// Use a default system font (e.g., "Arial")
+	err := pdf.AddTTFFont("Arial", "")
 	if err != nil {
 		return err
 	}
