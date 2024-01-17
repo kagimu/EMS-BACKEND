@@ -1,19 +1,12 @@
 package responses
 
+import (
+	"errors"
+	"github.com/gin-gonic/gin"
+	"github.com/signintech/gopdf"
+)
+
 type (
-	SchemeOfWorkResponseInfo struct {
-		Number                   string                     `json:"number"`
-		Name                     string                     `json:"name"`
-		Status                   string                     `json:"status"`
-		ClassNumber              string                     `json:"class_number"`
-		ClassName                string                     `json:"class_name"`
-		SubjectNumber            string                     `json:"subject_number"`
-		SubjectName              string                     `json:"subject_name"`
-		UserNumber               string                     `json:"user_number"`
-		AcademicYearNumber       string                     `json:"academic_year_number"`
-		AcademicYearName         string                     `json:"academic_year_name"`
-		SchemeOfWorkSubtopicInfo []SchemeOfWorkSubtopicInfo `json:"subtopic"`
-	}
 	SchemeOfWorkSubtopicInfo struct {
 		Number             string `json:"number"`
 		Code               int64  `json:"code"`
@@ -27,4 +20,66 @@ type (
 		UserNumber         string `json:"user_number"`
 		ConceptCount       int64  `json:"concept_count"`
 	}
+
+	SchemeOfWorkResponseInfo struct {
+		Number                   string                     `json:"number"`
+		Name                     string                     `json:"name"`
+		Status                   string                     `json:"status"`
+		ClassNumber              string                     `json:"class_number"`
+		ClassName                string                     `json:"class_name"`
+		SubjectNumber            string                     `json:"subject_number"`
+		SubjectName              string                     `json:"subject_name"`
+		UserNumber               string                     `json:"user_number"`
+		AcademicYearNumber       string                     `json:"academic_year_number"`
+		AcademicYearName         string                     `json:"academic_year_name"`
+		SchemeOfWorkSubtopicInfo []SchemeOfWorkSubtopicInfo `json:"subtopic"`
+	}
 )
+
+func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
+
+	pdf := gopdf.GoPdf{}
+
+	// Your HTML-like content
+	htmlContent := `<h1>Hello, PDF!</h1>
+	<p>This is a sample PDF generated from HTML-like content.</p>`
+
+	err := generatePDFFromHTML(&pdf, htmlContent)
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
+	// Save the PDF to a file
+	err = pdf.WritePdf(path)
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	filePath := "https://" + context.Request.Host + path
+
+	return filePath, nil
+
+}
+
+func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+	pdf.AddPage()
+
+	err := pdf.SetFont("Arial", "", 14)
+	if err != nil {
+		return err
+	}
+
+	// Simulate simple HTML rendering
+	pdf.SetX(20)
+	pdf.SetY(20)
+	pdf.SetTextColor(0, 0, 0)
+
+	err = pdf.Cell(nil, htmlContent)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
