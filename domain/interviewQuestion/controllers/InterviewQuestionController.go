@@ -34,17 +34,30 @@ func CreateInterviewQuestion(c *gin.Context) {
 		return
 	}
 
+	interviewQuestionNumber := uuid.NewV4().String()
+	saveInterviewQuestion := models.InterviewQuestion{
+		Number:          interviewQuestionNumber,
+		InterviewNumber: interviewNumber,
+		Question:        payload.Question,
+		CorrectAnswer:   payload.CorrectAnswer,
+	}
+
+	if err := config.DB.Create(&saveInterviewQuestion).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create interview question"})
+		return
+	}
+
 	for _, possibleAnswer := range payload.PossibleAnswers {
-		saveInterviewQuestion := models.InterviewQuestion{
-			Number:          uuid.NewV4().String(),
-			InterviewNumber: interviewNumber,
-			Question:        payload.Question,
-			CorrectAnswer:   payload.CorrectAnswer,
-			PossibleAnswers: possibleAnswer,
+		saveAnswers := models.Answer{
+			Number:                  uuid.NewV4().String(),
+			InterviewQuestionNumber: interviewQuestionNumber,
+			Body:                    possibleAnswer,
 		}
 
-		if err := config.DB.Create(&saveInterviewQuestion).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create interview question"})
+		if err := config.DB.Create(&saveAnswers).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"err":     err.Error(),
+				"message": "Failed to create possible answers"})
 			return
 		}
 	}
@@ -87,7 +100,7 @@ func EditInterviewQuestion(c *gin.Context) {
 
 	var interviewQuestion models.InterviewQuestion
 	interviewQuestionNumber := c.Param("number")
-	if err := config.DB.First(&interviewQuestion, "apn = ?", interviewQuestionNumber).Error; err != nil {
+	if err := config.DB.First(&interviewQuestion, "number = ?", interviewQuestionNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  http.StatusNotFound,
 			"message": "No interview question with the specified number",
@@ -95,16 +108,33 @@ func EditInterviewQuestion(c *gin.Context) {
 		return
 	}
 
+	updateInterviewQuestion := models.InterviewQuestion{
+		Number:          uuid.NewV4().String(),
+		InterviewNumber: payload.InterviewNumber,
+		Question:        payload.Question,
+		CorrectAnswer:   payload.CorrectAnswer,
+	}
+
+	if err := config.DB.Model(&interviewQuestion).Where("number = ?", interviewQuestionNumber).Updates(updateInterviewQuestion).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Failed to update interview question",
+		})
+		return
+	}
+
 	for _, possibleAnswer := range payload.PossibleAnswers {
-		updateInterviewQuestion := models.InterviewQuestion{
-			Number:          uuid.NewV4().String(),
-			InterviewNumber: payload.InterviewNumber,
-			Question:        payload.Question,
-			CorrectAnswer:   payload.CorrectAnswer,
-			PossibleAnswers: possibleAnswer,
+		saveAnswers := models.Answer{
+			InterviewQuestionNumber: interviewQuestionNumber,
+			Body:                    possibleAnswer,
 		}
 
-		if err := config.DB.Model(&interviewQuestion).Where("apn = ?", interviewQuestionNumber).Updates(updateInterviewQuestion).Error; err != nil {
+		if err := config.DB.Create(&saveAnswers).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create possible answers"})
+			return
+		}
+
+		if err := config.DB.Model(&interviewQuestion).Where("number = ?", interviewQuestionNumber).Updates(updateInterviewQuestion).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  http.StatusInternalServerError,
 				"message": "Failed to update interview question",

@@ -158,6 +158,7 @@ func main() {
 		&materialModels.MaterialSubType{},
 		&lessonPlanModel.LessonPlanReference{},
 		&interviewQuestionModel.InterviewQuestion{},
+		&interviewQuestionModel.Answer{},
 	)
 
 	if errMigrate != nil {
