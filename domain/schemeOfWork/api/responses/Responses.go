@@ -67,11 +67,12 @@ func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
 	pdf.AddPage()
 
 	// Use a default system font (e.g., "Arial")
-	/*err := pdf.AddTTFFont("Arial", "")
+	err := pdf.AddTTFFont("Arial", "/fileRepo/ttf/arial.ttf")
+	//err := pdf.AddTTFFont("Arial", "")
 	if err != nil {
 		return errors.New("---3. " + err.Error() + "----")
-	}*/
-	err := pdf.SetFont("Arial", "", 14)
+	}
+	err = pdf.SetFont("Arial", "", 12)
 	if err != nil {
 		return errors.New("--4. " + err.Error() + "----")
 	}
