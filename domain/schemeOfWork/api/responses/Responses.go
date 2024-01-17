@@ -46,14 +46,14 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 
 	err := generatePDFFromHTML(&pdf, htmlContent)
 	if err != nil {
-		return "", errors.New(err.Error())
+		return "", errors.New("1. " + err.Error())
 	}
 
 	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
 	// Save the PDF to a file
 	err = pdf.WritePdf(path)
 	if err != nil {
-		return "", errors.New(err.Error())
+		return "", errors.New("2. " + err.Error())
 	}
 
 	filePath := "https://" + context.Request.Host + path
@@ -74,7 +74,7 @@ func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
 	// Use a default system font (e.g., "Arial")
 	err := pdf.AddTTFFont("Arial", "")
 	if err != nil {
-		return err
+		return errors.New("3. " + err.Error())
 	}
 
 	// Simulate simple HTML rendering
@@ -84,7 +84,7 @@ func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
 
 	err = pdf.Cell(nil, htmlContent)
 	if err != nil {
-		return err
+		return errors.New("4. " + err.Error())
 	}
 
 	return nil
