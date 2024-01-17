@@ -26,10 +26,7 @@ func CreateStudent(c *gin.Context) {
 	var payload request.StudentRequest
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   err.Error(),
-			"message": "Internal server error!",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
