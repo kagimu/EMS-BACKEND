@@ -46,7 +46,7 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 
 	err := generatePDFFromHTML(&pdf, htmlContent)
 	if err != nil {
-		return "", errors.New("--1. " + err.Error() + "----")
+		return "", errors.New(err.Error())
 	}
 
 	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
@@ -67,11 +67,11 @@ func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
 	pdf.AddPage()
 
 	// Use a default system font (e.g., "Arial")
-	err := pdf.AddTTFFont("Arial", "")
+	/*err := pdf.AddTTFFont("Arial", "")
 	if err != nil {
 		return errors.New("---3. " + err.Error() + "----")
-	}
-	err = pdf.SetFont("Arial", "", 14)
+	}*/
+	err := pdf.SetFont("Arial", "", 14)
 	if err != nil {
 		return errors.New("--4. " + err.Error() + "----")
 	}
