@@ -2,6 +2,7 @@ package responses
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/signintech/gopdf"
 )
 
@@ -35,21 +36,11 @@ type (
 	}
 )
 
-func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf() (string, error) {
+func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
 
 	pdf := gopdf.GoPdf{}
 
-	htmlContent := `<h1>Hello, PDF!</h1>
-	<p>This is a sample PDF generated from HTML-like content.</p>`
-
-	err, path := generatePDFWithDefaultFont(&pdf, htmlContent)
-	if err != nil {
-		return "", errors.New(err.Error())
-	}
-
-	return path, nil
-
-	/*// Your HTML-like content
+	// Your HTML-like content
 	htmlContent := `<h1>Hello, PDF!</h1>
 	<p>This is a sample PDF generated from HTML-like content.</p>`
 
@@ -67,26 +58,27 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf() (string, err
 
 	filePath := "https://" + context.Request.Host + path
 
-	return filePath, nil*/
+	return filePath, nil
 
 }
 
-///*func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
-//	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-//	pdf.AddPage()*/
+func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+	pdf.AddPage()
 
-// Use a default system font (e.g., "Arial")
-/*err := pdf.AddTTFFont("Arial", "")
-if err != nil {
-	return errors.New("---3. " + err.Error() + "----")
-}*/
-/*err := pdf.SetFont("Arial", "", 14)
-if err != nil {
-	return errors.New("--4. " + err.Error() + "----")
-}*/
+	// Use a default system font (e.g., "Arial")
+	err := pdf.AddTTFFont("Arial", "/fileRepo/ttf/arial.ttf")
+	//err := pdf.AddTTFFont("Arial", "")
+	if err != nil {
+		return errors.New("---3. " + err.Error() + "----")
+	}
+	err = pdf.SetFont("Arial", "", 12)
+	if err != nil {
+		return errors.New("--4. " + err.Error() + "----")
+	}
 
-// Simulate simple HTML rendering
-/*	pdf.SetX(20)
+	// Simulate simple HTML rendering
+	pdf.SetX(20)
 	pdf.SetY(20)
 	pdf.SetTextColor(0, 0, 0)
 
@@ -95,31 +87,5 @@ if err != nil {
 		return errors.New("----4. " + err.Error() + "----")
 	}
 
-	return nil*/
-//}
-
-func generatePDFWithDefaultFont(pdf *gopdf.GoPdf, htmlContent string) (error, string) {
-	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-	pdf.AddPage()
-
-	// No need to add a custom font, it will use the default font
-
-	// Write HTML-like content to the PDF
-	pdf.SetY(20)
-	pdf.SetTextColor(0, 0, 0)
-	err := pdf.Cell(nil, htmlContent)
-	if err != nil {
-		return err, ""
-	}
-
-	// Specify the folder path and file name
-	filePath := "/fileRepo/schemeTemplatePdf/output.pdf.pdf"
-
-	// Save the PDF to the specified file path
-	err = pdf.WritePdf(filePath)
-	if err != nil {
-		return err, ""
-	}
-
-	return nil, filePath
+	return nil
 }
