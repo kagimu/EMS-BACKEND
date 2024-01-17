@@ -2,6 +2,8 @@ package responses
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
+	"github.com/signintech/gopdf"
 )
 
 type (
@@ -34,51 +36,50 @@ type (
 	}
 )
 
-func (userData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf() (string, error) {
-	return "", errors.New("")
-	/*// Read HTML template file
-	htmlTemplate, err := os.ReadFile("template.html")
+func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
+
+	pdf := gopdf.GoPdf{}
+
+	// Your HTML-like content
+	htmlContent := `<h1>Hello, PDF!</h1>
+	<p>This is a sample PDF generated from HTML-like content.</p>`
+
+	err := generatePDFFromHTML(&pdf, htmlContent)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
 
-	// Parse HTML template
-	tmpl, err := template.New("pdfTemplate").Parse(string(htmlTemplate))
+	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
+	// Save the PDF to a file
+	err = pdf.WritePdf(path)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
 
-	// Create a new PDF document
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	filePath := "https://" + context.Request.Host + path
+
+	return filePath, nil
+
+}
+
+func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
 
-	// Execute HTML template and write content to PDF
-	err = tmpl.Execute(pdf, userData)
+	err := pdf.SetFont("Arial", "", 14)
 	if err != nil {
-		log.Fatal(err)
-		http.Error(w, "Error executing HTML template", http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	// Specify the directory to save the PDF
-	outputDirectory := "./pdf_output"
-	outputPath := fmt.Sprintf("%s/user_data.pdf", outputDirectory)
+	// Simulate simple HTML rendering
+	pdf.SetX(20)
+	pdf.SetY(20)
+	pdf.SetTextColor(0, 0, 0)
 
-	// Create the output directory if it doesn't exist
-	if err := os.MkdirAll(outputDirectory, os.ModePerm); err != nil {
-		log.Fatal(err)
-		http.Error(w, "Error creating output directory", http.StatusInternalServerError)
-		return
+	err = pdf.Cell(nil, htmlContent)
+	if err != nil {
+		return err
 	}
 
-	// Save PDF to the specified file
-	if err := pdf.OutputFileAndClose(outputPath); err != nil {
-		log.Fatal(err)
-		http.Error(w, "Error saving PDF file", http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Printf("PDF saved to: %s\n", outputPath)
-	w.Write([]byte("PDF saved successfully"))
-	*/
+	return nil
 }

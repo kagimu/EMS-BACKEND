@@ -427,7 +427,7 @@ func ExportSchemeOfWork(context *gin.Context) {
 		SchemeOfWorkSubtopicInfo: schemeOfWrkSubTopicInfo_,
 	}
 
-	pdfUrl, err := schemeOfWrk_.ReturnSchemeOfWorkPdf()
+	pdfUrl, err := schemeOfWrk_.ReturnSchemeOfWorkPdf(context)
 	if err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Failed to load pdf: " + err.Error()})
 		return
@@ -779,7 +779,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 	}
 
 	//read now the Excel file
-	readSchemeExcelFile(path, userNumber, schemeNumber, classNumber, subjectNumber, tx, context)
+	readSchemeExcelFile(path, userNumber, schemeNumber, subjectNumber, tx, context)
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
@@ -792,7 +792,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 
 }
 
-func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, classNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
+func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
 
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
