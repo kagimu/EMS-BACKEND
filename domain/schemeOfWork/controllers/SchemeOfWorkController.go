@@ -427,7 +427,7 @@ func ExportSchemeOfWork(context *gin.Context) {
 		SchemeOfWorkSubtopicInfo: schemeOfWrkSubTopicInfo_,
 	}
 
-	pdfUrl, err := schemeOfWrk_.ReturnSchemeOfWorkPdf(context)
+	pdfUrl, err := schemeOfWrk_.ReturnSchemeOfWorkPdf()
 	if err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Failed to load pdf: " + err.Error()})
 		return
