@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/signintech/gopdf"
-	"jaytaylor.com/html2text"
 )
 
 type (
@@ -87,12 +86,12 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
   </body>
 </html>`
 
-	htmlText, err := html2text.FromString(htmlContent, html2text.Options{PrettyTables: true})
+	/*htmlText, err := html2text.FromString(htmlContent, html2text.Options{PrettyTables: true})
 	if err != nil {
 		panic(err)
-	}
+	}*/
 
-	err = generatePDFFromHTML(&pdf, htmlText)
+	err := generatePDFFromHTML(&pdf, htmlContent)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
