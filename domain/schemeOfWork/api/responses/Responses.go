@@ -116,7 +116,7 @@ func doThings(schemeData *SchemeOfWorkResponseInfo) (string, error) {
 		return "", errors.New(err.Error())
 	}
 	wd := bag.MustSp("280pt")
-	colText := bag.MustSp("140pt")
+	colText := bag.MustSp("240pt")
 	//colImage := bag.MustSp("20pt")
 	rowText := bag.MustSp("23cm")
 	if err = d.OutputAt(htmlData, wd, colText, rowText); err != nil {
@@ -152,24 +152,21 @@ func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
 			and this ball was her favorite plaything.
 		</p>`
 	html += `
-			<h1 style="text-align: center;">CSS-styled Inline Div Table</h1>
-						<div style="width: 100%; margin-bottom: 20px;">
-							<div style="display: flex; font-weight: bold; background-color: #f2f2f2; margin-bottom: 8px;">
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 1</div>
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 2</div>
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 3</div>
-							</div>
-							<div style="display: flex; margin-bottom: 8px;">
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 1</div>
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 2</div>
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 3</div>
-							</div>
-							<div style="display: flex;">
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 4</div>
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 5</div>
-								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 6</div>
-							</div>
-						</div>`
+			<h1 style="text-align: center;">CSS-styled Inline Div Table with Two Columns</h1>
+			<div style="width: 100%; margin-bottom: 20px;">
+				<div style="display: flex; font-weight: bold; background-color: #f2f2f2; margin-bottom: 8px;">
+					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 1</div>
+					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 2</div>
+				</div>
+				<div style="display: flex; margin-bottom: 8px;">
+					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 1</div>
+					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 2</div>
+				</div>
+				<div style="display: flex;">
+					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 3</div>
+					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 4</div>
+				</div>
+			</div>`
 	return html
 }
 
