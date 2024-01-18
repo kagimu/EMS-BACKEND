@@ -41,8 +41,9 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 	pdf := gopdf.GoPdf{}
 
 	// Your HTML-like content
-	htmlContent := `<h1>Hello, PDF!</h1>
-	<p>This is a sample PDF generated from HTML-like content.</p>`
+
+	htmlContent := "<h1>Hello, PDF!</h1>"
+	htmlContent += "<p>This is a sample PDF generated with HTML-like content.</p>"
 
 	err := generatePDFFromHTML(&pdf, htmlContent)
 	if err != nil {
@@ -66,9 +67,7 @@ func generatePDFFromHTML(pdf *gopdf.GoPdf, htmlContent string) error {
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
 
-	// Use a default system font (e.g., "Arial")
 	err := pdf.AddTTFFont("Arial", "/fileRepo/ttf/arial.ttf")
-	//err := pdf.AddTTFFont("Arial", "")
 	if err != nil {
 		return errors.New("---3. " + err.Error() + "----")
 	}
