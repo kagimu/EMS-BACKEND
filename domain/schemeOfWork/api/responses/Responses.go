@@ -76,7 +76,7 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 
 }
 
-//
+///
 //func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
 //
 //	pdf := gopdf.GoPdf{}
