@@ -152,19 +152,24 @@ func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
 			and this ball was her favorite plaything.
 		</p>`
 	html += `
-			<p>Table</p>
-		<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; color:red;">
-		<tr>
-			<td>Men</td>
-			<td>Two</td>
-			<td>Three</td>
-		</tr>
-		<tr>
-			<td>Men</td>
-			<td>Two</td>
-			<td>Three</td>
-		</tr>
-		</table>`
+			<h1>Inline CSS Table</h1>
+						<table>
+							<tr>
+								<th>Header 1</th>
+								<th>Header 2</th>
+								<th>Header 3</th>
+							</tr>
+							<tr>
+								<td>Data 1</td>
+								<td>Data 2</td>
+								<td>Data 3</td>
+							</tr>
+							<tr>
+								<td>Data 4</td>
+								<td>Data 5</td>
+								<td>Data 6</td>
+							</tr>
+						</table>`
 	return html
 }
 
