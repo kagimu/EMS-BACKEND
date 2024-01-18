@@ -5,13 +5,13 @@ go 1.21
 toolchain go1.21.1
 
 require (
+	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.9.2
 	github.com/badoux/checkmail v1.2.1
 	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/satori/go.uuid v1.2.0
 	github.com/xuri/excelize/v2 v2.8.0
 	go.uber.org/zap v1.26.0

@@ -1,10 +1,10 @@
 package responses
 
 import (
-	"encoding/json"
 	"errors"
+	wkhtml "github.com/SebastiaanKlippert/go-wkhtmltopdf"
 	"github.com/gin-gonic/gin"
-	"github.com/jung-kurt/gofpdf"
+	"strings"
 )
 
 type (
@@ -43,6 +43,36 @@ type Report struct {
 }
 
 func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
+	pdfg, err := wkhtml.NewPDFGenerator()
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	htmlStr := `<html><body><h1 style="color:red;">This is an html from pdf to test color<h1><img src="http://api.qrserver.com/v1/create-qr-code/?data=HelloWorld" alt="img" height="42" width="42"></img></body></html>`
+
+	pdfg.AddPage(wkhtml.NewPageReader(strings.NewReader(htmlStr)))
+
+	// Create PDF document in internal buffer
+	err = pdfg.Create()
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	// Your Pdf Name
+	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
+	err = pdfg.WriteFile(path)
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	filePath := "https://" + context.Request.Host + path
+
+	return filePath, nil
+
+}
+
+/*
+func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
 	// Sample JSON data
 	reportData := Report{
 		Title:   "Sample Report",
@@ -74,7 +104,7 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 
 	return filePath, nil
 
-}
+}*/
 
 ///
 //func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
