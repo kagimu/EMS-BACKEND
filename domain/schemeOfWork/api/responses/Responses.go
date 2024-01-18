@@ -152,24 +152,24 @@ func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
 			and this ball was her favorite plaything.
 		</p>`
 	html += `
-			<h1>Inline CSS Table</h1>
-						<table>
-							<tr>
-								<th>Header 1</th>
-								<th>Header 2</th>
-								<th>Header 3</th>
-							</tr>
-							<tr>
-								<td>Data 1</td>
-								<td>Data 2</td>
-								<td>Data 3</td>
-							</tr>
-							<tr>
-								<td>Data 4</td>
-								<td>Data 5</td>
-								<td>Data 6</td>
-							</tr>
-						</table>`
+			<h1 style="text-align: center;">CSS-styled Inline Div Table</h1>
+						<div style="width: 100%; margin-bottom: 20px;">
+							<div style="display: flex; font-weight: bold; background-color: #f2f2f2; margin-bottom: 8px;">
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 1</div>
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 2</div>
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 3</div>
+							</div>
+							<div style="display: flex; margin-bottom: 8px;">
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 1</div>
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 2</div>
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 3</div>
+							</div>
+							<div style="display: flex;">
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 4</div>
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 5</div>
+								<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 6</div>
+							</div>
+						</div>`
 	return html
 }
 
