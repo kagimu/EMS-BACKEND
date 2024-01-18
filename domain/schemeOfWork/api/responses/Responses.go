@@ -54,85 +54,63 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 
 	return filePath, nil
 
-	// Create a new PDF document
-	//pdf := gopdf.GoPdf{}
-	//pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-	//pdf.AddPage()
-	//
-	//// Set the HTML content for the PDF
-	//htmlContent := `<html><body><h1 style="color: blue;">Hello, this is a PDF with HTML and CSS content</h1></body></html>`
-	///*err := pdf.SetHtml(htmlContent)
-	//if err != nil {
-	//	return "", errors.New(err)
-	//}*/
-	//
-	//err := pdf.Cell(nil, htmlContent)
-	//if err != nil {
-	//	return "", errors.New(err.Error())
-	//}
-	//
-	//// Save the PDF to a file
-	//path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
-	//err = pdf.WritePdf(path)
-	//if err != nil {
-	//	return "", errors.New(err.Error())
-	//}
-	//
-	//filePath := "https://" + context.Request.Host + path
-	//
-	//return filePath, nil
-
 }
 
+/*
 var html = `<h1>The frog king</h1>
 
 <p>In olden times when wishing still <em>helped</em> one,
-   there lived a king whose daughters were all beautiful,
-   but the <span class="green">youngest</span> was so beautiful that the sun itself,
-   which has seen so much, was
-   <span style="font-weight: bold">astonished</span> whenever it
-   shone in her face.</p>
+
+	there lived a king whose daughters were all beautiful,
+	but the <span class="green">youngest</span> was so beautiful that the sun itself,
+	which has seen so much, was
+	<span style="font-weight: bold">astonished</span> whenever it
+	shone in her face.</p>
 
 <p>Close by the king's castle lay a great dark forest,
+
 	and under an old lime-tree in the forest was a well,
 	and when the day was very warm, the king's child
 	went out into the forest and sat down by the side of
 	the cool <span id="important">fountain</span>, and when she was bored she took a
 	golden ball, and threw it up on high and caught it,
 	and this ball was her favorite plaything.
+
 </p>`
 
 var css = `
-body {
-	font-family: serif;
-    font-size: 12pt;
-    line-height: 14pt;
-}
 
-p {
-    margin-top: 8pt;
-    margin-bottom: 2pt;
-}
+	body {
+		font-family: serif;
+	    font-size: 12pt;
+	    line-height: 14pt;
+	}
 
-.green {
-    color: green;
-}
+	p {
+	    margin-top: 8pt;
+	    margin-bottom: 2pt;
+	}
 
-#important {
-    color: rebeccapurple;
-    font-weight: bolder;
-    font-style: italic;
-}`
+	.green {
+	    color: green;
+	}
 
+	#important {
+	    color: rebeccapurple;
+	    font-weight: bolder;
+	    font-style: italic;
+	}`
+*/
 func doThings(schemeData *SchemeOfWorkResponseInfo) (string, error) {
 	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
+	htmlData := generateHtml(schemeData)
 	d, err := document.New(path)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
-	if d.AddCSS(css); err != nil {
+	/*if d.AddCSS(css); err != nil {
 		return "", errors.New(err.Error())
-	}
+	}*/
 	// loads the font families serif, sans and monospace
 	if err = d.Frontend.LoadIncludedFonts(); err != nil {
 		return "", errors.New(err.Error())
@@ -141,7 +119,7 @@ func doThings(schemeData *SchemeOfWorkResponseInfo) (string, error) {
 	colText := bag.MustSp("140pt")
 	//colImage := bag.MustSp("20pt")
 	rowText := bag.MustSp("23cm")
-	if err = d.OutputAt(html, wd, colText, rowText); err != nil {
+	if err = d.OutputAt(htmlData, wd, colText, rowText); err != nil {
 		return "", errors.New(err.Error())
 	}
 
@@ -154,6 +132,29 @@ func doThings(schemeData *SchemeOfWorkResponseInfo) (string, error) {
 	}
 	return path, nil
 
+}
+
+func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
+	var html = `<h1>The frog king</h1><br /> <br />`
+	html += `<p>In olden times when wishing still <em>helped</em> one,
+		   there lived a king whose daughters were all beautiful,
+		   but the <span class="green">youngest</span> was so beautiful that the sun itself,
+		   which has seen so much, was
+		   <span style="font-weight: bold">astonished</span> whenever it
+		   shone in her face.</p><br /><br />`
+
+	html += `<p>Close by the king's castle lay a great dark forest,
+			and under an old lime-tree in the forest was a well,
+			and when the day was very warm, the king's child
+			went out into the forest and sat down by the side of
+			the cool <span id="important">fountain</span>, and when she was bored she took a
+			golden ball, and threw it up on high and caught it,
+			and this ball was her favorite plaything.
+		</p>`
+	html += `<p>
+			Thanks be to God	
+			</p>`
+	return html
 }
 
 /*
