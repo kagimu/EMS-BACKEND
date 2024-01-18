@@ -2,9 +2,8 @@ package responses
 
 import (
 	"errors"
-	wkhtml "github.com/SebastiaanKlippert/go-wkhtmltopdf"
 	"github.com/gin-gonic/gin"
-	"strings"
+	"github.com/signintech/gopdf"
 )
 
 type (
@@ -43,24 +42,27 @@ type Report struct {
 }
 
 func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
-	pdfg, err := wkhtml.NewPDFGenerator()
+
+	// Create a new PDF document
+	pdf := gopdf.GoPdf{}
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+	pdf.AddPage()
+
+	// Set the HTML content for the PDF
+	htmlContent := `<html><body><h1 style="color: blue;">Hello, this is a PDF with HTML and CSS content</h1></body></html>`
+	/*err := pdf.SetHtml(htmlContent)
+	if err != nil {
+		return "", errors.New(err)
+	}*/
+
+	err := pdf.Cell(nil, htmlContent)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
 
-	htmlStr := `<html><body><h1 style="color:red;">This is an html from pdf to test color<h1><img src="http://api.qrserver.com/v1/create-qr-code/?data=HelloWorld" alt="img" height="42" width="42"></img></body></html>`
-
-	pdfg.AddPage(wkhtml.NewPageReader(strings.NewReader(htmlStr)))
-
-	// Create PDF document in internal buffer
-	err = pdfg.Create()
-	if err != nil {
-		return "", errors.New(err.Error())
-	}
-
-	// Your Pdf Name
+	// Save the PDF to a file
 	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
-	err = pdfg.WriteFile(path)
+	err = pdf.WritePdf(path)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
