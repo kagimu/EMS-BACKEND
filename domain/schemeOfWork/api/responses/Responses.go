@@ -3,7 +3,8 @@ package responses
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/signintech/gopdf"
+	"os"
+	"os/exec"
 )
 
 type (
@@ -43,26 +44,14 @@ type Report struct {
 
 func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
 
-	// Create a new PDF document
-	pdf := gopdf.GoPdf{}
-	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-	pdf.AddPage()
+	htmlContent := `<h1>Hello, PDF!</h1>
+	<p>This is a sample PDF generated with wkhtmltopdf and Go.</p>`
 
-	// Set the HTML content for the PDF
-	htmlContent := `<html><body><h1 style="color: blue;">Hello, this is a PDF with HTML and CSS content</h1></body></html>`
-	/*err := pdf.SetHtml(htmlContent)
-	if err != nil {
-		return "", errors.New(err)
-	}*/
+	// Specify the output file path
+	//outputPath := "output/output_wkhtmltopdf.pdf"
+	outputPath := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
 
-	err := pdf.Cell(nil, htmlContent)
-	if err != nil {
-		return "", errors.New(err.Error())
-	}
-
-	// Save the PDF to a file
-	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
-	err = pdf.WritePdf(path)
+	path, err := generatePDFFromHTML(htmlContent, outputPath)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
@@ -71,6 +60,70 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 
 	return filePath, nil
 
+	// Create a new PDF document
+	//pdf := gopdf.GoPdf{}
+	//pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+	//pdf.AddPage()
+	//
+	//// Set the HTML content for the PDF
+	//htmlContent := `<html><body><h1 style="color: blue;">Hello, this is a PDF with HTML and CSS content</h1></body></html>`
+	///*err := pdf.SetHtml(htmlContent)
+	//if err != nil {
+	//	return "", errors.New(err)
+	//}*/
+	//
+	//err := pdf.Cell(nil, htmlContent)
+	//if err != nil {
+	//	return "", errors.New(err.Error())
+	//}
+	//
+	//// Save the PDF to a file
+	//path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
+	//err = pdf.WritePdf(path)
+	//if err != nil {
+	//	return "", errors.New(err.Error())
+	//}
+	//
+	//filePath := "https://" + context.Request.Host + path
+	//
+	//return filePath, nil
+
+}
+
+func generatePDFFromHTML(htmlContent, outputPath string) (string, error) {
+	// Create a temporary HTML file
+	htmlFile, err := os.CreateTemp("", "temp*.html")
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+
+		}
+	}(htmlFile.Name()) // Clean up the temporary HTML file
+
+	// Write the HTML content to the temporary file
+	_, err = htmlFile.WriteString(htmlContent)
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	// Create the PDF file
+	pdfFile, err := os.Create(outputPath)
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+	defer pdfFile.Close()
+
+	// Run the wkhtmltopdf command
+	cmd := exec.Command("wkhtmltopdf", htmlFile.Name(), outputPath)
+	err = cmd.Run()
+	if err != nil {
+		return "", errors.New(err.Error())
+	}
+
+	return outputPath, nil
 }
 
 /*
