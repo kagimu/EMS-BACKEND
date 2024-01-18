@@ -152,6 +152,7 @@ func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
 			and this ball was her favorite plaything.
 		</p>`
 	html += `
+			<p>Table</p>
 		<table border="1" cellpadding="0" cellspacing="0" style="width: 100%;>
 		<tr>
 			<td>Men</td>
@@ -163,8 +164,7 @@ func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
 			<td>Two</td>
 			<td>Three</td>
 		</tr>
-		</table>	
-		`
+		</table>`
 	return html
 }
 
