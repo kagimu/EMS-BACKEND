@@ -151,9 +151,20 @@ func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
 			golden ball, and threw it up on high and caught it,
 			and this ball was her favorite plaything.
 		</p>`
-	html += `<p>
-			Thanks be to God	
-			</p>`
+	html += `
+		<table border="1" cellpadding="0" cellspacing="0" style="width: 100%;>
+		<tr>
+			<td>Men</td>
+			<td>Two</td>
+			<td>Three</td>
+		</tr>
+		<tr>
+			<td>Men</td>
+			<td>Two</td>
+			<td>Three</td>
+		</tr>
+		</table>	
+		`
 	return html
 }
 
