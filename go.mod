@@ -5,7 +5,6 @@ go 1.21
 toolchain go1.21.1
 
 require (
-	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.9.2
 	github.com/badoux/checkmail v1.2.1
 	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/gin-contrib/cors v1.4.0
@@ -13,6 +12,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/satori/go.uuid v1.2.0
+	github.com/signintech/gopdf v0.20.0
 	github.com/xuri/excelize/v2 v2.8.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.14.0
@@ -20,7 +20,11 @@ require (
 	gorm.io/gorm v1.25.5
 )
 
-require github.com/go-sql-driver/mysql v1.7.0 // indirect
+require (
+	github.com/go-sql-driver/mysql v1.7.0 // indirect
+	github.com/phpdave11/gofpdi v1.0.14-0.20211212211723-1f10f9844311 // indirect
+	github.com/pkg/errors v0.8.1 // indirect
+)
 
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect
