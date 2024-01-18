@@ -3,8 +3,9 @@ package responses
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"os"
-	"os/exec"
+	"github.com/speedata/bagme/document"
+	"github.com/speedata/boxesandglue/backend/bag"
+	"log"
 )
 
 type (
@@ -44,16 +45,9 @@ type Report struct {
 
 func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
 
-	htmlContent := `<h1>Hello, PDF!</h1>
-	<p>This is a sample PDF generated with wkhtmltopdf and Go.</p>`
-
-	// Specify the output file path
-	//outputPath := "output/output_wkhtmltopdf.pdf"
-	outputPath := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
-
-	path, err := generatePDFFromHTML(htmlContent, outputPath)
+	path, err := doThings(schemeData)
 	if err != nil {
-		return "", errors.New(err.Error())
+		log.Fatal(err)
 	}
 
 	filePath := "https://" + context.Request.Host + path
@@ -90,40 +84,76 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 
 }
 
-func generatePDFFromHTML(htmlContent, outputPath string) (string, error) {
-	// Create a temporary HTML file
-	htmlFile, err := os.CreateTemp("", "temp*.html")
+var html = `<h1>The frog king</h1>
+
+<p>In olden times when wishing still <em>helped</em> one,
+   there lived a king whose daughters were all beautiful,
+   but the <span class="green">youngest</span> was so beautiful that the sun itself,
+   which has seen so much, was
+   <span style="font-weight: bold">astonished</span> whenever it
+   shone in her face.</p>
+
+<p>Close by the king's castle lay a great dark forest,
+	and under an old lime-tree in the forest was a well,
+	and when the day was very warm, the king's child
+	went out into the forest and sat down by the side of
+	the cool <span id="important">fountain</span>, and when she was bored she took a
+	golden ball, and threw it up on high and caught it,
+	and this ball was her favorite plaything.
+</p>`
+
+var css = `
+body {
+	font-family: serif;
+    font-size: 12pt;
+    line-height: 14pt;
+}
+
+p {
+    margin-top: 8pt;
+    margin-bottom: 2pt;
+}
+
+.green {
+    color: green;
+}
+
+#important {
+    color: rebeccapurple;
+    font-weight: bolder;
+    font-style: italic;
+}`
+
+func doThings(schemeData *SchemeOfWorkResponseInfo) (string, error) {
+	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
+	d, err := document.New(path)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
-	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-
-		}
-	}(htmlFile.Name()) // Clean up the temporary HTML file
-
-	// Write the HTML content to the temporary file
-	_, err = htmlFile.WriteString(htmlContent)
-	if err != nil {
+	if d.AddCSS(css); err != nil {
+		return "", errors.New(err.Error())
+	}
+	// loads the font families serif, sans and monospace
+	if err = d.Frontend.LoadIncludedFonts(); err != nil {
+		return "", errors.New(err.Error())
+	}
+	wd := bag.MustSp("280pt")
+	colText := bag.MustSp("140pt")
+	colImage := bag.MustSp("20pt")
+	rowText := bag.MustSp("23cm")
+	if err = d.OutputAt(html, wd, colText, rowText); err != nil {
 		return "", errors.New(err.Error())
 	}
 
-	// Create the PDF file
-	pdfFile, err := os.Create(outputPath)
+	if err = d.OutputAt(`<img src="img/frogking-a.pdf" width="4cm" height="6cm">`, wd, colImage, rowText); err != nil {
+		return "", errors.New(err.Error())
+	}
+	err = d.Finish()
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
-	defer pdfFile.Close()
+	return path, nil
 
-	// Run the wkhtmltopdf command
-	cmd := exec.Command("wkhtmltopdf", htmlFile.Name(), outputPath)
-	err = cmd.Run()
-	if err != nil {
-		return "", errors.New(err.Error())
-	}
-
-	return outputPath, nil
 }
 
 /*
