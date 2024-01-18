@@ -139,15 +139,15 @@ func doThings(schemeData *SchemeOfWorkResponseInfo) (string, error) {
 	}
 	wd := bag.MustSp("280pt")
 	colText := bag.MustSp("140pt")
-	colImage := bag.MustSp("20pt")
+	//colImage := bag.MustSp("20pt")
 	rowText := bag.MustSp("23cm")
 	if err = d.OutputAt(html, wd, colText, rowText); err != nil {
 		return "", errors.New(err.Error())
 	}
 
-	if err = d.OutputAt(`<img src="img/frogking-a.pdf" width="4cm" height="6cm">`, wd, colImage, rowText); err != nil {
+	/*if err = d.OutputAt(`<img src="img/frogking-a.pdf" width="4cm" height="6cm">`, wd, colImage, rowText); err != nil {
 		return "", errors.New(err.Error())
-	}
+	}*/
 	err = d.Finish()
 	if err != nil {
 		return "", errors.New(err.Error())
