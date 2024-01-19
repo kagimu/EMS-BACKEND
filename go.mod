@@ -11,9 +11,8 @@ require (
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/phpdave11/gofpdf v1.4.2
 	github.com/satori/go.uuid v1.2.0
-	github.com/speedata/bagme v0.0.0-20231122194752-d1948a8d651e
-	github.com/speedata/boxesandglue v0.0.0-20231122103605-3435f2a32a56
 	github.com/xuri/excelize/v2 v2.8.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.14.0
@@ -21,17 +20,7 @@ require (
 	gorm.io/gorm v1.25.5
 )
 
-require (
-	github.com/PuerkitoBio/goquery v1.8.1 // indirect
-	github.com/andybalholm/cascadia v1.3.2 // indirect
-	github.com/go-sql-driver/mysql v1.7.0 // indirect
-	github.com/google/uuid v1.3.0 // indirect
-	github.com/speedata/baseline-pdf v0.0.0-20231122102911-d3b0bd534820 // indirect
-	github.com/speedata/css/scanner v0.0.0-20201005071706-2ed32c3ce553 // indirect
-	github.com/speedata/gofpdi v1.0.18 // indirect
-	github.com/speedata/hyphenation v1.0.1 // indirect
-	github.com/speedata/textlayout v0.0.0-20230827181055-b7ff752e85ae // indirect
-)
+require github.com/go-sql-driver/mysql v1.7.0 // indirect
 
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect
