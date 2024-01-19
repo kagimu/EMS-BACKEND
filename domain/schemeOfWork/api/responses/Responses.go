@@ -49,9 +49,9 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 		log.Fatal(err)
 	}
 
-	filePath := "https://" + context.Request.Host + path
+	//filePath := "https://" + context.Request.Host + path
 
-	return filePath, nil
+	return path, nil
 
 }
 
