@@ -136,7 +136,7 @@ func ExampleFpdf_HTMLBasicNew(schemeData *SchemeOfWorkResponseInfo, context *gin
 
 func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
 	var html = `<h1>The frog king</h1><br /> <br />`
-	html += `<p>In olden times when wishing still <em>helped</em> one,
+	/*html += `<p>In olden times when wishing still <em>helped</em> one,
 		   there lived a king whose daughters were all beautiful,
 		   but the <span class="green">youngest</span> was so beautiful that the sun itself,
 		   which has seen so much, was
@@ -150,24 +150,27 @@ func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
 			the cool <span id="important">fountain</span>, and when she was bored she took a
 			golden ball, and threw it up on high and caught it,
 			and this ball was her favorite plaything.
-		</p>`
+		</p>`*/
 	html += `
 			<h1>Inline CSS Table</h1>
-			<table>
-				<tr>
-					<th>Header 1</th>
-					<th>Header 2</th>
-					<th>Header 3</th>
+			<table border="1" style="width:100%;">
+				<tr style="color:green; background-color:#e7e9eb;">
+					<td style="width:25%;">Header 1</td>
+					<td style="width:25%;">Header 2</td>
+					<td style="width:25%;">Header 3</td>
+					<td style="width:25%;">Header 4</td>
 				</tr>
 				<tr>
 					<td>Data 1</td>
 					<td>Data 2</td>
 					<td>Data 3</td>
+					<td>Data 4</td>
 				</tr>
 				<tr>
 					<td>Data 4</td>
 					<td>Data 5</td>
 					<td>Data 6</td>
+					<td>Data 7</td>
 				</tr>
 			</table>`
 	return html
