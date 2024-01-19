@@ -49,9 +49,9 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 		log.Fatal(err)
 	}
 
-	filePath := "https://" + context.Request.Host + path
+	//filePath := "https://" + context.Request.Host + path
 
-	return filePath, nil
+	return path, nil
 
 }
 
@@ -59,16 +59,23 @@ func ExampleFpdf_HTMLBasicNew(schemeData *SchemeOfWorkResponseInfo, context *gin
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	// First page: manual local link
 	pdf.AddPage()
-	pdf.SetFont("Helvetica", "", 20)
+
+	/*  pdf.AddTTFFont("Arial", "/fileRepo/ttf/arial.ttf")
+	if err != nil {
+		return errors.New("---3. " + err.Error() + "----")
+	}*/
+	//pdf.AddFont("Arial", "","/fileRepo/ttf/arial.ttf")
+	pdf.SetFont("Arial", "", 12)
+	//pdf.SetFont("Helvetica", "", 20)
 	_, lineHt := pdf.GetFontSize()
-	pdf.Write(lineHt, "To find out what's new in this tutorial, click ")
-	pdf.SetFont("", "U", 0)
-	link := pdf.AddLink()
-	pdf.WriteLinkID(lineHt, "here", link)
-	pdf.SetFont("", "", 0)
+	//pdf.Write(lineHt, "To find out what's new in this tutorial, click ")
+	//pdf.SetFont("", "U", 0)
+	//link := pdf.AddLink()
+	//pdf.WriteLinkID(lineHt, "here", link)
+	//pdf.SetFont("", "", 0)
 	// Second page: image link and basic HTML with link
-	pdf.AddPage()
-	pdf.SetLink(link, 0, -1)
+	//pdf.AddPage()
+	//pdf.SetLink(link, 0, -1)
 	//pdf.Image(example.ImageFile("logo.png"), 10, 12, 30, 0, false, "", 0, "http://www.fpdf.org")
 	pdf.SetLeftMargin(45)
 	pdf.SetFontSize(14)
