@@ -3,7 +3,7 @@ package responses
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/phpdave11/gofpdf"
+	"github.com/jung-kurt/gofpdf"
 	"log"
 )
 
