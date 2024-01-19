@@ -3,8 +3,7 @@ package responses
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/speedata/bagme/document"
-	"github.com/speedata/boxesandglue/backend/bag"
+	"github.com/phpdave11/gofpdf"
 	"log"
 )
 
@@ -45,7 +44,7 @@ type Report struct {
 
 func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
 
-	path, err := doThings(schemeData)
+	path, err := ExampleFpdf_HTMLBasicNew(schemeData, context)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,119 +55,111 @@ func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.C
 
 }
 
-/*
-var html = `<h1>The frog king</h1>
-
-<p>In olden times when wishing still <em>helped</em> one,
-
-	there lived a king whose daughters were all beautiful,
-	but the <span class="green">youngest</span> was so beautiful that the sun itself,
-	which has seen so much, was
-	<span style="font-weight: bold">astonished</span> whenever it
-	shone in her face.</p>
-
-<p>Close by the king's castle lay a great dark forest,
-
-	and under an old lime-tree in the forest was a well,
-	and when the day was very warm, the king's child
-	went out into the forest and sat down by the side of
-	the cool <span id="important">fountain</span>, and when she was bored she took a
-	golden ball, and threw it up on high and caught it,
-	and this ball was her favorite plaything.
-
-</p>`
-
-var css = `
-
-	body {
-		font-family: serif;
-	    font-size: 12pt;
-	    line-height: 14pt;
-	}
-
-	p {
-	    margin-top: 8pt;
-	    margin-bottom: 2pt;
-	}
-
-	.green {
-	    color: green;
-	}
-
-	#important {
-	    color: rebeccapurple;
-	    font-weight: bolder;
-	    font-style: italic;
-	}`
-*/
-func doThings(schemeData *SchemeOfWorkResponseInfo) (string, error) {
+func ExampleFpdf_HTMLBasicNew(schemeData *SchemeOfWorkResponseInfo, context *gin.Context) (string, error) {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	// First page: manual local link
+	pdf.AddPage()
+	pdf.SetFont("Helvetica", "", 20)
+	_, lineHt := pdf.GetFontSize()
+	pdf.Write(lineHt, "To find out what's new in this tutorial, click ")
+	pdf.SetFont("", "U", 0)
+	link := pdf.AddLink()
+	pdf.WriteLinkID(lineHt, "here", link)
+	pdf.SetFont("", "", 0)
+	// Second page: image link and basic HTML with link
+	pdf.AddPage()
+	pdf.SetLink(link, 0, -1)
+	//pdf.Image(example.ImageFile("logo.png"), 10, 12, 30, 0, false, "", 0, "http://www.fpdf.org")
+	pdf.SetLeftMargin(45)
+	pdf.SetFontSize(14)
+	_, lineHt = pdf.GetFontSize()
+	htmlStr := `You can now easily print text mixing different styles: <b>bold</b>, ` +
+		`<i>italic</i>, <u>underlined</u>, or <b><i><u>all at once</u></i></b>!<br><br>` +
+		`<center>You can also center text.</center>` +
+		`<right>Or align it to the right.</right>` +
+		`You can also insert links on text, such as ` +
+		`<a href="http://www.fpdf.org">www.fpdf.org</a>, or on an image: click on the logo.`
+	html := pdf.HTMLBasicNew()
+	html.Write(lineHt, htmlStr)
 	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
-	htmlData := generateHtml(schemeData)
-	d, err := document.New(path)
+	err := pdf.OutputFileAndClose(path)
 	if err != nil {
 		return "", errors.New(err.Error())
 	}
-	/*if d.AddCSS(css); err != nil {
-		return "", errors.New(err.Error())
-	}*/
-	// loads the font families serif, sans and monospace
-	if err = d.Frontend.LoadIncludedFonts(); err != nil {
-		return "", errors.New(err.Error())
-	}
-	wd := bag.MustSp("280pt")
-	colText := bag.MustSp("240pt")
-	//colImage := bag.MustSp("20pt")
-	rowText := bag.MustSp("23cm")
-	if err = d.OutputAt(htmlData, wd, colText, rowText); err != nil {
-		return "", errors.New(err.Error())
-	}
 
-	/*if err = d.OutputAt(`<img src="img/frogking-a.pdf" width="4cm" height="6cm">`, wd, colImage, rowText); err != nil {
-		return "", errors.New(err.Error())
-	}*/
-	err = d.Finish()
-	if err != nil {
-		return "", errors.New(err.Error())
-	}
-	return path, nil
+	filePath := "https://" + context.Request.Host + path
 
+	return filePath, nil
 }
 
-func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
-	var html = `<h1>The frog king</h1><br /> <br />`
-	html += `<p>In olden times when wishing still <em>helped</em> one,
-		   there lived a king whose daughters were all beautiful,
-		   but the <span class="green">youngest</span> was so beautiful that the sun itself,
-		   which has seen so much, was
-		   <span style="font-weight: bold">astonished</span> whenever it
-		   shone in her face.</p><br /><br />`
+//func doThings(schemeData *SchemeOfWorkResponseInfo) (string, error) {
+//	path := "/fileRepo/schemeTemplatePdf/" + schemeData.Name + ".pdf"
+//	htmlData := generateHtml(schemeData)
+//	d, err := document.New(path)
+//	if err != nil {
+//		return "", errors.New(err.Error())
+//	}
+//	/*if d.AddCSS(css); err != nil {
+//		return "", errors.New(err.Error())
+//	}*/
+//	// loads the font families serif, sans and monospace
+//	if err = d.Frontend.LoadIncludedFonts(); err != nil {
+//		return "", errors.New(err.Error())
+//	}
+//	wd := bag.MustSp("280pt")
+//	colText := bag.MustSp("140pt")
+//	//colImage := bag.MustSp("20pt")
+//	rowText := bag.MustSp("23cm")
+//	if err = d.OutputAt(htmlData, wd, colText, rowText); err != nil {
+//		return "", errors.New(err.Error())
+//	}
+//
+//	/*if err = d.OutputAt(`<img src="img/frogking-a.pdf" width="4cm" height="6cm">`, wd, colImage, rowText); err != nil {
+//		return "", errors.New(err.Error())
+//	}*/
+//	err = d.Finish()
+//	if err != nil {
+//		return "", errors.New(err.Error())
+//	}
+//	return path, nil
+//
+//}
 
-	html += `<p>Close by the king's castle lay a great dark forest,
-			and under an old lime-tree in the forest was a well,
-			and when the day was very warm, the king's child
-			went out into the forest and sat down by the side of
-			the cool <span id="important">fountain</span>, and when she was bored she took a
-			golden ball, and threw it up on high and caught it,
-			and this ball was her favorite plaything.
-		</p>`
-	html += `
-			<h1 style="text-align: center;">CSS-styled Inline Div Table with Two Columns</h1>
-			<div style="width: 100%; margin-bottom: 20px;">
-				<div style="display: flex; font-weight: bold; background-color: #f2f2f2; margin-bottom: 8px;">
-					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 1</div>
-					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 2</div>
-				</div>
-				<div style="display: flex; margin-bottom: 8px;">
-					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 1</div>
-					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 2</div>
-				</div>
-				<div style="display: flex;">
-					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 3</div>
-					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 4</div>
-				</div>
-			</div>`
-	return html
-}
+//func generateHtml(schemeData *SchemeOfWorkResponseInfo) string {
+//	var html = `<h1>The frog king</h1><br /> <br />`
+//	html += `<p>In olden times when wishing still <em>helped</em> one,
+//		   there lived a king whose daughters were all beautiful,
+//		   but the <span class="green">youngest</span> was so beautiful that the sun itself,
+//		   which has seen so much, was
+//		   <span style="font-weight: bold">astonished</span> whenever it
+//		   shone in her face.</p><br /><br />`
+//
+//	html += `<p>Close by the king's castle lay a great dark forest,
+//			and under an old lime-tree in the forest was a well,
+//			and when the day was very warm, the king's child
+//			went out into the forest and sat down by the side of
+//			the cool <span id="important">fountain</span>, and when she was bored she took a
+//			golden ball, and threw it up on high and caught it,
+//			and this ball was her favorite plaything.
+//		</p>`
+//	html += `
+//			<h1 style="text-align: center;">CSS-styled Inline Div Table with Two Columns</h1>
+//			<div style="width: 100%; margin-bottom: 20px;">
+//				<div style="display: flex; font-weight: bold; background-color: #f2f2f2; margin-bottom: 8px;">
+//					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 1</div>
+//					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Header 2</div>
+//				</div>
+//				<div style="display: flex; margin-bottom: 8px;">
+//					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 1</div>
+//					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 2</div>
+//				</div>
+//				<div style="display: flex;">
+//					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 3</div>
+//					<div style="flex: 1; border: 1px solid #dddddd; padding: 8px;">Data 4</div>
+//				</div>
+//			</div>`
+//	return html
+//}
 
 /*
 func (schemeData *SchemeOfWorkResponseInfo) ReturnSchemeOfWorkPdf(context *gin.Context) (string, error) {
