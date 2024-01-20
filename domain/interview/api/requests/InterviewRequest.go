@@ -10,6 +10,7 @@ type InterviewRequest struct {
 	Message       string `json:"message"`
 	Venue         string `json:"venue"`
 	InterviewDate string `json:"interview_date"`
+	StudentNumber string `json:"student_number"`
 }
 
 func (i *InterviewRequest) Validate() error {

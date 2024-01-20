@@ -2,20 +2,17 @@ package controllers
 
 import (
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"net/http"
 )
 
 func CreateInterview(c *gin.Context) {
@@ -38,7 +35,7 @@ func CreateInterview(c *gin.Context) {
 	}
 
 	var student studentModel.Student
-	studentNumber := c.Query("student_number")
+	studentNumber := payload.StudentNumber
 
 	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -83,10 +80,10 @@ func CreateInterview(c *gin.Context) {
 		return
 	}
 
-	sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "TutorView: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
-	if err := sendEmail.SendEmail(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})
-	}
+	//sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "Wholesome: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
+	//if err := sendEmail.SendEmail(); err != nil {
+	//	c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})
+	//}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Interview created successfully", "data": saveInterview})
 }

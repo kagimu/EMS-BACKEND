@@ -17,3 +17,14 @@ type Interview struct {
 	UserNumber    string         `json:"user_number" gorm:"size:36;not null"`
 	User          authModel.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
+
+// load student name via the afterFind hook
+
+func (i *Interview) AfterFind(tx *gorm.DB) (err error) {
+	var student models.Student
+	if err := tx.First(&student, "number = ?", i.StudentNumber).Error; err != nil {
+		return err
+	}
+	i.Student = student
+	return nil
+}

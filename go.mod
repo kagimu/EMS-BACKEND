@@ -11,7 +11,7 @@ require (
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/jung-kurt/gofpdf v1.0.0
+	github.com/joho/godotenv v1.5.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/xuri/excelize/v2 v2.8.0
 	go.uber.org/zap v1.26.0

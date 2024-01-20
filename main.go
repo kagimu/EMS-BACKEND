@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-
+	"github.com/joho/godotenv"
+	"log"
 	"os"
 
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -53,12 +54,12 @@ import (
 var err error
 
 func main() {
-	/*	if os.Getenv("ENVIRONMENT") != "production" {
+	if os.Getenv("ENVIRONMENT") != "production" {
 		err := godotenv.Load(".env")
 		if err != nil {
 			log.Fatal("Error loading .env file")
 		}
-	}*/
+	}
 
 	if os.Getenv("ENVIRONMENT") == "production" {
 		gin.SetMode(gin.ReleaseMode)
