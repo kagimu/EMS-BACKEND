@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
-	"log"
 	"os"
 
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -45,7 +43,6 @@ import (
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -54,16 +51,16 @@ import (
 var err error
 
 func main() {
-	if os.Getenv("ENVIRONMENT") != "production" {
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
-	}
-
-	if os.Getenv("ENVIRONMENT") == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	//if os.Getenv("ENVIRONMENT") != "production" {
+	//	err := godotenv.Load(".env")
+	//	if err != nil {
+	//		log.Fatal("Error loading .env file")
+	//	}
+	//}
+	//
+	//if os.Getenv("ENVIRONMENT") == "production" {
+	//	gin.SetMode(gin.ReleaseMode)
+	//}
 
 	errZone := os.Setenv("TZ", "Africa/Nairobi")
 	if errZone != nil {
