@@ -224,10 +224,15 @@ func FetchStudentByAPN(c *gin.Context) {
 }
 
 func FetchAllStudents(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
 	var students []models.Student
 
-	err := config.DB.Find(&students).Error
-	if err != nil {
+	if err := config.DB.Find(&students).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "failed to fetch students",

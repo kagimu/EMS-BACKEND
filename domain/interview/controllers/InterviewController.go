@@ -55,10 +55,7 @@ func CreateInterview(c *gin.Context) {
 	}
 
 	if err := config.DB.Create(&saveInterview).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to create interview",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview"})
 		return
 	}
 
