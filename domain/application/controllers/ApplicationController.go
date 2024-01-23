@@ -120,9 +120,7 @@ func EditApplication(c *gin.Context) {
 
 	var payload ApplicationInfo
 	if err := c.BindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to process input",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 

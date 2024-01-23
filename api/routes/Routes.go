@@ -294,6 +294,7 @@ func SetupRoute() *gin.Engine {
 			interview.GET("/all", interviewController.FetchAllInterviews)
 			interview.GET("/:interview_number", interviewController.FetchAnInterview)
 			interview.PUT("/:interview_number", interviewController.EditInterview)
+			interview.PUT("/add-questions/:number", interviewController.AddStudentsAndQuestionsToAnInterview)
 		}
 
 		interviewQuestion := main.Group("/interview-questions")
@@ -310,6 +311,12 @@ func SetupRoute() *gin.Engine {
 			interviewResult.GET("/:student_number", interviewController.FetchInterviewResultByStudentNumber)
 			interviewResult.GET("/all", interviewController.FetchAllInterviewResults)
 			interviewResult.DELETE(":number", interviewController.DeleteInterviewResult)
+		}
+
+		interviewGrade := main.Group("/interview-grades")
+		{
+			interviewGrade.POST("/:number", interviewController.CreateInterviewGrade)
+			interviewGrade.GET("/:number", interviewController.GetStudentGrades)
 		}
 
 		admission := main.Group("/admission")
