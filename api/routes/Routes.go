@@ -19,7 +19,6 @@ import (
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
-	interviewQuestionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interviewQuestion/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
@@ -295,13 +294,24 @@ func SetupRoute() *gin.Engine {
 			interview.GET("/all", interviewController.FetchAllInterviews)
 			interview.GET("/:interview_number", interviewController.FetchAnInterview)
 			interview.PUT("/:interview_number", interviewController.EditInterview)
+			interview.GET("/:interview_number/students", interviewController.FetchStudentsByInterviewNumber)
+			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
 		}
 
 		interviewQuestion := main.Group("/interview-questions")
 		{
-			interviewQuestion.POST("", interviewQuestionController.CreateInterviewQuestion)
-			interviewQuestion.GET("/:number", interviewQuestionController.FetchInterviewQuestion)
-			interviewQuestion.PUT("/:number", interviewQuestionController.EditInterviewQuestion)
+			interviewQuestion.POST("", interviewController.CreateInterviewQuestion)
+			interviewQuestion.GET("/:number", interviewController.FetchInterviewQuestion)
+			interviewQuestion.GET("", interviewController.FetchAllInterviewQuestions)
+			interviewQuestion.PUT("/:number", interviewController.EditInterviewQuestion)
+		}
+
+		interviewResult := main.Group("/interview-results")
+		{
+			interviewResult.POST("/:student_number", interviewController.CreateInterviewResults)
+			interviewResult.GET("/:student_number", interviewController.FetchInterviewResultByStudentNumber)
+			interviewResult.GET("/all", interviewController.FetchAllInterviewResults)
+			interviewResult.DELETE(":number", interviewController.DeleteInterviewResult)
 		}
 
 		admission := main.Group("/admission")

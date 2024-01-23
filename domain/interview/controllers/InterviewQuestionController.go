@@ -1,20 +1,22 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interviewQuestion/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interviewQuestion/models"
-
+	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func CreateInterviewQuestion(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
 		return
@@ -27,42 +29,49 @@ func CreateInterviewQuestion(c *gin.Context) {
 	}
 
 	interviewNumber := payload.InterviewNumber
-	var interview interviewModel.Interview
+	var interview models.Interview
 	if err := config.DB.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Interview not found"})
 		return
 	}
 
+	tx := config.DB.Begin()
+
 	interviewQuestionNumber := uuid.NewV4().String()
 	saveInterviewQuestion := models.InterviewQuestion{
 		Number:          interviewQuestionNumber,
 		InterviewNumber: interviewNumber,
 		Question:        payload.Question,
+		Score:           payload.Score,
 		CorrectAnswer:   payload.CorrectAnswer,
+		UserNumber:      user.Number,
 	}
 
-	if err := config.DB.Create(&saveInterviewQuestion).Error; err != nil {
+	if err := tx.Create(&saveInterviewQuestion).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create interview question"})
 		return
 	}
 
 	for _, possibleAnswer := range payload.PossibleAnswers {
 		saveAnswers := models.Answer{
-			Number:                  uuid.NewV4().String(),
-			InterviewQuestionNumber: interviewQuestionNumber,
-			Body:                    possibleAnswer,
+			Number:         uuid.NewV4().String(),
+			QuestionNumber: interviewQuestionNumber,
+			Body:           possibleAnswer,
 		}
 
-		if err := config.DB.Create(&saveAnswers).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"err":     err.Error(),
-				"message": "Failed to create possible answers"})
+		if err := tx.Create(&saveAnswers).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create possible answers"})
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Interview question created"})
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create interview question"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": saveInterviewQuestion})
 }
 
 func FetchInterviewQuestion(c *gin.Context) {
@@ -75,15 +84,38 @@ func FetchInterviewQuestion(c *gin.Context) {
 	interviewQuestionNumber := c.Param("number")
 	var interviewQuestion models.InterviewQuestion
 	if err := config.DB.Where("number = ?", interviewQuestionNumber).First(&interviewQuestion).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview question not found"})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"message": "Interview question not found"})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch interview question"})
+			return
+		}
+	}
+
+	var answers []models.Answer
+	if err := config.DB.Where("question_number = ?", interviewQuestion.Number).Find(&answers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch answers"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": interviewQuestion})
+	var results []responses.InterviewQuestionResponse
+
+	for _, answer := range answers {
+		result := responses.InterviewQuestionResponse{
+			InterviewNumber: answer.Number,
+			Question:        interviewQuestion.InterviewNumber,
+		}
+
+		results = append(results, result)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": results})
 }
 
 func EditInterviewQuestion(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
 		})
@@ -92,9 +124,7 @@ func EditInterviewQuestion(c *gin.Context) {
 
 	var payload requests.InterviewQuestionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to process input",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
@@ -125,8 +155,8 @@ func EditInterviewQuestion(c *gin.Context) {
 
 	for _, possibleAnswer := range payload.PossibleAnswers {
 		saveAnswers := models.Answer{
-			InterviewQuestionNumber: interviewQuestionNumber,
-			Body:                    possibleAnswer,
+			QuestionNumber: interviewQuestionNumber,
+			Body:           possibleAnswer,
 		}
 
 		if err := config.DB.Create(&saveAnswers).Error; err != nil {
@@ -144,4 +174,35 @@ func EditInterviewQuestion(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": interviewQuestion})
+}
+
+func FetchAllInterviewQuestions(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var interviewQuestions []models.InterviewQuestion
+
+	paginationParams := helpers.ParsePaginationParams(c)
+
+	query := config.DB.Model(&models.InterviewQuestion{})
+
+	if _, err := helpers.Paginate(query, paginationParams); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Pagination failed",
+		})
+		return
+	}
+
+	if err := query.Find(&interviewQuestions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "Failed to fetch interview questions",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": interviewQuestions})
 }
