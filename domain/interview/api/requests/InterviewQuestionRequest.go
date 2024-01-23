@@ -5,5 +5,5 @@ type InterviewQuestionRequest struct {
 	Question        string   `json:"question"`
 	PossibleAnswers []string `json:"possible_answers"`
 	CorrectAnswer   string   `json:"correct_answer"`
-	Score           string   `json:"score"`
+	Score           int      `json:"score"`
 }

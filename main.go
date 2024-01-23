@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
+
 	"log"
 	"os"
 
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+	"github.com/joho/godotenv"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
@@ -28,7 +29,6 @@ import (
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
-	interviewQuestionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interviewQuestion/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
@@ -89,7 +89,7 @@ func main() {
 	defer func(sqlDB *sql.DB) {
 		err := sqlDB.Close()
 		if err != nil {
-
+			fmt.Println("Error closing database:", err)
 		}
 	}(sqlDB)
 
@@ -155,8 +155,9 @@ func main() {
 		&interviewModel.Interview{},
 		&materialModels.MaterialSubType{},
 		&lessonPlanModel.LessonPlanReference{},
-		&interviewQuestionModel.InterviewQuestion{},
-		&interviewQuestionModel.Answer{},
+		&interviewModel.InterviewQuestion{},
+		&interviewModel.Answer{},
+		&interviewModel.InterviewResult{},
 	)
 
 	if errMigrate != nil {

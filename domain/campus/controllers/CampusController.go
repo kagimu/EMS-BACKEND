@@ -31,7 +31,7 @@ func NewCampus(context *gin.Context) {
 	var campusInfo CampusInfo
 	err := context.BindJSON(&campusInfo)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!", "err": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
