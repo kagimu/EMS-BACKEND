@@ -181,53 +181,6 @@ func FetchAllInterviews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": interviews})
 }
 
-func AddStudentsAndQuestionsToAnInterview(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
-		return
-	}
-
-	type Input struct {
-		StudentNumber  []string `json:"student_number"`
-		QuestionNumber []string `json:"question_number"`
-	}
-
-	var payload Input
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process the input"})
-		return
-	}
-
-	interviewNumber := c.Param("number")
-	var interview models.Interview
-	if err := config.DB.First(&interview, "number = ?", interviewNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "No interview found with the specified number",
-		})
-		return
-	}
-
-	for i, studentNumber := range payload.StudentNumber {
-		questionNumber := payload.QuestionNumber[i]
-		interviewResultNumber := uuid.NewV4().String()
-
-		saveInterviewResult := models.Interview{
-			Number:         interviewResultNumber,
-			QuestionNumber: questionNumber,
-			StudentNumber:  studentNumber,
-			UserNumber:     user.Number,
-		}
-
-		if err := config.DB.Create(&saveInterviewResult).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview results"})
-			return
-		}
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "Students and questions addedd successfully to the interview"})
-}
-
 func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 	if _, err := commons.GetUserFromHeader(c); err != nil {
@@ -300,3 +253,4 @@ func AddStudentToInterview(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to add student to interview"})
 		return
 	}
+}
