@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -12,7 +14,6 @@ import (
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
 )
 
 func CreateInterview(c *gin.Context) {
@@ -50,7 +51,6 @@ func CreateInterview(c *gin.Context) {
 		Message:       payload.Message,
 		Venue:         payload.Venue,
 		InterviewDate: payload.InterviewDate,
-		StudentNumber: studentNumber,
 		UserNumber:    user.Number,
 	}
 
@@ -148,9 +148,7 @@ func FetchAnInterview(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"data":    interview,
-		"message": "Interview fetched successfully",
+		"data": interview,
 	})
 }
 
@@ -176,15 +174,9 @@ func FetchAllInterviews(c *gin.Context) {
 	}
 
 	if err := query.Find(&interviews).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "interview fetching failed",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interviews"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"data":    interviews,
-		"message": "interviews fetched successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"data": interviews})
 }

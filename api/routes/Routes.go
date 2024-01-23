@@ -308,6 +308,8 @@ func SetupRoute() *gin.Engine {
 		{
 			interviewResult.POST("/:student_number", interviewController.CreateInterviewResults)
 			interviewResult.GET("/:student_number", interviewController.FetchInterviewResultByStudentNumber)
+			interviewResult.GET("/all", interviewController.FetchAllInterviewResults)
+			interviewResult.DELETE(":number", interviewController.DeleteInterviewResult)
 		}
 
 		admission := main.Group("/admission")

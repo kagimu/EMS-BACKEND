@@ -6,6 +6,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
@@ -87,7 +88,7 @@ func FetchInterviewQuestion(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"message": "Interview question not found"})
 			return
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch interview question", "err": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch interview question"})
 			return
 		}
 	}
@@ -184,8 +185,22 @@ func FetchAllInterviewQuestions(c *gin.Context) {
 
 	var interviewQuestions []models.InterviewQuestion
 
-	if err := config.DB.Find(&interviewQuestions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to fetch interview questions"})
+	paginationParams := helpers.ParsePaginationParams(c)
+
+	query := config.DB.Model(&models.InterviewQuestion{})
+
+	if _, err := helpers.Paginate(query, paginationParams); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Pagination failed",
+		})
+		return
+	}
+
+	if err := query.Find(&interviewQuestions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "Failed to fetch interview questions",
+		})
 		return
 	}
 

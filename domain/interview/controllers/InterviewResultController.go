@@ -1,16 +1,19 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func CreateInterviewResults(c *gin.Context) {
@@ -77,4 +80,64 @@ func FetchInterviewResultByStudentNumber(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": results})
+}
+
+func FetchAllInterviewResults(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User does not exist"})
+		return
+	}
+
+	var interviewResults []models.InterviewResult
+
+	paginationParams := helpers.ParsePaginationParams(c)
+
+	query := config.DB.Model(&models.InterviewResult{}).Preload("Student").
+		Select("student_number, sum(score) as total_score").Order("total_score desc")
+
+	if _, err := helpers.Paginate(query, paginationParams); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Pagination failed",
+		})
+		return
+	}
+
+	if err := query.Find(&interviewResults).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"err":     err.Error(),
+			"message": "Failed to fetch interview questions",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": interviewResults})
+
+}
+
+func DeleteInterviewResult(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+		return
+	}
+
+	var interviewResult models.InterviewResult
+	interviewResultNumber := c.Param("number")
+	if err := config.DB.Where("number = ?", interviewResultNumber).First(&interviewResult).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"message": "Interview question not found"})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch interview question"})
+			return
+		}
+	}
+
+	if err := config.DB.Where("number = ?", interviewResultNumber).Delete(&models.InterviewResult{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete interview result", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Interview result deleted successfully"})
 }
