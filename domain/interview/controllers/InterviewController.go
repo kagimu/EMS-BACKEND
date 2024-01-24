@@ -5,8 +5,6 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
@@ -35,45 +33,17 @@ func CreateInterview(c *gin.Context) {
 		return
 	}
 
-	var student studentModel.Student
-	studentNumber := payload.StudentNumber
-
-	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "Student not found",
-		})
-		return
-	}
-
 	saveInterview := models.Interview{
 		Number:        uuid.NewV4().String(),
 		Message:       payload.Message,
 		Venue:         payload.Venue,
+		Name:          payload.Name,
 		InterviewDate: payload.InterviewDate,
 		UserNumber:    user.Number,
 	}
 
 	if err := config.DB.Create(&saveInterview).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview"})
-		return
-	}
-
-	applicationNumber := student.ApplicationNumber
-	application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
-		return
-	}
-
-	updateApplicationStatus := applicationModel.Application{
-		Status: "INTERVIEW_SCHEDULED",
-	}
-
-	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "application updating failed",
-		})
 		return
 	}
 
