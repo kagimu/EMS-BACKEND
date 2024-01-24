@@ -282,6 +282,7 @@ func DeleteStudyPeriod(context *gin.Context) {
 
 	//delete Study Period
 	if err := tx.
+		Unscoped().
 		Where("number = ?", studyPeriodNumber).
 		Delete(&studyPeriodData).Error; err != nil {
 		// If any error occurs, rollback the transaction
