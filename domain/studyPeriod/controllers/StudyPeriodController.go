@@ -6,6 +6,7 @@ import (
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"github.com/gin-gonic/gin"
@@ -254,4 +255,49 @@ func academicYearFilter(academicYearNumber string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+func DeleteStudyPeriod(context *gin.Context) {
+
+	var studyPeriodInfo requests.StudyPeriodDelRequest
+	err := context.BindJSON(&studyPeriodInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	studyPeriodNumber := studyPeriodInfo.Number
+
+	var studyPeriodData studyPeriodModel.StudyPeriod
+
+	studyPeriodDataInfo := config.DB.
+		Where("number = ?", studyPeriodNumber).
+		First(&studyPeriodData)
+	if studyPeriodDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Study Period not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Where("number = ?", studyPeriodNumber).
+		Delete(&studyPeriodData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Study period"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Study period"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Study Period deleted successfully!"})
+
 }
