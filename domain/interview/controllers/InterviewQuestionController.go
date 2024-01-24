@@ -8,7 +8,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -94,23 +93,14 @@ func FetchInterviewQuestion(c *gin.Context) {
 	}
 
 	var answers []models.Answer
-	if err := config.DB.Where("question_number = ?", interviewQuestion.Number).Find(&answers).Error; err != nil {
+	if err := config.DB.Where("question_number = ?", interviewQuestionNumber).Find(&answers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch answers"})
 		return
 	}
 
-	var results []responses.InterviewQuestionResponse
+	results := gin.H{"question": interviewQuestion, "answers": answers}
 
-	for _, answer := range answers {
-		result := responses.InterviewQuestionResponse{
-			InterviewNumber: answer.Number,
-			Question:        interviewQuestion.InterviewNumber,
-		}
-
-		results = append(results, result)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": results})
+	c.JSON(http.StatusOK, results)
 }
 
 func EditInterviewQuestion(c *gin.Context) {
