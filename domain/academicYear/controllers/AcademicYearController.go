@@ -9,6 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -296,7 +297,15 @@ func DeleteAcademicYear(context *gin.Context) {
 	if err := config.DB.
 		Where("academic_year_number = ?", academicYearNumber).
 		First(&studyPeriodChecker).Error; err == nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Academic year, it has Children"})
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Academic year, it is used on Study Period"})
+		return
+	}
+
+	var schemeOfWorkChecker schemeOfWorkModel.SchemeOfWork
+	if err := config.DB.
+		Where("academic_year_number = ?", academicYearNumber).
+		First(&schemeOfWorkChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Academic year, it is used on Scheme of work"})
 		return
 	}
 
@@ -305,7 +314,7 @@ func DeleteAcademicYear(context *gin.Context) {
 		Where("number = ?", academicYearNumber).
 		First(&academicYearData)
 	if academicYearDataInfo.Error != nil {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Study Period not found!"})
+		context.JSON(http.StatusNotFound, gin.H{"message": "Academic Year not found!"})
 		return
 	}
 
@@ -319,17 +328,17 @@ func DeleteAcademicYear(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Study period"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Academic Year"})
 		return
 	}
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Study period"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete academic year"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Study Period deleted successfully!"})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Academic year deleted successfully!"})
 
 }
