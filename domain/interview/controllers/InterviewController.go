@@ -183,6 +183,11 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 }
 
 func AddStudentToInterview(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		return
+	}
+
 	var request requests.InterviewStudentRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
@@ -224,4 +229,34 @@ func AddStudentToInterview(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, gin.H{"message": "Student added to the interview"})
+}
+
+func FetchQuestionsByInterviewNumber(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "User not found",
+		})
+		return
+	}
+
+	interviewNumber := c.Param("interview_number")
+
+	var interview models.Interview
+	if err := config.DB.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "Interview not found",
+		})
+		return
+	}
+
+	var questions []models.InterviewQuestion
+	if err := config.DB.Model(&models.InterviewQuestion{}).Where("interview_number = ?", interviewNumber).Find(&questions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to fetch questions",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": questions})
 }
