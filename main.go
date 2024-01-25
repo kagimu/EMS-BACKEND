@@ -154,8 +154,9 @@ func main() {
 		&interviewModel.InterviewQuestion{},
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
-		&interviewModel.InterviewStudent{},
-	)
+ 		&interviewModel.InterviewGrade{},
+ 		&interviewModel.InterviewStudent{},
+ 	)
 
 	if errMigrate != nil {
 		return
