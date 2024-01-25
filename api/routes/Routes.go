@@ -163,11 +163,19 @@ func SetupRoute() *gin.Engine {
 		main.GET("concepts", conceptController.FetchConcept)
 
 		//adds academic year
+		academicYear := main.Group("/academic-year")
+		{
+			academicYear.POST("delete", academicYearController.DeleteAcademicYear)
+		}
 		main.POST("new-academic-year", academicYearController.NewAcademicYear)
 		main.GET("fetch-academic-year", academicYearController.FetchAcademicYearInfo)
 		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
 
 		//adds study period
+		studyPeriod := main.Group("/study-period")
+		{
+			studyPeriod.POST("delete", studyPeriodController.DeleteStudyPeriod)
+		}
 		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
 		main.GET("fetch-study-period", studyPeriodController.FetchStudyPeriod)
 
@@ -296,6 +304,7 @@ func SetupRoute() *gin.Engine {
 			interview.PUT("/:interview_number", interviewController.EditInterview)
 			interview.GET("/:interview_number/students", interviewController.FetchStudentsByInterviewNumber)
 			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
+			interview.GET("/:interview_number/questions", interviewController.FetchQuestionsByInterviewNumber)
 		}
 
 		interviewQuestion := main.Group("/interview-questions")

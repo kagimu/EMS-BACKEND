@@ -10,6 +10,7 @@ type InterviewRequest struct {
 	Message       string `json:"message"`
 	Venue         string `json:"venue"`
 	InterviewDate string `json:"interview_date"`
+	Name          string `json:"name"`
 	StudentNumber string `json:"student_number"`
 }
 
@@ -21,6 +22,9 @@ func (i *InterviewRequest) Validate() error {
 		return errors.New("venue is required")
 	}
 	if i.InterviewDate == "" {
+		return errors.New("interview date is required")
+	}
+	if i.Name == "" {
 		return errors.New("interview date is required")
 	}
 
