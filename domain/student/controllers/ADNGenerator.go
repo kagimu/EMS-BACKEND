@@ -3,16 +3,19 @@ package controllers
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 )
 
-func CreateADN() (string, error) {
+func CreateADN(apnStatus string) (string, error) {
 	year := strconv.Itoa(time.Now().Year())
 	month := time.Now().Format("01")
+
+	if apnStatus == "Archive" {
+		return "Status is already archived", nil
+	}
 
 	saveADN := models.ADN{
 		Year:  year,
@@ -23,8 +26,8 @@ func CreateADN() (string, error) {
 		return "", err
 	}
 
-	savedID := saveADN.ID + 1
-	result := strings.Join([]string{saveADN.Year, "02", fmt.Sprintf("%04s", strconv.FormatUint(uint64(savedID), 10))}, "")
+	savedID := saveADN.ID
+	result := fmt.Sprintf("%s02%04d", saveADN.Year, savedID)
 
 	return result, nil
 }
