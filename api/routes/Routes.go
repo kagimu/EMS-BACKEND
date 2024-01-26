@@ -19,6 +19,7 @@ import (
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
+	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
@@ -26,6 +27,7 @@ import (
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
@@ -315,10 +317,27 @@ func SetupRoute() *gin.Engine {
 			interviewResult.DELETE(":number", interviewController.DeleteInterviewResult)
 		}
 
-		admission := main.Group("/admission")
+		invoices := main.Group("/invoices")
+		{
+			invoices.POST("", invoiceController.CreateInvoice)
+			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
+		}
+
+		services := main.Group("/services")
+		{
+			services.POST("", serviceController.CreateService)
+			services.GET("", serviceController.FetchServices)
+			services.DELETE("", serviceController.DeleteService)
+			services.PUT(":service_number", serviceController.EditService)
+		}
+
+		admission := main.Group("/admissions")
 		{
 			admission.POST("", admissionController.CreateAdmission)
+			admission.PUT("/:number/admit", admissionController.AdmitStudent)
+			admission.PUT("/admit", admissionController.BulkAdmitStudents)
 		}
 	}
+
 	return router
 }
