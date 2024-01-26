@@ -5,6 +5,7 @@ import "errors"
 type ServiceRequest struct {
 	Description string `json:"description"`
 	Cost        int    `json:"cost"`
+	Name        string `json:"name"`
 }
 
 func (s *ServiceRequest) Validate() error {

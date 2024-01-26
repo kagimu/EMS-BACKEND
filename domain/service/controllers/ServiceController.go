@@ -35,6 +35,7 @@ func CreateService(c *gin.Context) {
 		Cost:        payload.Cost,
 		Description: payload.Description,
 		UserNumber:  user.Number,
+		Name:        payload.Name,
 	}
 
 	if err := config.DB.Create(&saveService).Error; err != nil {
@@ -66,12 +67,7 @@ func EditService(c *gin.Context) {
 		return
 	}
 
-	type Input struct {
-		Description string `json:"description"`
-		Cost        int    `json:"cost"`
-	}
-
-	var payload Input
+	var payload requests.ServiceRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
