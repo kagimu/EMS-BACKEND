@@ -171,7 +171,7 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 	}
 
 	var students []models.InterviewStudent
-	if err := config.DB.Model(&models.InterviewStudent{}).Where("interview_number = ?", interviewNumber).Find(&students).Error; err != nil {
+	if err := config.DB.Where("interview_number = ?", interviewNumber).Find(&students).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Failed to fetch students",
 		})

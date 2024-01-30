@@ -83,6 +83,7 @@ func EditService(c *gin.Context) {
 	updateService := models.Service{
 		Description: payload.Description,
 		Cost:        payload.Cost,
+		Name:        payload.Name,
 	}
 
 	if err := config.DB.Model(&service).Where("number = ?", serviceNumber).Updates(updateService).Error; err != nil {

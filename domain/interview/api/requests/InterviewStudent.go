@@ -11,7 +11,7 @@ type InterviewStudentRequest struct {
 
 func (i *InterviewStudentRequest) Validate() error {
 	if i.StudentNumber == "" {
-		return errors.New("message is required")
+		return errors.New("student is required")
 	}
 	if i.InterviewNumber == "" {
 		return errors.New("venue is required")
