@@ -10,8 +10,8 @@ import (
 type Student struct {
 	gorm.Model
 	Number                    string              `json:"number" gorm:"size:36;unique;not null"`
-	APN                       string              `gorm:"unique;size:100; " json:"apn"`
-	ADN                       string              `gorm:"size:100;" json:"adn"`
+	APN                       string              `gorm:"unique;size:100;" json:"apn"`
+	ADN                       string              `gorm:"unique;size:100;" json:"adn"`
 	APNStatus                 string              `gorm:"size:20;default:Inactive" json:"apn_status"`
 	Surname                   string              `json:"surname" `
 	SecondName                string              `json:"second_name"`
