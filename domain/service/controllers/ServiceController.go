@@ -30,20 +30,23 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
-	saveService := models.Service{
-		Number:      uuid.NewV4().String(),
-		Cost:        payload.Cost,
-		Description: payload.Description,
-		UserNumber:  user.Number,
-		Name:        payload.Name,
+	for _, campusNumber := range payload.CampusNumbers {
+		saveService := models.Service{
+			Number:       uuid.NewV4().String(),
+			Cost:         payload.Cost,
+			Description:  payload.Description,
+			UserNumber:   user.Number,
+			CampusNumber: campusNumber,
+			Name:         payload.Name,
+		}
+
+		if err := config.DB.Create(&saveService).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service", "err": err.Error()})
+			return
+		}
 	}
 
-	if err := config.DB.Create(&saveService).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service", "err": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, saveService)
+	c.JSON(http.StatusCreated, gin.H{"message": "Service created successfully"})
 }
 
 func FetchServices(c *gin.Context) {

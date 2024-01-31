@@ -3,9 +3,10 @@ package requests
 import "errors"
 
 type ServiceRequest struct {
-	Description string `json:"description"`
-	Cost        int    `json:"cost"`
-	Name        string `json:"name"`
+	Description   string   `json:"description"`
+	Cost          int      `json:"cost"`
+	Name          string   `json:"name"`
+	CampusNumbers []string `json:"campus_number"`
 }
 
 func (s *ServiceRequest) Validate() error {
@@ -17,6 +18,9 @@ func (s *ServiceRequest) Validate() error {
 	}
 	if s.Name == "" {
 		return errors.New("name is required")
+	}
+	if len(s.CampusNumbers) == 0 {
+		return errors.New("at least one campus is required")
 	}
 
 	return nil
