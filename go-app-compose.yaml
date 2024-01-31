@@ -1,4 +1,4 @@
-version: '2'
+version: "2"
 services:
   wholesome-app:
     restart: unless-stopped
@@ -7,4 +7,15 @@ services:
       context: .
     environment:
       - VIRTUAL_HOST=104.248.175.232
-
+# Application to be modified
+# Previous schools are optional to some classes.
+# Indicate which classes need the previous schools
+#  Work on changing the status of the interview upon admission
+# For the services and products - some services are available on one campus and not available on the other campus.
+# tag that to the campus ID
+# Interview results rank up
+# After
+# Invoice - item in kind or item in cash
+# Grading - (to ideate on how the online interviews)
+# An array of campus ids when creating a service.
+# Generate an invoice for the student and the campus plus services
