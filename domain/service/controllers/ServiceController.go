@@ -36,6 +36,7 @@ func CreateService(c *gin.Context) {
 			Cost:         payload.Cost,
 			Description:  payload.Description,
 			UserNumber:   user.Number,
+			PaymentMode:  payload.PaymentMode,
 			CampusNumber: campusNumber,
 			Name:         payload.Name,
 		}

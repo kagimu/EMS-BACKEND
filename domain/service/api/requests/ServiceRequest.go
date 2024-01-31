@@ -7,6 +7,7 @@ type ServiceRequest struct {
 	Cost          int      `json:"cost"`
 	Name          string   `json:"name"`
 	CampusNumbers []string `json:"campus_number"`
+	PaymentMode   string   `json:"payment_mode"`
 }
 
 func (s *ServiceRequest) Validate() error {

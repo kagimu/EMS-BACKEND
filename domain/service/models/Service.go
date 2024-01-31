@@ -11,6 +11,7 @@ type Service struct {
 	Description  string      `json:"description" gorm:"type:text"`
 	Cost         int         `json:"cost"`
 	Name         string      `json:"name"`
+	PaymentMode  string      `json:"payment_mode" gorm:"default:'CASH'"`
 	CampusNumber string      `json:"campus_number" gorm:"size:36;not null"`
 	UserNumber   string      `json:"user_number" gorm:"size:36;not null"`
 	User         models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
