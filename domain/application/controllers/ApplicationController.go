@@ -116,6 +116,7 @@ func EditApplication(c *gin.Context) {
 	type ApplicationInfo struct {
 		Status                string `json:"status"`
 		ApplicationFeePayment bool   `json:"application_fee_payment"`
+		InterviewMode         string `json:"interview_mode"`
 	}
 
 	var payload ApplicationInfo
@@ -145,6 +146,7 @@ func EditApplication(c *gin.Context) {
 	updateApplication := models.Application{
 		Status:                payload.Status,
 		ApplicationFeePayment: payload.ApplicationFeePayment,
+		InterviewMode:         payload.InterviewMode,
 	}
 
 	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplication).Error; err != nil {

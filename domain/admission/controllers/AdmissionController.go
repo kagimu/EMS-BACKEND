@@ -7,6 +7,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -161,6 +163,23 @@ func AdmitStudent(c *gin.Context) {
 		return
 	}
 
+	// Update the application status
+	applicationNumber := student.ApplicationNumber
+	application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
+		return
+	}
+
+	updateApplicationStatus := applicationModel.Application{
+		Status: "ADMITTED",
+	}
+
+	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
+		return
+	}
+
 	c.JSON(http.StatusOK, student)
 }
 
@@ -213,6 +232,23 @@ func BulkAdmitStudents(c *gin.Context) {
 
 		if err := config.DB.Model(&student).Where("number= ?", studentNumber).Updates(updateStudent).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student", "err": err.Error()})
+			return
+		}
+
+		// Update the application status for every student
+		applicationNumber := student.ApplicationNumber
+		application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
+			return
+		}
+
+		updateApplicationStatus := applicationModel.Application{
+			Status: "ADMITTED",
+		}
+
+		if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
 			return
 		}
 	}
