@@ -6,6 +6,7 @@ type ServiceRequest struct {
 	Description   string   `json:"description"`
 	Cost          int      `json:"cost"`
 	Name          string   `json:"name"`
+	Mandatory     bool     `json:"mandatory"`
 	CampusNumbers []string `json:"campus_number"`
 	PaymentMode   string   `json:"payment_mode"`
 }

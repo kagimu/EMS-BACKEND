@@ -13,6 +13,7 @@ type Service struct {
 	Name         string      `json:"name"`
 	PaymentMode  string      `json:"payment_mode" gorm:"default:'CASH'"`
 	CampusNumber string      `json:"campus_number" gorm:"size:36;not null"`
+	Mandatory    bool        `json:"mandatory" gorm:"default:false"`
 	UserNumber   string      `json:"user_number" gorm:"size:36;not null"`
 	User         models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

@@ -30,19 +30,30 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
+	saveService := models.Service{
+		Number:      uuid.NewV4().String(),
+		Cost:        payload.Cost,
+		Description: payload.Description,
+		UserNumber:  user.Number,
+		Mandatory:   payload.Mandatory,
+		PaymentMode: payload.PaymentMode,
+		Name:        payload.Name,
+	}
+
+	if err := config.DB.Create(&saveService).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service"})
+		return
+	}
+
 	for _, campusNumber := range payload.CampusNumbers {
-		saveService := models.Service{
-			Number:       uuid.NewV4().String(),
-			Cost:         payload.Cost,
-			Description:  payload.Description,
-			UserNumber:   user.Number,
-			PaymentMode:  payload.PaymentMode,
-			CampusNumber: campusNumber,
-			Name:         payload.Name,
+		saveCampusService := models.CampusServices{
+			Number:        uuid.NewV4().String(),
+			CampusNumber:  campusNumber,
+			ServiceNumber: saveService.Number,
 		}
 
-		if err := config.DB.Create(&saveService).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service", "err": err.Error()})
+		if err := config.DB.Create(&saveCampusService).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service for the campus"})
 			return
 		}
 	}
