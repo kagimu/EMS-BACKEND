@@ -15,6 +15,7 @@ type Application struct {
 	ApplicationFeePayment     bool                                 `json:"application_fee_payment" gorm:"not null;default:false"`
 	ApplicationFeeInvalidDate string                               `json:"application_fee_invalid_date" gorm:"type:varchar(255);"`
 	UserNumber                string                               `json:"user_number" gorm:"size:36;index;not null"`
+	InterviewMode             string                               `json:"interview_mode" gorm:"type:varchar(20);not null;default:'OFFLINE'"`
 	Student                   studentModel.Student                 `gorm:"foreignKey:ApplicationNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Parent                    parentModel.Parent                   `gorm:"foreignKey:ApplicationNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	PreviousSchools           []previousSchoolModel.PreviousSchool `gorm:"foreignKey:ApplicationNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
