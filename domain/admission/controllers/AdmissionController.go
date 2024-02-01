@@ -172,7 +172,7 @@ func AdmitStudent(c *gin.Context) {
 	}
 
 	updateApplicationStatus := applicationModel.Application{
-		Status: "INTERVIEW_SCHEDULED",
+		Status: "ADMITTED",
 	}
 
 	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
@@ -244,7 +244,7 @@ func BulkAdmitStudents(c *gin.Context) {
 		}
 
 		updateApplicationStatus := applicationModel.Application{
-			Status: "INTERVIEW_SCHEDULED",
+			Status: "ADMITTED",
 		}
 
 		if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
