@@ -157,6 +157,7 @@ func main() {
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
 		&invoiceModel.Invoice{},
+		&serviceModels.CampusServices{},
 	)
 
 	if errMigrate != nil {

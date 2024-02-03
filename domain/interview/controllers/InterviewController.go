@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
@@ -226,6 +228,23 @@ func AddStudentToInterview(c *gin.Context) {
 
 	if err := config.DB.Create(&saveInterviewStudent).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to add student to interview"})
+		return
+	}
+
+	// Update the application status
+	applicationNumber := student.ApplicationNumber
+	application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
+		return
+	}
+
+	updateApplicationStatus := applicationModel.Application{
+		Status: "ADMITTED",
+	}
+
+	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
 		return
 	}
 
