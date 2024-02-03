@@ -1,4 +1,4 @@
-version: '2'
+version: "2"
 services:
   wholesome-app:
     restart: unless-stopped
@@ -7,4 +7,3 @@ services:
       context: .
     environment:
       - VIRTUAL_HOST=104.248.175.232
-

@@ -19,6 +19,7 @@ import (
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
+	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
@@ -26,6 +27,7 @@ import (
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
@@ -171,19 +173,11 @@ func SetupRoute() *gin.Engine {
 		main.GET("concepts", conceptController.FetchConcept)
 
 		//adds academic year
-		academicYear := main.Group("/academic-year")
-		{
-			academicYear.POST("delete", academicYearController.DeleteAcademicYear)
-		}
 		main.POST("new-academic-year", academicYearController.NewAcademicYear)
 		main.GET("fetch-academic-year", academicYearController.FetchAcademicYearInfo)
 		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
 
 		//adds study period
-		studyPeriod := main.Group("/study-period")
-		{
-			studyPeriod.POST("delete", studyPeriodController.DeleteStudyPeriod)
-		}
 		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
 		main.GET("fetch-study-period", studyPeriodController.FetchStudyPeriod)
 
@@ -312,6 +306,7 @@ func SetupRoute() *gin.Engine {
 			interview.PUT("/:interview_number", interviewController.EditInterview)
 			interview.GET("/:interview_number/students", interviewController.FetchStudentsByInterviewNumber)
 			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
+			interview.GET("/:interview_number/questions", interviewController.FetchQuestionsByInterviewNumber)
 		}
 
 		interviewQuestion := main.Group("/interview-questions")
@@ -330,10 +325,27 @@ func SetupRoute() *gin.Engine {
 			interviewResult.DELETE(":number", interviewController.DeleteInterviewResult)
 		}
 
-		admission := main.Group("/admission")
+		invoices := main.Group("/invoices")
+		{
+			invoices.POST("", invoiceController.CreateInvoice)
+			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
+		}
+
+		services := main.Group("/services")
+		{
+			services.POST("", serviceController.CreateService)
+			services.GET("", serviceController.FetchServices)
+			services.DELETE("", serviceController.DeleteService)
+			services.PUT(":service_number", serviceController.EditService)
+		}
+
+		admission := main.Group("/admissions")
 		{
 			admission.POST("", admissionController.CreateAdmission)
+			admission.PUT("/:number/admit", admissionController.AdmitStudent)
+			admission.PUT("/admit", admissionController.BulkAdmitStudents)
 		}
 	}
+
 	return router
 }
