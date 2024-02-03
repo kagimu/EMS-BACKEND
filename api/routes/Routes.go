@@ -100,6 +100,8 @@ func SetupRoute() *gin.Engine {
 
 		level := main.Group("/level")
 		{
+			level.GET("/info", learningLevelControllers.LevelInfo)
+			level.POST("/edit", learningLevelControllers.EditLevel)
 			level.POST("/delete", learningLevelControllers.DeleteLevel)
 		}
 

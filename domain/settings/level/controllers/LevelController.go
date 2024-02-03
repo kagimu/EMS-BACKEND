@@ -18,9 +18,8 @@ import (
 func NewLevel(context *gin.Context) {
 
 	type LevelInfo struct {
-		Code             string `json:"code"`
-		Name             string `json:"name"`
-		CurriculumNumber string `json:"curriculum_number"`
+		Code string `json:"code"`
+		Name string `json:"name"`
 	}
 
 	var levelInfo LevelInfo
@@ -317,4 +316,119 @@ func DeleteLevel(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level deleted successfully!"})
+}
+
+func LevelInfo(context *gin.Context) {
+
+	levelNumber := context.Query("level_number")
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School Number is required!"})
+		return
+	}
+
+	var level curriculumLevelModels2.Level
+	if err := config.DB.
+		Where("number = ?", levelNumber).
+		First(&level).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No level found"})
+		return
+	}
+
+	level_ := responses2.LevelList{
+		Number:     level.Number,
+		Name:       level.Name,
+		Code:       level.Code,
+		UserNumber: level.UserNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": level_})
+}
+
+func EditLevel(context *gin.Context) {
+
+	var levelInfo requests2.LevelEditInfo
+	err := context.BindJSON(&levelInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	code := levelInfo.Code
+	name := levelInfo.Name
+	levelNumber := levelInfo.LevelNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
+
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
+	if name == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if levelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	if codeNo == 0 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
+	var duplicateCode curriculumLevelModels2.Level
+	if duplicate := config.DB.
+		Where("code = ?", code).
+		Where("number != ?", levelNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
+	var duplicateLevel curriculumLevelModels2.Level
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("number != ?", levelNumber).
+		First(&duplicateLevel).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
+		return
+	}
+
+	// Begin the transaction
+	tx := config.DB.Begin()
+
+	var levelDataInfo curriculumLevelModels2.Level
+	updateLevel := tx.Model(&levelDataInfo).
+		Where("number = ?", levelNumber).
+		Updates(curriculumLevelModels2.Level{Name: name, UserNumber: userNumber, Code: codeNo})
+	if updateLevel.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update level"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level Added Successfully!", "data": levelDataInfo})
+
 }
