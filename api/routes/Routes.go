@@ -118,6 +118,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-curriculum-level", learningLevelControllers.FetchCurriculumLevel)
 
 		//	manage class
+		class := main.Group("/class")
+		{
+			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
+			class.POST("/delete", classController.DeleteClass)
+		}
+
 		main.POST("new-class", classController.NewClass)
 		main.POST("new-campus-class", classController.AddCampusClass)
 		main.POST("new-curriculum-class", classController.AddCurriculumClass)
@@ -130,12 +136,6 @@ func SetupRoute() *gin.Engine {
 		main.GET("class-level", classController.FetchClassLevel)
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
-
-		class := main.Group("/class")
-		{
-			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
-
-		}
 
 		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
