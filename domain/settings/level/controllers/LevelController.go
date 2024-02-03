@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/requests"
 	"net/http"
 	"strconv"
 
@@ -264,4 +265,56 @@ func FetchCurriculumLevel(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculumLevels_})
+}
+
+func DeleteLevel(context *gin.Context) {
+
+	var levelInfo requests2.LevelDelRequest
+	err := context.BindJSON(&levelInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	levelNumber := levelInfo.Number
+
+	var classChecker models2.Class
+	if err := config.DB.
+		Where("level_number = ?", levelNumber).
+		First(&classChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Level, it has classes under it."})
+		return
+	}
+
+	var levelData curriculumLevelModels2.Level
+	academicYearDataInfo := config.DB.
+		Where("number = ?", levelNumber).
+		First(&levelData)
+	if academicYearDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Level not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", levelNumber).
+		Delete(&levelData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete level"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete level"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level deleted successfully!"})
 }

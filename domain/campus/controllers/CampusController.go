@@ -370,16 +370,6 @@ func FetchLevel(context *gin.Context) {
 		return
 	}
 
-	/*	var level_ []responses.CampusLevelList
-		for _, lvl := range campus.Level {
-			level_ = append(level_, responses.CampusLevelList{
-				Number:              lvl.Number,
-				LearningLevelNumber: lvl.LearningLevelNumber,
-				LevelName:           lvl.LearningLevel.Name,
-				CampusNumber:        lvl.CampusNumber,
-			})
-		}*/
-
 	campus_ := responses.CampusDataList{
 		Number:       campus.Number,
 		Name:         campus.Name,

@@ -97,6 +97,12 @@ func SetupRoute() *gin.Engine {
 		main.POST("delete-campus", controllers.DeleteCampus)
 		main.GET("campuses", controllers.FetchCampuses)
 		main.GET("campus-info", controllers.CampusInfo)
+
+		level := main.Group("/level")
+		{
+			level.POST("/delete", learningLevelControllers.DeleteLevel)
+		}
+
 		main.GET("level", controllers.FetchLevel)
 		main.GET("campus-level", controllers.FetchCampusLevel)
 		main.GET("fetch-campus-level", controllers.FetchCampusLevelList)
