@@ -242,7 +242,7 @@ func EditClass(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": classDataInfo})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Edited Successfully!", "data": classDataInfo})
 }
 
 func AddCampusClass(context *gin.Context) {

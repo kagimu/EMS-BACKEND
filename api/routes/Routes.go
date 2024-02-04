@@ -146,6 +146,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
 
 		//manage Learning Area
+		learningArea := main.Group("/learning-area")
+		{
+			learningArea.GET("/info", learningAreaController.LearningAreaInfo)
+			learningArea.POST("/edit", learningAreaController.LearningAreaEdit)
+			learningArea.POST("/delete", learningAreaController.DeleteLearningArea)
+		}
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
 		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 

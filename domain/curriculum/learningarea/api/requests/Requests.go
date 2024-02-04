@@ -7,15 +7,20 @@ import (
 )
 
 type LearningAreaInfo struct {
-	Name             string `json:"name"`
-	Code             string `json:"code"`
-	CurriculumNumber string `json:"curriculum_number"`
+	Name               string `json:"name"`
+	Code               string `json:"code"`
+	CurriculumNumber   string `json:"curriculum_number"`
+	LearningAreaNumber string `json:"learning_area_number"`
+}
+
+type LearningAreaDelRequest struct {
+	Number string `json:"number"`
 }
 
 func (p *LearningAreaInfo) Prepare() {
-	p.Name = html.EscapeString(strings.TrimSpace(strings.ToLower(p.Name)))
-	p.Code = html.EscapeString(strings.TrimSpace(strings.ToLower(p.Code)))
-	p.CurriculumNumber = html.EscapeString(strings.TrimSpace(strings.ToLower(p.CurriculumNumber)))
+	p.Name = html.EscapeString(strings.TrimSpace(p.Name))
+	p.Code = html.EscapeString(strings.TrimSpace(p.Code))
+	p.CurriculumNumber = html.EscapeString(strings.TrimSpace(p.CurriculumNumber))
 }
 
 func (p *LearningAreaInfo) Validate() error {
