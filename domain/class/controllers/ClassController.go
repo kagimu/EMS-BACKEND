@@ -905,3 +905,31 @@ func DeleteClass(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level deleted successfully!"})
 }
+
+func ClassInfo(context *gin.Context) {
+	classNumber := context.Query("class_number")
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	var class models.Class
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		First(&class).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class found"})
+		return
+	}
+
+	class_ := responses.ClassDataList{
+		Number:       class.Number,
+		Name:         class.Name,
+		Code:         class.Code,
+		Abbreviation: class.Abbreviation,
+		UserNumber:   class.UserNumber,
+		LevelNumber:  class.LevelNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": class_})
+}

@@ -120,6 +120,7 @@ func SetupRoute() *gin.Engine {
 		//	manage class
 		class := main.Group("/class")
 		{
+			class.GET("/info", classController.ClassInfo)
 			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
 			class.POST("/delete", classController.DeleteClass)
 		}
