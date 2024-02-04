@@ -122,6 +122,7 @@ func SetupRoute() *gin.Engine {
 		{
 			class.GET("/info", classController.ClassInfo)
 			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
+			class.POST("/edit", classController.EditClass)
 			class.POST("/delete", classController.DeleteClass)
 		}
 
