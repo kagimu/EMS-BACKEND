@@ -38,33 +38,17 @@ func CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	paymentReference, err := GeneratePaymentReference()
+	invoiceNumber, err := InvoiceNumberGenerator()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate payment reference"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number", "err": err.Error()})
 		return
 	}
 
-	// 1. Check if payment reference already exists
-	// 2. If it does, regenerate a new one.
-	for {
-		if err := config.DB.First(&models.Invoice{}, "payment_reference  = ?", paymentReference).Error; err != nil {
-			break
-		}
-
-		paymentReference, err = GeneratePaymentReference()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate payment reference"})
-			return
-		} else {
-			break
-		}
-	}
-
 	saveInvoice := models.Invoice{
-		Number:           uuid.NewV4().String(),
-		StudentNumber:    payload.StudentNumber,
-		PaymentReference: paymentReference,
-		UserNumber:       user.Number,
+		Number:        uuid.NewV4().String(),
+		StudentNumber: payload.StudentNumber,
+		InvoiceNumber: invoiceNumber,
+		UserNumber:    user.Number,
 	}
 
 	if err := config.DB.Create(&saveInvoice).Error; err != nil {
