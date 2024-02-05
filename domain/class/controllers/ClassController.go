@@ -132,6 +132,119 @@ func NewClass(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
 
+func EditClass(context *gin.Context) {
+
+	var classInfo requests.EditClassInfo
+	err := context.BindJSON(&classInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	code := classInfo.Code
+	name := classInfo.Name
+	abbreviation := strings.ToUpper(classInfo.Abbreviation)
+	level := classInfo.Level
+	classNumber := classInfo.ClassNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
+
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
+	if name == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if level == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	if abbreviation == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation is required!"})
+		return
+	}
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	var userData authModels.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateCode models.Class
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("number != ?", classNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists!"})
+		return
+	}
+
+	var duplicateClass models.Class
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("number != ?", classNumber).
+		First(&duplicateClass).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists!"})
+		return
+	}
+
+	var duplicateAbbreviation models.Class
+	if duplicate := config.DB.
+		Where("abbreviation = ?", abbreviation).
+		Where("number != ?", classNumber).
+		First(&duplicateAbbreviation).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation already exists!"})
+		return
+	}
+
+	// Begin the transaction
+	tx := config.DB.Begin()
+
+	var classDataInfo models.Class
+	updateLevel := tx.Model(&classDataInfo).
+		Where("number = ?", classNumber).
+		Updates(models.Class{Name: name, UserNumber: userNumber, Abbreviation: abbreviation, Code: codeNo, LevelNumber: level})
+	if updateLevel.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add class"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Edited Successfully!", "data": classDataInfo})
+}
+
 func AddCampusClass(context *gin.Context) {
 
 	type ClassInfo struct {
@@ -852,4 +965,84 @@ func FetchClassesByCampusNumber(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": campusClasses})
 
+}
+
+func DeleteClass(context *gin.Context) {
+
+	var classInfo requests.ClassDelRequest
+	err := context.BindJSON(&classInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	classNumber := classInfo.Number
+
+	var classChecker classModel.CurriculumClass
+	if err := config.DB.
+		Where("class_number = ?", classNumber).
+		First(&classChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this class, it has classes under it on curriculum."})
+		return
+	}
+
+	var classData classModel.Class
+	academicYearDataInfo := config.DB.
+		Where("number = ?", classNumber).
+		First(&classData)
+	if academicYearDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Class not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", classNumber).
+		Delete(&classData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete level"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete level"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level deleted successfully!"})
+}
+
+func ClassInfo(context *gin.Context) {
+	classNumber := context.Query("class_number")
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
+		return
+	}
+
+	var class models.Class
+	if err := config.DB.
+		Where("number = ?", classNumber).
+		First(&class).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class found"})
+		return
+	}
+
+	class_ := responses.ClassDataList{
+		Number:       class.Number,
+		Name:         class.Name,
+		Code:         class.Code,
+		Abbreviation: class.Abbreviation,
+		UserNumber:   class.UserNumber,
+		LevelNumber:  class.LevelNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": class_})
 }

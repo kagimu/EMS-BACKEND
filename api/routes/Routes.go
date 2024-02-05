@@ -99,6 +99,14 @@ func SetupRoute() *gin.Engine {
 		main.POST("delete-campus", controllers.DeleteCampus)
 		main.GET("campuses", controllers.FetchCampuses)
 		main.GET("campus-info", controllers.CampusInfo)
+
+		level := main.Group("/level")
+		{
+			level.GET("/info", learningLevelControllers.LevelInfo)
+			level.POST("/edit", learningLevelControllers.EditLevel)
+			level.POST("/delete", learningLevelControllers.DeleteLevel)
+		}
+
 		main.GET("level", controllers.FetchLevel)
 		main.GET("campus-level", controllers.FetchCampusLevel)
 		main.GET("fetch-campus-level", controllers.FetchCampusLevelList)
@@ -110,6 +118,14 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-curriculum-level", learningLevelControllers.FetchCurriculumLevel)
 
 		//	manage class
+		class := main.Group("/class")
+		{
+			class.GET("/info", classController.ClassInfo)
+			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
+			class.POST("/edit", classController.EditClass)
+			class.POST("/delete", classController.DeleteClass)
+		}
+
 		main.POST("new-class", classController.NewClass)
 		main.POST("new-campus-class", classController.AddCampusClass)
 		main.POST("new-curriculum-class", classController.AddCurriculumClass)
@@ -123,12 +139,6 @@ func SetupRoute() *gin.Engine {
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
 
-		class := main.Group("/class")
-		{
-			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
-
-		}
-
 		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
 		main.GET("subjects", subjectController.FetchSubject)
@@ -136,6 +146,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
 
 		//manage Learning Area
+		learningArea := main.Group("/learning-area")
+		{
+			learningArea.GET("/info", learningAreaController.LearningAreaInfo)
+			learningArea.POST("/edit", learningAreaController.LearningAreaEdit)
+			learningArea.POST("/delete", learningAreaController.DeleteLearningArea)
+		}
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
 		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 
