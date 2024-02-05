@@ -7,8 +7,10 @@ import (
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
 	topicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
@@ -273,15 +275,54 @@ func removeDuplicates(data []SubjectData) []SubjectData {
 	return result
 }
 
-func FetchSubjectsByClassLevelNumber(ctx *gin.Context) {
+func DeleteSubject(context *gin.Context) {
 
-	classLevelNumber := ctx.Param("class_level_number")
+	var subjectInfo requests2.SubjectDelRequest
+	err := context.BindJSON(&subjectInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
 
-	var subjects []classModels.ClassLevelSubject
-	config.DB.
-		Where("class_level_number = ?", classLevelNumber).
-		Preload("Subject").
-		Find(&subjects)
-	ctx.JSON(http.StatusOK, gin.H{"data": subjects})
+	subjectNumber := subjectInfo.Number
 
+	var subjectChecker models3.Strand
+	if err := config.DB.
+		Where("subject_number = ?", subjectNumber).
+		First(&subjectChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Subject, it has strand."})
+		return
+	}
+
+	var subjectData subjectModel.Subject
+	academicYearDataInfo := config.DB.
+		Where("number = ?", subjectNumber).
+		First(&subjectData)
+	if academicYearDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Subject not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", subjectNumber).
+		Delete(&subjectData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Subject"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Subject"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Subject deleted successfully!"})
 }

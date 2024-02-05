@@ -1,6 +1,6 @@
 package requests
 
-type ClassInfo struct {
+/*type ClassInfo struct {
 	Name         string `json:"name"`
 	Code         string `json:"code"`
 	Abbreviation string `json:"abbreviation"`
@@ -10,4 +10,8 @@ type ClassInfo struct {
 type StreamRequest struct {
 	Name             string `json:"name"`
 	ClassLevelNumber string `json:"class_level_number"`
+}*/
+
+type SubjectDelRequest struct {
+	Number string `json:"number"`
 }

@@ -141,6 +141,11 @@ func SetupRoute() *gin.Engine {
 		main.POST("subject-to-class", classController.NewClassSubjects)
 
 		//manage subject
+		subject := main.Group("/subject")
+		{
+			subject.POST("/delete", subjectController.DeleteSubject)
+		}
+
 		main.POST("new-subject", subjectController.NewSubject)
 		main.GET("subjects", subjectController.FetchSubject)
 		main.GET("subject-list", subjectController.FetchSubjectList)
