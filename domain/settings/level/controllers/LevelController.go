@@ -8,9 +8,9 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	CurriculumClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
-	curriculumLevelModels2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	curriculumLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -57,7 +57,7 @@ func NewLevel(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode curriculumLevelModels2.Level
+	var duplicateCode curriculumLevelModels.Level
 	if duplicate := config.DB.
 		Where("code = ?", code).
 		First(&duplicateCode).Error; duplicate == nil {
@@ -65,7 +65,7 @@ func NewLevel(context *gin.Context) {
 		return
 	}
 
-	var duplicateLevel curriculumLevelModels2.Level
+	var duplicateLevel curriculumLevelModels.Level
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		First(&duplicateLevel).Error; duplicate == nil {
@@ -76,7 +76,7 @@ func NewLevel(context *gin.Context) {
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
-	saveLevel := curriculumLevelModels2.Level{
+	saveLevel := curriculumLevelModels.Level{
 		Number:     uuid.NewV4().String(),
 		Name:       name,
 		Code:       codeNo,
@@ -145,13 +145,13 @@ func NewCurriculumLevel(context *gin.Context) {
 
 	db := config.DB
 
-	var duplicateLevel curriculumLevelModels2.CurriculumLevel
+	var duplicateLevel curriculumLevelModels.CurriculumLevel
 	if duplicate := db.
 		Where("level_number = ?", levelNumber).
 		Where("curriculum_number = ?", curriculumNumber).
 		First(&duplicateLevel).Error; duplicate == nil {
 
-		var levelChildrenChecker models2.CurriculumClass
+		var levelChildrenChecker CurriculumClassModel.CurriculumClass
 		if err := db.
 			Where("curriculum_level_number = ?", duplicateLevel.Number).
 			First(&levelChildrenChecker).Error; err == nil {
@@ -173,7 +173,7 @@ func NewCurriculumLevel(context *gin.Context) {
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
-	saveLevel := curriculumLevelModels2.CurriculumLevel{
+	saveLevel := curriculumLevelModels.CurriculumLevel{
 		Number:           uuid.NewV4().String(),
 		Code:             code,
 		LevelNumber:      levelNumber,
@@ -202,7 +202,7 @@ func NewCurriculumLevel(context *gin.Context) {
 
 func FetchLearningLevel(context *gin.Context) {
 
-	var levels []curriculumLevelModels2.Level
+	var levels []curriculumLevelModels.Level
 	var levels_ []responses2.LevelList
 	if err := config.DB.
 		Order("code asc").
@@ -226,7 +226,7 @@ func FetchLearningLevel(context *gin.Context) {
 func FetchCurriculumLevel(context *gin.Context) {
 
 	curriculumNumber := context.Query("curriculum_number")
-	var curriculumLevels []curriculumLevelModels2.CurriculumLevel
+	var curriculumLevels []curriculumLevelModels.CurriculumLevel
 	var curriculumLevels_ []responses2.CurriculumLevelList
 	if err := config.DB.
 		Where("curriculum_number = ?", curriculumNumber).
@@ -264,7 +264,7 @@ func DeleteLevel(context *gin.Context) {
 
 	levelNumber := levelInfo.Number
 
-	var classChecker models2.Class
+	var classChecker CurriculumClassModel.Class
 	if err := config.DB.
 		Where("level_number = ?", levelNumber).
 		First(&classChecker).Error; err == nil {
@@ -272,7 +272,7 @@ func DeleteLevel(context *gin.Context) {
 		return
 	}
 
-	var levelData curriculumLevelModels2.Level
+	var levelData curriculumLevelModels.Level
 	academicYearDataInfo := config.DB.
 		Where("number = ?", levelNumber).
 		First(&levelData)
@@ -314,7 +314,7 @@ func LevelInfo(context *gin.Context) {
 		return
 	}
 
-	var level curriculumLevelModels2.Level
+	var level curriculumLevelModels.Level
 	if err := config.DB.
 		Where("number = ?", levelNumber).
 		First(&level).Error; err != nil {
@@ -365,7 +365,7 @@ func EditLevel(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode curriculumLevelModels2.Level
+	var duplicateCode curriculumLevelModels.Level
 	if duplicate := config.DB.
 		Where("code = ?", code).
 		Where("number != ?", levelNumber).
@@ -374,7 +374,7 @@ func EditLevel(context *gin.Context) {
 		return
 	}
 
-	var duplicateLevel curriculumLevelModels2.Level
+	var duplicateLevel curriculumLevelModels.Level
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("number != ?", levelNumber).
@@ -386,10 +386,10 @@ func EditLevel(context *gin.Context) {
 	// Begin the transaction
 	tx := config.DB.Begin()
 
-	var levelDataInfo curriculumLevelModels2.Level
+	var levelDataInfo curriculumLevelModels.Level
 	updateLevel := tx.Model(&levelDataInfo).
 		Where("number = ?", levelNumber).
-		Updates(curriculumLevelModels2.Level{Name: name, UserNumber: userNumber, Code: codeNo})
+		Updates(curriculumLevelModels.Level{Name: name, UserNumber: userNumber, Code: codeNo})
 	if updateLevel.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
