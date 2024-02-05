@@ -20,6 +20,7 @@ import (
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
 	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
+	invoicePaymentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
@@ -337,6 +338,10 @@ func SetupRoute() *gin.Engine {
 		{
 			invoices.POST("", invoiceController.CreateInvoice)
 			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
+		}
+		invoicePayments := main.Group("/invoice-payments")
+		{
+			invoicePayments.POST("", invoicePaymentController.CreateInvoicePayment)
 		}
 
 		services := main.Group("/services")

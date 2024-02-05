@@ -60,19 +60,16 @@ func CreateInvoice(c *gin.Context) {
 		}
 	}
 
-	for _, serviceNumber := range payload.ServiceNumber {
-		saveInvoice := models.Invoice{
-			Number:           uuid.NewV4().String(),
-			StudentNumber:    payload.StudentNumber,
-			PaymentReference: paymentReference,
-			ServiceNumber:    serviceNumber,
-			UserNumber:       user.Number,
-		}
+	saveInvoice := models.Invoice{
+		Number:           uuid.NewV4().String(),
+		StudentNumber:    payload.StudentNumber,
+		PaymentReference: paymentReference,
+		UserNumber:       user.Number,
+	}
 
-		if err := config.DB.Create(&saveInvoice).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice", "err": err.Error()})
-			return
-		}
+	if err := config.DB.Create(&saveInvoice).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice", "err": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Invoice created successfully"})
