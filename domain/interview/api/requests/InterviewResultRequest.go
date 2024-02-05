@@ -1,8 +1,8 @@
 package requests
 
 type InterviewResultRequest struct {
-	StudentNumber  string   `json:"student_number"`
-	QuestionNumber []string `json:"question_number"`
-	Score          []int    `json:"score"`
-	Status         string   `json:"status"`
+	StudentNumber   string   `json:"student_number"`
+	QuestionNumbers []string `json:"question_numbers"`
+	Scores          []int    `json:"scores"`
+	Status          string   `json:"status"`
 }

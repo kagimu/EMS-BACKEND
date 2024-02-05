@@ -36,8 +36,8 @@ func CreateInterviewResults(c *gin.Context) {
 		return
 	}
 
-	for i, questionNumber := range payload.QuestionNumber {
-		score := payload.Score[i]
+	for i, questionNumber := range payload.QuestionNumbers {
+		score := payload.Scores[i]
 		interviewResultNumber := uuid.NewV4().String()
 
 		saveInterviewResult := models.InterviewResult{

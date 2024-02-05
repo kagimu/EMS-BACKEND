@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
+
 	"log"
 	"os"
 
@@ -29,6 +29,8 @@ import (
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
+	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
+	invoicePaymentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
@@ -161,6 +163,8 @@ func main() {
 		&interviewModel.InterviewStudent{},
 		&invoiceModel.Invoice{},
 		&serviceModels.CampusServices{},
+		&invoicePaymentModel.InvoicePayment{},
+		&invoiceModel.InvoiceNumber{},
 	)
 
 	if errMigrate != nil {
