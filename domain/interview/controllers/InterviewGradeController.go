@@ -35,8 +35,8 @@ func CreateInterviewGrade(c *gin.Context) {
 	}
 
 	userNumber := user.Number
-	for i, questionNumber := range payload.QuestionNumber {
-		score := payload.Score[i]
+	for i, questionNumber := range payload.QuestionNumbers {
+		score := payload.Scores[i]
 		interviewGradeNumber := uuid.NewV4().String()
 
 		saveInterviewGrade := models.InterviewGrade{
