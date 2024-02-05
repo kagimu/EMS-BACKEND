@@ -17,15 +17,17 @@ import (
 
 func NewLevel(context *gin.Context) {
 
-	type LevelInfo struct {
-		Code string `json:"code"`
-		Name string `json:"name"`
-	}
-
-	var levelInfo LevelInfo
+	var levelInfo requests2.LevelInfo
 	err := context.BindJSON(&levelInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	levelInfo.Prepare()
+
+	if err := levelInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -33,21 +35,6 @@ func NewLevel(context *gin.Context) {
 	name := levelInfo.Name
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
@@ -347,10 +334,17 @@ func LevelInfo(context *gin.Context) {
 
 func EditLevel(context *gin.Context) {
 
-	var levelInfo requests2.LevelEditInfo
+	var levelInfo requests2.LevelInfo
 	err := context.BindJSON(&levelInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	levelInfo.Prepare()
+
+	if err := levelInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -359,26 +353,6 @@ func EditLevel(context *gin.Context) {
 	levelNumber := levelInfo.LevelNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-
-	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
-		return
-	}
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
