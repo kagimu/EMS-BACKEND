@@ -157,6 +157,11 @@ func SetupRoute() *gin.Engine {
 		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 
 		//subject cluster
+		subjectCluster := main.Group("/subject-cluster")
+		{
+			subjectCluster.POST("/delete", subjectClusterController.DeleteSubjectCluster)
+		}
+
 		main.POST("new-subject-cluster", subjectClusterController.NewSubjectCluster)
 		main.GET("subject-clusters", subjectClusterController.FetchSubjectCluster)
 		main.GET("subject-cluster-filter", subjectClusterController.FetchSubjectClusterList)

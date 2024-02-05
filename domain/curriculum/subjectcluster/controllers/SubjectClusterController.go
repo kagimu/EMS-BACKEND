@@ -6,8 +6,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
-	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
+	subjectClusterModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
+	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -78,7 +80,7 @@ func NewSubjectCluster(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode models3.SubjectCluster
+	var duplicateCode subjectClusterModel.SubjectCluster
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("learning_area_number = ?", learningAreaNumber).
@@ -88,7 +90,7 @@ func NewSubjectCluster(context *gin.Context) {
 		return
 	}
 
-	var duplicateSubjectCluster models3.SubjectCluster
+	var duplicateSubjectCluster subjectClusterModel.SubjectCluster
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("learning_area_number = ?", learningAreaNumber).
@@ -100,7 +102,7 @@ func NewSubjectCluster(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveSubjectCluster := models3.SubjectCluster{
+	saveSubjectCluster := subjectClusterModel.SubjectCluster{
 		Number:             number,
 		Name:               name,
 		LearningAreaNumber: learningAreaNumber,
@@ -184,4 +186,55 @@ func FetchSubjectClusterList(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjectCluster_})
+}
+
+func DeleteSubjectCluster(context *gin.Context) {
+	var subjectClusterInfo requests2.SubjectClusterDelRequest
+	err := context.BindJSON(&subjectClusterInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	subjectClusterNumber := subjectClusterInfo.Number
+
+	var subjectClusterChecker subjectModel.Subject
+	if err := config.DB.
+		Where("subject_cluster_number = ?", subjectClusterNumber).
+		First(&subjectClusterChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Subject cluster, it has subjects."})
+		return
+	}
+
+	var subjectClusterData subjectClusterModel.SubjectCluster
+	academicYearDataInfo := config.DB.
+		Where("number = ?", subjectClusterNumber).
+		First(&subjectClusterData)
+	if academicYearDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Subject Cluster not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", subjectClusterNumber).
+		Delete(&subjectClusterData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete subject cluster"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete subject cluster"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Subject cluster deleted successfully!"})
 }
