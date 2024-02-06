@@ -176,6 +176,10 @@ func SetupRoute() *gin.Engine {
 		main.GET("subject-cluster-filter", subjectClusterController.FetchSubjectClusterList)
 
 		//strand
+		strand := main.Group("/strand")
+		{
+			strand.POST("/delete", strandController.DeleteStrand)
+		}
 		main.POST("new-strand", strandController.NewStrand)
 		main.GET("strands", strandController.FetchStrand)
 		main.GET("strand-list", strandController.FetchStrandList)
