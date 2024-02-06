@@ -178,6 +178,7 @@ func SetupRoute() *gin.Engine {
 		//strand
 		strand := main.Group("/strand")
 		{
+			strand.GET("/info", strandController.StrandInfo)
 			strand.POST("/delete", strandController.DeleteStrand)
 		}
 		main.POST("new-strand", strandController.NewStrand)

@@ -282,3 +282,30 @@ func DeleteStrand(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Strand deleted successfully!"})
 }
+
+func StrandInfo(context *gin.Context) {
+	strandNumber := context.Query("strand_number")
+
+	if strandNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand is required!"})
+		return
+	}
+
+	var strand strandModel.Strand
+	if err := config.DB.
+		Where("number = ?", strandNumber).
+		First(&strand).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No learning area found"})
+		return
+	}
+
+	strand_ := responses2.StrandDataList{
+		Number:        strand.Number,
+		Name:          strand.Name,
+		Code:          strand.Code,
+		UserNumber:    strand.UserNumber,
+		SubjectNumber: strand.SubjectNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": strand_})
+}
