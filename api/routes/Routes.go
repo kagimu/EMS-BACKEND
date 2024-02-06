@@ -143,6 +143,8 @@ func SetupRoute() *gin.Engine {
 		//manage subject
 		subject := main.Group("/subject")
 		{
+			subject.GET("/info", subjectController.SubjectInfo)
+			subject.POST("/edit", subjectController.SubjectEdit)
 			subject.POST("/delete", subjectController.DeleteSubject)
 		}
 

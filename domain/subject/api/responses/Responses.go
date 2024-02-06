@@ -9,6 +9,7 @@ type (
 		Code                 int64                      `json:"code"`
 		UserNumber           string                     `json:"user_number"`
 		SubjectClusterNumber string                     `json:"subject_cluster_number"`
+		LearningAreaNumber   string                     `json:"learning_area_number"`
 		Strand               []responses.StrandDataList `json:"strand"`
 	}
 )

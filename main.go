@@ -161,7 +161,7 @@ func main() {
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
-		&invoiceModel.Invoice{},
+		//&invoiceModel.Invoice{},
 		&serviceModels.CampusServices{},
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
