@@ -34,9 +34,5 @@ func (p *LevelInfo) Validate() error {
 		return errors.New("code must be greater than zero")
 	}
 
-	if p.LevelNumber == "" {
-		return errors.New("level is required")
-	}
-
 	return nil
 }
