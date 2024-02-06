@@ -40,8 +40,10 @@ func CreateService(c *gin.Context) {
 		Name:        payload.Name,
 	}
 
-	if err := config.DB.Create(&saveService).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service"})
+	tx := config.DB.Begin()
+
+	if err := tx.Create(&saveService).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service " + err.Error()})
 		return
 	}
 
@@ -52,11 +54,14 @@ func CreateService(c *gin.Context) {
 			ServiceNumber: saveService.Number,
 		}
 
-		if err := config.DB.Create(&saveCampusService).Error; err != nil {
+		if err := tx.Create(&saveCampusService).Error; err != nil {
+			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service for the campus"})
 			return
 		}
 	}
+
+	tx.Commit()
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Service created successfully"})
 }

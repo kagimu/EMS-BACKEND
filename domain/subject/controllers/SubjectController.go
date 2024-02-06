@@ -7,26 +7,22 @@ import (
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
 	topicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"html"
 	"net/http"
 	"strconv"
 )
 
 func NewSubject(context *gin.Context) {
 
-	type SubjectInfo struct {
-		Code                 string `json:"code"`
-		Name                 string `json:"name"`
-		SubjectClusterNumber string `json:"subject_cluster_number"`
-		CurriculumNumber     string `json:"curriculum_number"`
-	}
-
-	var subjectInfo SubjectInfo
+	var subjectInfo requests2.SubjectInfo
 	err := context.BindJSON(&subjectInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -273,15 +269,186 @@ func removeDuplicates(data []SubjectData) []SubjectData {
 	return result
 }
 
-func FetchSubjectsByClassLevelNumber(ctx *gin.Context) {
+func DeleteSubject(context *gin.Context) {
 
-	classLevelNumber := ctx.Param("class_level_number")
+	var subjectInfo requests2.SubjectDelRequest
+	err := context.BindJSON(&subjectInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
 
-	var subjects []classModels.ClassLevelSubject
-	config.DB.
-		Where("class_level_number = ?", classLevelNumber).
-		Preload("Subject").
-		Find(&subjects)
-	ctx.JSON(http.StatusOK, gin.H{"data": subjects})
+	subjectNumber := subjectInfo.Number
 
+	var subjectChecker models3.Strand
+	if err := config.DB.
+		Where("subject_number = ?", subjectNumber).
+		First(&subjectChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Subject, it has strand."})
+		return
+	}
+
+	var subjectData subjectModel.Subject
+	academicYearDataInfo := config.DB.
+		Where("number = ?", subjectNumber).
+		First(&subjectData)
+	if academicYearDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Subject not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", subjectNumber).
+		Delete(&subjectData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Subject"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Subject"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Subject deleted successfully!"})
+}
+
+func SubjectInfo(context *gin.Context) {
+	subjectNumber := context.Query("subject_number")
+
+	if subjectNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
+		return
+	}
+
+	var subject subjectModel.Subject
+	if err := config.DB.
+		Where("number = ?", subjectNumber).
+		Preload("SubjectCluster.LearningArea").
+		Preload("SubjectCluster").
+		First(&subject).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No subject found"})
+		return
+	}
+
+	subject_ := responses.SubjectInfoList{
+		Number:               subject.Number,
+		Name:                 html.UnescapeString(subject.Name),
+		Code:                 subject.Code,
+		UserNumber:           subject.UserNumber,
+		LearningAreaNumber:   subject.SubjectCluster.LearningArea.Number,
+		SubjectClusterNumber: subject.SubjectClusterNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subject_})
+}
+
+func SubjectEdit(context *gin.Context) {
+
+	var subjectInfo requests2.SubjectInfo
+	err := context.BindJSON(&subjectInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	code := subjectInfo.Code
+	name := subjectInfo.Name
+	subjectClusterNumber := subjectInfo.SubjectClusterNumber
+	curriculumNumber := subjectInfo.CurriculumNumber
+	subjectNumber := subjectInfo.SubjectNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
+		return
+	}
+
+	if code == "0" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
+	if name == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
+		return
+	}
+
+	if subjectClusterNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateCode subjectModel.Subject
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("subject_cluster_number = ?", subjectClusterNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", subjectNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
+	var duplicateSubject subjectModel.Subject
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("subject_cluster_number = ?", subjectClusterNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", subjectNumber).
+		First(&duplicateSubject).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject already exists"})
+		return
+	}
+
+	///save user data
+	tx := config.DB.Begin()
+	var subjectDataInfo subjectModel.Subject
+	updateLevel := tx.Model(&subjectDataInfo).
+		Where("number = ?", subjectNumber).
+		Updates(subjectModel.Subject{Name: name, UserNumber: userNumber, Code: codeNo, SubjectClusterNumber: subjectClusterNumber})
+	if updateLevel.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create learning area"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": subjectDataInfo})
 }

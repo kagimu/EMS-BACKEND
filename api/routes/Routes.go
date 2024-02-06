@@ -20,6 +20,7 @@ import (
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
 	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
+	invoicePaymentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
@@ -99,6 +100,14 @@ func SetupRoute() *gin.Engine {
 		main.POST("delete-campus", controllers.DeleteCampus)
 		main.GET("campuses", controllers.FetchCampuses)
 		main.GET("campus-info", controllers.CampusInfo)
+
+		level := main.Group("/level")
+		{
+			level.GET("/info", learningLevelControllers.LevelInfo)
+			level.POST("/edit", learningLevelControllers.EditLevel)
+			level.POST("/delete", learningLevelControllers.DeleteLevel)
+		}
+
 		main.GET("level", controllers.FetchLevel)
 		main.GET("campus-level", controllers.FetchCampusLevel)
 		main.GET("fetch-campus-level", controllers.FetchCampusLevelList)
@@ -110,6 +119,14 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-curriculum-level", learningLevelControllers.FetchCurriculumLevel)
 
 		//	manage class
+		class := main.Group("/class")
+		{
+			class.GET("/info", classController.ClassInfo)
+			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
+			class.POST("/edit", classController.EditClass)
+			class.POST("/delete", classController.DeleteClass)
+		}
+
 		main.POST("new-class", classController.NewClass)
 		main.POST("new-campus-class", classController.AddCampusClass)
 		main.POST("new-curriculum-class", classController.AddCurriculumClass)
@@ -123,23 +140,37 @@ func SetupRoute() *gin.Engine {
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
 
-		class := main.Group("/class")
+		//manage subject
+		subject := main.Group("/subject")
 		{
-			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
-
+			subject.GET("/info", subjectController.SubjectInfo)
+			subject.POST("/edit", subjectController.SubjectEdit)
+			subject.POST("/delete", subjectController.DeleteSubject)
 		}
 
-		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
 		main.GET("subjects", subjectController.FetchSubject)
 		main.GET("subject-list", subjectController.FetchSubjectList)
 		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
 
 		//manage Learning Area
+		learningArea := main.Group("/learning-area")
+		{
+			learningArea.GET("/info", learningAreaController.LearningAreaInfo)
+			learningArea.POST("/edit", learningAreaController.LearningAreaEdit)
+			learningArea.POST("/delete", learningAreaController.DeleteLearningArea)
+		}
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
 		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 
 		//subject cluster
+		subjectCluster := main.Group("/subject-cluster")
+		{
+			subjectCluster.GET("/info", subjectClusterController.SubjectClusterInfo)
+			subjectCluster.POST("/edit", subjectClusterController.SubjectClusterEdit)
+			subjectCluster.POST("/delete", subjectClusterController.DeleteSubjectCluster)
+		}
+
 		main.POST("new-subject-cluster", subjectClusterController.NewSubjectCluster)
 		main.GET("subject-clusters", subjectClusterController.FetchSubjectCluster)
 		main.GET("subject-cluster-filter", subjectClusterController.FetchSubjectClusterList)
@@ -321,6 +352,10 @@ func SetupRoute() *gin.Engine {
 		{
 			invoices.POST("", invoiceController.CreateInvoice)
 			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
+		}
+		invoicePayments := main.Group("/invoice-payments")
+		{
+			invoicePayments.POST("", invoicePaymentController.CreateInvoicePayment)
 		}
 
 		services := main.Group("/services")
