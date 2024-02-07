@@ -8,30 +8,30 @@ import (
 	responses4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/api/responses"
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
+	subTopicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/api/responses"
-	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	topicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	responses5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 )
 
 func NewTopic(context *gin.Context) {
 
-	type TopicInfo struct {
-		Code             string `json:"code"`
-		Name             string `json:"name"`
-		StrandNumber     string `json:"strand_number"`
-		ClassNumber      string `json:"Class_number"`
-		CurriculumNumber string `json:"curriculum_number"`
-	}
-
-	var topicInfo TopicInfo
+	var topicInfo requests2.TopicInfo
 	err := context.BindJSON(&topicInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	topicInfo.Prepare()
+
+	if err := topicInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -40,38 +40,9 @@ func NewTopic(context *gin.Context) {
 	strandNumber := topicInfo.StrandNumber
 	classNumber := topicInfo.ClassNumber
 	curriculumNumber := topicInfo.CurriculumNumber
+	topicNumber := topicInfo.TopicNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-
-	if curriculumNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
-		return
-	}
-
-	if strandNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand is required!"})
-		return
-	}
-
-	if classNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
-		return
-	}
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
@@ -89,23 +60,25 @@ func NewTopic(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode models3.Topic
+	var duplicateCode topicModel.Topic
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("strand_number = ?", strandNumber).
 		Where("curriculum_class_number = ?", classNumber).
 		Where("curriculum_number = ?", curriculumNumber).
+		Where("topic_number != ?", topicNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
 	}
 
-	var duplicateTopic models3.Topic
+	var duplicateTopic topicModel.Topic
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("strand_number = ?", strandNumber).
 		Where("curriculum_class_number = ?", classNumber).
 		Where("curriculum_number = ?", curriculumNumber).
+		Where("topic_number != ?", topicNumber).
 		First(&duplicateTopic).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand already exists"})
 		return
@@ -113,7 +86,7 @@ func NewTopic(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveTopic := models3.Topic{
+	saveTopic := topicModel.Topic{
 		Number:                number,
 		Name:                  name,
 		StrandNumber:          strandNumber,
@@ -261,11 +234,173 @@ func FetchTopicList(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": topic_})
 }
 
-func strand(strandNumber string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if strandNumber != "" {
-			return db.Where("strand_number = ?", strandNumber)
-		}
-		return db
+func DeleteTopic(context *gin.Context) {
+
+	var topicInfo requests2.TopicDelRequest
+	err := context.BindJSON(&topicInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
 	}
+
+	topicNumber := topicInfo.Number
+
+	var topicChecker subTopicModel.SubTopic
+	if err := config.DB.
+		Where("topic_number = ?", topicNumber).
+		First(&topicChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this topic, it has subtopic."})
+		return
+	}
+
+	var topicData topicModel.Topic
+	academicYearDataInfo := config.DB.
+		Where("number = ?", topicNumber).
+		First(&topicData)
+	if academicYearDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Topic not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", topicNumber).
+		Delete(&topicData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete topic"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete topic"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Topic deleted successfully!"})
+
+}
+
+func TopicInfo(context *gin.Context) {
+	topicNumber := context.Query("topic_number")
+
+	if topicNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Topic is required!"})
+		return
+	}
+
+	var topic topicModel.Topic
+	if err := config.DB.
+		Where("number = ?", topicNumber).
+		Preload("Strand.Subject.SubjectCluster").
+		Preload("Strand.Subject").
+		Preload("Strand").
+		First(&topic).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No learning area found"})
+		return
+	}
+
+	topic_ := responses.TopicDataList{
+		Number:                topic.Number,
+		Name:                  topic.Name,
+		Code:                  topic.Code,
+		UserNumber:            topic.UserNumber,
+		CurriculumClassNumber: topic.CurriculumClassNumber,
+		StrandNumber:          topic.StrandNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": topic_})
+}
+
+func TopicEdit(context *gin.Context) {
+
+	var topicInfo requests2.TopicInfo
+	err := context.BindJSON(&topicInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	topicInfo.Prepare()
+
+	if err := topicInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	code := topicInfo.Code
+	name := topicInfo.Name
+	strandNumber := topicInfo.StrandNumber
+	classNumber := topicInfo.ClassNumber
+	curriculumNumber := topicInfo.CurriculumNumber
+	topicNumber := topicInfo.TopicNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateCode topicModel.Topic
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("strand_number = ?", strandNumber).
+		Where("curriculum_class_number = ?", classNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", topicNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
+	var duplicateTopic topicModel.Topic
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("strand_number = ?", strandNumber).
+		Where("curriculum_class_number = ?", classNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", topicNumber).
+		First(&duplicateTopic).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Topic already exists"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	var topicDataInfo topicModel.Topic
+	updateData := tx.Model(&topicDataInfo).
+		Where("number = ?", topicNumber).
+		Updates(topicModel.Topic{Name: name, UserNumber: userNumber, Code: codeNo, StrandNumber: strandNumber, CurriculumClassNumber: classNumber})
+	if updateData.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update topic"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Topic Updated Successfully!", "data": topicDataInfo})
 }
