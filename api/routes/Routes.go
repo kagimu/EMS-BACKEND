@@ -375,6 +375,7 @@ func SetupRoute() *gin.Engine {
 		admission := main.Group("/admissions")
 		{
 			admission.POST("", admissionController.CreateAdmission)
+			admission.POST("admission-offer", admissionController.CreateAdmissionOffer)
 			admission.PUT("/:number/admit", admissionController.AdmitStudent)
 			admission.PUT("/admit", admissionController.BulkAdmitStudents)
 		}

@@ -165,6 +165,7 @@ func main() {
 		&serviceModels.CampusServices{},
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
+		&admissionModel.AdmissionOffer{},
 	)
 
 	if errMigrate != nil {
