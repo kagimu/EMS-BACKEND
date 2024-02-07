@@ -313,6 +313,9 @@ func TopicInfo(context *gin.Context) {
 		UserNumber:            topic.UserNumber,
 		CurriculumClassNumber: topic.CurriculumClassNumber,
 		StrandNumber:          topic.StrandNumber,
+		SubjectNumber:         topic.Strand.SubjectNumber,
+		SubjectClusterNumber:  topic.Strand.Subject.SubjectClusterNumber,
+		LearningAreaNumber:    topic.Strand.Subject.SubjectCluster.LearningAreaNumber,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": topic_})
