@@ -158,6 +158,7 @@ func main() {
 		&interviewModel.Interview{},
 		&materialModels.MaterialSubType{},
 		&lessonPlanModel.LessonPlanReference{},
+		&assessmentAreaModel.AssessmentArea{},
 		&interviewModel.InterviewQuestion{},
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
