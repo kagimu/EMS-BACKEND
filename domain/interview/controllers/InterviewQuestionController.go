@@ -5,9 +5,11 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -30,8 +32,14 @@ func CreateInterviewQuestion(c *gin.Context) {
 	interviewNumber := payload.InterviewNumber
 	var interview models.Interview
 	if err := config.DB.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Interview not found"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview not found"})
+		return
+	}
+
+	assessmentAreaNUmber := payload.AssessmentAreaNumber
+	var assessmentArea assessmentAreaModel.AssessmentArea
+	if err := config.DB.Where("number = ?", assessmentAreaNUmber).First(&assessmentArea).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment area does not exist"})
 		return
 	}
 
@@ -39,12 +47,13 @@ func CreateInterviewQuestion(c *gin.Context) {
 
 	interviewQuestionNumber := uuid.NewV4().String()
 	saveInterviewQuestion := models.InterviewQuestion{
-		Number:          interviewQuestionNumber,
-		InterviewNumber: interviewNumber,
-		Question:        payload.Question,
-		Score:           payload.Score,
-		CorrectAnswer:   payload.CorrectAnswer,
-		UserNumber:      user.Number,
+		Number:               interviewQuestionNumber,
+		InterviewNumber:      interviewNumber,
+		Question:             payload.Question,
+		Score:                payload.Score,
+		AssessmentAreaNumber: payload.AssessmentAreaNumber,
+		CorrectAnswer:        payload.CorrectAnswer,
+		UserNumber:           user.Number,
 	}
 
 	if err := tx.Create(&saveInterviewQuestion).Error; err != nil {

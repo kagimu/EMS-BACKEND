@@ -3,11 +3,12 @@ package requests
 import "errors"
 
 type InterviewQuestionRequest struct {
-	InterviewNumber string   `json:"interview_number"`
-	Question        string   `json:"question"`
-	PossibleAnswers []string `json:"possible_answers"`
-	CorrectAnswer   string   `json:"correct_answer"`
-	Score           int64    `json:"score"`
+	InterviewNumber      string   `json:"interview_number"`
+	Question             string   `json:"question"`
+	PossibleAnswers      []string `json:"possible_answers"`
+	CorrectAnswer        string   `json:"correct_answer"`
+	Score                int64    `json:"score"`
+	AssessmentAreaNumber string   `json:"assessment_area_number"`
 }
 
 func (i *InterviewQuestionRequest) Validate() error {
