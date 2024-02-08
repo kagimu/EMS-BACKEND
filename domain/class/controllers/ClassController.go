@@ -29,32 +29,19 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
+	classInfo.Prepare()
+
+	if err := classInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	code := classInfo.Code
 	name := classInfo.Name
 	abbreviation := strings.ToUpper(classInfo.Abbreviation)
 	level := classInfo.Level
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-
-	if level == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
-		return
-	}
 
 	if abbreviation == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation is required!"})
@@ -134,10 +121,17 @@ func NewClass(context *gin.Context) {
 
 func EditClass(context *gin.Context) {
 
-	var classInfo requests.EditClassInfo
+	var classInfo requests.ClassInfo
 	err := context.BindJSON(&classInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	classInfo.Prepare()
+
+	if err := classInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -148,31 +142,6 @@ func EditClass(context *gin.Context) {
 	classNumber := classInfo.ClassNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-
-	if level == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
-		return
-	}
-
-	if abbreviation == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation is required!"})
-		return
-	}
 
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})

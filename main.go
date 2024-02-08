@@ -14,6 +14,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentArea/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -153,14 +154,16 @@ func main() {
 		&interviewModel.Interview{},
 		&materialModels.MaterialSubType{},
 		&lessonPlanModel.LessonPlanReference{},
+		&assessmentAreaModel.AssessmentArea{},
 		&interviewModel.InterviewQuestion{},
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
-		//&invoiceModel.Invoice{},
+		&invoiceModel.Invoice{},
 		&serviceModels.CampusServices{},
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
+		&assessmentAreaModel.AssessmentArea{},
 	)
 
 	if errMigrate != nil {
