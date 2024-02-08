@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -30,13 +29,13 @@ func CreateAdmissionOffer(c *gin.Context) {
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input: %s", err.Error())})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	studentAPN := payload.StudentAPN
+	studentNumber := payload.StudentNumber
 	var student studentModel.Student
-	if err := config.DB.First(&student, "apn = ?", studentAPN).Error; err != nil {
+	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
 		return
 	}
@@ -63,12 +62,12 @@ func CreateAdmissionOffer(c *gin.Context) {
 	}
 
 	saveAdmissionOffer := models.AdmissionOffer{
-		Number:       uuid.NewV1().String(),
-		SchoolNumber: payload.SchoolNumber,
-		ClassNumber:  payload.ClassNumber,
-		CampusNumber: payload.CampusNumber,
-		StudentAPN:   payload.StudentAPN,
-		UserNumber:   user.Number,
+		Number:        uuid.NewV1().String(),
+		SchoolNumber:  payload.SchoolNumber,
+		ClassNumber:   payload.ClassNumber,
+		CampusNumber:  payload.CampusNumber,
+		StudentNumber: payload.StudentNumber,
+		UserNumber:    user.Number,
 	}
 
 	if err := config.DB.Create(&saveAdmissionOffer).Error; err != nil {
