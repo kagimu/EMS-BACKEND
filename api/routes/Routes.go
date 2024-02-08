@@ -6,6 +6,7 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentArea/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -187,6 +188,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("strand-list", strandController.FetchStrandList)
 
 		//topic
+		topic := main.Group("/topic")
+		{
+			topic.GET("/info", topicController.TopicInfo)
+			topic.POST("/edit", topicController.TopicEdit)
+			topic.POST("/delete", topicController.DeleteTopic)
+		}
 		main.POST("new-topic", topicController.NewTopic)
 		main.GET("topics", topicController.FetchTopic)
 		main.GET("topic-list", topicController.FetchTopicList)
@@ -378,6 +385,13 @@ func SetupRoute() *gin.Engine {
 			admission.POST("admission-offer", admissionController.CreateAdmissionOffer)
 			admission.PUT("/:number/admit", admissionController.AdmitStudent)
 			admission.PUT("/admit", admissionController.BulkAdmitStudents)
+		}
+
+		assessmentArea := main.Group("/assessment-areas")
+		{
+			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
+			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
+			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
 	}
 

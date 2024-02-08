@@ -11,10 +11,9 @@ type (
 		ClassNumber           string                   `json:"class_number"`
 		CurriculumClassNumber string                   `json:"curriculum_class_number"`
 		SubTopic              []responses.SubTopicList `json:"subtopic"`
-
-		//StrandNumber  string `json:"strand_number"`
-		//StrandName    string `json:"strand_name"`
-		//SubjectNumber string `json:"subject_number"`
-		//SubjectName   string `json:"subject_name"`
+		StrandNumber          string                   `json:"strand_number"`
+		SubjectNumber         string                   `json:"subject_number"`
+		SubjectClusterNumber  string                   `json:"subject_cluster_number"`
+		LearningAreaNumber    string                   `json:"learning_area_number"`
 	}
 )
