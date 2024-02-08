@@ -26,6 +26,7 @@ import (
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
+	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/controllers"
@@ -370,6 +371,12 @@ func SetupRoute() *gin.Engine {
 			services.GET("", serviceController.FetchServices)
 			services.DELETE("", serviceController.DeleteService)
 			services.PUT(":service_number", serviceController.EditService)
+		}
+
+		products := main.Group("/products")
+		{
+			products.POST("", productController.CreateProduct)
+			products.PUT(":product_number", productController.EditProduct)
 		}
 
 		admission := main.Group("/admissions")

@@ -1,0 +1,98 @@
+package controllers
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/models"
+	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+)
+
+func CreateProduct(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ProductRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf(" %s", err.Error())})
+		return
+	}
+
+	generateProductSerialCode := models.SerialCode{}
+
+	if err := config.DB.Create(&generateProductSerialCode).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": " Failed to generate product serial code"})
+	}
+
+	payload.SerialCode = fmt.Sprintf("PDT%04d", generateProductSerialCode.ID)
+
+	saveProduct := models.Product{
+		Number:             uuid.NewV4().String(),
+		Name:               payload.Name,
+		Cost:               payload.Cost,
+		SerialCode:         payload.SerialCode,
+		Description:        payload.Description,
+		Prefix:             payload.Prefix,
+		DiscountPercentage: payload.DiscountPercentage,
+		DiscountAmount:     payload.DiscountAmount,
+		UserNumber:         user.Number,
+	}
+
+	if err := config.DB.Create(&saveProduct).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create product"})
+		return
+	}
+
+	c.JSON(http.StatusOK, saveProduct)
+}
+
+func EditProduct(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ProductRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	var product models.Product
+	productNumber := c.Param("product_number")
+	if err := config.DB.First(&product, "number = ?", productNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found."})
+		return
+	}
+
+	updateProduct := models.Product{
+		Number:             uuid.NewV4().String(),
+		Name:               payload.Name,
+		Cost:               payload.Cost,
+		Description:        payload.Description,
+		Prefix:             payload.Prefix,
+		DiscountPercentage: payload.DiscountPercentage,
+		DiscountAmount:     payload.DiscountAmount,
+		UserNumber:         user.Number,
+	}
+
+	if err := config.DB.Model(&product).Where("number = ?", productNumber).Updates(updateProduct).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update product"})
+		return
+	}
+
+	c.JSON(http.StatusOK, updateProduct)
+}
