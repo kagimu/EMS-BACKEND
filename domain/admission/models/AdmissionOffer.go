@@ -11,7 +11,7 @@ import (
 
 type AdmissionOffer struct {
 	gorm.Model
-	Number        string               `gorm:"size:36;not null"`
+	Number        string               `json:"number" gorm:"size:36;unique;not null"`
 	ClassNumber   string               `json:"class_number" gorm:"size:36;not null"`
 	Class         classModel.Class     `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	SchoolNumber  string               `json:"school_number" gorm:"size:36;not null"`

@@ -12,7 +12,7 @@ type Invoice struct {
 	Status        string         `json:"status" gorm:"default:NOT_PAID"`
 	StudentNumber string         `json:"student_number" gorm:"size:36;not null"`
 	Student       models.Student `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	InvoiceNumber string         `json:"invoice_number"`
+	InvoiceNumber string         `json:"invoice_number"  gorm:"unique;not null"`
 	UserNumber    string         `json:"user_number" gorm:"size:36;not null"`
 	User          authModel.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

@@ -9,6 +9,7 @@ import (
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -77,4 +78,33 @@ func CreateAdmissionOffer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": saveAdmissionOffer})
 
+}
+
+func FetchAdmissionOffers(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	paginationParams := helpers.ParsePaginationParams(c)
+
+	var admissionOffers []models.AdmissionOffer
+	query := config.DB.Model(&models.AdmissionOffer{}).Preload("Student").Preload("Class").Preload("Campus").Preload("School")
+
+	_, err := helpers.Paginate(query, paginationParams)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Pagination failed",
+		})
+		return
+	}
+
+	if err := query.Find(&admissionOffers).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Admission offer fetching failed",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, admissionOffers)
 }
