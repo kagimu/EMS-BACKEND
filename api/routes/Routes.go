@@ -211,6 +211,10 @@ func SetupRoute() *gin.Engine {
 		main.GET("sub-topics-by-class", subTopicController.FetchSubTopicByClass)
 
 		//concepts
+		concept := main.Group("/concept")
+		{
+			concept.POST("/delete", conceptController.DeleteConcept)
+		}
 		main.POST("new-concept", conceptController.NewConcept)
 		main.GET("concepts", conceptController.FetchConcept)
 
