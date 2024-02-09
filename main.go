@@ -36,6 +36,7 @@ import (
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
 	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
+	productModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	serviceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/models"
@@ -161,6 +162,8 @@ func main() {
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
+		&productModel.SerialCode{},
+		&productModel.Product{},
 		&invoiceModel.Invoice{},
 		&serviceModels.CampusServices{},
 		&invoicePaymentModel.InvoicePayment{},
