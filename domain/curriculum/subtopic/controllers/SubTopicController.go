@@ -3,6 +3,8 @@ package controllers
 import (
 	"fmt"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	conceptModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/requests"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/api/responses"
 	"net/http"
 	"strconv"
@@ -381,4 +383,55 @@ func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+func DeleteSubTopic(context *gin.Context) {
+	var subTopicInfo requests.SubTopicDelRequest
+	err := context.BindJSON(&subTopicInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	subTopicNumber := subTopicInfo.Number
+
+	var subTopicChecker conceptModel.Concept
+	if err := config.DB.
+		Where("sub_topic_number = ?", subTopicNumber).
+		First(&subTopicChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this sub topic, it has concept."})
+		return
+	}
+
+	var subTopicData models2.SubTopic
+	subTopicDataInfo := config.DB.
+		Where("number = ?", subTopicNumber).
+		First(&subTopicData)
+	if subTopicDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Sub topic not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", subTopicNumber).
+		Delete(&subTopicData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete sub topic"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete topic"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Sub topic deleted successfully!"})
 }

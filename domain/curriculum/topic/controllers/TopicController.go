@@ -235,7 +235,6 @@ func FetchTopicList(context *gin.Context) {
 }
 
 func DeleteTopic(context *gin.Context) {
-
 	var topicInfo requests2.TopicDelRequest
 	err := context.BindJSON(&topicInfo)
 	if err != nil {
@@ -284,7 +283,6 @@ func DeleteTopic(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Topic deleted successfully!"})
-
 }
 
 func TopicInfo(context *gin.Context) {
