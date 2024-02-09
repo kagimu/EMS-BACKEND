@@ -201,6 +201,8 @@ func SetupRoute() *gin.Engine {
 		//sub topic
 		subTopic := main.Group("/sub-topic")
 		{
+			subTopic.GET("/info", subTopicController.SubTopicInfo)
+			subTopic.POST("/edit", subTopicController.SubTopicEdit)
 			subTopic.POST("/delete", subTopicController.DeleteSubTopic)
 		}
 		main.POST("new-sub-topic", subTopicController.NewSubTopic)

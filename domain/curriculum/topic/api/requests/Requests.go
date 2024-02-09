@@ -19,10 +19,6 @@ type TopicDelRequest struct {
 	Number string `json:"number"`
 }
 
-type StrandDelRequest struct {
-	Number string `json:"number"`
-}
-
 func (p *TopicInfo) Prepare() {
 	p.Name = html.EscapeString(strings.TrimSpace(p.Name))
 }
