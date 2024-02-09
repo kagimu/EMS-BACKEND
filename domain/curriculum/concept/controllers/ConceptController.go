@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/api/responses"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	responses4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
@@ -12,6 +13,7 @@ import (
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
 	responses6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/api/responses"
+	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	responses5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -310,4 +312,56 @@ func subTopic(subtopicNumber string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+func DeleteConcept(context *gin.Context) {
+
+	var conceptInfo requests2.ConceptDelRequest
+	err := context.BindJSON(&conceptInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	conceptNumber := conceptInfo.Number
+
+	var conceptChecker lessonPlanModel.LessonPlanConcepts
+	if err := config.DB.
+		Where("concept_number = ?", conceptNumber).
+		First(&conceptChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this concept, it has concept."})
+		return
+	}
+
+	var conceptData models3.Concept
+	conceptDataInfo := config.DB.
+		Where("number = ?", conceptNumber).
+		First(&conceptData)
+	if conceptDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Sub topic not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete concept
+	if err := tx.
+		Unscoped().
+		Where("number = ?", conceptNumber).
+		Delete(&conceptData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete concept"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete concept"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Concept deleted successfully!"})
 }
