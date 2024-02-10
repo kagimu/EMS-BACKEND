@@ -214,6 +214,8 @@ func SetupRoute() *gin.Engine {
 		//concepts
 		concept := main.Group("/concept")
 		{
+			concept.GET("/info", conceptController.ConceptInfo)
+			concept.POST("/edit", conceptController.ConceptEdit)
 			concept.POST("/delete", conceptController.DeleteConcept)
 		}
 		main.POST("new-concept", conceptController.NewConcept)
