@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
@@ -15,13 +16,7 @@ import (
 
 func NewSchool(context *gin.Context) {
 
-	type SchoolInfo struct {
-		Name             string   `json:"name"`
-		CommencementDate string   `json:"commencement_date"`
-		Curriculum       []string `json:"curriculum"`
-	}
-
-	var schoolInfo SchoolInfo
+	var schoolInfo requests.SchoolInfo
 	err := context.BindJSON(&schoolInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -258,14 +253,14 @@ func FetchSchoolInfo(context *gin.Context) {
 	for _, schoolCurr := range schools.SchoolCurriculum {
 		curriculum_ = append(curriculum_, responses.SchoolCurriculumResponseInfo{
 			Name:   schoolCurr.Curriculum.Name,
-			Number: schoolCurr.Number,
+			Number: schoolCurr.Curriculum.Number,
 		})
 	}
 
 	schools_ := responses.SchoolResponseInfo{
 		Number:           schools.Number,
 		Name:             schools.Name,
-		CommencementDate: schools.CommencementDate.Format("2-Jan-2006"),
+		CommencementDate: schools.CommencementDate.Format("2006-01-02"),
 		SchoolCurriculum: curriculum_,
 	}
 
@@ -275,12 +270,34 @@ func FetchSchoolInfo(context *gin.Context) {
 func FetchSchools(context *gin.Context) {
 
 	var schools []schoolCurriculumModels.School
+	var schools_ []responses.SchoolResponseInfo
 	if err := config.DB.
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
 		Order("created_at desc").
 		Find(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools})
+	for _, item := range schools {
+
+		var curriculum_ []responses.SchoolCurriculumResponseInfo
+
+		for _, schoolCurr := range item.SchoolCurriculum {
+			curriculum_ = append(curriculum_, responses.SchoolCurriculumResponseInfo{
+				Name:   schoolCurr.Curriculum.Name,
+				Number: schoolCurr.Number,
+			})
+		}
+
+		schools_ = append(schools_, responses.SchoolResponseInfo{
+			Number:           item.Number,
+			Name:             item.Name,
+			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
+			SchoolCurriculum: curriculum_,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
 }
