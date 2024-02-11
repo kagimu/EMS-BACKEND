@@ -3,10 +3,11 @@ package requests
 import "errors"
 
 type AdmissionOfferRequest struct {
-	ClassNumber   string `json:"class_number"`
-	SchoolNumber  string `json:"school_number"`
-	CampusNumber  string `json:"campus_number"`
-	StudentNumber string `json:"student_number"`
+	ClassNumber                   string   `json:"class_number"`
+	SchoolNumber                  string   `json:"school_number"`
+	CampusNumber                  string   `json:"campus_number"`
+	StudentNumber                 string   `json:"student_number"`
+	AdmissionOfferConditionNumber []string `json:"admission_offer_condition_number"`
 }
 
 func (a *AdmissionOfferRequest) Validate() error {

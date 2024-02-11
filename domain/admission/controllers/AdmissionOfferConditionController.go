@@ -26,7 +26,7 @@ func CreateAdmissionOfferCondition(c *gin.Context) {
 	}
 
 	saveAdmission := models.AdmissionOfferCondition{
-		Number:      uuid.NewV1().String(),
+		Number:      uuid.NewV4().String(),
 		Description: payload.Description,
 		UserNumber:  user.Number,
 	}
