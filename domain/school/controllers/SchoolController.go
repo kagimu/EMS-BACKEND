@@ -119,12 +119,7 @@ func NewSchool(context *gin.Context) {
 
 func EditSchool(context *gin.Context) {
 
-	type SchoolInfo struct {
-		Name         string `json:"name"`
-		SchoolNumber string `json:"school_number"`
-	}
-
-	var schoolInfo SchoolInfo
+	var schoolInfo requests.SchoolInfo
 	err := context.BindJSON(&schoolInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -132,6 +127,7 @@ func EditSchool(context *gin.Context) {
 	}
 
 	name := schoolInfo.Name
+	commencementDate := schoolInfo.CommencementDate
 	schoolNumber := schoolInfo.SchoolNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
@@ -143,6 +139,11 @@ func EditSchool(context *gin.Context) {
 
 	if schoolNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "School number is required!"})
+		return
+	}
+
+	if commencementDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Commencement date is required!"})
 		return
 	}
 
