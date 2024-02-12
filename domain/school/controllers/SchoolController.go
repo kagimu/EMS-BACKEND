@@ -167,12 +167,30 @@ func EditSchool(context *gin.Context) {
 		return
 	}
 
+	// Parse the string into a time.Time value
+	commencementDateData, err := time.Parse("2006-01-02", commencementDate)
+	if err != nil {
+		fmt.Println("Error parsing date:", err)
+		return
+	}
+
+	///save user data
+	tx := config.DB.Begin()
+
 	var schoolData schoolCurriculumModels.School
-	updateSchoolName := config.DB.Model(&schoolData).
+	updateSchool := tx.Model(&schoolData).
 		Where("number = ?", schoolNumber).
-		Update("name", name)
-	if updateSchoolName.Error != nil {
+		Updates(schoolCurriculumModels.School{Name: name, UserNumber: userNumber, CommencementDate: commencementDateData})
+	if updateSchool.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update school!"})
 		return
 	}
 
