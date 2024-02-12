@@ -26,9 +26,10 @@ func CreateAdmissionOfferCondition(c *gin.Context) {
 	}
 
 	saveAdmission := models.AdmissionOfferCondition{
-		Number:      uuid.NewV4().String(),
-		Description: payload.Description,
-		UserNumber:  user.Number,
+		Number:                   uuid.NewV4().String(),
+		Description:              payload.Description,
+		CustomAdmissionCondition: payload.CustomAdmissionCondition,
+		UserNumber:               user.Number,
 	}
 
 	if err := config.DB.Create(&saveAdmission).Error; err != nil {
@@ -36,7 +37,7 @@ func CreateAdmissionOfferCondition(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Admission created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Admission offer conditions created successfully"})
 }
 
 func FetchAdmissionOfferConditions(c *gin.Context) {
