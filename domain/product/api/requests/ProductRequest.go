@@ -10,6 +10,8 @@ type ProductRequest struct {
 	DiscountAmount     uint   `json:"discount_amount"`
 	Cost               uint   `json:"cost"`
 	Prefix             string `json:"prefix"`
+	RepeatCycle        string `json:"repeat_cycle"`
+	OneTimePurchase    bool   `json:"one_time_purchase"`
 }
 
 func (p *ProductRequest) Validate() error {
