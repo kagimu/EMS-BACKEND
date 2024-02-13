@@ -127,6 +127,7 @@ func EditSchool(context *gin.Context) {
 	}
 
 	name := schoolInfo.Name
+	curriculum := schoolInfo.Curriculum
 	commencementDate := schoolInfo.CommencementDate
 	schoolNumber := schoolInfo.SchoolNumber
 
@@ -187,6 +188,59 @@ func EditSchool(context *gin.Context) {
 		return
 	}
 
+	//find and delete Curriculum thata are deselected
+	var curriculumLst []schoolCurriculumModels.SchoolCurriculum
+	if err := config.DB.
+		Where("school_number = ?", schoolNumber).
+		Find(&curriculumLst).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found"})
+		return
+	}
+
+	var curriculumListToDelete []string
+	for _, item := range curriculumLst {
+		found := false
+		for _, item2 := range curriculum {
+			if item.CurriculumNumber == item2 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			curriculumListToDelete = append(curriculumListToDelete, item.CurriculumNumber)
+		}
+
+	}
+
+	//continue to delete
+	if len(curriculumListToDelete) > 0 {
+		for _, curr := range curriculumListToDelete {
+
+			//check to see if this curriculum has been added to a campus
+			/*	var classChecker CurriculumClassModel.Class
+				if err := config.DB.
+					Where("level_number = ?", levelNumber).
+					First(&classChecker).Error; err == nil {
+					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Level, it has classes under it."})
+					return
+				}*/
+
+			var curriculumData schoolCurriculumModels.SchoolCurriculum
+			if err := tx.
+				Unscoped().
+				Where("curriculum_number = ?", curr).
+				Where("school_number = ?", schoolNumber).
+				Delete(&curriculumData).Error; err != nil {
+				// If any error occurs, rollback the transaction
+				tx.Rollback()
+				// Handle or return the error as needed
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Curriculum"})
+				return
+			}
+
+		}
+	}
+
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
 		// Handle or return the error as needed
@@ -229,7 +283,7 @@ func DeleteSchool(context *gin.Context) {
 	if err := db.
 		Where("school_number = ?", schoolNumber).
 		First(&schoolChecker).Error; err == nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this School, it has Children"})
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this School, it has Campus"})
 		return
 	}
 
@@ -243,10 +297,9 @@ func DeleteSchool(context *gin.Context) {
 		return
 	}
 
-	db.Where("number = ?", schoolNumber).Delete(&schoolData)
+	db.Unscoped().Where("number = ?", schoolNumber).Delete(&schoolData)
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "School deleted successfully!"})
-
 }
 
 func FetchSchoolInfo(context *gin.Context) {
