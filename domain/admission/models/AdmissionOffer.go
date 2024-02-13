@@ -20,6 +20,7 @@ type AdmissionOffer struct {
 	AdmissionOfferConditionNumber string               `json:"admission_offer_condition_number" gorm:"size:36;"`
 	Campus                        campusModel.Campus   `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudentNumber                 string               `json:"student_number" gorm:"size:36;not null"`
+	CustomAdmissionCondition      string               `json:"custom_admission_condition" gorm:"type:text"`
 	Student                       studentModel.Student `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber                    string               `json:"user_number" gorm:"size:36;not null"`
 	User                          authModel.User       `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

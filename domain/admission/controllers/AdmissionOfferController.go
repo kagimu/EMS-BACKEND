@@ -66,12 +66,13 @@ func CreateAdmissionOffer(c *gin.Context) {
 	}
 
 	saveAdmissionOffer := models.AdmissionOffer{
-		Number:        uuid.NewV4().String(),
-		SchoolNumber:  payload.SchoolNumber,
-		ClassNumber:   payload.ClassNumber,
-		CampusNumber:  payload.CampusNumber,
-		StudentNumber: payload.StudentNumber,
-		UserNumber:    user.Number,
+		Number:                   uuid.NewV4().String(),
+		SchoolNumber:             payload.SchoolNumber,
+		ClassNumber:              payload.ClassNumber,
+		CampusNumber:             payload.CampusNumber,
+		CustomAdmissionCondition: payload.CustomAdmissionCondition,
+		StudentNumber:            payload.StudentNumber,
+		UserNumber:               user.Number,
 	}
 
 	if err := config.DB.Create(&saveAdmissionOffer).Error; err != nil {

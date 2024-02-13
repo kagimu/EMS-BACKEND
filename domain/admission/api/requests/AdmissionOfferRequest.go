@@ -8,6 +8,7 @@ type AdmissionOfferRequest struct {
 	CampusNumber                  string   `json:"campus_number"`
 	StudentNumber                 string   `json:"student_number"`
 	AdmissionOfferConditionNumber []string `json:"admission_offer_condition_number"`
+	CustomAdmissionCondition      string   `json:"custom_admission_condition"`
 }
 
 func (a *AdmissionOfferRequest) Validate() error {
