@@ -20,6 +20,6 @@ jobs:
       - name: Setup credentials to access private repositories
         run: git config --global url.https://${{ secrets.MY_PAT }}@github.com/.insteadOf https://github.com/    
       - name: connect and pull
-        run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git checkout ${{ secrets.MAIN_BRANCH }} && git pull && sh deploy.sh && exit"
+        run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && git checkout ${{ secrets.MAIN_BRANCH }} &&  sh deploy.sh && exit"
       - name: cleanup
         run: rm -rf ~/.ssh
