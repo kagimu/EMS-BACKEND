@@ -119,6 +119,7 @@ func CreateAdmissionOffer(c *gin.Context) {
 		Number:        uuid.NewV4().String(),
 		StudentNumber: payload.StudentNumber,
 		InvoiceNumber: invoiceNumber,
+		Description:   "Admission offer",
 		UserNumber:    user.Number,
 	}
 

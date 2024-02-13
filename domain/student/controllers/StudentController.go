@@ -93,6 +93,7 @@ func CreateStudent(c *gin.Context) {
 		Number:        uuid.NewV4().String(),
 		StudentNumber: savedStudent.Number,
 		InvoiceNumber: invoiceNumber,
+		Description:   "Registration fee",
 		UserNumber:    user.Number,
 	}
 
