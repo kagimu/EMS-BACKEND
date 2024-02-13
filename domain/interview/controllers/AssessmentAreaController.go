@@ -44,7 +44,7 @@ func CreateAssessmentArea(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Assessment areas created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Assessment area created successfully"})
 }
 
 func FetchAssessmentAreas(c *gin.Context) {
