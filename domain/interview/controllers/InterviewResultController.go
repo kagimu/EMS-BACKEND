@@ -94,7 +94,7 @@ func FetchAllInterviewResults(c *gin.Context) {
 	paginationParams := helpers.ParsePaginationParams(c)
 
 	query := config.DB.Model(&models.InterviewResult{}).Preload("Student").
-		Select("student_number, sum(score) as total_score").Order("total_score desc")
+		Select("student_number, SUM(score) as total_score").Group("student_number").Order("total_score DESC")
 
 	if _, err := helpers.Paginate(query, paginationParams); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
