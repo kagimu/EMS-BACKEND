@@ -216,15 +216,6 @@ func EditSchool(context *gin.Context) {
 	if len(curriculumListToDelete) > 0 {
 		for _, curr := range curriculumListToDelete {
 
-			//check to see if this curriculum has been added to a campus
-			/*	var classChecker CurriculumClassModel.Class
-				if err := config.DB.
-					Where("level_number = ?", levelNumber).
-					First(&classChecker).Error; err == nil {
-					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Level, it has classes under it."})
-					return
-				}*/
-
 			var curriculumData schoolCurriculumModels.SchoolCurriculum
 			if err := tx.
 				Unscoped().
