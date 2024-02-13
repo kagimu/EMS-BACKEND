@@ -81,7 +81,7 @@ func CreateAdmissionOffer(c *gin.Context) {
 	}
 
 	for _, admissionOfferConditionNumber := range payload.AdmissionOfferConditionNumber {
-		saveAdmissionOfferConditions := models.AdmissionConditions{
+		saveAdmissionOfferConditions := models.AdmissionCondition{
 			Number:                        uuid.NewV4().String(),
 			AdmissionOfferNumber:          saveAdmissionOffer.Number,
 			AdmissionOfferConditionNumber: admissionOfferConditionNumber,
