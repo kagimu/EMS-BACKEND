@@ -15,6 +15,8 @@ type Product struct {
 	DiscountPercentage uint        `json:"discount_percentage"`
 	DiscountAmount     uint        `json:"discount_amount"`
 	Cost               uint        `json:"cost"`
+	OneTimePurchase    bool        `json:"one_time_purchase" gorm:"default:false"`
+	RepeatCycle        string      `json:"repeat_cycle" gorm:"size:20"`
 	UserNumber         string      `json:"user_number" gorm:"size:36;not null"`
 	User               models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

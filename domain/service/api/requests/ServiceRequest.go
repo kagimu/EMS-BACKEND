@@ -1,14 +1,22 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
 
 type ServiceRequest struct {
-	Description   string   `json:"description"`
-	Cost          int      `json:"cost"`
-	Name          string   `json:"name"`
-	Mandatory     bool     `json:"mandatory"`
-	CampusNumbers []string `json:"campus_numbers"`
-	PaymentMode   string   `json:"payment_mode"`
+	Description     string   `json:"description"`
+	Cost            int      `json:"cost"`
+	Name            string   `json:"name"`
+	Mandatory       bool     `json:"mandatory"`
+	SerialCode      string   `json:"serial_code"`
+	CampusNumbers   []string `json:"campus_numbers"`
+	OneTimePurchase bool     `json:"one_time_purchase"`
+	RepeatCycle     string   `json:"repeat_cycle"`
+	PaymentMode     string   `json:"payment_mode"`
 }
 
 func (s *ServiceRequest) Validate() error {
@@ -26,4 +34,8 @@ func (s *ServiceRequest) Validate() error {
 	}
 
 	return nil
+}
+
+func (s *ServiceRequest) Prepare() {
+	s.Name = cases.Title(language.Und).String(s.Name)
 }
