@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentAreas/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentAreas/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentArea/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
