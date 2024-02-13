@@ -5,9 +5,11 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentAreas/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -35,7 +37,7 @@ func CreateInterviewQuestion(c *gin.Context) {
 	}
 
 	assessmentAreaNUmber := payload.AssessmentAreaNumber
-	var assessmentArea models.AssessmentArea
+	var assessmentArea assessmentAreaModel.AssessmentArea
 	if err := config.DB.Where("number = ?", assessmentAreaNUmber).First(&assessmentArea).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment area does not exist"})
 		return
