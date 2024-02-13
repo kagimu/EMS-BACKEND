@@ -80,13 +80,13 @@ func CreateAdmissionOffer(c *gin.Context) {
 	}
 
 	for _, admissionOfferConditionNumber := range payload.AdmissionOfferConditionNumber {
-		saveAdmissionOffer := models.AdmissionOfferConditions{
+		saveAdmissionOfferConditions := models.AdmissionConditions{
 			Number:                        uuid.NewV4().String(),
 			AdmissionOfferNumber:          saveAdmissionOffer.Number,
 			AdmissionOfferConditionNumber: admissionOfferConditionNumber,
 		}
 
-		if err := config.DB.Create(&saveAdmissionOffer).Error; err != nil {
+		if err := config.DB.Create(&saveAdmissionOfferConditions).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission offer conditions"})
 			return
 		}
