@@ -30,17 +30,28 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
-	saveService := models.Service{
-		Number:      uuid.NewV4().String(),
-		Cost:        payload.Cost,
-		Description: payload.Description,
-		UserNumber:  user.Number,
-		Mandatory:   payload.Mandatory,
-		PaymentMode: payload.PaymentMode,
-		Name:        payload.Name,
+	generateProductSerialCode := models.SerialCode{}
+
+	if err := config.DB.Create(&generateProductSerialCode).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate service serial code"})
 	}
 
+	payload.SerialCode = fmt.Sprintf("SVC%04d", generateProductSerialCode.ID)
+
 	tx := config.DB.Begin()
+
+	saveService := models.Service{
+		Number:          uuid.NewV4().String(),
+		Cost:            payload.Cost,
+		Description:     payload.Description,
+		OneTimePurchase: payload.OneTimePurchase,
+		UserNumber:      user.Number,
+		SerialCode:      payload.SerialCode,
+		Mandatory:       payload.Mandatory,
+		RepeatCycle:     payload.RepeatCycle,
+		PaymentMode:     payload.PaymentMode,
+		Name:            payload.Name,
+	}
 
 	if err := tx.Create(&saveService).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service " + err.Error()})
@@ -61,7 +72,10 @@ func CreateService(c *gin.Context) {
 		}
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save service"})
+		return
+	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Service created successfully"})
 }

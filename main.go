@@ -163,7 +163,9 @@ func main() {
 		&productModel.SerialCode{},
 		&productModel.Product{},
 		&invoiceModel.Invoice{},
+		&serviceModels.SerialCode{},
 		&serviceModels.CampusServices{},
+		&serviceModels.Discount{},
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
 	)
