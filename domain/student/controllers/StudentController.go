@@ -8,6 +8,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
+	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -55,6 +57,7 @@ func CreateStudent(c *gin.Context) {
 
 	studentNumber := uuid.NewV4().String()
 	userNumber := user.Number
+
 	savedStudent := models.Student{
 		Number:                    studentNumber,
 		APN:                       studentAPN,
@@ -71,16 +74,30 @@ func CreateStudent(c *gin.Context) {
 		ApplicationNumber:         applicationNumber,
 		ClassNumber:               payload.ClassNumber,
 	}
-
 	tx := config.DB.Begin()
 
 	if err := tx.Create(&savedStudent).Error; err != nil {
 		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save student"})
+		return
+	}
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"details": err.Error(),
-			"message": "failed to save student",
-		})
+	// Create an invoice here
+	invoiceNumber, err := invoiceController.InvoiceNumberGenerator()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number"})
+		return
+	}
+
+	saveInvoice := invoiceModel.Invoice{
+		Number:        uuid.NewV4().String(),
+		StudentNumber: savedStudent.Number,
+		InvoiceNumber: invoiceNumber,
+		UserNumber:    user.Number,
+	}
+
+	if err := config.DB.Create(&saveInvoice).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice"})
 		return
 	}
 
