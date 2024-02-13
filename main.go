@@ -150,6 +150,8 @@ func main() {
 		&preInterviewModels.PreAdmissionInterviewTest{},
 		&gradeModel.Grade{},
 		&admissionModel.Admission{},
+		&admissionModel.AdmissionOfferCondition{},
+		&admissionModel.AdmissionOffer{},
 		&previousSchoolModels.PreviousSchoolClass{},
 		&materialModels.CurriculumSubtopicReference{},
 		&schemeOfWorkmodel.SchemeOfWorkImport{},
