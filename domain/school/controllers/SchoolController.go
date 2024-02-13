@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
@@ -15,13 +16,7 @@ import (
 
 func NewSchool(context *gin.Context) {
 
-	type SchoolInfo struct {
-		Name             string   `json:"name"`
-		CommencementDate string   `json:"commencement_date"`
-		Curriculum       []string `json:"curriculum"`
-	}
-
-	var schoolInfo SchoolInfo
+	var schoolInfo requests.SchoolInfo
 	err := context.BindJSON(&schoolInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -124,12 +119,7 @@ func NewSchool(context *gin.Context) {
 
 func EditSchool(context *gin.Context) {
 
-	type SchoolInfo struct {
-		Name         string `json:"name"`
-		SchoolNumber string `json:"school_number"`
-	}
-
-	var schoolInfo SchoolInfo
+	var schoolInfo requests.SchoolInfo
 	err := context.BindJSON(&schoolInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -137,6 +127,8 @@ func EditSchool(context *gin.Context) {
 	}
 
 	name := schoolInfo.Name
+	curriculum := schoolInfo.Curriculum
+	commencementDate := schoolInfo.CommencementDate
 	schoolNumber := schoolInfo.SchoolNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
@@ -148,6 +140,11 @@ func EditSchool(context *gin.Context) {
 
 	if schoolNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "School number is required!"})
+		return
+	}
+
+	if commencementDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Commencement date is required!"})
 		return
 	}
 
@@ -171,12 +168,74 @@ func EditSchool(context *gin.Context) {
 		return
 	}
 
+	// Parse the string into a time.Time value
+	commencementDateData, err := time.Parse("2006-01-02", commencementDate)
+	if err != nil {
+		fmt.Println("Error parsing date:", err)
+		return
+	}
+
+	///save user data
+	tx := config.DB.Begin()
+
 	var schoolData schoolCurriculumModels.School
-	updateSchoolName := config.DB.Model(&schoolData).
+	updateSchool := tx.Model(&schoolData).
 		Where("number = ?", schoolNumber).
-		Update("name", name)
-	if updateSchoolName.Error != nil {
+		Updates(schoolCurriculumModels.School{Name: name, UserNumber: userNumber, CommencementDate: commencementDateData})
+	if updateSchool.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	//find and delete Curriculum thata are deselected
+	var curriculumLst []schoolCurriculumModels.SchoolCurriculum
+	if err := config.DB.
+		Where("school_number = ?", schoolNumber).
+		Find(&curriculumLst).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found"})
+		return
+	}
+
+	var curriculumListToDelete []string
+	for _, item := range curriculumLst {
+		found := false
+		for _, item2 := range curriculum {
+			if item.CurriculumNumber == item2 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			curriculumListToDelete = append(curriculumListToDelete, item.CurriculumNumber)
+		}
+
+	}
+
+	//continue to delete
+	if len(curriculumListToDelete) > 0 {
+		for _, curr := range curriculumListToDelete {
+
+			var curriculumData schoolCurriculumModels.SchoolCurriculum
+			if err := tx.
+				Unscoped().
+				Where("curriculum_number = ?", curr).
+				Where("school_number = ?", schoolNumber).
+				Delete(&curriculumData).Error; err != nil {
+				// If any error occurs, rollback the transaction
+				tx.Rollback()
+				// Handle or return the error as needed
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Curriculum"})
+				return
+			}
+
+		}
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update school!"})
 		return
 	}
 
@@ -215,7 +274,7 @@ func DeleteSchool(context *gin.Context) {
 	if err := db.
 		Where("school_number = ?", schoolNumber).
 		First(&schoolChecker).Error; err == nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this School, it has Children"})
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this School, it has Campus"})
 		return
 	}
 
@@ -229,10 +288,9 @@ func DeleteSchool(context *gin.Context) {
 		return
 	}
 
-	db.Where("number = ?", schoolNumber).Delete(&schoolData)
+	db.Unscoped().Where("number = ?", schoolNumber).Delete(&schoolData)
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "School deleted successfully!"})
-
 }
 
 func FetchSchoolInfo(context *gin.Context) {
@@ -258,14 +316,14 @@ func FetchSchoolInfo(context *gin.Context) {
 	for _, schoolCurr := range schools.SchoolCurriculum {
 		curriculum_ = append(curriculum_, responses.SchoolCurriculumResponseInfo{
 			Name:   schoolCurr.Curriculum.Name,
-			Number: schoolCurr.Number,
+			Number: schoolCurr.Curriculum.Number,
 		})
 	}
 
 	schools_ := responses.SchoolResponseInfo{
 		Number:           schools.Number,
 		Name:             schools.Name,
-		CommencementDate: schools.CommencementDate.Format("2-Jan-2006"),
+		CommencementDate: schools.CommencementDate.Format("2006-01-02"),
 		SchoolCurriculum: curriculum_,
 	}
 
@@ -275,12 +333,34 @@ func FetchSchoolInfo(context *gin.Context) {
 func FetchSchools(context *gin.Context) {
 
 	var schools []schoolCurriculumModels.School
+	var schools_ []responses.SchoolResponseInfo
 	if err := config.DB.
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
 		Order("created_at desc").
 		Find(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools})
+	for _, item := range schools {
+
+		var curriculum_ []responses.SchoolCurriculumResponseInfo
+
+		for _, schoolCurr := range item.SchoolCurriculum {
+			curriculum_ = append(curriculum_, responses.SchoolCurriculumResponseInfo{
+				Name:   schoolCurr.Curriculum.Name,
+				Number: schoolCurr.Number,
+			})
+		}
+
+		schools_ = append(schools_, responses.SchoolResponseInfo{
+			Number:           item.Number,
+			Name:             item.Name,
+			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
+			SchoolCurriculum: curriculum_,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
 }
