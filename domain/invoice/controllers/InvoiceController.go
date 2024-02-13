@@ -48,11 +48,12 @@ func CreateInvoice(c *gin.Context) {
 		Number:        uuid.NewV4().String(),
 		StudentNumber: payload.StudentNumber,
 		InvoiceNumber: invoiceNumber,
+		Description:   payload.Description,
 		UserNumber:    user.Number,
 	}
 
 	if err := config.DB.Create(&saveInvoice).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice", "err": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice"})
 		return
 	}
 

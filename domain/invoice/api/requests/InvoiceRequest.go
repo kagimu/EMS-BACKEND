@@ -5,6 +5,7 @@ import "errors"
 type InvoiceRequest struct {
 	StudentNumber string `json:"student_number"`
 	InvoiceNumber string `json:"invoice_number"`
+	Description   string `json:"description"`
 }
 
 func (i *InvoiceRequest) Validate() error {
