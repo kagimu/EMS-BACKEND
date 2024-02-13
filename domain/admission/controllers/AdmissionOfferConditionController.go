@@ -26,10 +26,9 @@ func CreateAdmissionOfferCondition(c *gin.Context) {
 	}
 
 	saveAdmission := models.AdmissionOfferCondition{
-		Number:                   uuid.NewV4().String(),
-		Description:              payload.Description,
-		CustomAdmissionCondition: payload.CustomAdmissionCondition,
-		UserNumber:               user.Number,
+		Number:      uuid.NewV4().String(),
+		Description: payload.Description,
+		UserNumber:  user.Number,
 	}
 
 	if err := config.DB.Create(&saveAdmission).Error; err != nil {

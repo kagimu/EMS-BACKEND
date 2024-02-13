@@ -7,14 +7,13 @@ import (
 
 type AdmissionOfferCondition struct {
 	gorm.Model
-	Number                   string          `json:"number" gorm:"size:36;unique;not null"`
-	Description              string          `json:"description" gorm:"type:text;default:''"`
-	UserNumber               string          `json:"user_number" gorm:"size:36;not null"`
-	CustomAdmissionCondition string          `json:"custom_admission_condition" gorm:"type:text"`
-	User                     authModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Number      string          `json:"number" gorm:"size:36;unique;not null"`
+	Description string          `json:"description" gorm:"type:text;default:''"`
+	UserNumber  string          `json:"user_number" gorm:"size:36;not null"`
+	User        authModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
-type AdmissionOfferConditions struct {
+type AdmissionConditions struct {
 	gorm.Model
 	Number                        string                  `json:"number" gorm:"size:36;unique;not null"`
 	AdmissionOfferNumber          string                  `json:"admission_offer_number" gorm:"size:36"`
