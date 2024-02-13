@@ -31,12 +31,12 @@ func CreateInvoicePayment(c *gin.Context) {
 	}
 
 	saveInvoicePayment := models.InvoicePayment{
-		Number:           uuid.NewV4().String(),
-		PaymentReference: payload.PaymentReference,
-		Amount:           payload.Amount,
-		Balance:          payload.Balance,
-		Payer:            payload.Payer,
-		Date:             payload.Date,
+		Number:        uuid.NewV4().String(),
+		Amount:        payload.Amount,
+		Balance:       payload.Balance,
+		Payer:         payload.Payer,
+		Date:          payload.Date,
+		InvoiceNumber: payload.InvoiceNumber,
 	}
 	if err := config.DB.Create(&saveInvoicePayment).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice payment", "err": err.Error()})

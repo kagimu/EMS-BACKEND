@@ -67,7 +67,8 @@ func CreateAdmission(c *gin.Context) {
 	}
 
 	saveAdmission := models.Admission{
-		Number:           uuid.NewV1().String(),
+		Number: uuid.NewV4().String(),
+
 		Status:           payload.Status,
 		AdmissionFeePaid: payload.AdmissionFeePaid,
 		StudentNumber:    payload.StudentNumber,

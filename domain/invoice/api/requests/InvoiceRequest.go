@@ -3,9 +3,9 @@ package requests
 import "errors"
 
 type InvoiceRequest struct {
-	Status        string `json:"status"`
 	StudentNumber string `json:"student_number"`
 	InvoiceNumber string `json:"invoice_number"`
+	Description   string `json:"description"`
 }
 
 func (i *InvoiceRequest) Validate() error {
