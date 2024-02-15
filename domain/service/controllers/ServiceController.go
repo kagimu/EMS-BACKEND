@@ -142,7 +142,7 @@ func DeleteService(c *gin.Context) {
 	}
 
 	if err := config.DB.Delete(&service).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete student"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete service"})
 		return
 	}
 

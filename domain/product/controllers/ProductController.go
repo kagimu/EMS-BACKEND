@@ -96,3 +96,39 @@ func EditProduct(c *gin.Context) {
 
 	c.JSON(http.StatusOK, updateProduct)
 }
+
+func FetchProducts(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var products []models.Product
+	if err := config.DB.Find(&products).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
+		return
+	}
+
+	c.JSON(http.StatusOK, products)
+}
+
+func DeleteProduct(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	productNumber := c.Param("product_number")
+	var service models.Product
+	if err := config.DB.Where("number = ?", productNumber).First(&service).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found"})
+		return
+	}
+
+	if err := config.DB.Delete(&service).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete product"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product deleted"})
+}
