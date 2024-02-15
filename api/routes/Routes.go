@@ -80,6 +80,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("profile", authController.Profile)
 
 		//manage curriculum
+		curriculum := main.Group("/curriculum")
+		{
+			curriculum.GET("/info", curricullumController.CurriculumInfo)
+			curriculum.POST("/edit", curricullumController.CurriculumEdit)
+			curriculum.POST("/delete", curricullumController.DeleteCurriculum)
+		}
 		main.POST("new-curriculum", curricullumController.NewCurriculum)
 		main.GET("curriculum-list", curricullumController.FetchCurriculum)
 		main.GET("curriculum-info", curricullumController.FetchCurriculumInfo)

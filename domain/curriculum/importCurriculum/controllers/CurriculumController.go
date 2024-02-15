@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/requests"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -31,25 +32,23 @@ import (
 
 func NewCurriculum(context *gin.Context) {
 
-	type CurriculumInfo struct {
-		Name string `json:"name"`
-	}
-
-	var curriculumInfo CurriculumInfo
+	var curriculumInfo responses.CurriculumInfo
 	err := context.BindJSON(&curriculumInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
+	curriculumInfo.Prepare()
+
+	if err := curriculumInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	name := curriculumInfo.Name
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
 
 	var userData models.User
 	//check if user is a valid user
@@ -684,4 +683,160 @@ func FetchSchoolCurriculumLevel(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schoolCurriculumLevel_})
+}
+
+func DeleteCurriculum(context *gin.Context) {
+
+	var curriculumInfo requests.CurriculumDelRequest
+	err := context.BindJSON(&curriculumInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	curriculumNumber := curriculumInfo.Number
+
+	var curriculumChecker curriculumLevelModels2.CurriculumLevel
+	if err := config.DB.
+		Where("curriculum_number = ?", curriculumNumber).
+		First(&curriculumChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this curriculum, it has level under it."})
+		return
+	}
+
+	var curriculumChecker2 learningAreaModels.LearningArea
+	if err := config.DB.
+		Where("curriculum_number = ?", curriculumNumber).
+		First(&curriculumChecker2).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this curriculum, it has Learning Area under it."})
+		return
+	}
+
+	var curriculumData models5.Curriculum
+	curriculumDataInfo := config.DB.
+		Where("number = ?", curriculumNumber).
+		First(&curriculumData)
+	if curriculumDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Curriculum not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", curriculumNumber).
+		Delete(&curriculumData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete curriculum"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete curriculum"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Curriculum deleted successfully!"})
+}
+
+func CurriculumInfo(context *gin.Context) {
+
+	curriculumNumber := context.Query("curriculum_number")
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum  is required!"})
+		return
+	}
+
+	var curriculum models5.Curriculum
+	if err := config.DB.
+		Where("number = ?", curriculumNumber).
+		First(&curriculum).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Curriculum found"})
+		return
+	}
+
+	curriculum_ := responses.SchoolCurriculumDataList{
+		Name:   curriculum.Name,
+		Number: curriculum.Number,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculum_})
+}
+
+func CurriculumEdit(context *gin.Context) {
+
+	var curriculumInfo responses.CurriculumInfo
+	err := context.BindJSON(&curriculumInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	curriculumInfo.Prepare()
+
+	if err := curriculumInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	name := curriculumInfo.Name
+	curriculumNumber := curriculumInfo.CurriculumNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	if err := config.DB.Where("number = ?", userNumber).First(&userData).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			context.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		} else {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": "Error retrieving user data", "error": err.Error()})
+		}
+		return
+	}
+
+	var duplicateSchool models5.Curriculum
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("user_number = ?", userNumber).
+		Where("number != ?", curriculumNumber).
+		First(&duplicateSchool).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum already exists!!!"})
+		return
+	}
+
+	// Begin the transaction
+	tx := config.DB.Begin()
+
+	var curriculumDataInfo models5.Curriculum
+	updateCurriculum := tx.Model(&curriculumDataInfo).
+		Where("number = ?", curriculumNumber).
+		Updates(models5.Curriculum{Name: name, UserNumber: userNumber})
+	if updateCurriculum.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Curriculum"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Curriculum Edited Successfully!", "data": curriculumDataInfo})
 }
