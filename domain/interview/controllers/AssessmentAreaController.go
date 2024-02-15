@@ -34,6 +34,7 @@ func CreateAssessmentArea(c *gin.Context) {
 		saveAssessmentArea := models.AssessmentArea{
 			Number:      uuid.NewV4().String(),
 			ClassNumber: classNumber,
+			Name:        payload.Name,
 			UserNumber:  user.Number,
 		}
 
@@ -43,7 +44,7 @@ func CreateAssessmentArea(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Invoice created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Assessment area created successfully"})
 }
 
 func FetchAssessmentAreas(c *gin.Context) {

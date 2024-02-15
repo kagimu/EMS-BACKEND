@@ -6,6 +6,7 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentArea/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -95,11 +96,8 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-school-curriculum-level", curricullumController.FetchSchoolCurriculumLevel)
 
 		//manage School
-		school := main.Group("/school")
-		{
-			school.POST("/edit", schoolController.EditSchool)
-		}
 		main.POST("new-school", schoolController.NewSchool)
+		main.POST("edit-school", schoolController.EditSchool)
 		main.POST("delete-school", schoolController.DeleteSchool)
 		main.GET("schools", schoolController.FetchSchools)
 		main.GET("school-info", schoolController.FetchSchoolInfo)
@@ -364,13 +362,6 @@ func SetupRoute() *gin.Engine {
 			interview.GET("/:interview_number/students", interviewController.FetchStudentsByInterviewNumber)
 			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
 			interview.GET("/:interview_number/questions", interviewController.FetchQuestionsByInterviewNumber)
-
-			assessmentArea := main.Group("/assessment-areas")
-			{
-				assessmentArea.POST("", interviewController.CreateAssessmentArea)
-				assessmentArea.GET("", interviewController.FetchAssessmentAreas)
-				assessmentArea.PUT("", interviewController.EditAssessmentArea)
-			}
 		}
 
 		interviewQuestion := main.Group("/interview-questions")
@@ -418,22 +409,14 @@ func SetupRoute() *gin.Engine {
 			admission.POST("", admissionController.CreateAdmission)
 			admission.PUT("/:number/admit", admissionController.AdmitStudent)
 			admission.PUT("/admit", admissionController.BulkAdmitStudents)
-
-			admissionOffers := main.Group("/admissions")
-			{
-				admissionOffers.POST("admission-offers", admissionController.CreateAdmissionOffer)
-				admissionOffers.GET("admission-offers", admissionController.FetchAdmissionOffers)
-				admissionOffers.GET("admission-offers/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
-				admissionOffers.GET("admission-offer/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
-			}
-
-			admissionOfferConditions := main.Group("/admissions")
-			{
-				admissionOfferConditions.POST("admission-offer-conditions", admissionController.CreateAdmissionOfferCondition)
-				admissionOfferConditions.GET("admission-offer-conditions", admissionController.FetchAdmissionOfferConditions)
-			}
 		}
 
+		assessmentArea := main.Group("/assessment-areas")
+		{
+			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
+			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
+			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
+		}
 	}
 
 	return router
