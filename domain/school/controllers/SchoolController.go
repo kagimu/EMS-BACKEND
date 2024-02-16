@@ -188,6 +188,36 @@ func EditSchool(context *gin.Context) {
 		return
 	}
 
+	//this will add curriculum if it is new
+	for _, item := range curriculum {
+
+		fmt.Println(item)
+		var checkCurriculum schoolCurriculumModels.SchoolCurriculum
+		if duplicate := tx.
+			Where("curriculum_number = ?", item).
+			Where("school_number = ?", schoolNumber).
+			First(&checkCurriculum).Error; duplicate != nil {
+
+			//		add curriculum if it doesnt exist
+			saveSchoolCurriculum := schoolCurriculumModels.SchoolCurriculum{
+				Number:           uuid.NewV4().String(),
+				CurriculumNumber: item,
+				SchoolNumber:     schoolNumber,
+			}
+
+			if err := tx.Create(&saveSchoolCurriculum).Error; err != nil {
+				// If any error occurs, rollback the transaction
+				tx.Rollback()
+				// Handle or return the error as needed
+				//context.JSON(http.StatusBadRequest, gin.H{"message": err})
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save curriculum"})
+				return
+			}
+
+		}
+
+	}
+
 	//find and delete Curriculum thata are deselected
 	var curriculumLst []schoolCurriculumModels.SchoolCurriculum
 	if err := config.DB.

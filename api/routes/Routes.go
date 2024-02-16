@@ -96,11 +96,14 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-school-curriculum-level", curricullumController.FetchSchoolCurriculumLevel)
 
 		//manage School
-		main.POST("new-school", schoolController.NewSchool)
-		main.POST("edit-school", schoolController.EditSchool)
-		main.POST("delete-school", schoolController.DeleteSchool)
-		main.GET("schools", schoolController.FetchSchools)
-		main.GET("school-info", schoolController.FetchSchoolInfo)
+		school := main.Group("/school")
+		{
+			school.GET("/all", schoolController.FetchSchools)
+			school.POST("/new", schoolController.NewSchool)
+			school.POST("/edit", schoolController.EditSchool)
+			school.GET("/info", schoolController.FetchSchoolInfo)
+			school.POST("/delete", schoolController.DeleteSchool)
+		}
 
 		//manage campus
 		main.POST("new-campus", controllers.NewCampus)
