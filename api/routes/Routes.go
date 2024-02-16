@@ -405,6 +405,8 @@ func SetupRoute() *gin.Engine {
 		{
 			products.POST("", productController.CreateProduct)
 			products.PUT(":product_number", productController.EditProduct)
+			products.GET("", productController.FetchProducts)
+			products.DELETE(":product_number", productController.DeleteProduct)
 		}
 
 		admission := main.Group("/admissions")
