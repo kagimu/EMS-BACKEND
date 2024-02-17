@@ -107,6 +107,7 @@ func main() {
 		&schoolModels.SchoolCurriculum{},
 		&models2.Curriculum{},
 		&models.Campus{},
+		&models.CampusCurriculum{},
 		&LevelModels.CampusLevel{},
 		&LevelModels.Level{},
 		&LevelModels.CurriculumLevel{},
