@@ -120,7 +120,7 @@ func NewCampus(context *gin.Context) {
 		return
 	}
 
-	//save Level
+	//save Curriculum
 	for _, item := range campusCurriculum {
 
 		saveCurriculum := campusModel.CampusCurriculum{
@@ -194,6 +194,7 @@ func EditCampus(context *gin.Context) {
 	email := campusInfo.Email
 	location := campusInfo.Location
 	schoolNumber := campusInfo.SchoolNumber
+	campusCurriculum := campusInfo.CampusCurriculum
 	campusNumber := campusInfo.CampusNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
@@ -248,12 +249,88 @@ func EditCampus(context *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin()
+
 	var campusDataInfo campusModel.Campus
-	updateLevel := config.DB.Model(&campusDataInfo).
+	updateLevel := tx.Model(&campusDataInfo).
 		Where("number = ?", campusNumber).
 		Updates(campusModel.Campus{Name: name, Phone: phone, UserNumber: userNumber, Email: email, Location: location})
 	if updateLevel.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	for _, item := range campusCurriculum {
+		var checkCurriculum campusModel.CampusCurriculum
+		if duplicate := tx.
+			Where("school_curriculum_number = ?", item).
+			Where("campus_number = ?", campusNumber).
+			First(&checkCurriculum).Error; duplicate != nil {
+
+			saveCurriculum := campusModel.CampusCurriculum{
+				Number:                 uuid.NewV4().String(),
+				SchoolCurriculumNumber: item,
+				CampusNumber:           campusNumber,
+			}
+			if err := tx.Create(&saveCurriculum).Error; err != nil {
+				// If any error occurs, rollback the transaction
+				tx.Rollback()
+				// Handle or return the error as needed
+				context.JSON(http.StatusBadRequest, gin.H{
+					"err":     err.Error(),
+					"message": "Failed to save Curriculum"})
+				return
+			}
+		}
+	}
+
+	var curriculumLst []campusModel.CampusCurriculum
+	if err := config.DB.
+		Where("campus_number = ?", campusNumber).
+		Find(&curriculumLst).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found"})
+		return
+	}
+
+	var curriculumListToDelete []string
+	for _, item := range curriculumLst {
+		found := false
+		for _, item2 := range campusCurriculum {
+			if item.SchoolCurriculumNumber == item2 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			curriculumListToDelete = append(curriculumListToDelete, item.SchoolCurriculumNumber)
+		}
+
+	}
+
+	if len(curriculumListToDelete) > 0 {
+		for _, curr := range curriculumListToDelete {
+
+			var curriculumData campusModel.CampusCurriculum
+			if err := tx.
+				Unscoped().
+				Where("school_curriculum_number = ?", curr).
+				Where("campus_number = ?", campusNumber).
+				Delete(&curriculumData).Error; err != nil {
+				// If any error occurs, rollback the transaction
+				tx.Rollback()
+				// Handle or return the error as needed
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Curriculum"})
+				return
+			}
+
+		}
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update school!"})
 		return
 	}
 
@@ -294,7 +371,7 @@ func FetchCampuses(context *gin.Context) {
 
 		for _, items := range campusCurriculum {
 			curriculum_ = append(curriculum_, responses.CurriculumDataList{
-				Number: items.Number,
+				Number: items.SchoolCurriculumNumber,
 				Name:   items.SchoolCurriculum.Curriculum.Name,
 			})
 		}
@@ -327,12 +404,29 @@ func CampusInfo(context *gin.Context) {
 	var campus campusModel.Campus
 	if err := config.DB.
 		Where("number = ?", campusNumber).
-		Preload("SchoolCurriculum.Curriculum").
-		Preload("SchoolCurriculum").
 		Order("created_at desc").
 		First(&campus).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})
 		return
+	}
+
+	//fetch curriculum
+	var campusCurriculum []campusModel.CampusCurriculum
+	var curriculum_ []responses.CurriculumDataList
+	if err := config.DB.
+		Where("campus_number = ?", campus.Number).
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
+		Find(&campusCurriculum).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found"})
+		return
+	}
+
+	for _, items := range campusCurriculum {
+		curriculum_ = append(curriculum_, responses.CurriculumDataList{
+			Number: items.SchoolCurriculumNumber,
+			Name:   items.SchoolCurriculum.Curriculum.Name,
+		})
 	}
 
 	campus_ := responses.CampusDataList{
@@ -343,7 +437,8 @@ func CampusInfo(context *gin.Context) {
 		Location:         campus.Location,
 		UserNumber:       campus.UserNumber,
 		SchoolNumber:     campus.SchoolNumber,
-		CommencementDate: campus.CommencementDate.Format("2-Jan-2006"),
+		CommencementDate: campus.CommencementDate.Format("2006-01-02"),
+		Curriculum:       curriculum_,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
