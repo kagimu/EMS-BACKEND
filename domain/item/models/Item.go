@@ -5,16 +5,19 @@ import (
 	"gorm.io/gorm"
 )
 
-type Product struct {
+type Item struct {
 	gorm.Model
 	Number             string      `json:"number" gorm:"size:36;unique;not null"`
-	Name               string      `json:"name"`
+	Name               string      `json:"name" gorm:"not null"`
 	Description        string      `json:"description" gorm:"type:text"`
-	SerialCode         string      `json:"serial_code"`
+	Type               string      `json:"type" gorm:"not null;comment:'Service or Product'"`
+	Cost               int64       `json:"cost" gorm:"not null"`
 	Prefix             string      `json:"prefix"`
+	PaymentMode        string      `json:"payment_mode" gorm:"default:'CASH'"`
+	Mandatory          bool        `json:"mandatory" gorm:"default:false"`
+	SerialCode         string      `json:"serial_code"`
 	DiscountPercentage uint        `json:"discount_percentage"`
 	DiscountAmount     uint        `json:"discount_amount"`
-	Cost               uint        `json:"cost"`
 	OneTimePurchase    bool        `json:"one_time_purchase" gorm:"default:false"`
 	RepeatCycle        string      `json:"repeat_cycle" gorm:"size:20"`
 	UserNumber         string      `json:"user_number" gorm:"size:36;not null"`

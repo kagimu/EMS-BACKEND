@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -30,7 +31,7 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
-	generateProductSerialCode := models.SerialCode{}
+	generateProductSerialCode := models2.SerialCode{}
 
 	if err := config.DB.Create(&generateProductSerialCode).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate service serial code"})
@@ -39,9 +40,9 @@ func CreateService(c *gin.Context) {
 	payload.SerialCode = fmt.Sprintf("SVC%04d", generateProductSerialCode.ID)
 
 	tx := config.DB.Begin()
-
-	saveService := models.Service{
-		Number:          uuid.NewV4().String(),
+	itemNumber := uuid.NewV4().String()
+	saveItem := models.Item{
+		Number:          itemNumber,
 		Cost:            payload.Cost,
 		Description:     payload.Description,
 		OneTimePurchase: payload.OneTimePurchase,
@@ -53,16 +54,26 @@ func CreateService(c *gin.Context) {
 		Name:            payload.Name,
 	}
 
+	if err := tx.Create(&saveItem).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create item " + err.Error()})
+		return
+	}
+
+	saveService := models2.Service{
+		ItemNumber: itemNumber,
+	}
+
 	if err := tx.Create(&saveService).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service " + err.Error()})
 		return
 	}
 
 	for _, campusNumber := range payload.CampusNumbers {
-		saveCampusService := models.CampusServices{
+		saveCampusService := models2.CampusServices{
 			Number:        uuid.NewV4().String(),
 			CampusNumber:  campusNumber,
-			ServiceNumber: saveService.Number,
+			ServiceNumber: saveService.ItemNumber,
 		}
 
 		if err := tx.Create(&saveCampusService).Error; err != nil {
@@ -73,7 +84,7 @@ func CreateService(c *gin.Context) {
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save service"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit service transaction"})
 		return
 	}
 
@@ -86,7 +97,7 @@ func FetchServices(c *gin.Context) {
 		return
 	}
 
-	var services []models.Service
+	var services []models2.Service
 	if err := config.DB.Find(&services).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch services"})
 		return
@@ -107,22 +118,53 @@ func EditService(c *gin.Context) {
 		return
 	}
 
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
+		return
+
+	}
+
 	serviceNumber := c.Param("service_number")
-	var service models.Service
+	var service models.Item
 	if err := config.DB.Where("number = ?", serviceNumber).First(&service).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Service not found"})
 		return
 	}
 
-	updateService := models.Service{
-		Description: payload.Description,
-		Cost:        payload.Cost,
-		Name:        payload.Name,
+	updateService := models.Item{
+		Description:     payload.Description,
+		Cost:            payload.Cost,
+		Name:            payload.Name,
+		Mandatory:       payload.Mandatory,
+		SerialCode:      payload.SerialCode,
+		RepeatCycle:     payload.RepeatCycle,
+		PaymentMode:     payload.PaymentMode,
+		OneTimePurchase: payload.OneTimePurchase,
 	}
 
 	if err := config.DB.Model(&service).Where("number = ?", serviceNumber).Updates(updateService).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update service"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update service item"})
 		return
+	}
+
+	// synchronize campus services by deleting all and adding them again
+	if err := config.DB.Where("service_number = ?", serviceNumber).Delete(&models2.CampusServices{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
+		return
+
+	}
+
+	for _, campusNumber := range payload.CampusNumbers {
+		saveCampusService := models2.CampusServices{
+			Number:        uuid.NewV4().String(),
+			CampusNumber:  campusNumber,
+			ServiceNumber: serviceNumber,
+		}
+		if err := config.DB.Create(&saveCampusService).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create campus service"})
+			return
+		}
+
 	}
 
 	c.JSON(http.StatusOK, service)
@@ -135,14 +177,31 @@ func DeleteService(c *gin.Context) {
 	}
 
 	serviceNumber := c.Param("service_number")
-	var service models.Service
-	if err := config.DB.Where("number = ?", serviceNumber).First(&service).Error; err != nil {
+	var service models2.Service
+	if err := config.DB.Where("item_number = ?", serviceNumber).First(&service).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Service not found"})
 		return
 	}
 
-	if err := config.DB.Delete(&service).Error; err != nil {
+	//start db transaction
+	tx := config.DB.Begin()
+
+	//delete campus services
+	if err := tx.Where("service_number = ?", serviceNumber).Delete(&models2.CampusServices{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
+		return
+
+	}
+
+	if err := tx.Delete(&service).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete service"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit service transaction"})
 		return
 	}
 
