@@ -191,7 +191,6 @@ func EditSchool(context *gin.Context) {
 	//this will add curriculum if it is new
 	for _, item := range curriculum {
 
-		fmt.Println(item)
 		var checkCurriculum schoolCurriculumModels.SchoolCurriculum
 		if duplicate := tx.
 			Where("curriculum_number = ?", item).

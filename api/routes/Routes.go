@@ -106,11 +106,14 @@ func SetupRoute() *gin.Engine {
 		}
 
 		//manage campus
-		main.POST("new-campus", controllers.NewCampus)
-		main.POST("edit-campus", controllers.EditCampus)
-		main.POST("delete-campus", controllers.DeleteCampus)
-		main.GET("campuses", controllers.FetchCampuses)
-		main.GET("campus-info", controllers.CampusInfo)
+		campus := main.Group("/campus")
+		{
+			campus.GET("/all", controllers.FetchCampuses)
+			campus.GET("/info", controllers.CampusInfo)
+			campus.POST("/new", controllers.NewCampus)
+			campus.POST("/edit", controllers.EditCampus)
+			campus.POST("/delete", controllers.DeleteCampus)
+		}
 
 		level := main.Group("/level")
 		{
