@@ -8,8 +8,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
-	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -78,32 +76,32 @@ func CreateStudent(c *gin.Context) {
 
 	if err := tx.Create(&savedStudent).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save student"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + " Failed to save student"})
 		return
 	}
+	/*
+		// Create an invoice here
+		invoiceNumber, err := invoiceController.InvoiceNumberGenerator()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number"})
+			return
+		}
 
-	// Create an invoice here
-	invoiceNumber, err := invoiceController.InvoiceNumberGenerator()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number"})
-		return
-	}
+		saveInvoice := invoiceModel.Invoice{
+			Number:        uuid.NewV4().String(),
+			StudentNumber: savedStudent.Number,
+			InvoiceNumber: invoiceNumber,
+			Description:   "Registration fee",
+			UserNumber:    user.Number,
+		}
 
-	saveInvoice := invoiceModel.Invoice{
-		Number:        uuid.NewV4().String(),
-		StudentNumber: savedStudent.Number,
-		InvoiceNumber: invoiceNumber,
-		Description:   "Registration fee",
-		UserNumber:    user.Number,
-	}
-
-	if err := config.DB.Create(&saveInvoice).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice"})
-		return
-	}
+		if err := config.DB.Create(&saveInvoice).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error() + " Failed to create invoice"})
+			return
+		}*/
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save student"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
 		return
 	}
 
