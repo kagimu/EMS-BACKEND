@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
+	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"os"
 
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -29,15 +31,14 @@ import (
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	invoicePaymentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
+	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
 	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
-	productModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
-	serviceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -103,6 +104,7 @@ func main() {
 		&schoolModels.SchoolCurriculum{},
 		&models2.Curriculum{},
 		&models.Campus{},
+		&models.CampusCurriculum{},
 		&LevelModels.CampusLevel{},
 		&LevelModels.Level{},
 		&LevelModels.CurriculumLevel{},
@@ -143,7 +145,6 @@ func main() {
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&studentModels.ADN{},
-		&serviceModels.Service{},
 		&preInterviewModels.PreAdmissionInterviewTest{},
 		&gradeModel.Grade{},
 		&admissionModel.Admission{},
@@ -161,12 +162,15 @@ func main() {
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
-		&productModel.SerialCode{},
-		&productModel.Product{},
+		&models3.SerialCode{},
+		&itemModels.Item{},
+		&models3.Product{},
+		&models4.Service{},
 		&invoiceModel.Invoice{},
-		&serviceModels.SerialCode{},
-		&serviceModels.CampusServices{},
-		&serviceModels.Discount{},
+		&invoiceModel.InvoiceItem{},
+		&models4.SerialCode{},
+		&models4.CampusServices{},
+		&models4.Discount{},
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
 		&assessmentAreaModel.AssessmentArea{},

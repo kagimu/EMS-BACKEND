@@ -1,6 +1,8 @@
 package routes
 
 import (
+	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/controllers"
+	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/controllers"
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
@@ -27,10 +29,8 @@ import (
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
-	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
-	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
@@ -81,6 +81,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("profile", authController.Profile)
 
 		//manage curriculum
+		curriculum := main.Group("/curriculum")
+		{
+			curriculum.GET("/info", curricullumController.CurriculumInfo)
+			curriculum.POST("/edit", curricullumController.CurriculumEdit)
+			curriculum.POST("/delete", curricullumController.DeleteCurriculum)
+		}
 		main.POST("new-curriculum", curricullumController.NewCurriculum)
 		main.GET("curriculum-list", curricullumController.FetchCurriculum)
 		main.GET("curriculum-info", curricullumController.FetchCurriculumInfo)
@@ -90,18 +96,24 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-school-curriculum-level", curricullumController.FetchSchoolCurriculumLevel)
 
 		//manage School
-		main.POST("new-school", schoolController.NewSchool)
-		main.POST("edit-school", schoolController.EditSchool)
-		main.POST("delete-school", schoolController.DeleteSchool)
-		main.GET("schools", schoolController.FetchSchools)
-		main.GET("school-info", schoolController.FetchSchoolInfo)
+		school := main.Group("/school")
+		{
+			school.GET("/all", schoolController.FetchSchools)
+			school.POST("/new", schoolController.NewSchool)
+			school.POST("/edit", schoolController.EditSchool)
+			school.GET("/info", schoolController.FetchSchoolInfo)
+			school.POST("/delete", schoolController.DeleteSchool)
+		}
 
 		//manage campus
-		main.POST("new-campus", controllers.NewCampus)
-		main.POST("edit-campus", controllers.EditCampus)
-		main.POST("delete-campus", controllers.DeleteCampus)
-		main.GET("campuses", controllers.FetchCampuses)
-		main.GET("campus-info", controllers.CampusInfo)
+		campus := main.Group("/campus")
+		{
+			campus.GET("/all", controllers.FetchCampuses)
+			campus.GET("/info", controllers.CampusInfo)
+			campus.POST("/new", controllers.NewCampus)
+			campus.POST("/edit", controllers.EditCampus)
+			campus.POST("/delete", controllers.DeleteCampus)
+		}
 
 		level := main.Group("/level")
 		{
@@ -396,6 +408,8 @@ func SetupRoute() *gin.Engine {
 		{
 			products.POST("", productController.CreateProduct)
 			products.PUT(":product_number", productController.EditProduct)
+			products.GET("", productController.FetchProducts)
+			products.DELETE(":product_number", productController.DeleteProduct)
 		}
 
 		admission := main.Group("/admissions")
@@ -403,6 +417,22 @@ func SetupRoute() *gin.Engine {
 			admission.POST("", admissionController.CreateAdmission)
 			admission.PUT("/:number/admit", admissionController.AdmitStudent)
 			admission.PUT("/admit", admissionController.BulkAdmitStudents)
+		}
+
+		offer := admission.Group("/admission-offers")
+		{
+			offer.POST("", admissionController.CreateAdmissionOffer)
+			offer.GET("", admissionController.FetchAdmissionOffers)
+			offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
+			offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
+
+		}
+
+		conditions := admission.Group("/admission-offer-conditions")
+		{
+			conditions.POST("", admissionController.CreateAdmissionOfferCondition)
+			conditions.GET("", admissionController.FetchAdmissionOfferConditions)
+
 		}
 
 		assessmentArea := main.Group("/assessment-areas")

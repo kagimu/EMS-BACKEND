@@ -553,7 +553,7 @@ func FetchSchemeOfWorkClasses(context *gin.Context) {
 	var classes_ []responses.ClassDataList
 	if err := config.DB.
 		Scopes(levelDataFilter(levelNo)).
-		Where("curriculum_levels.curriculum_number = ?", campus.SchoolCurriculum.CurriculumNumber).
+		//Where("curriculum_levels.curriculum_number = ?", campus.SchoolCurriculum.CurriculumNumber).
 		Joins("join curriculum_levels on curriculum_levels.number = curriculum_classes.curriculum_level_number").
 		Joins("join classes on curriculum_classes.class_number = classes.number").
 		Preload("CurriculumLevel").

@@ -1,13 +1,13 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -31,7 +31,7 @@ func CreateDiscount(c *gin.Context) {
 		return
 	}
 
-	var service models.Service
+	var service models2.Service
 	if err := config.DB.Where("number = ?", payload.ServiceNumber).First(&service).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Service not found"})
 		return
@@ -51,7 +51,7 @@ func CreateDiscount(c *gin.Context) {
 
 	tx := config.DB.Begin()
 
-	saveServiceDiscount := models.Discount{
+	saveServiceDiscount := models2.Discount{
 		Number:         uuid.NewV4().String(),
 		ServiceNumber:  payload.ServiceNumber,
 		AuthorizedBy:   payload.AuthorizedBy,

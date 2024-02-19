@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/api/requests"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -30,16 +31,21 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 
-	generateProductSerialCode := models.SerialCode{}
+	tx := config.DB.Begin()
 
-	if err := config.DB.Create(&generateProductSerialCode).Error; err != nil {
+	generateProductSerialCode := models2.SerialCode{}
+
+	if err := tx.Create(&generateProductSerialCode).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": " Failed to generate product serial code"})
+		return
 	}
 
 	payload.SerialCode = fmt.Sprintf("PDT%04d", generateProductSerialCode.ID)
 
-	saveProduct := models.Product{
-		Number:             uuid.NewV4().String(),
+	itemNumber := uuid.NewV4().String()
+	saveProductItem := models.Item{
+		Number:             itemNumber,
 		Name:               payload.Name,
 		Cost:               payload.Cost,
 		SerialCode:         payload.SerialCode,
@@ -50,11 +56,22 @@ func CreateProduct(c *gin.Context) {
 		UserNumber:         user.Number,
 	}
 
-	if err := config.DB.Create(&saveProduct).Error; err != nil {
+	if err := tx.Create(&saveProductItem).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create product"})
 		return
 	}
 
+	saveProduct := models2.Product{
+		ItemNumber: itemNumber,
+	}
+
+	if err := tx.Create(&saveProduct).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create product"})
+		return
+	}
+	tx.Commit()
 	c.JSON(http.StatusOK, saveProduct)
 }
 
@@ -71,14 +88,14 @@ func EditProduct(c *gin.Context) {
 		return
 	}
 
-	var product models.Product
+	var product models.Item
 	productNumber := c.Param("product_number")
 	if err := config.DB.First(&product, "number = ?", productNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found."})
 		return
 	}
 
-	updateProduct := models.Product{
+	updateProduct := models.Item{
 		Number:             uuid.NewV4().String(),
 		Name:               payload.Name,
 		Cost:               payload.Cost,
@@ -95,4 +112,40 @@ func EditProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, updateProduct)
+}
+
+func FetchProducts(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var products []models2.Product
+	if err := config.DB.Find(&products).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
+		return
+	}
+
+	c.JSON(http.StatusOK, products)
+}
+
+func DeleteProduct(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	productNumber := c.Param("product_number")
+	var service models2.Product
+	if err := config.DB.Where("number = ?", productNumber).First(&service).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found"})
+		return
+	}
+
+	if err := config.DB.Delete(&service).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete product"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product deleted"})
 }
