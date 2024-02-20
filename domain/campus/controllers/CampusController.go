@@ -444,6 +444,37 @@ func CampusInfo(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campus_})
 }
 
+func CampusCurriculum(context *gin.Context) {
+
+	campusNumber := context.Query("campus_number")
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School Number is required!"})
+		return
+	}
+
+	//fetch curriculum
+	var campusCurriculum []campusModel.CampusCurriculum
+	var curriculum_ []responses.CurriculumDataList
+	if err := config.DB.
+		Where("campus_number = ?", campusNumber).
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
+		Find(&campusCurriculum).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found"})
+		return
+	}
+
+	for _, items := range campusCurriculum {
+		curriculum_ = append(curriculum_, responses.CurriculumDataList{
+			Number: items.SchoolCurriculumNumber,
+			Name:   items.SchoolCurriculum.Curriculum.Name,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculum_})
+}
+
 func FetchLevel(context *gin.Context) {
 
 	campusNumber := context.Query("campus_number")
