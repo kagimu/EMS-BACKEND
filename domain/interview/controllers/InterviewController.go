@@ -240,7 +240,7 @@ func AddStudentToInterview(c *gin.Context) {
 	}
 
 	updateApplicationStatus := applicationModel.Application{
-		Status: "ADMITTED",
+		Status: "INTERVIEW_SCHEDULED",
 	}
 
 	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {

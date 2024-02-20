@@ -16,7 +16,7 @@ type Discount struct {
 	StudentNumber  string                `json:"student_number" gorm:"size:36;not null"`
 	Student        studentModels.Student `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	ServiceNumber  string                `json:"service_number" gorm:"size:36;not null"`
-	Service        Service               `gorm:"foreignKey:ServiceNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Service        Service               `gorm:"foreignKey:ServiceNumber;references:ItemNumber;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber     string                `json:"user_number" gorm:"size:36;index;not null"`
 	User           models.User           `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

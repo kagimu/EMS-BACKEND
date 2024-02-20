@@ -6,6 +6,7 @@ type InvoiceRequest struct {
 	StudentNumber string `json:"student_number"`
 	InvoiceNumber string `json:"invoice_number"`
 	Description   string `json:"description"`
+	DueDate       string `json:"due_date"`
 }
 
 func (i *InvoiceRequest) Validate() error {

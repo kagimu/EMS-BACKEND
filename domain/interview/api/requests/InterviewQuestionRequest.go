@@ -18,6 +18,13 @@ func (i *InterviewQuestionRequest) Validate() error {
 	if i.Question == "" {
 		return errors.New("question is required")
 	}
+	if i.CorrectAnswer == "" {
+		return errors.New("correct answer is required")
+	}
+	if i.AssessmentAreaNumber == "" {
+		return errors.New("assessment area is required")
+	}
+
 	if len(i.PossibleAnswers) == 0 {
 		return errors.New("possible answers are required")
 	}

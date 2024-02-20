@@ -48,6 +48,7 @@ func CreateInvoice(c *gin.Context) {
 		Number:        uuid.NewV4().String(),
 		StudentNumber: payload.StudentNumber,
 		InvoiceNumber: invoiceNumber,
+		DueDate:       payload.DueDate,
 		Description:   payload.Description,
 		UserNumber:    user.Number,
 	}

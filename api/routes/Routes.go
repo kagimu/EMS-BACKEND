@@ -3,14 +3,17 @@ package routes
 import (
 	"time"
 
+	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/controllers"
+	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/controllers"
+
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
-	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentArea/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
 	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
+	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
 	conceptController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/controllers"
 	curricullumController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers"
 	learningAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/controllers"
@@ -27,10 +30,8 @@ import (
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
-	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/product/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
-	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
@@ -418,6 +419,22 @@ func SetupRoute() *gin.Engine {
 			admission.POST("", admissionController.CreateAdmission)
 			admission.PUT("/:number/admit", admissionController.AdmitStudent)
 			admission.PUT("/admit", admissionController.BulkAdmitStudents)
+		}
+
+		offer := admission.Group("/admission-offers")
+		{
+			offer.POST("", admissionController.CreateAdmissionOffer)
+			offer.GET("", admissionController.FetchAdmissionOffers)
+			offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
+			offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
+
+		}
+
+		conditions := admission.Group("/admission-offer-conditions")
+		{
+			conditions.POST("", admissionController.CreateAdmissionOfferCondition)
+			conditions.GET("", admissionController.FetchAdmissionOfferConditions)
+
 		}
 
 		assessmentArea := main.Group("/assessment-areas")

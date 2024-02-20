@@ -8,7 +8,7 @@ type ProductRequest struct {
 	SerialCode         string `json:"serial_code"`
 	DiscountPercentage uint   `json:"discount_percentage"`
 	DiscountAmount     uint   `json:"discount_amount"`
-	Cost               uint   `json:"cost"`
+	Cost               int64  `json:"cost"`
 	Prefix             string `json:"prefix"`
 	RepeatCycle        string `json:"repeat_cycle"`
 	OneTimePurchase    bool   `json:"one_time_purchase"`
