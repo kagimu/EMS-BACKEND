@@ -121,7 +121,7 @@ func FetchProducts(c *gin.Context) {
 	}
 
 	var products []models2.Product
-	if err := config.DB.Find(&products).Error; err != nil {
+	if err := config.DB.Preload("Item").Find(&products).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
 		return
 	}
