@@ -174,27 +174,35 @@ func AddLessonPlanReference(ctx *gin.Context) {
 		return
 	}
 
-	code, err := strconv.Atoi(lessonPlanReferenceRequest.Code)
+	tx := config.DB.Begin()
 
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+	for _, material := range lessonPlanReferenceRequest.References {
 
-		return
+		code, err := strconv.Atoi(material.Code)
+
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+
+			return
+		}
+
+		var lessonPlanReference = lessonPlanModel.LessonPlanReference{
+			LessonPlanNumber:       lessonPlanReferenceRequest.LessonPlanNumber,
+			LearningMaterialNumber: material.LearningMaterialNumber,
+			Name:                   material.Name,
+			Code:                   int64(code),
+			UserNumber:             ctx.GetHeader("User-Number"),
+			Number:                 uuid.NewV4().String(),
+		}
+
+		if tx.Create(&lessonPlanReference).Error != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add lesson plan reference"))
+			return
+		}
 	}
 
-	var lessonPlanReference = lessonPlanModel.LessonPlanReference{
-		LessonPlanNumber:       lessonPlanReferenceRequest.LessonPlanNumber,
-		LearningMaterialNumber: lessonPlanReferenceRequest.LearningMaterialNumber,
-		Name:                   lessonPlanReferenceRequest.Name,
-		Code:                   int64(code),
-		UserNumber:             ctx.GetHeader("User-Number"),
-		Number:                 uuid.NewV4().String(),
-	}
-
-	if config.DB.Create(&lessonPlanReference).Error != nil {
-		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add lesson plan reference"))
-		return
-	}
+	tx.Commit()
 
 	ctx.JSON(http.StatusOK, commons.Feedback("Lesson plan reference added successfully!"))
 
@@ -285,12 +293,27 @@ func FetchLessonPlan(context *gin.Context) {
 		})
 	}
 
+	var lessonPlanReferenceInfo []lessonPlanModel.LessonPlanReference
+	config.DB.Where("lesson_plan_number = ?", lessonPlanInfo.Number).Find(&lessonPlanReferenceInfo)
+
+	var lessonPlanReferenceInfo_ []responses.LessonPlanReferenceResponse
+
+	for _, reference := range lessonPlanReferenceInfo {
+		lessonPlanReferenceInfo_ = append(lessonPlanReferenceInfo_, responses.LessonPlanReferenceResponse{
+			LessonPlanNumber:       reference.LessonPlanNumber,
+			LearningMaterialNumber: reference.LearningMaterialNumber,
+			Name:                   reference.Name,
+			Code:                   reference.Code,
+		})
+	}
+
 	_lessonPlanResp := responses.LessonPlanData{
 		Number:               lessonPlanInfo.Number,
 		SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
 		Status:               lessonPlanInfo.Status,
 		UserNumber:           lessonPlanInfo.UserNumber,
 		LessonPlanConcepts:   lessonPlanConceptsInfo_,
+		References:           lessonPlanReferenceInfo_,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _lessonPlanResp})

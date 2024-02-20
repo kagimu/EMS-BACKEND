@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -84,7 +85,7 @@ func Login(context *gin.Context) {
 	var user models.User
 	config.DB.Where("number = ?", userNumber).First(&user)
 	if user.Status != "Active" {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Account not Active, please reset password to activate your account"})
+		context.JSON(http.StatusNotFound, gin.H{"message": "Account not Active, please reset password to activate your account!"})
 		return
 	}
 
@@ -117,7 +118,6 @@ func Login(context *gin.Context) {
 	}
 
 	_userProfile := responses.GetUserList{
-		ID:         userProfile.ID,
 		Number:     userProfile.Number,
 		FirstName:  userProfile.FirstName,
 		SecondName: userProfile.SecondName,
@@ -125,6 +125,7 @@ func Login(context *gin.Context) {
 		Gender:     userProfile.Gender,
 		Type:       userProfile.Type,
 	}
+	fmt.Println(_userProfile.Type)
 
 	//we generate jwt token
 	//serialized := user.Serialize()
@@ -175,13 +176,14 @@ func Profile(context *gin.Context) {
 	}
 
 	_userProfile := responses.GetUserList{
-		ID:         userProfile.ID,
 		Number:     userProfile.Number,
 		FirstName:  userProfile.FirstName,
 		SecondName: userProfile.SecondName,
 		LastName:   userProfile.LastName,
 		Gender:     userProfile.Gender,
 		Contacts:   contactListInfo,
+		Type:       userProfile.Type,
+		Status:     userProfile.Status,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _userProfile})
@@ -448,7 +450,7 @@ func ResetPassword(context *gin.Context) {
 	}
 
 	//email sender
-	d := emailSender.Info{Email: Email, Token: userToken, MailType: "TutorView: User Account Confirmation", UserName: contact.User.SecondName, CurrentYear: time.Now().Year(), Type: "reset-password"}
+	d := emailSender.Info{Email: Email, Token: userToken, MailType: "Wholesome: User Account Confirmation", UserName: contact.User.SecondName, CurrentYear: time.Now().Year(), Type: "reset-password"}
 	d.SendEmail()
 
 	context.JSON(http.StatusOK, gin.H{"message": "Please check your email to continue resetting your password", "token": userToken})
@@ -552,7 +554,7 @@ func UserPassword(context *gin.Context) {
 		config.DB.Save(&userPasswordData)
 
 	}
-	////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////
 
 	//then we proceed to update the user status
 	updateUserStatus := config.DB.Model(&userData).
@@ -563,7 +565,7 @@ func UserPassword(context *gin.Context) {
 		return
 	}
 
-	/////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////
 
 	//then we update status of the token as well
 	updateTokenStatus := config.DB.Model(&passwordReset).

@@ -5,11 +5,13 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
+	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
@@ -22,25 +24,7 @@ import (
 
 func NewSchemeOfWork(context *gin.Context) {
 
-	type SubtopicListInfo struct {
-		Number        string `json:"number"`
-		Name          string `json:"name"`
-		Code          int64  `json:"code"`
-		SortCode      int64  `json:"sort_code"`
-		UserNumber    string `json:"user_number"`
-		EstimatedTime int64  `json:"estimated_time"`
-		TopicNumber   string `json:"topic_number"`
-	}
-
-	type SchemeOfWorkInfo struct {
-		Name               string             `json:"name"`
-		ClassNumber        string             `json:"class_number"`
-		SubjectNumber      string             `json:"subject_number"`
-		AcademicYearNumber string             `json:"academic_year_number"`
-		SubtopicList       []SubtopicListInfo `json:"subtopicList"`
-	}
-
-	var schemeOfWorkInfo SchemeOfWorkInfo
+	var schemeOfWorkInfo requests.SchemeOfWorkInfo
 	err := context.BindJSON(&schemeOfWorkInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
@@ -165,26 +149,7 @@ func NewSchemeOfWork(context *gin.Context) {
 
 func UpdateSchemeOfWork(context *gin.Context) {
 
-	type SubtopicListInfo struct {
-		Code               int    `json:"code"`
-		SortCode           int    `json:"sort_code"`
-		EstimatedTime      int    `json:"estimated_time"`
-		Name               string `json:"name"`
-		Number             string `json:"number"`
-		UserNumber         string `json:"user_number"`
-		SchemeOfWorkNumber string `json:"scheme_of_work_number"`
-		SubTopicNumber     string `json:"sub_topic_number"`
-	}
-
-	type SchemeOfWorkInfo struct {
-		Name          string             `json:"name"`
-		ClassNumber   string             `json:"class_number"`
-		SubjectNumber string             `json:"subject_number"`
-		SchemeNumber  string             `json:"scheme_number"`
-		SubtopicList  []SubtopicListInfo `json:"subtopicList"`
-	}
-
-	var schemeOfWorkInfo SchemeOfWorkInfo
+	var schemeOfWorkInfo requests.SchemeOfWorkInfo
 	err := context.BindJSON(&schemeOfWorkInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error! " + err.Error()})
@@ -256,7 +221,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 	}
 
 	for _, schemeList := range subtopicList {
-		codeNo, err := strconv.ParseInt(strconv.Itoa(schemeList.SortCode), 10, 64)
+		codeNo, err := strconv.ParseInt(strconv.Itoa(int(schemeList.SortCode)), 10, 64)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -277,7 +242,7 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		updateScheme := tx.Model(&schemeSubtopicUpdate).
 			Where("scheme_of_work_number = ?", schemeNumber).
 			Where("number = ?", schemeList.Number).
-			Updates(schemeOfWorkModel.SchemeOfWorkSubTopic{Code: codeNo})
+			Updates(schemeOfWorkModel.SchemeOfWorkSubTopic{Code: codeNo, EstimatedTime: schemeList.EstimatedTime})
 		if updateScheme.Error != nil {
 			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
@@ -341,51 +306,11 @@ func FetchSchemeOfWork(context *gin.Context) {
 
 	for _, subTopicList := range schemeOfWrkSubTopicInfo {
 
-		//fetch lesson plan
-		/*	var lessonPlanInfo []models2.LessonPlan
-			var lessonPlanInfo_ []responses.LessonPlanResponseInfo
-			if err := config.DB.
-				Where("scheme_sub_topic_number = ?", subTopicList.Number).
-				//Preload("Concept").
-				Order("created_at desc").
-				Find(&lessonPlanInfo).Error; err != nil {
-				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
-				return
-			}*/
-
-		/*for _, lessonPlanList := range lessonPlanInfo {
-
-			//fetch lesson plan steps
-			var lessonPlanStepsInfo []models2.LessonPlanSteps
-			var lessonPlanStepsInfo_ []responses.LessonPlanStepsInfo
-			//var lessonPlanInfo_ []responses.LessonPlanResponseInfo
-			if err := config.DB.
-				Where("lesson_plan_number = ?", lessonPlanList.Number).
-				Order("code asc").
-				Find(&lessonPlanStepsInfo).Error; err != nil {
-				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Scheme found"})
-				return
-			}
-
-			for _, lessonPlanSteps := range lessonPlanStepsInfo {
-				lessonPlanStepsInfo_ = append(lessonPlanStepsInfo_, responses.LessonPlanStepsInfo{
-					Number:           lessonPlanSteps.Number,
-					Code:             lessonPlanSteps.Code,
-					Step:             lessonPlanSteps.Step,
-					LessonPlanNumber: lessonPlanSteps.LessonPlanNumber,
-				})
-			}
-
-			lessonPlanInfo_ = append(lessonPlanInfo_, responses.LessonPlanResponseInfo{
-				Number: lessonPlanList.Number,
-				//LessonPlanConceptNumber: lessonPlanList.LessonPlanConceptNumber,
-				SchemeSubTopicNumber: lessonPlanList.SchemeSubTopicNumber,
-				//ConceptName:             lessonPlanList.Concept.Name,
-				//Code:                    lessonPlanList.Code,
-				UserNumber:      lessonPlanList.UserNumber,
-				LessonPlanSteps: lessonPlanStepsInfo_,
-			})
-		}*/
+		var conceptCount int64
+		var conceptModel models4.Concept
+		config.DB.Model(&conceptModel).
+			Where("sub_topic_number = ?", subTopicList.SubTopicNumber).
+			Count(&conceptCount)
 
 		schemeOfWrkSubTopicInfo_ = append(schemeOfWrkSubTopicInfo_, responses2.SchemeOfWorkSubtopicInfo{
 			Number:             subTopicList.Number,
@@ -398,7 +323,7 @@ func FetchSchemeOfWork(context *gin.Context) {
 			SchemeOfWorkNumber: subTopicList.SchemeOfWorkNumber,
 			SubTopicNumber:     subTopicList.SubTopicNumber,
 			UserNumber:         subTopicList.UserNumber,
-			//LessonPlan:         lessonPlanInfo_,
+			ConceptCount:       conceptCount,
 		})
 	}
 
@@ -474,6 +399,8 @@ func DownloadSchemeOfWork(context *gin.Context) {
 				TopicName:     subtopicList.Topic.Name,
 				StrandNumber:  subtopicList.Topic.Strand.Number,
 				StrandName:    subtopicList.Topic.Strand.Name,
+				SubjectNumber: subtopicList.Topic.Strand.Subject.Number,
+				SubjectName:   subtopicList.Topic.Strand.Subject.Name,
 			})
 		}
 	}
@@ -499,34 +426,17 @@ func generateSchemeTemplate(dataInfo []responses.SubTopicList) (string, error) {
 	// Set the sheet name
 	sheetName := "Sheet1"
 
-	err11 := xlsx.SetCellValue(sheetName, columnIndexToLetters(1)+fmt.Sprint(1), "Subtopic")
-	if err11 != nil {
-		return "", err
-	}
-
-	err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(2)+fmt.Sprint(1), "sorting Code")
-	if err1 != nil {
-		return "", err1
-	}
+	//this function will set all headers for excel
+	excelHeaders(sheetName, xlsx)
 
 	// Iterate through the JSON data and write to the Excel file
 	row := 2
 	col := 1
 
 	for _, lst := range dataInfo {
-		// Write the key (JSON field) to the first column
-		err := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.Name)
-		if err != nil {
-			return "", err
-		}
-		col++
 
-		// Write the value to the second column
-		err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.SortCode)
-		if err1 != nil {
-			return "", err1
-		}
-		col++
+		//this function will add data to excel document
+		addExcelInfoData(sheetName, col, row, lst, xlsx)
 
 		// Move to the next row
 		row++
@@ -543,6 +453,90 @@ func generateSchemeTemplate(dataInfo []responses.SubTopicList) (string, error) {
 	}
 	return path, err
 	//fmt.Println("Excel file generated successfully:", path)
+
+}
+
+func addExcelInfoData(sheetName string, col int, row int, lst responses.SubTopicList, xlsx *excelize.File) {
+	//Subject
+	err := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.SubjectName)
+	if err != nil {
+		//return "", err
+	}
+	col++
+	//------------------
+
+	//Strand
+	err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.StrandName)
+	if err1 != nil {
+		//return "", err1
+	}
+	col++
+	//------------------
+
+	//topic
+	err2 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.TopicName)
+	if err2 != nil {
+		//return "", err2
+	}
+	col++
+	//------------------
+
+	//subtopic
+	err3 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.Name)
+	if err3 != nil {
+		//return "", err3
+	}
+	col++
+	//------------------
+
+	//Estimated Time
+	err4 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.EstimatedTime)
+	if err4 != nil {
+		//return "", err4
+	}
+	col++
+	//------------------------
+
+	//sorting code
+	err5 := xlsx.SetCellValue(sheetName, columnIndexToLetters(col)+fmt.Sprint(row), lst.SortCode)
+	if err5 != nil {
+		//return "", err5
+	}
+	col++
+	//---------------------------
+}
+
+func excelHeaders(sheetName string, xlsx *excelize.File) {
+
+	err1 := xlsx.SetCellValue(sheetName, columnIndexToLetters(1)+fmt.Sprint(1), "Subject")
+	if err1 != nil {
+		//return "", err
+	}
+
+	err2 := xlsx.SetCellValue(sheetName, columnIndexToLetters(2)+fmt.Sprint(1), "Strand")
+	if err2 != nil {
+		//return "", err
+	}
+
+	err3 := xlsx.SetCellValue(sheetName, columnIndexToLetters(3)+fmt.Sprint(1), "Topic")
+	if err3 != nil {
+		//return "", err
+	}
+
+	err4 := xlsx.SetCellValue(sheetName, columnIndexToLetters(4)+fmt.Sprint(1), "Subtopic")
+	if err4 != nil {
+		//return "", err
+	}
+
+	err5 := xlsx.SetCellValue(sheetName, columnIndexToLetters(5)+fmt.Sprint(1), "Estimated Time")
+	if err5 != nil {
+		//return "", err1
+	}
+
+	err6 := xlsx.SetCellValue(sheetName, columnIndexToLetters(6)+fmt.Sprint(1), "sorting Code")
+	if err6 != nil {
+		//return "", err1
+	}
 
 }
 
@@ -693,7 +687,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 	}
 
 	//read now the Excel file
-	readSchemeExcelFile(path, userNumber, schemeNumber, classNumber, subjectNumber, tx, context)
+	readSchemeExcelFile(path, userNumber, schemeNumber, subjectNumber, tx, context)
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
@@ -706,7 +700,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 
 }
 
-func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, classNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
+func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
 
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
@@ -721,8 +715,11 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 		}
 	}()
 
+	//get sheet name dynamically
+	sheetName := f.GetSheetList()
+
 	// Get all the rows in the Sheet1.
-	rows, err := f.GetRows("Sheet1")
+	rows, err := f.GetRows(sheetName[0])
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -731,19 +728,25 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 	for idx, row := range rows {
 		if idx > 0 {
 			schemeInfo := requests.ExcelSchemeOfWorkInfo{
-				SubTopic:    getValueAtIndex(row, 0),
-				SortingCode: getValueAtIndex(row, 1),
+				SubTopic:      getValueAtIndex(row, 3),
+				EstimatedTime: getValueAtIndex(row, 4),
+				SortingCode:   getValueAtIndex(row, 5),
 			}
-			saveSchemeOfWorkData(schemeInfo, idx, userNumber, schemeNumber, classNumber, subjectNumber, tx, context)
+			saveSchemeOfWorkData(schemeInfo, userNumber, schemeNumber, subjectNumber, tx, context)
 		}
 	}
 
 }
 
-func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, userNumber string, schemeNumber string, classNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
+func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
 
-	//for _, schemeList := range subtopicList {
 	codeNo, err := strconv.ParseInt(schemeInfo.SortingCode, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	estimatedTime, err := strconv.ParseInt(schemeInfo.EstimatedTime, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
@@ -761,59 +764,35 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, idx int, us
 
 	//fetch scheme of work
 	//----------------
-
-	var campusClassInfo models3.CampusClass
-	if err := config.DB.
-		Where("number = ?", classNumber).
-		Preload("CurriculumClass.Class").
-		Preload("CurriculumClass").
-		Preload("Streams").
-		Order("code asc").
-		First(&campusClassInfo).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+	//first identify which curriculum is on this subject
+	var subjectInfo subjectModel.Subject
+	if err := tx.
+		Where("number = ?", subjectNumber).
+		First(&subjectInfo).Error; err != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
 		return
 	}
 
+	//then fetch subtopic by curriculum and its  name
 	var subtopic models2.SubTopic
-	var subTopicInfo_ responses.SubTopicList
 	if err := tx.
-		Where("topics.curriculum_class_number = ?", campusClassInfo.CurriculumClassNumber).
 		Where("name = ?", schemeInfo.SubTopic).
-		Joins("join topics on topics.number = sub_topics.topic_number").
-		Preload("Topic.Strand.Subject").
-		Preload("Topic.Strand").
-		Preload("Topic").
-		Order("code asc").
+		Where("curriculum_number = ?", subjectInfo.CurriculumNumber).
 		First(&subtopic).Error; err != nil {
 		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!!"})
 		return
-	}
-
-	if subjectNumber == subtopic.Topic.Strand.Subject.Number {
-		subTopicInfo_ = responses.SubTopicList{
-			Number:        subtopic.Number,
-			Code:          subtopic.Code,
-			SortCode:      int64(idx + 1),
-			Name:          subtopic.Name,
-			UserNumber:    subtopic.UserNumber,
-			EstimatedTime: subtopic.EstimatedTime,
-			TopicNumber:   subtopic.TopicNumber,
-			TopicName:     subtopic.Topic.Name,
-			StrandNumber:  subtopic.Topic.Strand.Number,
-			StrandName:    subtopic.Topic.Strand.Name,
-		}
 	}
 
 	//-----------------------
-
 	schemeNo := uuid.NewV4().String()
 	saveSchemeOfWorkSubtopic := schemeOfWorkModel.SchemeOfWorkSubTopic{
 		Number:             schemeNo,
 		Code:               codeNo,
-		EstimatedTime:      subTopicInfo_.EstimatedTime,
-		SchemeOfWorkNumber: subTopicInfo_.Number,
-		SubTopicNumber:     schemeNumber,
+		SubTopicNumber:     subtopic.Number,
+		EstimatedTime:      estimatedTime,
+		SchemeOfWorkNumber: schemeNumber,
 		UserNumber:         userNumber,
 	}
 	if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {

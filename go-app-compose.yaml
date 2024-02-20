@@ -1,0 +1,9 @@
+version: "2"
+services:
+  wholesome-app:
+    restart: unless-stopped
+    build:
+      dockerfile: Dockerfile
+      context: .
+    environment:
+      - VIRTUAL_HOST=104.248.175.232

@@ -26,10 +26,7 @@ func CreateStudent(c *gin.Context) {
 	var payload request.StudentRequest
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   err.Error(),
-			"message": "Internal server error!",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
@@ -43,9 +40,7 @@ func CreateStudent(c *gin.Context) {
 
 	applicationNumber := payload.ApplicationNumber
 	var application applicationModel.Application
-	if err := config.DB.
-		Where("number = ?", applicationNumber).
-		First(&application).Error; err != nil {
+	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Application not found"})
 		return
@@ -60,6 +55,7 @@ func CreateStudent(c *gin.Context) {
 
 	studentNumber := uuid.NewV4().String()
 	userNumber := user.Number
+
 	savedStudent := models.Student{
 		Number:                    studentNumber,
 		APN:                       studentAPN,
@@ -76,21 +72,36 @@ func CreateStudent(c *gin.Context) {
 		ApplicationNumber:         applicationNumber,
 		ClassNumber:               payload.ClassNumber,
 	}
-
 	tx := config.DB.Begin()
 
 	if err := tx.Create(&savedStudent).Error; err != nil {
 		tx.Rollback()
-
-		c.JSON(http.StatusBadRequest, gin.H{
-			"details": err.Error(),
-			"message": "failed to save student",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + " Failed to save student"})
 		return
 	}
+	/*
+		// Create an invoice here
+		invoiceNumber, err := invoiceController.InvoiceNumberGenerator()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number"})
+			return
+		}
+
+		saveInvoice := invoiceModel.Invoice{
+			Number:        uuid.NewV4().String(),
+			StudentNumber: savedStudent.Number,
+			InvoiceNumber: invoiceNumber,
+			Description:   "Registration fee",
+			UserNumber:    user.Number,
+		}
+
+		if err := config.DB.Create(&saveInvoice).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error() + " Failed to create invoice"})
+			return
+		}*/
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save student"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
 		return
 	}
 
@@ -128,28 +139,10 @@ func EditStudent(c *gin.Context) {
 		return
 	}
 
-	apnStatusIsArchive := true
-	studentADN := ""
-
-	if payload.APNStatus == "Archive" {
-		apnStatusIsArchive = false
-	}
-
-	// TODO: ADN does not get created if the status is Archive for the first time.
-	if apnStatusIsArchive {
-		var err error
-		studentADN, err = CreateADN()
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create ADN"})
-			return
-		}
-	}
-
 	savedStudent := models.Student{
 		Surname:                   payload.Surname,
 		OtherName:                 payload.OtherName,
 		SecondName:                payload.SecondName,
-		ADN:                       studentADN,
 		APNStatus:                 payload.APNStatus,
 		DateOfBirth:               payload.DateOfBirth,
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
@@ -229,10 +222,15 @@ func FetchStudentByAPN(c *gin.Context) {
 }
 
 func FetchAllStudents(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
 	var students []models.Student
 
-	err := config.DB.Find(&students).Error
-	if err != nil {
+	if err := config.DB.Find(&students).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
 			"message": "failed to fetch students",

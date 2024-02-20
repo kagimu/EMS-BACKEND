@@ -5,13 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
+	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 
 	"log"
 	"os"
 
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
+	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+	"github.com/joho/godotenv"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
@@ -20,6 +23,7 @@ import (
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
@@ -28,6 +32,10 @@ import (
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
+	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
+	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
+	invoicePaymentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
+	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
@@ -35,7 +43,6 @@ import (
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
-	serviceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/service/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -45,7 +52,6 @@ import (
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -89,7 +95,7 @@ func main() {
 	defer func(sqlDB *sql.DB) {
 		err := sqlDB.Close()
 		if err != nil {
-
+			fmt.Println("Error closing database:", err)
 		}
 	}(sqlDB)
 
@@ -103,6 +109,7 @@ func main() {
 		&schoolModels.SchoolCurriculum{},
 		&models2.Curriculum{},
 		&models.Campus{},
+		&models.CampusCurriculum{},
 		&LevelModels.CampusLevel{},
 		&LevelModels.Level{},
 		&LevelModels.CurriculumLevel{},
@@ -143,15 +150,35 @@ func main() {
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&studentModels.ADN{},
-		&serviceModels.Service{},
 		&preInterviewModels.PreAdmissionInterviewTest{},
 		&gradeModel.Grade{},
 		&admissionModel.Admission{},
+		&admissionModel.AdmissionOfferCondition{},
+		&admissionModel.AdmissionOffer{},
 		&previousSchoolModels.PreviousSchoolClass{},
-		&models3.CurriculumSubtopicReference{},
+		&materialModels.CurriculumSubtopicReference{},
 		&schemeOfWorkmodel.SchemeOfWorkImport{},
 		&paymentModels.Payment{},
 		&preInterviewModels.PreAdmissionInterviewTestReport{},
+		&interviewModel.Interview{},
+		&materialModels.MaterialSubType{},
+		&lessonPlanModel.LessonPlanReference{},
+		&interviewModel.InterviewQuestion{},
+		&interviewModel.Answer{},
+		&interviewModel.InterviewResult{},
+		&interviewModel.InterviewStudent{},
+		&models3.SerialCode{},
+		&itemModels.Item{},
+		&models3.Product{},
+		&models4.Service{},
+		&invoiceModel.Invoice{},
+		&invoiceModel.InvoiceItem{},
+		&models4.SerialCode{},
+		&models4.CampusServices{},
+		&models4.Discount{},
+		&invoicePaymentModel.InvoicePayment{},
+		&invoiceModel.InvoiceNumber{},
+		&assessmentAreaModel.AssessmentArea{},
 	)
 
 	if errMigrate != nil {

@@ -5,13 +5,15 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/api/responses"
-	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	conceptModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	responses4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/api/responses"
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
 	responses6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/api/responses"
+	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	responses5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -22,17 +24,17 @@ import (
 
 func NewConcept(context *gin.Context) {
 
-	type ConceptInfo struct {
-		Code             string `json:"code"`
-		Name             string `json:"name"`
-		SubTopicNumber   string `json:"sub_topic_number"`
-		CurriculumNumber string `json:"curriculum_number"`
-	}
-
-	var conceptInfo ConceptInfo
+	var conceptInfo requests2.ConceptInfo
 	err := context.BindJSON(&conceptInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	conceptInfo.Prepare()
+
+	if err := conceptInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -42,31 +44,6 @@ func NewConcept(context *gin.Context) {
 	curriculumNumber := conceptInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-
-	if curriculumNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
-		return
-	}
-
-	if subtopicNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic is required!"})
-		return
-	}
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
@@ -84,7 +61,7 @@ func NewConcept(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode models3.Concept
+	var duplicateCode conceptModel.Concept
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("sub_topic_number = ?", subtopicNumber).
@@ -94,7 +71,7 @@ func NewConcept(context *gin.Context) {
 		return
 	}
 
-	var duplicateConcept models3.Concept
+	var duplicateConcept conceptModel.Concept
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("sub_topic_number = ?", subtopicNumber).
@@ -106,7 +83,7 @@ func NewConcept(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveConcept := models3.Concept{
+	saveConcept := conceptModel.Concept{
 		Number:           number,
 		Name:             name,
 		SubTopicNumber:   subtopicNumber,
@@ -280,7 +257,7 @@ func FetchConceptBySubTopic(context *gin.Context) {
 		return
 	}*/
 
-	var concept []models3.Concept
+	var concept []conceptModel.Concept
 	var concept_ []responses.ConceptList
 	if err := config.DB.
 		Scopes(subTopic(subtopicNumber)).
@@ -310,4 +287,183 @@ func subTopic(subtopicNumber string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+func DeleteConcept(context *gin.Context) {
+
+	var conceptInfo requests2.ConceptDelRequest
+	err := context.BindJSON(&conceptInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	conceptNumber := conceptInfo.Number
+
+	var conceptChecker lessonPlanModel.LessonPlanConcepts
+	if err := config.DB.
+		Where("concept_number = ?", conceptNumber).
+		First(&conceptChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this concept, it has concept."})
+		return
+	}
+
+	var conceptData conceptModel.Concept
+	conceptDataInfo := config.DB.
+		Where("number = ?", conceptNumber).
+		First(&conceptData)
+	if conceptDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Sub topic not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete concept
+	if err := tx.
+		Unscoped().
+		Where("number = ?", conceptNumber).
+		Delete(&conceptData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete concept"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete concept"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Concept deleted successfully!"})
+}
+
+func ConceptInfo(context *gin.Context) {
+	conceptNumber := context.Query("concept_number")
+
+	if conceptNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Concept is required!"})
+		return
+	}
+
+	var concept conceptModel.Concept
+	if err := config.DB.
+		Where("number = ?", conceptNumber).
+		Preload("SubTopic.Topic.Strand.Subject.SubjectCluster").
+		Preload("SubTopic.Topic.Strand.Subject").
+		Preload("SubTopic.Topic.Strand").
+		Preload("SubTopic.Topic").
+		Preload("SubTopic").
+		First(&concept).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Concept found"})
+		return
+	}
+
+	concept_ := responses.ConceptList{
+		Number:               concept.Number,
+		Name:                 concept.Name,
+		Code:                 concept.Code,
+		UserNumber:           concept.UserNumber,
+		SubTopicNumber:       concept.SubTopicNumber,
+		SubTopicName:         concept.SubTopic.Name,
+		TopicNumber:          concept.SubTopic.TopicNumber,
+		StrandNumber:         concept.SubTopic.Topic.StrandNumber,
+		SubjectNumber:        concept.SubTopic.Topic.Strand.SubjectNumber,
+		SubjectClusterNumber: concept.SubTopic.Topic.Strand.Subject.SubjectClusterNumber,
+		LearningAreaNumber:   concept.SubTopic.Topic.Strand.Subject.SubjectCluster.LearningAreaNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": concept_})
+}
+
+func ConceptEdit(context *gin.Context) {
+
+	var conceptInfo requests2.ConceptInfo
+	err := context.BindJSON(&conceptInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	conceptInfo.Prepare()
+
+	if err := conceptInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	code := conceptInfo.Code
+	name := conceptInfo.Name
+	subtopicNumber := conceptInfo.SubTopicNumber
+	curriculumNumber := conceptInfo.CurriculumNumber
+	conceptNumber := conceptInfo.ConceptNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if conceptNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Concept is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateCode conceptModel.Concept
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("sub_topic_number = ?", subtopicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", conceptNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
+	var duplicateConcept conceptModel.Concept
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("sub_topic_number = ?", subtopicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", conceptNumber).
+		First(&duplicateConcept).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Concept already exists"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	var conceptDataInfo conceptModel.Concept
+	updateData := tx.Model(&conceptDataInfo).
+		Where("number = ?", conceptNumber).
+		Updates(conceptModel.Concept{Name: name, UserNumber: userNumber, Code: codeNo, SubTopicNumber: subtopicNumber})
+	if updateData.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update sub Concept!"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Concept Edited Successfully!", "data": conceptDataInfo})
 }

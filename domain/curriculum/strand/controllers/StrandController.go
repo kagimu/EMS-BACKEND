@@ -6,64 +6,40 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
 	responses4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/api/responses"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
+	strandModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/api/responses"
+	topicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 )
 
 func NewStrand(context *gin.Context) {
 
-	type SubjectClusterInfo struct {
-		Code             string `json:"code"`
-		Name             string `json:"name"`
-		SubjectNumber    string `json:"subject_number"`
-		CurriculumNumber string `json:"curriculum_number"`
-	}
-
-	var subjectClusterInfo SubjectClusterInfo
-	err := context.BindJSON(&subjectClusterInfo)
+	var strandInfo requests.SubjectClusterInfo
+	err := context.BindJSON(&strandInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
-	code := subjectClusterInfo.Code
-	name := subjectClusterInfo.Name
-	subjectNumber := subjectClusterInfo.SubjectNumber
-	curriculumNumber := subjectClusterInfo.CurriculumNumber
+	strandInfo.Prepare()
+
+	if err := strandInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	code := strandInfo.Code
+	name := strandInfo.Name
+	subjectNumber := strandInfo.SubjectNumber
+	curriculumNumber := strandInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-
-	if curriculumNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
-		return
-	}
-
-	if subjectNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
-		return
-	}
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
@@ -81,7 +57,7 @@ func NewStrand(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode models2.Strand
+	var duplicateCode strandModel.Strand
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("subject_number = ?", subjectNumber).
@@ -91,7 +67,7 @@ func NewStrand(context *gin.Context) {
 		return
 	}
 
-	var duplicateStrand models2.Strand
+	var duplicateStrand strandModel.Strand
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("subject_number = ?", subjectNumber).
@@ -103,7 +79,7 @@ func NewStrand(context *gin.Context) {
 
 	number := uuid.NewV4().String()
 	///save user data
-	saveStrand := models2.Strand{
+	saveStrand := strandModel.Strand{
 		Number:           number,
 		Name:             name,
 		SubjectNumber:    subjectNumber,
@@ -230,11 +206,174 @@ func FetchStrandList(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": strand_})
 }
 
-func subject(subjectNumber string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if subjectNumber != "" {
-			return db.Where("subject_number = ?", subjectNumber)
-		}
-		return db
+func DeleteStrand(context *gin.Context) {
+
+	var strandInfo requests.StrandDelRequest
+	err := context.BindJSON(&strandInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
 	}
+
+	strandNumber := strandInfo.Number
+
+	var strandChecker topicModel.Topic
+	if err := config.DB.
+		Where("strand_number = ?", strandNumber).
+		First(&strandChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this strand, it has topic."})
+		return
+	}
+
+	var strandData strandModel.Strand
+	academicYearDataInfo := config.DB.
+		Where("number = ?", strandNumber).
+		First(&strandData)
+	if academicYearDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Strand not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", strandNumber).
+		Delete(&strandData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete strand"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete strand"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Strand deleted successfully!"})
+}
+
+func StrandInfo(context *gin.Context) {
+	strandNumber := context.Query("strand_number")
+
+	if strandNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand is required!"})
+		return
+	}
+
+	var strand strandModel.Strand
+	if err := config.DB.
+		Where("number = ?", strandNumber).
+		Preload("Subject.SubjectCluster").
+		Preload("Subject").
+		First(&strand).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No learning area found"})
+		return
+	}
+
+	strand_ := responses2.StrandDataList{
+		Number:                   strand.Number,
+		Name:                     strand.Name,
+		Code:                     strand.Code,
+		UserNumber:               strand.UserNumber,
+		SubjectNumber:            strand.SubjectNumber,
+		SubjectClusterNumber:     strand.Subject.SubjectClusterNumber,
+		LearningAreaNumberNumber: strand.Subject.SubjectCluster.LearningAreaNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": strand_})
+}
+
+func StrandEdit(context *gin.Context) {
+
+	var strandInfo requests.SubjectClusterInfo
+	err := context.BindJSON(&strandInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	strandInfo.Prepare()
+
+	if err := strandInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	code := strandInfo.Code
+	name := strandInfo.Name
+	subjectNumber := strandInfo.SubjectNumber
+	curriculumNumber := strandInfo.CurriculumNumber
+	strandNumber := strandInfo.StrandNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if strandNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateCode strandModel.Strand
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("subject_number = ?", subjectNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", strandNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
+	var duplicateStrand strandModel.Strand
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("subject_number = ?", subjectNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", strandNumber).
+		First(&duplicateStrand).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Strand already exists"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	var strandDataInfo strandModel.Strand
+	updateData := tx.Model(&strandDataInfo).
+		Where("number = ?", strandNumber).
+		Updates(strandModel.Strand{Name: name, UserNumber: userNumber, Code: codeNo, SubjectNumber: subjectNumber})
+	if updateData.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update strand"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Strand Added Successfully!", "data": strandDataInfo})
 }

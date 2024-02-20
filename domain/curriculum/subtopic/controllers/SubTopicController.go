@@ -3,6 +3,8 @@ package controllers
 import (
 	"fmt"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	conceptModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/requests"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/api/responses"
 	"net/http"
 	"strconv"
@@ -24,18 +26,17 @@ import (
 
 func NewSubTopic(context *gin.Context) {
 
-	type TopicInfo struct {
-		Code             string `json:"code"`
-		Name             string `json:"name"`
-		TopicNumber      string `json:"topic_number"`
-		EstimatedTime    string `json:"estimated_time"`
-		CurriculumNumber string `json:"curriculum_number"`
-	}
-
-	var topicInfo TopicInfo
+	var topicInfo requests.SubTopicInfo
 	err := context.BindJSON(&topicInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	topicInfo.Prepare()
+
+	if err := topicInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -46,36 +47,6 @@ func NewSubTopic(context *gin.Context) {
 	curriculumNumber := topicInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
-		return
-	}
-
-	if curriculumNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
-		return
-	}
-
-	if topicNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Topic is required!"})
-		return
-	}
-
-	if estimatedTime == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Estimated time is required!"})
-		return
-	}
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
@@ -381,4 +352,188 @@ func classFilter(classNumber string) func(db *gorm.DB) *gorm.DB {
 		}
 		return db
 	}
+}
+
+func DeleteSubTopic(context *gin.Context) {
+	var subTopicInfo requests.SubTopicDelRequest
+	err := context.BindJSON(&subTopicInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	subTopicNumber := subTopicInfo.Number
+
+	var subTopicChecker conceptModel.Concept
+	if err := config.DB.
+		Where("sub_topic_number = ?", subTopicNumber).
+		First(&subTopicChecker).Error; err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this sub topic, it has concept."})
+		return
+	}
+
+	var subTopicData models2.SubTopic
+	subTopicDataInfo := config.DB.
+		Where("number = ?", subTopicNumber).
+		First(&subTopicData)
+	if subTopicDataInfo.Error != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Sub topic not found!"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	//delete Study Period
+	if err := tx.
+		Unscoped().
+		Where("number = ?", subTopicNumber).
+		Delete(&subTopicData).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete sub topic"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete topic"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Sub topic deleted successfully!"})
+}
+
+func SubTopicInfo(context *gin.Context) {
+	subTopicNumber := context.Query("sub_topic_number")
+
+	if subTopicNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic is required!"})
+		return
+	}
+
+	var subTopic models2.SubTopic
+	if err := config.DB.
+		Where("number = ?", subTopicNumber).
+		Preload("Topic.Strand.Subject.SubjectCluster").
+		Preload("Topic.Strand.Subject").
+		Preload("Topic.Strand").
+		Preload("Topic").
+		First(&subTopic).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No sub topic found"})
+		return
+	}
+
+	subTopic_ := responses.SubTopicList{
+		Number:               subTopic.Number,
+		Code:                 subTopic.Code,
+		Name:                 subTopic.Name,
+		UserNumber:           subTopic.UserNumber,
+		EstimatedTime:        subTopic.EstimatedTime,
+		TopicNumber:          subTopic.TopicNumber,
+		StrandNumber:         subTopic.Topic.StrandNumber,
+		SubjectNumber:        subTopic.Topic.Strand.SubjectNumber,
+		SubjectClusterNumber: subTopic.Topic.Strand.Subject.SubjectClusterNumber,
+		LearningAreaNumber:   subTopic.Topic.Strand.Subject.SubjectCluster.LearningAreaNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subTopic_})
+}
+
+func SubTopicEdit(context *gin.Context) {
+
+	var topicInfo requests.SubTopicInfo
+	err := context.BindJSON(&topicInfo)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+
+	topicInfo.Prepare()
+
+	if err := topicInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	code := topicInfo.Code
+	name := topicInfo.Name
+	topicNumber := topicInfo.TopicNumber
+	estimatedTime := topicInfo.EstimatedTime
+	curriculumNumber := topicInfo.CurriculumNumber
+	subTopicNumber := topicInfo.SubTopicNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if subTopicNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub Topic is required!"})
+		return
+	}
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	var userData models.User
+	//check if user is a valid user
+	validateUser := config.DB.
+		Where("number = ?", userNumber).
+		First(&userData)
+	if validateUser.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	var duplicateCode models2.SubTopic
+	if duplicate := config.DB.
+		Where("code = ?", codeNo).
+		Where("topic_number = ?", topicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", subTopicNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
+	var duplicateSubTopic models2.SubTopic
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("topic_number = ?", topicNumber).
+		Where("curriculum_number = ?", curriculumNumber).
+		Where("number != ?", subTopicNumber).
+		First(&duplicateSubTopic).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic already exists"})
+		return
+	}
+
+	estTime, err := strconv.ParseInt(estimatedTime, 10, 64)
+
+	if err != nil {
+		// Handle the error if the string cannot be converted to int64
+		//return err
+	}
+
+	tx := config.DB.Begin()
+
+	var subTopicDataInfo models2.SubTopic
+	updateData := tx.Model(&subTopicDataInfo).
+		Where("number = ?", subTopicNumber).
+		Updates(models2.SubTopic{Name: name, UserNumber: userNumber, Code: codeNo, EstimatedTime: estTime, TopicNumber: topicNumber})
+	if updateData.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update sub topic"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Sub topic Edited Successfully!", "data": subTopicDataInfo})
 }

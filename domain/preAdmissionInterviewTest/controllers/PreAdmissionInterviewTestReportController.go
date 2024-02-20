@@ -21,7 +21,7 @@ func CreatePreAdmissionInterviewReport(c *gin.Context) {
 		return
 	}
 
-	var payload requests.PreAdmissionInterviewTestRequest
+	var payload requests.PreAdmissionInterviewTestReportRequest
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input payload"})

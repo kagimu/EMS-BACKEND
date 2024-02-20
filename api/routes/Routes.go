@@ -3,12 +3,17 @@ package routes
 import (
 	"time"
 
+	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/controllers"
+	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/controllers"
+
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
+	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
 	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
+	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
 	conceptController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/controllers"
 	curricullumController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers"
 	learningAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/controllers"
@@ -17,6 +22,9 @@ import (
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
+	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
+	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
+	invoicePaymentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
@@ -28,7 +36,7 @@ import (
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
-	studentDetails "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
+	studentDetailsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
@@ -74,6 +82,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("profile", authController.Profile)
 
 		//manage curriculum
+		curriculum := main.Group("/curriculum")
+		{
+			curriculum.GET("/info", curricullumController.CurriculumInfo)
+			curriculum.POST("/edit", curricullumController.CurriculumEdit)
+			curriculum.POST("/delete", curricullumController.DeleteCurriculum)
+		}
 		main.POST("new-curriculum", curricullumController.NewCurriculum)
 		main.GET("curriculum-list", curricullumController.FetchCurriculum)
 		main.GET("curriculum-info", curricullumController.FetchCurriculumInfo)
@@ -83,18 +97,33 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-school-curriculum-level", curricullumController.FetchSchoolCurriculumLevel)
 
 		//manage School
-		main.POST("new-school", schoolController.NewSchool)
-		main.POST("edit-school", schoolController.EditSchool)
-		main.POST("delete-school", schoolController.DeleteSchool)
-		main.GET("schools", schoolController.FetchSchools)
-		main.GET("school-info", schoolController.FetchSchoolInfo)
+		school := main.Group("/school")
+		{
+			school.GET("/all", schoolController.FetchSchools)
+			school.POST("/new", schoolController.NewSchool)
+			school.POST("/edit", schoolController.EditSchool)
+			school.GET("/info", schoolController.FetchSchoolInfo)
+			school.POST("/delete", schoolController.DeleteSchool)
+		}
 
 		//manage campus
-		main.POST("new-campus", controllers.NewCampus)
-		main.POST("edit-campus", controllers.EditCampus)
-		main.POST("delete-campus", controllers.DeleteCampus)
-		main.GET("campuses", controllers.FetchCampuses)
-		main.GET("campus-info", controllers.CampusInfo)
+		campus := main.Group("/campus")
+		{
+			campus.GET("/all", controllers.FetchCampuses)
+			campus.GET("/info", controllers.CampusInfo)
+			campus.GET("/curriculum", controllers.CampusCurriculum)
+			campus.POST("/new", controllers.NewCampus)
+			campus.POST("/edit", controllers.EditCampus)
+			campus.POST("/delete", controllers.DeleteCampus)
+		}
+
+		level := main.Group("/level")
+		{
+			level.GET("/info", learningLevelControllers.LevelInfo)
+			level.POST("/edit", learningLevelControllers.EditLevel)
+			level.POST("/delete", learningLevelControllers.DeleteLevel)
+		}
+
 		main.GET("level", controllers.FetchLevel)
 		main.GET("campus-level", controllers.FetchCampusLevel)
 		main.GET("fetch-campus-level", controllers.FetchCampusLevelList)
@@ -106,6 +135,14 @@ func SetupRoute() *gin.Engine {
 		main.GET("fetch-curriculum-level", learningLevelControllers.FetchCurriculumLevel)
 
 		//	manage class
+		class := main.Group("/class")
+		{
+			class.GET("/info", classController.ClassInfo)
+			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
+			class.POST("/edit", classController.EditClass)
+			class.POST("/delete", classController.DeleteClass)
+		}
+
 		main.POST("new-class", classController.NewClass)
 		main.POST("new-campus-class", classController.AddCampusClass)
 		main.POST("new-curriculum-class", classController.AddCurriculumClass)
@@ -119,44 +156,82 @@ func SetupRoute() *gin.Engine {
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
 
-		class := main.Group("/class")
+		//manage subject
+		subject := main.Group("/subject")
 		{
-			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
-
+			subject.GET("/info", subjectController.SubjectInfo)
+			subject.POST("/edit", subjectController.SubjectEdit)
+			subject.POST("/delete", subjectController.DeleteSubject)
 		}
 
-		//manage subject
 		main.POST("new-subject", subjectController.NewSubject)
 		main.GET("subjects", subjectController.FetchSubject)
 		main.GET("subject-list", subjectController.FetchSubjectList)
 		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
 
 		//manage Learning Area
+		learningArea := main.Group("/learning-area")
+		{
+			learningArea.GET("/info", learningAreaController.LearningAreaInfo)
+			learningArea.POST("/edit", learningAreaController.LearningAreaEdit)
+			learningArea.POST("/delete", learningAreaController.DeleteLearningArea)
+		}
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
 		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 
 		//subject cluster
+		subjectCluster := main.Group("/subject-cluster")
+		{
+			subjectCluster.GET("/info", subjectClusterController.SubjectClusterInfo)
+			subjectCluster.POST("/edit", subjectClusterController.SubjectClusterEdit)
+			subjectCluster.POST("/delete", subjectClusterController.DeleteSubjectCluster)
+		}
+
 		main.POST("new-subject-cluster", subjectClusterController.NewSubjectCluster)
 		main.GET("subject-clusters", subjectClusterController.FetchSubjectCluster)
 		main.GET("subject-cluster-filter", subjectClusterController.FetchSubjectClusterList)
 
 		//strand
+		strand := main.Group("/strand")
+		{
+			strand.GET("/info", strandController.StrandInfo)
+			strand.POST("/edit", strandController.StrandEdit)
+			strand.POST("/delete", strandController.DeleteStrand)
+		}
 		main.POST("new-strand", strandController.NewStrand)
 		main.GET("strands", strandController.FetchStrand)
 		main.GET("strand-list", strandController.FetchStrandList)
 
 		//topic
+		topic := main.Group("/topic")
+		{
+			topic.GET("/info", topicController.TopicInfo)
+			topic.POST("/edit", topicController.TopicEdit)
+			topic.POST("/delete", topicController.DeleteTopic)
+		}
 		main.POST("new-topic", topicController.NewTopic)
 		main.GET("topics", topicController.FetchTopic)
 		main.GET("topic-list", topicController.FetchTopicList)
 
 		//sub topic
+		subTopic := main.Group("/sub-topic")
+		{
+			subTopic.GET("/info", subTopicController.SubTopicInfo)
+			subTopic.POST("/edit", subTopicController.SubTopicEdit)
+			subTopic.POST("/delete", subTopicController.DeleteSubTopic)
+		}
 		main.POST("new-sub-topic", subTopicController.NewSubTopic)
 		main.GET("sub-topics", subTopicController.FetchSubTopic)
 		main.GET("sub-topic-list", subTopicController.FetchSubTopiList)
 		main.GET("sub-topics-by-class", subTopicController.FetchSubTopicByClass)
 
 		//concepts
+		concept := main.Group("/concept")
+		{
+			concept.GET("/info", conceptController.ConceptInfo)
+			concept.POST("/edit", conceptController.ConceptEdit)
+			concept.POST("/delete", conceptController.DeleteConcept)
+		}
 		main.POST("new-concept", conceptController.NewConcept)
 		main.GET("concepts", conceptController.FetchConcept)
 
@@ -174,10 +249,10 @@ func SetupRoute() *gin.Engine {
 		{
 			schemeOfWork.GET("download-scheme-template", schemeOfWorkControllers.DownloadSchemeOfWork)
 			schemeOfWork.POST("upload-scheme-of-work", schemeOfWorkControllers.ImportSchemeOfWork)
+			schemeOfWork.GET("fetch-scheme-of-work-by-class-and-subject", schemeOfWorkControllers.FetchSchemeOfWork)
 		}
 		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
 		main.POST("update-scheme-of-work", schemeOfWorkControllers.UpdateSchemeOfWork)
-		main.GET("fetch-scheme-of-work-by-class-and-subject", schemeOfWorkControllers.FetchSchemeOfWork)
 
 		//lesson notes
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
@@ -190,8 +265,12 @@ func SetupRoute() *gin.Engine {
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
 		}
 
-		//Student Admission
-		main.POST("new-student-details-admission", studentDetails.NewStudentDetails)
+		// Student details
+		studentDetails := main.Group("/student-details")
+		{
+			studentDetails.POST("/:student_number", studentDetailsController.CreateStudentDetails)
+			studentDetails.PUT("/:student_number", studentDetailsController.EditStudentDetails)
+		}
 
 		//timetable routes
 		timetable := main.Group("/timetable")
@@ -259,6 +338,8 @@ func SetupRoute() *gin.Engine {
 		learningMaterials := main.Group("/learning-materials")
 		{
 			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.POST("sub-type", learningMaterialsControllers.CreateMaterialSubType)
+			learningMaterials.GET("sub-types/:category", learningMaterialsControllers.FetchMaterialSubTypesByCategory)
 			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
 			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
 		}
@@ -268,13 +349,101 @@ func SetupRoute() *gin.Engine {
 			payments.POST("", paymentsController.CreatePayment)
 		}
 
-		preAdmissionInterview := main.Group("/pre-interview-reports")
+		preAdmissionInterviewTestReport := main.Group("/pre-admission-test-interview-reports")
 		{
-			preAdmissionInterview.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
-			preAdmissionInterview.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
-			preAdmissionInterview.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
+			preAdmissionInterviewTestReport.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
+			preAdmissionInterviewTestReport.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
+			preAdmissionInterviewTestReport.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
+		}
+
+		preAdmissionInterviewTest := main.Group("/pre-admission-interview-tests")
+		{
+			preAdmissionInterviewTest.POST("", preInterviewController.CreatePreAdmissionInterviewTest)
+		}
+
+		interview := main.Group("/interviews")
+		{
+			interview.POST("", interviewController.CreateInterview)
+			interview.GET("/all", interviewController.FetchAllInterviews)
+			interview.GET("/:interview_number", interviewController.FetchAnInterview)
+			interview.PUT("/:interview_number", interviewController.EditInterview)
+			interview.GET("/:interview_number/students", interviewController.FetchStudentsByInterviewNumber)
+			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
+			interview.GET("/:interview_number/questions", interviewController.FetchQuestionsByInterviewNumber)
+		}
+
+		interviewQuestion := main.Group("/interview-questions")
+		{
+			interviewQuestion.POST("", interviewController.CreateInterviewQuestion)
+			interviewQuestion.GET("/:number", interviewController.FetchInterviewQuestion)
+			interviewQuestion.GET("", interviewController.FetchAllInterviewQuestions)
+			interviewQuestion.PUT("/:number", interviewController.EditInterviewQuestion)
+		}
+
+		interviewResult := main.Group("/interview-results")
+		{
+			interviewResult.POST("/:student_number", interviewController.CreateInterviewResults)
+			interviewResult.GET("/:student_number", interviewController.FetchInterviewResultByStudentNumber)
+			interviewResult.GET("/all", interviewController.FetchAllInterviewResults)
+			interviewResult.DELETE(":number", interviewController.DeleteInterviewResult)
+		}
+
+		invoices := main.Group("/invoices")
+		{
+			invoices.POST("", invoiceController.CreateInvoice)
+			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
+		}
+		invoicePayments := main.Group("/invoice-payments")
+		{
+			invoicePayments.POST("", invoicePaymentController.CreateInvoicePayment)
+		}
+
+		services := main.Group("/services")
+		{
+			services.POST("", serviceController.CreateService)
+			services.GET("", serviceController.FetchServices)
+			services.DELETE("", serviceController.DeleteService)
+			services.PUT(":service_number", serviceController.EditService)
+		}
+
+		products := main.Group("/products")
+		{
+			products.POST("", productController.CreateProduct)
+			products.PUT(":product_number", productController.EditProduct)
+			products.GET("", productController.FetchProducts)
+			products.DELETE(":product_number", productController.DeleteProduct)
+		}
+
+		admission := main.Group("/admissions")
+		{
+			admission.POST("", admissionController.CreateAdmission)
+			admission.PUT("/:number/admit", admissionController.AdmitStudent)
+			admission.PUT("/admit", admissionController.BulkAdmitStudents)
+		}
+
+		offer := admission.Group("/admission-offers")
+		{
+			offer.POST("", admissionController.CreateAdmissionOffer)
+			offer.GET("", admissionController.FetchAdmissionOffers)
+			offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
+			offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
+
+		}
+
+		conditions := admission.Group("/admission-offer-conditions")
+		{
+			conditions.POST("", admissionController.CreateAdmissionOfferCondition)
+			conditions.GET("", admissionController.FetchAdmissionOfferConditions)
+
+		}
+
+		assessmentArea := main.Group("/assessment-areas")
+		{
+			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
+			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
+			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
 	}
-	//router.GET("/profile/:name", profile)
+
 	return router
 }

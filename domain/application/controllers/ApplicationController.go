@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func FetchApplication(c *gin.Context) {
@@ -29,11 +30,15 @@ func FetchApplication(c *gin.Context) {
 		Where("number = ?", applicationNumber).
 		First(&application).
 		Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"err":     err.Error(),
-			"message": "Application not found",
-		})
-		return
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal server error",
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, application)
@@ -88,14 +93,14 @@ func FetchApplicationsByStatus(c *gin.Context) {
 	var applications []models.Application
 	if err := config.DB.Where("status = ?", status).Find(&applications).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "application fetching failed",
+			"message": "Application fetching failed",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"data":    applications,
-		"message": "applications fetched successfully",
+		"message": "Applications fetched successfully",
 	})
 }
 
@@ -111,13 +116,12 @@ func EditApplication(c *gin.Context) {
 	type ApplicationInfo struct {
 		Status                string `json:"status"`
 		ApplicationFeePayment bool   `json:"application_fee_payment"`
+		InterviewMode         string `json:"interview_mode"`
 	}
 
 	var payload ApplicationInfo
 	if err := c.BindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to process input",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
@@ -142,6 +146,7 @@ func EditApplication(c *gin.Context) {
 	updateApplication := models.Application{
 		Status:                payload.Status,
 		ApplicationFeePayment: payload.ApplicationFeePayment,
+		InterviewMode:         payload.InterviewMode,
 	}
 
 	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplication).Error; err != nil {
@@ -155,4 +160,21 @@ func EditApplication(c *gin.Context) {
 		"data":    application,
 		"message": "Application updated successfully",
 	})
+}
+
+func FetchApplicationByNumber(c *gin.Context, applicationNumber string) (*models.Application, error) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return nil, err
+	}
+
+	var application models.Application
+	if err := config.DB.Where("number = ?", applicationNumber).Preload("Parent").First(&application).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Application not found"})
+		return nil, err
+	}
+
+	return &application, nil
 }
