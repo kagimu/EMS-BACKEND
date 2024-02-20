@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
