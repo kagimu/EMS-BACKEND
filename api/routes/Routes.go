@@ -444,7 +444,7 @@ func SetupRoute() *gin.Engine {
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
 
-		assessment := main.Group("/assessment")
+		assessment := main.Group("/assessments")
 		{
 			assessment.POST("", assessmentController.CreateAssessment)
 			assessment.POST("examination-type", assessmentController.CreateExaminationType)
