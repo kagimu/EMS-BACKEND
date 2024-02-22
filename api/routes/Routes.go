@@ -443,6 +443,18 @@ func SetupRoute() *gin.Engine {
 			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
+
+		settings := router.Group("settings/permissions")
+		{
+			settings.POST("", authController.CreatePermission)
+			settings.GET("", authController.FetchPermissions)
+		}
+
+		roles := router.Group("settings/roles")
+		{
+			roles.POST("", authController.CreateRole)
+			roles.GET("", authController.FetchRoles)
+		}
 	}
 
 	return router

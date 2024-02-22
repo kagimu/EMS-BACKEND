@@ -179,6 +179,8 @@ func main() {
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
 		&assessmentAreaModel.AssessmentArea{},
+		&authModels.Role{},
+		&authModels.Permission{},
 	)
 
 	if errMigrate != nil {
