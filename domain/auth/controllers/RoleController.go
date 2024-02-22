@@ -61,3 +61,48 @@ func FetchRoles(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": roles})
 }
+
+func AssignRoles(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	if user.Role != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"message": "You are not an admin"})
+		return
+	}
+
+	type Input struct {
+		Name       string `json:"name"`
+		UserNumber string `json:"user_number"`
+	}
+
+	var payload Input
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	if payload.Name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Name is required"})
+		return
+	}
+
+	if payload.UserNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User number is required"})
+		return
+	}
+
+	updateUser := models.User{
+		Role: payload.Name,
+	}
+
+	if err := config.DB.Model(&user).Where("number = ?", payload.UserNumber).Updates(updateUser).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User has been specified"})
+}
