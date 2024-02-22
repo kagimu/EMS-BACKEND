@@ -23,9 +23,10 @@ func CreateAssessment(c *gin.Context) {
 
 	var payload requests.AssessmentRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input:", "err": err.Error()})
 		return
 	}
+
 	if err := payload.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -89,11 +90,27 @@ func FetchAssessmentByStudentNumber(c *gin.Context) {
 	}
 
 	studentNumber := c.Query("student_number")
-	var assessment assessmentAreaModel.AssessmentArea
-	if err := config.DB.Where("student_number = ?", studentNumber).Find(&assessment).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment fetching failed"})
+	var assessment []models.Assessment
+	if err := config.DB.Where("student_number = ?", studentNumber).Preload("ExaminationType").Find(&assessment).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment fetching failed", "err": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": assessment})
+}
+
+func FetchAssessments(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var assessments []models.Assessment
+	if err := config.DB.Preload("ExaminationType").Find(&assessments).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessments fetching failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": assessments})
 }

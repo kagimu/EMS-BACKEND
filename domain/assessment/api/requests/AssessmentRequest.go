@@ -3,7 +3,7 @@ package requests
 import "errors"
 
 type AssessmentRequest struct {
-	AssessmentAreaNumber  string `json:"assessment_nnumber"`
+	AssessmentAreaNumber  string `json:"assessment_area_number"`
 	Subject               string `json:"subject"`
 	Attendance            uint64 `json:"attendance"`
 	Observations          string `json:"observations"`

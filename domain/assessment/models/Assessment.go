@@ -28,7 +28,7 @@ type Assessment struct {
 	LevelNumber           string                             `json:"level_number" gorm:"size:36;not null"`
 	Level                 levelModels.Level                  `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	ExaminationTypeNumber string                             `json:"examination_type_number" gorm:"size:36;"`
-	Examination           ExaminationType                    `gorm:"foreignKey:ExaminationTypeNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	ExaminationType       ExaminationType                    `gorm:"foreignKey:ExaminationTypeNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;" json:"examination_type"`
 	UserNumber            string                             `json:"user_number" gorm:"size:36;index;not null"`
 	User                  authModel.User                     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
