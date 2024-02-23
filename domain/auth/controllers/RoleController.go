@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -8,10 +9,11 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func CreateRole(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -22,20 +24,18 @@ func CreateRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate input"})
 		return
 	}
+
 	if payload.Name == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Name is required"})
-		return
-	}
-	if payload.SchoolNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "School number is required"})
 		return
 	}
 
 	saveRole := models.Role{
 		Number:       uuid.NewV4().String(),
 		Name:         payload.Name,
-		UserNumber:   user.Number,
-		SchoolNumber: payload.SchoolNumber,
+		ClassNumber:  payload.ClassNumber,
+		CampusNumber: payload.ClassNumber,
+		Description:  payload.Description,
 	}
 
 	if err := config.DB.Create(&saveRole).Error; err != nil {
@@ -62,21 +62,16 @@ func FetchRoles(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": roles})
 }
 
-func AssignRoles(c *gin.Context) {
+func AssignRolesToAUser(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	if user.Role != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"message": "You are not an admin"})
-		return
-	}
-
 	type Input struct {
-		Name       string `json:"name"`
-		UserNumber string `json:"user_number"`
+		UserNumber string   `json:"user_number"`
+		RoleNumber []string `json:"role_number"`
 	}
 
 	var payload Input
@@ -85,8 +80,8 @@ func AssignRoles(c *gin.Context) {
 		return
 	}
 
-	if payload.Name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Name is required"})
+	if len(payload.RoleNumber) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "At least one role is required"})
 		return
 	}
 
@@ -95,14 +90,76 @@ func AssignRoles(c *gin.Context) {
 		return
 	}
 
-	updateUser := models.User{
-		Role: payload.Name,
+	for _, roleNumber := range payload.RoleNumber {
+		updateUser := models.User{
+			RoleNumber: roleNumber,
+		}
+
+		if err := config.DB.Model(&user).Where("number = ?", payload.UserNumber).Updates(updateUser).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user"})
+			return
+		}
 	}
 
-	if err := config.DB.Model(&user).Where("number = ?", payload.UserNumber).Updates(updateUser).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user"})
+	c.JSON(http.StatusOK, gin.H{"message": "User has been updated"})
+}
+
+func FetchRoleDetails(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User has been specified"})
+	roleNumber := c.Param("role_number")
+
+	var role models.Role
+	if err := config.DB.Where("number = ?", roleNumber).First(&role).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"message": "Role not found"})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch role details"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": role})
+}
+
+func UpdateRoleAssignment(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	type Input struct {
+		UserNumber string   `json:"user_number"`
+		RoleNumber []string `json:"role_number"`
+	}
+
+	var payload Input
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	if len(payload.RoleNumber) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "At least one role is required"})
+		return
+	}
+
+	for _, roleNumber := range payload.RoleNumber {
+		updateUser := models.User{
+			RoleNumber: roleNumber,
+		}
+
+		if err := config.DB.Model(&user).Where("number = ?", payload.UserNumber).Updates(updateUser).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update role assignment"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Role assignment has been updated"})
 }

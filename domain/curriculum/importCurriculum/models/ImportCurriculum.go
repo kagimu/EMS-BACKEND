@@ -1,10 +1,11 @@
 package models
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"gorm.io/gorm"
 	"html"
 	"strings"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"gorm.io/gorm"
 )
 
 type (

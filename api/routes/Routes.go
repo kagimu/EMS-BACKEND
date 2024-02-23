@@ -454,7 +454,9 @@ func SetupRoute() *gin.Engine {
 		{
 			roles.POST("", authController.CreateRole)
 			roles.GET("", authController.FetchRoles)
-			roles.PUT("", authController.AssignRoles)
+			roles.GET(":role_number", authController.FetchRoleDetails)
+			roles.PUT("assign", authController.AssignRolesToAUser)
+			roles.PUT("update-assignment", authController.UpdateRoleAssignment)
 		}
 	}
 
