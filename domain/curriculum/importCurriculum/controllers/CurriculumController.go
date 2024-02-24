@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/requests"
 	"net/http"
 	"path/filepath"
@@ -646,32 +647,34 @@ func FetchSchoolCurriculum(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schoolCurriculum_})
 }
 
-func FetchSchoolCurriculumLevel(context *gin.Context) {
-	schoolCurriculumNumber := context.Query("school_curriculum_number")
+func FetchCampusCurriculumLevel(context *gin.Context) {
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
 
-	var schoolCurriculumInfo schoolCurriculumModel.SchoolCurriculum
+	var campusCurriculum campusModel.CampusCurriculum
+
 	if err := config.DB.
-		Where("number = ?", schoolCurriculumNumber).
-		Order("created_at desc").
-		First(&schoolCurriculumInfo).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No School curriculum found!"})
+		Where("number = ?", campusCurriculumNumber).
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
+		Find(&campusCurriculum).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found"})
 		return
 	}
 
-	var schoolCurriculumLevel []curriculumLevelModels2.CurriculumLevel
-	var schoolCurriculumLevel_ []responses2.CurriculumLevelList
+	var campusCurriculumLevel []curriculumLevelModels2.CurriculumLevel
+	var campusCurriculumLevel_ []responses2.CurriculumLevelList
 	if err := config.DB.
-		Where("curriculum_number = ?", schoolCurriculumInfo.CurriculumNumber).
+		Where("curriculum_number = ?", campusCurriculum.SchoolCurriculum.CurriculumNumber).
 		Preload("Level").
 		Preload("Curriculum").
 		Order("code asc").
-		Find(&schoolCurriculumLevel).Error; err != nil {
+		Find(&campusCurriculumLevel).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
 		return
 	}
 
-	for _, item := range schoolCurriculumLevel {
-		schoolCurriculumLevel_ = append(schoolCurriculumLevel_, responses2.CurriculumLevelList{
+	for _, item := range campusCurriculumLevel {
+		campusCurriculumLevel_ = append(campusCurriculumLevel_, responses2.CurriculumLevelList{
 			Number:           item.Number,
 			Name:             item.Level.Name,
 			Code:             item.Code,
@@ -682,7 +685,7 @@ func FetchSchoolCurriculumLevel(context *gin.Context) {
 		})
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schoolCurriculumLevel_})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campusCurriculumLevel_})
 }
 
 func DeleteCurriculum(context *gin.Context) {

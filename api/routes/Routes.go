@@ -15,7 +15,7 @@ import (
 	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
 	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
 	conceptController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/controllers"
-	curricullumController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers"
+	curriculumController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers"
 	learningAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/controllers"
 	strandController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/controllers"
 	subjectClusterController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/controllers"
@@ -84,17 +84,18 @@ func SetupRoute() *gin.Engine {
 		//manage curriculum
 		curriculum := main.Group("/curriculum")
 		{
-			curriculum.GET("/info", curricullumController.CurriculumInfo)
-			curriculum.POST("/edit", curricullumController.CurriculumEdit)
-			curriculum.POST("/delete", curricullumController.DeleteCurriculum)
+			curriculum.GET("/info", curriculumController.CurriculumInfo)
+			curriculum.GET("/campus-curriculum-level", curriculumController.FetchCampusCurriculumLevel)
+			curriculum.POST("/edit", curriculumController.CurriculumEdit)
+			curriculum.POST("/delete", curriculumController.DeleteCurriculum)
 		}
-		main.POST("new-curriculum", curricullumController.NewCurriculum)
-		main.GET("curriculum-list", curricullumController.FetchCurriculum)
-		main.GET("curriculum-info", curricullumController.FetchCurriculumInfo)
-		main.POST("upload-curriculum", curricullumController.ImportCurriculum)
-		main.GET("uploaded-curriculum", curricullumController.FetchUploadedCurriculum)
-		main.GET("fetch-school-curriculum", curricullumController.FetchSchoolCurriculum)
-		main.GET("fetch-school-curriculum-level", curricullumController.FetchSchoolCurriculumLevel)
+
+		main.POST("new-curriculum", curriculumController.NewCurriculum)
+		main.GET("curriculum-list", curriculumController.FetchCurriculum)
+		main.GET("curriculum-info", curriculumController.FetchCurriculumInfo)
+		main.POST("upload-curriculum", curriculumController.ImportCurriculum)
+		main.GET("uploaded-curriculum", curriculumController.FetchUploadedCurriculum)
+		main.GET("fetch-school-curriculum", curriculumController.FetchSchoolCurriculum)
 
 		//manage School
 		school := main.Group("/school")
@@ -115,6 +116,7 @@ func SetupRoute() *gin.Engine {
 			campus.POST("/new", controllers.NewCampus)
 			campus.POST("/edit", controllers.EditCampus)
 			campus.POST("/delete", controllers.DeleteCampus)
+			campus.POST("/new-level", controllers.NewCampusLevel)
 		}
 
 		level := main.Group("/level")
