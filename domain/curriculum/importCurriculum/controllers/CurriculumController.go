@@ -651,7 +651,6 @@ func FetchCampusCurriculumLevel(context *gin.Context) {
 	campusCurriculumNumber := context.Query("campus_curriculum_number")
 
 	var campusCurriculum campusModel.CampusCurriculum
-
 	if err := config.DB.
 		Where("number = ?", campusCurriculumNumber).
 		Preload("SchoolCurriculum.Curriculum").

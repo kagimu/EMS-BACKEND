@@ -20,6 +20,13 @@ type (
 		Name   string `json:"name"`
 	}
 
+	CampusLevelDataList struct {
+		Number                string `json:"number"`
+		CurriculumLevelNumber string `json:"curriculum_level_number"`
+		Code                  int64  `json:"code"`
+		Name                  string `json:"name"`
+	}
+
 	CampusLevelList struct {
 		Number              string `json:"number"`
 		LearningLevelNumber string `json:"learning_level_number"`
