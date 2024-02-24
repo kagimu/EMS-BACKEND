@@ -100,11 +100,11 @@ func GetUserFromHeader(c *gin.Context) (*models.User, error) {
 	return &user, nil
 }
 
-type Permission map[string][]string
+type PermissionGroup map[string][]string
 
-func PermissionGroups() []Permission {
+func PermissionGroups() []PermissionGroup {
 
-	return []Permission{
+	return []PermissionGroup{
 		{"USERS": []string{"create", "read", "update", "delete"}},
 		{"PERMISSIONS": []string{"create", "read", "update", "delete"}},
 		{"INTERVIEWS": []string{"create", "read", "update", "delete"}},
