@@ -1,7 +1,11 @@
 package models
 
-// Permission represents the database model of permissions
+import "gorm.io/gorm"
+
 type Permission struct {
-	ID   uint
-	Name string
+	gorm.Model
+	Number     string `json:"number" gorm:"size:36;unique;not null"`
+	Name       string `json:"name" gorm:"size:20;not null"`
+	UserNumber string `json:"user_number" gorm:"size:36;index;not null"`
+	User       User   `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
