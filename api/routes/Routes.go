@@ -455,21 +455,21 @@ func SetupRoute() *gin.Engine {
 			assessment.POST("examination-types", assessmentController.CreateExaminationType)
 		}
 
-	}
+		settings := main.Group("settings/permissions")
+		{
+			settings.POST("", authController.CreatePermission)
+			settings.GET("", authController.FetchPermissions)
+			settings.GET("groups", authController.FetchPermissionGroups)
+		}
 
-	settings := router.Group("settings/permissions")
-	{
-		settings.POST("", authController.CreatePermission)
-		settings.GET("", authController.FetchPermissions)
-	}
-
-	roles := router.Group("settings/roles")
-	{
-		roles.POST("", authController.CreateRole)
-		roles.GET("", authController.FetchRoles)
-		roles.GET(":role_number", authController.FetchRoleDetails)
-		roles.PUT("assign", authController.AssignRolesToAUser)
-		roles.PUT("update-assignment", authController.UpdateRoleAssignment)
+		roles := main.Group("settings/roles")
+		{
+			roles.POST("", authController.CreateRole)
+			roles.GET("", authController.FetchRoles)
+			roles.GET(":role_number", authController.FetchRoleDetails)
+			roles.PUT("assign", authController.AssignRolesToAUser)
+			roles.PUT("update-assignment", authController.RemoveRoleAssignment)
+		}
 	}
 
 	return router

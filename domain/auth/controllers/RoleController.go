@@ -13,7 +13,7 @@ import (
 )
 
 func CreateRole(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -31,11 +31,10 @@ func CreateRole(c *gin.Context) {
 	}
 
 	saveRole := models.Role{
-		Number:       uuid.NewV4().String(),
-		Name:         payload.Name,
-		ClassNumber:  payload.ClassNumber,
-		CampusNumber: payload.ClassNumber,
-		Description:  payload.Description,
+		Number:      uuid.NewV4().String(),
+		Name:        payload.Name,
+		UserNumber:  user.Number,
+		Description: payload.Description,
 	}
 
 	if err := config.DB.Create(&saveRole).Error; err != nil {
@@ -91,11 +90,13 @@ func AssignRolesToAUser(c *gin.Context) {
 	}
 
 	for _, roleNumber := range payload.RoleNumber {
-		updateUser := models.User{
+		saveRole := models.UserRole{
 			RoleNumber: roleNumber,
+			UserNumber: payload.UserNumber,
+			AddedBy:    user.Number,
 		}
 
-		if err := config.DB.Model(&user).Where("number = ?", payload.UserNumber).Updates(updateUser).Error; err != nil {
+		if err := config.DB.Save(&saveRole); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user"})
 			return
 		}
@@ -127,12 +128,7 @@ func FetchRoleDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": role})
 }
 
-func UpdateRoleAssignment(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
+func RemoveRoleAssignment(c *gin.Context) {
 
 	type Input struct {
 		UserNumber string   `json:"user_number"`
@@ -150,15 +146,11 @@ func UpdateRoleAssignment(c *gin.Context) {
 		return
 	}
 
-	for _, roleNumber := range payload.RoleNumber {
-		updateUser := models.User{
-			RoleNumber: roleNumber,
-		}
+	// delete the role assignment
 
-		if err := config.DB.Model(&user).Where("number = ?", payload.UserNumber).Updates(updateUser).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update role assignment"})
-			return
-		}
+	if err := config.DB.Where("user_number = ?", payload.UserNumber).Where("role_number = ?", payload.RoleNumber).Delete(&models.UserRole{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to remove role assignment"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Role assignment has been updated"})

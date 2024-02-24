@@ -56,3 +56,14 @@ func FetchPermissions(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": permissions})
 }
+
+func FetchPermissionGroups(c *gin.Context) {
+	permissions := commons.PermissionGroups()
+	//if err != nil {
+	//	c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch permissions"})
+	//	return
+	//}
+
+	c.JSON(http.StatusOK, gin.H{"data": permissions})
+
+}
