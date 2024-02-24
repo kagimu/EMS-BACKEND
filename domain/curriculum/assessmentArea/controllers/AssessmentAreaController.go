@@ -94,7 +94,6 @@ func EditAssessmentArea(c *gin.Context) {
 	}
 
 	updateAssessmentArea := models.AssessmentArea{
-
 		Name: payload.Name,
 	}
 
