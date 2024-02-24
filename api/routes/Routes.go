@@ -421,22 +421,21 @@ func SetupRoute() *gin.Engine {
 			admission.PUT("/:number/admit", admissionController.AdmitStudent)
 			admission.PUT("/admit", admissionController.BulkAdmitStudents)
 
+			offer := admission.Group("/admission-offers")
+			{
+				offer.POST("", admissionController.CreateAdmissionOffer)
+				offer.GET("", admissionController.FetchAdmissionOffers)
+				offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
+				offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
 
-		offer := admission.Group("/admission-offers")
-		{
-			offer.POST("", admissionController.CreateAdmissionOffer)
-			offer.GET("", admissionController.FetchAdmissionOffers)
-			offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
-			offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
+			}
 
-		}
+			conditions := admission.Group("/admission-offer-conditions")
+			{
+				conditions.POST("", admissionController.CreateAdmissionOfferCondition)
+				conditions.GET("", admissionController.FetchAdmissionOfferConditions)
 
-		conditions := admission.Group("/admission-offer-conditions")
-		{
-			conditions.POST("", admissionController.CreateAdmissionOfferCondition)
-			conditions.GET("", admissionController.FetchAdmissionOfferConditions)
-
-		}
+			}
 
 		}
 
@@ -447,33 +446,31 @@ func SetupRoute() *gin.Engine {
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
 
-		//assessment := main.Group("/assessments")
-		//{
-		//	assessment.POST("", assessmentController.CreateAssessment)
-		//	assessment.GET(":student_number", assessmentController.FetchAssessmentByStudentNumber)
-		//	assessment.GET("", assessmentController.FetchAssessments)
-		//
-		//	assessment.POST("examination-types", assessmentController.CreateExaminationType)
-		//}
-
-		}
-
-		settings := router.Group("settings/permissions")
+		assessment := main.Group("/assessments")
 		{
-			settings.POST("", authController.CreatePermission)
-			settings.GET("", authController.FetchPermissions)
+			assessment.POST("", assessmentController.CreateAssessment)
+			assessment.GET(":student_number", assessmentController.FetchAssessmentByStudentNumber)
+			assessment.GET("", assessmentController.FetchAssessments)
+
+			assessment.POST("examination-types", assessmentController.CreateExaminationType)
 		}
 
-		roles := router.Group("settings/roles")
-		{
-			roles.POST("", authController.CreateRole)
-			roles.GET("", authController.FetchRoles)
-			roles.GET(":role_number", authController.FetchRoleDetails)
-			roles.PUT("assign", authController.AssignRolesToAUser)
-			roles.PUT("update-assignment", authController.UpdateRoleAssignment)
-		}
 	}
-}
+
+	settings := router.Group("settings/permissions")
+	{
+		settings.POST("", authController.CreatePermission)
+		settings.GET("", authController.FetchPermissions)
+	}
+
+	roles := router.Group("settings/roles")
+	{
+		roles.POST("", authController.CreateRole)
+		roles.GET("", authController.FetchRoles)
+		roles.GET(":role_number", authController.FetchRoleDetails)
+		roles.PUT("assign", authController.AssignRolesToAUser)
+		roles.PUT("update-assignment", authController.UpdateRoleAssignment)
+	}
 
 	return router
 }
