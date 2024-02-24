@@ -113,6 +113,7 @@ func SetupRoute() *gin.Engine {
 		{
 			campus.GET("/all", controllers.FetchCampuses)
 			campus.GET("/info", controllers.CampusInfo)
+			campus.GET("/level-list", controllers.CampusLevelList)
 			campus.GET("/curriculum", controllers.CampusCurriculum)
 			campus.POST("/new", controllers.NewCampus)
 			campus.POST("/edit", controllers.EditCampus)
