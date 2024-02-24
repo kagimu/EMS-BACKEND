@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -75,10 +76,39 @@ func FetchRoles(c *gin.Context) {
 		return
 	}
 
+	var rolesReponse []responses.RolesList
+
 	var roles []models.Role
 	if err := config.DB.Find(&roles).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch roles"})
 		return
+	}
+
+	// fetch the permissions
+	for _, role := range roles {
+		var permissions []models.RolePermission
+		// select only the permission column in the role_permissions table
+		if err := config.DB.Where("role_number = ?", role.Number).Find(&permissions).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"message": "Role not found"})
+				return
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch role details"})
+			return
+		}
+
+		//prepare array of permissions
+		var pms []string
+		for _, permission := range permissions {
+			pms = append(pms, permission.Permission)
+		}
+
+		rolesReponse = append(rolesReponse, responses.RolesList{
+			Number:      role.Number,
+			Name:        role.Name,
+			Description: role.Description,
+			Permissions: pms,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": roles})
