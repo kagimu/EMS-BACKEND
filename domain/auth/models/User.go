@@ -15,7 +15,6 @@ type (
 		Gender     string    `json:"gender" form:"gender" binding:"required" gorm:"size:8;not null"`
 		Type       string    `json:"type" gorm:"size:8;not null"`
 		Status     string    `json:"status" gorm:"size:100;not null"`
-		Roles      []Role    `json:"role" gorm:"foreignKey:RoleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Contacts   []Contact `json:"contacts" gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )

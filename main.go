@@ -184,6 +184,8 @@ func main() {
 		&assessmentModel.ExaminationType{},
 		&authModels.Role{},
 		&authModels.Permission{},
+		&authModels.RolePermission{},
+		&authModels.UserRole{},
 	)
 
 	if errMigrate != nil {
