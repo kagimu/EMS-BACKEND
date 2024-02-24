@@ -9,6 +9,7 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -419,7 +420,7 @@ func SetupRoute() *gin.Engine {
 			admission.POST("", admissionController.CreateAdmission)
 			admission.PUT("/:number/admit", admissionController.AdmitStudent)
 			admission.PUT("/admit", admissionController.BulkAdmitStudents)
-		}
+
 
 		offer := admission.Group("/admission-offers")
 		{
@@ -437,11 +438,24 @@ func SetupRoute() *gin.Engine {
 
 		}
 
+		}
+
 		assessmentArea := main.Group("/assessment-areas")
 		{
 			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
 			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
+		}
+
+		//assessment := main.Group("/assessments")
+		//{
+		//	assessment.POST("", assessmentController.CreateAssessment)
+		//	assessment.GET(":student_number", assessmentController.FetchAssessmentByStudentNumber)
+		//	assessment.GET("", assessmentController.FetchAssessments)
+		//
+		//	assessment.POST("examination-types", assessmentController.CreateExaminationType)
+		//}
+
 		}
 
 		settings := router.Group("settings/permissions")
@@ -459,6 +473,7 @@ func SetupRoute() *gin.Engine {
 			roles.PUT("update-assignment", authController.UpdateRoleAssignment)
 		}
 	}
+}
 
 	return router
 }
