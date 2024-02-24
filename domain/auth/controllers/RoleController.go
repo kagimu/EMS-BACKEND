@@ -86,9 +86,9 @@ func FetchRoles(c *gin.Context) {
 
 	// fetch the permissions
 	for _, role := range roles {
-		var permissions []string
+		var permissions []models.RolePermission
 		// select only the permission column in the role_permissions table
-		if err := config.DB.Model(&models.RolePermission{}).Where("role_number = ?", role.Number).Pluck("permission", &permissions).Error; err != nil {
+		if err := config.DB.Where("role_number = ?", role.Number).Find(&permissions).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				c.JSON(http.StatusNotFound, gin.H{"message": "Role not found"})
 				return
@@ -97,11 +97,17 @@ func FetchRoles(c *gin.Context) {
 			return
 		}
 
+		//prepare array of permissions
+		var pms []string
+		for _, permission := range permissions {
+			pms = append(pms, permission.Permission)
+		}
+
 		rolesReponse = append(rolesReponse, responses.RolesList{
 			Number:      role.Number,
 			Name:        role.Name,
 			Description: role.Description,
-			Permissions: permissions,
+			Permissions: pms,
 		})
 	}
 
