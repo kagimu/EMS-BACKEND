@@ -183,7 +183,6 @@ func main() {
 		&assessmentModel.Assessment{},
 		&assessmentModel.ExaminationType{},
 		&authModels.Role{},
-		&authModels.Permission{},
 		&authModels.RolePermission{},
 		&authModels.UserRole{},
 	)

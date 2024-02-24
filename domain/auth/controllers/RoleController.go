@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -19,30 +20,52 @@ func CreateRole(c *gin.Context) {
 		return
 	}
 
-	var payload models.Role
+	var payload requests.NewRoleRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate input"})
 		return
 	}
 
-	if payload.Name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Name is required"})
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
+
 	}
 
+	roleNumber := uuid.NewV4().String()
 	saveRole := models.Role{
-		Number:      uuid.NewV4().String(),
+		Number:      roleNumber,
 		Name:        payload.Name,
 		UserNumber:  user.Number,
 		Description: payload.Description,
 	}
 
-	if err := config.DB.Create(&saveRole).Error; err != nil {
+	tx := config.DB.Begin()
+
+	if err := tx.Create(&saveRole).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save role"})
+		tx.Rollback()
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": saveRole})
+	// save the permissions
+	for _, permission := range payload.Permissions {
+		savePermission := models.RolePermission{
+			RoleNumber: roleNumber,
+			Permission: permission,
+		}
+
+		if err := tx.Create(&savePermission).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save role permissions"})
+			tx.Rollback()
+			return
+		}
+
+	}
+
+	tx.Commit()
+
+	c.JSON(http.StatusOK, commons.Feedback("Role has been created"))
 }
 
 func FetchRoles(c *gin.Context) {
