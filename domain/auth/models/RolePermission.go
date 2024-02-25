@@ -8,4 +8,5 @@ type RolePermission struct {
 	ID         uint
 	RoleNumber string `gorm:"size:36;not null" json:"role_number"`
 	Permission string `gorm:"size:36;not null" json:"permission"`
+	Role       Role   `gorm:"foreignKey:RoleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

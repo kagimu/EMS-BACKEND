@@ -76,7 +76,7 @@ func FetchRoles(c *gin.Context) {
 		return
 	}
 
-	var rolesReponse []responses.RolesList
+	var rolesResponse []responses.RolesList
 
 	var roles []models.Role
 	if err := config.DB.Find(&roles).Error; err != nil {
@@ -103,7 +103,7 @@ func FetchRoles(c *gin.Context) {
 			pms = append(pms, permission.Permission)
 		}
 
-		rolesReponse = append(rolesReponse, responses.RolesList{
+		rolesResponse = append(rolesResponse, responses.RolesList{
 			Number:      role.Number,
 			Name:        role.Name,
 			Description: role.Description,
@@ -111,7 +111,7 @@ func FetchRoles(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": roles})
+	c.JSON(http.StatusOK, gin.H{"data": rolesResponse})
 }
 
 func AssignRolesToAUser(c *gin.Context) {
