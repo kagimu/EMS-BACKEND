@@ -14,7 +14,7 @@ type AssessmentMetric struct {
 	DescriptiveScore          string              `json:"descriptive_score" gorm:"type:text"`
 	ExpectedScore             uint8               `json:"expected_score"`
 	ActualScore               uint8               `json:"actual_score"`
-	ClassNumber               string              `json:"classNumber" gorm:"size:36;"`
+	ClassNumber               string              `json:"class_number" gorm:"size:36;"`
 	Schedule                  string              `json:"schedule" gorm:"size:30"`
 	Class                     models.Class        `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentSubMetricNumber string              `json:"assessment_metric_number" gorm:"size:36;not null"`
