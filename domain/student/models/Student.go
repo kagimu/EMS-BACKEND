@@ -13,6 +13,7 @@ type Student struct {
 	APN                       string              `gorm:"unique;size:100;" json:"apn"`
 	ADN                       string              `gorm:"unique;size:100;default:null" json:"adn"`
 	APNStatus                 string              `gorm:"size:20;default:Inactive" json:"apn_status"`
+	ADNStatus                 string              `gorm:"size:20;" json:"adn_status"`
 	Surname                   string              `json:"surname" `
 	SecondName                string              `json:"second_name"`
 	OtherName                 string              `json:"other_name"`

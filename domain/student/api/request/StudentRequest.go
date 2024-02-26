@@ -14,6 +14,7 @@ type StudentRequest struct {
 	OtherName                 string                  `json:"other_name"`
 	DateOfBirth               string                  `json:"date_of_birth"`
 	APN                       string                  `json:"apn"`
+	ADNStatus                 string                  `json:"adn_status"`
 	PreviousSchool            []models.PreviousSchool `json:"previous_school"`
 	PreferredTypeOfEnrollment string                  `json:"preferred_type_of_enrollment"`
 	PreferredCampusNumber     string                  `json:"preferred_campus_number"`

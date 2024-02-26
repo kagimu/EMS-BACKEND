@@ -7,8 +7,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
-	levelModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -23,66 +21,47 @@ func CreateAssessment(c *gin.Context) {
 
 	var payload requests.AssessmentRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input:", "err": err.Error()})
-		return
-	}
-
-	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	var assessmentArea assessmentAreaModel.AssessmentArea
-	if err := config.DB.Where("number = ?", payload.AssessmentAreaNumber).First(&assessmentArea).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment area not found"})
-		return
-	}
-
-	var level levelModel.Level
-	if err := config.DB.Where("number = ?", payload.LevelNumber).First(&level).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Level not found"})
-		return
-	}
-
-	var examinationType models.ExaminationType
-	if err := config.DB.Where("number = ?", payload.ExaminationTypeNumber).First(&examinationType).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Examination type not found"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
 	var student studentModel.Student
-	if err := config.DB.Where("number = ?", payload.StudentNumber).First(&student).Error; err != nil {
+	if err := config.DB.Model(&studentModel.Student{}).Where("number = ?", payload.StudentNumber).First(&student).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Student not found"})
 		return
 	}
 
-	saveAssessment := models.Assessment{
-		Number:                uuid.NewV4().String(),
-		Subject:               payload.Subject,
-		Attendance:            payload.Attendance,
-		Observations:          payload.Observations,
-		GuidedExercise:        payload.GuidedExercise,
-		UnguidedExercise:      payload.UnguidedExercise,
-		ExplorativeAssignment: payload.ExplorativeAssignment,
-		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
-		GroupWork:             payload.GroupWork,
-		Project:               payload.Project,
-		ExaminationTypeNumber: payload.ExaminationTypeNumber,
-		TopicalText:           payload.TopicalText,
-		StudentNumber:         payload.StudentNumber,
-		LevelNumber:           payload.LevelNumber,
-		UserNumber:            user.Number,
-	}
-
-	if err := config.DB.Create(&saveAssessment).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment"})
+	if student.APNStatus == "Inactive" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student ADN is still active"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": saveAssessment})
+	saveAssessment := models.Assessment{
+		Number:                 uuid.NewV4().String(),
+		AssessmentDate:         payload.AssessmentDate,
+		UserNumber:             user.Number,
+		AssessmentMetricNumber: payload.AssessmentMetricNumber,
+		StudentNumber:          payload.StudentNumber,
+		AssessmentAreaNumber:   payload.AssessmentAreaNumber,
+	}
+
+	tx := config.DB.Begin()
+
+	if err := tx.Create(&saveAssessment).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save assessment"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save assessment"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"data": saveAssessment})
 }
 
-func FetchAssessmentByStudentNumber(c *gin.Context) {
+func FetchAssessment(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
@@ -90,25 +69,15 @@ func FetchAssessmentByStudentNumber(c *gin.Context) {
 	}
 
 	studentNumber := c.Query("student_number")
-	var assessment []models.Assessment
-	if err := config.DB.Where("student_number = ?", studentNumber).Preload("ExaminationType").Find(&assessment).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment fetching failed", "err": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": assessment})
-}
-
-func FetchAssessments(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+	var student studentModel.Student
+	if err := config.DB.Model(&studentModel.Student{}).Where("number = ?", studentNumber).First(&student).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student not found"})
 		return
 	}
 
 	var assessments []models.Assessment
-	if err := config.DB.Preload("ExaminationType").Find(&assessments).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessments fetching failed"})
+	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Preload("AssessmentArea").Preload("Level").Where("student_number = ?", studentNumber).Find(&assessments).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments"})
 		return
 	}
 

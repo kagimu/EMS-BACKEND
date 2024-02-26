@@ -63,6 +63,7 @@ func CreateStudent(c *gin.Context) {
 		OtherName:                 payload.OtherName,
 		Gender:                    payload.Gender,
 		DateOfBirth:               payload.DateOfBirth,
+		ADNStatus: payload.ADNStatus,
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
