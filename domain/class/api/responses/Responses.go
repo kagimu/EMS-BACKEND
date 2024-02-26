@@ -1,7 +1,7 @@
 package responses
 
 type (
-	ClassLevelInfo struct {
+	CampusClassInfo struct {
 		Number                string       `json:"number"`
 		ClassNumber           string       `json:"class_number"`
 		Name                  string       `json:"name"`

@@ -115,12 +115,14 @@ func SetupRoute() *gin.Engine {
 			campus.GET("/info", controllers.CampusInfo)
 			campus.GET("/level-list", controllers.CampusLevelList)
 			campus.GET("/curriculum", controllers.CampusCurriculum)
+			campus.GET("/class-list", classController.FetchClassLevel)
 			campus.POST("/new", controllers.NewCampus)
 			campus.POST("/edit", controllers.EditCampus)
 			campus.POST("/delete", controllers.DeleteCampus)
 			campus.POST("/new-level", controllers.NewCampusLevel)
 			campus.POST("/new-class", classController.AddCampusClass)
 		}
+		main.GET("class-level", classController.FetchClassLevel)
 
 		level := main.Group("/level")
 		{
@@ -156,7 +158,6 @@ func SetupRoute() *gin.Engine {
 		main.GET("filter-curriculum-classes", classController.FilterCurriculumClasses)
 		main.GET("scheme-of-work-classes", classController.FetchSchemeOfWorkClasses)
 		main.GET("classes-curriculum", classController.FetchClassesCurriculum)
-		main.GET("class-level", classController.FetchClassLevel)
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
 
