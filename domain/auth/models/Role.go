@@ -1,11 +1,15 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
-// Role represents the database model of roles
 type Role struct {
 	gorm.Model
-	ID           uint   `gorm:"primary_key"`
-	Name         string `gorm:"unique;not null" json:"name"`
-	SchoolNumber string `gorm:"size:36;not null" json:"school_number"`
+	Number      string           `json:"number" gorm:"size:36;unique;not null"`
+	Name        string           `json:"name" gorm:"size:20;not null"`
+	Description string           `json:"description" gorm:"size:100"`
+	UserNumber  string           `json:"user_number" gorm:"size:36;index;not null"`
+	User        User             `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Permissions []RolePermission `json:"permissions" gorm:"foreignKey:RoleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
