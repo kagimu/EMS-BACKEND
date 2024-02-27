@@ -17,6 +17,5 @@ type InvoiceItem struct {
 func (invoiceItem *InvoiceItem) AfterFind(tx *gorm.DB) (err error) {
 	invoiceItem.TotalPrice = invoiceItem.Quantity * invoiceItem.UnitPrice
 	// find item name from table items
-
 	return
 }
