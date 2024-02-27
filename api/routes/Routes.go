@@ -472,6 +472,11 @@ func SetupRoute() *gin.Engine {
 			roles.PUT("assign", authController.AssignRolesToAUser)
 			roles.PUT("update-assignment", authController.RemoveRoleAssignment)
 		}
+
+		users := main.Group("/users")
+		{
+			users.GET("", authController.FetchUsers)
+		}
 	}
 
 	return router
