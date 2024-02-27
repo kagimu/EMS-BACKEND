@@ -9,6 +9,7 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	aggregateScaleController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/controllers"
 	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
@@ -457,6 +458,15 @@ func SetupRoute() *gin.Engine {
 			assessment.GET("", assessmentController.FetchAssessments)
 
 			assessment.POST("examination-types", assessmentController.CreateExaminationType)
+
+			aggregateScale := main.Group("/aggregate-scales")
+			{
+				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
+				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+				aggregateScale.POST("alternative", aggregateScaleController.CreateAlternateAggregateScale)
+				aggregateScale.GET("alternative", aggregateScaleController.FetchAlternativeAggregateScale)
+			}
+
 		}
 
 		settings := main.Group("settings/permissions")
