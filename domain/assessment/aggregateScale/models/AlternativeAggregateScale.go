@@ -4,6 +4,7 @@ import (
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"gorm.io/gorm"
@@ -12,11 +13,14 @@ import (
 type AlternativeAggregateScale struct {
 	gorm.Model
 	Number            string                       `json:"number" gorm:"size:36;unique;not null"`
-	Name              string                       `json:"name" gorm:"type:text"`
-	Factors           string                       `json:"factors" gorm:"type:text"`
-	Description       string                       `json:"description" gorm:"type:text"`
 	MinValue          int                          `json:"min_value" gorm:"not null"`
 	MaxValue          int                          `json:"max_value" gorm:"not null"`
+	Name              string                       `json:"name" gorm:"type:text"`
+	Scale             string                       `json:"scale"`
+	SchoolNumber      string                       `json:"school_number" gorm:"size:36;not null"`
+	School            schoolModel.School           `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Factors           string                       `json:"factors" gorm:"type:text"`
+	Description       string                       `json:"description" gorm:"type:text"`
 	LevelNumber       string                       `json:"level_number" gorm:"size:36;not null"`
 	Level             models.Level                 `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriodNumber string                       `json:"study_period_number" gorm:"size:36;not null"`

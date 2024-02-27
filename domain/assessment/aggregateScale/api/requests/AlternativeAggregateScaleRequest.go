@@ -10,6 +10,7 @@ type AlternativeAggregateScaleRequest struct {
 	MaxValue          int    `json:"max_value"`
 	Scale             string `json:"scale"`
 	LevelNumber       string `json:"level_number"`
+	SchoolNumber      string `json:"school_number"`
 	StudyPeriodNumber string `json:"study_period_number"`
 	ClassNumber       string `json:"class_number"`
 	CampusNumber      string `json:"campus_number"`

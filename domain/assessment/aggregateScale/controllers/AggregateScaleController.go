@@ -35,9 +35,12 @@ func CreateAggregateScale(c *gin.Context) {
 	saveAggregateScale := models.AggregateScale{
 		Number:            uuid.NewV4().String(),
 		Name:              payload.Name,
+		Scale:             payload.Scale,
 		MinValue:          payload.MinValue,
 		MaxValue:          payload.MaxValue,
+		Description:       payload.Description,
 		LevelNumber:       payload.LevelNumber,
+		SchoolNumber:      payload.SchoolNumber,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
 		ClassNumber:       payload.ClassNumber,
 		CampusNumber:      payload.CampusNumber,
