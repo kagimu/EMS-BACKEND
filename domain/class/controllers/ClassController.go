@@ -698,8 +698,8 @@ func FetchClassLevel(context *gin.Context) {
 		var classLevel []models.CampusClass
 		var classLevel_ []responses.CampusClassInfo
 		if err := config.DB.
-			//Scopes(levelClassFilter(levelNumber)).
-			//Where("campus_number = ?", campusNumber).
+			//Scopes(levelClassFilter(levelNumber)).//
+			//Where("campus_number = ?", campusNumber). //
 			Where("campus_level_number = ?", items.Number).
 			Preload("CurriculumClass.Class").
 			Preload("CurriculumClass").
