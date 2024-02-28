@@ -181,9 +181,10 @@ func main() {
 		&invoiceModel.InvoiceNumber{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
-		&assessmentModel.Assessment{},
 		&assessmentModel.AssessmentMetric{},
 		&assessmentModel.AssessmentSubMetric{},
+		&assessmentModel.Attendance{},
+		&assessmentModel.ExaminationType{},
 	)
 
 	if errMigrate != nil {

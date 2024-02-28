@@ -459,6 +459,17 @@ func SetupRoute() *gin.Engine {
 
 			assessment.POST("sub-metrics", assessmentController.CreateAssessmentSubMetric)
 			assessment.GET("sub-metrics", assessmentController.FetchAssessmentSubMetrics)
+
+			assessment.POST("examination-type", assessmentController.CreateExaminationType)
+			assessment.GET("examination-type", assessmentController.FetchExaminationTypes)
+		}
+
+		attendance := main.Group("/attendance")
+		{
+			attendance.POST("", assessmentController.CreateAttendance)
+			attendance.GET("class", assessmentController.FetchAttendanceByClass)
+			attendance.GET("/student", assessmentController.FetchStudentAttendance)
+
 		}
 
 		settings := main.Group("settings/permissions")
