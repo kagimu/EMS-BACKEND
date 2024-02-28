@@ -464,11 +464,11 @@ func SetupRoute() *gin.Engine {
 			assessment.GET("examination-types", assessmentController.FetchExaminationTypes)
 		}
 
-		attendance := main.Group("/attendance")
+		attendance := main.Group("/attendances")
 		{
 			attendance.POST("", assessmentController.CreateAttendance)
 			attendance.GET("class", assessmentController.FetchAttendanceByClass)
-			attendance.GET("/student", assessmentController.FetchStudentAttendance)
+			attendance.GET("student", assessmentController.FetchStudentAttendance)
 
 		}
 
