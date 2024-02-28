@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"net/http"
 	"strconv"
@@ -621,7 +622,7 @@ func FetchClassesToAdd(context *gin.Context) {
 	}
 
 	var curriculumClasses []models.CurriculumClass
-	var curriculumClasses_ []responses.ClassLevelInfo
+	var curriculumClasses_ []responses.CampusClassInfo
 	if err := config.DB.
 		Where("curriculum_level_number = ?", campusLevelData.CurriculumLevelNumber).
 		Preload("Class").
@@ -632,7 +633,7 @@ func FetchClassesToAdd(context *gin.Context) {
 	}
 
 	for _, lst := range curriculumClasses {
-		curriculumClasses_ = append(curriculumClasses_, responses.ClassLevelInfo{
+		curriculumClasses_ = append(curriculumClasses_, responses.CampusClassInfo{
 			Number:       lst.Number,
 			Name:         lst.Class.Name,
 			ClassNumber:  lst.Class.Number,
@@ -673,56 +674,117 @@ func levelInfoFilter(level string) func(db *gorm.DB) *gorm.DB {
 
 func FetchClassLevel(context *gin.Context) {
 
-	levelNumber := context.Query("level_number")
-	campusNumber := context.Query("campus_number")
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
+	//campusLevelNumber := context.Query("campus_level_number")
 
-	/*	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level Number is required!"})
-		return
-	}*/
-
-	if campusNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "campus Number is required!"})
+	if campusCurriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
 		return
 	}
 
-	var classLevel []models.CampusClass
-	var classLevels []responses.ClassLevelInfo
-
+	var campusLevel []levelModels.CampusLevel
+	var campusLevel_ []responses3.CampusLevelDataList
 	if err := config.DB.
-		Scopes(levelClassFilter(levelNumber)).
-		Where("campus_number = ?", campusNumber).
-		Preload("CurriculumClass.Class").
-		Preload("CurriculumClass").
-		Preload("Streams").
-		Order("code asc").
-		Find(&classLevel).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		Where("campus_curriculum_number = ?", campusCurriculumNumber).
+		Preload("CurriculumLevel.Level").
+		Preload("CurriculumLevel").
+		Find(&campusLevel).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found"})
 		return
 	}
 
-	for _, lst := range classLevel {
-		var stream_ []responses.StreamInfo
+	for _, items := range campusLevel {
 
-		for _, list := range lst.Streams {
-			stream_ = append(stream_, responses.StreamInfo{
-				StreamNumber: list.Number,
-				Name:         list.Name,
+		var classLevel []models.CampusClass
+		var classLevel_ []responses.CampusClassInfo
+		if err := config.DB.
+			//Scopes(levelClassFilter(levelNumber)).//
+			//Where("campus_number = ?", campusNumber). //
+			Where("campus_level_number = ?", items.Number).
+			Preload("CurriculumClass.Class").
+			Preload("CurriculumClass").
+			Preload("Streams").
+			Order("code asc").
+			Find(&classLevel).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+			return
+		}
+
+		for _, lst := range classLevel {
+
+			var stream_ []responses.StreamInfo
+
+			for _, list := range lst.Streams {
+				stream_ = append(stream_, responses.StreamInfo{
+					StreamNumber: list.Number,
+					Name:         list.Name,
+				})
+			}
+
+			classLevel_ = append(classLevel_, responses.CampusClassInfo{
+				Number:                lst.Number,
+				Name:                  lst.CurriculumClass.Class.Name,
+				ClassNumber:           lst.CurriculumClass.Class.Number,
+				Abbreviation:          lst.CurriculumClass.Class.Abbreviation,
+				CurriculumClassNumber: lst.CurriculumClassNumber,
+				Code:                  lst.Code,
+				Streams:               stream_,
 			})
 		}
 
-		classLevels = append(classLevels, responses.ClassLevelInfo{
-			Number:                lst.Number,
-			Name:                  lst.CurriculumClass.Class.Name,
-			ClassNumber:           lst.CurriculumClass.Class.Number,
-			Abbreviation:          lst.CurriculumClass.Class.Abbreviation,
-			CurriculumClassNumber: lst.CurriculumClassNumber,
-			Code:                  lst.Code,
-			Streams:               stream_,
+		campusLevel_ = append(campusLevel_, responses3.CampusLevelDataList{
+			Number:                items.Number,
+			CurriculumLevelNumber: items.CurriculumLevelNumber,
+			Code:                  items.Code,
+			Name:                  items.CurriculumLevel.Level.Name,
+			Classes:               classLevel_,
 		})
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classLevels})
+	/*
+
+		if campusNumber == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "campus Number is required!"})
+			return
+		}
+
+		var classLevel []models.CampusClass
+		var classLevels []responses.CampusClassInfo
+
+		if err := config.DB.
+			Scopes(levelClassFilter(levelNumber)).
+			Where("campus_number = ?", campusNumber).
+			Preload("CurriculumClass.Class").
+			Preload("CurriculumClass").
+			Preload("Streams").
+			Order("code asc").
+			Find(&classLevel).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+			return
+		}
+
+		for _, lst := range classLevel {
+			var stream_ []responses.StreamInfo
+
+			for _, list := range lst.Streams {
+				stream_ = append(stream_, responses.StreamInfo{
+					StreamNumber: list.Number,
+					Name:         list.Name,
+				})
+			}
+
+			classLevels = append(classLevels, responses.CampusClassInfo{
+				Number:                lst.Number,
+				Name:                  lst.CurriculumClass.Class.Name,
+				ClassNumber:           lst.CurriculumClass.Class.Number,
+				Abbreviation:          lst.CurriculumClass.Class.Abbreviation,
+				CurriculumClassNumber: lst.CurriculumClassNumber,
+				Code:                  lst.Code,
+				Streams:               stream_,
+			})
+		}*/
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campusLevel_})
 }
 
 func levelClassFilter(levelNumber string) func(db *gorm.DB) *gorm.DB {

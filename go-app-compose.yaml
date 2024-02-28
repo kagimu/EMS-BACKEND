@@ -7,3 +7,4 @@ services:
       context: .
     environment:
       - VIRTUAL_HOST=104.248.175.232
+      - JWT_SECRET=supersecret
