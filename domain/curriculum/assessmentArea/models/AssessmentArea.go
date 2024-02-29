@@ -8,7 +8,7 @@ import (
 type AssessmentArea struct {
 	gorm.Model
 	Number      string      `json:"number" gorm:"size:36;unique;not null"`
-	Name        string      `json:"name" gorm:"not null"`
+	Name        string      `json:"name" gorm:"size:200"`
 	ClassNumber string      `json:"class_number" gorm:"size:36;not null"`
 	Class       string      `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber  string      `json:"user_number" gorm:"size:36;not null"`
