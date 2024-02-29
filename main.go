@@ -164,7 +164,6 @@ func main() {
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
-		&models3.SerialCode{},
 		&itemModels.Item{},
 		&models3.Product{},
 		&models4.Service{},
