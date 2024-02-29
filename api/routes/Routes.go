@@ -9,6 +9,7 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	assessmentGradeController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/controllers"
 	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
@@ -470,6 +471,13 @@ func SetupRoute() *gin.Engine {
 			attendance.GET("class", assessmentController.FetchAttendanceByClass)
 			attendance.GET("student", assessmentController.FetchStudentAttendance)
 
+			assessmentGrade := main.Group("/aggregate-grade")
+			{
+				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
+				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
+				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
+				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
+			}
 		}
 
 		settings := main.Group("settings/permissions")
@@ -483,8 +491,16 @@ func SetupRoute() *gin.Engine {
 			roles.GET("", authController.FetchRoles)
 			roles.GET(":role_number", authController.FetchRoleDetails)
 			roles.PUT("assign", authController.AssignRolesToAUser)
-			roles.PUT("update-assignment", authController.RemoveRoleAssignment)
+			roles.PUT("remove", authController.RemoveRoleAssignment)
 		}
+
+		users := main.Group("settings/users")
+		{
+			users.GET("", authController.FetchUsers)
+			users.GET(":user_number", authController.FetchUser)
+			users.POST("", authController.CreateUser)
+		}
+
 	}
 
 	return router

@@ -17,6 +17,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
@@ -180,6 +182,12 @@ func main() {
 		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
 		&assessmentModel.ExaminationType{},
+		&authModels.Role{},
+		&authModels.RolePermission{},
+		&authModels.UserRole{},
+		&assessmentScaleModels.AggregateScale{},
+		&assessmentScaleModels.AlternativeAggregateScale{},
+		&assessmentGradeModels.AssessmentGrade{},
 	)
 
 	if errMigrate != nil {
