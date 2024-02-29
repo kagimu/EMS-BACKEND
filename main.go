@@ -20,7 +20,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
-	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
@@ -52,6 +51,7 @@ import (
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
@@ -168,7 +168,7 @@ func main() {
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
-		&models3.ProductSerialCode{},
+		&models3.SerialCode{},
 		&itemModels.Item{},
 		&models3.Product{},
 		&models4.Service{},
@@ -181,12 +181,10 @@ func main() {
 		&invoiceModel.InvoiceNumber{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
+		&assessmentModel.AssessmentMetric{},
+		&assessmentModel.AssessmentSubMetric{},
+		&assessmentModel.Attendance{},
 		&assessmentModel.ExaminationType{},
-		&authModels.Role{},
-		&authModels.RolePermission{},
-		&authModels.UserRole{},
-		&assessmentScaleModels.AggregateScale{},
-		assessmentScaleModels.AlternativeAggregateScale{},
 	)
 
 	if errMigrate != nil {
