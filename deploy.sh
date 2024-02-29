@@ -2,6 +2,8 @@
 
 echo "Listing available running containers: "
 
+git pull
+
 docker ps
 docker stop  wholesome_backend_cont
 docker rm wholesome_backend_cont
