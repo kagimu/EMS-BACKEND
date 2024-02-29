@@ -115,14 +115,12 @@ func SetupRoute() *gin.Engine {
 			campus.GET("/info", controllers.CampusInfo)
 			campus.GET("/level-list", controllers.CampusLevelList)
 			campus.GET("/curriculum", controllers.CampusCurriculum)
-			campus.GET("/class-list", classController.FetchClassLevel)
 			campus.POST("/new", controllers.NewCampus)
 			campus.POST("/edit", controllers.EditCampus)
 			campus.POST("/delete", controllers.DeleteCampus)
 			campus.POST("/new-level", controllers.NewCampusLevel)
 			campus.POST("/new-class", classController.AddCampusClass)
 		}
-		main.GET("class-level", classController.FetchClassLevel)
 
 		level := main.Group("/level")
 		{
@@ -158,6 +156,7 @@ func SetupRoute() *gin.Engine {
 		main.GET("filter-curriculum-classes", classController.FilterCurriculumClasses)
 		main.GET("scheme-of-work-classes", classController.FetchSchemeOfWorkClasses)
 		main.GET("classes-curriculum", classController.FetchClassesCurriculum)
+		main.GET("class-level", classController.FetchClassLevel)
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
 
@@ -453,10 +452,24 @@ func SetupRoute() *gin.Engine {
 		assessment := main.Group("/assessments")
 		{
 			assessment.POST("", assessmentController.CreateAssessment)
-			assessment.GET(":student_number", assessmentController.FetchAssessmentByStudentNumber)
-			assessment.GET("", assessmentController.FetchAssessments)
+			assessment.GET(":student_number", assessmentController.FetchAssessment)
+
+			assessment.POST("metrics", assessmentController.CreateAssessmentMetric)
+			assessment.GET("metrics", assessmentController.FetchAssessmentMetrics)
+
+			assessment.POST("sub-metrics", assessmentController.CreateAssessmentSubMetric)
+			assessment.GET("sub-metrics", assessmentController.FetchAssessmentSubMetrics)
 
 			assessment.POST("examination-types", assessmentController.CreateExaminationType)
+			assessment.GET("examination-types", assessmentController.FetchExaminationTypes)
+		}
+
+		attendance := main.Group("/attendances")
+		{
+			attendance.POST("", assessmentController.CreateAttendance)
+			attendance.GET("class", assessmentController.FetchAttendanceByClass)
+			attendance.GET("student", assessmentController.FetchStudentAttendance)
+
 		}
 
 		settings := main.Group("settings/permissions")
@@ -468,14 +481,9 @@ func SetupRoute() *gin.Engine {
 		{
 			roles.POST("", authController.CreateRole)
 			roles.GET("", authController.FetchRoles)
-			roles.GET("/:role_number", authController.FetchRoleDetails)
-			roles.PUT("/assign", authController.AssignRolesToAUser)
-			roles.PUT("/remove", authController.RemoveRoleAssignment)
-		}
-
-		users := main.Group("/users")
-		{
-			users.GET("", authController.FetchUsers)
+			roles.GET(":role_number", authController.FetchRoleDetails)
+			roles.PUT("assign", authController.AssignRolesToAUser)
+			roles.PUT("update-assignment", authController.RemoveRoleAssignment)
 		}
 	}
 
