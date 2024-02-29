@@ -7,19 +7,17 @@ import (
 
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
-
-	"log"
 	"os"
 
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
-	"github.com/joho/godotenv"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -51,7 +49,6 @@ import (
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -60,16 +57,16 @@ import (
 var err error
 
 func main() {
-	if os.Getenv("ENVIRONMENT") != "production" {
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
-	}
-
-	if os.Getenv("ENVIRONMENT") == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	//if os.Getenv("ENVIRONMENT") != "production" {
+	//	err := godotenv.Load(".env")
+	//	if err != nil {
+	//		log.Fatal("Error loading .env file")
+	//	}
+	//}
+	//
+	//if os.Getenv("ENVIRONMENT") == "production" {
+	//	gin.SetMode(gin.ReleaseMode)
+	//}
 
 	errZone := os.Setenv("TZ", "Africa/Nairobi")
 	if errZone != nil {
@@ -167,7 +164,6 @@ func main() {
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
-		&models3.SerialCode{},
 		&itemModels.Item{},
 		&models3.Product{},
 		&models4.Service{},
@@ -179,6 +175,11 @@ func main() {
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
 		&assessmentAreaModel.AssessmentArea{},
+		&assessmentModel.Assessment{},
+		&assessmentModel.AssessmentMetric{},
+		&assessmentModel.AssessmentSubMetric{},
+		&assessmentModel.Attendance{},
+		&assessmentModel.ExaminationType{},
 	)
 
 	if errMigrate != nil {

@@ -9,13 +9,14 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
 	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
 	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
 	conceptController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/controllers"
-	curricullumController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers"
+	curriculumController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers"
 	learningAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/controllers"
 	strandController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/controllers"
 	subjectClusterController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/controllers"
@@ -84,17 +85,18 @@ func SetupRoute() *gin.Engine {
 		//manage curriculum
 		curriculum := main.Group("/curriculum")
 		{
-			curriculum.GET("/info", curricullumController.CurriculumInfo)
-			curriculum.POST("/edit", curricullumController.CurriculumEdit)
-			curriculum.POST("/delete", curricullumController.DeleteCurriculum)
+			curriculum.GET("/info", curriculumController.CurriculumInfo)
+			curriculum.GET("/campus-curriculum-level", curriculumController.FetchCampusCurriculumLevel)
+			curriculum.POST("/edit", curriculumController.CurriculumEdit)
+			curriculum.POST("/delete", curriculumController.DeleteCurriculum)
 		}
-		main.POST("new-curriculum", curricullumController.NewCurriculum)
-		main.GET("curriculum-list", curricullumController.FetchCurriculum)
-		main.GET("curriculum-info", curricullumController.FetchCurriculumInfo)
-		main.POST("upload-curriculum", curricullumController.ImportCurriculum)
-		main.GET("uploaded-curriculum", curricullumController.FetchUploadedCurriculum)
-		main.GET("fetch-school-curriculum", curricullumController.FetchSchoolCurriculum)
-		main.GET("fetch-school-curriculum-level", curricullumController.FetchSchoolCurriculumLevel)
+
+		main.POST("new-curriculum", curriculumController.NewCurriculum)
+		main.GET("curriculum-list", curriculumController.FetchCurriculum)
+		main.GET("curriculum-info", curriculumController.FetchCurriculumInfo)
+		main.POST("upload-curriculum", curriculumController.ImportCurriculum)
+		main.GET("uploaded-curriculum", curriculumController.FetchUploadedCurriculum)
+		main.GET("fetch-school-curriculum", curriculumController.FetchSchoolCurriculum)
 
 		//manage School
 		school := main.Group("/school")
@@ -111,10 +113,13 @@ func SetupRoute() *gin.Engine {
 		{
 			campus.GET("/all", controllers.FetchCampuses)
 			campus.GET("/info", controllers.CampusInfo)
+			campus.GET("/level-list", controllers.CampusLevelList)
 			campus.GET("/curriculum", controllers.CampusCurriculum)
 			campus.POST("/new", controllers.NewCampus)
 			campus.POST("/edit", controllers.EditCampus)
 			campus.POST("/delete", controllers.DeleteCampus)
+			campus.POST("/new-level", controllers.NewCampusLevel)
+			campus.POST("/new-class", classController.AddCampusClass)
 		}
 
 		level := main.Group("/level")
@@ -138,20 +143,19 @@ func SetupRoute() *gin.Engine {
 		class := main.Group("/class")
 		{
 			class.GET("/info", classController.ClassInfo)
+			class.GET("/curriculum-class", classController.FetchClassesToAdd)
 			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
 			class.POST("/edit", classController.EditClass)
 			class.POST("/delete", classController.DeleteClass)
 		}
-
+		//main.GET("classes-to-add", classController.FetchClassesToAdd)
 		main.POST("new-class", classController.NewClass)
-		main.POST("new-campus-class", classController.AddCampusClass)
 		main.POST("new-curriculum-class", classController.AddCurriculumClass)
 		main.GET("classes", classController.FetchClasses)
 		main.GET("fetch-curriculum-classes", classController.FetchCurriculumClasses)
 		main.GET("filter-curriculum-classes", classController.FilterCurriculumClasses)
 		main.GET("scheme-of-work-classes", classController.FetchSchemeOfWorkClasses)
 		main.GET("classes-curriculum", classController.FetchClassesCurriculum)
-		main.GET("classes-to-add", classController.FetchClassesToAdd)
 		main.GET("class-level", classController.FetchClassLevel)
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
@@ -419,21 +423,22 @@ func SetupRoute() *gin.Engine {
 			admission.POST("", admissionController.CreateAdmission)
 			admission.PUT("/:number/admit", admissionController.AdmitStudent)
 			admission.PUT("/admit", admissionController.BulkAdmitStudents)
-		}
 
-		offer := admission.Group("/admission-offers")
-		{
-			offer.POST("", admissionController.CreateAdmissionOffer)
-			offer.GET("", admissionController.FetchAdmissionOffers)
-			offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
-			offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
+			offer := admission.Group("/admission-offers")
+			{
+				offer.POST("", admissionController.CreateAdmissionOffer)
+				offer.GET("", admissionController.FetchAdmissionOffers)
+				offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
+				offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
 
-		}
+			}
 
-		conditions := admission.Group("/admission-offer-conditions")
-		{
-			conditions.POST("", admissionController.CreateAdmissionOfferCondition)
-			conditions.GET("", admissionController.FetchAdmissionOfferConditions)
+			conditions := admission.Group("/admission-offer-conditions")
+			{
+				conditions.POST("", admissionController.CreateAdmissionOfferCondition)
+				conditions.GET("", admissionController.FetchAdmissionOfferConditions)
+
+			}
 
 		}
 
@@ -442,6 +447,43 @@ func SetupRoute() *gin.Engine {
 			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
 			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
+		}
+
+		assessment := main.Group("/assessments")
+		{
+			assessment.POST("", assessmentController.CreateAssessment)
+			assessment.GET(":student_number", assessmentController.FetchAssessment)
+
+			assessment.POST("metrics", assessmentController.CreateAssessmentMetric)
+			assessment.GET("metrics", assessmentController.FetchAssessmentMetrics)
+
+			assessment.POST("sub-metrics", assessmentController.CreateAssessmentSubMetric)
+			assessment.GET("sub-metrics", assessmentController.FetchAssessmentSubMetrics)
+
+			assessment.POST("examination-types", assessmentController.CreateExaminationType)
+			assessment.GET("examination-types", assessmentController.FetchExaminationTypes)
+		}
+
+		attendance := main.Group("/attendances")
+		{
+			attendance.POST("", assessmentController.CreateAttendance)
+			attendance.GET("class", assessmentController.FetchAttendanceByClass)
+			attendance.GET("student", assessmentController.FetchStudentAttendance)
+
+		}
+
+		settings := main.Group("settings/permissions")
+		{
+			settings.GET("groups", authController.FetchPermissionGroups)
+		}
+
+		roles := main.Group("settings/roles")
+		{
+			roles.POST("", authController.CreateRole)
+			roles.GET("", authController.FetchRoles)
+			roles.GET(":role_number", authController.FetchRoleDetails)
+			roles.PUT("assign", authController.AssignRolesToAUser)
+			roles.PUT("update-assignment", authController.RemoveRoleAssignment)
 		}
 	}
 

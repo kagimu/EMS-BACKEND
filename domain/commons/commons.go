@@ -99,3 +99,18 @@ func GetUserFromHeader(c *gin.Context) (*models.User, error) {
 
 	return &user, nil
 }
+
+type PermissionGroup map[string][]string
+
+func PermissionGroups() []PermissionGroup {
+
+	return []PermissionGroup{
+		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete"}},
+		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete"}},
+		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum", "delete_curriculum"}},
+		{"STUDENTS": []string{"view_students", "update_student_details"}},
+		{"SUBJECTS": []string{"create_subject", "view_subjects", "update_subjects"}},
+		{"LEARNING AREAS": []string{"create", "view", "update", "delete"}},
+	}
+
+}

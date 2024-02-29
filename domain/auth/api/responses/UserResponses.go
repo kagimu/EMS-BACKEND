@@ -16,3 +16,10 @@ type GetUserList struct {
 	DeletedAt  *time.Time           `sql:"index"`*/
 	Contacts []models.ContactList `json:"contacts"`
 }
+
+type RolesList struct {
+	Number      string   `json:"number"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Permissions []string `json:"permissions"`
+}

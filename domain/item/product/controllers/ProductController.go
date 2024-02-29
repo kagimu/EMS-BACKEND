@@ -2,10 +2,11 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/api/requests"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
-	"net/http"
+	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -33,7 +34,7 @@ func CreateProduct(c *gin.Context) {
 
 	tx := config.DB.Begin()
 
-	generateProductSerialCode := models2.SerialCode{}
+	generateProductSerialCode := productModels.ProductSerialCode{}
 
 	if err := tx.Create(&generateProductSerialCode).Error; err != nil {
 		tx.Rollback()
@@ -62,7 +63,7 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 
-	saveProduct := models2.Product{
+	saveProduct := productModels.Product{
 		ItemNumber: itemNumber,
 	}
 
@@ -120,7 +121,7 @@ func FetchProducts(c *gin.Context) {
 		return
 	}
 
-	var products []models2.Product
+	var products []productModels.Product
 	if err := config.DB.Preload("Item").Find(&products).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
 		return
@@ -136,7 +137,7 @@ func DeleteProduct(c *gin.Context) {
 	}
 
 	productNumber := c.Param("product_number")
-	var service models2.Product
+	var service productModels.Product
 	if err := config.DB.Where("number = ?", productNumber).First(&service).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found"})
 		return

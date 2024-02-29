@@ -23,8 +23,8 @@ func CreateStudent(c *gin.Context) {
 		})
 		return
 	}
-	var payload request.StudentRequest
 
+	var payload request.StudentRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
@@ -63,6 +63,7 @@ func CreateStudent(c *gin.Context) {
 		OtherName:                 payload.OtherName,
 		Gender:                    payload.Gender,
 		DateOfBirth:               payload.DateOfBirth,
+		ADNStatus: payload.ADNStatus,
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
