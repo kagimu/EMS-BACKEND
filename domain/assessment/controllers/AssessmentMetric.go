@@ -30,14 +30,13 @@ func CreateAssessmentMetric(c *gin.Context) {
 	}
 
 	saveAssessmentMetric := models.AssessmentMetric{
-		Number:           uuid.NewV4().String(),
-		Name:             payload.Name,
-		Weight:           payload.Weight,
-		DescriptiveScore: payload.DescriptiveScore,
-		PercentageScore:  payload.PercentageScore,
-		ExpectedScore:    payload.ExpectedScore,
-		ActualScore:      payload.ActualScore,
-		ClassNumber:      payload.ClassNumber,
+		Number:               uuid.NewV4().String(),
+		Name:                 payload.Name,
+		Weight:               payload.Weight,
+		AssessmentAreaNumber: payload.AssessmentAreaNumber,
+		Description:          payload.Description,
+		MaxScore:             payload.MaxScore,
+		ActualScore:          payload.ActualScore,
 	}
 
 	if err := config.DB.Create(&saveAssessmentMetric).Error; err != nil {

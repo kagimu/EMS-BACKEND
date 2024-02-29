@@ -3,13 +3,14 @@ package requests
 import "errors"
 
 type AssessmentMetricRequest struct {
-	Name             string `json:"name"`
-	Weight           uint8  `json:"weight"`
-	DescriptiveScore string `json:"descriptive_score"`
-	PercentageScore  uint8  `json:"percentage_score"`
-	ExpectedScore    uint8  `json:"expected_score"`
-	ActualScore      uint8  `json:"actual_score"`
-	ClassNumber      string `json:"class_number"`
+	Name                 string `json:"name"`
+	Weight               uint8  `json:"weight"`
+	DescriptiveScore     string `json:"descriptive_score"`
+	PercentageScore      uint8  `json:"percentage_score"`
+	MaxScore             uint8  `json:"max_score"`
+	ActualScore          uint8  `json:"actual_score"`
+	Description          string `json:"description"`
+	AssessmentAreaNumber string `json:"assessment_area_number"`
 }
 
 func (a *AssessmentMetricRequest) Validate() error {
@@ -18,12 +19,6 @@ func (a *AssessmentMetricRequest) Validate() error {
 	}
 	if a.Weight == 0 {
 		return errors.New("weight is required")
-	}
-	if a.DescriptiveScore == "" {
-		return errors.New("descriptive_score is required")
-	}
-	if a.ClassNumber == "" {
-		return errors.New("class_number is required")
 	}
 
 	return nil

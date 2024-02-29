@@ -40,7 +40,6 @@ func CreateAttendance(c *gin.Context) {
 		ClassNumber:       payload.ClassNumber,
 		Present:           payload.Present,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
-		CampusNumber:      payload.CampusNumber,
 		SchoolNumber:      payload.SchoolNumber,
 		UserNumber:        user.Number,
 	}
