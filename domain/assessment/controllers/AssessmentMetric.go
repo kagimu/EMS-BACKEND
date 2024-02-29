@@ -36,7 +36,6 @@ func CreateAssessmentMetric(c *gin.Context) {
 		AssessmentAreaNumber: payload.AssessmentAreaNumber,
 		Description:          payload.Description,
 		MaxScore:             payload.MaxScore,
-		ActualScore:          payload.ActualScore,
 	}
 
 	if err := config.DB.Create(&saveAssessmentMetric).Error; err != nil {
