@@ -53,6 +53,7 @@ import (
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
@@ -169,7 +170,6 @@ func main() {
 		&interviewModel.Answer{},
 		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
-		&models3.ProductSerialCode{},
 		&itemModels.Item{},
 		&models3.Product{},
 		&models4.Service{},
@@ -182,6 +182,9 @@ func main() {
 		&invoiceModel.InvoiceNumber{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
+		&assessmentModel.AssessmentMetric{},
+		&assessmentModel.AssessmentSubMetric{},
+		&assessmentModel.Attendance{},
 		&assessmentModel.ExaminationType{},
 		&authModels.Role{},
 		&authModels.RolePermission{},
