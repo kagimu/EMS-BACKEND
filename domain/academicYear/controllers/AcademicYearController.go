@@ -334,3 +334,44 @@ func DeleteAcademicYear(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Academic year deleted successfully!"})
 
 }
+
+func AcademicYearsByLevel(context *gin.Context) {
+
+	campusLevelNumber := context.Query("campus_level_number")
+
+	if campusLevelNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
+		return
+	}
+
+	var academicYearInfo []academicYearModel.AcademicYear
+	var academicYearInfo_ []responses.AcademicYearList
+	if err := config.DB.
+		Where("campus_level_number = ?", campusLevelNumber).
+		Preload("CampusLevel.CurriculumLevel.Level").
+		Preload("CampusLevel.CurriculumLevel").
+		Preload("CampusLevel").
+		Order("code asc").
+		Find(&academicYearInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
+		return
+	}
+
+	// Populate the selected columns from the fetched data
+	for _, academicList := range academicYearInfo {
+		academicYearInfo_ = append(academicYearInfo_, responses.AcademicYearList{
+			Number:                academicList.Number,
+			Code:                  academicList.Code,
+			AcademicYearName:      academicList.AcademicYearName,
+			NoOfStudyPeriod:       academicList.NoOfStudyPeriod,
+			AcademicYearStartDate: (academicList.AcademicYearStartDate).Format("2-Jan-2006 15:04:05"),
+			AcademicYearEndDate:   (academicList.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
+			UserNumber:            academicList.UserNumber,
+			LevelNumber:           academicList.CampusLevelNumber,
+			LevelName:             academicList.CampusLevel.CurriculumLevel.Level.Name,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": academicYearInfo_})
+
+}
