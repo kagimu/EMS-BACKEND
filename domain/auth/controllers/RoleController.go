@@ -141,6 +141,7 @@ func AssignRolesToAUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "User number is required"})
 		return
 	}
+	tx := config.DB.Begin()
 
 	for _, roleNumber := range payload.RoleNumber {
 		saveRole := models.UserRole{
@@ -149,11 +150,14 @@ func AssignRolesToAUser(c *gin.Context) {
 			AddedBy:    user.Number,
 		}
 
-		if err := config.DB.Save(&saveRole); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user"})
+		if err := tx.Create(&saveRole).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user" + err.Error()})
 			return
 		}
 	}
+
+	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{"message": "User has been updated"})
 }
