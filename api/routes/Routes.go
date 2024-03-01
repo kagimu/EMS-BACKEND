@@ -241,8 +241,12 @@ func SetupRoute() *gin.Engine {
 		main.GET("concepts", conceptController.FetchConcept)
 
 		//adds academic year
-		main.POST("new-academic-year", academicYearController.NewAcademicYear)
-		main.GET("fetch-academic-year", academicYearController.FetchAcademicYearInfo)
+		academicYear := main.Group("/academic-year")
+		{
+			academicYear.GET("all", academicYearController.FetchAcademicYearInfo)
+			academicYear.POST("/new", academicYearController.NewAcademicYear)
+			academicYear.POST("/delete", academicYearController.DeleteAcademicYear)
+		}
 		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
 
 		//adds study period
