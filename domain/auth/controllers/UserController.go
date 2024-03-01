@@ -10,10 +10,6 @@ import (
 )
 
 func FetchUsers(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
 
 	var users []models.User
 	if err := config.DB.Find(&users).Error; err != nil {

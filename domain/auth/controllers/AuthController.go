@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -117,15 +116,42 @@ func Login(context *gin.Context) {
 		})
 	}
 
-	_userProfile := responses.GetUserList{
-		Number:     userProfile.Number,
-		FirstName:  userProfile.FirstName,
-		SecondName: userProfile.SecondName,
-		LastName:   userProfile.LastName,
-		Gender:     userProfile.Gender,
-		Type:       userProfile.Type,
+	//prepare roles and permissions
+	//get user roles
+	var userRoles []models.UserRole
+	var userRolesList []responses.RoleView
+	var permissions []string
+
+	config.DB.Where("user_number = ?", userNumber).Find(&userRoles)
+
+	for _, item := range userRoles {
+
+		userRolesList = append(userRolesList, responses.RoleView{
+			Number:      item.Role.Number,
+			Name:        item.Role.Name,
+			Description: item.Role.Description,
+		})
+
+		//get role permissions
+		var rolePermissions []models.RolePermission
+		config.DB.Where("role_number = ?", item.RoleNumber).Find(&rolePermissions)
+
+		for _, permission := range rolePermissions {
+			permissions = append(permissions, permission.Permission)
+		}
+
 	}
-	fmt.Println(_userProfile.Type)
+
+	userView := responses.UserView{
+		Number:      userProfile.Number,
+		FirstName:   userProfile.FirstName,
+		SecondName:  userProfile.SecondName,
+		LastName:    userProfile.LastName,
+		Gender:      userProfile.Gender,
+		Type:        userProfile.Type,
+		Roles:       userRolesList,
+		Permissions: permissions,
+	}
 
 	//we generate jwt token
 	//serialized := user.Serialize()
@@ -140,7 +166,7 @@ func Login(context *gin.Context) {
 
 	//context.SetCookie("token", token, 60*60*24*7, "/", "", false, true)
 	//context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "data": user, "expires_in": date, "token": token})
-	context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "token": token, "data": _userProfile})
+	context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "token": token, "data": userView})
 
 }
 
