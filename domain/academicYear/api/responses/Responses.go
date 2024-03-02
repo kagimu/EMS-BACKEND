@@ -13,7 +13,7 @@ type (
 		UserNumber            string                      `json:"user_number"`
 		LevelNumber           string                      `json:"level_number"`
 		LevelName             string                      `json:"level_name"`
-		StudyPeriod           []responses.StudyPeriodList `json:"study_period"`
+		StudyPeriod           []responses.StudyPeriodList `json:"studyPeriod"`
 	}
 
 	AcademicYearListByClass struct {

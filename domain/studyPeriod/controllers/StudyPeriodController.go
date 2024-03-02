@@ -255,8 +255,8 @@ func FetchStudyPeriod(context *gin.Context) {
 				//Scopes(academicYearFilter(academicYearNumber)).
 				Where("academic_year_number = ?", academicList.Number).
 				//Where("academic_years.campus_level_number = ?", levelNumber).
-				Joins("join academic_years on academic_years.number = study_periods.academic_year_number").
-				Preload("AcademicYear").
+				//Joins("join academic_years on academic_years.number = study_periods.academic_year_number").
+				//Preload("AcademicYear").
 				Order("code asc").
 				Find(&studyPeriodInfo).Error; err != nil {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
@@ -271,9 +271,9 @@ func FetchStudyPeriod(context *gin.Context) {
 					StudyPeriodName:      studyPeriodList.StudyPeriodName,
 					StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
 					StudyPeriodEndDate:   (studyPeriodList.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
-					AcademicYearNumber:   studyPeriodList.AcademicYearNumber,
-					AcademicYearName:     studyPeriodList.AcademicYear.AcademicYearName,
-					UserNumber:           studyPeriodList.UserNumber,
+					//AcademicYearNumber:   studyPeriodList.AcademicYearNumber,
+					//AcademicYearName:     studyPeriodList.AcademicYear.AcademicYearName,
+					UserNumber: studyPeriodList.UserNumber,
 				})
 			}
 
