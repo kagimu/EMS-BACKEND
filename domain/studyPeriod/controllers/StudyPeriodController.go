@@ -252,11 +252,7 @@ func FetchStudyPeriod(context *gin.Context) {
 			var studyPeriodInfo []studyPeriodModel.StudyPeriod
 			var studyPeriodInfo_ []responses2.StudyPeriodList
 			if err := config.DB.
-				//Scopes(academicYearFilter(academicYearNumber)).
 				Where("academic_year_number = ?", academicList.Number).
-				//Where("academic_years.campus_level_number = ?", levelNumber).
-				//Joins("join academic_years on academic_years.number = study_periods.academic_year_number").
-				//Preload("AcademicYear").
 				Order("code asc").
 				Find(&studyPeriodInfo).Error; err != nil {
 				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
