@@ -698,8 +698,6 @@ func FetchClassLevel(context *gin.Context) {
 		var classLevel []models.CampusClass
 		var classLevel_ []responses.CampusClassInfo
 		if err := config.DB.
-			//Scopes(levelClassFilter(levelNumber)).//
-			//Where("campus_number = ?", campusNumber). //
 			Where("campus_level_number = ?", items.Number).
 			Preload("CurriculumClass.Class").
 			Preload("CurriculumClass").
@@ -740,49 +738,6 @@ func FetchClassLevel(context *gin.Context) {
 			Classes:               classLevel_,
 		})
 	}
-
-	/*
-
-		if campusNumber == "" {
-			context.JSON(http.StatusBadRequest, gin.H{"message": "campus Number is required!"})
-			return
-		}
-
-		var classLevel []models.CampusClass
-		var classLevels []responses.CampusClassInfo
-
-		if err := config.DB.
-			Scopes(levelClassFilter(levelNumber)).
-			Where("campus_number = ?", campusNumber).
-			Preload("CurriculumClass.Class").
-			Preload("CurriculumClass").
-			Preload("Streams").
-			Order("code asc").
-			Find(&classLevel).Error; err != nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
-			return
-		}
-
-		for _, lst := range classLevel {
-			var stream_ []responses.StreamInfo
-
-			for _, list := range lst.Streams {
-				stream_ = append(stream_, responses.StreamInfo{
-					StreamNumber: list.Number,
-					Name:         list.Name,
-				})
-			}
-
-			classLevels = append(classLevels, responses.CampusClassInfo{
-				Number:                lst.Number,
-				Name:                  lst.CurriculumClass.Class.Name,
-				ClassNumber:           lst.CurriculumClass.Class.Number,
-				Abbreviation:          lst.CurriculumClass.Class.Abbreviation,
-				CurriculumClassNumber: lst.CurriculumClassNumber,
-				Code:                  lst.Code,
-				Streams:               stream_,
-			})
-		}*/
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campusLevel_})
 }

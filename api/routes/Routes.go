@@ -113,6 +113,7 @@ func SetupRoute() *gin.Engine {
 		campus := main.Group("/campus")
 		{
 			campus.GET("/all", controllers.FetchCampuses)
+			campus.GET("/class-list", classController.FetchClassLevel)
 			campus.GET("/info", controllers.CampusInfo)
 			campus.GET("/level-list", controllers.CampusLevelList)
 			campus.GET("/curriculum", controllers.CampusCurriculum)
@@ -157,7 +158,6 @@ func SetupRoute() *gin.Engine {
 		main.GET("filter-curriculum-classes", classController.FilterCurriculumClasses)
 		main.GET("scheme-of-work-classes", classController.FetchSchemeOfWorkClasses)
 		main.GET("classes-curriculum", classController.FetchClassesCurriculum)
-		main.GET("class-level", classController.FetchClassLevel)
 		main.GET("class-subjects", classController.FetchClassSubjects)
 		main.POST("subject-to-class", classController.NewClassSubjects)
 
@@ -241,13 +241,21 @@ func SetupRoute() *gin.Engine {
 		main.GET("concepts", conceptController.FetchConcept)
 
 		//adds academic year
-		main.POST("new-academic-year", academicYearController.NewAcademicYear)
-		main.GET("fetch-academic-year", academicYearController.FetchAcademicYearInfo)
+		academicYear := main.Group("/academic-year")
+		{
+			academicYear.GET("all", academicYearController.FetchAcademicYearInfo)
+			academicYear.GET("by-level", academicYearController.AcademicYearsByLevel)
+			academicYear.POST("/new", academicYearController.NewAcademicYear)
+			academicYear.POST("/delete", academicYearController.DeleteAcademicYear)
+		}
 		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
 
 		//adds study period
+		studyPeriod := main.Group("/study-period")
+		{
+			studyPeriod.GET("all", studyPeriodController.FetchStudyPeriod)
+		}
 		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
-		main.GET("fetch-study-period", studyPeriodController.FetchStudyPeriod)
 
 		//adds scheme of work
 		schemeOfWork := main.Group("/scheme-of-work")
