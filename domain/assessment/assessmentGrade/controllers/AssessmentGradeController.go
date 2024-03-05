@@ -25,6 +25,11 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	var level levelModels.Level
 	if err := config.DB.First(&level, "number = ?", payload.LevelNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No level found with the specified number"})
