@@ -185,6 +185,7 @@ func main() {
 		&authModels.Role{},
 		&authModels.RolePermission{},
 		&authModels.UserRole{},
+		&assessmentScaleModels.GradingStandard{},
 		&assessmentScaleModels.AggregateScale{},
 		&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
