@@ -472,6 +472,14 @@ func SetupRoute() *gin.Engine {
 
 			assessment.POST("examination-types", assessmentController.CreateExaminationType)
 			assessment.GET("examination-types", assessmentController.FetchExaminationTypes)
+
+			assessmentGrade := main.Group("/aggregate-grades")
+			{
+				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
+				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
+				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
+				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
+			}
 		}
 
 		attendance := main.Group("/attendances")
@@ -480,13 +488,6 @@ func SetupRoute() *gin.Engine {
 			attendance.GET("class", assessmentController.FetchAttendanceByClass)
 			attendance.GET("student", assessmentController.FetchStudentAttendance)
 
-			assessmentGrade := main.Group("/aggregate-grade")
-			{
-				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
-				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
-				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
-				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
-			}
 		}
 
 		settings := main.Group("settings/permissions")
