@@ -480,6 +480,13 @@ func SetupRoute() *gin.Engine {
 				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
 				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
 			}
+
+			aggregateScale := main.Group("/aggregate-scales")
+			{
+				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
+				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+			}
+
 		}
 
 		attendance := main.Group("/attendances")
