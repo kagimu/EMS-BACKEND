@@ -473,18 +473,18 @@ func SetupRoute() *gin.Engine {
 			assessment.POST("examination-types", assessmentController.CreateExaminationType)
 			assessment.GET("examination-types", assessmentController.FetchExaminationTypes)
 
-			assessmentGrade := main.Group("/aggregate-grades")
+			aggregateScale := assessment.Group("/aggregate-scales")
+			{
+				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
+				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+			}
+
+			assessmentGrade := assessment.Group("/aggregate-grades")
 			{
 				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
 				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
 				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
 				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
-			}
-
-			aggregateScale := main.Group("/aggregate-scales")
-			{
-				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
-				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
 			}
 
 		}
