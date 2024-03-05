@@ -38,7 +38,7 @@ func CreateGradingStandard(ctx *gin.Context) {
 	ctx.JSON(201, gin.H{"message": "Grading standard created successfully", "data": gradingStandard})
 }
 
-func GetGradingStandards(ctx *gin.Context) {
+func FetchGradingStandards(ctx *gin.Context) {
 	var gradingStandards []models.GradingStandard
 	if err := config.DB.Find(&gradingStandards).Error; err != nil {
 		ctx.JSON(400, gin.H{"message": "Failed to get grading standards"})

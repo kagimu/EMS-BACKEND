@@ -512,8 +512,8 @@ func SetupRoute() *gin.Engine {
 
 		gradingStandard := main.Group("grading-standard")
 		{
-			gradingStandard.GET("", aggregateScaleController.FetchAggregateScales)
-			gradingStandard.POST("", aggregateScaleController.CreateAggregateScale)
+			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
+			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
 		}
 
 	}
