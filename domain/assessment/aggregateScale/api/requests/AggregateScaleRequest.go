@@ -3,16 +3,16 @@ package requests
 import "errors"
 
 type AggregateScaleRequest struct {
-	MinValue          int    `json:"min_value"`
-	MaxValue          int    `json:"max_value"`
-	LevelNumber       string `json:"level_number"`
-	Scale             string `json:"scale"`
-	Description       string `json:"description"`
-	StudyPeriodNumber string `json:"study_period_number"`
-	ClassNumber       string `json:"class_number"`
-	CampusNumber      string `json:"campus_number"`
-	SchoolNumber      string `json:"school_number"`
-	Name              string `json:"name"`
+	MinValue              int    `json:"min_value"`
+	MaxValue              int    `json:"max_value"`
+	Scale                 string `json:"scale"`
+	Description           string `json:"description"`
+	StudyPeriodNumber     string `json:"study_period_number"`
+	ClassNumber           string `json:"class_number"`
+	CampusNumber          string `json:"campus_number"`
+	SchoolNumber          string `json:"school_number"`
+	Name                  string `json:"name"`
+	GradingStandardNumber string `json:"grading_standard_number"`
 }
 
 func (a *AggregateScaleRequest) Validate() error {
@@ -33,6 +33,17 @@ func (a *AggregateScaleRequest) Validate() error {
 	}
 	if a.CampusNumber == "" {
 		return errors.New("campus number is required")
+	}
+	if a.Scale == "" {
+		return errors.New("scale is required")
+	}
+	if a.SchoolNumber == "" {
+		return errors.New("school number is required")
+	}
+
+	if a.GradingStandardNumber == "" {
+		return errors.New("grading standard number is required")
+
 	}
 
 	return nil

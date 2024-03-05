@@ -9,6 +9,7 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	aggregateScaleController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/controllers"
 	assessmentGradeController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/controllers"
 	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
@@ -507,6 +508,12 @@ func SetupRoute() *gin.Engine {
 			users.GET("", authController.FetchUsers)
 			users.GET(":user_number", authController.FetchUser)
 			users.POST("", authController.CreateUser)
+		}
+
+		gradingStandard := main.Group("grading-standard")
+		{
+			gradingStandard.GET("", aggregateScaleController.FetchAggregateScales)
+			gradingStandard.POST("", aggregateScaleController.CreateAggregateScale)
 		}
 
 	}

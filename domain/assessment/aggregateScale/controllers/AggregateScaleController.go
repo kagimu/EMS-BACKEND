@@ -39,7 +39,6 @@ func CreateAggregateScale(c *gin.Context) {
 		MinValue:          payload.MinValue,
 		MaxValue:          payload.MaxValue,
 		Description:       payload.Description,
-		LevelNumber:       payload.LevelNumber,
 		SchoolNumber:      payload.SchoolNumber,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
 		ClassNumber:       payload.ClassNumber,
