@@ -25,9 +25,6 @@ func (a *AggregateScaleRequest) Validate() error {
 	if a.MaxValue < 0 {
 		return errors.New("maximum value must be greater than 0")
 	}
-	if a.StudyPeriodNumber == "" {
-		return errors.New("study period number is required")
-	}
 	if a.ClassNumber == "" {
 		return errors.New("class number is required")
 	}
@@ -40,7 +37,6 @@ func (a *AggregateScaleRequest) Validate() error {
 	if a.SchoolNumber == "" {
 		return errors.New("school number is required")
 	}
-
 	if a.GradingStandardNumber == "" {
 		return errors.New("grading standard number is required")
 
