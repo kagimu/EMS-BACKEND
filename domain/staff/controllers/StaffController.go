@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -31,10 +32,22 @@ func CreateStaff(c *gin.Context) {
 		return
 	}
 
+	generateStaffNumber := models.StaffNumber{}
+
+	tx := config.DB.Begin()
+
+	if err := tx.Create(&generateStaffNumber).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": " Failed to generate staff number"})
+		return
+	}
+
+	staffNumber := fmt.Sprintf("STN%03d", generateStaffNumber.ID)
+
 	saveStaff := models.Staff{
 		Number:                     uuid.NewV4().String(),
 		Surname:                    payload.Surname,
-		StaffNumber:                payload.StaffNumber,
+		StaffNumber:                staffNumber,
 		Firstname:                  payload.FirstName,
 		OtherName:                  payload.OtherName,
 		Gender:                     payload.Gender,
@@ -48,10 +61,13 @@ func CreateStaff(c *gin.Context) {
 		UserNumber:                 user.Number,
 	}
 
-	if err := config.DB.Create(&saveStaff).Error; err != nil {
+	if err := tx.Create(&saveStaff).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save staff member"})
 		return
 	}
+
+	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Staff member created successfully"})
 }
