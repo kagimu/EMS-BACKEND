@@ -107,10 +107,19 @@ func PermissionGroups() []PermissionGroup {
 	return []PermissionGroup{
 		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete"}},
 		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete"}},
-		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum", "delete_curriculum"}},
+		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum",
+			"delete_curriculum", "import_curriculum", "view_subject-cluster", "view_subject", "view_strands", "view_topic", "view_sub-topic", "view_concept"}},
+		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
+		{"SCHOOL": []string{"view_school", "add_school", "edit_school", "delete_school"}},
+		{"TIMETABLE": []string{"add_timetable", "view_timetable-details"}},
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
-		{"SUBJECTS": []string{"create_subject", "view_subjects", "update_subjects"}},
-		{"LEARNING AREAS": []string{"create", "view", "update", "delete"}},
+		{"CALENDAR": []string{"view_calendar", "view_calendar-details"}},
+		{"INTERVIEWS": []string{"view_interview-details"}},
+		{"PRODUCTS & SERVICES": []string{"view_services", "view_products"}},
+		{"USER ACCOUNTS": []string{"view_account-management", "view_user-management"}},
+		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype"}},
+		{"LEARNING AREAS": []string{"create_learning_area", "view_learning_area", "update_learning_area"}},
+		{"SETTINGS": []string{"create_learning_area", "view_learning_area", "update_learning_area"}},
 	}
 
 }

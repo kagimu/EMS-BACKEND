@@ -25,6 +25,11 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	var level levelModels.Level
 	if err := config.DB.First(&level, "number = ?", payload.LevelNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No level found with the specified number"})
@@ -32,15 +37,17 @@ func CreateAssessmentGrade(c *gin.Context) {
 	}
 
 	saveAssessmentGrade := models.AssessmentGrade{
-		Number:         uuid.NewV4().String(),
-		Grade:          payload.Grade,
-		Description:    payload.Description,
-		AggregateRange: payload.AggregateRange,
-		Abbreviation:   payload.Abbreviation,
-		Condition:      payload.Condition,
-		Remarks:        payload.Remarks,
-		LevelNumber:    payload.LevelNumber,
-		UserNumber:     user.Number,
+		Number:        uuid.NewV4().String(),
+		Grade:         payload.Grade,
+		Name:          payload.Name,
+		Description:   payload.Description,
+		MinimumPoints: payload.MinimumPoints,
+		MaximumPoints: payload.MaximumPoints,
+		Abbreviation:  payload.Abbreviation,
+		Condition:     payload.Condition,
+		Remarks:       payload.Remarks,
+		LevelNumber:   payload.LevelNumber,
+		UserNumber:    user.Number,
 	}
 
 	if err := config.DB.Create(&saveAssessmentGrade).Error; err != nil {
@@ -88,12 +95,14 @@ func EditAssessmentGrade(c *gin.Context) {
 	}
 
 	updateAssessmentGrade := models.AssessmentGrade{
-		Grade:          payload.Grade,
-		Description:    payload.Description,
-		AggregateRange: payload.AggregateRange,
-		Abbreviation:   payload.Abbreviation,
-		Condition:      payload.Condition,
-		Remarks:        payload.Remarks,
+		Grade:         payload.Grade,
+		Description:   payload.Description,
+		Name:          payload.Name,
+		MaximumPoints: payload.MaximumPoints,
+		MinimumPoints: payload.MinimumPoints,
+		Abbreviation:  payload.Abbreviation,
+		Condition:     payload.Condition,
+		Remarks:       payload.Remarks,
 	}
 
 	if err := config.DB.Model(&assessmentGrade).Where("number  = ?", assessmentGradeNumber).Updates(updateAssessmentGrade).Error; err != nil {

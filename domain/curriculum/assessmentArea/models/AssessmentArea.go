@@ -18,13 +18,11 @@ type AssessmentArea struct {
 	Subject       subjectModel.Subject `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
-//
-
-func (as *AssessmentArea) AfterFind(tx *gorm.DB) {
+func (as *AssessmentArea) AfterFind(tx *gorm.DB) error {
 	if as.SubjectNumber != "" {
 		var subject subjectModel.Subject
 		tx.Model(&as).Where("number = ?", as.SubjectNumber).First(&subject)
 		as.Name = subject.Name
 	}
-
+	return nil
 }

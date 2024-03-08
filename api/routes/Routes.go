@@ -9,6 +9,7 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	aggregateScaleController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/controllers"
 	assessmentGradeController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/controllers"
 	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
@@ -471,6 +472,21 @@ func SetupRoute() *gin.Engine {
 
 			assessment.POST("examination-types", assessmentController.CreateExaminationType)
 			assessment.GET("examination-types", assessmentController.FetchExaminationTypes)
+
+			aggregateScale := assessment.Group("/aggregate-scales")
+			{
+				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
+				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+			}
+
+			assessmentGrade := assessment.Group("/aggregate-grades")
+			{
+				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
+				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
+				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
+				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
+			}
+
 		}
 
 		attendance := main.Group("/attendances")
@@ -479,13 +495,6 @@ func SetupRoute() *gin.Engine {
 			attendance.GET("class", assessmentController.FetchAttendanceByClass)
 			attendance.GET("student", assessmentController.FetchStudentAttendance)
 
-			assessmentGrade := main.Group("/aggregate-grade")
-			{
-				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
-				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
-				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
-				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
-			}
 		}
 
 		settings := main.Group("settings/permissions")
@@ -499,7 +508,7 @@ func SetupRoute() *gin.Engine {
 			roles.GET("", authController.FetchRoles)
 			roles.GET(":role_number", authController.FetchRoleDetails)
 			roles.PUT("assign", authController.AssignRolesToAUser)
-			roles.PUT("remove", authController.RemoveRoleAssignment)
+			roles.DELETE("remove", authController.RemoveRoleAssignment)
 		}
 
 		users := main.Group("users")
@@ -507,6 +516,12 @@ func SetupRoute() *gin.Engine {
 			users.GET("", authController.FetchUsers)
 			users.GET(":user_number", authController.FetchUser)
 			users.POST("", authController.CreateUser)
+		}
+
+		gradingStandard := main.Group("grading-standard")
+		{
+			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
+			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
 		}
 
 	}
