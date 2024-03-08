@@ -675,7 +675,7 @@ func levelInfoFilter(level string) func(db *gorm.DB) *gorm.DB {
 func FetchClassLevel(context *gin.Context) {
 
 	campusCurriculumNumber := context.Query("campus_curriculum_number")
-	//campusLevelNumber := context.Query("campus_level_number")
+	campusLevelNumber := context.Query("campus_level_number")
 
 	if campusCurriculumNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
@@ -685,6 +685,7 @@ func FetchClassLevel(context *gin.Context) {
 	var campusLevel []levelModels.CampusLevel
 	var campusLevel_ []responses3.CampusLevelDataList
 	if err := config.DB.
+		Scopes(levelClassFilter(campusLevelNumber)).
 		Where("campus_curriculum_number = ?", campusCurriculumNumber).
 		Preload("CurriculumLevel.Level").
 		Preload("CurriculumLevel").
@@ -745,7 +746,7 @@ func FetchClassLevel(context *gin.Context) {
 func levelClassFilter(levelNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if levelNumber != "" {
-			return db.Where("campus_level_number = ?", levelNumber)
+			return db.Where("number = ?", levelNumber)
 		}
 		return db
 	}
