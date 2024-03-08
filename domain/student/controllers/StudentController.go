@@ -114,6 +114,7 @@ func CreateStudent(c *gin.Context) {
 		PreferedCampusNumber:      payload.PreferredCampusNumber,
 		UserNumber:                userNumber,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
+		ApplicationNumber:         applicationNumber,
 		ClassNumber:               payload.ClassNumber,
 	}
 	tx := config.DB.Begin()
