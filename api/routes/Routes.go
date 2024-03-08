@@ -332,10 +332,10 @@ func SetupRoutes() *gin.Engine {
 
 			// students
 			application.POST("/new-student", studentController.CreateStudent)
-			application.GET("/students/:apn", studentController.FetchStudentByAPN)
+			application.GET("/students/:student_number", studentController.FetchStudentByNumber)
 			application.GET("/students", studentController.FetchAllStudents)
-			application.PUT("/students/:apn", studentController.EditStudent)
-			application.POST("/students/:id", studentController.DeleteStudent)
+			application.PUT("/students/:student_number", studentController.EditStudent)
+			application.DELETE("/students/:student_number", studentController.DeleteStudent)
 
 			// previous schools
 			application.POST(":application_number/previous-schools", previousSchoolController.CreatePreviousSchools)
