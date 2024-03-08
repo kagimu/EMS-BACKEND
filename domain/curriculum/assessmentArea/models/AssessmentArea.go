@@ -24,5 +24,6 @@ func (as *AssessmentArea) AfterFind(tx *gorm.DB) error {
 		tx.Model(&as).Where("number = ?", as.SubjectNumber).First(&subject)
 		as.Name = subject.Name
 	}
+
 	return nil
 }

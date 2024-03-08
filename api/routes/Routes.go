@@ -33,6 +33,7 @@ import (
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
+	reportCardController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportCards/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
@@ -515,10 +516,10 @@ func SetupRoutes() *gin.Engine {
 			users.POST("", authController.CreateUser)
 		}
 
-		gradingStandard := main.Group("grading-standard")
+		reportCards := main.Group("report-cards")
 		{
-			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
-			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
+			reportCards.POST("", reportCardController.CreateReportCard)
+			reportCards.GET("", reportCardController.FetchAllPromotions)
 		}
 
 		enrollment := main.Group("enrollment")
