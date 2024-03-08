@@ -55,7 +55,6 @@ func CreateAggregateScale(c *gin.Context) {
 }
 
 func FetchAggregateScales(c *gin.Context) {
-
 	campusNumber := c.Query("campus_number")
 	if campusNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus number is required"})
@@ -64,6 +63,29 @@ func FetchAggregateScales(c *gin.Context) {
 
 	var aggregateScales []models.AggregateScale
 	if err := config.DB.Where("campus_number = ?", campusNumber).Find(&aggregateScales).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": aggregateScales})
+}
+
+func FetchAggregateScaleBySchool(c *gin.Context) {
+
+	campusNumber := c.Query("campus_number")
+	if campusNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus number is required"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+	if schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "School number is required"})
+		return
+	}
+
+	var aggregateScales []models.AggregateScale
+	if err := config.DB.Where("campus_number = ? AND school_number", campusNumber, schoolNumber).Find(&aggregateScales).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
 		return
 	}

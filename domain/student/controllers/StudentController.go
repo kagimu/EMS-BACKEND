@@ -18,9 +18,7 @@ import (
 func CreateStudent(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "User not found in header",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
 		return
 	}
 
@@ -48,22 +46,64 @@ func CreateStudent(c *gin.Context) {
 
 	studentAPN, err := CreateAPN()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to create APN"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create APN"})
 		return
 	}
 
 	studentNumber := uuid.NewV4().String()
 	userNumber := user.Number
 
-	savedStudent := models.Student{
+	// find Student by application number
+
+	var student models.Student
+	if err := config.DB.Where("application_number = ?", applicationNumber).First(&student).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to find student"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to find student"})
+		return
+	}
+
+	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
+	if student.Number != "" {
+		// update student details
+		updateStudent := models.Student{
+			Surname:                   payload.Surname,
+			OtherName:                 payload.OtherName,
+			Gender:                    payload.Gender,
+			DateOfBirth:               payload.DateOfBirth,
+			ADNStatus:                 payload.ADNStatus,
+			ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
+			PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+			SecondName:                payload.SecondName,
+			PreferedCampusNumber:      payload.PreferredCampusNumber,
+			UserNumber:                userNumber,
+			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
+			ApplicationNumber:         applicationNumber,
+			ClassNumber:               payload.ClassNumber,
+		}
+
+		if err := config.DB.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "failed to update student",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "updated student details successfully"})
+		return
+	}
+
+	savStudent := models.Student{
 		Number:                    studentNumber,
 		APN:                       studentAPN,
 		Surname:                   payload.Surname,
 		OtherName:                 payload.OtherName,
 		Gender:                    payload.Gender,
 		DateOfBirth:               payload.DateOfBirth,
-		ADNStatus: payload.ADNStatus,
+		ADNStatus:                 payload.ADNStatus,
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
@@ -75,31 +115,11 @@ func CreateStudent(c *gin.Context) {
 	}
 	tx := config.DB.Begin()
 
-	if err := tx.Create(&savedStudent).Error; err != nil {
+	if err := tx.Create(&savStudent).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + " Failed to save student"})
 		return
 	}
-	/*
-		// Create an invoice here
-		invoiceNumber, err := invoiceController.InvoiceNumberGenerator()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number"})
-			return
-		}
-
-		saveInvoice := invoiceModel.Invoice{
-			Number:        uuid.NewV4().String(),
-			StudentNumber: savedStudent.Number,
-			InvoiceNumber: invoiceNumber,
-			Description:   "Registration fee",
-			UserNumber:    user.Number,
-		}
-
-		if err := config.DB.Create(&saveInvoice).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error() + " Failed to create invoice"})
-			return
-		}*/
 
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
@@ -108,15 +128,13 @@ func CreateStudent(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "student created successfully",
-		"data":    savedStudent,
+		"data":    savStudent,
 	})
 }
 
 func EditStudent(c *gin.Context) {
 	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "User not found",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
 		return
 	}
 
@@ -131,12 +149,9 @@ func EditStudent(c *gin.Context) {
 	payload.Prepare()
 
 	var student models.Student
-	studentAPN := c.Param("apn")
-	if err := config.DB.First(&student, "apn = ?", studentAPN).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "No student found with the specified APN",
-		})
+	studentNumber := c.Param("student_number")
+	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No student found with the specified number"})
 		return
 	}
 
@@ -151,11 +166,8 @@ func EditStudent(c *gin.Context) {
 		ClassNumber:               payload.ClassNumber,
 	}
 
-	if err := config.DB.Model(&student).Where("apn = ?", studentAPN).Updates(savedStudent).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "failed to update student",
-		})
+	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
 		return
 	}
 
@@ -163,58 +175,47 @@ func EditStudent(c *gin.Context) {
 }
 
 func DeleteStudent(c *gin.Context) {
-	studentAPN := c.Param("id")
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	studentNumber := c.Param("student_number")
 	student := models.Student{}
 
-	err := config.DB.First(&student, studentAPN).Error
+	err := config.DB.First(&student, studentNumber).Error
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "no student found",
-		})
+		c.JSON(http.StatusNotFound, gin.H{"message": "no student found"})
 		return
 	}
 
 	if err := config.DB.Delete(&student).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "failed to delete student",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to delete student"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "student deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "student deleted successfully"})
 }
 
-func FetchStudentByAPN(c *gin.Context) {
-	if user, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"debug":   user,
-			"message": "User not found"})
+func FetchStudentByNumber(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
 		return
 	}
 
 	var student models.Student
-	studentAPN := c.Param("apn")
+	studentNumber := c.Param("student_number")
 
-	if studentAPN == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Student API is missing",
-		})
+	if studentNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student number is missing"})
 		return
 	}
 
-	if err := config.DB.First(&student, "apn = ?", studentAPN).Error; err != nil {
+	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  http.StatusNotFound,
-				"message": "no student found",
-			})
+			c.JSON(http.StatusNotFound, gin.H{"message": "no student found"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  http.StatusInternalServerError,
-				"message": "internal server error",
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 		}
 		return
 	}
