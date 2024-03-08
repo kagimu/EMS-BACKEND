@@ -3,9 +3,6 @@ package routes
 import (
 	"time"
 
-	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/controllers"
-	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/controllers"
-
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
@@ -24,10 +21,13 @@ import (
 	subjectClusterController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/controllers"
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
+	enrollmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
 	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
 	invoicePaymentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/controllers"
+	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/controllers"
+	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
@@ -38,6 +38,7 @@ import (
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
+	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentDetailsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
@@ -48,7 +49,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoute() *gin.Engine {
+func SetupRoutes() *gin.Engine {
 	router := gin.Default()
 
 	//setting cors in the system
@@ -65,7 +66,6 @@ func SetupRoute() *gin.Engine {
 		MaxAge: 12 * time.Hour,
 	}))
 
-	//this is to validate user toke before accessing any route
 	//router.Use(middlewares.JWTMiddleware())
 	router.MaxMultipartMemory = 20 << 20 // 20 MiB
 	//router.Static("/", "./fileRepo")
@@ -81,10 +81,8 @@ func SetupRoute() *gin.Engine {
 
 	main := router.Group("/main", middleware.AuthorizeJWT())
 	{
-		//main.GET("profile/:id", middlewares.JWTMiddleware(), controllers.Profile)
 		main.GET("profile", authController.Profile)
 
-		//manage curriculum
 		curriculum := main.Group("/curriculum")
 		{
 			curriculum.GET("/info", curriculumController.CurriculumInfo)
@@ -407,6 +405,7 @@ func SetupRoute() *gin.Engine {
 			invoices.POST("", invoiceController.CreateInvoice)
 			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
 		}
+
 		invoicePayments := main.Group("/invoice-payments")
 		{
 			invoicePayments.POST("", invoicePaymentController.CreateInvoicePayment)
@@ -440,16 +439,13 @@ func SetupRoute() *gin.Engine {
 				offer.GET("", admissionController.FetchAdmissionOffers)
 				offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
 				offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
-
 			}
 
 			conditions := admission.Group("/admission-offer-conditions")
 			{
 				conditions.POST("", admissionController.CreateAdmissionOfferCondition)
 				conditions.GET("", admissionController.FetchAdmissionOfferConditions)
-
 			}
-
 		}
 
 		assessmentArea := main.Group("/assessment-areas")
@@ -477,6 +473,7 @@ func SetupRoute() *gin.Engine {
 			{
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
 				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScaleBySchool)
 			}
 
 			assessmentGrade := assessment.Group("/aggregate-grades")
@@ -524,6 +521,50 @@ func SetupRoute() *gin.Engine {
 			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
 		}
 
+		enrollment := main.Group("enrollment")
+		{
+			enrollment.POST("", enrollmentController.CreateEnrollment)
+			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
+			enrollment.GET("campus", enrollmentController.EnrolledStudentsByCampus)
+		}
+
+		staff := main.Group("staff-management")
+		{
+			staff.POST("", staffController.CreateStaff)
+			staff.GET("", staffController.FetchStaff)
+			staff.GET("", staffController.FetchMemberByStaffNumber)
+			staff.PUT("", staffController.EditStaff)
+			staff.DELETE("", staffController.DeleteStaff)
+
+			salaryScale := staff.Group("salary-scale")
+			{
+				salaryScale.POST("", staffController.CreateSalaryScale)
+				salaryScale.GET("", staffController.FetchSalaryScales)
+				salaryScale.PUT("", staffController.EditSalaryScale)
+			}
+
+			tasks := staff.Group("tasks")
+			{
+				tasks.POST("", staffController.CreateTask)
+				tasks.PUT("", staffController.EditTask)
+				tasks.DELETE("", staffController.DeleteTask)
+				tasks.GET("", staffController.FetchTasks)
+			}
+
+			taskSupervisions := staff.Group("task-supervisions")
+			{
+				taskSupervisions.POST("", staffController.CreateTaskSupervision)
+				taskSupervisions.GET("", staffController.FetchTaskSUpervisions)
+			}
+
+			joTitles := staff.Group("job-titles")
+			{
+				joTitles.POST("", staffController.CreateJobTitle)
+				joTitles.GET("", staffController.FetchJobTitles)
+				joTitles.PUT("", staffController.EditJobTitle)
+			}
+
+		}
 	}
 
 	return router

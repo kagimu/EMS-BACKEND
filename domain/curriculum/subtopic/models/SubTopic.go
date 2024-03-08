@@ -4,11 +4,12 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
-	"time"
+	"gorm.io/gorm"
 )
 
 type (
 	SubTopic struct {
+		gorm.Model
 		ID               uint                       `gorm:"primaryKey"`
 		Number           string                     `json:"number" gorm:"size:36;unique;not null"`
 		Name             string                     `json:"name" form:"name" binding:"required" gorm:"type:longtext;not null"`
@@ -17,9 +18,6 @@ type (
 		UserNumber       string                     `json:"user_number" gorm:"size:36;not null"`
 		EstimatedTime    int64                      `json:"estimated_time"`
 		TopicNumber      string                     `json:"topic_number" gorm:"size:36;not null"`
-		CreatedAt        time.Time                  `json:"created_at"`
-		UpdatedAt        time.Time                  `json:"updated_at"`
-		DeletedAt        *time.Time                 `sql:"index"`
 		Curriculum       curriculumModel.Curriculum `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Topic            topicModels.Topic          `gorm:"foreignKey:TopicNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User             models.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

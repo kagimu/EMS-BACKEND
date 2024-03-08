@@ -1,0 +1,154 @@
+package migrations
+
+import (
+	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
+	serviceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
+	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
+	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
+	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
+	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
+	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
+	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
+	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
+	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
+	invoicePaymentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
+	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
+	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
+	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
+	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
+	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
+	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
+	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
+	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
+	staffModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
+	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
+	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
+	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
+	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+)
+
+func Init() error {
+	err := config.DB.AutoMigrate(
+		&authModels.User{},
+		&eosModels.Entity{},
+		&authModels.Contact{},
+		&authModels.PasswordReset{},
+		&authModels.UserPassword{},
+		&schoolModels.School{},
+		&schoolModels.SchoolCurriculum{},
+		&curriculumModel.Curriculum{},
+		&models.Campus{},
+		&models.CampusCurriculum{},
+		&LevelModels.CampusLevel{},
+		&LevelModels.Level{},
+		&LevelModels.CurriculumLevel{},
+		&classModel.Class{},
+		&learningAreaModels.LearningArea{},
+		&classModel.ClassLevelSubject{},
+		&subjectClusterModels.SubjectCluster{},
+		&subjectModels.Subject{},
+		&strandModels.Strand{},
+		&topicModels.Topic{},
+		&subTopicModels.SubTopic{},
+		&conceptModels.Concept{},
+		&classModel.CampusClass{},
+		&curriculumModel.ImportCurriculum{},
+		&classModel.Stream{},
+		&academicYearModel.AcademicYear{},
+		&studyPeriodModel.StudyPeriod{},
+		&curriculumModel.ImportCurriculum{},
+		&classModel.Stream{},
+		&timetableModels.StudyTimetable{},
+		&timetableModels.StudyTimetablePeriods{},
+		&timetableModels.TimetableSlots{},
+		&eosModels.GeneralCalendar{},
+		&eosModels.CalendarEvent{},
+		&academicYearModel.AcademicYear{},
+		&schemeOfWorkmodel.SchemeOfWork{},
+		&schemeOfWorkmodel.SchemeOfWorkSubTopic{},
+		&lessonPlanModel.LessonPlan{},
+		&lessonPlanModel.LessonPlanConcepts{},
+		&lessonPlanModel.LessonPlanStep{},
+		&studentDetailsModels.StudentDetail{},
+		&classModel.CurriculumClass{},
+		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},
+		&applicationModel.Application{},
+		&parentModels.Parent{},
+		&studentModels.Student{},
+		&previousSchoolModels.PreviousSchool{},
+		&previousSchoolModels.PreviousSchoolClass{},
+		&studentModels.APN{},
+		&studentModels.ADN{},
+		&preInterviewModels.PreAdmissionInterviewTest{},
+		&gradeModel.Grade{},
+		&admissionModel.Admission{},
+		&admissionModel.AdmissionOfferCondition{},
+		&admissionModel.AdmissionOffer{},
+		&previousSchoolModels.PreviousSchoolClass{},
+		&materialModels.CurriculumSubtopicReference{},
+		&schemeOfWorkmodel.SchemeOfWorkImport{},
+		&paymentModels.Payment{},
+		&preInterviewModels.PreAdmissionInterviewTestReport{},
+		&interviewModel.Interview{},
+		&materialModels.MaterialSubType{},
+		&lessonPlanModel.LessonPlanReference{},
+		&interviewModel.InterviewQuestion{},
+		&interviewModel.Answer{},
+		&interviewModel.InterviewResult{},
+		&interviewModel.InterviewStudent{},
+		&itemModels.Item{},
+		&productModels.Product{},
+		&serviceModel.Service{},
+		&invoiceModel.Invoice{},
+		&invoiceModel.InvoiceItem{},
+		&serviceModel.SerialCode{},
+		&serviceModel.CampusServices{},
+		&serviceModel.Discount{},
+		&invoicePaymentModel.InvoicePayment{},
+		&invoiceModel.InvoiceNumber{},
+		&assessmentAreaModel.AssessmentArea{},
+		&assessmentModel.Assessment{},
+		&assessmentModel.AssessmentMetric{},
+		&assessmentModel.AssessmentSubMetric{},
+		&assessmentModel.Attendance{},
+		&assessmentModel.ExaminationType{},
+		&authModels.Role{},
+		&authModels.RolePermission{},
+		&authModels.UserRole{},
+		&assessmentScaleModels.GradingStandard{},
+		&assessmentScaleModels.AggregateScale{},
+		&assessmentScaleModels.AlternativeAggregateScale{},
+		&assessmentGradeModels.AssessmentGrade{},
+		&staffModel.JobTitle{},
+		&staffModel.SalaryScale{},
+		&staffModel.Staff{},
+		&staffModel.Task{},
+		&staffModel.TaskSupervision{},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
