@@ -1,16 +1,20 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type AssessmentMetricRequest struct {
-	Name                 string `json:"name"`
-	Weight               uint8  `json:"weight"`
-	DescriptiveScore     string `json:"descriptive_score"`
-	PercentageScore      uint8  `json:"percentage_score"`
-	MaxScore             uint8  `json:"max_score"`
-	ActualScore          uint8  `json:"actual_score"`
-	Description          string `json:"description"`
-	AssessmentAreaNumber string `json:"assessment_area_number"`
+	Name                 string    `json:"name"`
+	Weight               uint8     `json:"weight"`
+	DescriptiveScore     string    `json:"descriptive_score"`
+	PercentageScore      uint8     `json:"percentage_score"`
+	MaxScore             uint8     `json:"max_score"`
+	ActualScore          uint8     `json:"actual_score"`
+	ScheduledOn          time.Time `json:"scheduled_on"`
+	Description          string    `json:"description"`
+	AssessmentAreaNumber string    `json:"assessment_area_number"`
 }
 
 func (a *AssessmentMetricRequest) Validate() error {

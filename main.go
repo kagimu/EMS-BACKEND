@@ -2,60 +2,19 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
-
-	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
-	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 
 	"log"
 	"os"
 
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
-	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	"github.com/joho/godotenv"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
-	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
-	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
-	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
-	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
-	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
-	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
-	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
-	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
-	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
-	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
-	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
-	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
-	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
-	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
-	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
-	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
-	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
-	invoicePaymentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
-	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
-	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
-	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
-	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
-	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
-	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
-	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
-	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
-	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
-	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
-	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
-	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
-	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
-	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
-	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/logger"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -79,22 +38,18 @@ func main() {
 		return
 	}
 
-	//config.DB, err = gorm.Open("mysql", config.DbURL(config.BuildDBConfig()))
 	config.DB, err = gorm.Open(mysql.Open(config.DbURL(config.BuildDBConfig())), &gorm.Config{})
 
-	//config.DB, err = gorm.Open(mysql.Open(config.DbURL(config.BuildDBConfig())), &gorm.Config{})
 	if err != nil {
 		fmt.Println("Error connecting to database:", err)
 		return
 	}
 
-	//All auto migrations
-	//defer config.DB.Close()
 	sqlDB, err := config.DB.DB()
 	if err != nil {
 		return
 	}
-	//All auto migrations
+
 	defer func(sqlDB *sql.DB) {
 		err := sqlDB.Close()
 		if err != nil {
@@ -102,111 +57,11 @@ func main() {
 		}
 	}(sqlDB)
 
-	errMigrate := config.DB.AutoMigrate(
-		&authModels.User{},
-		&eosModels.Entity{},
-		&authModels.Contact{},
-		&authModels.PasswordReset{},
-		&authModels.UserPassword{},
-		&schoolModels.School{},
-		&schoolModels.SchoolCurriculum{},
-		&models2.Curriculum{},
-		&models.Campus{},
-		&models.CampusCurriculum{},
-		&LevelModels.CampusLevel{},
-		&LevelModels.Level{},
-		&LevelModels.CurriculumLevel{},
-		&classModel.Class{},
-		&learningAreaModels.LearningArea{},
-		&classModel.ClassLevelSubject{},
-		&subjectClusterModels.SubjectCluster{},
-		&subjectModels.Subject{},
-		&strandModels.Strand{},
-		&topicModels.Topic{},
-		&subTopicModels.SubTopic{},
-		&conceptModels.Concept{},
-		&classModel.CampusClass{},
-		&models2.ImportCurriculum{},
-		&classModel.Stream{},
-		&academicYearModel.AcademicYear{},
-		&studyPeriodModel.StudyPeriod{},
-		&models2.ImportCurriculum{},
-		&classModel.Stream{},
-		&timetableModels.StudyTimetable{},
-		&timetableModels.StudyTimetablePeriods{},
-		&timetableModels.TimetableSlots{},
-		&eosModels.GeneralCalendar{},
-		&eosModels.CalendarEvent{},
-		&academicYearModel.AcademicYear{},
-		&schemeOfWorkmodel.SchemeOfWork{},
-		&schemeOfWorkmodel.SchemeOfWorkSubTopic{},
-		&lessonPlanModel.LessonPlan{},
-		&lessonPlanModel.LessonPlanConcepts{},
-		&lessonPlanModel.LessonPlanStep{},
-		&studentDetailsModels.StudentDetail{},
-		&classModel.CurriculumClass{},
-		&sourceOfSchoolInfoModels.SourceOfSchoolInfo{},
-		&applicationModel.Application{},
-		&parentModels.Parent{},
-		&studentModels.Student{},
-		&previousSchoolModels.PreviousSchool{},
-		&previousSchoolModels.PreviousSchoolClass{},
-		&studentModels.APN{},
-		&studentModels.ADN{},
-		&preInterviewModels.PreAdmissionInterviewTest{},
-		&gradeModel.Grade{},
-		&admissionModel.Admission{},
-		&admissionModel.AdmissionOfferCondition{},
-		&admissionModel.AdmissionOffer{},
-		&previousSchoolModels.PreviousSchoolClass{},
-		&materialModels.CurriculumSubtopicReference{},
-		&schemeOfWorkmodel.SchemeOfWorkImport{},
-		&paymentModels.Payment{},
-		&preInterviewModels.PreAdmissionInterviewTestReport{},
-		&interviewModel.Interview{},
-		&materialModels.MaterialSubType{},
-		&lessonPlanModel.LessonPlanReference{},
-		&interviewModel.InterviewQuestion{},
-		&interviewModel.Answer{},
-		&interviewModel.InterviewResult{},
-		&interviewModel.InterviewStudent{},
-		&itemModels.Item{},
-		&models3.Product{},
-		&models4.Service{},
-		&invoiceModel.Invoice{},
-		&invoiceModel.InvoiceItem{},
-		&models4.SerialCode{},
-		&models4.CampusServices{},
-		&models4.Discount{},
-		&invoicePaymentModel.InvoicePayment{},
-		&invoiceModel.InvoiceNumber{},
-		&assessmentAreaModel.AssessmentArea{},
-		&assessmentModel.Assessment{},
-		&assessmentModel.AssessmentMetric{},
-		&assessmentModel.AssessmentSubMetric{},
-		&assessmentModel.Attendance{},
-		&assessmentModel.ExaminationType{},
-		&authModels.Role{},
-		&authModels.RolePermission{},
-		&authModels.UserRole{},
-		&assessmentScaleModels.GradingStandard{},
-		&assessmentScaleModels.AggregateScale{},
-		&assessmentScaleModels.AlternativeAggregateScale{},
-		&assessmentGradeModels.AssessmentGrade{},
-	)
-
-	if errMigrate != nil {
-		return
+	//All auto migrations
+	if err := migrations.Init(); err != nil {
+		panic(err)
 	}
 
-	// For some users, the presets offered by the NewProduction, NewDevelopment,
-	// and NewExample constructors won't be appropriate. For most of those
-	// users, the bundled Config struct offers the right balance of flexibility
-	// and convenience. (For more complex needs, see the AdvancedConfiguration
-	// example.)
-	//
-	// See the documentation for Config and zapcore.EncoderConfig for all the
-	// available options.
 	rawJSON := []byte(`{
 	  "level": "debug",
 	  "encoding": "json",
@@ -220,25 +75,19 @@ func main() {
 	  }
 	}`)
 
-	var cfg zap.Config
-	if err := json.Unmarshal(rawJSON, &cfg); err != nil {
-		panic(err)
+	logger, err := logger.Init(rawJSON)
+	if err != nil {
+		fmt.Println("Error initializing logger:", err)
+		return
 	}
-	logger := zap.Must(cfg.Build())
-	defer func(logger *zap.Logger) {
-		err := logger.Sync()
-		if err != nil {
-			fmt.Println("Failed to initialize logger")
-		}
-	}(logger)
 
-	logger.Info("logger construction succeeded")
+	logger.Info("Logger construction succeeded")
 
-	router := routes.SetupRoute()
+	router := routes.SetupRoutes()
 	port := os.Getenv("APP_PORT")
-	errPort := router.Run(":" + port)
-	if errPort != nil {
-		fmt.Println("Error starting server:", errPort)
-	}
 
+	server := router.Run(":" + port)
+	if server != nil {
+		fmt.Println("Error starting server:", server)
+	}
 }
