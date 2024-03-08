@@ -531,7 +531,7 @@ func SetupRoutes() *gin.Engine {
 		staff := main.Group("staff-management")
 		{
 			staff.POST("", staffController.CreateStaff)
-			staff.GET("", staffController.FetchStaff)
+			staff.GET("all", staffController.FetchStaff)
 			staff.GET("", staffController.FetchMemberByStaffNumber)
 			staff.PUT("", staffController.EditStaff)
 			staff.DELETE("", staffController.DeleteStaff)

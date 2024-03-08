@@ -141,9 +141,9 @@ func Init() error {
 		&assessmentGradeModels.AssessmentGrade{},
 		&staffModel.JobTitle{},
 		&staffModel.SalaryScale{},
-		&staffModel.Staff{},
 		&staffModel.Task{},
 		&staffModel.TaskSupervision{},
+		&staffModel.Staff{},
 	)
 
 	if err != nil {
