@@ -75,13 +75,13 @@ func main() {
 	  }
 	}`)
 
-	logger, err := logger.Init(rawJSON)
+	loger, err := logger.Init(rawJSON)
 	if err != nil {
 		fmt.Println("Error initializing logger:", err)
 		return
 	}
 
-	logger.Info("Logger construction succeeded")
+	loger.Info("Logger construction succeeded")
 
 	router := routes.SetupRoutes()
 	port := os.Getenv("APP_PORT")
