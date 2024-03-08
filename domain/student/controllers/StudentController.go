@@ -56,50 +56,73 @@ func CreateStudent(c *gin.Context) {
 	studentNumber := uuid.NewV4().String()
 	userNumber := user.Number
 
-	savedStudent := models.Student{
+	// find Student by application number
+
+	var student models.Student
+	if err := config.DB.Where("application_number = ?", applicationNumber).First(&student).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "failed to find student",
+			})
+			return
+		}
+
+	}
+
+	if student.Number != "" {
+		// update student details
+		updateStudent := models.Student{
+			Surname:                   payload.Surname,
+			OtherName:                 payload.OtherName,
+			Gender:                    payload.Gender,
+			DateOfBirth:               payload.DateOfBirth,
+			ADNStatus:                 payload.ADNStatus,
+			ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
+			PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+			SecondName:                payload.SecondName,
+			PreferedCampusNumber:      payload.PreferredCampusNumber,
+			UserNumber:                userNumber,
+			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
+			ApplicationNumber:         applicationNumber,
+			ClassNumber:               payload.ClassNumber,
+		}
+
+		if err := config.DB.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "failed to update student",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "updated student details successfully"})
+		return
+	}
+
+	savStudent := models.Student{
 		Number:                    studentNumber,
 		APN:                       studentAPN,
 		Surname:                   payload.Surname,
 		OtherName:                 payload.OtherName,
 		Gender:                    payload.Gender,
 		DateOfBirth:               payload.DateOfBirth,
-		ADNStatus: payload.ADNStatus,
+		ADNStatus:                 payload.ADNStatus,
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
 		PreferedCampusNumber:      payload.PreferredCampusNumber,
 		UserNumber:                userNumber,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
-		ApplicationNumber:         applicationNumber,
 		ClassNumber:               payload.ClassNumber,
 	}
 	tx := config.DB.Begin()
 
-	if err := tx.Create(&savedStudent).Error; err != nil {
+	if err := tx.Create(&savStudent).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + " Failed to save student"})
 		return
 	}
-	/*
-		// Create an invoice here
-		invoiceNumber, err := invoiceController.InvoiceNumberGenerator()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number"})
-			return
-		}
-
-		saveInvoice := invoiceModel.Invoice{
-			Number:        uuid.NewV4().String(),
-			StudentNumber: savedStudent.Number,
-			InvoiceNumber: invoiceNumber,
-			Description:   "Registration fee",
-			UserNumber:    user.Number,
-		}
-
-		if err := config.DB.Create(&saveInvoice).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error() + " Failed to create invoice"})
-			return
-		}*/
 
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
@@ -108,7 +131,7 @@ func CreateStudent(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "student created successfully",
-		"data":    savedStudent,
+		"data":    savStudent,
 	})
 }
 

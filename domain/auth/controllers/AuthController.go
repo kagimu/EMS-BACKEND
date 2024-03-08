@@ -580,9 +580,7 @@ func UserPassword(context *gin.Context) {
 		config.DB.Save(&userPasswordData)
 
 	}
-	/////////////////////////////////////////////////////////////////
 
-	//then we proceed to update the user status
 	updateUserStatus := config.DB.Model(&userData).
 		Where("number = ?", userNumber).
 		Update("status", "Active")
@@ -591,9 +589,6 @@ func UserPassword(context *gin.Context) {
 		return
 	}
 
-	//////////////////////////////////////////////////////////////
-
-	//then we update status of the token as well
 	updateTokenStatus := config.DB.Model(&passwordReset).
 		Where("number = ?", passwordReset.Number).
 		Update("status", "Active")
