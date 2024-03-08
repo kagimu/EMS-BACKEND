@@ -21,8 +21,9 @@ type (
 	}
 
 	CurriculumDataList struct {
-		Number string `json:"number"`
-		Name   string `json:"name"`
+		Number                 string `json:"number"`
+		SchoolCurriculumNumber string `json:"school_curriculum_number"`
+		Name                   string `json:"name"`
 	}
 
 	CampusLevelDataList struct {
