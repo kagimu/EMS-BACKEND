@@ -460,11 +460,11 @@ func SetupRoutes() *gin.Engine {
 			assessment.POST("", assessmentController.CreateAssessment)
 			assessment.GET(":student_number", assessmentController.FetchAssessment)
 
-			assessment.POST("metrics", assessmentController.CreateAssessmentMetric)
-			assessment.GET("metrics", assessmentController.FetchAssessmentMetrics)
+			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
+			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
 
-			assessment.POST("sub-metrics", assessmentController.CreateAssessmentSubMetric)
-			assessment.GET("sub-metrics", assessmentController.FetchAssessmentSubMetrics)
+			assessment.POST("assessment-sub-metrics", assessmentController.CreateAssessmentSubMetric)
+			assessment.GET("assessment-sub-metrics", assessmentController.FetchAssessmentSubMetrics)
 
 			assessment.POST("examination-types", assessmentController.CreateExaminationType)
 			assessment.GET("examination-types", assessmentController.FetchExaminationTypes)
