@@ -143,6 +143,7 @@ func Init() error {
 		&staffModel.TaskSupervision{},
 		&staffModel.Staff{},
 		&interviewModel.InterviewAssessmentMetric{},
+		&assessmentModel.Metric{},
 	)
 
 	if err != nil {
