@@ -3,6 +3,7 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"go.uber.org/zap"
 )
@@ -10,7 +11,7 @@ import (
 func Init(rawJSON []byte) (*zap.Logger, error) {
 	var cfg zap.Config
 	if err := json.Unmarshal(rawJSON, &cfg); err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	logger := zap.Must(cfg.Build())

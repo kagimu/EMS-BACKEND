@@ -1,16 +1,10 @@
 package migrations
 
 import (
-	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
-	serviceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
-
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
-	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
-
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
@@ -19,6 +13,7 @@ import (
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	strandModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/models"
 	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
@@ -30,6 +25,8 @@ import (
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	invoicePaymentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
+	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
+	serviceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
@@ -37,6 +34,7 @@ import (
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	staffModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
@@ -144,6 +142,7 @@ func Init() error {
 		&staffModel.Task{},
 		&staffModel.TaskSupervision{},
 		&staffModel.Staff{},
+		&interviewModel.InterviewAssessmentMetric{},
 	)
 
 	if err != nil {
