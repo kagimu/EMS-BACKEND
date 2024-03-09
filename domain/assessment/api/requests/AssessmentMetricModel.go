@@ -9,12 +9,11 @@ type AssessmentMetricRequest struct {
 	Name                  string    `json:"name"`
 	Weight                uint8     `json:"weight"`
 	MaxScore              uint8     `json:"max_score"`
-	ActualScore           uint8     `json:"actual_score"`
 	ScheduledOn           time.Time `json:"scheduled_on"`
 	GradingStandardNumber string    `json:"grading_standard_number"`
 	Description           string    `json:"description"`
 	AssessmentAreaNumber  string    `json:"assessment_area_number"`
-	StudyPeriodNumber     string    `json:"study_period_number"`
+	CurriculumNumber      string    `json:"curriculum_number"`
 }
 
 func (a *AssessmentMetricRequest) Validate() error {
@@ -33,8 +32,8 @@ func (a *AssessmentMetricRequest) Validate() error {
 	if a.AssessmentAreaNumber == "" {
 		return errors.New("assessment area number is required")
 	}
-	if a.StudyPeriodNumber == "" {
-		return errors.New("study period number is required")
+	if a.CurriculumNumber == "" {
+		return errors.New("curriculum number is required")
 	}
 
 	return nil
