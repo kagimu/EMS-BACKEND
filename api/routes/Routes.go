@@ -383,6 +383,8 @@ func SetupRoutes() *gin.Engine {
 			interview.GET("/:interview_number/students", interviewController.FetchStudentsByInterviewNumber)
 			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
 			interview.GET("/:interview_number/questions", interviewController.FetchQuestionsByInterviewNumber)
+			interview.POST("/add-interview-assessment-metric", interviewController.CreateInterviewAssessmentMetric)
+			interview.GET("/:interview_number/interview-assessment-metrics", interviewController.FetchInterviewAssessmentMetrics)
 		}
 
 		interviewQuestion := main.Group("/interview-questions")
