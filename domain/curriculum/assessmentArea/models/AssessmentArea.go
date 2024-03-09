@@ -9,14 +9,14 @@ import (
 
 type AssessmentArea struct {
 	gorm.Model
-	Number        string               `json:"number" gorm:"size:36;unique;not null"`
-	Name          string               `json:"name" gorm:"not null;comment:Other name"`
-	ClassNumber   string               `json:"class_number" gorm:"size:36;not null"`
-	Class         classModel.Class     `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	UserNumber    string               `json:"user_number" gorm:"size:36;not null"`
-	User          models.User          `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	SubjectNumber string               `json:"subject_number"`
-	Subject       subjectModel.Subject `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Number                string                     `json:"number" gorm:"size:36;unique;not null"`
+	Name                  string                     `json:"name" gorm:"not null;comment:Other name"`
+	CurriculumClassNumber string                     `json:"curriculum_class_number" gorm:"size:36;not null"`
+	Class                 classModel.CurriculumClass `gorm:"foreignKey:CurriculumClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	UserNumber            string                     `json:"user_number" gorm:"size:36;not null"`
+	User                  models.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	SubjectNumber         string                     `json:"subject_number"`
+	Subject               subjectModel.Subject       `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 func (as *AssessmentArea) AfterFind(tx *gorm.DB) error {
