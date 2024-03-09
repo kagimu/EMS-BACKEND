@@ -31,10 +31,10 @@ func CreateAssessmentArea(c *gin.Context) {
 	}
 
 	saveAssessmentArea := models.AssessmentArea{
-		Number:      uuid.NewV4().String(),
-		ClassNumber: payload.ClassNumber,
-		Name:        payload.Name,
-		UserNumber:  user.Number,
+		Number:                uuid.NewV4().String(),
+		CurriculumClassNumber: payload.CurriculumClassNumber,
+		Name:                  payload.Name,
+		UserNumber:            user.Number,
 	}
 
 	if err := config.DB.Create(&saveAssessmentArea).Error; err != nil {
