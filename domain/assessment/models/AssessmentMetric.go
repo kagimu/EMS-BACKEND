@@ -22,6 +22,8 @@ type AssessmentMetric struct {
 	GradingStandard       models.GradingStandard               `gorm:"foreignKey:GradingStandardNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentAreaNumber  string                               `json:"assessment_area_number"`
 	AssessmentArea        assessmentAreaModel.AssessmentArea   `gorm:"foreignKey:AssessmentAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	MetricNumber          string                               `json:"metric_number" gorm:"size:36;"`
+	Metric                Metric                               `gorm:"foreignKey:MetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriodNumber     string                               `json:"study_period_number" gorm:"size:36;"`
 	StudyPeriod           studyPeriodModel.StudyPeriod         `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CurriculumClassNumber string                               `json:"curriculum_class_number" gorm:"size:36;"`
