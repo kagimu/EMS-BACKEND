@@ -16,7 +16,6 @@ type AssessmentArea struct {
 	UserNumber            string                     `json:"user_number" gorm:"size:36;not null"`
 	User                  models.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	SubjectNumber         string                     `json:"subject_number"`
-	Subject               subjectModel.Subject       `gorm:"foreignKey:SubjectNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 func (as *AssessmentArea) AfterFind(tx *gorm.DB) error {
