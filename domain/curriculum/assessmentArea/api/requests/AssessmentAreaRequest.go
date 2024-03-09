@@ -9,14 +9,11 @@ type AssessmentAreaRequest struct {
 }
 
 func (a *AssessmentAreaRequest) Validate() error {
-	if a.CurriculumClassNumber == "" {
-		return errors.New("curriculum class number is required")
+	if a.SubjectNumber == "" && a.Name == "" {
+		return errors.New("both subject number and name can not be empty")
 	}
-	if a.SubjectNumber == "" {
-		return errors.New("subject number is required")
-	}
-	if a.Name == "" {
-		return errors.New("name is required")
+	if a.SubjectNumber != "" && a.Name != "" {
+		return errors.New("either subject number or name has to be empty")
 	}
 
 	return nil

@@ -11,7 +11,7 @@ type AssessmentArea struct {
 	gorm.Model
 	Number                string                     `json:"number" gorm:"size:36;unique;not null"`
 	Name                  string                     `json:"name" gorm:"not null;comment:Other name"`
-	CurriculumClassNumber string                     `json:"curriculum_class_number" gorm:"size:36;not null"`
+	CurriculumClassNumber string                     `json:"curriculum_class_number" gorm:"size:36;"`
 	Class                 classModel.CurriculumClass `gorm:"foreignKey:CurriculumClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber            string                     `json:"user_number" gorm:"size:36;not null"`
 	User                  models.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
