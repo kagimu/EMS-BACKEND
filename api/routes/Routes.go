@@ -87,18 +87,17 @@ func SetupRoute() *gin.Engine {
 		//manage curriculum
 		curriculum := main.Group("/curriculum")
 		{
+			curriculum.GET("all", curriculumController.FetchCurriculum)
+			curriculum.POST("new", curriculumController.NewCurriculum)
 			curriculum.GET("/info", curriculumController.CurriculumInfo)
 			curriculum.GET("/campus-curriculum-level", curriculumController.FetchCampusCurriculumLevel)
 			curriculum.POST("/edit", curriculumController.CurriculumEdit)
 			curriculum.POST("/delete", curriculumController.DeleteCurriculum)
+			curriculum.POST("upload", curriculumController.ImportCurriculum)
+			curriculum.GET("uploaded", curriculumController.FetchUploadedCurriculum)
+			curriculum.GET("school-curriculum", curriculumController.FetchSchoolCurriculum)
+			curriculum.GET("data", curriculumController.FetchCurriculumInfo)
 		}
-
-		main.POST("new-curriculum", curriculumController.NewCurriculum)
-		main.GET("curriculum-list", curriculumController.FetchCurriculum)
-		main.GET("curriculum-info", curriculumController.FetchCurriculumInfo)
-		main.POST("upload-curriculum", curriculumController.ImportCurriculum)
-		main.GET("uploaded-curriculum", curriculumController.FetchUploadedCurriculum)
-		main.GET("fetch-school-curriculum", curriculumController.FetchSchoolCurriculum)
 
 		//manage School
 		school := main.Group("/school")
