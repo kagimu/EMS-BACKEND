@@ -32,7 +32,7 @@ func CreateAggregateScale(c *gin.Context) {
 	saveAggregateScale := models.AggregateScale{
 		Number:                uuid.NewV4().String(),
 		Name:                  payload.Name,
-		Scale:                 payload.Scale,
+		Weight:                payload.Weight,
 		MinValue:              payload.MinValue,
 		MaxValue:              payload.MaxValue,
 		Description:           payload.Description,
@@ -47,7 +47,7 @@ func CreateAggregateScale(c *gin.Context) {
 
 	if err := tx.Create(&saveAggregateScale).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save aggregatet scale" + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save aggregate scale" + err.Error()})
 		return
 	}
 

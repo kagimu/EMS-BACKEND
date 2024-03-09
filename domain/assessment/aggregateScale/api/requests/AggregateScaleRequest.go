@@ -5,7 +5,7 @@ import "errors"
 type AggregateScaleRequest struct {
 	MinValue              int    `json:"min_value"`
 	MaxValue              int    `json:"max_value"`
-	Scale                 string `json:"scale"`
+	Weight                int64  `json:"weight"`
 	Description           string `json:"description"`
 	StudyPeriodNumber     string `json:"study_period_number"`
 	ClassNumber           string `json:"class_number"`
@@ -31,8 +31,8 @@ func (a *AggregateScaleRequest) Validate() error {
 	if a.CampusNumber == "" {
 		return errors.New("campus number is required")
 	}
-	if a.Scale == "" {
-		return errors.New("scale is required")
+	if a.Weight == 0 {
+		return errors.New("weight for this scale are required")
 	}
 	if a.SchoolNumber == "" {
 		return errors.New("school number is required")
