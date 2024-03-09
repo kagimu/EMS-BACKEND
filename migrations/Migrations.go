@@ -127,6 +127,7 @@ func Init() error {
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
+		&assessmentModel.Metric{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
 		&assessmentModel.AssessmentSubMetric{},
@@ -144,7 +145,6 @@ func Init() error {
 		&staffModel.TaskSupervision{},
 		&staffModel.Staff{},
 		&interviewModel.InterviewAssessmentMetric{},
-		&assessmentModel.Metric{},
 	)
 
 	if err != nil {
