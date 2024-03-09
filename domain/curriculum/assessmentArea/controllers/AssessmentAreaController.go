@@ -30,18 +30,16 @@ func CreateAssessmentArea(c *gin.Context) {
 		return
 	}
 
-	for _, classNumber := range payload.ClassNumber {
-		saveAssessmentArea := models.AssessmentArea{
-			Number:      uuid.NewV4().String(),
-			ClassNumber: classNumber,
-			Name:        payload.Name,
-			UserNumber:  user.Number,
-		}
+	saveAssessmentArea := models.AssessmentArea{
+		Number:      uuid.NewV4().String(),
+		ClassNumber: payload.ClassNumber,
+		Name:        payload.Name,
+		UserNumber:  user.Number,
+	}
 
-		if err := config.DB.Create(&saveAssessmentArea).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment area"})
-			return
-		}
+	if err := config.DB.Create(&saveAssessmentArea).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment area"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Assessment area created successfully"})
