@@ -15,6 +15,9 @@ func (a *AssessmentAreaRequest) Validate() error {
 	if a.SubjectNumber != "" && a.Name != "" {
 		return errors.New("either subject number or name has to be empty")
 	}
+	if a.CurriculumClassNumber == "" {
+		return errors.New("curriculum class number can not be empty")
+	}
 
 	return nil
 }
