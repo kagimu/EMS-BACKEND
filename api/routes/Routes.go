@@ -523,6 +523,12 @@ func SetupRoutes() *gin.Engine {
 			reportCards.GET("", reportCardController.FetchAllPromotions)
 		}
 
+		gradingStandard := main.Group("grading-standard")
+		{
+			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
+			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
+		}
+
 		enrollment := main.Group("enrollment")
 		{
 			enrollment.POST("", enrollmentController.CreateEnrollment)
