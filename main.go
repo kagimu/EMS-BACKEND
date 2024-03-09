@@ -10,9 +10,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/logger"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
-
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"log"
 )
 
 var err error
