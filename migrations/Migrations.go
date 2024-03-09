@@ -124,6 +124,7 @@ func Init() error {
 		&serviceModel.Discount{},
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
+		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
 		&assessmentScaleModels.GradingStandard{},
