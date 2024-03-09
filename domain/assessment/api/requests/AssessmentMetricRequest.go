@@ -32,8 +32,8 @@ func (a *AssessmentMetricRequest) Validate() error {
 	if a.StudyPeriodNumber == "" {
 		return errors.New("study period number is required")
 	}
-	if a.CurriculumNumber == "" {
-		return errors.New("curriculum number is required")
+	if a.CurriculumClassNumber == "" {
+		return errors.New("curriculum class number is required")
 	}
 
 	return nil
