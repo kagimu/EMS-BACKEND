@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"gorm.io/gorm"
 )
@@ -11,7 +12,7 @@ type AssessmentArea struct {
 	Number        string               `json:"number" gorm:"size:36;unique;not null"`
 	Name          string               `json:"name" gorm:"not null;comment:Other name"`
 	ClassNumber   string               `json:"class_number" gorm:"size:36;not null"`
-	Class         string               `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Class         classModel.Class     `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber    string               `json:"user_number" gorm:"size:36;not null"`
 	User          models.User          `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	SubjectNumber string               `json:"subject_number"`

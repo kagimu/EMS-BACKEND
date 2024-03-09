@@ -54,3 +54,13 @@ func CreateInterviewAssessmentMetric(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": interviewAssessmentMetric, "message": "Interview assessment metric created successfully"})
 }
+
+func FetchInterviewAssessmentMetrics(c *gin.Context) {
+	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
+	if err := config.DB.Preload("AssessmentMetric").Preload("Interview").Find(&interviewAssessmentMetrics).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interview assessment metrics"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": interviewAssessmentMetrics})
+}

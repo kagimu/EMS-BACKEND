@@ -30,13 +30,14 @@ func CreateEnrollment(c *gin.Context) {
 	}
 
 	saveEnrollment := models.Enrollment{
-		Number:         uuid.NewV4().String(),
-		StudentNumber:  payload.StudentNumber,
-		CampusNumber:   payload.CampusNumber,
-		SchoolNumber:   payload.SchoolNumber,
-		EnrollmentDate: payload.EnrollmentDate,
-		Status:         payload.Status,
-		UserNumber:     user.Number,
+		Number:            uuid.NewV4().String(),
+		StudentNumber:     payload.StudentNumber,
+		CampusNumber:      payload.CampusNumber,
+		SchoolNumber:      payload.SchoolNumber,
+		EnrollmentDate:    payload.EnrollmentDate,
+		StudyPeriodNumber: payload.StudyPeriodNumber,
+		Status:            payload.Status,
+		UserNumber:        user.Number,
 	}
 
 	if err := config.DB.Create(&saveEnrollment).Error; err != nil {

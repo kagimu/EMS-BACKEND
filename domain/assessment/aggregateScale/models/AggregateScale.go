@@ -14,7 +14,7 @@ type AggregateScale struct {
 	MinValue              int                `json:"min_value" gorm:"not null"`
 	MaxValue              int                `json:"max_value" gorm:"not null"`
 	Name                  string             `json:"name" gorm:"type:text"`
-	Scale                 string             `json:"scale"`
+	Points                int64              `json:"points" gorm:"not null"`
 	SchoolNumber          string             `json:"school_number" gorm:"size:36;not null"`
 	Description           string             `json:"description" gorm:"type:text"`
 	School                schoolModel.School `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
