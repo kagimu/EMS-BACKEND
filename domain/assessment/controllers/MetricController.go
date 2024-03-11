@@ -33,6 +33,7 @@ func CreateMetric(c *gin.Context) {
 		Number:           uuid.NewV4().String(),
 		Name:             payload.Name,
 		CurriculumNumber: payload.CurriculumNumber,
+		ExamType:         payload.ExamType,
 		UserNumber:       user.Number,
 	}
 
