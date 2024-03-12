@@ -124,8 +124,10 @@ func Init() error {
 		&serviceModel.Discount{},
 		&invoicePaymentModel.InvoicePayment{},
 		&invoiceModel.InvoiceNumber{},
+		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
+		&assessmentModel.Metric{},
 		&assessmentModel.AssessmentMetric{},
 		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
@@ -133,7 +135,6 @@ func Init() error {
 		&authModels.Role{},
 		&authModels.RolePermission{},
 		&authModels.UserRole{},
-		&assessmentScaleModels.GradingStandard{},
 		&assessmentScaleModels.AggregateScale{},
 		&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
@@ -142,6 +143,7 @@ func Init() error {
 		&staffModel.Task{},
 		&staffModel.TaskSupervision{},
 		&staffModel.Staff{},
+		&interviewModel.InterviewAssessmentMetric{},
 	)
 
 	if err != nil {
