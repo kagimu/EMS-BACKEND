@@ -27,6 +27,7 @@ type AssessmentMetric struct {
 	StudyPeriod           studyPeriodModel.StudyPeriod         `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CurriculumClassNumber string                               `json:"curriculum_class_number" gorm:"size:36;"`
 	CurriculumClass       curriculumClassModel.CurriculumClass `gorm:"foreignKey:CurriculumClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	AssessmentAreaName    string                               `json:"assessment_area_name" gorm:"-"`
 }
 
 type AssessmentSubMetric struct {
@@ -35,4 +36,14 @@ type AssessmentSubMetric struct {
 	Name                   string           `json:"name" gorm:"size:255;"`
 	AssessmentMetricNumber string           `json:"assessment_metric_number" gorm:"size:36;not null"`
 	AssessmentMetric       AssessmentMetric `gorm:"foreignKey:AssessmentMetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+}
+
+// Set value for assessmentAreaname field in afterfind hook
+func (assessmentMetric *AssessmentMetric) AfterFind(tx *gorm.DB) (err error) {
+	var assessmentArea assessmentAreaModel.AssessmentArea
+	if err := tx.First(&assessmentArea, "number = ?", assessmentMetric.AssessmentAreaNumber).Error; err != nil {
+		return err
+	}
+	assessmentMetric.AssessmentAreaName = assessmentArea.Name
+	return nil
 }
