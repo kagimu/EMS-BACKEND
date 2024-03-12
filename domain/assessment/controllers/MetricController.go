@@ -66,3 +66,65 @@ func FetchMetrics(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": metrics})
 }
+
+func EditMetric(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	metricNumber := c.Param("metric_number")
+	var payload requests.MetricRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var metric models.Metric
+	if err := config.DB.Where("number = ?", metricNumber).First(&metric).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Metric not found"})
+		return
+	}
+
+	updateMetric := models.Metric{
+		Name:             payload.Name,
+		CurriculumNumber: payload.CurriculumNumber,
+		ExamType:         payload.ExamType,
+	}
+
+	if err := config.DB.Model(&metric).Where("number = ?", metricNumber).Updates(updateMetric).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update metric"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": metric})
+}
+
+func DeleteMetric(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	metricNumber := c.Param("metric_number")
+	var metric models.Metric
+
+	err := config.DB.First(&metric, metricNumber).Error
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Metric not found"})
+		return
+	}
+
+	if err := config.DB.Delete(&metric).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete metric"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Metric deleted successfully"})
+}
