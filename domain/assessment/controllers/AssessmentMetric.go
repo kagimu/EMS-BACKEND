@@ -31,12 +31,10 @@ func CreateAssessmentMetric(c *gin.Context) {
 
 	saveAssessmentMetric := models.AssessmentMetric{
 		Number:                uuid.NewV4().String(),
-		Name:                  payload.Name,
 		Weight:                payload.Weight,
 		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
 		GradingStandardNumber: payload.GradingStandardNumber,
 		StudyPeriodNumber:     payload.StudyPeriodNumber,
-		CurriculumClassNumber: payload.CurriculumClassNumber,
 		Description:           payload.Description,
 		MaxScore:              payload.MaxScore,
 	}
