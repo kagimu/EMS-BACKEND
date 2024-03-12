@@ -254,6 +254,7 @@ func SetupRoutes() *gin.Engine {
 		studyPeriod := main.Group("/study-period")
 		{
 			studyPeriod.GET("all", studyPeriodController.FetchStudyPeriod)
+			studyPeriod.GET("by-academic-year", studyPeriodController.FetchStudyPeriodByAcademicYear)
 		}
 		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
 
