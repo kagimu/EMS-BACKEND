@@ -11,6 +11,9 @@ type AssessmentMetricRequest struct {
 	Description           string `json:"description"`
 	AssessmentAreaNumber  string `json:"assessment_area_number"`
 	StudyPeriodNumber     string `json:"study_period_number"`
+	ScheduledOn           string `json:"scheduled_on"`
+	MetricNumber          string `json:"metric_number"`
+	CurriculumClassNumber string `json:"curriculum_class_number"`
 }
 
 func (a *AssessmentMetricRequest) Validate() error {
@@ -25,6 +28,15 @@ func (a *AssessmentMetricRequest) Validate() error {
 	}
 	if a.StudyPeriodNumber == "" {
 		return errors.New("study period number is required")
+	}
+	if a.MetricNumber == "" {
+		return errors.New("metric number is required")
+	}
+	if a.CurriculumClassNumber == "" {
+		return errors.New("curriculum class number is required")
+	}
+	if a.ScheduledOn == "" {
+		return errors.New("scheduled on is required")
 	}
 
 	return nil

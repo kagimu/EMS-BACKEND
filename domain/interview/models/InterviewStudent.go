@@ -28,5 +28,6 @@ func (i *InterviewStudent) AfterFind(tx *gorm.DB) (err error) {
 		return err
 	}
 	i.Application = application
+
 	return nil
 }

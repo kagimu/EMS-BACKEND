@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
@@ -29,12 +30,21 @@ func CreateAssessmentMetric(c *gin.Context) {
 		return
 	}
 
+	formatDate, err := time.Parse(time.RFC3339, payload.ScheduledOn)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse date"})
+		return
+	}
+
 	saveAssessmentMetric := models.AssessmentMetric{
 		Number:                uuid.NewV4().String(),
-		Weight:                payload.Weight,
-		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
 		GradingStandardNumber: payload.GradingStandardNumber,
 		StudyPeriodNumber:     payload.StudyPeriodNumber,
+		ScheduledOn:           formatDate.Format("2006-01-02"),
+		CurriculumClassNumber: payload.CurriculumClassNumber,
+		MetricNumber:          payload.MetricNumber,
+		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
+		Weight:                payload.Weight,
 		Description:           payload.Description,
 		MaxScore:              payload.MaxScore,
 	}

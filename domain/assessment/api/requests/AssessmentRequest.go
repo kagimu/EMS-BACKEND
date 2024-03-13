@@ -3,11 +3,12 @@ package requests
 import "errors"
 
 type AssessmentRequest struct {
-	AssessmentMetricNumber string `json:"assessment_metric_number"`
-	StudentNumber          string `json:"student_number"`
-	AssessmentAreaNumber   string `json:"assessment_area_number"`
-	LevelNumber            string `json:"level_number"`
-	AssessmentDate         string `json:"assessment_date"`
+	AssessmentMetricNumber string  `json:"assessment_metric_number"`
+	StudentNumber          string  `json:"student_number"`
+	AssessmentAreaNumber   string  `json:"assessment_area_number"`
+	LevelNumber            string  `json:"level_number"`
+	AssessmentDate         string  `json:"assessment_date"`
+	ActualScore            float64 `json:"actual_score"`
 }
 
 func (a *AssessmentRequest) Validate() error {

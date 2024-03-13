@@ -42,6 +42,7 @@ func CreateAssessment(c *gin.Context) {
 		UserNumber:             user.Number,
 		AssessmentMetricNumber: payload.AssessmentMetricNumber,
 		StudentNumber:          payload.StudentNumber,
+		ActualScore:            payload.ActualScore,
 	}
 
 	tx := config.DB.Begin()

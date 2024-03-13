@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	curriculumClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
@@ -13,10 +11,10 @@ import (
 type AssessmentMetric struct {
 	gorm.Model
 	Number                string                               `json:"number" gorm:"size:36;unique;not null"`
-	Weight                uint8                                `json:"weight" gorm:"default:1"`
+	Weight                uint8                                `json:"weight" gorm:"default:1; max:3;"`
 	Description           string                               `json:"description" gorm:"type:text;"`
 	MaxScore              uint8                                `json:"max_score"`
-	ScheduledOn           time.Time                            `json:"scheduled_on" gorm:"size:30"`
+	ScheduledOn           string                               `json:"scheduled_on" gorm:"size:30"`
 	GradingStandardNumber string                               `json:"grading_standard_number"`
 	GradingStandard       models.GradingStandard               `gorm:"foreignKey:GradingStandardNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentAreaNumber  string                               `json:"assessment_area_number"`
@@ -27,6 +25,7 @@ type AssessmentMetric struct {
 	StudyPeriod           studyPeriodModel.StudyPeriod         `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CurriculumClassNumber string                               `json:"curriculum_class_number" gorm:"size:36;"`
 	CurriculumClass       curriculumClassModel.CurriculumClass `gorm:"foreignKey:CurriculumClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	AssessmentAreaName    string                               `json:"assessment_area_name" gorm:"-"`
 }
 
 type AssessmentSubMetric struct {
@@ -35,4 +34,14 @@ type AssessmentSubMetric struct {
 	Name                   string           `json:"name" gorm:"size:255;"`
 	AssessmentMetricNumber string           `json:"assessment_metric_number" gorm:"size:36;not null"`
 	AssessmentMetric       AssessmentMetric `gorm:"foreignKey:AssessmentMetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+}
+
+// Set value for assessmentAreaname field in afterfind hook
+func (assessmentMetric *AssessmentMetric) AfterFind(tx *gorm.DB) (err error) {
+	var assessmentArea assessmentAreaModel.AssessmentArea
+	if err := tx.First(&assessmentArea, "number = ?", assessmentMetric.AssessmentAreaNumber).Error; err != nil {
+		return err
+	}
+	assessmentMetric.AssessmentAreaName = assessmentArea.Name
+	return nil
 }
