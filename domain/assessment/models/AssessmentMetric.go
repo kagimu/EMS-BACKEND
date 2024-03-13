@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	curriculumClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
@@ -14,7 +16,7 @@ type AssessmentMetric struct {
 	Weight                uint8                                `json:"weight" gorm:"default:1; max:3;"`
 	Description           string                               `json:"description" gorm:"type:text;"`
 	MaxScore              uint8                                `json:"max_score"`
-	ScheduledOn           string                               `json:"scheduled_on" gorm:"size:30"`
+	ScheduledOn           time.Time                            `json:"scheduled_on" gorm:"size:30"`
 	GradingStandardNumber string                               `json:"grading_standard_number"`
 	GradingStandard       models.GradingStandard               `gorm:"foreignKey:GradingStandardNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentAreaNumber  string                               `json:"assessment_area_number"`
