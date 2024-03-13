@@ -41,7 +41,7 @@ func CreateAssessmentMetric(c *gin.Context) {
 		GradingStandardNumber: payload.GradingStandardNumber,
 		StudyPeriodNumber:     payload.StudyPeriodNumber,
 		ScheduledOn:           formatDate,
-		CurriculumClassNumber: payload.CurriculumClassNumber,
+		CampusClassNumber:     payload.CampusClassNumber,
 		MetricNumber:          payload.MetricNumber,
 		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
 		Weight:                payload.Weight,
