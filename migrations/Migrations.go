@@ -128,6 +128,7 @@ func Init() error {
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
 		&assessmentModel.Metric{},
+		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
 		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
