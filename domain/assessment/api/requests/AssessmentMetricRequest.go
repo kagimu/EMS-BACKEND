@@ -33,7 +33,7 @@ func (a *AssessmentMetricRequest) Validate() error {
 		return errors.New("metric number is required")
 	}
 	if a.CampusClassNumber == "" {
-		return errors.New("curriculum class number is required")
+		return errors.New("campus class number is required")
 	}
 	if a.ScheduledOn == "" {
 		return errors.New("scheduled on is required")
