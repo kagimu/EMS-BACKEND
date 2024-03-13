@@ -30,9 +30,9 @@ func CreateAssessmentMetric(c *gin.Context) {
 		return
 	}
 
-	formatDate, err := time.Parse(time.RFC3339, payload.ScheduledOn)
+	formatDate, err := time.Parse("2006-01-02", payload.ScheduledOn)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse date"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse time"})
 		return
 	}
 
@@ -40,7 +40,7 @@ func CreateAssessmentMetric(c *gin.Context) {
 		Number:                uuid.NewV4().String(),
 		GradingStandardNumber: payload.GradingStandardNumber,
 		StudyPeriodNumber:     payload.StudyPeriodNumber,
-		ScheduledOn:           formatDate.Format("2006-01-02"),
+		ScheduledOn:           formatDate,
 		CurriculumClassNumber: payload.CurriculumClassNumber,
 		MetricNumber:          payload.MetricNumber,
 		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
