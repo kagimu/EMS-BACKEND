@@ -4,7 +4,6 @@ WORKDIR /go/src/app
 
 COPY go.mod .
 COPY go.sum .
-COPY .env .
 RUN go mod download
 COPY . .
 RUN GOOS=linux go build -ldflags="-s -w" -o ./bin/web-app ./main.go
@@ -13,6 +12,5 @@ FROM alpine:3.13
 RUN apk --no-cache add ca-certificates
 WORKDIR /usr/bin
 COPY --from=build /go/src/app/bin /go/bin
-COPY --from=build  /go/src/app/.env /go/bin
 EXPOSE 2053
 ENTRYPOINT /go/bin/web-app --port 2053
