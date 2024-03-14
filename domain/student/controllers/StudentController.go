@@ -56,14 +56,7 @@ func CreateStudent(c *gin.Context) {
 	// find Student by application number
 
 	var student models.Student
-	if err := config.DB.Where("application_number = ?", applicationNumber).First(&student).Error; err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to find student"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to find student"})
-		return
-	}
+	config.DB.Where("application_number = ?", applicationNumber).First(&student)
 
 	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
 	if student.Number != "" {
