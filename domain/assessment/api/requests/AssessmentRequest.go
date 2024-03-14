@@ -7,6 +7,7 @@ type AssessmentRequest struct {
 	StudentNumber          string  `json:"student_number"`
 	AssessmentAreaNumber   string  `json:"assessment_area_number"`
 	LevelNumber            string  `json:"level_number"`
+	Comment                string  `json:"comment"`
 	AssessmentDate         string  `json:"assessment_date"`
 	ActualScore            float64 `json:"actual_score"`
 }

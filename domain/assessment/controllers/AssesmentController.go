@@ -40,6 +40,7 @@ func CreateAssessment(c *gin.Context) {
 		Number:                 uuid.NewV4().String(),
 		AssessmentDate:         payload.AssessmentDate,
 		UserNumber:             user.Number,
+		Comment:                payload.Comment,
 		AssessmentMetricNumber: payload.AssessmentMetricNumber,
 		StudentNumber:          payload.StudentNumber,
 		ActualScore:            payload.ActualScore,
