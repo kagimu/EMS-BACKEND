@@ -462,7 +462,7 @@ func SetupRoutes() *gin.Engine {
 		assessment := main.Group("/assessments")
 		{
 			assessment.POST("", assessmentController.CreateAssessment)
-			assessment.GET(":student_number", assessmentController.FetchAssessment)
+			assessment.GET("", assessmentController.FetchAssessmentByStudent)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
