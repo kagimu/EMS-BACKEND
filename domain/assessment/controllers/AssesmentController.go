@@ -76,8 +76,15 @@ func FetchAssessmentByStudent(c *gin.Context) {
 		return
 	}
 
+	assessmentMetricNumber := c.Query("assessment_metric_number")
+	var assessmentMetric models.AssessmentMetric
+	if err := config.DB.Model(&models.AssessmentMetric{}).Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric not found"})
+		return
+	}
+
 	var assessments []models.Assessment
-	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Where("student_number = ?", studentNumber).Find(&assessments).Error; err != nil {
+	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Where("student_number = ? AND assessment_metric_number = ?", studentNumber, assessmentMetricNumber).Find(&assessments).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments"})
 		return
 	}
