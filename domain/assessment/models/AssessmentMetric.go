@@ -22,7 +22,7 @@ type AssessmentMetric struct {
 	AssessmentAreaNumber  string                             `json:"assessment_area_number"`
 	AssessmentArea        assessmentAreaModel.AssessmentArea `gorm:"foreignKey:AssessmentAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;" json:"assessment_area"`
 	MetricNumber          string                             `json:"metric_number" gorm:"size:36;"`
-	Metric                Metric                             `gorm:"foreignKey:MetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Metric                Metric                             `gorm:"foreignKey:MetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;" json:"metric"`
 	StudyPeriodNumber     string                             `json:"study_period_number" gorm:"size:36;"`
 	StudyPeriod           studyPeriodModel.StudyPeriod       `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusClassNumber     string                             `json:"campus_class_number" gorm:"size:36;"`
