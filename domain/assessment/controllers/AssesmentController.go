@@ -62,7 +62,7 @@ func CreateAssessment(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": saveAssessment})
 }
 
-func FetchAssessment(c *gin.Context) {
+func FetchAssessmentByStudent(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
