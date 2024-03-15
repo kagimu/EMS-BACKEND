@@ -77,7 +77,23 @@ func FetchAssessmentByStudent(c *gin.Context) {
 	}
 
 	var assessments []models.Assessment
-	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Preload("AssessmentArea").Preload("Level").Where("student_number = ?", studentNumber).Find(&assessments).Error; err != nil {
+	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Where("student_number = ?", studentNumber).Find(&assessments).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": assessments})
+}
+
+func FetchAssessments(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var assessments []models.Assessment
+	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Find(&assessments).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments"})
 		return
 	}
