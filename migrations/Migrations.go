@@ -132,7 +132,6 @@ func Init() error {
 		&assessmentModel.AssessmentMetric{},
 		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
-		&assessmentModel.ExaminationType{},
 		&authModels.Role{},
 		&authModels.RolePermission{},
 		&authModels.UserRole{},
