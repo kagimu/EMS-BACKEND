@@ -10,6 +10,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/logger"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -17,16 +19,11 @@ import (
 var err error
 
 func main() {
-	//if os.Getenv("ENVIRONMENT") != "production" {
-	//	err := godotenv.Load(".env")
-	//	if err != nil {
-	//		log.Fatal("Error loading .env file")
-	//	}
-	//}
-	//
-	//if os.Getenv("ENVIRONMENT") == "production" {
-	//	gin.SetMode(gin.ReleaseMode)
-	//}
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	gin.SetMode(gin.DebugMode)
 
 	errZone := os.Setenv("TZ", "Africa/Nairobi")
 	if errZone != nil {
