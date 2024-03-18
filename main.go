@@ -19,11 +19,8 @@ import (
 var err error
 
 func main() {
-	if os.Getenv("ENVIRONMENT") != "production" {
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatal("Error loading .env file")
 	}
 
 	gin.SetMode(gin.DebugMode)

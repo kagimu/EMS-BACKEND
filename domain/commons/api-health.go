@@ -7,5 +7,5 @@ import (
 )
 
 func APIHealth(c *gin.Context) {
-	c.JSON(http.StatusNotFound, gin.H{"message": "Systems are up and running"})
+	c.JSON(http.StatusOK, gin.H{"message": "Systems are up and running"})
 }
