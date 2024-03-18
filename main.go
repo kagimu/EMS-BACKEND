@@ -23,8 +23,8 @@ func main() {
 
 	gin.SetMode(gin.DebugMode)
 
-	errZone := os.Setenv("TZ", "Africa/Nairobi")
-	if errZone != nil {
+	err := os.Setenv("TZ", "Africa/Nairobi")
+	if err != nil {
 		return
 	}
 
