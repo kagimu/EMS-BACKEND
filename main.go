@@ -16,10 +16,9 @@ import (
 	"gorm.io/gorm"
 )
 
-var err error
-
 func main() {
-	if err := godotenv.Load(".env"); err != nil {
+	err := godotenv.Load(".env")
+	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
