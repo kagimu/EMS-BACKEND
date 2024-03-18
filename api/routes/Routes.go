@@ -13,6 +13,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
 	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
 	conceptController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/controllers"
 	curriculumController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers"
@@ -71,6 +72,9 @@ func SetupRoutes() *gin.Engine {
 	router.MaxMultipartMemory = 20 << 20 // 20 MiB
 	//router.Static("/", "./fileRepo")
 	router.Use(static.Serve("/fileRepo", static.LocalFile("/fileRepo", true)))
+
+	router.NoRoute(commons.RouteNotFound)
+	router.GET("ping", commons.APIHealth)
 
 	auth := router.Group("/auth")
 	{
