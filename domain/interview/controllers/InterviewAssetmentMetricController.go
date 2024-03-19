@@ -156,13 +156,13 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 		var aggregateScales []aggregateSaceltModel.AggregateScale
 		var assessment assessmentModel.Assessment
 		if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", studentNumber, v.Number).First(&assessment).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment"})
-			return
+			//c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment"})
+			//return
 		}
 
 		if err := config.DB.Where("grading_standard_number = ?", v.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
-			return
+			//c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
+			//return
 		}
 		var comment string
 		if assessment.Comment == "" {
@@ -171,21 +171,31 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 			comment = assessment.Comment
 		}
 
-		for _, val := range aggregateScales {
-			if assessment.ActualScore >= val.MinValue && assessment.ActualScore <= val.MaxValue {
-				results = append(results, StudentInterviewResults{
-					Name:    v.AssessmentAreaName,
-					Score:   int(assessment.ActualScore),
-					Grade:   val.Name,
-					Comment: comment,
-				})
-			} else {
-				results = append(results, StudentInterviewResults{
-					Name:    v.AssessmentAreaName,
-					Comment: comment,
-					Score:   0,
-					Grade:   "Not Graded",
-				})
+		if len(aggregateScales) == 0 {
+			results = append(results, StudentInterviewResults{
+				Name:    v.AssessmentAreaName,
+				Comment: comment,
+				Score:   0,
+				Grade:   "Not Graded",
+			})
+
+		} else {
+			for _, val := range aggregateScales {
+				if assessment.ActualScore >= val.MinValue && assessment.ActualScore <= val.MaxValue {
+					results = append(results, StudentInterviewResults{
+						Name:    v.AssessmentAreaName,
+						Score:   int(assessment.ActualScore),
+						Grade:   val.Name,
+						Comment: comment,
+					})
+				} else {
+					results = append(results, StudentInterviewResults{
+						Name:    v.AssessmentAreaName,
+						Comment: comment,
+						Score:   0,
+						Grade:   "Not Graded",
+					})
+				}
 			}
 		}
 	}
