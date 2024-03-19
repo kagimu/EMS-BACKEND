@@ -7,7 +7,6 @@ import (
 )
 
 type AdmissionRequest struct {
-	Status            string `json:"status"`
 	StudentNumber     string `json:"student_number"`
 	AdmissionFeePaid  bool   `json:"admission_fee_paid"`
 	InterviewNumber   string `json:"interview_number"`
@@ -18,9 +17,6 @@ type AdmissionRequest struct {
 }
 
 func (a *AdmissionRequest) Validate() error {
-	if a.Status == "" {
-		return errors.New("status is required")
-	}
 	if a.StudentNumber == "" {
 		return errors.New("student number is required")
 	}
