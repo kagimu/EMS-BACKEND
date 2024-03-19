@@ -51,6 +51,8 @@ func CreateAggregateScale(c *gin.Context) {
 		return
 	}
 
+	tx.Commit()
+
 	c.JSON(http.StatusCreated, gin.H{"message": "Aggregate scale created successfully", "data": saveAggregateScale})
 }
 
