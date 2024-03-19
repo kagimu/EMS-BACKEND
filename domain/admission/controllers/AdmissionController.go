@@ -32,7 +32,7 @@ func CreateAdmission(c *gin.Context) {
 
 	var payload requests.AdmissionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
 		return
 	}
 
@@ -131,7 +131,6 @@ func CreateAdmission(c *gin.Context) {
 
 	saveAdmission := models.Admission{
 		Number:            uuid.NewV4().String(),
-		Status:            payload.Status,
 		AdmissionFeePaid:  payload.AdmissionFeePaid,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
 		InterviewNumber:   payload.InterviewNumber,
