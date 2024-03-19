@@ -14,9 +14,11 @@ import (
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	studentControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -68,16 +70,76 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	saveAdmission := models.Admission{
-		Number: uuid.NewV4().String(),
+	studyPeriodNumber := c.Query("study_period_number")
+	var studyPeriod studyPeriodModel.StudyPeriod
+	if err := config.DB.First(&studyPeriod, "number = ?", studyPeriodNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
+		return
+	}
 
-		Status:           payload.Status,
-		AdmissionFeePaid: payload.AdmissionFeePaid,
-		StudentNumber:    payload.StudentNumber,
-		ClassNumber:      payload.CampusNumber,
-		CampusNumber:     payload.CampusNumber,
-		StreamNumber:     payload.StreamNumber,
-		UserNumber:       user.Number,
+	interviewNumber := c.Query("interview_number")
+	var interview interviewModel.Interview
+	if err := config.DB.First(&interview, "number = ?", interviewNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Interview not found"})
+		return
+	}
+
+	// Checks if the invoice is paid
+	var invoice invoiceModel.Invoice
+	if err := config.DB.First(&invoice, "student_number = ?", student.Number).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Failed to fetch invoice for the student"})
+		return
+	}
+
+	if invoice.Status != "PAID" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student invoice is not paid", "debug": invoice})
+		return
+	}
+
+	generateADN, err := studentControllers.CreateADN(student.APNStatus)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to generate ADN"})
+		return
+	}
+
+	updateStudent := studentModels.Student{
+		APNStatus: "Archive",
+		ADN:       generateADN,
+	}
+
+	if err := config.DB.Model(&student).Where("number= ?", studentNumber).Updates(updateStudent).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
+		return
+	}
+
+	// Update the application status
+	applicationNumber := student.ApplicationNumber
+	application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
+		return
+	}
+
+	updateApplicationStatus := applicationModel.Application{
+		Status: "ADMITTED",
+	}
+
+	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
+		return
+	}
+
+	saveAdmission := models.Admission{
+		Number:            uuid.NewV4().String(),
+		Status:            payload.Status,
+		AdmissionFeePaid:  payload.AdmissionFeePaid,
+		StudyPeriodNumber: payload.StudyPeriodNumber,
+		InterviewNumber:   payload.InterviewNumber,
+		StudentNumber:     payload.StudentNumber,
+		ClassNumber:       payload.CampusNumber,
+		CampusNumber:      payload.CampusNumber,
+		StreamNumber:      payload.StreamNumber,
+		UserNumber:        user.Number,
 	}
 
 	if err := config.DB.Create(&saveAdmission).Error; err != nil {
@@ -131,10 +193,17 @@ func AdmitStudent(c *gin.Context) {
 		return
 	}
 
-	studentNumber := c.Param("number")
+	studentNumber := c.Query("student_number")
 	var student studentModels.Student
 	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Student not found"})
+		return
+	}
+
+	studyPeriodNumber := c.Query("study_period_number")
+	var studyPeriod studyPeriodModel.StudyPeriod
+	if err := config.DB.First(&studyPeriod, "number = ?", studyPeriodNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
 		return
 	}
 
