@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"errors"
+	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
@@ -133,33 +133,90 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 		Comment string
 	}
 
+	var assessmentMetrics []assessmentModel.AssessmentMetric
+
+	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
+	if err := config.DB.Where("interview_number = ?", interviewNumber).Find(&interviewAssessmentMetrics).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interview assessment metrics"})
+		return
+	}
+
+	for _, v := range interviewAssessmentMetrics {
+		var assessmentMetric assessmentModel.AssessmentMetric
+		if err := config.DB.Where("number = ?", v.AssessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric not found"})
+			return
+		}
+		assessmentMetrics = append(assessmentMetrics, assessmentMetric)
+	}
+
 	var results []StudentInterviewResults
-	var result []StudentInterviewResult
-	config.DB.Raw("SELECT a.actual_score AS Score , a.comment , aa.name , gs.number  FROM assessments a,assessment_metrics am,assessment_areas aa , interview_assessment_metrics iam , interviews i ,grading_standards gs  WHERE a.student_number = ? AND a.assessment_metric_number = am.number AND am.number = iam.assessment_metric_number AND  am.assessment_area_number = aa.number AND am.grading_standard_number = gs.number AND  iam.interview_number = i.number AND i.number = ?", studentNumber, interviewNumber).Scan(&result)
 
-	// loop through the result and get the grade
-
-	for _, v := range result {
-
+	for _, v := range assessmentMetrics {
 		var aggregateScales []aggregateSaceltModel.AggregateScale
+		var assessment assessmentModel.Assessment
+		if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", studentNumber, v.Number).First(&assessment).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment"})
+			return
+		}
 
 		if err := config.DB.Where("grading_standard_number = ?", v.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
 			return
 		}
+		var comment string
+		if assessment.Comment == "" {
+			comment = "No comment"
+		} else {
+			comment = assessment.Comment
+		}
 
 		for _, val := range aggregateScales {
-			if v.Score >= val.MinValue && v.Score <= val.MaxValue {
+			if assessment.ActualScore >= val.MinValue && assessment.ActualScore <= val.MaxValue {
 				results = append(results, StudentInterviewResults{
-					Name:    v.Name,
-					Score:   v.Score,
+					Name:    v.AssessmentAreaName,
+					Score:   int(assessment.ActualScore),
 					Grade:   val.Name,
-					Comment: v.Comment,
+					Comment: comment,
+				})
+			} else {
+				results = append(results, StudentInterviewResults{
+					Name:    v.AssessmentAreaName,
+					Comment: comment,
+					Score:   0,
+					Grade:   "Not Graded",
 				})
 			}
 		}
-
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": results})
 }
+
+//var results []StudentInterviewResults
+//var result []StudentInterviewResult
+//config.DB.Raw("SELECT a.actual_score AS Score , a.comment , aa.name , gs.number  FROM assessments a,assessment_metrics am,assessment_areas aa , interview_assessment_metrics iam , interviews i ,grading_standards gs  WHERE a.student_number = ? AND a.assessment_metric_number = am.number AND am.number = iam.assessment_metric_number AND  am.assessment_area_number = aa.number AND am.grading_standard_number = gs.number AND  iam.interview_number = i.number AND i.number = ?", studentNumber, interviewNumber).Scan(&result)
+//
+//// loop through the result and get the grade
+//
+//for _, v := range result {
+//
+//	var aggregateScales []aggregateSaceltModel.AggregateScale
+//
+//	if err := config.DB.Where("grading_standard_number = ?", v.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
+//		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
+//		return
+//	}
+//
+//	for _, val := range aggregateScales {
+//		if v.Score >= val.MinValue && v.Score <= val.MaxValue {
+//			results = append(results, StudentInterviewResults{
+//				Name:    v.Name,
+//				Score:   v.Score,
+//				Grade:   val.Name,
+//				Comment: v.Comment,
+//			})
+//		}
+//	}
+//
+//}

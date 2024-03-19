@@ -3,15 +3,15 @@ package requests
 import "errors"
 
 type AggregateScaleRequest struct {
-	MinValue              int    `json:"min_value"`
-	MaxValue              int    `json:"max_value"`
-	Weight                int64  `json:"weight"`
-	Description           string `json:"description"`
-	ClassNumber           string `json:"class_number"`
-	CampusNumber          string `json:"campus_number"`
-	SchoolNumber          string `json:"school_number"`
-	Name                  string `json:"name"`
-	GradingStandardNumber string `json:"grading_standard_number"`
+	MinValue              float64 `json:"min_value"`
+	MaxValue              float64 `json:"max_value"`
+	Weight                float64 `json:"weight"`
+	Description           string  `json:"description"`
+	ClassNumber           string  `json:"class_number"`
+	CampusNumber          string  `json:"campus_number"`
+	SchoolNumber          string  `json:"school_number"`
+	Name                  string  `json:"name"`
+	GradingStandardNumber string  `json:"grading_standard_number"`
 }
 
 func (a *AggregateScaleRequest) Validate() error {

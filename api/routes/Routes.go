@@ -249,6 +249,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			academicYear.GET("all", academicYearController.FetchAcademicYearInfo)
 			academicYear.GET("by-level", academicYearController.AcademicYearsByLevel)
+			academicYear.GET("by-campus-class", academicYearController.AcademicYearsByCampusClass)
 			academicYear.POST("/new", academicYearController.NewAcademicYear)
 			academicYear.POST("/delete", academicYearController.DeleteAcademicYear)
 		}
