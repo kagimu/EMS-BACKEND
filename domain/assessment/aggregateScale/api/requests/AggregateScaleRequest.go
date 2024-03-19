@@ -7,7 +7,6 @@ type AggregateScaleRequest struct {
 	MaxValue              int    `json:"max_value"`
 	Weight                int64  `json:"weight"`
 	Description           string `json:"description"`
-	StudyPeriodNumber     string `json:"study_period_number"`
 	ClassNumber           string `json:"class_number"`
 	CampusNumber          string `json:"campus_number"`
 	SchoolNumber          string `json:"school_number"`
