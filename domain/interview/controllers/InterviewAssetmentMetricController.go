@@ -12,23 +12,28 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
 func CreateInterviewAssessmentMetric(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	var payload requests.InterviewAssessmentMetricRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
 		return
 	}
 
-	err := payload.Validate()
-	if err != nil {
+	if err := payload.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	// validate if interview number  is valid
 	var interview models.Interview
 	if err := config.DB.Where("number = ?", payload.InterviewNumber).First(&interview).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview schedule not found"})
@@ -48,9 +53,10 @@ func CreateInterviewAssessmentMetric(c *gin.Context) {
 	}
 
 	interviewAssessmentMetric = models.InterviewAssessmentMetric{
+		Number:                 uuid.NewV4().String(),
 		InterviewNumber:        payload.InterviewNumber,
 		AssessmentMetricNumber: payload.AssessmentMetricNumber,
-		UserNumber:             c.GetHeader("User-Number"),
+		UserNumber:             user.Number,
 	}
 
 	if err := config.DB.Create(&interviewAssessmentMetric).Error; err != nil {
