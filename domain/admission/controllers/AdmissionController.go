@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -18,6 +19,7 @@ import (
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func CreateAdmission(c *gin.Context) {
@@ -255,4 +257,38 @@ func BulkAdmitStudents(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Students admitted successfully"})
+}
+
+func FetchAdmittedStudentsByClass(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	classNumber := c.Query("class_number")
+	var class classModels.Class
+
+	if classNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Class number is missing"})
+		return
+	}
+
+	if err := config.DB.First(&class, "number = ?", classNumber).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"message": "Class not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
+		}
+		return
+	}
+
+	var admissions []models.Admission
+
+	if err := config.DB.Where("class_number = ?", classNumber).Preload("Campus").Preload("Stream").Preload("Student").Find(&admissions).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Failed to fetch admission list"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": admissions})
 }
