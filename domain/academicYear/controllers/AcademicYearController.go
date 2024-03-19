@@ -12,6 +12,7 @@ import (
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -407,6 +408,31 @@ func AcademicYearsByCampusClass(context *gin.Context) {
 
 	// Populate the selected columns from the fetched data
 	for _, academicList := range academicYearInfo {
+
+		var studyPeriodInfo []studyPeriodModel.StudyPeriod
+		var studyPeriodInfo_ []responses2.StudyPeriodList
+		if err := config.DB.
+			Where("academic_year_number = ?", academicList.Number).
+			Order("code asc").
+			Find(&studyPeriodInfo).Error; err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
+			return
+		}
+
+		// Populate the selected columns from the fetched data
+		for _, studyPeriodList := range studyPeriodInfo {
+			studyPeriodInfo_ = append(studyPeriodInfo_, responses2.StudyPeriodList{
+				Number:               studyPeriodList.Number,
+				Code:                 studyPeriodList.Code,
+				StudyPeriodName:      studyPeriodList.StudyPeriodName,
+				StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
+				StudyPeriodEndDate:   (studyPeriodList.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
+				//AcademicYearNumber:   studyPeriodList.AcademicYearNumber,
+				//AcademicYearName:     studyPeriodList.AcademicYear.AcademicYearName,
+				UserNumber: studyPeriodList.UserNumber,
+			})
+		}
+
 		academicYearInfo_ = append(academicYearInfo_, responses.AcademicYearList{
 			Number:                academicList.Number,
 			Code:                  academicList.Code,
@@ -417,6 +443,7 @@ func AcademicYearsByCampusClass(context *gin.Context) {
 			UserNumber:            academicList.UserNumber,
 			LevelNumber:           academicList.CampusLevelNumber,
 			LevelName:             academicList.CampusLevel.CurriculumLevel.Level.Name,
+			StudyPeriod:           studyPeriodInfo_,
 		})
 	}
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": academicYearInfo_})
