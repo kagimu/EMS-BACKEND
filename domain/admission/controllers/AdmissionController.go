@@ -48,7 +48,7 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	var campusClass campusClassModels.Class
+	var campusClass campusClassModels.CampusClass
 	if err := config.DB.First(&campusClass, "number = ?", payload.ClassNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus class not found"})
 		return
@@ -158,7 +158,7 @@ func FetchAdmissions(c *gin.Context) {
 	paginationParams := helpers.ParsePaginationParams(c)
 
 	var admissions []models.Admission
-	query := config.DB.Model(&models.Admission{}).Preload("Student").Preload("Class").Preload("Campus").Preload("Stream")
+	query := config.DB.Model(&models.Admission{}).Preload("Student").Preload("CampusClass").Preload("Campus").Preload("Stream")
 
 	_, err := helpers.Paginate(query, paginationParams)
 	if err != nil {
@@ -190,7 +190,7 @@ func FetchAdmittedStudentsByClass(c *gin.Context) {
 	}
 
 	classNumber := c.Query("class_number")
-	var class campusClassModels.Class
+	var class campusClassModels.CampusClass
 
 	if classNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Class number is missing"})
