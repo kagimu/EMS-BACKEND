@@ -32,7 +32,7 @@ func CreateAdmission(c *gin.Context) {
 
 	var payload requests.AdmissionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -42,44 +42,38 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	studentNumber := c.Query("student_number")
 	var student studentModels.Student
-	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
+	if err := config.DB.First(&student, "number = ?", payload.StudentNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
 		return
 	}
 
-	classNumber := c.Query("class_number")
 	var class classModels.Class
-	if err := config.DB.First(&class, "number = ?", classNumber).Error; err != nil {
+	if err := config.DB.First(&class, "number = ?", payload.ClassNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Class not found"})
 		return
 	}
 
-	campusNumber := c.Query("campus_number")
 	var campus campusModels.Campus
-	if err := config.DB.First(&campus, "number = ?", campusNumber).Error; err != nil {
+	if err := config.DB.First(&campus, "number = ?", payload.CampusNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Campus not found"})
 		return
 	}
 
-	streamNumber := c.Query("stream_number")
 	var stream classModels.Stream
-	if err := config.DB.First(&stream, "number = ?", streamNumber).Error; err != nil {
+	if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Stream not found"})
 		return
 	}
 
-	studyPeriodNumber := c.Query("study_period_number")
 	var studyPeriod studyPeriodModel.StudyPeriod
-	if err := config.DB.First(&studyPeriod, "number = ?", studyPeriodNumber).Error; err != nil {
+	if err := config.DB.First(&studyPeriod, "number = ?", payload.StudyPeriodNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
 		return
 	}
 
-	interviewNumber := c.Query("interview_number")
 	var interview interviewModel.Interview
-	if err := config.DB.First(&interview, "number = ?", interviewNumber).Error; err != nil {
+	if err := config.DB.First(&interview, "number = ?", payload.InterviewNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Interview not found"})
 		return
 	}
@@ -107,7 +101,7 @@ func CreateAdmission(c *gin.Context) {
 		ADN:       generateADN,
 	}
 
-	if err := config.DB.Model(&student).Where("number= ?", studentNumber).Updates(updateStudent).Error; err != nil {
+	if err := config.DB.Model(&student).Where("number= ?", payload.StudentNumber).Updates(updateStudent).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
 		return
 	}

@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"fmt"
-	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/requests"
 	"net/http"
 	"strconv"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/requests"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -16,10 +18,14 @@ import (
 )
 
 func NewLevel(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
 
 	var levelInfo requests2.LevelInfo
-	err := context.BindJSON(&levelInfo)
-	if err != nil {
+	if err := context.BindJSON(&levelInfo); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
@@ -34,8 +40,6 @@ func NewLevel(context *gin.Context) {
 	code := levelInfo.Code
 	name := levelInfo.Name
 
-	userNumber := context.Request.Header["User-Number"][0]
-
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -44,16 +48,6 @@ func NewLevel(context *gin.Context) {
 
 	if codeNo == 0 {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
 		return
 	}
 
@@ -80,7 +74,7 @@ func NewLevel(context *gin.Context) {
 		Number:     uuid.NewV4().String(),
 		Name:       name,
 		Code:       codeNo,
-		UserNumber: userNumber,
+		UserNumber: user.Number,
 	}
 
 	if err := tx.Create(&saveLevel).Error; err != nil {
