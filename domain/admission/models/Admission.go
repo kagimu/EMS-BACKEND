@@ -18,8 +18,8 @@ type Admission struct {
 	Student           studentModel.Student         `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber      string                       `json:"campus_number" gorm:"size:36;"`
 	Campus            campusModels.Campus          `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	ClassNumber       string                       `json:"class_number" gorm:"size:36;"`
-	Class             classModels.Class            `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	CampusClassNumber string                       `json:"campus_class_number" gorm:"size:36;"`
+	CampusClass       classModels.CampusClass      `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriodNumber string                       `json:"study_period_number" gorm:"size:36;"`
 	StudyPeriod       studyPeriodModel.StudyPeriod `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	InterviewNumber   string                       `json:"interview_number" gorm:"size:36;"`

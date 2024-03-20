@@ -48,7 +48,7 @@ func CreateAdmission(c *gin.Context) {
 	}
 
 	var campusClass campusClassModels.CampusClass
-	if err := config.DB.First(&campusClass, "number = ?", payload.ClassNumber).Error; err != nil {
+	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus class not found"})
 		return
 	}
@@ -116,7 +116,7 @@ func CreateAdmission(c *gin.Context) {
 			StudyPeriodNumber: payload.StudyPeriodNumber,
 			InterviewNumber:   payload.InterviewNumber,
 			StudentNumber:     student,
-			ClassNumber:       payload.CampusNumber,
+			CampusClassNumber: payload.CampusClassNumber,
 			CampusNumber:      payload.CampusNumber,
 			StreamNumber:      payload.StreamNumber,
 			UserNumber:        user.Number,
