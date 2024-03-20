@@ -113,7 +113,6 @@ func CreateAdmission(c *gin.Context) {
 	for _, student := range payload.StudentNumber {
 		saveAdmission := models.Admission{
 			Number:            uuid.NewV4().String(),
-			AdmissionFeePaid:  payload.AdmissionFeePaid,
 			StudyPeriodNumber: payload.StudyPeriodNumber,
 			InterviewNumber:   payload.InterviewNumber,
 			StudentNumber:     student,
