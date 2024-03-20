@@ -123,24 +123,27 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	saveAdmission := models.Admission{
-		Number:            uuid.NewV4().String(),
-		AdmissionFeePaid:  payload.AdmissionFeePaid,
-		StudyPeriodNumber: payload.StudyPeriodNumber,
-		InterviewNumber:   payload.InterviewNumber,
-		StudentNumber:     payload.StudentNumber,
-		ClassNumber:       payload.CampusNumber,
-		CampusNumber:      payload.CampusNumber,
-		StreamNumber:      payload.StreamNumber,
-		UserNumber:        user.Number,
+	for _, student := range payload.StudentNumber {
+		saveAdmission := models.Admission{
+			Number:            uuid.NewV4().String(),
+			AdmissionFeePaid:  payload.AdmissionFeePaid,
+			StudyPeriodNumber: payload.StudyPeriodNumber,
+			InterviewNumber:   payload.InterviewNumber,
+			StudentNumber:     student,
+			ClassNumber:       payload.CampusNumber,
+			CampusNumber:      payload.CampusNumber,
+			StreamNumber:      payload.StreamNumber,
+			UserNumber:        user.Number,
+		}
+
+		if err := config.DB.Create(&saveAdmission).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
+			return
+		}
+
 	}
 
-	if err := config.DB.Create(&saveAdmission).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Admission created successfully", "data": saveAdmission})
+	c.JSON(http.StatusOK, gin.H{"message": "Admission created successfully"})
 
 }
 
@@ -177,148 +180,6 @@ func FetchAdmissions(c *gin.Context) {
 		"data":    admissions,
 		"message": "Admissions fetched successfully",
 	})
-}
-
-func AdmitStudent(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	studentNumber := c.Query("student_number")
-	var student studentModels.Student
-	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Student not found"})
-		return
-	}
-
-	studyPeriodNumber := c.Query("study_period_number")
-	var studyPeriod studyPeriodModel.StudyPeriod
-	if err := config.DB.First(&studyPeriod, "number = ?", studyPeriodNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
-		return
-	}
-
-	// Checks if the invoice is paid
-	var invoice invoiceModel.Invoice
-	if err := config.DB.First(&invoice, "student_number = ?", student.Number).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Failed to fetch invoice for the student"})
-		return
-	}
-
-	if invoice.Status != "PAID" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Student invoice is not paid", "debug": invoice})
-		return
-	}
-
-	generateADN, err := studentControllers.CreateADN(student.APNStatus)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to generate ADN"})
-		return
-	}
-
-	updateStudent := studentModels.Student{
-		APNStatus: "Archive",
-		ADN:       generateADN,
-	}
-
-	if err := config.DB.Model(&student).Where("number= ?", studentNumber).Updates(updateStudent).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
-		return
-	}
-
-	// Update the application status
-	applicationNumber := student.ApplicationNumber
-	application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
-		return
-	}
-
-	updateApplicationStatus := applicationModel.Application{
-		Status: "ADMITTED",
-	}
-
-	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
-		return
-	}
-
-	c.JSON(http.StatusOK, student)
-}
-
-func BulkAdmitStudents(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	type Input struct {
-		StudentNumbers []string `json:"student_numbers"`
-	}
-
-	var payload Input
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate input"})
-		return
-	}
-
-	for _, studentNumber := range payload.StudentNumbers {
-		var student studentModels.Student
-		if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Student not found"})
-			return
-		}
-
-		// Checks if the invoice is paid
-		var invoice invoiceModel.Invoice
-		if err := config.DB.First(&invoice, "student_number = ?", student.Number).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"message": "Failed to fetch invoice for the student"})
-			return
-		}
-
-		if invoice.Status != "PAID" {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Student invoice is not paid", "debug": invoice})
-			return
-		}
-
-		generateADN, err := studentControllers.CreateADN(student.APNStatus)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to generate ADN"})
-			return
-		}
-
-		updateStudent := studentModels.Student{
-			APNStatus: "Archive",
-			ADN:       generateADN,
-		}
-
-		if err := config.DB.Model(&student).Where("number= ?", studentNumber).Updates(updateStudent).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student", "err": err.Error()})
-			return
-		}
-
-		// Update the application status for every student
-		applicationNumber := student.ApplicationNumber
-		application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
-			return
-		}
-
-		updateApplicationStatus := applicationModel.Application{
-			Status: "ADMITTED",
-		}
-
-		if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Students admitted successfully"})
 }
 
 func FetchAdmittedStudentsByClass(c *gin.Context) {
