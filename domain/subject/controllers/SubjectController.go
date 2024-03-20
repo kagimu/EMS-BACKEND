@@ -321,6 +321,35 @@ func DeleteSubject(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Subject deleted successfully!"})
 }
 
+func SubjectCurriculumClass(context *gin.Context) {
+	curriculumClassNumber := context.Query("curriculum_class_number")
+
+	var topic []topicModel.Topic
+	if err := config.DB.
+		Where("curriculum_class_number = ?", curriculumClassNumber).
+		Joins("join strands on strands.number = topics.strand_number").
+		Preload("Strand.Subject").
+		Preload("Strand").
+		Order("created_at desc").
+		Find(&topic).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No topic found!"})
+		return
+	}
+
+	var subjectData []SubjectData
+	for _, item := range topic {
+		subjectData = append(subjectData, SubjectData{
+			Number: item.Strand.Subject.Number,
+			Name:   item.Strand.Subject.Name,
+			Code:   item.Strand.Subject.Code,
+		})
+	}
+
+	subjectData = removeDuplicates(subjectData)
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subjectData})
+}
+
 func SubjectInfo(context *gin.Context) {
 	subjectNumber := context.Query("subject_number")
 

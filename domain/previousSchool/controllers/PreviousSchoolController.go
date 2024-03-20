@@ -46,6 +46,8 @@ func CreatePreviousSchools(c *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin()
+
 	for _, item := range previousSchoolInfo {
 		savePreviousSchool := previousSchoolModel.PreviousSchool{
 			Number:            uuid.NewV4().String(),
@@ -53,7 +55,7 @@ func CreatePreviousSchools(c *gin.Context) {
 			ApplicationNumber: applicationNumber,
 		}
 
-		if err := config.DB.Create(&savePreviousSchool).Error; err != nil {
+		if err := tx.Create(&savePreviousSchool).Error; err != nil {
 
 			c.JSON(http.StatusBadRequest, gin.H{
 				"debug":   err.Error(),
@@ -62,7 +64,27 @@ func CreatePreviousSchools(c *gin.Context) {
 			})
 			return
 		}
+
+		// save previous school classes
+
+		for _, class := range item.Classes {
+			savePreviousSchoolClass := previousSchoolModel.PreviousSchoolClass{
+				PreviousSchoolNumber: savePreviousSchool.Number,
+				Class:                class.Name,
+				Year:                 class.Year,
+			}
+
+			if err := tx.Create(&savePreviousSchoolClass).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusBadRequest, gin.H{
+					"message": "failed to save previous school class",
+				})
+			}
+		}
+
 	}
+
+	tx.Commit()
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "student previous schools saved successfully",

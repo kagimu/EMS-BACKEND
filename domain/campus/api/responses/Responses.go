@@ -1,6 +1,9 @@
 package responses
 
-import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
+import (
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
+)
 
 type (
 	CampusDataList struct {
@@ -18,16 +21,18 @@ type (
 	}
 
 	CurriculumDataList struct {
-		Number string `json:"number"`
-		Name   string `json:"name"`
+		Number                 string `json:"number"`
+		SchoolCurriculumNumber string `json:"school_curriculum_number"`
+		Name                   string `json:"name"`
 	}
 
 	CampusLevelDataList struct {
-		Number                string                      `json:"number"`
-		CurriculumLevelNumber string                      `json:"curriculum_level_number"`
-		Code                  int64                       `json:"code"`
-		Name                  string                      `json:"name"`
-		Classes               []responses.CampusClassInfo `json:"classes"`
+		Number                string                        `json:"number"`
+		CurriculumLevelNumber string                        `json:"curriculum_level_number"`
+		Code                  int64                         `json:"code"`
+		Name                  string                        `json:"name"`
+		Classes               []responses.CampusClassInfo   `json:"classes"`
+		AcademicYear          []responses2.AcademicYearList `json:"academicYear"`
 	}
 
 	CampusLevelList struct {

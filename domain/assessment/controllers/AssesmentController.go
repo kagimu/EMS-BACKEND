@@ -31,7 +31,7 @@ func CreateAssessment(c *gin.Context) {
 		return
 	}
 
-	if student.APNStatus == "Inactive" {
+	if student.APNStatus != "Inactive" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Student ADN is still active"})
 		return
 	}
@@ -40,8 +40,10 @@ func CreateAssessment(c *gin.Context) {
 		Number:                 uuid.NewV4().String(),
 		AssessmentDate:         payload.AssessmentDate,
 		UserNumber:             user.Number,
+		Comment:                payload.Comment,
 		AssessmentMetricNumber: payload.AssessmentMetricNumber,
 		StudentNumber:          payload.StudentNumber,
+		ActualScore:            payload.ActualScore,
 	}
 
 	tx := config.DB.Begin()
@@ -60,7 +62,7 @@ func CreateAssessment(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": saveAssessment})
 }
 
-func FetchAssessment(c *gin.Context) {
+func FetchAssessmentByStudent(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
@@ -74,8 +76,31 @@ func FetchAssessment(c *gin.Context) {
 		return
 	}
 
+	assessmentMetricNumber := c.Query("assessment_metric_number")
+	var assessmentMetric models.AssessmentMetric
+	if err := config.DB.Model(&models.AssessmentMetric{}).Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric not found"})
+		return
+	}
+
 	var assessments []models.Assessment
-	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Preload("AssessmentArea").Preload("Level").Where("student_number = ?", studentNumber).Find(&assessments).Error; err != nil {
+	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Where("student_number = ? AND assessment_metric_number = ?", studentNumber, assessmentMetricNumber).Find(&assessments).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": assessments})
+}
+
+func FetchAssessments(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var assessments []models.Assessment
+	if err := config.DB.Model(&models.Assessment{}).Preload("AssessmentMetric").Preload("Student").Find(&assessments).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments"})
 		return
 	}

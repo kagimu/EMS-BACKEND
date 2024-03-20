@@ -2,17 +2,17 @@ package controllers
 
 import (
 	"fmt"
-	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
-	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"net/http"
 	"strconv"
 	"strings"
+
+	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
@@ -65,7 +65,7 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode models.Class
+	var duplicateCode classModel.Class
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		First(&duplicateCode).Error; duplicate == nil {
@@ -73,7 +73,7 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateClass models.Class
+	var duplicateClass classModel.Class
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		First(&duplicateClass).Error; duplicate == nil {
@@ -81,7 +81,7 @@ func NewClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateAbbreviation models.Class
+	var duplicateAbbreviation classModel.Class
 	if duplicate := config.DB.
 		Where("abbreviation = ?", abbreviation).
 		First(&duplicateAbbreviation).Error; duplicate == nil {
@@ -92,7 +92,7 @@ func NewClass(context *gin.Context) {
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
-	saveClass := models.Class{
+	saveClass := classModel.Class{
 		Number:       uuid.NewV4().String(),
 		Name:         name,
 		Abbreviation: abbreviation,
@@ -165,7 +165,7 @@ func EditClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateCode models.Class
+	var duplicateCode classModel.Class
 	if duplicate := config.DB.
 		Where("code = ?", codeNo).
 		Where("number != ?", classNumber).
@@ -174,7 +174,7 @@ func EditClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateClass models.Class
+	var duplicateClass classModel.Class
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("number != ?", classNumber).
@@ -183,7 +183,7 @@ func EditClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateAbbreviation models.Class
+	var duplicateAbbreviation classModel.Class
 	if duplicate := config.DB.
 		Where("abbreviation = ?", abbreviation).
 		Where("number != ?", classNumber).
@@ -195,10 +195,10 @@ func EditClass(context *gin.Context) {
 	// Begin the transaction
 	tx := config.DB.Begin()
 
-	var classDataInfo models.Class
+	var classDataInfo classModel.Class
 	updateLevel := tx.Model(&classDataInfo).
 		Where("number = ?", classNumber).
-		Updates(models.Class{Name: name, UserNumber: userNumber, Abbreviation: abbreviation, Code: codeNo, LevelNumber: level})
+		Updates(classModel.Class{Name: name, UserNumber: userNumber, Abbreviation: abbreviation, Code: codeNo, LevelNumber: level})
 	if updateLevel.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
@@ -263,7 +263,7 @@ func AddCampusClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateClass models.CampusClass
+	var duplicateClass classModel.CampusClass
 	db := config.DB
 	if duplicate := config.DB.
 		Where("curriculum_class_number = ?", classNumber).
@@ -273,7 +273,7 @@ func AddCampusClass(context *gin.Context) {
 
 		//check if this class has children such that it is not deleted
 
-		/*var classChildrenChecker models.ClassLevelSubject
+		/*var classChildrenChecker classModel.ClassLevelSubject
 		if err := db.
 			Where("class_level_number = ?", duplicateClass.Number).
 			First(&classChildrenChecker).Error; err == nil {
@@ -292,7 +292,7 @@ func AddCampusClass(context *gin.Context) {
 	}
 
 	number := uuid.NewV4().String()
-	saveClass := models.CampusClass{
+	saveClass := classModel.CampusClass{
 		Number:                number,
 		CurriculumClassNumber: classNumber,
 		CampusNumber:          campusNumber,
@@ -346,7 +346,7 @@ func AddCurriculumClass(context *gin.Context) {
 		return
 	}
 
-	var duplicateClass models.CurriculumClass
+	var duplicateClass classModel.CurriculumClass
 	db := config.DB
 	if duplicate := config.DB.
 		Where("class_number = ?", classNumber).
@@ -355,7 +355,7 @@ func AddCurriculumClass(context *gin.Context) {
 
 		//check if this class has children such that it is not deleted
 
-		/*var classChildrenChecker models.ClassLevelSubject
+		/*var classChildrenChecker classModel.ClassLevelSubject
 		if err := db.
 			Where("class_level_number = ?", duplicateClass.Number).
 			First(&classChildrenChecker).Error; err == nil {
@@ -372,7 +372,7 @@ func AddCurriculumClass(context *gin.Context) {
 		return
 	}
 
-	saveClass := models.CurriculumClass{
+	saveClass := classModel.CurriculumClass{
 		Number:                uuid.NewV4().String(),
 		ClassNumber:           classNumber,
 		CurriculumLevelNumber: levelNumber,
@@ -400,7 +400,7 @@ func FetchClasses(context *gin.Context) {
 
 	for _, list := range levels {
 
-		var classes []models.Class
+		var classes []classModel.Class
 		var classes_ []responses.ClassDataList
 		if err := config.DB.
 			Where("level_number = ?", list.Number).
@@ -454,7 +454,7 @@ func FetchCurriculumClasses(context *gin.Context) {
 
 	for _, list := range levels {
 
-		var classes []models.CurriculumClass
+		var classes []classModel.CurriculumClass
 		var classes_ []responses.ClassDataList
 		if err := config.DB.
 			Where("curriculum_level_number = ?", list.Number).
@@ -494,7 +494,7 @@ func FilterCurriculumClasses(context *gin.Context) {
 
 	level := context.Query("level")
 
-	var classes []models.Class
+	var classes []classModel.Class
 	var classes_ []responses.ClassDataList
 	if err := config.DB.
 		Where("level_number = ?", level).
@@ -550,7 +550,7 @@ func FetchSchemeOfWorkClasses(context *gin.Context) {
 	}
 
 	//fetch curriculum classes
-	var classes []models.CurriculumClass
+	var classes []classModel.CurriculumClass
 	var classes_ []responses.ClassDataList
 	if err := config.DB.
 		Scopes(levelDataFilter(levelNo)).
@@ -580,7 +580,7 @@ func FetchSchemeOfWorkClasses(context *gin.Context) {
 
 func FetchClassesCurriculum(context *gin.Context) {
 	curriculumNumber := context.Query("curriculum_number")
-	var classes []models.CurriculumClass
+	var classes []classModel.CurriculumClass
 	var classes_ []responses.ClassDataList
 	if err := config.DB.
 		Where("curriculum_levels.curriculum_number = ?", curriculumNumber).
@@ -621,7 +621,7 @@ func FetchClassesToAdd(context *gin.Context) {
 		return
 	}
 
-	var curriculumClasses []models.CurriculumClass
+	var curriculumClasses []classModel.CurriculumClass
 	var curriculumClasses_ []responses.CampusClassInfo
 	if err := config.DB.
 		Where("curriculum_level_number = ?", campusLevelData.CurriculumLevelNumber).
@@ -675,7 +675,7 @@ func levelInfoFilter(level string) func(db *gorm.DB) *gorm.DB {
 func FetchClassLevel(context *gin.Context) {
 
 	campusCurriculumNumber := context.Query("campus_curriculum_number")
-	//campusLevelNumber := context.Query("campus_level_number")
+	campusLevelNumber := context.Query("campus_level_number")
 
 	if campusCurriculumNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
@@ -685,6 +685,7 @@ func FetchClassLevel(context *gin.Context) {
 	var campusLevel []levelModels.CampusLevel
 	var campusLevel_ []responses3.CampusLevelDataList
 	if err := config.DB.
+		Scopes(levelClassFilter(campusLevelNumber)).
 		Where("campus_curriculum_number = ?", campusCurriculumNumber).
 		Preload("CurriculumLevel.Level").
 		Preload("CurriculumLevel").
@@ -695,11 +696,9 @@ func FetchClassLevel(context *gin.Context) {
 
 	for _, items := range campusLevel {
 
-		var classLevel []models.CampusClass
+		var classLevel []classModel.CampusClass
 		var classLevel_ []responses.CampusClassInfo
 		if err := config.DB.
-			//Scopes(levelClassFilter(levelNumber)).//
-			//Where("campus_number = ?", campusNumber). //
 			Where("campus_level_number = ?", items.Number).
 			Preload("CurriculumClass.Class").
 			Preload("CurriculumClass").
@@ -741,56 +740,13 @@ func FetchClassLevel(context *gin.Context) {
 		})
 	}
 
-	/*
-
-		if campusNumber == "" {
-			context.JSON(http.StatusBadRequest, gin.H{"message": "campus Number is required!"})
-			return
-		}
-
-		var classLevel []models.CampusClass
-		var classLevels []responses.CampusClassInfo
-
-		if err := config.DB.
-			Scopes(levelClassFilter(levelNumber)).
-			Where("campus_number = ?", campusNumber).
-			Preload("CurriculumClass.Class").
-			Preload("CurriculumClass").
-			Preload("Streams").
-			Order("code asc").
-			Find(&classLevel).Error; err != nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
-			return
-		}
-
-		for _, lst := range classLevel {
-			var stream_ []responses.StreamInfo
-
-			for _, list := range lst.Streams {
-				stream_ = append(stream_, responses.StreamInfo{
-					StreamNumber: list.Number,
-					Name:         list.Name,
-				})
-			}
-
-			classLevels = append(classLevels, responses.CampusClassInfo{
-				Number:                lst.Number,
-				Name:                  lst.CurriculumClass.Class.Name,
-				ClassNumber:           lst.CurriculumClass.Class.Number,
-				Abbreviation:          lst.CurriculumClass.Class.Abbreviation,
-				CurriculumClassNumber: lst.CurriculumClassNumber,
-				Code:                  lst.Code,
-				Streams:               stream_,
-			})
-		}*/
-
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campusLevel_})
 }
 
 func levelClassFilter(levelNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if levelNumber != "" {
-			return db.Where("campus_level_number = ?", levelNumber)
+			return db.Where("number = ?", levelNumber)
 		}
 		return db
 	}
@@ -806,8 +762,8 @@ func FetchClassSubjects(context *gin.Context) {
 		return
 	}*/
 
-	var classSubjects []models.ClassLevelSubject
-	var subjects_ []models.SubjectInfo
+	var classSubjects []classModel.ClassLevelSubject
+	var subjects_ []classModel.SubjectInfo
 	if err := config.DB.
 		Scopes(classFilter(classNumber)).
 		//Where("campus_classes.level_number = ?", levelNumber).
@@ -823,7 +779,7 @@ func FetchClassSubjects(context *gin.Context) {
 	}
 
 	for _, item := range classSubjects {
-		subjects_ = append(subjects_, models.SubjectInfo{
+		subjects_ = append(subjects_, classModel.SubjectInfo{
 			SubjectNumber: item.Subject.Number,
 			Name:          item.Subject.Name,
 			Class:         item.ClassLevel.CurriculumClass.Class.Name,
@@ -883,7 +839,7 @@ func NewClassSubjects(context *gin.Context) {
 		return
 	}
 
-	var duplicateSubjectClass models.ClassLevelSubject
+	var duplicateSubjectClass classModel.ClassLevelSubject
 	if duplicate := config.DB.
 		Where("class_level_number = ?", classNumber).
 		Where("subject_number = ?", subjectNumbers).
@@ -891,7 +847,7 @@ func NewClassSubjects(context *gin.Context) {
 
 		//		add a subject to a learning area once no duplicates
 		number := uuid.NewV4().String()
-		saveLevel := models.ClassLevelSubject{
+		saveLevel := classModel.ClassLevelSubject{
 			Number:           number,
 			ClassLevelNumber: classNumber,
 			SubjectNumber:    subjectNumbers,
@@ -930,7 +886,7 @@ func AddClassStream(ctx *gin.Context) {
 	//add streams to the class
 	if streams != nil {
 		for _, stream := range streams {
-			streamObj := models.Stream{
+			streamObj := classModel.Stream{
 				Number:           uuid.NewV4().String(),
 				Name:             stream,
 				ClassLevelNumber: streamRequest.ClassLevelNumber,
@@ -961,7 +917,7 @@ func AddClassStream(ctx *gin.Context) {
 }
 
 func FetchStreamsByClassLevelNumber(ctx *gin.Context) {
-	var streams []models.Stream
+	var streams []classModel.Stream
 	classLevelNumber := ctx.Query("class_level_number")
 
 	if classLevelNumber == "" {
@@ -1058,7 +1014,7 @@ func ClassInfo(context *gin.Context) {
 		return
 	}
 
-	var class models.Class
+	var class classModel.Class
 	if err := config.DB.
 		Where("number = ?", classNumber).
 		First(&class).Error; err != nil {

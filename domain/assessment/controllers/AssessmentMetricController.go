@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
@@ -29,14 +30,23 @@ func CreateAssessmentMetric(c *gin.Context) {
 		return
 	}
 
+	formatDate, err := time.Parse("2006-01-02", payload.ScheduledOn)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse time"})
+		return
+	}
+
 	saveAssessmentMetric := models.AssessmentMetric{
-		Number:               uuid.NewV4().String(),
-		Name:                 payload.Name,
-		Weight:               payload.Weight,
-		AssessmentAreaNumber: payload.AssessmentAreaNumber,
-		Description:          payload.Description,
-		MaxScore:             payload.MaxScore,
-		ActualScore:          payload.ActualScore,
+		Number:                uuid.NewV4().String(),
+		GradingStandardNumber: payload.GradingStandardNumber,
+		StudyPeriodNumber:     payload.StudyPeriodNumber,
+		ScheduledOn:           formatDate,
+		CampusClassNumber:     payload.CampusClassNumber,
+		MetricNumber:          payload.MetricNumber,
+		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
+		Weight:                payload.Weight,
+		Description:           payload.Description,
+		MaxScore:              payload.MaxScore,
 	}
 
 	if err := config.DB.Create(&saveAssessmentMetric).Error; err != nil {
@@ -55,7 +65,7 @@ func FetchAssessmentMetrics(c *gin.Context) {
 	}
 
 	var assessmentMetrics []models.AssessmentMetric
-	if err := config.DB.Model(&models.AssessmentMetric{}).Find(&assessmentMetrics).Error; err != nil {
+	if err := config.DB.Model(&models.AssessmentMetric{}).Preload("AssessmentArea").Preload("Metric").Find(&assessmentMetrics).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics"})
 		return
 	}
