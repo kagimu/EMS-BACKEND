@@ -15,7 +15,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
-	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	studentControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -75,18 +74,6 @@ func CreateAdmission(c *gin.Context) {
 	var interview interviewModel.Interview
 	if err := config.DB.First(&interview, "number = ?", payload.InterviewNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Interview not found"})
-		return
-	}
-
-	// Checks if the invoice is paid
-	var invoice invoiceModel.Invoice
-	if err := config.DB.First(&invoice, "student_number = ?", student.Number).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Failed to fetch invoice for the student"})
-		return
-	}
-
-	if invoice.Status != "PAID" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Student invoice is not paid", "debug": invoice})
 		return
 	}
 
