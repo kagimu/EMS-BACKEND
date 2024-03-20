@@ -14,10 +14,8 @@ import (
 type Admission struct {
 	gorm.Model
 	Number            string                       `json:"number" gorm:"size:36;unique;not null"`
-	Status            string                       `json:"status"`
-	AdmissionFeePaid  bool                         `json:"admission_fee_paid" gorm:"default:false"`
 	StudentNumber     string                       `json:"student_number" gorm:"size:36;"`
-	Student           studentModel.Student         `gorm:"foreignKey:StudentNumber;references:APN;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Student           studentModel.Student         `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber      string                       `json:"campus_number" gorm:"size:36;"`
 	Campus            campusModels.Campus          `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	ClassNumber       string                       `json:"class_number" gorm:"size:36;"`
