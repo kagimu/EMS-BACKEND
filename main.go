@@ -11,6 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/logger"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -18,10 +19,10 @@ import (
 var err error
 
 func main() {
-	// err := godotenv.Load(".env")
-	// if err != nil {
-	// 	log.Fatal("Error loading .env file")
-	// }
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	gin.SetMode(gin.DebugMode)
 

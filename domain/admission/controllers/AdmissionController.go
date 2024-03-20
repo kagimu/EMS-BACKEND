@@ -11,7 +11,7 @@ import (
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
@@ -48,9 +48,9 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	var class classModels.Class
-	if err := config.DB.First(&class, "number = ?", payload.ClassNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Class not found"})
+	var campusClass campusClassModels.Class
+	if err := config.DB.First(&campusClass, "number = ?", payload.ClassNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus class not found"})
 		return
 	}
 
@@ -60,7 +60,7 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	var stream classModels.Stream
+	var stream campusClassModels.Stream
 	if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Stream not found"})
 		return
@@ -190,7 +190,7 @@ func FetchAdmittedStudentsByClass(c *gin.Context) {
 	}
 
 	classNumber := c.Query("class_number")
-	var class classModels.Class
+	var class campusClassModels.Class
 
 	if classNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Class number is missing"})
