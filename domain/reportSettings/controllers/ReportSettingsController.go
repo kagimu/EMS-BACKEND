@@ -27,7 +27,7 @@ func CreateReportSettings(c *gin.Context) {
 		Number:             uuid.NewV4().String(),
 		StudyPeriodNumber:  payload.StudyPeriodNumber,
 		AcademicYearNumber: payload.AcademicYearNumber,
-		ClassNumber:        payload.ClassNumber,
+		CampusClassNumber:  payload.CampusClassNumber,
 		Columns:            payload.Columns,
 		Status:             payload.Status,
 	}
@@ -151,7 +151,7 @@ func CreateReportSummary(ctx *gin.Context) {
 		Number:              uuid.NewV4().String(),
 		ReportSettingNumber: payload.ReportSettingNumber,
 		StudentNumber:       payload.StudentNumber,
-		ClassNumber:         payload.ClassNumber,
+		CampusClassNumber:   payload.CampusClassNumber,
 		StudyPeriodNumber:   payload.StudyPeriodNumber,
 		Grade:               payload.Grade,
 		Aggregate:           payload.Aggregate,
