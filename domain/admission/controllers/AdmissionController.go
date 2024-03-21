@@ -180,19 +180,17 @@ func FilterAdmissions(c *gin.Context) {
 	if c.Query("study_period_number") != "" {
 		query = query.Where("study_period_number = ?", payload.StudyPeriodNumber)
 	}
-	if c.Query("study_period_number") != "" {
+	if c.Query("interview_number") != "" {
 		query = query.Where("interview_number = ?", payload.InterviewNumber)
 	}
-	if c.Query("study_period_number") != "" {
-		query = query.Where("study_period_number = ?", payload.StudyPeriodNumber)
-	}
-	if c.Query("study_period_number") != "" {
+
+	if c.Query("stream_number") != "" {
 		query = query.Where("stream_number = ?", payload.StreamNumber)
 	}
-	if c.Query("study_period_number") != "" {
+	if c.Query("campus_number") != "" {
 		query = query.Where("campus_number = ?", payload.CampusNumber)
 	}
-	if c.Query("study_period_number") != "" {
+	if c.Query("campus_class_number") != "" {
 		query = query.Where("campus_class_number = ?", payload.CampusClassNumber)
 	}
 
@@ -201,5 +199,5 @@ func FilterAdmissions(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": admissions})
+	c.JSON(http.StatusOK, gin.H{"data": admissions})
 }
