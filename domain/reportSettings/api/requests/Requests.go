@@ -1,0 +1,159 @@
+package requests
+
+import "errors"
+
+type ReportSettingsRequest struct {
+	AcademicYearNumber string `json:"academic_year_number"`
+	StudyPeriodNumber  string `json:"study_period_number"`
+	ClassNumber        string `json:"class_number"`
+	Columns            int64  `json:"columns"`
+	Status             string `json:"status"`
+}
+
+type ReportColumnRequest struct {
+	ReportSettingNumber string  `json:"report_setting_number"`
+	Name                string  `json:"name"`
+	PercentageShare     float64 `json:"percentage_share"`
+}
+
+type ReportColumnAssessmentRequest struct {
+	ReportColumnNumber     string `json:"report_column_number"`
+	AssessmentAreaNumber   string `json:"assessment_number"`
+	AssessmentMetricNumber string `json:"assessment_metric_number"`
+}
+
+type ReportSummaryRequest struct {
+	ReportSettingNumber string  `json:"report_setting_number"`
+	StudentNumber       string  `json:"student_number"`
+	ClassNumber         string  `json:"class_number"`
+	StudyPeriodNumber   string  `json:"study_period_number"`
+	Grade               string  `json:"grade"`
+	Aggregate           float64 `json:"aggregate"`
+	Comment             string  `json:"comment"`
+}
+
+type ReportScoreSummaryRequest struct {
+	ReportSummaryNumber  string  `json:"report_summary_number"`
+	AssessmentAreaNumber string  `json:"assessment_area_number"`
+	Aggregate            float64 `json:"aggregate"`
+	Grade                string  `json:"grade"`
+	Summation            float64 `json:"summation"`
+}
+
+type ReportScoreRequest struct {
+	ReportSummaryNumber  string  `json:"report_summary_number"`
+	AssessmentAreaNumber string  `json:"assessment_area_number"`
+	ReportColumnNumber   string  `json:"report_column_number"`
+	Score                float64 `json:"score"`
+	Aggregate            float64 `json:"aggregate"`
+	Grade                string  `json:"grade"`
+}
+
+func (reportSummary *ReportSummaryRequest) ValidateReportSummary() error {
+	if reportSummary.ReportSettingNumber == "" {
+		return errors.New("report setting is required")
+	}
+	if reportSummary.StudentNumber == "" {
+		return errors.New("student is required")
+	}
+	if reportSummary.ClassNumber == "" {
+		return errors.New("class is required")
+	}
+	if reportSummary.StudyPeriodNumber == "" {
+		return errors.New("study period is required")
+	}
+	if reportSummary.Grade == "" {
+		return errors.New("grade is required")
+	}
+	if reportSummary.Aggregate == 0 {
+		return errors.New("aggregate is required")
+	}
+	return nil
+
+}
+
+func (reportSetting *ReportSettingsRequest) ValidateReportSetting() error {
+	if reportSetting.AcademicYearNumber == "" {
+		return errors.New("academic year is required")
+	}
+	if reportSetting.StudyPeriodNumber == "" {
+		return errors.New("study period is required")
+	}
+	if reportSetting.ClassNumber == "" {
+		return errors.New("class is required")
+	}
+	if reportSetting.Columns == 0 {
+		return errors.New("number of columns is required")
+	}
+	return nil
+}
+
+func (reportScoreSummary *ReportScoreSummaryRequest) ValidateReportScoreSummary() error {
+	if reportScoreSummary.ReportSummaryNumber == "" {
+		return errors.New("report summary is required")
+	}
+	if reportScoreSummary.AssessmentAreaNumber == "" {
+		return errors.New("assessment area is required")
+	}
+	if reportScoreSummary.Aggregate == 0 {
+		return errors.New("aggregate is required")
+	}
+	if reportScoreSummary.Grade == "" {
+		return errors.New("grade is required")
+	}
+	if reportScoreSummary.Summation == 0 {
+		return errors.New("summation is required")
+	}
+	return nil
+}
+
+func (reportScore *ReportScoreRequest) ValidateReportScore() error {
+	if reportScore.ReportSummaryNumber == "" {
+		return errors.New("report summary is required")
+	}
+	if reportScore.AssessmentAreaNumber == "" {
+		return errors.New("assessment area is required")
+	}
+	if reportScore.ReportColumnNumber == "" {
+		return errors.New("report column is required")
+	}
+	if reportScore.Score == 0 {
+		return errors.New("score is required")
+	}
+	if reportScore.Aggregate == 0 {
+		return errors.New("aggregate is required")
+	}
+	if reportScore.Grade == "" {
+		return errors.New("grade is required")
+	}
+	return nil
+
+}
+
+func (reportColumnAssessment *ReportColumnAssessmentRequest) ValidateReportColumnAssessment() error {
+	if reportColumnAssessment.ReportColumnNumber == "" {
+		return errors.New("report column is required")
+	}
+	if reportColumnAssessment.AssessmentAreaNumber == "" {
+		return errors.New("assessment area is required")
+	}
+	if reportColumnAssessment.AssessmentMetricNumber == "" {
+		return errors.New("assessment metric is required")
+	}
+	return nil
+
+}
+
+func (reportColumn *ReportColumnRequest) ValidateReportColumn() error {
+	if reportColumn.ReportSettingNumber == "" {
+		return errors.New("report setting is required")
+	}
+	if reportColumn.Name == "" {
+		return errors.New("name is required")
+	}
+	if reportColumn.PercentageShare == 0 {
+		return errors.New("percentage share is required")
+	}
+	return nil
+
+}
