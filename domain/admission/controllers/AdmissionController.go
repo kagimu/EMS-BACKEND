@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -20,7 +19,6 @@ import (
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"gorm.io/gorm"
 )
 
 func CreateAdmission(c *gin.Context) {
@@ -168,34 +166,36 @@ func FetchAdmissions(c *gin.Context) {
 	})
 }
 
-func FetchAdmittedStudentsByClass(c *gin.Context) {
+func FilterAdmissions(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	classNumber := c.Query("class_number")
-	var class campusClassModels.CampusClass
-
-	if classNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Class number is missing"})
-		return
-	}
-
-	if err := config.DB.First(&class, "number = ?", classNumber).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"message": "Class not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
-		}
-		return
-	}
+	var payload requests.AdmissionRequest
 
 	var admissions []models.Admission
+	query := config.DB.Model(&models.Admission{})
+	if c.Query("study_period_number") != "" {
+		query = query.Where("study_period_number = ?", payload.StudyPeriodNumber)
+	}
+	if c.Query("interview_number") != "" {
+		query = query.Where("interview_number = ?", payload.InterviewNumber)
+	}
 
-	if err := config.DB.Where("class_number = ?", classNumber).Preload("Campus").Preload("Stream").Preload("Student").Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Failed to fetch admission list"})
+	if c.Query("stream_number") != "" {
+		query = query.Where("stream_number = ?", payload.StreamNumber)
+	}
+	if c.Query("campus_number") != "" {
+		query = query.Where("campus_number = ?", payload.CampusNumber)
+	}
+	if c.Query("campus_class_number") != "" {
+		query = query.Where("campus_class_number = ?", payload.CampusClassNumber)
+	}
+
+	if err := query.Preload("Interview").Preload("StudyPeriod").Preload("Stream").Preload("Campus").Preload("CampusClass").Find(&admissions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
 		return
 	}
 
