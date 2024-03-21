@@ -2,7 +2,7 @@ package requests
 
 import "errors"
 
-type ProgressiveReportRequest struct {
+type ProgressReportRequest struct {
 	ClassTeacher      string `json:"class_teacher"`
 	SubjectTeacher    string `json:"subject_teacher"`
 	StudentNumber     string `json:"student_number"`
@@ -10,7 +10,7 @@ type ProgressiveReportRequest struct {
 	Comment           string `json:"comment"`
 }
 
-func (r *ProgressiveReportRequest) Validate() error {
+func (r *ProgressReportRequest) Validate() error {
 	if r.ClassTeacher == "" {
 		return errors.New("class teacher is required")
 	}

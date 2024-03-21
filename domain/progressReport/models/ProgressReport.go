@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type ProgressiveReport struct {
+type ProgressReport struct {
 	gorm.Model
 	Number            string                       `json:"number" gorm:"size:36;unique;not null"`
 	StudyPeriodNumber string                       `json:"study_period_number" gorm:"size:36;"`

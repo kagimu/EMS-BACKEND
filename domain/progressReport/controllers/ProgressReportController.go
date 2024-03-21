@@ -5,21 +5,21 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressiveReport/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressiveReport/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
 
-func CreateProgressiveReport(c *gin.Context) {
+func CreateProgressReport(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	var payload requests.ProgressiveReportRequest
+	var payload requests.ProgressReportRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
@@ -37,7 +37,7 @@ func CreateProgressiveReport(c *gin.Context) {
 		return
 	}
 
-	saveReport := models.ProgressiveReport{
+	saveReport := models.ProgressReport{
 		Number:            uuid.NewV4().String(),
 		StudentNumber:     studentNumber,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
@@ -62,7 +62,7 @@ func FetchAllPromotions(c *gin.Context) {
 		return
 	}
 
-	var reports []models.ProgressiveReport
+	var reports []models.ProgressReport
 	if err := config.DB.Find(&reports).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report cards"})
 		return
