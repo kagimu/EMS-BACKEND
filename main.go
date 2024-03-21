@@ -71,7 +71,6 @@ func main() {
 		fmt.Println("Error initializing logger:", err)
 		return
 	}
-
 	loger.Info("Logger construction succeeded")
 
 	router := routes.SetupRoutes()
