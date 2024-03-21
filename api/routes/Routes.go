@@ -34,7 +34,7 @@ import (
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
-	reportCardController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportCards/controllers"
+	progressiveReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressiveReport/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
@@ -440,7 +440,7 @@ func SetupRoutes() *gin.Engine {
 		admission := main.Group("/admissions")
 		{
 			admission.POST("", admissionController.CreateAdmission)
-			admission.GET("", admissionController.FetchAdmittedStudentsByClass)
+			admission.GET("/", admissionController.FilterAdmissions)
 
 			offer := admission.Group("/admission-offers")
 			{
@@ -527,8 +527,8 @@ func SetupRoutes() *gin.Engine {
 
 		reportCards := main.Group("report-cards")
 		{
-			reportCards.POST("", reportCardController.CreateReportCard)
-			reportCards.GET("", reportCardController.FetchAllPromotions)
+			reportCards.POST("", progressiveReportController.CreateProgressiveReport)
+			reportCards.GET("", progressiveReportController.FetchAllPromotions)
 		}
 
 		gradingStandard := main.Group("grading-standard")
