@@ -14,7 +14,7 @@ type ReportSetting struct {
 	Number             string                         `json:"number" gorm:"size:36;unique;not null"`
 	AcademicYearNumber string                         `json:"academic_year_number" gorm:"size:36;"`
 	StudyPeriodNumber  string                         `json:"study_period_number" gorm:"size:36;"`
-	ClassNumber        string                         `json:"class_number" gorm:"size:36;"`
+	CampusClassNumber  string                         `json:"campus_class_number" gorm:"size:36;"`
 	Columns            int64                          `json:"columns" gorm:"type:bigint;"`
 	Status             string                         `json:"status" gorm:"type:text;"`
 	AcademicYear       academicYearModel.AcademicYear `gorm:"foreignKey:AcademicYearNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
@@ -51,7 +51,7 @@ type ReportSummary struct {
 	Number              string                  `json:"number" gorm:"size:36;unique;not null"`
 	ReportSettingNumber string                  `json:"report_setting_number" gorm:"size:36;"`
 	StudentNumber       string                  `json:"student_number" gorm:"size:36;"`
-	ClassNumber         string                  `json:"class_number" gorm:"size:36;"`
+	CampusClassNumber   string                  `json:"campus_class_number" gorm:"size:36;"`
 	StudyPeriodNumber   string                  `json:"study_period_number" gorm:"size:36;"`
 	Grade               string                  `json:"grade" gorm:"type:text;"`
 	Aggregate           float64                 `json:"aggregate" gorm:"type:double precision;"`
