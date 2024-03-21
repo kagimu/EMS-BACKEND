@@ -39,81 +39,81 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	var student studentModels.Student
-	if err := config.DB.First(&student, "number = ?", payload.StudentNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
-		return
-	}
+	for _, studentPayload := range payload.StudentNumber {
+		var student studentModels.Student
+		if err := config.DB.First(&student, "number = ?", studentPayload).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
+			return
+		}
 
-	var campusClass campusClassModels.CampusClass
-	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus class not found"})
-		return
-	}
+		var campusClass campusClassModels.CampusClass
+		if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus class not found"})
+			return
+		}
 
-	var campus campusModels.Campus
-	if err := config.DB.First(&campus, "number = ?", payload.CampusNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Campus not found"})
-		return
-	}
+		var campus campusModels.Campus
+		if err := config.DB.First(&campus, "number = ?", payload.CampusNumber).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Campus not found"})
+			return
+		}
 
-	var stream campusClassModels.Stream
-	if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Stream not found"})
-		return
-	}
+		var stream campusClassModels.Stream
+		if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Stream not found"})
+			return
+		}
 
-	var studyPeriod studyPeriodModel.StudyPeriod
-	if err := config.DB.First(&studyPeriod, "number = ?", payload.StudyPeriodNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
-		return
-	}
+		var studyPeriod studyPeriodModel.StudyPeriod
+		if err := config.DB.First(&studyPeriod, "number = ?", payload.StudyPeriodNumber).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
+			return
+		}
 
-	var interview interviewModel.Interview
-	if err := config.DB.First(&interview, "number = ?", payload.InterviewNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Interview not found"})
-		return
-	}
+		var interview interviewModel.Interview
+		if err := config.DB.First(&interview, "number = ?", payload.InterviewNumber).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Interview not found"})
+			return
+		}
 
-	generateADN, err := studentControllers.CreateADN(student.APNStatus)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to generate ADN"})
-		return
-	}
+		generateADN, err := studentControllers.CreateADN(student.APNStatus)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create ADN"})
+			return
+		}
 
-	updateStudent := studentModels.Student{
-		APNStatus: "Archive",
-		ADN:       generateADN,
-	}
+		updateStudent := studentModels.Student{
+			APNStatus: "Archive",
+			ADN:       generateADN,
+		}
 
-	if err := config.DB.Model(&student).Where("number= ?", payload.StudentNumber).Updates(updateStudent).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
-		return
-	}
+		if err := config.DB.Model(&student).Where("number= ?", studentPayload).Updates(updateStudent).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
+			return
+		}
 
-	// Update the application status
-	applicationNumber := student.ApplicationNumber
-	application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
-		return
-	}
+		// Update the application status
+		applicationNumber := student.ApplicationNumber
+		application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
+			return
+		}
 
-	updateApplicationStatus := applicationModel.Application{
-		Status: "ADMITTED",
-	}
+		updateApplicationStatus := applicationModel.Application{
+			Status: "ADMITTED",
+		}
 
-	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
-		return
-	}
+		if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
+			return
+		}
 
-	for _, student := range payload.StudentNumber {
 		saveAdmission := models.Admission{
 			Number:            uuid.NewV4().String(),
 			StudyPeriodNumber: payload.StudyPeriodNumber,
 			InterviewNumber:   payload.InterviewNumber,
-			StudentNumber:     student,
+			StudentNumber:     studentPayload,
 			CampusClassNumber: payload.CampusClassNumber,
 			CampusNumber:      payload.CampusNumber,
 			StreamNumber:      payload.StreamNumber,
@@ -121,7 +121,7 @@ func CreateAdmission(c *gin.Context) {
 		}
 
 		if err := config.DB.Create(&saveAdmission).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission", "err": err.Error()})
 			return
 		}
 
@@ -153,48 +153,96 @@ func FetchAdmissions(c *gin.Context) {
 	}
 
 	if err := query.Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Admission fetching failed",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Admission fetching failed"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"data":    admissions,
-		"message": "Admissions fetched successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"data": admissions})
 }
 
-func FilterAdmissions(c *gin.Context) {
+func FilterAdmissionsByStudyPeriod(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	var payload requests.AdmissionRequest
+	var admissions []models.Admission
+	studyPeriodNumber := c.Query("study_period_number")
+
+	if err := config.DB.Where("study_period_number = ?", studyPeriodNumber).Find(&admissions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": admissions})
+}
+
+func FilterAdmissionsByCampus(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
 
 	var admissions []models.Admission
-	query := config.DB.Model(&models.Admission{})
-	if c.Query("study_period_number") != "" {
-		query = query.Where("study_period_number = ?", payload.StudyPeriodNumber)
-	}
-	if c.Query("interview_number") != "" {
-		query = query.Where("interview_number = ?", payload.InterviewNumber)
+	campusNumber := c.Query("campus_number")
+
+	if err := config.DB.Where("campus_number = ?", campusNumber).Find(&admissions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
+		return
 	}
 
-	if c.Query("stream_number") != "" {
-		query = query.Where("stream_number = ?", payload.StreamNumber)
-	}
-	if c.Query("campus_number") != "" {
-		query = query.Where("campus_number = ?", payload.CampusNumber)
-	}
-	if c.Query("campus_class_number") != "" {
-		query = query.Where("campus_class_number = ?", payload.CampusClassNumber)
+	c.JSON(http.StatusOK, gin.H{"data": admissions})
+}
+
+func FilterAdmissionsByCampusClass(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
 	}
 
-	if err := query.Preload("Interview").Preload("StudyPeriod").Preload("Stream").Preload("Campus").Preload("CampusClass").Find(&admissions).Error; err != nil {
+	var admissions []models.Admission
+	campusNumber := c.Query("campus_number")
+
+	if err := config.DB.Where("campus_number = ?", campusNumber).Find(&admissions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": admissions})
+}
+
+func FilterAdmissionsByStream(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var admissions []models.Admission
+	streamNumber := c.Query("stream_number")
+
+	if err := config.DB.Where("stream_number = ?", streamNumber).Find(&admissions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": admissions})
+}
+
+func FilterAdmissionsByInterview(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var admissions []models.Admission
+	interviewNumber := c.Query("interview_number")
+
+	if err := config.DB.Where("interview_number = ?", interviewNumber).Find(&admissions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
 		return
 	}
