@@ -375,11 +375,6 @@ func SetupRoutes() *gin.Engine {
 			preAdmissionInterviewTestReport.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
 		}
 
-		preAdmissionInterviewTest := main.Group("/pre-admission-interview-tests")
-		{
-			preAdmissionInterviewTest.POST("", preInterviewController.CreatePreAdmissionInterviewTest)
-		}
-
 		interview := main.Group("/interviews")
 		{
 			interview.POST("", interviewController.CreateInterview)

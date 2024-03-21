@@ -33,6 +33,7 @@ import (
 	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	progressReportModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/models"
+	reportSettings "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
@@ -98,7 +99,6 @@ func Init() error {
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&studentModels.ADN{},
-		&preInterviewModels.PreAdmissionInterviewTest{},
 		&gradeModel.Grade{},
 		&admissionModel.Admission{},
 		&admissionModel.AdmissionOfferCondition{},
@@ -146,6 +146,12 @@ func Init() error {
 		&staffModel.Staff{},
 		&interviewModel.InterviewAssessmentMetric{},
 		&progressReportModels.ProgressReport{},
+		&reportSettings.ReportSetting{},
+		&reportSettings.ReportColumn{},
+		&reportSettings.ReportColumnAssessment{},
+		&reportSettings.ReportSummary{},
+		&reportSettings.ReportScore{},
+		&reportSettings.ReportScoreSummary{},
 	)
 
 	if err != nil {
