@@ -35,6 +35,7 @@ import (
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
+	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
@@ -375,11 +376,6 @@ func SetupRoutes() *gin.Engine {
 			preAdmissionInterviewTestReport.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
 		}
 
-		preAdmissionInterviewTest := main.Group("/pre-admission-interview-tests")
-		{
-			preAdmissionInterviewTest.POST("", preInterviewController.CreatePreAdmissionInterviewTest)
-		}
-
 		interview := main.Group("/interviews")
 		{
 			interview.POST("", interviewController.CreateInterview)
@@ -579,6 +575,23 @@ func SetupRoutes() *gin.Engine {
 				joTitles.GET("", staffController.FetchJobTitles)
 				joTitles.PUT("", staffController.EditJobTitle)
 			}
+
+		}
+
+		reportSettings := main.Group("report-settings")
+		{
+			reportSettings.POST("", reportSettingsController.CreateReportSettings)
+			reportSettings.GET("", reportSettingsController.FetchReportSettings)
+			reportSettings.POST("columns", reportSettingsController.CreatReportColumn)
+			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
+			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
+			reportSettings.GET("report-column-assessment", reportSettingsController.FetchReportColumnAssessments)
+			reportSettings.POST("report-summary", reportSettingsController.CreateReportSummary)
+			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
+			reportSettings.POST("report-score", reportSettingsController.CreateReportScore)
+			reportSettings.GET("report-score", reportSettingsController.FetchReportScores)
+			reportSettings.POST("report-score-summary", reportSettingsController.CreateReportScoreSummary)
+			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
 
 		}
 	}
