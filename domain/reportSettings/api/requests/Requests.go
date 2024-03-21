@@ -5,7 +5,7 @@ import "errors"
 type ReportSettingsRequest struct {
 	AcademicYearNumber string `json:"academic_year_number"`
 	StudyPeriodNumber  string `json:"study_period_number"`
-	ClassNumber        string `json:"class_number"`
+	CampusClassNumber  string `json:"campus_class_number"`
 	Columns            int64  `json:"columns"`
 	Status             string `json:"status"`
 }
@@ -25,7 +25,7 @@ type ReportColumnAssessmentRequest struct {
 type ReportSummaryRequest struct {
 	ReportSettingNumber string  `json:"report_setting_number"`
 	StudentNumber       string  `json:"student_number"`
-	ClassNumber         string  `json:"class_number"`
+	CampusClassNumber   string  `json:"campus_class_number"`
 	StudyPeriodNumber   string  `json:"study_period_number"`
 	Grade               string  `json:"grade"`
 	Aggregate           float64 `json:"aggregate"`
@@ -56,7 +56,7 @@ func (reportSummary *ReportSummaryRequest) ValidateReportSummary() error {
 	if reportSummary.StudentNumber == "" {
 		return errors.New("student is required")
 	}
-	if reportSummary.ClassNumber == "" {
+	if reportSummary.CampusClassNumber == "" {
 		return errors.New("class is required")
 	}
 	if reportSummary.StudyPeriodNumber == "" {
@@ -79,7 +79,7 @@ func (reportSetting *ReportSettingsRequest) ValidateReportSetting() error {
 	if reportSetting.StudyPeriodNumber == "" {
 		return errors.New("study period is required")
 	}
-	if reportSetting.ClassNumber == "" {
+	if reportSetting.CampusClassNumber == "" {
 		return errors.New("class is required")
 	}
 	if reportSetting.Columns == 0 {
