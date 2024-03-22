@@ -12,7 +12,6 @@ import (
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	studentControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -139,22 +138,24 @@ func FetchAdmissions(c *gin.Context) {
 		return
 	}
 
-	paginationParams := helpers.ParsePaginationParams(c)
+	campusNumber := c.Query("campus_number")
+	studyPeriodNumber := c.Query("study_period_number")
+	streamNumber := c.Query("stream_number")
+	interviewNumber := c.Query("interview_number")
 
 	var admissions []models.Admission
-	query := config.DB.Model(&models.Admission{}).Preload("Student").Preload("CampusClass").Preload("Campus").Preload("Stream")
+	// Fetch all admissions if no query params are provided
 
-	_, err := helpers.Paginate(query, paginationParams)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Pagination failed",
-		})
-		return
-	}
-
-	if err := query.Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Admission fetching failed"})
-		return
+	if campusNumber == "" && studyPeriodNumber == "" && streamNumber == "" && interviewNumber == "" {
+		if err := config.DB.Find(&admissions).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
+			return
+		}
+	} else {
+		if err := config.DB.Where("campus_number = ? AND study_period_number = ? AND stream_number = ? AND interview_number = ?", campusNumber, studyPeriodNumber, streamNumber, interviewNumber).Find(&admissions).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": admissions})
