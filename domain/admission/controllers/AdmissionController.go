@@ -158,11 +158,6 @@ func FetchAdmissions(c *gin.Context) {
 		}
 	}
 
-	// conditionally Fetch  admissions if some query params are provided in the request
-	if campusNumber != "" {
-
-	}
-
 	c.JSON(http.StatusOK, gin.H{"data": admissions})
 }
 
