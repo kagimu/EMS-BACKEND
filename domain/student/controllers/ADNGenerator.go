@@ -11,23 +11,24 @@ import (
 
 func CreateADN(apnStatus string) (string, error) {
 	year := strconv.Itoa(time.Now().Year())
-	month := time.Now().Format("01")
+	month := time.Now().Format("02") // Get zero-padded month
 
 	if apnStatus == "Archive" {
-		return "Status is already archived", nil
+		return "", nil
+	} else {
+		saveADN := models.ADN{
+			Year:  year,
+			Month: month,
+		}
+
+		if err := config.DB.Create(&saveADN).Error; err != nil {
+			return "", err
+		}
+
+		savedID := saveADN.ID
+		result := fmt.Sprintf("%s02%04d", saveADN.Year, savedID)
+
+		return result, nil
 	}
 
-	saveADN := models.ADN{
-		Year:  year,
-		Month: month,
-	}
-
-	if err := config.DB.Create(&saveADN).Error; err != nil {
-		return "", err
-	}
-
-	savedID := saveADN.ID
-	result := fmt.Sprintf("%s02%04d", saveADN.Year, savedID)
-
-	return result, nil
 }
