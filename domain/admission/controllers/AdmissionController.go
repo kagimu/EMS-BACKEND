@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -75,6 +76,14 @@ func CreateAdmission(c *gin.Context) {
 			return
 		}
 
+		// validate academic year
+
+		var academicYear academicYearModel.AcademicYear
+		if err := config.DB.First(&academicYear, "number = ?", payload.AcademicYearNumber).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Academic year not found"})
+			return
+		}
+
 		generateADN, err := studentControllers.CreateADN(student.APNStatus)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create ADN"})
@@ -109,14 +118,15 @@ func CreateAdmission(c *gin.Context) {
 		}
 
 		saveAdmission := models.Admission{
-			Number:            uuid.NewV4().String(),
-			StudyPeriodNumber: payload.StudyPeriodNumber,
-			InterviewNumber:   payload.InterviewNumber,
-			StudentNumber:     studentPayload,
-			CampusClassNumber: payload.CampusClassNumber,
-			CampusNumber:      payload.CampusNumber,
-			StreamNumber:      payload.StreamNumber,
-			UserNumber:        user.Number,
+			Number:             uuid.NewV4().String(),
+			StudyPeriodNumber:  payload.StudyPeriodNumber,
+			InterviewNumber:    payload.InterviewNumber,
+			StudentNumber:      studentPayload,
+			CampusClassNumber:  payload.CampusClassNumber,
+			CampusNumber:       payload.CampusNumber,
+			StreamNumber:       payload.StreamNumber,
+			UserNumber:         user.Number,
+			AcademicYearNumber: payload.AcademicYearNumber,
 		}
 
 		if err := config.DB.Create(&saveAdmission).Error; err != nil {
@@ -144,10 +154,9 @@ func FetchAdmissions(c *gin.Context) {
 	interviewNumber := c.Query("interview_number")
 
 	var admissions []models.Admission
-	// Fetch all admissions if no query params are provided
 
 	if campusNumber == "" && studyPeriodNumber == "" && streamNumber == "" && interviewNumber == "" {
-		if err := config.DB.Find(&admissions).Error; err != nil {
+		if err := config.DB.Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
 			return
 		}
