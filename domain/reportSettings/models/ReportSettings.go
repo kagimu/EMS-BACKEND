@@ -18,10 +18,10 @@ type ReportSetting struct {
 	CampusClassNumber  string                         `json:"campus_class_number" gorm:"size:36;not null;"`
 	Columns            int64                          `json:"columns" gorm:"type:bigint;not null;"`
 	Status             string                         `json:"status" gorm:"type:text;"`
+	UserNumber         string                         `json:"user_number" gorm:"size:36;not null;"`
 	AcademicYear       academicYearModel.AcademicYear `gorm:"foreignKey:AcademicYearNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriod        studyModels.StudyPeriod        `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Class              classModel.CampusClass         `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	UserNumber         string                         `json:"user_number" gorm:"size:36;not null;"`
 	User               userModels.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
