@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,14 @@ func CreateReportSettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+	//check for existing report settings with the same study period number, academic year number and campus class number and status active
+
+	var existingReportSettings models.ReportSetting
+	if err := config.DB.Where("study_period_number = ? AND academic_year_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.AcademicYearNumber, payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&existingReportSettings).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class  already exists"})
+		return
+
+	}
 
 	// Save report settings
 	reportSettings := models.ReportSetting{
@@ -29,7 +38,7 @@ func CreateReportSettings(c *gin.Context) {
 		AcademicYearNumber: payload.AcademicYearNumber,
 		CampusClassNumber:  payload.CampusClassNumber,
 		Columns:            payload.Columns,
-		Status:             payload.Status,
+		Status:             constants.STATUS_ACTIVE,
 	}
 
 	if err := config.DB.Create(&reportSettings).Error; err != nil {
