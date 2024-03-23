@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
@@ -29,6 +31,14 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
+	// validate if student exists on the same campus and school and campus_class_number and study period and   is active
+	var existingEnrollment models.Enrollment
+
+	if err := config.DB.Where("student_number = ? AND campus_number = ? AND school_number = ? AND campus_class_number = ? AND study_period_number = ? AND status = ?", payload.StudentNumber, payload.CampusNumber, payload.SchoolNumber, payload.CampusClassNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student is already enrolled in this class"})
+		return
+	}
+
 	saveEnrollment := models.Enrollment{
 		Number:            uuid.NewV4().String(),
 		StudentNumber:     payload.StudentNumber,
@@ -36,14 +46,38 @@ func CreateEnrollment(c *gin.Context) {
 		SchoolNumber:      payload.SchoolNumber,
 		EnrollmentDate:    payload.EnrollmentDate,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
-		Status:            payload.Status,
-		UserNumber:        user.Number,
+		CampusClassNumber: payload.CampusClassNumber,
+
+		Status:     payload.Status,
+		UserNumber: user.Number,
 	}
 
-	if err := config.DB.Create(&saveEnrollment).Error; err != nil {
+	tx := config.DB.Begin()
+
+	if err := tx.Create(&saveEnrollment).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
+
 		return
 	}
+
+	// update admission status to enrolled where student number is equal to payload.StudentNumber
+
+	var admission admissionModel.Admission
+
+	if err := tx.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
+		tx.Commit()
+		c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
+		return
+	}
+
+	admission.Status = constants.STATUS_ENROLLED
+
+	if err := tx.Save(&admission).Error; err != nil {
+
+	}
+
+	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
 }

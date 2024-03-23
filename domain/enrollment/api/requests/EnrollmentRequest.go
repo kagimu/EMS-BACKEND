@@ -9,6 +9,7 @@ type EnrollmentRequest struct {
 	SchoolNumber      string `json:"school_number"`
 	EnrollmentDate    string `json:"enrollment_date"`
 	Status            string `json:"status"`
+	CampusClassNumber string `json:"campus_class_number"`
 }
 
 func (e *EnrollmentRequest) Validate() error {
@@ -17,6 +18,10 @@ func (e *EnrollmentRequest) Validate() error {
 	}
 	if e.SchoolNumber == "" {
 		return errors.New("school number is required")
+	}
+	if e.CampusClassNumber == "" {
+		return errors.New("class is required")
+
 	}
 	if e.StudentNumber == "" {
 		return errors.New("student number is required")

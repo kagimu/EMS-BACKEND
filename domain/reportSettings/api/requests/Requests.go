@@ -20,7 +20,7 @@ type ReportColumnRequest struct {
 type ReportColumnAssessmentRequest struct {
 	Code                   int64  `json:"code"`
 	ReportColumnNumber     string `json:"report_column_number"`
-	AssessmentAreaNumber   string `json:"assessment_number"`
+	AssessmentAreaNumber   string `json:"assessment_area_number"`
 	AssessmentMetricNumber string `json:"assessment_metric_number"`
 }
 
