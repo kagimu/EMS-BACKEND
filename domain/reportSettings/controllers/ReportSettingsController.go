@@ -64,7 +64,7 @@ func FetchReportSettings(c *gin.Context) {
 
 	for _, reportSetting := range reportSettings {
 		response := responses.ReportSettingsResponse{
-			Name:    reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.Class.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
+			Name:    reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
 			Number:  reportSetting.Number,
 			Status:  reportSetting.Status,
 			Columns: reportSetting.Columns,
