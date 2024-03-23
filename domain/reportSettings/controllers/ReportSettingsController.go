@@ -39,7 +39,7 @@ func CreateReportSettings(c *gin.Context) {
 		CampusClassNumber:  payload.CampusClassNumber,
 		Columns:            payload.Columns,
 		Status:             constants.STATUS_ACTIVE,
-		UserNumber:         c.GetHeader("User-Number"),
+		UserNumber:         c.Request.Header["User-Number"][0],
 	}
 
 	if err := config.DB.Create(&reportSettings).Error; err != nil {
@@ -81,7 +81,7 @@ func CreatReportColumn(ctx *gin.Context) {
 		ReportSettingNumber: payload.ReportSettingNumber,
 		Name:                payload.Name,
 		PercentageShare:     payload.PercentageShare,
-		UserNumber:          ctx.GetHeader("User-Number"),
+		UserNumber:          ctx.Request.Header["User-Number"][0],
 	}
 
 	if err := config.DB.Create(&reportColumn).Error; err != nil {
@@ -123,7 +123,7 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 		ReportColumnNumber:     payload.ReportColumnNumber,
 		AssessmentAreaNumber:   payload.AssessmentAreaNumber,
 		AssessmentMetricNumber: payload.AssessmentMetricNumber,
-		UserNumber:             ctx.GetHeader("User-Number"),
+		UserNumber:             ctx.Request.Header["User-Number"][0],
 	}
 
 	if err := config.DB.Create(&reportColumnAssessment).Error; err != nil {
@@ -168,7 +168,7 @@ func CreateReportSummary(ctx *gin.Context) {
 		Grade:               payload.Grade,
 		Aggregate:           payload.Aggregate,
 		Comment:             payload.Comment,
-		UserNumber:          ctx.GetHeader("User-Number"),
+		UserNumber:          ctx.Request.Header["User-Number"][0],
 	}
 
 	if err := config.DB.Create(&reportSummary).Error; err != nil {
@@ -211,7 +211,7 @@ func CreateReportScore(ctx *gin.Context) {
 		Score:                payload.Score,
 		Aggregate:            payload.Aggregate,
 		Grade:                payload.Grade,
-		UserNumber:           ctx.GetHeader("User-Number"),
+		UserNumber:           ctx.Request.Header["User-Number"][0],
 	}
 
 	if err := config.DB.Create(&reportScore).Error; err != nil {
@@ -253,7 +253,7 @@ func CreateReportScoreSummary(ctx *gin.Context) {
 		Aggregate:            payload.Aggregate,
 		Grade:                payload.Grade,
 		Summation:            payload.Summation,
-		UserNumber:           ctx.GetHeader("User-Number"),
+		UserNumber:           ctx.Request.Header["User-Number"][0],
 	}
 
 	if err := config.DB.Create(&reportScoreSummary).Error; err != nil {
