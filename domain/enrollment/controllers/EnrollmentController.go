@@ -56,7 +56,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 	}
 
 	var enrolledStudents []models.Enrollment
-	if err := config.DB.Find(&enrolledStudents).Error; err != nil {
+	if err := config.DB.Preload("School").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch enrolled students"})
 		return
 	}

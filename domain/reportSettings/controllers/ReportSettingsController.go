@@ -4,8 +4,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/gin-gonic/gin"
+
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
@@ -53,12 +55,25 @@ func CreateReportSettings(c *gin.Context) {
 
 func FetchReportSettings(c *gin.Context) {
 	var reportSettings []models.ReportSetting
-	if err := config.DB.Find(&reportSettings).Error; err != nil {
+	if err := config.DB.Preload("AcademicYear").Preload("CampusClass").Preload("StudyPeriod").Find(&reportSettings).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"report_settings": reportSettings})
+	var rs []responses.ReportSettingsResponse
+
+	for _, reportSetting := range reportSettings {
+		response := responses.ReportSettingsResponse{
+			Name:    reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.Class.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
+			Number:  reportSetting.Number,
+			Status:  reportSetting.Status,
+			Columns: reportSetting.Columns,
+		}
+
+		rs = append(rs, response)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": rs})
 
 }
 
@@ -100,7 +115,7 @@ func FetchReportColumns(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"report_columns": reportColumns})
+	ctx.JSON(http.StatusOK, gin.H{"data": reportColumns})
 
 }
 
@@ -141,7 +156,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"report_column_assessments": reportColumnAssessments})
+	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessments})
 
 }
 
@@ -186,7 +201,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"report_summaries": reportSummaries})
+	ctx.JSON(http.StatusOK, gin.H{"data": reportSummaries})
 
 }
 
@@ -229,7 +244,7 @@ func FetchReportScores(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"report_scores": reportScores})
+	ctx.JSON(http.StatusOK, gin.H{"data": reportScores})
 
 }
 
