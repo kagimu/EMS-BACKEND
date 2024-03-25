@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -42,6 +43,7 @@ func CreateReportSettings(c *gin.Context) {
 		Columns:            payload.Columns,
 		Status:             constants.STATUS_ACTIVE,
 		UserNumber:         c.Request.Header["User-Number"][0],
+		Code:               payload.Code,
 	}
 
 	if err := config.DB.Create(&reportSettings).Error; err != nil {
@@ -68,6 +70,7 @@ func FetchReportSettings(c *gin.Context) {
 			Number:  reportSetting.Number,
 			Status:  reportSetting.Status,
 			Columns: reportSetting.Columns,
+			Code:    reportSetting.Code,
 		}
 
 		rs = append(rs, response)
@@ -97,6 +100,7 @@ func CreatReportColumn(ctx *gin.Context) {
 		Name:                payload.Name,
 		PercentageShare:     payload.PercentageShare,
 		UserNumber:          ctx.Request.Header["User-Number"][0],
+		Code:                payload.Code,
 	}
 
 	if err := config.DB.Create(&reportColumn).Error; err != nil {
@@ -115,7 +119,20 @@ func FetchReportColumns(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": reportColumns})
+	var rc []responses.ReportColumnResponse
+
+	for _, reportColumn := range reportColumns {
+		response := responses.ReportColumnResponse{
+			Name:            reportColumn.Name,
+			Number:          reportColumn.Number,
+			PercentageShare: reportColumn.PercentageShare,
+			Code:            reportColumn.Code,
+		}
+		rc = append(rc, response)
+
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": rc})
 
 }
 
@@ -139,6 +156,7 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 		AssessmentAreaNumber:   payload.AssessmentAreaNumber,
 		AssessmentMetricNumber: payload.AssessmentMetricNumber,
 		UserNumber:             ctx.Request.Header["User-Number"][0],
+		Code:                   payload.Code,
 	}
 
 	if err := config.DB.Create(&reportColumnAssessment).Error; err != nil {
@@ -154,6 +172,26 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 	if err := config.DB.Find(&reportColumnAssessments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column assessments"})
 		return
+	}
+
+	var rca []responses.ReportColumnAssessmentResponse
+
+	for _, reportColumnAssessment := range reportColumnAssessments {
+		var assessmentArea assessmentAreaModel.AssessmentArea
+		if err := config.DB.Where("number = ?", reportColumnAssessment.AssessmentAreaNumber).First(&assessmentArea).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment area"})
+			return
+		}
+
+		response := responses.ReportColumnAssessmentResponse{
+			Number:           reportColumnAssessment.Number,
+			AssessmentArea:   reportColumnAssessment.AssessmentAreaNumber,
+			AssessmentMetric: reportColumnAssessment.AssessmentMetricNumber,
+			Code:             reportColumnAssessment.Code,
+			ReportColumn:     reportColumnAssessment.ReportColumnNumber,
+		}
+		rca = append(rca, response)
+
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessments})
@@ -184,6 +222,7 @@ func CreateReportSummary(ctx *gin.Context) {
 		Aggregate:           payload.Aggregate,
 		Comment:             payload.Comment,
 		UserNumber:          ctx.Request.Header["User-Number"][0],
+		Code:                payload.Code,
 	}
 
 	if err := config.DB.Create(&reportSummary).Error; err != nil {
@@ -227,6 +266,7 @@ func CreateReportScore(ctx *gin.Context) {
 		Aggregate:            payload.Aggregate,
 		Grade:                payload.Grade,
 		UserNumber:           ctx.Request.Header["User-Number"][0],
+		Code:                 payload.Code,
 	}
 
 	if err := config.DB.Create(&reportScore).Error; err != nil {
@@ -269,6 +309,7 @@ func CreateReportScoreSummary(ctx *gin.Context) {
 		Grade:                payload.Grade,
 		Summation:            payload.Summation,
 		UserNumber:           ctx.Request.Header["User-Number"][0],
+		Code:                 payload.Code,
 	}
 
 	if err := config.DB.Create(&reportScoreSummary).Error; err != nil {
