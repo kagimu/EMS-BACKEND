@@ -170,6 +170,25 @@ func FetchAdmissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": admissions})
 }
 
+func FetchAdmissionById(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "User not found",
+		})
+		return
+	}
+
+	admissionNumber := c.Param("admission_number")
+	var admission models.Admission
+
+	if err := config.DB.Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").First(&admission, "number = ?", admissionNumber).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": admission})
+}
+
 func FilterAdmissionsByStudyPeriod(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
