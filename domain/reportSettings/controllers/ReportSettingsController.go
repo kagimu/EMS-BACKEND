@@ -2,9 +2,13 @@ package controllers
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/gin-gonic/gin"
+
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
@@ -21,6 +25,14 @@ func CreateReportSettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+	//check for existing report settings with the same study period number, academic year number and campus class number and status active
+
+	var existingReportSettings models.ReportSetting
+	if err := config.DB.Where("study_period_number = ? AND academic_year_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.AcademicYearNumber, payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&existingReportSettings).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class  already exists"})
+		return
+
+	}
 
 	// Save report settings
 	reportSettings := models.ReportSetting{
@@ -29,7 +41,9 @@ func CreateReportSettings(c *gin.Context) {
 		AcademicYearNumber: payload.AcademicYearNumber,
 		CampusClassNumber:  payload.CampusClassNumber,
 		Columns:            payload.Columns,
-		Status:             payload.Status,
+		Status:             constants.STATUS_ACTIVE,
+		UserNumber:         c.Request.Header["User-Number"][0],
+		Code:               payload.Code,
 	}
 
 	if err := config.DB.Create(&reportSettings).Error; err != nil {
@@ -43,12 +57,26 @@ func CreateReportSettings(c *gin.Context) {
 
 func FetchReportSettings(c *gin.Context) {
 	var reportSettings []models.ReportSetting
-	if err := config.DB.Find(&reportSettings).Error; err != nil {
+	if err := config.DB.Preload("AcademicYear").Preload("CampusClass").Preload("StudyPeriod").Find(&reportSettings).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"report_settings": reportSettings})
+	var rs []responses.ReportSettingsResponse
+
+	for _, reportSetting := range reportSettings {
+		response := responses.ReportSettingsResponse{
+			Name:    reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
+			Number:  reportSetting.Number,
+			Status:  reportSetting.Status,
+			Columns: reportSetting.Columns,
+			Code:    reportSetting.Code,
+		}
+
+		rs = append(rs, response)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": rs})
 
 }
 
@@ -71,6 +99,8 @@ func CreatReportColumn(ctx *gin.Context) {
 		ReportSettingNumber: payload.ReportSettingNumber,
 		Name:                payload.Name,
 		PercentageShare:     payload.PercentageShare,
+		UserNumber:          ctx.Request.Header["User-Number"][0],
+		Code:                payload.Code,
 	}
 
 	if err := config.DB.Create(&reportColumn).Error; err != nil {
@@ -89,7 +119,20 @@ func FetchReportColumns(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"report_columns": reportColumns})
+	var rc []responses.ReportColumnResponse
+
+	for _, reportColumn := range reportColumns {
+		response := responses.ReportColumnResponse{
+			Name:            reportColumn.Name,
+			Number:          reportColumn.Number,
+			PercentageShare: reportColumn.PercentageShare,
+			Code:            reportColumn.Code,
+		}
+		rc = append(rc, response)
+
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": rc})
 
 }
 
@@ -112,6 +155,8 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 		ReportColumnNumber:     payload.ReportColumnNumber,
 		AssessmentAreaNumber:   payload.AssessmentAreaNumber,
 		AssessmentMetricNumber: payload.AssessmentMetricNumber,
+		UserNumber:             ctx.Request.Header["User-Number"][0],
+		Code:                   payload.Code,
 	}
 
 	if err := config.DB.Create(&reportColumnAssessment).Error; err != nil {
@@ -129,7 +174,27 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"report_column_assessments": reportColumnAssessments})
+	var rca []responses.ReportColumnAssessmentResponse
+
+	for _, reportColumnAssessment := range reportColumnAssessments {
+		var assessmentArea assessmentAreaModel.AssessmentArea
+		if err := config.DB.Where("number = ?", reportColumnAssessment.AssessmentAreaNumber).First(&assessmentArea).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment area"})
+			return
+		}
+
+		response := responses.ReportColumnAssessmentResponse{
+			Number:           reportColumnAssessment.Number,
+			AssessmentArea:   reportColumnAssessment.AssessmentAreaNumber,
+			AssessmentMetric: reportColumnAssessment.AssessmentMetricNumber,
+			Code:             reportColumnAssessment.Code,
+			ReportColumn:     reportColumnAssessment.ReportColumnNumber,
+		}
+		rca = append(rca, response)
+
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessments})
 
 }
 
@@ -156,6 +221,8 @@ func CreateReportSummary(ctx *gin.Context) {
 		Grade:               payload.Grade,
 		Aggregate:           payload.Aggregate,
 		Comment:             payload.Comment,
+		UserNumber:          ctx.Request.Header["User-Number"][0],
+		Code:                payload.Code,
 	}
 
 	if err := config.DB.Create(&reportSummary).Error; err != nil {
@@ -173,7 +240,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"report_summaries": reportSummaries})
+	ctx.JSON(http.StatusOK, gin.H{"data": reportSummaries})
 
 }
 
@@ -198,6 +265,8 @@ func CreateReportScore(ctx *gin.Context) {
 		Score:                payload.Score,
 		Aggregate:            payload.Aggregate,
 		Grade:                payload.Grade,
+		UserNumber:           ctx.Request.Header["User-Number"][0],
+		Code:                 payload.Code,
 	}
 
 	if err := config.DB.Create(&reportScore).Error; err != nil {
@@ -215,7 +284,7 @@ func FetchReportScores(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"report_scores": reportScores})
+	ctx.JSON(http.StatusOK, gin.H{"data": reportScores})
 
 }
 
@@ -239,6 +308,8 @@ func CreateReportScoreSummary(ctx *gin.Context) {
 		Aggregate:            payload.Aggregate,
 		Grade:                payload.Grade,
 		Summation:            payload.Summation,
+		UserNumber:           ctx.Request.Header["User-Number"][0],
+		Code:                 payload.Code,
 	}
 
 	if err := config.DB.Create(&reportScoreSummary).Error; err != nil {

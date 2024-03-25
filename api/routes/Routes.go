@@ -150,6 +150,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			class.GET("/info", classController.ClassInfo)
 			class.GET("/curriculum-class", classController.FetchClassesToAdd)
+			class.GET("/campus-class-by-level", classController.FetchCampusClassesByLevel)
 			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
 			class.POST("/edit", classController.EditClass)
 			class.POST("/delete", classController.DeleteClass)
@@ -437,6 +438,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			admission.POST("", admissionController.FetchAdmissions)
 			admission.GET("", admissionController.FetchAdmissions)
+			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 			admission.GET("/study_period", admissionController.FilterAdmissionsByStudyPeriod)
 			admission.GET("/stream", admissionController.FilterAdmissionsByStream)
 			admission.GET("/campus_class", admissionController.FilterAdmissionsByCampusClass)
@@ -597,7 +599,6 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("report-score", reportSettingsController.FetchReportScores)
 			reportSettings.POST("report-score-summary", reportSettingsController.CreateReportScoreSummary)
 			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
-
 		}
 	}
 

@@ -2,3 +2,6 @@ package constants
 
 const STATUS_PENDING = "PENDING"
 const STATUS_APPROVED = "APPROVED"
+const STATUS_ACTIVE = "ACTIVE"
+const STATUS_INACTIVE = "INACTIVE"
+const STATUS_ENROLLED = "Enrolled"

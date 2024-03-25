@@ -608,6 +608,36 @@ func FetchClassesCurriculum(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes_})
 }
 
+func FetchCampusClassesByLevel(context *gin.Context) {
+	campusLevelNumber := context.Query("campus_level_number")
+
+	var classLevel []classModel.CampusClass
+	var classLevel_ []responses.CampusClassInfo
+	if err := config.DB.
+		Where("campus_level_number = ?", campusLevelNumber).
+		Preload("CurriculumClass.Class").
+		Preload("CurriculumClass").
+		Preload("Streams").
+		Order("code asc").
+		Find(&classLevel).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
+		return
+	}
+
+	for _, lst := range classLevel {
+
+		classLevel_ = append(classLevel_, responses.CampusClassInfo{
+			Number:                lst.Number,
+			Name:                  lst.CurriculumClass.Class.Name,
+			ClassNumber:           lst.CurriculumClass.Class.Number,
+			Abbreviation:          lst.CurriculumClass.Class.Abbreviation,
+			CurriculumClassNumber: lst.CurriculumClassNumber,
+			Code:                  lst.Code,
+		})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classLevel_})
+}
 func FetchClassesToAdd(context *gin.Context) {
 
 	levelNumber := context.Query("level_number")

@@ -3,26 +3,29 @@ package requests
 import "errors"
 
 type ReportSettingsRequest struct {
+	Code               int64  `json:"code"`
 	AcademicYearNumber string `json:"academic_year_number"`
 	StudyPeriodNumber  string `json:"study_period_number"`
 	CampusClassNumber  string `json:"campus_class_number"`
 	Columns            int64  `json:"columns"`
-	Status             string `json:"status"`
 }
 
 type ReportColumnRequest struct {
+	Code                int64   `json:"code"`
 	ReportSettingNumber string  `json:"report_setting_number"`
 	Name                string  `json:"name"`
 	PercentageShare     float64 `json:"percentage_share"`
 }
 
 type ReportColumnAssessmentRequest struct {
+	Code                   int64  `json:"code"`
 	ReportColumnNumber     string `json:"report_column_number"`
-	AssessmentAreaNumber   string `json:"assessment_number"`
+	AssessmentAreaNumber   string `json:"assessment_area_number"`
 	AssessmentMetricNumber string `json:"assessment_metric_number"`
 }
 
 type ReportSummaryRequest struct {
+	Code                int64   `json:"code"`
 	ReportSettingNumber string  `json:"report_setting_number"`
 	StudentNumber       string  `json:"student_number"`
 	CampusClassNumber   string  `json:"campus_class_number"`
@@ -33,6 +36,7 @@ type ReportSummaryRequest struct {
 }
 
 type ReportScoreSummaryRequest struct {
+	Code                 int64   `json:"code"`
 	ReportSummaryNumber  string  `json:"report_summary_number"`
 	AssessmentAreaNumber string  `json:"assessment_area_number"`
 	Aggregate            float64 `json:"aggregate"`
@@ -41,6 +45,7 @@ type ReportScoreSummaryRequest struct {
 }
 
 type ReportScoreRequest struct {
+	Code                 int64   `json:"code"`
 	ReportSummaryNumber  string  `json:"report_summary_number"`
 	AssessmentAreaNumber string  `json:"assessment_area_number"`
 	ReportColumnNumber   string  `json:"report_column_number"`
@@ -68,6 +73,12 @@ func (reportSummary *ReportSummaryRequest) ValidateReportSummary() error {
 	if reportSummary.Aggregate == 0 {
 		return errors.New("aggregate is required")
 	}
+
+	if reportSummary.Code == 0 {
+		return errors.New("code is required")
+
+	}
+
 	return nil
 
 }
@@ -84,6 +95,9 @@ func (reportSetting *ReportSettingsRequest) ValidateReportSetting() error {
 	}
 	if reportSetting.Columns == 0 {
 		return errors.New("number of columns is required")
+	}
+	if reportSetting.Code == 0 {
+		return errors.New("code is required")
 	}
 	return nil
 }
@@ -103,6 +117,10 @@ func (reportScoreSummary *ReportScoreSummaryRequest) ValidateReportScoreSummary(
 	}
 	if reportScoreSummary.Summation == 0 {
 		return errors.New("summation is required")
+	}
+	if reportScoreSummary.Code == 0 {
+		return errors.New("code is required")
+
 	}
 	return nil
 }
@@ -126,6 +144,11 @@ func (reportScore *ReportScoreRequest) ValidateReportScore() error {
 	if reportScore.Grade == "" {
 		return errors.New("grade is required")
 	}
+
+	if reportScore.Code == 0 {
+		return errors.New("code is required")
+
+	}
 	return nil
 
 }
@@ -140,6 +163,10 @@ func (reportColumnAssessment *ReportColumnAssessmentRequest) ValidateReportColum
 	if reportColumnAssessment.AssessmentMetricNumber == "" {
 		return errors.New("assessment metric is required")
 	}
+
+	if reportColumnAssessment.Code == 0 {
+		return errors.New("code is required")
+	}
 	return nil
 
 }
@@ -153,6 +180,10 @@ func (reportColumn *ReportColumnRequest) ValidateReportColumn() error {
 	}
 	if reportColumn.PercentageShare == 0 {
 		return errors.New("percentage share is required")
+	}
+
+	if reportColumn.Code == 0 {
+		return errors.New("code is required")
 	}
 	return nil
 
