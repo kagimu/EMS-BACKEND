@@ -31,7 +31,7 @@ func CreateAssessment(c *gin.Context) {
 		return
 	}
 
-	if student.APNStatus != "Inactive" {
+	if student.APNStatus == "Inactive" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Student ADN is still active"})
 		return
 	}

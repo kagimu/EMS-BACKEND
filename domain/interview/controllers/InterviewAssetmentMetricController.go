@@ -102,8 +102,8 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 		return
 	}
 
-	var assessment []assessmentModel.Assessment
-	if err := config.DB.Where("student_number = ?", studentNumber).Preload("AssessmentMetric").Preload("Student").Find(&assessment).Error; err != nil {
+	var assessments []assessmentModel.Assessment
+	if err := config.DB.Where("student_number = ?", studentNumber).Preload("AssessmentMetric").Preload("Student").Find(&assessments).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Assessment not found"})
 		return
 	}
@@ -181,7 +181,7 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 			results = append(results, StudentInterviewResults{
 				Name:    v.AssessmentAreaName,
 				Comment: comment,
-				Score:   0,
+				Score:   int(assessment.ActualScore),
 				Grade:   "Not Graded",
 			})
 
@@ -198,7 +198,7 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 					results = append(results, StudentInterviewResults{
 						Name:    v.AssessmentAreaName,
 						Comment: comment,
-						Score:   0,
+						Score:   int(assessment.ActualScore),
 						Grade:   "Not Graded",
 					})
 				}
