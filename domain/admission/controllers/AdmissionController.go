@@ -200,7 +200,7 @@ func FilterAdmissionsBySchool(c *gin.Context) {
 		return
 	}
 
-	schoolNumber := c.Param("school_number")
+	schoolNumber := c.Query("school_number")
 	var admission []models.Admission
 
 	if err := config.DB.Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").First(&admission, "school_number = ?", schoolNumber).Error; err != nil {
