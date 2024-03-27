@@ -2,8 +2,9 @@ package controllers
 
 import (
 	"fmt"
-	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"net/http"
+
+	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
@@ -76,8 +77,6 @@ func CreateAdmission(c *gin.Context) {
 			return
 		}
 
-		// validate academic year
-
 		var academicYear academicYearModel.AcademicYear
 		if err := config.DB.First(&academicYear, "number = ?", payload.AcademicYearNumber).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Academic year not found"})
@@ -112,6 +111,12 @@ func CreateAdmission(c *gin.Context) {
 			Status: "ADMITTED",
 		}
 
+		// Checks if the campus class applied for is the same as the campus class being admitted for.
+		if student.CampusClassNumber != payload.CampusClassNumber {
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Campus class applied for and selected are different for student: %s %s %s", student.Surname, student.OtherName, student.SecondName)})
+			return
+		}
+
 		if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
 			return
@@ -126,14 +131,14 @@ func CreateAdmission(c *gin.Context) {
 			CampusNumber:       payload.CampusNumber,
 			StreamNumber:       payload.StreamNumber,
 			UserNumber:         user.Number,
+			SchoolNumber:       payload.SchoolNumber,
 			AcademicYearNumber: payload.AcademicYearNumber,
 		}
 
 		if err := config.DB.Create(&saveAdmission).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission", "err": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
 			return
 		}
-
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Admission created successfully"})
@@ -182,6 +187,23 @@ func FetchAdmissionById(c *gin.Context) {
 	var admission models.Admission
 
 	if err := config.DB.Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").First(&admission, "number = ?", admissionNumber).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": admission})
+}
+
+func FilterAdmissionsBySchool(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	schoolNumber := c.Param("school_number")
+	var admission []models.Admission
+
+	if err := config.DB.Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").First(&admission, "school_number = ?", schoolNumber).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission"})
 		return
 	}

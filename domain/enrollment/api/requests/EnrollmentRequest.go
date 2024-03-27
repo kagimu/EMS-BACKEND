@@ -10,6 +10,7 @@ type EnrollmentRequest struct {
 	EnrollmentDate    string `json:"enrollment_date"`
 	Status            string `json:"status"`
 	CampusClassNumber string `json:"campus_class_number"`
+	ContinuingStudent bool   `json:"continuing_student"`
 }
 
 func (e *EnrollmentRequest) Validate() error {

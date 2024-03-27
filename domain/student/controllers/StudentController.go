@@ -74,7 +74,7 @@ func CreateStudent(c *gin.Context) {
 			UserNumber:                userNumber,
 			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 			ApplicationNumber:         applicationNumber,
-			ClassNumber:               payload.ClassNumber,
+			CampusClassNumber:         payload.CampusClassNumber,
 		}
 
 		if err := config.DB.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
@@ -104,7 +104,7 @@ func CreateStudent(c *gin.Context) {
 		UserNumber:                userNumber,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 		ApplicationNumber:         applicationNumber,
-		ClassNumber:               payload.ClassNumber,
+		CampusClassNumber:         payload.CampusClassNumber,
 	}
 	tx := config.DB.Begin()
 
@@ -156,7 +156,7 @@ func EditStudent(c *gin.Context) {
 		DateOfBirth:               payload.DateOfBirth,
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
-		ClassNumber:               payload.ClassNumber,
+		CampusClassNumber:         payload.CampusClassNumber,
 	}
 
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {

@@ -27,4 +27,5 @@ type Enrollment struct {
 	CampusClass       campusClass.CampusClass `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber        string                  `json:"user_number" gorm:"size:36;index;not null"`
 	User              authModels.User         `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	ContinuingStudent bool                    `json:"continuing_student"`
 }

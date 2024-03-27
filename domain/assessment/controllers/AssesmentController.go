@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -26,13 +27,19 @@ func CreateAssessment(c *gin.Context) {
 	}
 
 	var student studentModel.Student
-	if err := config.DB.Model(&studentModel.Student{}).Where("number = ?", payload.StudentNumber).First(&student).Error; err != nil {
+	if err := config.DB.Model(&studentModel.Student{}).Preload("CampusClass").Where("number = ?", payload.StudentNumber).First(&student).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Student not found"})
 		return
 	}
 
-	if student.APNStatus == "Inactive" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Student ADN is still active"})
+	var assessmentMetric assessmentMetricModel.AssessmentMetric
+	if err := config.DB.Model(&studentModel.Student{}).Preload("CampusClass").Where("number = ?", payload.AssessmentMetricNumber).First(&student).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric not found"})
+		return
+	}
+
+	if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric and student are not in the same class"})
 		return
 	}
 

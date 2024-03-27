@@ -443,6 +443,7 @@ func SetupRoutes() *gin.Engine {
 			admission.GET("/stream", admissionController.FilterAdmissionsByStream)
 			admission.GET("/campus_class", admissionController.FilterAdmissionsByCampusClass)
 			admission.GET("/interview", admissionController.FilterAdmissionsByInterview)
+			admission.GET("/:school_number", admissionController.FilterAdmissionsBySchool)
 			admission.GET("/campus", admissionController.FilterAdmissionsByCampus)
 
 			offer := admission.Group("/admission-offers")
