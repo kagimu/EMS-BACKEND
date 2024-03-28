@@ -233,11 +233,8 @@ func FetchAllStudents(c *gin.Context) {
 
 	var students []models.Student
 
-	if err := config.DB.Find(&students).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "failed to fetch students",
-		})
+	if err := config.DB.Preload("CampusClass").Find(&students).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to fetch students"})
 		return
 	}
 
