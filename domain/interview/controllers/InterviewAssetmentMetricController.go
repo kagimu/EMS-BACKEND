@@ -142,7 +142,9 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 	var assessmentMetrics []assessmentModel.AssessmentMetric
 
 	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
-	if err := config.DB.Where("interview_number = ?", interviewNumber).Find(&interviewAssessmentMetrics).Error; err != nil {
+	if err := config.DB.
+		Joins("join assessment_metrics on assessment_metrics.number = interview_assessment_metrics.assessment_metric_number AND assessment_metrics.campus_class_number=?", student.CampusClassNumber).
+		Where("interview_number = ?", interviewNumber).Find(&interviewAssessmentMetrics).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interview assessment metrics"})
 		return
 	}
