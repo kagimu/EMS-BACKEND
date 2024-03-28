@@ -31,22 +31,22 @@ func CreateAssessmentGrade(c *gin.Context) {
 	}
 
 	var level levelModels.Level
-	if err := config.DB.First(&level, "number = ?", payload.LevelNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No level found with the specified number"})
+	if err := config.DB.First(&level, "number = ?", payload.CampusClassNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No campus class found with the specified number"})
 		return
 	}
 
 	saveAssessmentGrade := models.AssessmentGrade{
-		Number:        uuid.NewV4().String(),
-		Grade:         payload.Grade,
-		Name:          payload.Name,
-		Description:   payload.Description,
-		MinimumPoints: payload.MinimumPoints,
-		MaximumPoints: payload.MaximumPoints,
-		Abbreviation:  payload.Abbreviation,
-		Remarks:       payload.Remarks,
-		LevelNumber:   payload.LevelNumber,
-		UserNumber:    user.Number,
+		Number:            uuid.NewV4().String(),
+		Grade:             payload.Grade,
+		Name:              payload.Name,
+		Description:       payload.Description,
+		MinimumPoints:     payload.MinimumPoints,
+		MaximumPoints:     payload.MaximumPoints,
+		Abbreviation:      payload.Abbreviation,
+		Remarks:           payload.Remarks,
+		CampusClassNumber: payload.CampusClassNumber,
+		UserNumber:        user.Number,
 	}
 
 	if err := config.DB.Create(&saveAssessmentGrade).Error; err != nil {
@@ -65,7 +65,7 @@ func FetchAssessmentGrades(c *gin.Context) {
 	}
 
 	var assessmentGrades []models.AssessmentGrade
-	if err := config.DB.Find(&assessmentGrades).Error; err != nil {
+	if err := config.DB.Preload("CampusClass").Find(&assessmentGrades).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment grades"})
 		return
 	}
