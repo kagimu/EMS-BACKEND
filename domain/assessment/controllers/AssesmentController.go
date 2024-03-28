@@ -6,7 +6,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
-	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -32,7 +31,7 @@ func CreateAssessment(c *gin.Context) {
 		return
 	}
 
-	var assessmentMetric assessmentMetricModel.AssessmentMetric
+	var assessmentMetric models.AssessmentMetric
 	if err := config.DB.First(&assessmentMetric, payload.AssessmentMetricNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Assessment metric not found"})
 		return
