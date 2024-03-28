@@ -87,7 +87,7 @@ func EditAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	assessmentGradeNumber := c.Param("assessment_grade_number")
+	assessmentGradeNumber := c.Query("assessment_grade_number")
 	assessmentGrade := models.AssessmentGrade{}
 	if err := config.DB.First(&assessmentGrade, "number = ?", assessmentGradeNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No assessment grade found with the specified number"})
@@ -95,13 +95,14 @@ func EditAssessmentGrade(c *gin.Context) {
 	}
 
 	updateAssessmentGrade := models.AssessmentGrade{
-		Grade:         payload.Grade,
-		Description:   payload.Description,
-		Name:          payload.Name,
-		MaximumPoints: payload.MaximumPoints,
-		MinimumPoints: payload.MinimumPoints,
-		Abbreviation:  payload.Abbreviation,
-		Remarks:       payload.Remarks,
+		Grade:             payload.Grade,
+		Description:       payload.Description,
+		Name:              payload.Name,
+		MaximumPoints:     payload.MaximumPoints,
+		CampusClassNumber: payload.CampusClassNumber,
+		MinimumPoints:     payload.MinimumPoints,
+		Abbreviation:      payload.Abbreviation,
+		Remarks:           payload.Remarks,
 	}
 
 	if err := config.DB.Model(&assessmentGrade).Where("number  = ?", assessmentGradeNumber).Updates(updateAssessmentGrade).Error; err != nil {
