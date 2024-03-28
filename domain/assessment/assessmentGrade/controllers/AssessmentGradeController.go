@@ -1,13 +1,13 @@
 package controllers
 
 import (
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -30,8 +30,8 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	var level levelModels.Level
-	if err := config.DB.First(&level, "number = ?", payload.CampusClassNumber).Error; err != nil {
+	var campusClass classModel.CampusClass
+	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No campus class found with the specified number"})
 		return
 	}
