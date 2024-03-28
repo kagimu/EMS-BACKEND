@@ -95,13 +95,14 @@ func EditAssessmentGrade(c *gin.Context) {
 	}
 
 	updateAssessmentGrade := models.AssessmentGrade{
-		Grade:         payload.Grade,
-		Description:   payload.Description,
-		Name:          payload.Name,
-		MaximumPoints: payload.MaximumPoints,
-		MinimumPoints: payload.MinimumPoints,
-		Abbreviation:  payload.Abbreviation,
-		Remarks:       payload.Remarks,
+		Grade:             payload.Grade,
+		Description:       payload.Description,
+		Name:              payload.Name,
+		MaximumPoints:     payload.MaximumPoints,
+		CampusClassNumber: payload.CampusClassNumber,
+		MinimumPoints:     payload.MinimumPoints,
+		Abbreviation:      payload.Abbreviation,
+		Remarks:           payload.Remarks,
 	}
 
 	if err := config.DB.Model(&assessmentGrade).Where("number  = ?", assessmentGradeNumber).Updates(updateAssessmentGrade).Error; err != nil {
