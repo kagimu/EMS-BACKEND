@@ -1,137 +1,608 @@
-package controllers
+package routes
 
 import (
-	"net/http"
+	"time"
 
-	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
+	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
+	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
+	aggregateScaleController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/controllers"
+	assessmentGradeController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/controllers"
+	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
+	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
+	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
+	conceptController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/controllers"
+	curriculumController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/controllers"
+	learningAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/controllers"
+	strandController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/controllers"
+	subjectClusterController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/controllers"
+	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
+	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
+	enrollmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/controllers"
+	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
+	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
+	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
+	invoicePaymentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/controllers"
+	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/controllers"
+	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/controllers"
+	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
+	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
+	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
+	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
+	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
+	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
+	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
+	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
+	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
+	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
+	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
+	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
+	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
+	studentDetailsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
+	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
+	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
+	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
-func CreateAssessmentGrade(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
+func SetupRoutes() *gin.Engine {
+	router := gin.Default()
+
+	//setting cors in the system
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:2054", "https://wholesome-api.noregrets.ug"},
+		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Access-Control-Allow-Origin", "Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host", "Token", "Authorization", "Accept-Encoding", "X-CSRF-Token", "Access-Control-Allow-Headers", "Content-Type", "user-number"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			///return origin == "https://github.com"
+			return true
+		},
+		MaxAge: 12 * time.Hour,
+	}))
+
+	//router.Use(middlewares.JWTMiddleware())
+	router.MaxMultipartMemory = 20 << 20 // 20 MiB
+	//router.Static("/", "./fileRepo")
+	router.Use(static.Serve("/fileRepo", static.LocalFile("/fileRepo", true)))
+
+	router.NoRoute(commons.RouteNotFound)
+	router.GET("ping", commons.APIHealth)
+
+	auth := router.Group("/auth")
+	{
+		auth.POST("login", authController.Login)
+		auth.POST("register", authController.Register)
+		auth.POST("set-password", authController.UserPassword)
+		auth.POST("reset-password", authController.ResetPassword)
 	}
 
-	var payload requests.AssessmentGradeRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
-		return
+	main := router.Group("/main", middleware.AuthorizeJWT())
+	{
+		main.GET("profile", authController.Profile)
+
+		curriculum := main.Group("/curriculum")
+		{
+			curriculum.GET("all", curriculumController.FetchCurriculum)
+			curriculum.POST("new", curriculumController.NewCurriculum)
+			curriculum.GET("/info", curriculumController.CurriculumInfo)
+			curriculum.GET("/campus-curriculum-level", curriculumController.FetchCampusCurriculumLevel)
+			curriculum.POST("/edit", curriculumController.CurriculumEdit)
+			curriculum.POST("/delete", curriculumController.DeleteCurriculum)
+			curriculum.POST("upload", curriculumController.ImportCurriculum)
+			curriculum.GET("uploaded", curriculumController.FetchUploadedCurriculum)
+			curriculum.GET("school-curriculum", curriculumController.FetchSchoolCurriculum)
+			curriculum.GET("data", curriculumController.FetchCurriculumInfo)
+		}
+
+		//manage School
+		school := main.Group("/school")
+		{
+			school.GET("/all", schoolController.FetchSchools)
+			school.POST("/new", schoolController.NewSchool)
+			school.POST("/edit", schoolController.EditSchool)
+			school.GET("/info", schoolController.FetchSchoolInfo)
+			school.POST("/delete", schoolController.DeleteSchool)
+		}
+
+		//manage campus
+		campus := main.Group("/campus")
+		{
+			campus.GET("/all", controllers.FetchCampuses)
+			campus.GET("/class-list", classController.FetchClassLevel)
+			campus.GET("/info", controllers.CampusInfo)
+			campus.GET("/level-list", controllers.CampusLevelList)
+			campus.GET("/curriculum", controllers.CampusCurriculum)
+			campus.POST("/new", controllers.NewCampus)
+			campus.POST("/edit", controllers.EditCampus)
+			campus.POST("/delete", controllers.DeleteCampus)
+			campus.POST("/new-level", controllers.NewCampusLevel)
+			campus.POST("/new-class", classController.AddCampusClass)
+		}
+
+		level := main.Group("/level")
+		{
+			level.GET("/info", learningLevelControllers.LevelInfo)
+			level.POST("/edit", learningLevelControllers.EditLevel)
+			level.POST("/delete", learningLevelControllers.DeleteLevel)
+		}
+
+		main.GET("level", controllers.FetchLevel)
+		main.GET("campus-level", controllers.FetchCampusLevel)
+		main.GET("fetch-campus-level", controllers.FetchCampusLevelList)
+
+		//level
+		main.POST("new-level", learningLevelControllers.NewLevel)
+		main.POST("new-curriculum-level", learningLevelControllers.NewCurriculumLevel)
+		main.GET("fetch-level", learningLevelControllers.FetchLearningLevel)
+		main.GET("fetch-curriculum-level", learningLevelControllers.FetchCurriculumLevel)
+
+		//	manage class
+		class := main.Group("/class")
+		{
+			class.GET("/info", classController.ClassInfo)
+			class.GET("/curriculum-class", classController.FetchClassesToAdd)
+			class.GET("/campus-class-by-level", classController.FetchCampusClassesByLevel)
+			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
+			class.POST("/edit", classController.EditClass)
+			class.POST("/delete", classController.DeleteClass)
+		}
+		//main.GET("classes-to-add", classController.FetchClassesToAdd)
+		main.POST("new-class", classController.NewClass)
+		main.POST("new-curriculum-class", classController.AddCurriculumClass)
+		main.GET("classes", classController.FetchClasses)
+		main.GET("fetch-curriculum-classes", classController.FetchCurriculumClasses)
+		main.GET("filter-curriculum-classes", classController.FilterCurriculumClasses)
+		main.GET("scheme-of-work-classes", classController.FetchSchemeOfWorkClasses)
+		main.GET("classes-curriculum", classController.FetchClassesCurriculum)
+		main.GET("class-subjects", classController.FetchClassSubjects)
+		main.POST("subject-to-class", classController.NewClassSubjects)
+
+		//manage subject
+		subject := main.Group("/subject")
+		{
+			subject.GET("/info", subjectController.SubjectInfo)
+			subject.GET("/by-curriculum-class", subjectController.SubjectCurriculumClass)
+			subject.POST("/edit", subjectController.SubjectEdit)
+			subject.POST("/delete", subjectController.DeleteSubject)
+		}
+
+		main.POST("new-subject", subjectController.NewSubject)
+		main.GET("subjects", subjectController.FetchSubject)
+		main.GET("subject-list", subjectController.FetchSubjectList)
+		main.GET("subjects-by-class", subjectController.FetchSubjectByClass)
+
+		//manage Learning Area
+		learningArea := main.Group("/learning-area")
+		{
+			learningArea.GET("/info", learningAreaController.LearningAreaInfo)
+			learningArea.POST("/edit", learningAreaController.LearningAreaEdit)
+			learningArea.POST("/delete", learningAreaController.DeleteLearningArea)
+		}
+		main.POST("new-learning-area", learningAreaController.NewLearningArea)
+		main.GET("learning-areas", learningAreaController.FetchLearningArea)
+
+		//subject cluster
+		subjectCluster := main.Group("/subject-cluster")
+		{
+			subjectCluster.GET("/info", subjectClusterController.SubjectClusterInfo)
+			subjectCluster.POST("/edit", subjectClusterController.SubjectClusterEdit)
+			subjectCluster.POST("/delete", subjectClusterController.DeleteSubjectCluster)
+		}
+
+		main.POST("new-subject-cluster", subjectClusterController.NewSubjectCluster)
+		main.GET("subject-clusters", subjectClusterController.FetchSubjectCluster)
+		main.GET("subject-cluster-filter", subjectClusterController.FetchSubjectClusterList)
+
+		//strand
+		strand := main.Group("/strand")
+		{
+			strand.GET("/info", strandController.StrandInfo)
+			strand.POST("/edit", strandController.StrandEdit)
+			strand.POST("/delete", strandController.DeleteStrand)
+		}
+		main.POST("new-strand", strandController.NewStrand)
+		main.GET("strands", strandController.FetchStrand)
+		main.GET("strand-list", strandController.FetchStrandList)
+
+		//topic
+		topic := main.Group("/topic")
+		{
+			topic.GET("/info", topicController.TopicInfo)
+			topic.POST("/edit", topicController.TopicEdit)
+			topic.POST("/delete", topicController.DeleteTopic)
+		}
+		main.POST("new-topic", topicController.NewTopic)
+		main.GET("topics", topicController.FetchTopic)
+		main.GET("topic-list", topicController.FetchTopicList)
+
+		//sub topic
+		subTopic := main.Group("/sub-topic")
+		{
+			subTopic.GET("/info", subTopicController.SubTopicInfo)
+			subTopic.POST("/edit", subTopicController.SubTopicEdit)
+			subTopic.POST("/delete", subTopicController.DeleteSubTopic)
+		}
+		main.POST("new-sub-topic", subTopicController.NewSubTopic)
+		main.GET("sub-topics", subTopicController.FetchSubTopic)
+		main.GET("sub-topic-list", subTopicController.FetchSubTopiList)
+		main.GET("sub-topics-by-class", subTopicController.FetchSubTopicByClass)
+
+		//concepts
+		concept := main.Group("/concept")
+		{
+			concept.GET("/info", conceptController.ConceptInfo)
+			concept.POST("/edit", conceptController.ConceptEdit)
+			concept.POST("/delete", conceptController.DeleteConcept)
+		}
+		main.POST("new-concept", conceptController.NewConcept)
+		main.GET("concepts", conceptController.FetchConcept)
+
+		//adds academic year
+		academicYear := main.Group("/academic-year")
+		{
+			academicYear.GET("all", academicYearController.FetchAcademicYearInfo)
+			academicYear.GET("by-level", academicYearController.AcademicYearsByLevel)
+			academicYear.GET("by-campus-class", academicYearController.AcademicYearsByCampusClass)
+			academicYear.POST("/new", academicYearController.NewAcademicYear)
+			academicYear.POST("/delete", academicYearController.DeleteAcademicYear)
+		}
+		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
+
+		//adds study period
+		studyPeriod := main.Group("/study-period")
+		{
+			studyPeriod.GET("all", studyPeriodController.FetchStudyPeriod)
+			studyPeriod.GET("by-academic-year", studyPeriodController.FetchStudyPeriodByAcademicYear)
+		}
+		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
+
+		//adds scheme of work
+		schemeOfWork := main.Group("/scheme-of-work")
+		{
+			schemeOfWork.GET("download-scheme-template", schemeOfWorkControllers.DownloadSchemeOfWork)
+			schemeOfWork.POST("upload-scheme-of-work", schemeOfWorkControllers.ImportSchemeOfWork)
+			schemeOfWork.GET("fetch-scheme-of-work-by-class-and-subject", schemeOfWorkControllers.FetchSchemeOfWork)
+		}
+		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
+		main.POST("update-scheme-of-work", schemeOfWorkControllers.UpdateSchemeOfWork)
+
+		//lesson notes
+		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
+
+		lessonPlan := main.Group("/lesson-plan")
+		{
+			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
+			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
+			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
+			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
+		}
+
+		// Student details
+		studentDetails := main.Group("/student-details")
+		{
+			studentDetails.POST("/:student_number", studentDetailsController.CreateStudentDetails)
+			studentDetails.PUT("/:student_number", studentDetailsController.EditStudentDetails)
+		}
+
+		//timetable routes
+		timetable := main.Group("/timetable")
+		{
+			timetable.GET("all-study-timetables", timetableController.FetchStudyTimetables)
+			timetable.POST("create-study-timetable", timetableController.CreateStudyTimetable)
+			timetable.POST("add-timetable-period", timetableController.AddPeriod)
+			timetable.GET("get-timetable-periods", timetableController.FetchTimetablePeriodsGroupedByDay)
+			timetable.GET("get-distinct-days", timetableController.GetDistinctDays)
+			timetable.GET("get-periods-by-day/:day", timetableController.GetPeriodsByDay)
+			timetable.GET("subjects-by-class-level-number/:class_level_number", timetableController.FetchSubjectsByClassLevelNumber)
+			timetable.GET("get-classes-by-campus-number-and-level-number", timetableController.FetchClassLevelsByCampusNumberAndLevelNumber)
+			timetable.GET("fetch-levels-by-campus-number/:campus_number", timetableController.FetchLevelsByCampusNumber)
+		}
+
+		stream := main.Group("/stream")
+		{
+			stream.POST("new", classController.AddClassStream)
+			stream.GET("fetch", classController.FetchStreamsByClassLevelNumber)
+
+		}
+
+		eos := main.Group("/eos")
+		{
+			eos.POST("entity/add", eosController.AddEntity)
+			eos.GET("calendars", eosController.GetAllCalendars)
+			eos.POST("calendars", eosController.AddGeneralCalendar)
+			eos.GET("calendars/:calendar_number", eosController.GetCalendarDetails)
+			eos.POST("calendars/update", eosController.AddCalendarEvent)
+			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
+		}
+
+		application := main.Group("/applications")
+		{
+			// source of school info
+			application.POST("new-source-of-school-info", sourceOfSchoolController.NewSourceOfSchoolInfo)
+			application.GET("source-of-school-info", sourceOfSchoolController.GetSourcesOfSchoolInfo)
+			application.PUT("edit-source-of-school-info/:source_of_school_info_number", sourceOfSchoolController.EditSourceOfSchoolInfo)
+			application.DELETE("source-of-school-info/:source_of_school_info_number", sourceOfSchoolController.DeleteSourceOfSchoolInfo)
+
+			// parents
+			application.POST("new-parent", parentController.CreateParent)
+			application.GET("parents", parentController.FetchParents)
+			application.GET("parents/:id", parentController.FetchParentInfo)
+			application.PATCH("parents/:id", parentController.UpdateParent)
+			application.POST("parents/:id", parentController.DeleteParent)
+
+			// students
+			application.POST("/new-student", studentController.CreateStudent)
+			application.GET("/students/:student_number", studentController.FetchStudentByNumber)
+			application.GET("/students", studentController.FetchAllStudents)
+			application.PUT("/students/:student_number", studentController.EditStudent)
+			application.DELETE("/students/:student_number", studentController.DeleteStudent)
+
+			// previous schools
+			application.POST(":application_number/previous-schools", previousSchoolController.CreatePreviousSchools)
+
+			// application
+			application.GET("/:application_number", applicationController.FetchApplication)
+			application.GET("all", applicationController.FetchApplications)
+			application.GET("", applicationController.FetchApplicationsByStatus)
+			application.PUT("/:application_number", applicationController.EditApplication)
+		}
+
+		learningMaterials := main.Group("/learning-materials")
+		{
+			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.POST("sub-type", learningMaterialsControllers.CreateMaterialSubType)
+			learningMaterials.GET("sub-types/:category", learningMaterialsControllers.FetchMaterialSubTypesByCategory)
+			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
+			learningMaterials.GET("", learningMaterialsControllers.FetchAllLearningMaterials)
+		}
+
+		payments := main.Group("/payments")
+		{
+			payments.POST("", paymentsController.CreatePayment)
+		}
+
+		preAdmissionInterviewTestReport := main.Group("/pre-admission-test-interview-reports")
+		{
+			preAdmissionInterviewTestReport.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
+			preAdmissionInterviewTestReport.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
+			preAdmissionInterviewTestReport.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
+		}
+
+		interview := main.Group("/interviews")
+		{
+			interview.POST("", interviewController.CreateInterview)
+			interview.GET("/all", interviewController.FetchAllInterviews)
+			interview.GET("/:interview_number", interviewController.FetchAnInterview)
+			interview.PUT("/:interview_number", interviewController.EditInterview)
+			interview.GET("/:interview_number/students", interviewController.FetchStudentsByInterviewNumber)
+			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
+			interview.GET("/:interview_number/questions", interviewController.FetchQuestionsByInterviewNumber)
+			interview.POST("/add-interview-assessment-metric", interviewController.CreateInterviewAssessmentMetric)
+			interview.GET("/:interview_number/interview-assessment-metrics", interviewController.FetchInterviewAssessmentMetrics)
+			interview.GET("student-interview-assessment-results", interviewController.FetchInterviewAssessmentMetricByStudent)
+		}
+
+		interviewQuestion := main.Group("/interview-questions")
+		{
+			interviewQuestion.POST("", interviewController.CreateInterviewQuestion)
+			interviewQuestion.GET("/:number", interviewController.FetchInterviewQuestion)
+			interviewQuestion.GET("", interviewController.FetchAllInterviewQuestions)
+			interviewQuestion.PUT("/:number", interviewController.EditInterviewQuestion)
+		}
+
+		interviewResult := main.Group("/interview-results")
+		{
+			interviewResult.POST("/:student_number", interviewController.CreateInterviewResults)
+			interviewResult.GET("/:student_number", interviewController.FetchInterviewResultByStudentNumber)
+			interviewResult.GET("/all", interviewController.FetchAllInterviewResults)
+			interviewResult.DELETE(":number", interviewController.DeleteInterviewResult)
+		}
+
+		invoices := main.Group("/invoices")
+		{
+			invoices.POST("", invoiceController.CreateInvoice)
+			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
+		}
+
+		invoicePayments := main.Group("/invoice-payments")
+		{
+			invoicePayments.POST("", invoicePaymentController.CreateInvoicePayment)
+		}
+
+		services := main.Group("/services")
+		{
+			services.POST("", serviceController.CreateService)
+			services.GET("", serviceController.FetchServices)
+			services.DELETE("", serviceController.DeleteService)
+			services.PUT(":service_number", serviceController.EditService)
+		}
+
+		products := main.Group("/products")
+		{
+			products.POST("", productController.CreateProduct)
+			products.PUT(":product_number", productController.EditProduct)
+			products.GET("", productController.FetchProducts)
+			products.DELETE(":product_number", productController.DeleteProduct)
+		}
+
+		admission := main.Group("/admissions")
+		{
+			admission.POST("", admissionController.CreateAdmission)
+			admission.GET("", admissionController.FetchAdmissions)
+			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
+			admission.GET("/study_period", admissionController.FilterAdmissionsByStudyPeriod)
+			admission.GET("/stream", admissionController.FilterAdmissionsByStream)
+			admission.GET("/campus_class", admissionController.FilterAdmissionsByCampusClass)
+			admission.GET("/interview", admissionController.FilterAdmissionsByInterview)
+			admission.GET("/school", admissionController.FilterAdmissionsBySchool)
+			admission.GET("/campus", admissionController.FilterAdmissionsByCampus)
+
+			offer := admission.Group("/admission-offers")
+			{
+				offer.POST("", admissionController.CreateAdmissionOffer)
+				offer.GET("", admissionController.FetchAdmissionOffers)
+				offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
+				offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
+			}
+
+			conditions := admission.Group("/admission-offer-conditions")
+			{
+				conditions.POST("", admissionController.CreateAdmissionOfferCondition)
+				conditions.GET("", admissionController.FetchAdmissionOfferConditions)
+			}
+		}
+
+		assessmentArea := main.Group("/assessment-areas")
+		{
+			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
+			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
+			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
+		}
+
+		assessment := main.Group("/assessments")
+		{
+			assessment.POST("", assessmentController.CreateAssessment)
+			assessment.GET("", assessmentController.FetchAssessmentByStudent)
+
+			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
+			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
+
+			assessment.POST("assessment-sub-metrics", assessmentController.CreateAssessmentSubMetric)
+			assessment.GET("assessment-sub-metrics", assessmentController.FetchAssessmentSubMetrics)
+
+			assessment.POST("metrics", assessmentController.CreateMetric)
+			assessment.GET("metrics", assessmentController.FetchMetrics)
+			assessment.DELETE("metrics/:metric_number", assessmentController.DeleteMetric)
+			assessment.PUT("metrics/:metric_number", assessmentController.EditMetric)
+
+			aggregateScale := assessment.Group("/aggregate-scales")
+			{
+				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
+				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+				aggregateScale.PUT("", aggregateScaleController.EditAggregateScale)
+				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScaleBySchool)
+			}
+
+			assessmentGrade := assessment.Group("/assessment-grades")
+			{
+				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
+				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
+				assessmentGrade.PUT("/update/:assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
+				assessmentGrade.DELETE(":assesment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
+			}
+		}
+
+		attendance := main.Group("/attendances")
+		{
+			attendance.POST("", assessmentController.CreateAttendance)
+			attendance.GET("class", assessmentController.FetchAttendanceByClass)
+			attendance.GET("student", assessmentController.FetchStudentAttendance)
+
+		}
+
+		settings := main.Group("settings/permissions")
+		{
+			settings.GET("groups", authController.FetchPermissionGroups)
+		}
+
+		roles := main.Group("settings/roles")
+		{
+			roles.POST("", authController.CreateRole)
+			roles.GET("", authController.FetchRoles)
+			roles.GET(":role_number", authController.FetchRoleDetails)
+			roles.PUT("assign", authController.AssignRolesToAUser)
+			roles.DELETE("remove", authController.RemoveRoleAssignment)
+		}
+
+		users := main.Group("users")
+		{
+			users.GET("", authController.FetchUsers)
+			users.GET(":user_number", authController.FetchUser)
+			users.POST("", authController.CreateUser)
+		}
+
+		reportCards := main.Group("report-cards")
+		{
+			reportCards.POST("", progressReportController.CreateProgressReport)
+			reportCards.GET("", progressReportController.FetchAllPromotions)
+		}
+
+		gradingStandard := main.Group("grading-standard")
+		{
+			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
+			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
+		}
+
+		enrollment := main.Group("enrollment")
+		{
+			enrollment.POST("", enrollmentController.CreateEnrollment)
+			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
+			enrollment.GET("campus", enrollmentController.EnrolledStudentsByCampus)
+		}
+
+		staff := main.Group("staff-management")
+		{
+			staff.POST("", staffController.CreateStaff)
+			staff.GET("all", staffController.FetchStaff)
+			staff.GET("", staffController.FetchMemberByStaffNumber)
+			staff.PUT("", staffController.EditStaff)
+			staff.DELETE("", staffController.DeleteStaff)
+
+			salaryScale := staff.Group("salary-scale")
+			{
+				salaryScale.POST("", staffController.CreateSalaryScale)
+				salaryScale.GET("", staffController.FetchSalaryScales)
+				salaryScale.PUT("", staffController.EditSalaryScale)
+			}
+
+			tasks := staff.Group("tasks")
+			{
+				tasks.POST("", staffController.CreateTask)
+				tasks.PUT("", staffController.EditTask)
+				tasks.DELETE("", staffController.DeleteTask)
+				tasks.GET("", staffController.FetchTasks)
+			}
+
+			taskSupervisions := staff.Group("task-supervisions")
+			{
+				taskSupervisions.POST("", staffController.CreateTaskSupervision)
+				taskSupervisions.GET("", staffController.FetchTaskSUpervisions)
+			}
+
+			joTitles := staff.Group("job-titles")
+			{
+				joTitles.POST("", staffController.CreateJobTitle)
+				joTitles.GET("", staffController.FetchJobTitles)
+				joTitles.PUT("", staffController.EditJobTitle)
+			}
+
+		}
+
+		reportSettings := main.Group("report-settings")
+		{
+			reportSettings.POST("", reportSettingsController.CreateReportSettings)
+			reportSettings.GET("", reportSettingsController.FetchReportSettings)
+			reportSettings.POST("columns", reportSettingsController.CreatReportColumn)
+			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
+			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
+			reportSettings.GET("report-column-assessment", reportSettingsController.FetchReportColumnAssessments)
+			reportSettings.POST("report-summary", reportSettingsController.CreateReportSummary)
+			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
+			reportSettings.POST("report-score", reportSettingsController.CreateReportScore)
+			reportSettings.GET("report-score", reportSettingsController.FetchReportScores)
+			reportSettings.POST("report-score-summary", reportSettingsController.CreateReportScoreSummary)
+			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
+		}
 	}
 
-	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	var campusClass classModel.CampusClass
-	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No campus class found with the specified number"})
-		return
-	}
-
-	saveAssessmentGrade := models.AssessmentGrade{
-		Number:            uuid.NewV4().String(),
-		Grade:             payload.Grade,
-		Name:              payload.Name,
-		Description:       payload.Description,
-		MinimumPoints:     payload.MinimumPoints,
-		MaximumPoints:     payload.MaximumPoints,
-		Abbreviation:      payload.Abbreviation,
-		Remarks:           payload.Remarks,
-		CampusClassNumber: payload.CampusClassNumber,
-		UserNumber:        user.Number,
-	}
-
-	if err := config.DB.Create(&saveAssessmentGrade).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment grade"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "Assessment grade created successfully"})
-}
-
-func FetchAssessmentGrades(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var assessmentGrades []models.AssessmentGrade
-	if err := config.DB.Preload("CampusClass").Find(&assessmentGrades).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment grades"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": assessmentGrades})
-}
-
-func EditAssessmentGrade(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var payload requests.AssessmentGradeRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
-		return
-	}
-
-	assessmentGradeNumber := c.Param("aggregate_grade_number")
-	assessmentGrade := models.AssessmentGrade{}
-	if err := config.DB.First(&assessmentGrade, "number = ?", assessmentGradeNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No assessment grade found with the specified number"})
-		return
-	}
-
-	updateAssessmentGrade := models.AssessmentGrade{
-		Grade:             payload.Grade,
-		Description:       payload.Description,
-		Name:              payload.Name,
-		MaximumPoints:     payload.MaximumPoints,
-		CampusClassNumber: payload.CampusClassNumber,
-		MinimumPoints:     payload.MinimumPoints,
-		Abbreviation:      payload.Abbreviation,
-		Remarks:           payload.Remarks,
-	}
-
-	if err := config.DB.Model(&assessmentGrade).Where("number  = ?", assessmentGradeNumber).Updates(updateAssessmentGrade).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update assessment grade"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": assessmentGrade})
-}
-
-func DeleteAssessmentGrade(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	assessmentGradeNumber := c.Query("aggregate_grade_number")
-	var assessmentGrade models.AssessmentGrade
-
-	if err := config.DB.First(&assessmentGrade, assessmentGradeNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Assessment grade not found"})
-		return
-	}
-
-	if err := config.DB.Delete(&assessmentGrade).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete student"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Assessment grade deleted successfully"})
+	return router
 }
