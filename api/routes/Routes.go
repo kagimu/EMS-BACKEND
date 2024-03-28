@@ -488,15 +488,16 @@ func SetupRoutes() *gin.Engine {
 			{
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
 				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+				aggregateScale.PUT("", aggregateScaleController.EditAggregateScale)
 				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScaleBySchool)
 			}
 
-			assessmentGrade := assessment.Group("/aggregate-grades")
+			assessmentGrade := assessment.Group("/assessment-grades")
 			{
 				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
 				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
-				assessmentGrade.PUT(":aggregate_grade_number", assessmentGradeController.EditAssessmentGrade)
-				assessmentGrade.DELETE(":aggregate_grade_number", assessmentGradeController.DeleteAssessmentGrade)
+				assessmentGrade.PUT("/update/:assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
+				assessmentGrade.DELETE(":assesment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
 			}
 		}
 
