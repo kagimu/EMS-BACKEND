@@ -2,6 +2,10 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
@@ -17,9 +21,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 func NewAcademicYear(context *gin.Context) {
@@ -97,9 +98,8 @@ func NewAcademicYear(context *gin.Context) {
 
 	noOfStudyPeriodData, err := strconv.ParseInt(noOfStudyPeriod, 10, 32)
 	if err != nil {
-		// Handle the error if the conversion fails
-		//fmt.Println("Error:", err)
-		//return
+		fmt.Println("Validation failed:", err)
+		return
 	}
 
 	tx := config.DB.Begin()

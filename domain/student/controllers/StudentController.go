@@ -7,6 +7,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -41,6 +42,13 @@ func CreateStudent(c *gin.Context) {
 	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Application not found"})
+		return
+	}
+
+	var campusClass classModels.CampusClass
+	if err := config.DB.Where("number = ?", payload.CampusClassNumber).First(&campusClass).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Campus class not found"})
 		return
 	}
 
@@ -225,11 +233,8 @@ func FetchAllStudents(c *gin.Context) {
 
 	var students []models.Student
 
-	if err := config.DB.Find(&students).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "failed to fetch students",
-		})
+	if err := config.DB.Preload("CampusClass").Find(&students).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to fetch students"})
 		return
 	}
 

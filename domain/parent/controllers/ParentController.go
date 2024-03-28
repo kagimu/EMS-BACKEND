@@ -128,31 +128,26 @@ func FetchParents(c *gin.Context) {
 }
 
 func UpdateParent(c *gin.Context) {
-	parent := models.Parent{}
-	parentID := c.Param("id")
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
 
-	err := config.DB.First(&parent, parentID).Error
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "no parent found",
-		})
+	var parent models.Parent
+	parentID := c.Param("parent_number")
+
+	if err := config.DB.First(&parent, parentID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "no parent found"})
 		return
 	}
 
 	if err := c.BindJSON(&parent); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "invalid request",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
 		return
 	}
 
 	if err := config.DB.Save(&parent).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "failed to update parent",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update parent"})
 		return
 	}
 
