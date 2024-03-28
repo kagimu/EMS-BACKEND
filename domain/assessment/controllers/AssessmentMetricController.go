@@ -65,7 +65,7 @@ func FetchAssessmentMetrics(c *gin.Context) {
 	}
 
 	var assessmentMetrics []models.AssessmentMetric
-	if err := config.DB.Model(&models.AssessmentMetric{}).Preload("AssessmentArea").Preload("Metric").Find(&assessmentMetrics).Error; err != nil {
+	if err := config.DB.Model(&models.AssessmentMetric{}).Preload("AssessmentArea").Preload("Metric").Preload("CampusClass").Find(&assessmentMetrics).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics"})
 		return
 	}
