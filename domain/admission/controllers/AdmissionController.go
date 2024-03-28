@@ -111,11 +111,11 @@ func CreateAdmission(c *gin.Context) {
 			Status: "ADMITTED",
 		}
 
-		// Checks if the campus class applied for is the same as the campus class being admitted for.
-		if student.CampusClassNumber != payload.CampusClassNumber {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Campus class applied for and selected are different for student: %s %s %s", student.Surname, student.OtherName, student.SecondName)})
-			return
-		}
+		//// Checks if the campus class applied for is the same as the campus class being admitted for.
+		//if student.CampusClassNumber != payload.CampusClassNumber {
+		//	c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Campus class applied for and selected are different for student: %s %s %s", student.Surname, student.OtherName, student.SecondName)})
+		//	return
+		//}
 
 		if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
