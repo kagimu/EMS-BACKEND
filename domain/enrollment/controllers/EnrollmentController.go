@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"net/http"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
@@ -39,17 +40,23 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
+	var admission admissionModel.Admission
+	if err := config.DB.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch the student admission details"})
+		return
+	}
+
 	saveEnrollment := models.Enrollment{
 		Number:            uuid.NewV4().String(),
 		StudentNumber:     payload.StudentNumber,
-		CampusNumber:      payload.CampusNumber,
-		SchoolNumber:      payload.SchoolNumber,
+		CampusNumber:      admission.CampusNumber,
+		SchoolNumber:      admission.SchoolNumber,
 		EnrollmentDate:    payload.EnrollmentDate,
-		StudyPeriodNumber: payload.StudyPeriodNumber,
-		CampusClassNumber: payload.CampusClassNumber,
-
-		Status:     payload.Status,
-		UserNumber: user.Number,
+		StudyPeriodNumber: admission.StudyPeriodNumber,
+		CampusClassNumber: admission.CampusClassNumber,
+		Status:            payload.Status,
+		UserNumber:        user.Number,
+		ContinuingStudent: payload.ContinuingStudent,
 	}
 
 	tx := config.DB.Begin()
@@ -57,13 +64,10 @@ func CreateEnrollment(c *gin.Context) {
 	if err := tx.Create(&saveEnrollment).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
-
 		return
 	}
 
 	// update admission status to enrolled where student number is equal to payload.StudentNumber
-
-	var admission admissionModel.Admission
 
 	if err := tx.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
 		tx.Commit()
@@ -74,7 +78,9 @@ func CreateEnrollment(c *gin.Context) {
 	admission.Status = constants.STATUS_ENROLLED
 
 	if err := tx.Save(&admission).Error; err != nil {
-
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update admission status"})
+		return
 	}
 
 	tx.Commit()

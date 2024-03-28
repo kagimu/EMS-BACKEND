@@ -17,7 +17,7 @@ type StudentUpdateRequest struct {
 	ReasonForAdmissionDenial  string `json:"reason_for_admission_denial"`
 	SourceOfSchoolInfo        string `json:"source_of_school_info"`
 	ParentNumber              string `json:"parent_number"`
-	ClassNumber               string `json:"class_number"`
+	CampusClassNumber         string `json:"campus_class_number"`
 }
 
 func (s *StudentUpdateRequest) Prepare() {

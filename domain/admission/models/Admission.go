@@ -6,6 +6,7 @@ import (
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
+	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"gorm.io/gorm"
@@ -31,4 +32,6 @@ type Admission struct {
 	UserNumber         string                         `json:"user_number" gorm:"size:36;not null"`
 	User               authModels.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Status             string                         `json:"status" gorm:"size:20;default:'pending'"`
+	SchoolNumber       string                         `json:"school_number" gorm:"size:36;"`
+	School             schoolModels.School            `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
