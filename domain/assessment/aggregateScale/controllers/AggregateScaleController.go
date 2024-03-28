@@ -94,3 +94,43 @@ func FetchAggregateScaleBySchool(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": aggregateScales})
 }
+
+func EditAggregateScale(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.AggregateScaleRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	aggregateScaleNumber := c.Query("aggregate_scale_number")
+	var aggregateScale models.AggregateScale
+	if err := config.DB.First(&aggregateScale, "number = ?", aggregateScaleNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No aggregate scale found with the specified number"})
+		return
+	}
+
+	updateAggregateScale := models.AggregateScale{
+		Name:                  payload.Name,
+		Weight:                payload.Weight,
+		MinValue:              payload.MinValue,
+		MaxValue:              payload.MaxValue,
+		Description:           payload.Description,
+		SchoolNumber:          payload.SchoolNumber,
+		ClassNumber:           payload.ClassNumber,
+		CampusNumber:          payload.CampusNumber,
+		GradingStandardNumber: payload.GradingStandardNumber,
+	}
+
+	if err := config.DB.Model(&aggregateScale).Where("number  = ?", aggregateScaleNumber).Updates(updateAggregateScale).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update aggregate scale"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": aggregateScale})
+}
