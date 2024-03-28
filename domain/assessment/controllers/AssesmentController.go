@@ -33,8 +33,8 @@ func CreateAssessment(c *gin.Context) {
 	}
 
 	var assessmentMetric assessmentMetricModel.AssessmentMetric
-	if err := config.DB.Model(&studentModel.Student{}).Preload("CampusClass").Where("number = ?", payload.AssessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric not found"})
+	if err := config.DB.First(&assessmentMetric, payload.AssessmentMetricNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Assessment metric not found"})
 		return
 	}
 
