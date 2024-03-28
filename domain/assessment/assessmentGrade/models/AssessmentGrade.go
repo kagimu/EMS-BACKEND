@@ -12,7 +12,7 @@ type AssessmentGrade struct {
 	Number            string                  `json:"number" gorm:"size:36;unique;not null"`
 	Grade             string                  `json:"Grade" gorm:"size:20;"`
 	Name              string                  `json:"name"`
-	Description       string                  `json:"description" gorm:"size:20;"`
+	Description       string                  `json:"description" gorm:"type:text"`
 	MinimumPoints     int64                   `json:"minimum_points"`
 	MaximumPoints     int64                   `json:"maximum_points"`
 	Abbreviation      string                  `json:"abbreviation" gorm:"size:20;"`
