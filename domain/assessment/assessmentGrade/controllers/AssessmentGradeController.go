@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"net/http"
+
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
@@ -86,7 +87,7 @@ func EditAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	assessmentGradeNumber := c.Query("assessment_grade_number")
+	assessmentGradeNumber := c.Param("assessment_grade_number")
 	assessmentGrade := models.AssessmentGrade{}
 	if err := config.DB.First(&assessmentGrade, "number = ?", assessmentGradeNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No assessment grade found with the specified number"})
