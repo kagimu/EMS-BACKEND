@@ -9,7 +9,6 @@ type AssessmentGradeRequest struct {
 	MaximumPoints int64  `json:"maximum_points"`
 	Name          string `json:"name"`
 	Abbreviation  string `json:"abbreviation"`
-	Condition     string `json:"condition"`
 	Remarks       string `json:"remarks"`
 	LevelNumber   string `json:"level_number"`
 }
@@ -33,9 +32,7 @@ func (r *AssessmentGradeRequest) Validate() error {
 	if r.MaximumPoints == 0 {
 		return errors.New("maximum points is required")
 	}
-	if r.Condition == "" {
-		return errors.New("condition is required")
-	}
+
 	if r.Remarks == "" {
 		return errors.New("remarks is required")
 	}

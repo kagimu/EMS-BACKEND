@@ -16,7 +16,6 @@ type AssessmentGrade struct {
 	MinimumPoints int64             `json:"minimum_points"`
 	MaximumPoints int64             `json:"maximum_points"`
 	Abbreviation  string            `json:"abbreviation" gorm:"size:20;"`
-	Condition     string            `json:"condition" gorm:"type:text;"`
 	Remarks       string            `json:"remarks" gorm:"type:text;"`
 	LevelNumber   string            `json:"level_number" gorm:"size:36;"`
 	Level         levelModels.Level `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
