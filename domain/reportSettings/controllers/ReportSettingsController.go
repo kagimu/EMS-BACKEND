@@ -356,11 +356,13 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 		if err := config.DB.Where("student_number = ? AND study_period_number = ? AND campus_class_number = ?", enrollment.StudentNumber, enrollment.StudyPeriodNumber, enrollment.CampusClassNumber).First(&reportSummary).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				response = append(response, responses.SummarizedFinalReportResponse{
-					Student:       enrollment.Student.Surname + " " + enrollment.Student.SecondName,
-					Grade:         "N/A",
-					Aggregate:     "N/A",
-					Class:         enrollment.CampusClass.ClassName,
-					StudentNumber: enrollment.Student.Number,
+					Student:           enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+					Grade:             "N/A",
+					Aggregate:         "N/A",
+					Class:             enrollment.CampusClass.ClassName,
+					StudentNumber:     enrollment.Student.Number,
+					EnrollmentNumber:  enrollment.Number,
+					CampusClassNumber: enrollment.CampusClassNumber,
 				})
 
 			}
@@ -368,11 +370,13 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 		} else {
 
 			response = append(response, responses.SummarizedFinalReportResponse{
-				Student:       enrollment.Student.Surname + " " + enrollment.Student.SecondName,
-				Grade:         reportSummary.Grade,
-				Aggregate:     strconv.Itoa(int(reportSummary.Aggregate)),
-				Class:         enrollment.CampusClass.ClassName,
-				StudentNumber: enrollment.Student.Number,
+				Student:           enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+				Grade:             reportSummary.Grade,
+				Aggregate:         strconv.Itoa(int(reportSummary.Aggregate)),
+				Class:             enrollment.CampusClass.ClassName,
+				StudentNumber:     enrollment.Student.Number,
+				EnrollmentNumber:  enrollment.Number,
+				CampusClassNumber: enrollment.CampusClassNumber,
 			})
 		}
 	}
