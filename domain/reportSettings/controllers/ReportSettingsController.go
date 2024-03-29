@@ -508,6 +508,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 			}
 
 			var reportScore = models.ReportScore{
+				Number:               uuid.NewV4().String(),
 				ReportSummaryNumber:  reportSummary.Number,
 				AssessmentAreaNumber: assessmentArea.Number,
 				ReportColumnNumber:   reportColum.Number,
@@ -542,6 +543,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 		}
 
 		var reportScoreSummary = models.ReportScoreSummary{
+			Number:               uuid.NewV4().String(),
 			ReportSummaryNumber:  reportSummary.Number,
 			AssessmentAreaNumber: assessmentArea.Number,
 			Aggregate:            0,
