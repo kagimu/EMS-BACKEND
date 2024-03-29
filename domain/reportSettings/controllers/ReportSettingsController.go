@@ -337,8 +337,8 @@ func FetchReportScoreSummaries(ctx *gin.Context) {
 }
 
 func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
-	studyPeriodNumber := ctx.Param("study_period_number")
-	campusClassNumber := ctx.Param("campus_class_number")
+	//studyPeriodNumber := ctx.Param("study_period_number")
+	//campusClassNumber := ctx.Param("campus_class_number")
 
 	var response []responses.SummarizedFinalReportResponse
 
@@ -346,8 +346,8 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 
 	if err := config.DB.
 		//Preload("Student").
-		Preload("CampusClass").
-		Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).
+		//Preload("CampusClass").
+		//Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).
 		Find(&enrollments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
