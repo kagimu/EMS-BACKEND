@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -348,15 +347,13 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 	var enrollments []enrollmentModel.Enrollment
 
 	if err := config.DB.
-		//Preload("Student").
+		Preload("Student").
 		//Preload("CampusClass").
 		//Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).
 		Find(&enrollments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
 	}
-
-	fmt.Println(len(enrollments))
 
 	for _, enrollment := range enrollments {
 		var reportSummary models.ReportSummary
@@ -383,8 +380,6 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 			})
 		}
 	}
-
-	fmt.Println("response", response)
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
