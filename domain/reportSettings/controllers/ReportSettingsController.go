@@ -424,7 +424,9 @@ func GenerateReportSummary(ctx *gin.Context) {
 		return
 
 	}
+	user := ctx.Request.Header["User-Number"][0]
 
+	tx := config.DB.Begin()
 	reportSummary := models.ReportSummary{
 		Number:              uuid.NewV4().String(),
 		ReportSettingNumber: reportSettings.Number,
@@ -434,18 +436,18 @@ func GenerateReportSummary(ctx *gin.Context) {
 		Grade:               "",
 		Aggregate:           -1,
 		Comment:             "",
-		UserNumber:          ctx.Request.Header["User-Number"][0],
+		UserNumber:          user,
 		Code:                0,
 	}
 
-	if err := config.DB.Create(&reportSummary).Error; err != nil {
+	if err := tx.Create(&reportSummary).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report summary"})
 		return
 	}
 
 	var campusClass classModel.CampusClass
 
-	if err := config.DB.Where("number = ?", payload.CampusClassNumber).First(&campusClass).Error; err != nil {
+	if err := tx.Where("number = ?", payload.CampusClassNumber).First(&campusClass).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch class"})
 		return
 
@@ -453,7 +455,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 	var assessmentAreas []assessmentModel.AssessmentArea
 
-	if err := config.DB.Where("curriculum_class_number = ?", campusClass.CurriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
+	if err := tx.Where("curriculum_class_number = ?", campusClass.CurriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
 		return
 	}
@@ -464,7 +466,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 			var rcas []models.ReportColumnAssessment
 
-			if err := config.DB.Where("assessment_area_number = ? AND report_column_number = ? ", assessmentArea.Number, reportColum.Number).Find(&rcas).Error; err != nil {
+			if err := tx.Where("assessment_area_number = ? AND report_column_number = ? ", assessmentArea.Number, reportColum.Number).Find(&rcas).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					continue
 				}
@@ -474,7 +476,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 			for _, rca := range rcas {
 				var assessment assesmentModel.Assessment
 
-				if err := config.DB.Where("assessment_metric_number = ? AND student_number = ? ", rca.AssessmentMetricNumber, payload.StudentNumber).First(&assessment).Error; err != nil {
+				if err := tx.Where("assessment_metric_number = ? AND student_number = ? ", rca.AssessmentMetricNumber, payload.StudentNumber).First(&assessment).Error; err != nil {
 					if errors.Is(err, gorm.ErrRecordNotFound) {
 						continue
 					}
@@ -497,15 +499,16 @@ func GenerateReportSummary(ctx *gin.Context) {
 				AverageScore:         scoreAverage,
 				Aggregate:            0,
 				Grade:                "",
+				UserNumber:           user,
 			}
 
-			config.DB.Create(&reportScore)
+			tx.Create(&reportScore)
 
 		}
 
 		var rs []models.ReportScore
 
-		if err := config.DB.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).Find(&rs).Error; err != nil {
+		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).Find(&rs).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				continue
 			}
@@ -525,11 +528,17 @@ func GenerateReportSummary(ctx *gin.Context) {
 			Grade:                "",
 			Summation:            summation,
 			Comment:              "Subject teacher comment goes here",
+			UserNumber:           user,
 		}
 
-		config.DB.Create(&reportScoreSummary)
+		if err = tx.Create(&reportScoreSummary).Error; err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score summary"})
+			return
+		}
 
 	}
+	tx.Commit()
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Report summary created successfully"})
 }
