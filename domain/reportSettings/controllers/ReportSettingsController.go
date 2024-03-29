@@ -495,11 +495,17 @@ func GenerateReportSummary(ctx *gin.Context) {
 			fmt.Println("Score is ", score)
 			fmt.Println("Length is ", length)
 			var scoreAverage = score / length
+			if length == 0 || score == 0 {
+				scoreAverage = -1
+			}
 
 			fmt.Println("Score average is ", scoreAverage)
 			// find the aggregate scale with from grading standard of the  assessment metric
 
-			percentageScore := (scoreAverage / 100) * reportColum.PercentageShare
+			var percentageScore float64
+			if length > 0 && score > 0 {
+				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
+			}
 
 			var reportScore = models.ReportScore{
 				ReportSummaryNumber:  reportSummary.Number,
