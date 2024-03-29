@@ -601,8 +601,8 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("report-score", reportSettingsController.FetchReportScores)
 			reportSettings.POST("report-score-summary", reportSettingsController.CreateReportScoreSummary)
 			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
-
 			reportSettings.GET("report-settings-by-student", reportSettingsController.FetchReportSummaryByStudentAndStudyPeriodAndClass)
+			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
 
 		}
 	}

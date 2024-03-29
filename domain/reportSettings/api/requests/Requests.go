@@ -1,6 +1,8 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+)
 
 type ReportSettingsRequest struct {
 	Code               int64  `json:"code"`
@@ -52,6 +54,12 @@ type ReportScoreRequest struct {
 	Score                float64 `json:"score"`
 	Aggregate            float64 `json:"aggregate"`
 	Grade                string  `json:"grade"`
+}
+
+type GenerateReportSummaryRequest struct {
+	StudentNumber     string `json:"student_number"`
+	StudyPeriodNumber string `json:"study_period_number"`
+	CampusClassNumber string `json:"campus_class_number"`
 }
 
 func (reportSummary *ReportSummaryRequest) ValidateReportSummary() error {
@@ -187,4 +195,17 @@ func (reportColumn *ReportColumnRequest) ValidateReportColumn() error {
 	}
 	return nil
 
+}
+
+func (rpt *GenerateReportSummaryRequest) ValidateGenerateReportSummary() error {
+	if rpt.StudentNumber == "" {
+		return errors.New("student number is required")
+	}
+	if rpt.StudyPeriodNumber == "" {
+		return errors.New("study period number is required")
+	}
+	if rpt.CampusClassNumber == "" {
+		return errors.New("class number is required")
+	}
+	return nil
 }

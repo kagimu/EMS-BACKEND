@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"gorm.io/gorm"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -35,15 +37,17 @@ func CreateEnrollment(c *gin.Context) {
 	// validate if student exists on the same campus and school and campus_class_number and study period and   is active
 	var existingEnrollment models.Enrollment
 
-	if err := config.DB.Where("student_number = ? AND campus_number = ? AND school_number = ? AND campus_class_number = ? AND study_period_number = ? AND status = ?", payload.StudentNumber, payload.CampusNumber, payload.SchoolNumber, payload.CampusClassNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Student is already enrolled in this class"})
+	if err := config.DB.Where("student_number = ? AND study_period_number = ? AND status = ?", payload.StudentNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student is already enrolled for this study period"})
 		return
 	}
 
 	var admission admissionModel.Admission
 	if err := config.DB.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch the student admission details"})
-		return
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch the student admission details"})
+			return
+		}
 	}
 
 	saveEnrollment := models.Enrollment{
