@@ -344,7 +344,11 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 
 	var enrollments []enrollmentModel.Enrollment
 
-	if err := config.DB.Preload("Student").Preload("CampusClass").Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).Find(&enrollments).Error; err != nil {
+	if err := config.DB.
+		//Preload("Student").
+		Preload("CampusClass").
+		Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).
+		Find(&enrollments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
 	}
