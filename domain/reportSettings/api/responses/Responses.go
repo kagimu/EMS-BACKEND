@@ -24,8 +24,9 @@ type ReportColumnAssessmentResponse struct {
 }
 
 type SummarizedFinalReportResponse struct {
-	Student   string `json:"student"`
-	Grade     string `json:"grade"`
-	Aggregate string `json:"aggregate"`
-	Class     string `json:"class"`
+	Student       string `json:"student"`
+	StudentNumber string `json:"student_number"`
+	Grade         string `json:"grade"`
+	Aggregate     string `json:"aggregate"`
+	Class         string `json:"class"`
 }
