@@ -486,9 +486,11 @@ func GenerateReportSummary(ctx *gin.Context) {
 				score += assessment.ActualScore
 
 			}
+			length := float64(len(rcas))
 
 			fmt.Println("Score is ", score)
-			var scoreAverage = score / float64(len(rcas))
+			fmt.Println("Length is ", length)
+			var scoreAverage = score / length
 
 			fmt.Println("Score average is ", scoreAverage)
 			// find the aggregate scale with from grading standard of the  assessment metric
