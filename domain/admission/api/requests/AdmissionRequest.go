@@ -15,6 +15,7 @@ type AdmissionRequest struct {
 	StreamNumber       string   `json:"stream_number"`
 	CampusNumber       string   `json:"campus_number"`
 	AcademicYearNumber string   `json:"academic_year_number"`
+	SchoolNumber       string   `json:"school_number"`
 }
 
 func (a *AdmissionRequest) Validate() error {
@@ -34,5 +35,6 @@ func (a *AdmissionRequest) Prepare() {
 	a.CampusNumber = html.EscapeString(strings.TrimSpace(a.CampusNumber))
 	a.AcademicYearNumber = html.EscapeString(strings.TrimSpace(a.AcademicYearNumber))
 	a.StudyPeriodNumber = html.EscapeString(strings.TrimSpace(a.StudyPeriodNumber))
+	a.SchoolNumber = html.EscapeString(strings.TrimSpace(a.SchoolNumber))
 
 }

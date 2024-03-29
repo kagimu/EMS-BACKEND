@@ -443,6 +443,7 @@ func SetupRoutes() *gin.Engine {
 			admission.GET("/stream", admissionController.FilterAdmissionsByStream)
 			admission.GET("/campus_class", admissionController.FilterAdmissionsByCampusClass)
 			admission.GET("/interview", admissionController.FilterAdmissionsByInterview)
+			admission.GET("/school", admissionController.FilterAdmissionsBySchool)
 			admission.GET("/campus", admissionController.FilterAdmissionsByCampus)
 
 			offer := admission.Group("/admission-offers")
@@ -487,14 +488,15 @@ func SetupRoutes() *gin.Engine {
 			{
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
 				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+				aggregateScale.PUT("", aggregateScaleController.EditAggregateScale)
 				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScaleBySchool)
 			}
 
-			assessmentGrade := assessment.Group("/aggregate-grades")
+			assessmentGrade := assessment.Group("/assessment-grades")
 			{
 				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
 				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
-				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
+				assessmentGrade.PUT("/update/:assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
 				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
 			}
 		}

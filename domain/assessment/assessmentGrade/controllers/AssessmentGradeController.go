@@ -3,11 +3,12 @@ package controllers
 import (
 	"net/http"
 
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -30,24 +31,23 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	var level levelModels.Level
-	if err := config.DB.First(&level, "number = ?", payload.LevelNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No level found with the specified number"})
+	var campusClass classModel.CampusClass
+	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No campus class found with the specified number"})
 		return
 	}
 
 	saveAssessmentGrade := models.AssessmentGrade{
-		Number:        uuid.NewV4().String(),
-		Grade:         payload.Grade,
-		Name:          payload.Name,
-		Description:   payload.Description,
-		MinimumPoints: payload.MinimumPoints,
-		MaximumPoints: payload.MaximumPoints,
-		Abbreviation:  payload.Abbreviation,
-		Condition:     payload.Condition,
-		Remarks:       payload.Remarks,
-		LevelNumber:   payload.LevelNumber,
-		UserNumber:    user.Number,
+		Number:            uuid.NewV4().String(),
+		Grade:             payload.Grade,
+		Name:              payload.Name,
+		Description:       payload.Description,
+		MinimumPoints:     payload.MinimumPoints,
+		MaximumPoints:     payload.MaximumPoints,
+		Abbreviation:      payload.Abbreviation,
+		Remarks:           payload.Remarks,
+		CampusClassNumber: payload.CampusClassNumber,
+		UserNumber:        user.Number,
 	}
 
 	if err := config.DB.Create(&saveAssessmentGrade).Error; err != nil {
@@ -66,7 +66,7 @@ func FetchAssessmentGrades(c *gin.Context) {
 	}
 
 	var assessmentGrades []models.AssessmentGrade
-	if err := config.DB.Find(&assessmentGrades).Error; err != nil {
+	if err := config.DB.Preload("CampusClass").Find(&assessmentGrades).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment grades"})
 		return
 	}
@@ -87,22 +87,22 @@ func EditAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	assessmentGradeNumber := c.Query("assessment_grade_number")
-	assessmentGrade := models.AssessmentGrade{}
-	if err := config.DB.First(&assessmentGrade, "number = ?", assessmentGradeNumber).Error; err != nil {
+	assessmentGradeNumber := c.Param("assessment_grade_number")
+	var assessmentGrade models.AssessmentGrade
+	if err := config.DB.First(&assessmentGrade).Where("number = ?", assessmentGradeNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No assessment grade found with the specified number"})
 		return
 	}
 
 	updateAssessmentGrade := models.AssessmentGrade{
-		Grade:         payload.Grade,
-		Description:   payload.Description,
-		Name:          payload.Name,
-		MaximumPoints: payload.MaximumPoints,
-		MinimumPoints: payload.MinimumPoints,
-		Abbreviation:  payload.Abbreviation,
-		Condition:     payload.Condition,
-		Remarks:       payload.Remarks,
+		Grade:             payload.Grade,
+		Description:       payload.Description,
+		Name:              payload.Name,
+		MaximumPoints:     payload.MaximumPoints,
+		CampusClassNumber: payload.CampusClassNumber,
+		MinimumPoints:     payload.MinimumPoints,
+		Abbreviation:      payload.Abbreviation,
+		Remarks:           payload.Remarks,
 	}
 
 	if err := config.DB.Model(&assessmentGrade).Where("number  = ?", assessmentGradeNumber).Updates(updateAssessmentGrade).Error; err != nil {

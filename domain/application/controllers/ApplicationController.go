@@ -25,6 +25,7 @@ func FetchApplication(c *gin.Context) {
 
 	if err := config.DB.Model(&models.Application{}).
 		Preload("Student").
+		Preload("Student.CampusClass").
 		Preload("Parent").
 		Preload("PreviousSchools").
 		Where("number = ?", applicationNumber).
