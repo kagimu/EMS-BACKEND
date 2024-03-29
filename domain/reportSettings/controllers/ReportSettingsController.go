@@ -1,13 +1,17 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"strconv"
 
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -329,4 +333,43 @@ func FetchReportScoreSummaries(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"report_score_summaries": reportScoreSummaries})
 
+}
+
+func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
+	studyPeriodNumber := ctx.Param("study_period_number")
+	campusClassNumber := ctx.Param("campus_class_number")
+
+	var response []responses.SummarizedFinalReportResponse
+
+	var enrollments []enrollmentModel.Enrollment
+
+	if err := config.DB.Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).Find(&enrollments).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
+		return
+	}
+
+	for _, enrollment := range enrollments {
+		var reportSummary models.ReportSummary
+		if err := config.DB.Where("student_number = ? AND study_period_number = ? AND campus_class_number = ?", enrollment.StudentNumber, enrollment.StudyPeriodNumber, enrollment.CampusClassNumber).First(&reportSummary).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				response = append(response, responses.SummarizedFinalReportResponse{
+					Student:   enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+					Grade:     "Not Graded",
+					Aggregate: "N/A",
+					Class:     enrollment.CampusClass.ClassName,
+				})
+
+			}
+		}
+
+		response = append(response, responses.SummarizedFinalReportResponse{
+			Student:   enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+			Grade:     reportSummary.Grade,
+			Aggregate: strconv.Itoa(int(reportSummary.Aggregate)),
+			Class:     enrollment.CampusClass.ClassName,
+		})
+
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }

@@ -22,3 +22,10 @@ type ReportColumnAssessmentResponse struct {
 	Code             int64  `json:"code"`
 	ReportColumn     string `json:"report_column"`
 }
+
+type SummarizedFinalReportResponse struct {
+	Student   string `json:"student"`
+	Grade     string `json:"grade"`
+	Aggregate string `json:"aggregate"`
+	Class     string `json:"class"`
+}
