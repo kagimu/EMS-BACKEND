@@ -502,7 +502,11 @@ func GenerateReportSummary(ctx *gin.Context) {
 				UserNumber:           user,
 			}
 
-			tx.Create(&reportScore)
+			if err = tx.Create(&reportScore).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score"})
+				return
+			}
 
 		}
 
