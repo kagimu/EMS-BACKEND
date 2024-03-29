@@ -343,7 +343,7 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 
 	var enrollments []enrollmentModel.Enrollment
 
-	if err := config.DB.Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).Find(&enrollments).Error; err != nil {
+	if err := config.DB.Preload("Student").Preload("CampusClass").Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).Find(&enrollments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
 	}
@@ -354,22 +354,105 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				response = append(response, responses.SummarizedFinalReportResponse{
 					Student:   enrollment.Student.Surname + " " + enrollment.Student.SecondName,
-					Grade:     "Not Graded",
+					Grade:     "N/A",
 					Aggregate: "N/A",
 					Class:     enrollment.CampusClass.ClassName,
 				})
 
 			}
+
+		} else {
+
+			response = append(response, responses.SummarizedFinalReportResponse{
+				Student:   enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+				Grade:     reportSummary.Grade,
+				Aggregate: strconv.Itoa(int(reportSummary.Aggregate)),
+				Class:     enrollment.CampusClass.ClassName,
+			})
 		}
-
-		response = append(response, responses.SummarizedFinalReportResponse{
-			Student:   enrollment.Student.Surname + " " + enrollment.Student.SecondName,
-			Grade:     reportSummary.Grade,
-			Aggregate: strconv.Itoa(int(reportSummary.Aggregate)),
-			Class:     enrollment.CampusClass.ClassName,
-		})
-
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
+
+func GenerateReportSummary(ctx *gin.Context) {
+	var payload requests.GenerateReportSummaryRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	err := payload.ValidateGenerateReportSummary()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	//check if report settings exists
+	var reportSettings models.ReportSetting
+	if err := config.DB.Where("campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&reportSettings).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class does not exist"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch settings  for this class"})
+		return
+	}
+
+	//check if report columns exists
+	var reportColumns []models.ReportColumn
+	if err := config.DB.Where("report_setting_number = ?", reportSettings.Number).Find(&reportColumns).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report columns for this class not yet set up"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch columns  for this class"})
+		return
+	}
+
+	if len(reportColumns) != int(reportSettings.Columns) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report columns set for the settings are not yet fully set up"})
+		return
+
+	}
+
+	////check if report column assessments exists
+	//var reportColumnAssessments []models.ReportColumnAssessment
+	//
+	//for _, reportColumn := range reportColumns {
+	//var rca []responses.ReportColumnAssessmentResponse
+	//	if err := config.DB.Where("report_column_number = ?", reportColumn.Number).Find(&rca).Error; err != nil {
+	//
+	//	}
+	//
+	//	}
+	//
+	//}
+
+	//
+	//if err := config.DB.Where("report_column_number = ?", reportColumns[0].Number).Find(&reportColumnAssessments).Error; err != nil {
+	//	if errors.Is(err, gorm.ErrRecordNotFound) {
+	//		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column assessments for this class not yet set up"})
+	//}
+	//
+	//// Save report summary
+	//reportSummary := models.ReportSummary{
+	//	Number:              uuid.NewV4().String(),
+	//	ReportSettingNumber: payload.ReportSettingNumber,
+	//	StudentNumber:       payload.StudentNumber,
+	//	CampusClassNumber:   payload.CampusClassNumber,
+	//	StudyPeriodNumber:   payload.StudyPeriodNumber,
+	//	Grade:               payload.Grade,
+	//	Aggregate:           payload.Aggregate,
+	//	Comment:             payload.Comment,
+	//	UserNumber:          ctx.Request.Header["User-Number"][0],
+	//	Code:                payload.Code,
+	//}
+	//
+	//if err := config.DB.Create(&reportSummary).Error; err != nil {
+	//	ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report summary"})
+	//	return
+	//}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Report summary created successfully"})
 }
