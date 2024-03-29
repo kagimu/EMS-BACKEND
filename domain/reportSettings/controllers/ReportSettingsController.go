@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
@@ -348,6 +349,8 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 		return
 	}
 
+	fmt.Println(len(enrollments))
+
 	for _, enrollment := range enrollments {
 		var reportSummary models.ReportSummary
 		if err := config.DB.Where("student_number = ? AND study_period_number = ? AND campus_class_number = ?", enrollment.StudentNumber, enrollment.StudyPeriodNumber, enrollment.CampusClassNumber).First(&reportSummary).Error; err != nil {
@@ -371,6 +374,8 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 			})
 		}
 	}
+
+	fmt.Println("response", response)
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
