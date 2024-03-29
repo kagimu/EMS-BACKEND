@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -399,7 +400,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 	//check if report settings exists
 	var reportSettings models.ReportSetting
-	if err := config.DB.Where("study_period_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&reportSettings).Error; err != nil {
+	if err := config.DB.Where("campus_class_number = ? AND status = ?", payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&reportSettings).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class does not exist"})
 			return
@@ -478,6 +479,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 				if err := tx.Where("assessment_metric_number = ? AND student_number = ? ", rca.AssessmentMetricNumber, payload.StudentNumber).First(&assessment).Error; err != nil {
 					if errors.Is(err, gorm.ErrRecordNotFound) {
+						fmt.Println("No assessment found for this metric")
 						continue
 					}
 				}
@@ -485,8 +487,10 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 			}
 
+			fmt.Println("Score is ", score)
 			var scoreAverage = score / float64(len(rcas))
 
+			fmt.Println("Score average is ", scoreAverage)
 			// find the aggregate scale with from grading standard of the  assessment metric
 
 			percentageScore := (scoreAverage / 100) * reportColum.PercentageShare
