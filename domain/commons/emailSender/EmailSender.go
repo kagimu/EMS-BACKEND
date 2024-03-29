@@ -21,11 +21,11 @@ type Info struct {
 func (i Info) SendEmail() error {
 	templateUrl := ""
 	if i.Type == "registration" {
-		templateUrl = "./fileRepo/templates/registrationTemplate.html"
+		templateUrl = "/fileRepo/templates/registrationTemplate.html"
 	} else if i.Type == "scheduled-interview" {
-		templateUrl = "./fileRepo/templates/notifyInterview.html"
+		templateUrl = "/fileRepo/templates/notifyInterview.html"
 	} else {
-		templateUrl = "./fileRepo/templates/resetPasswordTemplate.html"
+		templateUrl = "/fileRepo/templates/resetPasswordTemplate.html"
 	}
 
 	t, err := template.ParseFiles(templateUrl)
