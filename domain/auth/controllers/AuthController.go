@@ -477,10 +477,12 @@ func ResetPassword(context *gin.Context) {
 
 	//email sender
 	d := emailSender.Info{Email: Email, Token: userToken, MailType: "Wholesome: User Account Confirmation", UserName: contact.User.SecondName, CurrentYear: time.Now().Year(), Type: "reset-password"}
-	d.SendEmail()
-
+	err = d.SendEmail()
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Error " + err.Error()})
+		return
+	}
 	context.JSON(http.StatusOK, gin.H{"message": "Please check your email to continue resetting your password", "token": userToken})
-
 }
 
 func UserPassword(context *gin.Context) {
