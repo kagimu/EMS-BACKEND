@@ -403,7 +403,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 	//check if report settings exists
 	var reportSettings models.ReportSetting
-	if err := config.DB.Where("campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&reportSettings).Error; err != nil {
+	if err := config.DB.Where("study_period_number,campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&reportSettings).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class does not exist"})
 			return
