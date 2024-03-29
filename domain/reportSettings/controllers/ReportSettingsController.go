@@ -340,14 +340,18 @@ func FetchReportScoreSummaries(ctx *gin.Context) {
 }
 
 func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
-	studyPeriodNumber := ctx.Param("study_period_number")
-	campusClassNumber := ctx.Param("campus_class_number")
+	//studyPeriodNumber := ctx.Param("study_period_number")
+	//campusClassNumber := ctx.Param("campus_class_number")
 
 	var response []responses.SummarizedFinalReportResponse
 
 	var enrollments []enrollmentModel.Enrollment
 
-	if err := config.DB.Preload("Student").Preload("CampusClass").Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).Find(&enrollments).Error; err != nil {
+	if err := config.DB.
+		Preload("Student").
+		//Preload("CampusClass").
+		//Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).
+		Find(&enrollments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
 	}
@@ -491,11 +495,17 @@ func GenerateReportSummary(ctx *gin.Context) {
 			fmt.Println("Score is ", score)
 			fmt.Println("Length is ", length)
 			var scoreAverage = score / length
+			if length == 0 || score == 0 {
+				scoreAverage = -1
+			}
 
 			fmt.Println("Score average is ", scoreAverage)
 			// find the aggregate scale with from grading standard of the  assessment metric
 
-			percentageScore := (scoreAverage / 100) * reportColum.PercentageShare
+			var percentageScore float64
+			if length > 0 && score > 0 {
+				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
+			}
 
 			var reportScore = models.ReportScore{
 				ReportSummaryNumber:  reportSummary.Number,
