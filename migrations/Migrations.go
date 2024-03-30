@@ -154,6 +154,7 @@ func Init() error {
 		&reportSettings.ReportScore{},
 		&reportSettings.ReportScoreSummary{},
 		&enrollmentModel.Enrollment{},
+		&assessmentAreaModel.AssessmentAreaGradingStandard{},
 	)
 
 	if err != nil {
