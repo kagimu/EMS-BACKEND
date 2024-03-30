@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -466,6 +467,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 		return
 	}
 
+	var totalAggregates float64
 	for _, assessmentArea := range assessmentAreas {
 		var scale aggregateSaceltModel.AggregateScale
 
@@ -564,6 +566,8 @@ func GenerateReportSummary(ctx *gin.Context) {
 			UserNumber:           user,
 		}
 
+		totalAggregates += scale.Weight
+
 		if err = tx.Create(&reportScoreSummary).Error; err != nil {
 			tx.Rollback()
 			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score summary"})
@@ -571,6 +575,23 @@ func GenerateReportSummary(ctx *gin.Context) {
 		}
 
 	}
+	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
+
+	if err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get assessment grade"})
+		return
+	}
+
+	reportSummary.Aggregate = totalAggregates
+	reportSummary.Grade = assessmentGrade.Name
+
+	if err := tx.Save(&reportSummary).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update report summary"})
+		return
+	}
+
 	tx.Commit()
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Report summary created successfully"})
@@ -596,4 +617,23 @@ func GetProperAggregateScale(score float64, assessmentAreaNumber string) (aggreg
 	}
 
 	return scale, errors.New("no scale found")
+}
+
+func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGrade, error) {
+	var assessmentGrade assesmentGradeModel.AssessmentGrade
+	var assessmentGrades []assesmentGradeModel.AssessmentGrade
+
+	if err := config.DB.Where("campus_class_number = ?", campusClassNumber).Find(&assessmentGrades).Error; err != nil {
+	}
+
+	for _, val := range assessmentGrades {
+		if points >= float64(val.MinimumPoints) && points <= float64(val.MaximumPoints) {
+			assessmentGrade = val
+
+			return assessmentGrade, nil
+		}
+	}
+
+	return assessmentGrade, errors.New("no grade found")
+
 }
