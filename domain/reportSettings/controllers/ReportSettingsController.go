@@ -467,6 +467,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 	}
 
 	for _, assessmentArea := range assessmentAreas {
+		var scale aggregateSaceltModel.AggregateScale
 
 		for _, reportColum := range reportColumns {
 
@@ -484,16 +485,6 @@ func GenerateReportSummary(ctx *gin.Context) {
 			var score float64
 			for _, rca := range rcas {
 				var assessment assesmentModel.Assessment
-				var assessmentMetric assesmentModel.AssessmentMetric
-				var aggregateScales []aggregateSaceltModel.AggregateScale
-
-				if err := tx.Where("number = ? ", rca.AssessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
-
-				}
-
-				if err := tx.Where("grading_standard_number = ?", assessmentMetric.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
-
-				}
 
 				if err := tx.Where("assessment_metric_number = ? AND student_number = ? ", rca.AssessmentMetricNumber, payload.StudentNumber).First(&assessment).Error; err != nil {
 					if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -517,8 +508,10 @@ func GenerateReportSummary(ctx *gin.Context) {
 			// find the aggregate scale with from grading standard of the  assessment metric
 
 			var percentageScore float64
+
 			if length > 0 && score > 0 {
 				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
+				scale, err = GetProperAggregateScale(scoreAverage, assessmentArea.Number)
 			}
 
 			var reportScore = models.ReportScore{
@@ -528,8 +521,8 @@ func GenerateReportSummary(ctx *gin.Context) {
 				ReportColumnNumber:   reportColum.Number,
 				Score:                percentageScore,
 				AverageScore:         scoreAverage,
-				Aggregate:            0,
-				Grade:                "",
+				Aggregate:            scale.Weight,
+				Grade:                scale.Name,
 				UserNumber:           user,
 			}
 
@@ -558,12 +551,14 @@ func GenerateReportSummary(ctx *gin.Context) {
 			summation += r.Score
 		}
 
+		scale, err = GetProperAggregateScale(summation, assessmentArea.Number)
+
 		var reportScoreSummary = models.ReportScoreSummary{
 			Number:               uuid.NewV4().String(),
 			ReportSummaryNumber:  reportSummary.Number,
 			AssessmentAreaNumber: assessmentArea.Number,
-			Aggregate:            0,
-			Grade:                "",
+			Aggregate:            scale.Weight,
+			Grade:                scale.Name,
 			Summation:            summation,
 			Comment:              "Subject teacher comment goes here",
 			UserNumber:           user,
@@ -579,4 +574,26 @@ func GenerateReportSummary(ctx *gin.Context) {
 	tx.Commit()
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Report summary created successfully"})
+
+}
+
+func GetProperAggregateScale(score float64, assessmentAreaNumber string) (aggregateSaceltModel.AggregateScale, error) {
+	var scale aggregateSaceltModel.AggregateScale
+	var aggregateScales []aggregateSaceltModel.AggregateScale
+	var aags assessmentAreaModel.AssessmentAreaGradingStandard
+
+	if err := config.DB.Where("assessment_area_number = ?", assessmentAreaNumber).First(&aags).Error; err != nil {
+	}
+	if err := config.DB.Where("grading_standard_number = ?", aags.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
+	}
+
+	for _, val := range aggregateScales {
+		if score >= val.MinValue && score <= val.MaxValue {
+			scale = val
+
+			return scale, nil
+		}
+	}
+
+	return scale, errors.New("no scale found")
 }
