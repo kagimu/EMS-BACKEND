@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -471,6 +472,9 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 			var rcas []models.ReportColumnAssessment
 
+			fmt.Println("AN", assessmentArea.Number)
+			fmt.Println("RCN", reportColum.Number)
+
 			if err := tx.Where("assessment_area_number = ? AND report_column_number = ? ", assessmentArea.Number, reportColum.Number).Find(&rcas).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					continue
@@ -480,6 +484,16 @@ func GenerateReportSummary(ctx *gin.Context) {
 			var score float64
 			for _, rca := range rcas {
 				var assessment assesmentModel.Assessment
+				var assessmentMetric assesmentModel.AssessmentMetric
+				var aggregateScales []aggregateSaceltModel.AggregateScale
+
+				if err := tx.Where("number = ? ", rca.AssessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+
+				}
+
+				if err := tx.Where("grading_standard_number = ?", assessmentMetric.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
+
+				}
 
 				if err := tx.Where("assessment_metric_number = ? AND student_number = ? ", rca.AssessmentMetricNumber, payload.StudentNumber).First(&assessment).Error; err != nil {
 					if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -519,10 +533,12 @@ func GenerateReportSummary(ctx *gin.Context) {
 				UserNumber:           user,
 			}
 
-			if err = tx.Create(&reportScore).Error; err != nil {
-				tx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score"})
-				return
+			if score > 0 {
+				if err = tx.Create(&reportScore).Error; err != nil {
+					tx.Rollback()
+					ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score"})
+					return
+				}
 			}
 
 		}
