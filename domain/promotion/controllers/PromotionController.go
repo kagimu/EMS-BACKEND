@@ -6,7 +6,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assessmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
-	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
@@ -55,22 +54,19 @@ func PromoteStudent(c *gin.Context) {
 		return
 	}
 
-	authorizorNumber := payload.AuthorizedByNumber
-	var staff authModel.User
-	if err := config.DB.Where("number = ?", authorizorNumber).First(&staff).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
 	savePromotion := models.Promotion{
-		Number:                uuid.NewV4().String(),
-		StudentNumber:         studentNumber,
-		AssessmentNumber:      assessmentNumber,
-		AssessmentGradeNumber: assessmentGradeNumber,
-		Condition:             payload.Condition,
-		ReasonForAltering:     payload.ReasonForAltering,
-		AuthorizedByNumber:    authorizorNumber,
-		UserNumber:            user.Number,
+		Number:                    uuid.NewV4().String(),
+		StudentNumber:             studentNumber,
+		AssessmentNumber:          assessmentNumber,
+		AssessmentGradeNumber:     assessmentGradeNumber,
+		Status:                    payload.Status,
+		Type:                      payload.Type,
+		PreviousCampusClassNumber: payload.PreviousCampusClassNumber,
+		NextCampusClassNumber:     payload.NextCampusClassNumber,
+		Condition:                 payload.Condition,
+		ReasonForAltering:         payload.ReasonForAltering,
+		Authorizer:                payload.Authorizer,
+		UserNumber:                user.Number,
 	}
 
 	if err := config.DB.Create(&savePromotion).Error; err != nil {
@@ -81,7 +77,7 @@ func PromoteStudent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Promotion created successfully"})
 }
 
-func FetchAllPromotions(c *gin.Context) {
+func FetchAllPromotedStudents(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})

@@ -55,7 +55,7 @@ func CreateProgressReport(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Report card created successfully"})
 }
 
-func FetchAllPromotions(c *gin.Context) {
+func FetchAllProgressReports(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
