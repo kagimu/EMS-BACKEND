@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
@@ -475,9 +474,6 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 			var rcas []models.ReportColumnAssessment
 
-			fmt.Println("AN", assessmentArea.Number)
-			fmt.Println("RCN", reportColum.Number)
-
 			if err := tx.Where("assessment_area_number = ? AND report_column_number = ? ", assessmentArea.Number, reportColum.Number).Find(&rcas).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					continue
@@ -490,7 +486,6 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 				if err := tx.Where("assessment_metric_number = ? AND student_number = ? ", rca.AssessmentMetricNumber, payload.StudentNumber).First(&assessment).Error; err != nil {
 					if errors.Is(err, gorm.ErrRecordNotFound) {
-						fmt.Println("No assessment found for this metric")
 						continue
 					}
 				}
@@ -499,16 +494,12 @@ func GenerateReportSummary(ctx *gin.Context) {
 			}
 			length := float64(len(rcas))
 
-			fmt.Println("Score is ", score)
-			fmt.Println("Length is ", length)
 			var scoreAverage = score / length
 			if length == 0 || score == 0 {
 				scoreAverage = -1
 			}
 
-			fmt.Println("Score average is ", scoreAverage)
 			// find the aggregate scale with from grading standard of the  assessment metric
-
 			var percentageScore float64
 
 			if length > 0 && score > 0 {
@@ -545,7 +536,6 @@ func GenerateReportSummary(ctx *gin.Context) {
 				continue
 			}
 		}
-
 		// sum report scores
 
 		var summation float64
