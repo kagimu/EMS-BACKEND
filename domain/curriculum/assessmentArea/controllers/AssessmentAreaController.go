@@ -35,6 +35,7 @@ func CreateAssessmentArea(c *gin.Context) {
 		CurriculumClassNumber: payload.CurriculumClassNumber,
 		Name:                  payload.Name,
 		UserNumber:            user.Number,
+		SubjectNumber:         payload.SubjectNumber,
 	}
 
 	if err := config.DB.Create(&saveAssessmentArea).Error; err != nil {
