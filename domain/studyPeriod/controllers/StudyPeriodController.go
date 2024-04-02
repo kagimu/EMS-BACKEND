@@ -240,10 +240,43 @@ func FetchStudyPeriodByAcademicYear(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": studyPeriodInfo_})
 }
 
+func FetchStudyPeriodInfo(context *gin.Context) {
+
+	studyPeriodNumber := context.Query("study_period_number")
+
+	if studyPeriodNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Study Period is required!"})
+		return
+	}
+
+	var studyPeriodInfo studyPeriodModel.StudyPeriod
+	if err := config.DB.
+		Where("number = ?", studyPeriodNumber).
+		Preload("AcademicYear").
+		Order("code asc").
+		First(&studyPeriodInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
+		return
+	}
+
+	// Populate the selected columns from the fetched data
+	studyPeriodInfo_ := responses2.StudyPeriodList{
+		Number:               studyPeriodInfo.Number,
+		Code:                 studyPeriodInfo.Code,
+		StudyPeriodName:      studyPeriodInfo.StudyPeriodName,
+		StudyPeriodStartDate: (studyPeriodInfo.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
+		StudyPeriodEndDate:   (studyPeriodInfo.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
+		AcademicYearNumber:   studyPeriodInfo.AcademicYearNumber,
+		AcademicYearName:     studyPeriodInfo.AcademicYear.AcademicYearName,
+		UserNumber:           studyPeriodInfo.UserNumber,
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": studyPeriodInfo_})
+
+}
 func FetchStudyPeriod(context *gin.Context) {
 
 	campusCurriculumNumber := context.Query("campus_curriculum_number")
-	//campusLevelNumber := context.Query("campus_level_number")
 
 	if campusCurriculumNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
