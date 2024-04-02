@@ -48,7 +48,7 @@ func main() {
 
 	//All auto migrations
 	if err := migrations.Init(); err != nil {
-		log.Println(err)
+		//	log.Println(err)
 	}
 
 	rawJSON := []byte(`{
