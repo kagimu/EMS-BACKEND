@@ -10,7 +10,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/logger"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -48,9 +47,9 @@ func main() {
 	}(sqlDB)
 
 	//All auto migrations
-	if err := migrations.Init(); err != nil {
-		log.Println(err)
-	}
+	//if err := migrations.Init(); err != nil {
+	//	log.Println(err)
+	//}
 
 	rawJSON := []byte(`{
 	  "level": "debug",
