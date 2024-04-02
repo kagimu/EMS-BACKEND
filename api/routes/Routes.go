@@ -543,6 +543,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
 			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
+			gradingStandard.POST("attach-assessment-area", aggregateScaleController.AttachAssessmentAreas)
 		}
 
 		enrollment := main.Group("enrollment")

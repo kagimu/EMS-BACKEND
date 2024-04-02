@@ -4,6 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -46,4 +47,31 @@ func FetchGradingStandards(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, gin.H{"data": gradingStandards})
+}
+
+func AttachAssessmentAreas(ctx *gin.Context) {
+
+	var payload requests.AssessmentAreaGradingStandardRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(400, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(400, gin.H{"message": err.Error()})
+		return
+	}
+
+	assessmentAreaGradingStandard := assessmentAreaModel.AssessmentAreaGradingStandard{
+		Number:                uuid.NewV4().String(),
+		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
+		GradingStandardNumber: payload.GradingStandardNumber,
+	}
+
+	if err := config.DB.Create(&assessmentAreaGradingStandard).Error; err != nil {
+		ctx.JSON(400, gin.H{"message": "Failed to save assessment area grading standard"})
+		return
+	}
+
+	ctx.JSON(201, gin.H{"message": "Assessment area grading standard created successfully", "data": assessmentAreaGradingStandard})
 }
