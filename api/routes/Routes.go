@@ -35,6 +35,7 @@ import (
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
+	promotionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/controllers"
 	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
@@ -534,7 +535,7 @@ func SetupRoutes() *gin.Engine {
 		reportCards := main.Group("report-cards")
 		{
 			reportCards.POST("", progressReportController.CreateProgressReport)
-			reportCards.GET("", progressReportController.FetchAllPromotions)
+			reportCards.GET("", progressReportController.FetchAllProgressReports)
 		}
 
 		gradingStandard := main.Group("grading-standard")
@@ -606,6 +607,13 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
 
 		}
+
+		promotions := main.Group("promotions")
+		{
+			promotions.POST("", promotionController.PromoteStudent)
+			promotions.GET("", promotionController.FetchAllPromotedStudents)
+		}
+
 	}
 
 	return router
