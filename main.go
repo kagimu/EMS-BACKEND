@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"log"
 	"os"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
