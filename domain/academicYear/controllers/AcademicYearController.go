@@ -154,6 +154,41 @@ func NewAcademicYear(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Academic year Added Successfully!", "data": saveAcademicYear})
 }
 
+func FetchAcademicYearData(context *gin.Context) {
+	academicYearNumber := context.Query("academic_year_number")
+
+	if academicYearNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year is required!"})
+		return
+	}
+
+	var academicYearInfo academicYearModel.AcademicYear
+
+	if err := config.DB.
+		Where("number = ?", academicYearNumber).
+		Preload("CampusLevel.CurriculumLevel.Level").
+		Preload("CampusLevel.CurriculumLevel").
+		Preload("CampusLevel").
+		Order("code asc").
+		First(&academicYearInfo).Error; err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
+		return
+	}
+
+	// Populate the selected columns from the fetched data
+	academicYearInfo_ := responses.AcademicYearList{
+		Number:                academicYearInfo.Number,
+		Code:                  academicYearInfo.Code,
+		AcademicYearName:      academicYearInfo.AcademicYearName,
+		NoOfStudyPeriod:       academicYearInfo.NoOfStudyPeriod,
+		AcademicYearStartDate: (academicYearInfo.AcademicYearStartDate).Format("2-Jan-2006 15:04:05"),
+		AcademicYearEndDate:   (academicYearInfo.AcademicYearEndDate).Format("2-Jan-2006 15:04:05"),
+		UserNumber:            academicYearInfo.UserNumber,
+		LevelNumber:           academicYearInfo.CampusLevelNumber,
+		LevelName:             academicYearInfo.CampusLevel.CurriculumLevel.Level.Name,
+	}
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": academicYearInfo_})
+}
 func FetchAcademicYearInfo(context *gin.Context) {
 
 	campusCurriculumNumber := context.Query("campus_curriculum_number")
