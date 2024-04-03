@@ -34,6 +34,7 @@ import (
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
+	previousSchoolResultsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/controllers"
 	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
 	promotionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/controllers"
 	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
@@ -339,7 +340,7 @@ func SetupRoutes() *gin.Engine {
 			application.POST("new-parent", parentController.CreateParent)
 			application.GET("parents", parentController.FetchParents)
 			application.GET("parents/:id", parentController.FetchParentInfo)
-			application.PATCH("parents/:id", parentController.UpdateParent)
+			application.PUT("parents/:id", parentController.UpdateParent)
 			application.POST("parents/:id", parentController.DeleteParent)
 
 			// students
@@ -613,7 +614,27 @@ func SetupRoutes() *gin.Engine {
 		promotions := main.Group("promotions")
 		{
 			promotions.POST("", promotionController.PromoteStudent)
-			promotions.GET("", promotionController.FetchAllPromotedStudents)
+			promotions.GET("", promotionController.FetchAllPromotions)
+			promotions.PUT(":promotion_number", promotionController.EditPromotion)
+
+			promotionSettings := promotions.Group("settings")
+			{
+				promotionSettings.POST("", promotionController.CreatePromotionSettings)
+				promotionSettings.GET("", promotionController.FetchPromotionSettings)
+			}
+
+			promotionSettingsValues := promotions.Group("settings-values")
+			{
+				promotionSettingsValues.POST("", promotionController.CreatePromotionSettingValue)
+				promotionSettingsValues.GET("", promotionController.FetchPromotionSettingsValues)
+			}
+		}
+
+		previousSchoolResults := main.Group("previous-school-results")
+		{
+			previousSchoolResults.POST("", previousSchoolResultsController.CreatePreviousSchoolResults)
+			previousSchoolResults.GET("all", previousSchoolResultsController.FetchAllPreviousSchoolResults)
+			previousSchoolResults.GET("", previousSchoolResultsController.FetchPreviousSchoolResultsByStudent)
 		}
 
 	}

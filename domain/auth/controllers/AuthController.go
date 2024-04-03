@@ -172,18 +172,16 @@ func Login(context *gin.Context) {
 
 func Profile(context *gin.Context) {
 
-	userId := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userId = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found!"})
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
 	var userProfile models.User
 
 	if err := config.DB.
-		Where("number = ?", userId).
+		Where("number = ?", user.Number).
 		Preload("Contacts").
 		First(&userProfile).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "User not found"})
