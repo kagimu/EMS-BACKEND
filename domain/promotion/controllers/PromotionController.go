@@ -4,8 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	assessmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
-	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
@@ -18,7 +17,7 @@ import (
 func PromoteStudent(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorizr=ed"})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
@@ -33,20 +32,6 @@ func PromoteStudent(c *gin.Context) {
 		return
 	}
 
-	assessmentGradeNumber := payload.AssessmentGradeNumber
-	var assessmentGrade assessmentGradeModel.AssessmentGrade
-	if err := config.DB.Where("number = ?", assessmentGradeNumber).First(&assessmentGrade).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment grade not found"})
-		return
-	}
-
-	assessmentNumber := payload.AssessmentNumber
-	var assessment assessmentModel.Assessment
-	if err := config.DB.Where("number = ?", assessmentNumber).First(&assessment).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment not found"})
-		return
-	}
-
 	studentNumber := payload.StudentNumber
 	var student studentModel.Student
 	if err := config.DB.Where("number = ?", studentNumber).First(&student).Error; err != nil {
@@ -54,18 +39,27 @@ func PromoteStudent(c *gin.Context) {
 		return
 	}
 
+	academicYearNumber := payload.CurrentAcademicYearNumber
+	var academicYear academicYearModel.AcademicYear
+	if err := config.DB.Where("number = ?", academicYearNumber).First(&academicYear).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Academic year not found"})
+		return
+	}
+
+	promotionSettingNumber := payload.PromotionSettingNumber
+	var promotionSetting models.PromotionSetting
+	if err := config.DB.Where("number = ?", promotionSettingNumber).First(&promotionSetting).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Promotion setting not found"})
+		return
+	}
+
 	savePromotion := models.Promotion{
 		Number:                    uuid.NewV4().String(),
+		PromotionSettingNumber:    payload.PromotionSettingNumber,
 		StudentNumber:             studentNumber,
-		AssessmentNumber:          assessmentNumber,
-		AssessmentGradeNumber:     assessmentGradeNumber,
 		Status:                    payload.Status,
-		Type:                      payload.Type,
-		PreviousCampusClassNumber: payload.PreviousCampusClassNumber,
-		NextCampusClassNumber:     payload.NextCampusClassNumber,
-		Condition:                 payload.Condition,
-		ReasonForAltering:         payload.ReasonForAltering,
-		Authorizer:                payload.Authorizer,
+		Reason:                    payload.Reason,
+		CurrentAcademicYearNumber: payload.CurrentAcademicYearNumber,
 		UserNumber:                user.Number,
 	}
 
@@ -77,7 +71,7 @@ func PromoteStudent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Promotion created successfully"})
 }
 
-func FetchAllPromotedStudents(c *gin.Context) {
+func FetchAllPromotions(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
@@ -91,4 +85,43 @@ func FetchAllPromotedStudents(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": promotions})
+}
+
+func EditPromotion(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.PromotionRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	payload.Prepare()
+
+	var promotion models.Promotion
+	promotionNumber := c.Param("promotion_number")
+	if err := config.DB.First(&promotion, "number = ?", promotionNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No promotion found with the specified number"})
+		return
+	}
+
+	updatedPromotion := models.Promotion{
+		PromotionSettingNumber:    payload.PromotionSettingNumber,
+		StudentNumber:             payload.StudentNumber,
+		Status:                    payload.Status,
+		Reason:                    payload.Reason,
+		CurrentAcademicYearNumber: payload.CurrentAcademicYearNumber,
+		UserNumber:                user.Number,
+	}
+
+	if err := config.DB.Model(&promotion).Where("number = ?", promotionNumber).Updates(updatedPromotion).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update promotion"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": promotion})
 }

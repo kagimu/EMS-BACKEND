@@ -1,30 +1,38 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"html"
+	"strings"
+)
 
 type PromotionRequest struct {
-	Condition                 string `json:"condition"`
-	AssessmentNumber          string `json:"assessment_number"`
-	ReasonForAltering         string `json:"reason_for_altering"`
-	GradeNumber               string `json:"grade_number"`
-	StudentNumber             string `json:"student_number"`
-	AssessmentGradeNumber     string `json:"assessment_grade_number"`
-	Authorizer                string `json:"authorizer"`
+	CurrentAcademicYearNumber string `json:"current_academic_year_number"`
 	Status                    string `json:"status"`
-	Type                      string `json:"type"`
-	PreviousCampusClassNumber string `json:"previous_campus_class_number"`
-	NextCampusClassNumber     string `json:"next_campus_class_number"`
+	PromotionSettingNumber    string `json:"promotion_setting_number"`
+	StudentNumber             string `json:"student_number"`
+	Reason                    string `json:"reason"`
+	UserNumber                string `json:"user_number"`
+}
+
+func (p *PromotionRequest) Prepare() {
+	p.Status = html.EscapeString(strings.TrimSpace(p.Status))
+	p.PromotionSettingNumber = html.EscapeString(strings.TrimSpace(p.PromotionSettingNumber))
+	p.StudentNumber = html.EscapeString(strings.TrimSpace(p.StudentNumber))
+	p.Reason = html.EscapeString(strings.TrimSpace(p.Reason))
+	p.CurrentAcademicYearNumber = html.EscapeString(strings.TrimSpace(p.CurrentAcademicYearNumber))
+	p.UserNumber = html.EscapeString(strings.TrimSpace(p.UserNumber))
 }
 
 func (p *PromotionRequest) Validate() error {
-	if p.AssessmentNumber == "" {
-		return errors.New("assessment number is required")
+	if p.CurrentAcademicYearNumber == "" {
+		return errors.New("current year is required")
 	}
-	if p.AssessmentGradeNumber == "" {
-		return errors.New("assessment grade number is required")
+	if p.Status == "" {
+		return errors.New("status is required")
 	}
-	if p.Authorizer == "" {
-		return errors.New("authorizer is required")
+	if p.PromotionSettingNumber == "" {
+		return errors.New("promotion setting number is required")
 	}
 	if p.StudentNumber == "" {
 		return errors.New("student number is required")

@@ -17,6 +17,7 @@ type Student struct {
 	Surname                   string                  `json:"surname" `
 	SecondName                string                  `json:"second_name"`
 	OtherName                 string                  `json:"other_name"`
+	Photo                     string                  `json:"photo"`
 	AcademicReport            string                  `json:"academic_report"`
 	Gender                    string                  `json:"gender"  binding:"required" gorm:"size:8;not null"`
 	ReasonForChoosingSchool   string                  `json:"reason_for_choosing_school" gorm:"type:text"`
