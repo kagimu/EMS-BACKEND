@@ -3,12 +3,16 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -239,4 +243,56 @@ func FetchAllStudents(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": students})
+}
+
+func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	assessmentMetricNumber := c.Param("assessment_metric_number")
+
+	if assessmentMetricNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric number is required"})
+		return
+	}
+
+	var assessmentMetric assessmentMetricModel.AssessmentMetric
+
+	if err := config.DB.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric not found"})
+		return
+	}
+
+	//fetch enrollment students from assessment metric campus class number
+
+	var enrollments []enrollmentModel.Enrollment
+
+	if err := config.DB.Where("campus_class_number = ? AND status = ? ", assessmentMetric.CampusClassNumber, constants.STATUS_ACTIVE).Find(&enrollments).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
+		return
+
+	}
+
+	var students []enrollmentResponse.EnrolledStudent
+
+	for _, enrollment := range enrollments {
+		var student models.Student
+		if err := config.DB.Where("number = ?", enrollment.StudentNumber).First(&student).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch student"})
+			return
+		}
+
+		students = append(students, enrollmentResponse.EnrolledStudent{
+
+			Number:            student.Number,
+			StudentSurname:    student.Surname,
+			StudentOtherName:  student.OtherName,
+			StudentSecondName: student.SecondName,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": students})
 }
