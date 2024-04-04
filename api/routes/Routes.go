@@ -637,6 +637,11 @@ func SetupRoutes() *gin.Engine {
 			previousSchoolResults.GET("", previousSchoolResultsController.FetchPreviousSchoolResultsByStudent)
 		}
 
+		students := main.Group("students")
+		{
+			students.GET("/by-assessment-metric/:assessment_metric_number", studentController.FetchStudentsByAssessmentMetricNumber)
+		}
+
 	}
 
 	return router
