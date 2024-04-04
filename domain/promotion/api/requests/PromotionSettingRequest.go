@@ -7,11 +7,12 @@ import (
 )
 
 type PromotionSettingRequest struct {
-	Name                string `json:"name"`
-	Status              string `json:"status"`
-	Type                string `json:"type"`
-	NextClassNumber     string `json:"next_class_number"`
-	PreviousClassNumber string `json:"previous_class_number"`
+	Name                  string `json:"name"`
+	Status                string `json:"status"`
+	Type                  string `json:"type"`
+	NextClassNumber       string `json:"next_class_number"`
+	PreviousClassNumber   string `json:"previous_class_number"`
+	AssessmentGradeNumber string `json:"assessment_grade_number"`
 }
 
 func (p *PromotionSettingRequest) Prepare() {

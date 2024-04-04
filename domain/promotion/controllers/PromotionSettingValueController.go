@@ -54,7 +54,7 @@ func FetchPromotionSettingsValues(c *gin.Context) {
 	}
 
 	var promotionSettingsValues []models.PromotionSettingsValue
-	err := config.DB.Find(&promotionSettingsValues).Error
+	err := config.DB.Preload("PromotionSetting").Find(&promotionSettingsValues).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotion settings values"})
 	}
