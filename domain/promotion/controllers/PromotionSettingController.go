@@ -68,7 +68,7 @@ func FetchPromotionSettings(c *gin.Context) {
 	}
 
 	var promotionSettings []models.PromotionSetting
-	err := config.DB.Preload("CampusClass").Find(&promotionSettings).Error
+	err := config.DB.Preload("NextClass").Preload("PreviousClass").Find(&promotionSettings).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotion settings"})
 	}
