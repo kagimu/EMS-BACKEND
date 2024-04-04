@@ -95,7 +95,7 @@ func FetchPreviousSchoolResultsByStudent(c *gin.Context) {
 	}
 
 	var previousSchoolResults []models.PreviousSchoolResults
-	if err := config.DB.Find(&previousSchoolResults).Error; err != nil {
+	if err := config.DB.Preload("AssessmentArea").Preload("Application").Find(&previousSchoolResults).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch previous school results"})
 		return
 	}
