@@ -285,12 +285,25 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 			return
 		}
 
+		// find assesment for student and assessment metric
+
+		var assessment assessmentMetricModel.Assessment
+
+		if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", student.Number, assessmentMetric.Number).First(&assessment).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
+				return
+			}
+		}
+
 		students = append(students, enrollmentResponse.EnrolledStudent{
 
 			Number:            student.Number,
 			StudentSurname:    student.Surname,
 			StudentOtherName:  student.OtherName,
 			StudentSecondName: student.SecondName,
+			Comment:           assessment.Comment,
+			Score:             assessment.ActualScore,
 		})
 	}
 
