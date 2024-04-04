@@ -31,10 +31,11 @@ func CreatePromotionSettingValue(c *gin.Context) {
 	}
 
 	savePromotionSettings := models.PromotionSettingsValue{
-		Number:     uuid.NewV4().String(),
-		Type:       payload.Type,
-		Score:      payload.Score,
-		UserNumber: user.Number,
+		Number:                 uuid.NewV4().String(),
+		Type:                   payload.Type,
+		Score:                  payload.Score,
+		PromotionSettingNumber: payload.PromotionSettingNumber,
+		UserNumber:             user.Number,
 	}
 
 	if err := config.DB.Create(&savePromotionSettings).Error; err != nil {
