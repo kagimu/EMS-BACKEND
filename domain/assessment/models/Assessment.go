@@ -9,7 +9,6 @@ import (
 type Assessment struct {
 	gorm.Model
 	Number                 string               `json:"number" gorm:"size:36;unique;not null"`
-	AssessmentDate         string               `json:"assessment_date"`
 	AssessmentMetricNumber string               `json:"assessment_metric_number" gorm:"size:36;"`
 	AssessmentMetric       AssessmentMetric     `gorm:"foreignKey:AssessmentMetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudentNumber          string               `json:"student_number" gorm:"size:36;index;not null"`
