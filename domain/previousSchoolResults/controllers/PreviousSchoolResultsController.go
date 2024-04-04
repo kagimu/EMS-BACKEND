@@ -25,15 +25,16 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 
 	var payload requests.PreviousSchoolResultsRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input", "err": err.Error()})
 		return
 	}
 
-	file, header, err := c.Request.FormFile("file")
+	file, header, err := c.Request.FormFile("attachment")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to process file"})
 		return
 	}
+
 	defer file.Close()
 
 	os.MkdirAll("uploads", os.ModePerm)
@@ -46,16 +47,16 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 
 	out, err := os.Create(filepath.Join("uploads", newFileName))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create a new file"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create a new file", "err": err.Error()})
 	}
 
 	defer out.Close()
 	_, err = io.Copy(out, file)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to copy the new file to target directory"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to copy the new file to target directory", "err": err.Error()})
 	}
 
-	fileURL := fmt.Sprintf("/uploads/%s", newFileName)
+	fileURL := fmt.Sprintf("/fileRepo/uploads/%s", newFileName)
 
 	for i, score := range payload.Score {
 		previousSchoolResultsNumber := uuid.NewV4().String()
