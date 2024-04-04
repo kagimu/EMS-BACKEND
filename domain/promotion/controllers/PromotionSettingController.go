@@ -43,13 +43,14 @@ func CreatePromotionSettings(c *gin.Context) {
 	}
 
 	savePromotionSettings := models.PromotionSetting{
-		Number:              uuid.NewV4().String(),
-		Name:                payload.Name,
-		Type:                payload.Type,
-		Status:              payload.Status,
-		NextClassNumber:     payload.NextClassNumber,
-		PreviousClassNumber: payload.PreviousClassNumber,
-		UserNumber:          user.Number,
+		Number:                uuid.NewV4().String(),
+		Name:                  payload.Name,
+		Type:                  payload.Type,
+		Status:                payload.Status,
+		NextClassNumber:       payload.NextClassNumber,
+		AssessmentGradeNumber: payload.AssessmentGradeNumber,
+		PreviousClassNumber:   payload.PreviousClassNumber,
+		UserNumber:            user.Number,
 	}
 
 	if err := config.DB.Create(&savePromotionSettings).Error; err != nil {
