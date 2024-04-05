@@ -79,7 +79,7 @@ func FetchAllPromotions(c *gin.Context) {
 	}
 
 	var promotions []models.Promotion
-	if err := config.DB.Preload("AcademicYear").Find(&promotions).Error; err != nil {
+	if err := config.DB.Preload("AcademicYear").Preload("Student").Preload("Student.Campus").Find(&promotions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotions"})
 		return
 	}
@@ -125,3 +125,5 @@ func EditPromotion(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": promotion})
 }
+
+func FetchPromotionsByAcademicYear()
