@@ -3,12 +3,14 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/requests"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/requests"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -101,8 +103,11 @@ func NewCurriculum(context *gin.Context) {
 }
 
 func ImportCurriculum(context *gin.Context) {
-
-	userNumber := context.Request.Header["User-Number"][0]
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
 
 	//validate maximum file size
 	excelFile, fileError := context.FormFile("excel_file")
@@ -126,20 +131,8 @@ func ImportCurriculum(context *gin.Context) {
 		return
 	}
 
-	if userNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "user number is required!"})
-		return
-	}
-
 	if curriculumNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
-		return
-	}
-
-	//	validate user number
-	var user models.User
-	if validateUserNumber := config.DB.Where("number = ?", userNumber).First(&user).Error; validateUserNumber != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User Not found!"})
 		return
 	}
 
@@ -151,13 +144,16 @@ func ImportCurriculum(context *gin.Context) {
 	fileName := name + extension
 	path := "fileRepo/excelFile/" + fileName
 
-	err := context.SaveUploadedFile(excelFile, path)
+	err = context.SaveUploadedFile(excelFile, path)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
 		return
 	}
 
+	// move the assessment grade to another table
+	// normalize
 	fileNumber := uuid.NewV4().String()
+	userNumber := user.Number
 	saveFileData := models5.ImportCurriculum{
 		Number:           fileNumber,
 		Name:             excelName,
