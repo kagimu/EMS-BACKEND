@@ -296,6 +296,12 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 			}
 		}
 
+		var campusClass classModels.CampusClass
+		if err := config.DB.Where("number = ?", enrollment.CampusClassNumber).First(&campusClass).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class not found"})
+			return
+		}
+
 		students = append(students, enrollmentResponse.EnrolledStudent{
 
 			Number:            student.Number,
@@ -304,6 +310,7 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 			StudentSecondName: student.SecondName,
 			Comment:           assessment.Comment,
 			Score:             assessment.ActualScore,
+			Class:             campusClass.ClassName,
 		})
 	}
 

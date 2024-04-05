@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -44,9 +45,17 @@ func CreateAssessment(c *gin.Context) {
 		return
 	}
 
-	if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric and student are not in the same class"})
-		return
+	//check if there is existing enrollment for the student
+
+	var enrollment enrollmentModel.Enrollment
+	if err := config.DB.Where("student_number = ?", student.Number).First(&enrollment).Error; err == nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric and student are not in the same class"})
+				return
+			}
+		}
+
 	}
 
 	//find if assessment with student number and assessment metric  already exists
