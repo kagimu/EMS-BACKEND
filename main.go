@@ -3,9 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
-	"os"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
@@ -15,10 +16,10 @@ import (
 )
 
 func main() {
-	//err := godotenv.Load(".env")
-	//if err != nil {
-	//	log.Fatal("Error loading .env file")
-	//}
+	// err := godotenv.Load(".env")
+	// if err != nil {
+	// 	log.Fatal("Error loading .env file")
+	// }
 
 	gin.SetMode(gin.DebugMode)
 
