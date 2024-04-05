@@ -26,7 +26,7 @@ func (p *PromotionRequest) Prepare() {
 
 func (p *PromotionRequest) Validate() error {
 	if p.CurrentAcademicYearNumber == "" {
-		return errors.New("current year is required")
+		return errors.New("current academic year is required")
 	}
 	if p.Status == "" {
 		return errors.New("status is required")
