@@ -79,7 +79,24 @@ func FetchAllPromotions(c *gin.Context) {
 	}
 
 	var promotions []models.Promotion
-	if err := config.DB.Preload("AcademicYear").Preload("Student").Preload("Student.Campus").Find(&promotions).Error; err != nil {
+	if err := config.DB.Preload("CurrentAcademicYear").Preload("Student").Preload("PromotionSetting").Preload("PromotionSetting.NextClass").Preload("PromotionSetting.PreviousClass").Preload("Student.PreferredCampus").Find(&promotions).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotions"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": promotions})
+}
+
+func FetchPromotionsByAcademicYear(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	academicYearNumber := c.Query("academic_year_number")
+	var promotions []models.Promotion
+	if err := config.DB.Where("current_academic_year_number = ?", academicYearNumber).Preload("CurrentAcademicYear").Preload("Student").Preload("PromotionSetting").Preload("PromotionSetting.NextClass").Preload("PromotionSetting.PreviousClass").Preload("Student.PreferredCampus").Find(&promotions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotions"})
 		return
 	}
