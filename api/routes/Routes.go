@@ -444,12 +444,6 @@ func SetupRoutes() *gin.Engine {
 			admission.POST("", admissionController.CreateAdmission)
 			admission.GET("", admissionController.FetchAdmissions)
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
-			admission.GET("/study_period", admissionController.FilterAdmissionsByStudyPeriod)
-			admission.GET("/stream", admissionController.FilterAdmissionsByStream)
-			admission.GET("/campus_class", admissionController.FilterAdmissionsByCampusClass)
-			admission.GET("/interview", admissionController.FilterAdmissionsByInterview)
-			admission.GET("/school", admissionController.FilterAdmissionsBySchool)
-			admission.GET("/campus", admissionController.FilterAdmissionsByCampus)
 
 			offer := admission.Group("/admission-offers")
 			{
@@ -654,6 +648,12 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("feeding-groups", cateringController.FetchFeedingGroups)
 			catering.POST("feeding-groups-per-day", cateringController.CreateFeedingGroupPerDay)
 			catering.GET("feeding-groups-per-day", cateringController.FetchFeedingGroupsPerDay)
+
+			catering.POST("menu-items", cateringController.CreateMenuItem)
+			catering.GET("menu-items", cateringController.FetchMenuItems)
+			catering.POST("units-of-measure", cateringController.CreateUnitOfMeasure)
+			catering.GET("units-of-measure", cateringController.FetchUnitsOfMeasure)
+
 		}
 	}
 
