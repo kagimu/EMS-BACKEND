@@ -29,13 +29,13 @@ func CreateItemAssembly(c *gin.Context) {
 		return
 	}
 
-	for i, primaryItem := range payload.PrimaryItemNumber {
+	for _, primaryItem := range payload.SecondaryItemQuantity {
 
 		saveItemAssembly := models.ItemAssesmbly{
 			Number:              uuid.NewV4().String(),
-			PrimaryItemNumber:   primaryItem,
-			SecondaryItemNumber: payload.SecondaryItemNumber[i],
-			Quantity:            payload.Quantity,
+			PrimaryItemNumber:   payload.PrimaryItemNumber,
+			SecondaryItemNumber: primaryItem.SecondaryItemNumber,
+			Quantity:            primaryItem.Quantity,
 			UserNumber:          user.Number,
 		}
 
