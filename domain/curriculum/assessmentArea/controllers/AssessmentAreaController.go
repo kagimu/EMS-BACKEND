@@ -47,14 +47,16 @@ func CreateAssessmentArea(c *gin.Context) {
 }
 
 func FetchAssessmentAreas(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
+	var curriculumClassNumber = c.Query("curriculum_class_number")
 	var assessmentAreas []models.AssessmentArea
-	if err := config.DB.Where("user_number = ?", user.Number).Find(&assessmentAreas).Error; err != nil {
+
+	if err := config.DB.Where("curriculum_class_number = ?", curriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
 		return
 	}
@@ -104,3 +106,5 @@ func EditAssessmentArea(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Assessment area updated successfully"})
 }
+
+//prepare Scope for assessment area
