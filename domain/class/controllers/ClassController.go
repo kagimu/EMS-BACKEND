@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"strconv"
 	"strings"
@@ -391,7 +392,7 @@ func FetchClasses(context *gin.Context) {
 	var levels []levelModels.Level
 	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
-		Scopes(levelInfoDataFilter(level)).
+		Scopes(filters.ByPrimaryKey(level)).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
@@ -443,7 +444,7 @@ func FetchCurriculumClasses(context *gin.Context) {
 	var levels []levelModels.CurriculumLevel
 	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
-		Scopes(levelInfoFilter(level)).
+		Scopes(filters.ByLevelNumber(level)).
 		Where("curriculum_Number = ?", curriculumNumber).
 		Preload("Level").
 		Order("code asc").
@@ -553,8 +554,7 @@ func FetchSchemeOfWorkClasses(context *gin.Context) {
 	var classes []classModel.CurriculumClass
 	var classes_ []responses.ClassDataList
 	if err := config.DB.
-		Scopes(levelDataFilter(levelNo)).
-		//Where("curriculum_levels.curriculum_number = ?", campus.SchoolCurriculum.CurriculumNumber).
+		Scopes(filters.ByCurriculumLevelNumber(levelNo)).
 		Joins("join curriculum_levels on curriculum_levels.number = curriculum_classes.curriculum_level_number").
 		Joins("join classes on curriculum_classes.class_number = classes.number").
 		Preload("CurriculumLevel").
@@ -673,33 +673,6 @@ func FetchClassesToAdd(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": curriculumClasses_})
-}
-
-func levelDataFilter(level string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if level != "" {
-			return db.Where("curriculum_level_number = ?", level)
-		}
-		return db
-	}
-}
-
-func levelInfoDataFilter(level string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if level != "" {
-			return db.Where("number = ?", level)
-		}
-		return db
-	}
-}
-
-func levelInfoFilter(level string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if level != "" {
-			return db.Where("level_number = ?", level)
-		}
-		return db
-	}
 }
 
 func FetchClassLevel(context *gin.Context) {

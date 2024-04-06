@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"gorm.io/gorm"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"time"
 
@@ -71,20 +71,10 @@ func FetchAssessmentMetrics(c *gin.Context) {
 	var assessmentMetrics []models.AssessmentMetric
 	if err := config.DB.
 		Scopes(
-			func(db *gorm.DB) *gorm.DB {
-				if studyPeriodNumber != "" {
-					return config.DB.Where("study_period_number = ?", studyPeriodNumber)
-				}
-				return db
-			},
-			func(db *gorm.DB) *gorm.DB {
-				if assessmentAreaNumber != "" {
-					return config.DB.Where("assessment_area_number = ?", assessmentAreaNumber)
-				}
-				return db
-			},
+			filters.ByStudyPeriodNumber(studyPeriodNumber),
+			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
 		).
-		Model(&models.AssessmentMetric{}).Preload("AssessmentArea").Preload("Metric").Preload("CampusClass").Find(&assessmentMetrics).Error; err != nil {
+		Preload("AssessmentArea").Preload("Metric").Preload("CampusClass").Find(&assessmentMetrics).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics"})
 		return
 	}

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
@@ -160,16 +161,14 @@ func FetchAdmissions(c *gin.Context) {
 
 	var admissions []models.Admission
 
-	if campusNumber == "" && studyPeriodNumber == "" && streamNumber == "" && interviewNumber == "" {
-		if err := config.DB.Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
-			return
-		}
-	} else {
-		if err := config.DB.Where("campus_number = ? AND study_period_number = ? AND stream_number = ? AND interview_number = ?", campusNumber, studyPeriodNumber, streamNumber, interviewNumber).Find(&admissions).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
-			return
-		}
+	if err := config.DB.Scopes(
+		filters.ByStudyPeriodNumber(studyPeriodNumber),
+		filters.ByCampusNumber(campusNumber),
+		filters.ByStreamNumber(streamNumber),
+		filters.ByInterviewNumber(interviewNumber),
+	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": admissions})
@@ -192,111 +191,4 @@ func FetchAdmissionById(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": admission})
-}
-
-func FilterAdmissionsBySchool(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	schoolNumber := c.Query("school_number")
-	var admission []models.Admission
-
-	if err := config.DB.Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").First(&admission, "school_number = ?", schoolNumber).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": admission})
-}
-
-func FilterAdmissionsByStudyPeriod(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var admissions []models.Admission
-	studyPeriodNumber := c.Query("study_period_number")
-
-	if err := config.DB.Where("study_period_number = ?", studyPeriodNumber).Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": admissions})
-}
-
-func FilterAdmissionsByCampus(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var admissions []models.Admission
-	campusNumber := c.Query("campus_number")
-
-	if err := config.DB.Where("campus_number = ?", campusNumber).Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": admissions})
-}
-
-func FilterAdmissionsByCampusClass(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var admissions []models.Admission
-	campusNumber := c.Query("campus_number")
-
-	if err := config.DB.Where("campus_number = ?", campusNumber).Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": admissions})
-}
-
-func FilterAdmissionsByStream(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var admissions []models.Admission
-	streamNumber := c.Query("stream_number")
-
-	if err := config.DB.Where("stream_number = ?", streamNumber).Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": admissions})
-}
-
-func FilterAdmissionsByInterview(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var admissions []models.Admission
-	interviewNumber := c.Query("interview_number")
-
-	if err := config.DB.Where("interview_number = ?", interviewNumber).Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admission list"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": admissions})
 }
