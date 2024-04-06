@@ -1,10 +1,7 @@
 package controllers
 
 import (
-	"fmt"
-	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -24,46 +21,41 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 	}
 
 	var payload requests.PreviousSchoolResultsRequest
-
-	// TODO: This throws an error as well
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input", "err": err.Error()})
 		return
 	}
 
-	file, header, err := c.Request.FormFile("attachment")
+	pdfFile, err := c.FormFile("attachment")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to process file"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "PDF file is missing"})
 		return
 	}
 
-	defer file.Close()
+	// upload size must not exceed 20 megabytes
+	if pdfFile.Size > 20971520 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Pdf file must not exceed 20 mbs!"})
+		return
+	}
 
-	os.MkdirAll("/fileRepo/uploads", os.ModePerm)
+	if pdfFile.Size < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Pdf"})
+		return
+	}
 
-	filename := header.Filename
+	filename := pdfFile.Filename
 
 	ext := filepath.Ext(filename)
 
 	newFileName := uuid.NewV4().String() + ext
-	// TODO: To be removed
-	os.Open(newFileName)
 
-	// This fails to
-	fileOutput, err := os.Create(filepath.Join("/fileRepo/uploads", newFileName))
+	path := filepath.Join("/fileRepo/uploads", newFileName)
+
+	err = c.SaveUploadedFile(pdfFile, path)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create a new file", "err": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
 		return
 	}
-
-	defer fileOutput.Close()
-	_, err = io.Copy(fileOutput, file)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to copy the new file to target directory", "err": err.Error()})
-		return
-	}
-
-	fileURL := fmt.Sprintf("/fileRepo/uploads/%s", newFileName)
 
 	for i, score := range payload.Score {
 		previousSchoolResultsNumber := uuid.NewV4().String()
@@ -73,7 +65,7 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 			StudentNumber:        payload.StudentNumber,
 			AssessmentAreaNumber: payload.AssessmentAreaNumber[i],
 			Score:                score,
-			Attachment:           fileURL,
+			Attachment:           newFileName,
 			ApplicationNumber:    payload.ApplicationNumber,
 			UserNumber:           user.Number,
 		}
