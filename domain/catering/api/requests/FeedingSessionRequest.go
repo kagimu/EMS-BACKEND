@@ -2,13 +2,14 @@ package requests
 
 import "errors"
 
-type FeedingSesionRequest struct {
-	Name   string `json:"name"`
-	Code   uint64 `json:"code"`
-	Status string `json:"status"`
+type FeedingSessionRequest struct {
+	Name         string `json:"name"`
+	Code         uint64 `json:"code"`
+	Status       string `json:"status"`
+	CampusNumber string `json:"campus_number"`
 }
 
-func (r *FeedingSesionRequest) Validate() error {
+func (r *FeedingSessionRequest) Validate() error {
 	if r.Name == "" {
 		return errors.New("name is required")
 	}
