@@ -193,6 +193,32 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 		return
 	}
 
+	//check if report column exists
+	var reportColumn models.ReportColumn
+	if err := config.DB.Where("number = ?", payload.ReportColumnNumber).First(&reportColumn).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column does not exist"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report column"})
+		return
+
+	}
+
+	// check code uniqueness
+
+	var existingReportColumnAssessment models.ReportColumnAssessment
+	if err := config.DB.Where("code = ? AND report_column_number = ?", payload.Code, payload.ReportColumnNumber).First(&existingReportColumnAssessment).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column assessment with the same code already exists"})
+		return
+	}
+
+	var existingReportColumn models.ReportColumnAssessment
+	if err := config.DB.Where("report_column_number = ?", payload.ReportColumnNumber).First(&existingReportColumn).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column already configured on an  assessment"})
+		return
+	}
+
 	// Save report column assessment
 	reportColumnAssessment := models.ReportColumnAssessment{
 		Number:                 uuid.NewV4().String(),
