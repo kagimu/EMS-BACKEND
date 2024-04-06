@@ -165,7 +165,7 @@ func Init() error {
 		&cateringModels.FeedingGroup{},
 		&cateringModels.FeedingGroupPerDay{},
 		&cateringModels.FeedingSessionPerDay{},
-		&cateringModels.FeedingSesion{},
+		&cateringModels.FeedingSession{},
 	)
 
 	if err != nil {
