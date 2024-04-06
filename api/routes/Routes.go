@@ -640,20 +640,29 @@ func SetupRoutes() *gin.Engine {
 
 		catering := main.Group("catering")
 		{
+			// Feeding sessions
 			catering.POST("feeding-sessions", cateringController.CreateFeedingSession)
 			catering.GET("feeding-sessions", cateringController.FetchFeedingSessions)
 			catering.POST("feeding-sessions-per-day", cateringController.CreateFeedingSessionPerDay)
 			catering.GET("feeding-sessions-per-day", cateringController.FetchFeedingSessionsPerDay)
+
+			// Feeding groups
 			catering.POST("feeding-groups", cateringController.CreateFeedingGroup)
 			catering.GET("feeding-groups", cateringController.FetchFeedingGroups)
 			catering.POST("feeding-groups-per-day", cateringController.CreateFeedingGroupPerDay)
 			catering.GET("feeding-groups-per-day", cateringController.FetchFeedingGroupsPerDay)
 
+			// Menu items
 			catering.POST("menu-items", cateringController.CreateMenuItem)
 			catering.GET("menu-items", cateringController.FetchMenuItems)
+
+			// Units of measure
 			catering.POST("units-of-measure", cateringController.CreateUnitOfMeasure)
 			catering.GET("units-of-measure", cateringController.FetchUnitsOfMeasure)
 
+			// Item assembly
+			catering.POST("item-assembly", cateringController.CreateItemAssembly)
+			catering.GET("item-assembly", cateringController.FetchItemAssemblies)
 		}
 	}
 

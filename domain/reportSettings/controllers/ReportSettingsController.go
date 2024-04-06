@@ -165,10 +165,11 @@ func FetchReportColumns(ctx *gin.Context) {
 
 	for _, reportColumn := range reportColumns {
 		response := responses.ReportColumnResponse{
-			Name:            reportColumn.Name,
-			Number:          reportColumn.Number,
-			PercentageShare: reportColumn.PercentageShare,
-			Code:            reportColumn.Code,
+			Name:              reportColumn.Name,
+			Number:            reportColumn.Number,
+			PercentageShare:   reportColumn.PercentageShare,
+			Code:              reportColumn.Code,
+			ReportSettingName: reportColumn.ReportSettingName,
 		}
 		rc = append(rc, response)
 
