@@ -18,7 +18,7 @@ func CreateFeedingSession(c *gin.Context) {
 		return
 	}
 
-	var payload requests.FeedingSesionRequest
+	var payload requests.FeedingSessionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
@@ -29,12 +29,13 @@ func CreateFeedingSession(c *gin.Context) {
 		return
 	}
 
-	saveFeedingSession := models.FeedingSesion{
-		Number:     uuid.NewV4().String(),
-		Name:       payload.Name,
-		Status:     payload.Status,
-		Code:       payload.Code,
-		UserNumber: user.Number,
+	saveFeedingSession := models.FeedingSession{
+		Number:       uuid.NewV4().String(),
+		Name:         payload.Name,
+		Status:       payload.Status,
+		CampusNumber: payload.CampusNumber,
+		Code:         payload.Code,
+		UserNumber:   user.Number,
 	}
 
 	if err := config.DB.Create(&saveFeedingSession).Error; err != nil {
@@ -51,7 +52,7 @@ func FetchFeedingSessions(c *gin.Context) {
 		return
 	}
 
-	var feedingSessions []models.FeedingSesion
+	var feedingSessions []models.FeedingSession
 	if err := config.DB.Find(&feedingSessions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding sessions"})
 		return
