@@ -12,6 +12,7 @@ import (
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
+	cateringController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/controllers"
 	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
@@ -637,11 +638,24 @@ func SetupRoutes() *gin.Engine {
 			previousSchoolResults.GET("", previousSchoolResultsController.FetchPreviousSchoolResultsByStudent)
 		}
 
+		// TODO: Organize the student routes
 		students := main.Group("students")
 		{
 			students.GET("/by-assessment-metric/:assessment_metric_number", studentController.FetchStudentsByAssessmentMetricNumber)
 		}
 
+		catering := main.Group("catering")
+		{
+			catering.POST("feeding-groups", cateringController.CreateFeedingGroup)
+			catering.GET("feeding-groups", cateringController.FetchFeedingGroups)
+			catering.POST("feeding-groups-per-day", cateringController.CreateFeedingGroupPerDay)
+			catering.GET("feeding-groups-per-day", cateringController.FetchFeedingGroupsPerDay)
+			catering.POST("feeding-sessions", cateringController.CreateFeedingSession)
+			catering.GET("feeding-sessions", cateringController.FetchFeedingSessions)
+			catering.POST("feeding-sessions-per-day", cateringController.CreateFeedingSessionPerDay)
+			catering.GET("feeding-sessions-per-day", cateringController.FetchFeedingSessionsPerDay)
+
+		}
 	}
 
 	return router
