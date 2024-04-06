@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type ItemAssesmbly struct {
+type ItemAssembly struct {
 	gorm.Model
 	Number              string          `json:"number" gorm:"size:36;unique;not null"`
 	PrimaryItemNumber   string          `json:"primary_item_number" gorm:"size:36;not null"`

@@ -168,7 +168,7 @@ func Init() error {
 		&cateringModels.FeedingSession{},
 		&cateringModels.UnitOfMeasure{},
 		&cateringModels.MenuItem{},
-		&cateringModels.ItemAssesmbly{},
+		&cateringModels.ItemAssembly{},
 	)
 
 	if err != nil {
