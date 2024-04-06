@@ -8,6 +8,7 @@ import (
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
@@ -226,12 +227,24 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 			return
 		}
 
+		var assessmentMetric assesmentModel.AssessmentMetric
+		if err := config.DB.Where("number = ?", reportColumnAssessment.AssessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment metric"})
+			return
+		}
+
+		var reportColumn models.ReportColumn
+		if err := config.DB.Where("number = ?", reportColumnAssessment.ReportColumnNumber).First(&reportColumn).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column"})
+			return
+		}
+
 		response := responses.ReportColumnAssessmentResponse{
 			Number:           reportColumnAssessment.Number,
-			AssessmentArea:   reportColumnAssessment.AssessmentAreaNumber,
-			AssessmentMetric: reportColumnAssessment.AssessmentMetricNumber,
+			AssessmentArea:   assessmentArea.Name,
+			AssessmentMetric: assessmentMetric.Name,
 			Code:             reportColumnAssessment.Code,
-			ReportColumn:     reportColumnAssessment.ReportColumnNumber,
+			ReportColumn:     reportColumn.Name,
 		}
 		rca = append(rca, response)
 
@@ -375,8 +388,8 @@ func FetchReportScoreSummaries(ctx *gin.Context) {
 }
 
 func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
-	//studyPeriodNumber := ctx.Param("study_period_number")
-	//campusClassNumber := ctx.Param("campus_class_number")
+	studyPeriodNumber := ctx.Param("study_period_number")
+	campusClassNumber := ctx.Param("campus_class_number")
 
 	var response []responses.SummarizedFinalReportResponse
 
@@ -384,8 +397,7 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 
 	if err := config.DB.
 		Preload("Student").
-		//Preload("CampusClass").
-		//Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).
+		Scopes(filters.ByStudyPeriodNumber(studyPeriodNumber), filters.ByCampusClassNumber(campusClassNumber)).
 		Find(&enrollments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return

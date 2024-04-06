@@ -108,3 +108,13 @@ func (r *ReportColumn) AfterFind(tx *gorm.DB) (err error) {
 	r.ReportSettingName = reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName
 	return nil
 }
+
+// after find hook for ReportColumnAssessment
+
+func (r *ReportColumnAssessment) AfterFind(tx *gorm.DB) (err error) {
+	var reportColumn ReportColumn
+	if err := tx.Model(&ReportColumn{}).Preload("ReportSetting").Where("number = ?", r.ReportColumnNumber).First(&reportColumn).Error; err != nil {
+		return err
+	}
+	return nil
+}
