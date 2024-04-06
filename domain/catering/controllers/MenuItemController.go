@@ -1,0 +1,62 @@
+package controllers
+
+import (
+	"net/http"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+)
+
+func CreateMenuItem(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.MenuItemRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	saveMenuItem := models.MenuItem{
+		Number:              uuid.NewV4().String(),
+		Name:                payload.Name,
+		Code:                payload.Code,
+		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
+		UserNumber:          user.Number,
+	}
+
+	if err := config.DB.Create(&saveMenuItem).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": saveMenuItem})
+}
+
+func FetchMenuItems(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var menuItems []models.MenuItem
+	if err := config.DB.Find(&menuItems).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": menuItems})
+}
