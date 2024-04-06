@@ -32,7 +32,6 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 		return
 	}
 
-	// upload size must not exceed 20 megabytes
 	if pdfFile.Size > 20971520 {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Pdf file must not exceed 20 mbs!"})
 		return
