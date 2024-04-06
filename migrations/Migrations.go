@@ -10,6 +10,7 @@ import (
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	cateringModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
@@ -160,7 +161,11 @@ func Init() error {
 		&promotionModels.Promotion{},
 		&promotionModels.PromotionSetting{},
 		&promotionModels.PromotionSettingsValue{},
-		previousSchoolResultsModels.PreviousSchoolResults{},
+		&previousSchoolResultsModels.PreviousSchoolResults{},
+		&cateringModels.FeedingGroup{},
+		&cateringModels.FeedingGroupPerDay{},
+		&cateringModels.FeedingSessionPerDay{},
+		&cateringModels.FeedingSesion{},
 	)
 
 	if err != nil {
