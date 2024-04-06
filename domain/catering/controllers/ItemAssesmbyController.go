@@ -18,7 +18,7 @@ func CreateItemAssembly(c *gin.Context) {
 		return
 	}
 
-	var payload requests.ItemAssesmbly
+	var payload requests.ItemAssembly
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(400, gin.H{"message": "Failed to process input"})
 		return
@@ -31,7 +31,7 @@ func CreateItemAssembly(c *gin.Context) {
 
 	for _, primaryItem := range payload.SecondaryItemQuantity {
 
-		saveItemAssembly := models.ItemAssesmbly{
+		saveItemAssembly := models.ItemAssembly{
 			Number:              uuid.NewV4().String(),
 			PrimaryItemNumber:   payload.PrimaryItemNumber,
 			SecondaryItemNumber: primaryItem.SecondaryItemNumber,
@@ -55,7 +55,7 @@ func FetchItemAssemblies(c *gin.Context) {
 		return
 	}
 
-	var itemAssesmblies []models.ItemAssesmbly
+	var itemAssesmblies []models.ItemAssembly
 	if err := config.DB.Find(&itemAssesmblies).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies"})
 		return
