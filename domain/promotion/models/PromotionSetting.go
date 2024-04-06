@@ -13,9 +13,9 @@ type PromotionSetting struct {
 	Status              string                  `json:"status" gorm:"size:20;"`
 	Type                string                  `json:"type" gorm:"size:50"`
 	NextClassNumber     string                  `json:"next_class_number" gorm:"size:36;not null"`
-	NextClass           classModels.CampusClass `gorm:"foreignKey:NextClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	NextClass           classModels.CampusClass `json:"next_class" gorm:"foreignKey:NextClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	PreviousClassNumber string                  `json:"previous_class_number" gorm:"size:36;not null"`
-	PreviousClass       classModels.CampusClass `gorm:"foreignKey:PreviousClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	PreviousClass       classModels.CampusClass `json:"previous_class" gorm:"foreignKey:PreviousClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber          string                  `json:"user_number" gorm:"size:36;"`
 	User                authModel.User          `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
