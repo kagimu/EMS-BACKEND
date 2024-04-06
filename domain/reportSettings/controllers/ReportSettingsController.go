@@ -250,7 +250,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessments})
+	ctx.JSON(http.StatusOK, gin.H{"data": rca})
 
 }
 
