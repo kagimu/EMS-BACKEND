@@ -102,6 +102,39 @@ func CreatReportColumn(ctx *gin.Context) {
 		return
 	}
 
+	// validate the current number of entries in the report column table for the report setting
+
+	var reportSetting models.ReportSetting
+	if err := config.DB.Where("number = ?", payload.ReportSettingNumber).First(&reportSetting).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
+		return
+	}
+
+	var reportColumns []models.ReportColumn
+	if err := config.DB.Where("report_setting_number = ?", payload.ReportSettingNumber).Find(&reportColumns).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
+		return
+	}
+
+	if len(reportColumns) >= int(reportSetting.Columns) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report columns for this class are already set up"})
+		return
+	}
+
+	//validate name and code to be unique on each report setting
+
+	var existingReportColumn models.ReportColumn
+	if err := config.DB.Where("name = ? AND report_setting_number = ?", payload.Name, payload.ReportSettingNumber).First(&existingReportColumn).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column with the same name already exists"})
+		return
+	}
+
+	if err := config.DB.Where("code = ? AND report_setting_number = ?", payload.Code, payload.ReportSettingNumber).First(&existingReportColumn).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column with the same code already exists"})
+		return
+
+	}
+
 	// Save report column
 	reportColumn := models.ReportColumn{
 		Number:              uuid.NewV4().String(),
