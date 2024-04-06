@@ -9,10 +9,11 @@ type ReportSettingsResponse struct {
 }
 
 type ReportColumnResponse struct {
-	Number          string  `json:"number"`
-	Name            string  `json:"name"`
-	PercentageShare float64 `json:"percentage_share"`
-	Code            int64   `json:"code"`
+	Number            string  `json:"number"`
+	Name              string  `json:"name"`
+	ReportSettingName string  `json:"report_setting_name"`
+	PercentageShare   float64 `json:"percentage_share"`
+	Code              int64   `json:"code"`
 }
 
 type ReportColumnAssessmentResponse struct {

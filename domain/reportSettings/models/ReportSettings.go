@@ -35,6 +35,7 @@ type ReportColumn struct {
 	ReportSetting       ReportSetting   `gorm:"foreignKey:ReportSettingNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber          string          `json:"user_number" gorm:"size:36;not null;"`
 	User                userModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	ReportSettingName   string          `json:"report_setting_name" gorm:"-"`
 }
 
 type ReportColumnAssessment struct {
@@ -95,4 +96,15 @@ type ReportScoreSummary struct {
 	Comment              string          `json:"comment" gorm:"type:text;not null;"`
 	UserNumber           string          `json:"user_number" gorm:"size:36;not null;"`
 	User                 userModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+}
+
+// AfterFind hook for ReportColumn
+
+func (r *ReportColumn) AfterFind(tx *gorm.DB) (err error) {
+	var reportSetting ReportSetting
+	if err := tx.Model(&ReportSetting{}).Preload("AcademicYear").Preload("CampusClass").Preload("StudyPeriod").Where("number = ?", r.ReportSettingNumber).First(&reportSetting).Error; err != nil {
+		return err
+	}
+	r.ReportSettingName = reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName
+	return nil
 }
