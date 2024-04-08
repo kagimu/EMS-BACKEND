@@ -64,6 +64,7 @@ func AttachAssessmentAreas(ctx *gin.Context) {
 
 	assessmentAreaGradingStandard := assessmentAreaModel.AssessmentAreaGradingStandard{
 		Number:                uuid.NewV4().String(),
+		Code:                  payload.Code,
 		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
 		GradingStandardNumber: payload.GradingStandardNumber,
 	}

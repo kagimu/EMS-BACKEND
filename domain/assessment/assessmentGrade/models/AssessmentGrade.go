@@ -10,7 +10,6 @@ import (
 type AssessmentGrade struct {
 	gorm.Model
 	Number            string                  `json:"number" gorm:"size:36;unique;not null"`
-	Grade             string                  `json:"Grade" gorm:"size:20;"`
 	Name              string                  `json:"name"`
 	Description       string                  `json:"description" gorm:"type:text"`
 	MinimumPoints     int64                   `json:"minimum_points"`

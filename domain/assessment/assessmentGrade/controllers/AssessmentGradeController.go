@@ -39,7 +39,6 @@ func CreateAssessmentGrade(c *gin.Context) {
 
 	saveAssessmentGrade := models.AssessmentGrade{
 		Number:            uuid.NewV4().String(),
-		Grade:             payload.Grade,
 		Name:              payload.Name,
 		Description:       payload.Description,
 		MinimumPoints:     payload.MinimumPoints,
@@ -95,7 +94,6 @@ func EditAssessmentGrade(c *gin.Context) {
 	}
 
 	updateAssessmentGrade := models.AssessmentGrade{
-		Grade:             payload.Grade,
 		Description:       payload.Description,
 		Name:              payload.Name,
 		MaximumPoints:     payload.MaximumPoints,
