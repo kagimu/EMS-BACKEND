@@ -23,12 +23,12 @@ func CreateGradingStandard(ctx *gin.Context) {
 
 	// Save GradingStandard
 	gradingStandard := models.GradingStandard{
-		Number:      uuid.NewV4().String(),
-		Name:        payload.Name,
-		Description: payload.Description,
-		Type:        payload.Type,
-		ClassNumber: payload.ClassNumber,
-		UserNumber:  ctx.GetHeader("User-Number"),
+		Number:            uuid.NewV4().String(),
+		Name:              payload.Name,
+		Description:       payload.Description,
+		Type:              payload.Type,
+		CampusClassNumber: payload.ClassNumber,
+		UserNumber:        ctx.GetHeader("User-Number"),
 	}
 
 	if err := config.DB.Create(&gradingStandard).Error; err != nil {
