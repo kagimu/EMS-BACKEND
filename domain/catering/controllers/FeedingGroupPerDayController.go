@@ -35,7 +35,7 @@ func CreateFeedingGroupPerDay(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group on a specified day"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": saveFeedingGroupPerDay})
+	c.JSON(http.StatusOK, gin.H{"message": "Feeding group per given day created successfully"})
 }
 
 func FetchFeedingGroupsPerDay(c *gin.Context) {

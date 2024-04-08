@@ -56,5 +56,5 @@ func FetchUnitsOfMeasure(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": unitsOfMeasure})
+	c.JSON(http.StatusOK, gin.H{"message": "Units of measure fetched successfully", "data": unitsOfMeasure})
 }

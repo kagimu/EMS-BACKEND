@@ -11,7 +11,7 @@ type FeedingGroup struct {
 	Number       string              `json:"number" gorm:"size:36;unique;not null"`
 	Name         string              `json:"name" gorm:"size:36;"`
 	Status       string              `json:"status" gorm:"size:36;"`
-	CampusNumber string              `json:"campusNumber" gorm:"size:36;"`
+	CampusNumber string              `json:"campus_number" gorm:"size:36;"`
 	Campus       campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber   string              `json:"user_number" gorm:"size:36;index;not null"`
 	User         authModels.User     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

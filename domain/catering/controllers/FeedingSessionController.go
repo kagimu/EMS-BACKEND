@@ -42,7 +42,7 @@ func CreateFeedingSession(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": saveFeedingSession})
+	c.JSON(http.StatusOK, gin.H{"message": "Feeding session saved successfully"})
 }
 
 func FetchFeedingSessions(c *gin.Context) {
