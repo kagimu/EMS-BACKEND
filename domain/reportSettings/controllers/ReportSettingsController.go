@@ -8,7 +8,6 @@ import (
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
@@ -417,12 +416,20 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 	studyPeriodNumber := ctx.Param("study_period_number")
 	campusClassNumber := ctx.Param("campus_class_number")
 
+	//validate and make sure the study period number and campus class number are not empty
+	if studyPeriodNumber == "" || campusClassNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Study period number and campus class number are required"})
+		return
+
+	}
+
 	var response []responses.SummarizedFinalReportResponse
 
 	var enrollments []enrollmentModel.Enrollment
 
 	if err := config.DB.
-		Model(enrollmentModel.Enrollment{}).Preload("Student").Scopes(filters.ByStudyPeriodNumber(studyPeriodNumber), filters.ByCampusClassNumber(campusClassNumber)).
+		//Model(enrollmentModel.Enrollment{}).Preload("Student").Scopes(filters.ByStudyPeriodNumber(studyPeriodNumber), filters.ByCampusClassNumber(campusClassNumber)).
+		Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).
 		Find(&enrollments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
