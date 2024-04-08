@@ -646,6 +646,10 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("feeding-sessions-per-day", cateringController.CreateFeedingSessionPerDay)
 			catering.GET("feeding-sessions-per-day", cateringController.FetchFeedingSessionsPerDay)
 
+			// Feeding session items
+			catering.POST("feeding-sessions-items", cateringController.CreateFeedingSessionItemController)
+			catering.GET("feeding-sessions-items", cateringController.FetchFeedingSessionItems)
+
 			// Feeding groups
 			catering.POST("feeding-groups", cateringController.CreateFeedingGroup)
 			catering.GET("feeding-groups", cateringController.FetchFeedingGroups)
@@ -663,6 +667,15 @@ func SetupRoutes() *gin.Engine {
 			// Item assembly
 			catering.POST("item-assembly", cateringController.CreateItemAssembly)
 			catering.GET("item-assembly", cateringController.FetchItemAssemblies)
+
+			// Feedings
+			catering.POST("feedings", cateringController.CreateFeeding)
+			catering.GET("feedings", cateringController.FetchFeedings)
+
+			// Stocking
+			catering.POST("stocking", cateringController.CreateStocking)
+			catering.GET("stocking", cateringController.FetchStockings)
+
 		}
 	}
 

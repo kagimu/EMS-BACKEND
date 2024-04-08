@@ -35,7 +35,7 @@ func CreateFeedingSessionPerDay(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session on a specified day"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": saveFeedingSessionPerDay})
+	c.JSON(http.StatusOK, gin.H{"message": "Feeding session on the given day has been created"})
 }
 
 func FetchFeedingSessionsPerDay(c *gin.Context) {

@@ -267,6 +267,7 @@ func FetchStudyPeriodInfo(context *gin.Context) {
 		StudyPeriodStartDate: (studyPeriodInfo.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
 		StudyPeriodEndDate:   (studyPeriodInfo.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
 		AcademicYearNumber:   studyPeriodInfo.AcademicYearNumber,
+		LevelNumber:          studyPeriodInfo.AcademicYear.CampusLevelNumber,
 		AcademicYearName:     studyPeriodInfo.AcademicYear.AcademicYearName,
 		UserNumber:           studyPeriodInfo.UserNumber,
 	}

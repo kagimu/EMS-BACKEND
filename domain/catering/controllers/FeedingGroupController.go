@@ -49,7 +49,7 @@ func CreateFeedingGroup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": saveFeedingGroup})
+	c.JSON(http.StatusOK, gin.H{"message": "Feeding group has been created"})
 }
 
 func FetchFeedingGroups(c *gin.Context) {
