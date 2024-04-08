@@ -158,6 +158,7 @@ func FetchAdmissions(c *gin.Context) {
 	studyPeriodNumber := c.Query("study_period_number")
 	streamNumber := c.Query("stream_number")
 	interviewNumber := c.Query("interview_number")
+	schoolNumber := c.Query("school_number")
 
 	var admissions []models.Admission
 
@@ -166,6 +167,7 @@ func FetchAdmissions(c *gin.Context) {
 		filters.ByCampusNumber(campusNumber),
 		filters.ByStreamNumber(streamNumber),
 		filters.ByInterviewNumber(interviewNumber),
+		filters.BySchoolNumber(schoolNumber),
 	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
 		return

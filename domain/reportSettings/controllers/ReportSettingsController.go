@@ -8,6 +8,7 @@ import (
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
@@ -102,6 +103,39 @@ func CreatReportColumn(ctx *gin.Context) {
 		return
 	}
 
+	// validate the current number of entries in the report column table for the report setting
+
+	var reportSetting models.ReportSetting
+	if err := config.DB.Where("number = ?", payload.ReportSettingNumber).First(&reportSetting).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
+		return
+	}
+
+	var reportColumns []models.ReportColumn
+	if err := config.DB.Where("report_setting_number = ?", payload.ReportSettingNumber).Find(&reportColumns).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
+		return
+	}
+
+	if len(reportColumns) >= int(reportSetting.Columns) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report columns for this class are already set up"})
+		return
+	}
+
+	//validate name and code to be unique on each report setting
+
+	var existingReportColumn models.ReportColumn
+	if err := config.DB.Where("name = ? AND report_setting_number = ?", payload.Name, payload.ReportSettingNumber).First(&existingReportColumn).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column with the same name already exists"})
+		return
+	}
+
+	if err := config.DB.Where("code = ? AND report_setting_number = ?", payload.Code, payload.ReportSettingNumber).First(&existingReportColumn).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column with the same code already exists"})
+		return
+
+	}
+
 	// Save report column
 	reportColumn := models.ReportColumn{
 		Number:              uuid.NewV4().String(),
@@ -132,10 +166,11 @@ func FetchReportColumns(ctx *gin.Context) {
 
 	for _, reportColumn := range reportColumns {
 		response := responses.ReportColumnResponse{
-			Name:            reportColumn.Name,
-			Number:          reportColumn.Number,
-			PercentageShare: reportColumn.PercentageShare,
-			Code:            reportColumn.Code,
+			Name:              reportColumn.Name,
+			Number:            reportColumn.Number,
+			PercentageShare:   reportColumn.PercentageShare,
+			Code:              reportColumn.Code,
+			ReportSettingName: reportColumn.ReportSettingName,
 		}
 		rc = append(rc, response)
 
@@ -155,6 +190,32 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 	err := payload.ValidateReportColumnAssessment()
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	//check if report column exists
+	var reportColumn models.ReportColumn
+	if err := config.DB.Where("number = ?", payload.ReportColumnNumber).First(&reportColumn).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column does not exist"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report column"})
+		return
+
+	}
+
+	// check code uniqueness
+
+	var existingReportColumnAssessment models.ReportColumnAssessment
+	if err := config.DB.Where("code = ? AND report_column_number = ?", payload.Code, payload.ReportColumnNumber).First(&existingReportColumnAssessment).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column assessment with the same code already exists"})
+		return
+	}
+
+	var existingReportColumn models.ReportColumnAssessment
+	if err := config.DB.Where("report_column_number = ?", payload.ReportColumnNumber).First(&existingReportColumn).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column already configured on an  assessment"})
 		return
 	}
 
@@ -192,18 +253,30 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 			return
 		}
 
+		var assessmentMetric assesmentModel.AssessmentMetric
+		if err := config.DB.Where("number = ?", reportColumnAssessment.AssessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment metric"})
+			return
+		}
+
+		var reportColumn models.ReportColumn
+		if err := config.DB.Where("number = ?", reportColumnAssessment.ReportColumnNumber).First(&reportColumn).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column"})
+			return
+		}
+
 		response := responses.ReportColumnAssessmentResponse{
 			Number:           reportColumnAssessment.Number,
-			AssessmentArea:   reportColumnAssessment.AssessmentAreaNumber,
-			AssessmentMetric: reportColumnAssessment.AssessmentMetricNumber,
+			AssessmentArea:   assessmentArea.Name,
+			AssessmentMetric: assessmentMetric.Name,
 			Code:             reportColumnAssessment.Code,
-			ReportColumn:     reportColumnAssessment.ReportColumnNumber,
+			ReportColumn:     reportColumn.Name,
 		}
 		rca = append(rca, response)
 
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessments})
+	ctx.JSON(http.StatusOK, gin.H{"data": rca})
 
 }
 
@@ -341,8 +414,8 @@ func FetchReportScoreSummaries(ctx *gin.Context) {
 }
 
 func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
-	//studyPeriodNumber := ctx.Param("study_period_number")
-	//campusClassNumber := ctx.Param("campus_class_number")
+	studyPeriodNumber := ctx.Param("study_period_number")
+	campusClassNumber := ctx.Param("campus_class_number")
 
 	var response []responses.SummarizedFinalReportResponse
 
@@ -350,8 +423,7 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 
 	if err := config.DB.
 		Preload("Student").
-		//Preload("CampusClass").
-		//Where("study_period_number = ? AND campus_class_number = ?", studyPeriodNumber, campusClassNumber).
+		Scopes(filters.ByStudyPeriodNumber(studyPeriodNumber), filters.ByCampusClassNumber(campusClassNumber)).
 		Find(&enrollments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return

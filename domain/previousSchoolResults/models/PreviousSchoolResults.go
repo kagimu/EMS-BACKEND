@@ -16,7 +16,7 @@ type PreviousSchoolResults struct {
 	Score                float64                             `json:"score" gorm:"not null"`
 	StudentNumber        string                              `json:"student_number" gorm:"size:36;not null"`
 	Student              models.Student                      `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Attachment           string                              `json:"attachment"`
+	Attachment           string                              `json:"attachment" form:"attachment"`
 	ApplicationNumber    string                              `json:"application_number" gorm:"size:36;not null"`
 	Application          applicationModels.Application       `gorm:"foreignKey:ApplicationNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber           string                              `json:"user_number" gorm:"size:36;not null"`
