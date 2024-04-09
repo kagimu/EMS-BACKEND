@@ -33,6 +33,7 @@ func CreateMenuItem(c *gin.Context) {
 		Number:              uuid.NewV4().String(),
 		Name:                payload.Name,
 		Code:                payload.Code,
+		CampusNumber:        payload.CampusNumber,
 		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
 		UserNumber:          user.Number,
 	}

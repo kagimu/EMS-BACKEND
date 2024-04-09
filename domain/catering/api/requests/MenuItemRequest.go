@@ -7,6 +7,7 @@ type MenuItemRequest struct {
 	Code                uint64 `json:"code"`
 	Type                string `json:"type"`
 	UnitOfMeasureNumber string `json:"unit_of_measure_number"`
+	CampusNumber        string `json:"campus_number"`
 }
 
 func (r *MenuItemRequest) Validate() error {
