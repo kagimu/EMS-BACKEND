@@ -14,9 +14,6 @@ type AssessmentGradeRequest struct {
 }
 
 func (r *AssessmentGradeRequest) Validate() error {
-	if r.Grade == "" {
-		return errors.New("grade is required")
-	}
 	if r.Abbreviation == "" {
 		return errors.New("abbreviation is required")
 	}
