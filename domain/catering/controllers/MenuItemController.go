@@ -51,7 +51,7 @@ func CreateMenuItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": saveMenuItem})
+	c.JSON(http.StatusOK, gin.H{"data": "Menu item saved successfully"})
 }
 
 func FetchMenuItems(c *gin.Context) {

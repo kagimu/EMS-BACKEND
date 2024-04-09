@@ -540,7 +540,6 @@ func SetupRoutes() *gin.Engine {
 			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
 			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
 			gradingStandard.POST("attach-assessment-area", aggregateScaleController.AttachAssessmentAreas)
-			gradingStandard.GET("assessment-areas", aggregateScaleController.FetchAssessmentAreasByGradingStandard)
 		}
 
 		enrollment := main.Group("enrollment")
@@ -681,6 +680,9 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("stocking", cateringController.CreateStocking)
 			catering.GET("stocking", cateringController.FetchStockings)
 
+			// Feeding group users
+			catering.POST("feeding-group-users", cateringController.CreateFeedingGroupUser)
+			catering.GET("feeding-group-users", cateringController.FetchFeedingGroupUsers)
 		}
 	}
 
