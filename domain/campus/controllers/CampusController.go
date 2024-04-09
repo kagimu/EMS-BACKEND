@@ -90,7 +90,7 @@ func NewCampus(context *gin.Context) {
 	}
 
 	// Parse the string into a time.Time value
-	commencementDateData, err := time.Parse("2006-01-02", commencementDate)
+	commencementDateData, err := time.Parse("2006-01-02T15:04:05.000Z", commencementDate)
 	if err != nil {
 		fmt.Println("Error parsing date:", err)
 		return
