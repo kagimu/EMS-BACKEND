@@ -69,6 +69,7 @@ func NewSchool(context *gin.Context) {
 	commencementDateData, err := time.Parse("2006-01-02", commencementDate)
 	if err != nil {
 		fmt.Println("Error parsing date:", err)
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse date" + err.Error()})
 		return
 	}
 
