@@ -5,6 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -33,6 +34,7 @@ func CreateMenuItem(c *gin.Context) {
 		Number:              uuid.NewV4().String(),
 		Name:                payload.Name,
 		Code:                payload.Code,
+		Type:                payload.Type,
 		CampusNumber:        payload.CampusNumber,
 		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
 		UserNumber:          user.Number,
@@ -47,6 +49,8 @@ func CreateMenuItem(c *gin.Context) {
 }
 
 func FetchMenuItems(c *gin.Context) {
+	var response []responses.MenuItemResponse
+
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
@@ -54,10 +58,26 @@ func FetchMenuItems(c *gin.Context) {
 	}
 
 	var menuItems []models.MenuItem
-	if err := config.DB.Find(&menuItems).Error; err != nil {
+	if err := config.DB.Preload("Campus").Preload("UnitOfMeasure").Find(&menuItems).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Menu items have been created successfully"})
+	for _, menuItem := range menuItems {
+		response = append(response, responses.MenuItemResponse{
+			Number:              menuItem.Number,
+			Name:                menuItem.Name,
+			Code:                menuItem.Code,
+			Type:                menuItem.Type,
+			Email:               menuItem.Campus.Email,
+			CampusName:          menuItem.Campus.Name,
+			CampusNumber:        menuItem.CampusNumber,
+			Location:            menuItem.Campus.Location,
+			UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
+			UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
+			UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
