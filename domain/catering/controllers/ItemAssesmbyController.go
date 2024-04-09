@@ -30,7 +30,6 @@ func CreateItemAssembly(c *gin.Context) {
 	}
 
 	for _, primaryItem := range payload.SecondaryItemQuantity {
-
 		saveItemAssembly := models.ItemAssembly{
 			Number:              uuid.NewV4().String(),
 			PrimaryItemNumber:   payload.PrimaryItemNumber,

@@ -13,8 +13,7 @@ import (
 )
 
 func CreateFeedingGroup(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
-	if err != nil {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
@@ -37,18 +36,21 @@ func CreateFeedingGroup(c *gin.Context) {
 		return
 	}
 
-	saveFeedingGroup := models.FeedingGroup{
-		Number:       uuid.NewV4().String(),
-		Name:         payload.Name,
-		CampusNumber: campusNumber,
-		Status:       payload.Status,
-		UserNumber:   user.Number,
+	for _, user := range payload.UserNumber {
+		saveFeedingGroup := models.FeedingGroup{
+			Number:       uuid.NewV4().String(),
+			Name:         payload.Name,
+			CampusNumber: campusNumber,
+			Status:       payload.Status,
+			UserNumber:   user,
+		}
+
+		if err := config.DB.Create(&saveFeedingGroup).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group"})
+			return
+		}
 	}
 
-	if err := config.DB.Create(&saveFeedingGroup).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group"})
-		return
-	}
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding group has been created"})
 }
 
