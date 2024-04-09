@@ -26,6 +26,11 @@ func CreateFeedingGroupPerDay(c *gin.Context) {
 	}
 
 	dayOfTheWeek, err := time.Parse("Monday", payload.Day)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse date"})
+		return
+	}
+
 	saveFeedingGroupPerDay := models.FeedingGroupPerDay{
 		Number:             uuid.NewV4().String(),
 		FeedingGroupNumber: payload.FeedingGroupNumber,
