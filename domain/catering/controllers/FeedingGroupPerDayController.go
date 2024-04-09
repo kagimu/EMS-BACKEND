@@ -31,7 +31,7 @@ func CreateFeedingGroupPerDay(c *gin.Context) {
 		return
 	}
 
-	saveFeedingGroupPerDay := models.FeedingGroupPerDay{
+  saveFeedingGroupPerDay := models.FeedingGroupPerDay{
 		Number:             uuid.NewV4().String(),
 		FeedingGroupNumber: payload.FeedingGroupNumber,
 		Day:                dayOfTheWeek,

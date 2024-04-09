@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
@@ -12,51 +11,54 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func CreateFeedingGroupPerDay(c *gin.Context) {
+func CreateItemAssembly(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	var payload requests.FeedingGroupPerDayRequest
+	var payload requests.ItemAssembly
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	dayOfTheWeek, err := time.Parse("Monday", payload.Day)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse date"})
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	saveFeedingGroupPerDay := models.FeedingGroupPerDay{
-		Number:             uuid.NewV4().String(),
-		FeedingGroupNumber: payload.FeedingGroupNumber,
-		Day:                dayOfTheWeek,
-		UserNumber:         user.Number,
+	for _, secondaryItem := range payload.SecondaryItemQuantity {
+		saveItemAssembly := models.ItemAssembly{
+			Number:              uuid.NewV4().String(),
+			PrimaryItemNumber:   payload.PrimaryItemNumber,
+			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
+			Quantity:            secondaryItem.Quantity,
+			UserNumber:          user.Number,
+		}
+
+		if err := config.DB.Create(&saveItemAssembly).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview grade"})
+			return
+		}
 	}
 
-	if err := config.DB.Create(&saveFeedingGroupPerDay).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group on a specified day"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"message": "Feeding group per given day created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Item assembly created successfully"})
 }
 
-func FetchFeedingGroupsPerDay(c *gin.Context) {
+func FetchItemAssemblies(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	var feedingGroupsPerDay []models.FeedingGroupPerDay
-	if err := config.DB.Find(&feedingGroupsPerDay).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding groups per day"})
+	var itemAssesmblies []models.ItemAssembly
+	if err := config.DB.Find(&itemAssesmblies).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": feedingGroupsPerDay})
+	c.JSON(http.StatusOK, gin.H{"data": itemAssesmblies})
 }
