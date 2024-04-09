@@ -14,27 +14,27 @@ import (
 func CreateItemAssembly(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		c.JSON(401, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
 	var payload requests.ItemAssembly
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(400, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(400, gin.H{"message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	for _, primaryItem := range payload.SecondaryItemQuantity {
+	for _, secondaryItem := range payload.SecondaryItemQuantity {
 		saveItemAssembly := models.ItemAssembly{
 			Number:              uuid.NewV4().String(),
 			PrimaryItemNumber:   payload.PrimaryItemNumber,
-			SecondaryItemNumber: primaryItem.SecondaryItemNumber,
-			Quantity:            primaryItem.Quantity,
+			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
+			Quantity:            secondaryItem.Quantity,
 			UserNumber:          user.Number,
 		}
 
@@ -50,7 +50,7 @@ func CreateItemAssembly(c *gin.Context) {
 func FetchItemAssemblies(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		c.JSON(401, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
