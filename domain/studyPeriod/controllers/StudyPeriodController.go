@@ -342,7 +342,6 @@ func EditStudyPeriod(context *gin.Context) {
 
 	//var campusDataInfo campusModel.Campus
 	var calendarEvent eosModels.CalendarEvent
-
 	updateCalendar := tx.Model(&calendarEvent).
 		Where("number = ?", studyPeriodNumber).
 		Updates(eosModels.CalendarEvent{StartDate: startDate, EndDate: endDate, StartTime: startTime, EndTime: endTime, CalendarNumber: academicYearData.CalendarNumber, Name: studyPeriodName})
