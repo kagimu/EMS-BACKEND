@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"time"
 
@@ -384,15 +385,10 @@ func FetchCampuses(context *gin.Context) {
 
 	schoolNumber := context.Query("school_number")
 
-	if schoolNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "School Number is required!"})
-		return
-	}
-
 	var campuses []campusModel.Campus
 	var campuses_ []responses.CampusDataList
 	if err := config.DB.
-		Where("school_number = ?", schoolNumber).
+		Scopes(filters.BySchoolNumber(schoolNumber)).
 		Order("created_at desc").
 		Find(&campuses).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})

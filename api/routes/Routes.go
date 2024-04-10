@@ -353,6 +353,7 @@ func SetupRoutes() *gin.Engine {
 
 			// previous schools
 			application.POST(":application_number/previous-schools", previousSchoolController.CreatePreviousSchools)
+			application.PUT(":application_number/previous-schools", previousSchoolController.UpdatePreviousSchool)
 
 			// application
 			application.GET("/:application_number", applicationController.FetchApplication)
@@ -596,14 +597,12 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
 			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
 			reportSettings.GET("report-column-assessment", reportSettingsController.FetchReportColumnAssessments)
-			reportSettings.POST("report-summary", reportSettingsController.CreateReportSummary)
 			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
 			reportSettings.POST("report-score", reportSettingsController.CreateReportScore)
-			reportSettings.GET("report-score", reportSettingsController.FetchReportScores)
-			reportSettings.POST("report-score-summary", reportSettingsController.CreateReportScoreSummary)
 			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
 			reportSettings.GET("report-settings-by-student", reportSettingsController.FetchReportSummaryByStudentAndStudyPeriodAndClass)
 			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
+			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)
 
 		}
 
