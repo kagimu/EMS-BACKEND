@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"log"
 	"os"
 
@@ -49,9 +50,9 @@ func main() {
 	}(sqlDB)
 
 	//All auto migrations
-	//if err := migrations.Init(); err != nil {
-	//	log.Println(err)
-	//}
+	if err := migrations.Init(); err != nil {
+		log.Println(err)
+	}
 
 	rawJSON := []byte(`{
 	  "level": "debug",
