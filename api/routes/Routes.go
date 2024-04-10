@@ -257,6 +257,7 @@ func SetupRoutes() *gin.Engine {
 			academicYear.GET("by-level", academicYearController.AcademicYearsByLevel)
 			academicYear.GET("by-campus-class", academicYearController.AcademicYearsByCampusClass)
 			academicYear.POST("/new", academicYearController.NewAcademicYear)
+			academicYear.POST("/edit", academicYearController.EditAcademicYear)
 			academicYear.POST("/delete", academicYearController.DeleteAcademicYear)
 		}
 		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
@@ -265,6 +266,7 @@ func SetupRoutes() *gin.Engine {
 		studyPeriod := main.Group("/study-period")
 		{
 			studyPeriod.POST("new", studyPeriodController.NewStudyPeriod)
+			studyPeriod.POST("edit", studyPeriodController.EditStudyPeriod)
 			studyPeriod.GET("info", studyPeriodController.FetchStudyPeriodInfo)
 			studyPeriod.GET("all", studyPeriodController.FetchStudyPeriod)
 			studyPeriod.GET("by-academic-year", studyPeriodController.FetchStudyPeriodByAcademicYear)
@@ -353,6 +355,7 @@ func SetupRoutes() *gin.Engine {
 
 			// previous schools
 			application.POST(":application_number/previous-schools", previousSchoolController.CreatePreviousSchools)
+			application.PUT(":application_number/previous-schools", previousSchoolController.UpdatePreviousSchool)
 
 			// application
 			application.GET("/:application_number", applicationController.FetchApplication)
@@ -596,14 +599,12 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
 			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
 			reportSettings.GET("report-column-assessment", reportSettingsController.FetchReportColumnAssessments)
-			reportSettings.POST("report-summary", reportSettingsController.CreateReportSummary)
 			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
 			reportSettings.POST("report-score", reportSettingsController.CreateReportScore)
-			reportSettings.GET("report-score", reportSettingsController.FetchReportScores)
-			reportSettings.POST("report-score-summary", reportSettingsController.CreateReportScoreSummary)
 			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
 			reportSettings.GET("report-settings-by-student", reportSettingsController.FetchReportSummaryByStudentAndStudyPeriodAndClass)
 			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
+			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)
 
 		}
 

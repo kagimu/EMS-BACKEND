@@ -133,18 +133,29 @@ func UpdateParent(c *gin.Context) {
 		return
 	}
 
-	var parent models.Parent
-	parentID := c.Param("parent_number")
+	var parentId = c.Param("id")
 
-	if err := config.DB.First(&parent, parentID).Error; err != nil {
+	var parentRequest requests.ParentRequest
+
+	if err := c.BindJSON(&parentRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request please prepare a valid request"})
+		return
+	}
+
+	var parent models.Parent
+
+	if err := config.DB.Where("number =? ", parentId).First(&parent).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "no parent found"})
 		return
 	}
 
-	if err := c.BindJSON(&parent); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
-		return
-	}
+	parent.Surname = parentRequest.Surname
+	parent.SecondName = parentRequest.SecondName
+	parent.OtherName = parentRequest.OtherName
+	parent.MainTelephoneNumber = parentRequest.MainTelephoneNumber
+	parent.AlternativeTelephoneNumber = parentRequest.AlternativeTelephoneNumber
+	parent.Email = parentRequest.Email
+	parent.AlternativeEmail = parentRequest.AlternativeEmail
 
 	if err := config.DB.Save(&parent).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update parent"})

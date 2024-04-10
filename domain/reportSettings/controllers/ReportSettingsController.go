@@ -11,10 +11,12 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strconv"
@@ -280,50 +282,115 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 
 }
 
-func CreateReportSummary(ctx *gin.Context) {
-	var payload requests.ReportSummaryRequest
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
-		return
-	}
-
-	err := payload.ValidateReportSummary()
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	// Save report summary
-	reportSummary := models.ReportSummary{
-		Number:              uuid.NewV4().String(),
-		ReportSettingNumber: payload.ReportSettingNumber,
-		StudentNumber:       payload.StudentNumber,
-		CampusClassNumber:   payload.CampusClassNumber,
-		StudyPeriodNumber:   payload.StudyPeriodNumber,
-		Grade:               payload.Grade,
-		Aggregate:           payload.Aggregate,
-		Comment:             payload.Comment,
-		UserNumber:          ctx.Request.Header["User-Number"][0],
-		Code:                payload.Code,
-	}
-
-	if err := config.DB.Create(&reportSummary).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report summary"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Report summary created successfully"})
-}
-
 func FetchReportSummaries(ctx *gin.Context) {
+
+	var cleanReportSummary []responses.LeanReportSummary
+
 	var reportSummaries []models.ReportSummary
-	if err := config.DB.Find(&reportSummaries).Error; err != nil {
+	if err := config.DB.Preload("Student").Find(&reportSummaries).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": reportSummaries})
+	for _, reportSummary := range reportSummaries {
+		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
+			Number:        reportSummary.Number,
+			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
+			StudentNumber: reportSummary.StudentNumber,
+			Grade:         reportSummary.Grade,
+		})
+	}
 
+	ctx.JSON(http.StatusOK, gin.H{"data": cleanReportSummary})
+
+}
+
+func FetchReportSummaryDetails(ctx *gin.Context) {
+	reportSummaryNumber := ctx.Param("report_summary_number")
+
+	var reportSummary models.ReportSummary
+	if err := config.DB.Where("number = ?", reportSummaryNumber).Preload("Student").Preload("StudyPeriod").First(&reportSummary).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summary"})
+		return
+	}
+
+	var assessments []responses.Assessments
+
+	// get curricullum class number from the campus class number
+
+	var campusClass classModel.CampusClass
+	if err := config.DB.Preload("CurriculumClass.CurriculumLevel").Preload("Campus").Preload("Campus.School").Where("number = ?", reportSummary.CampusClassNumber).First(&campusClass).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus class"})
+		return
+	}
+
+	var learningAreas []learningAreaModel.LearningArea
+	if err := config.DB.Where("curriculum_number = ?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).Find(&learningAreas).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch learning areas"})
+		return
+	}
+
+	var la []responses.LearningArea
+	for _, learningArea := range learningAreas {
+
+		var assessmentAreas []assessmentAreaModel.AssessmentArea
+		if err := config.DB.Where("assessment_areas.curriculum_class_number = ?", campusClass.CurriculumClassNumber).
+			Joins("JOIN subjects on subjects.number = assessment_areas.subject_number AND subjects.curriculum_number=?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).Find(&assessmentAreas).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
+			return
+		}
+
+		for _, assessmentArea := range assessmentAreas {
+
+			var reportScoreSummary models.ReportScoreSummary
+			if err := config.DB.Where("report_summary_number = ? AND assessment_area_number =? ", reportSummaryNumber, assessmentArea.Number).First(&reportScoreSummary).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report score summaries"})
+				return
+			}
+
+			var reportScores []models.ReportScore
+			if err := config.DB.Where("report_summary_number = ? AND assessment_area_number = ? ", reportSummaryNumber, assessmentArea.Number).Find(&reportScores).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report scores"})
+				return
+			}
+
+			assessments = append(assessments, responses.Assessments{
+				Name:               assessmentArea.Name,
+				ReportScores:       reportScores,
+				ReportScoreSummary: reportScoreSummary,
+			})
+		}
+
+		la = append(la, responses.LearningArea{
+			Name:        learningArea.Name,
+			Assessments: assessments,
+		})
+
+	}
+
+	var school schoolModel.School
+	if err := config.DB.Where("number = ?", campusClass.Campus.SchoolNumber).First(&school).Error; err != nil {
+
+	}
+
+	response := responses.FullReportSummary{
+		Student: responses.LeanStudent{
+			Number:     reportSummary.Student.Number,
+			Surname:    reportSummary.Student.Surname,
+			SecondName: reportSummary.Student.SecondName,
+			OtherName:  reportSummary.Student.OtherName,
+			Gender:     reportSummary.Student.Gender,
+		},
+		Grade:             reportSummary.Grade,
+		LearningAreas:     la,
+		Stream:            "",
+		Class:             campusClass.ClassName,
+		ClassAbbreviation: campusClass.ClassAbbreviation,
+		School:            campusClass.Campus.School,
+		Campus:            campusClass.Campus,
+		StudyPeriod:       reportSummary.StudyPeriod.StudyPeriodName,
+	}
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
 
 func CreateReportScore(ctx *gin.Context) {
@@ -357,49 +424,6 @@ func CreateReportScore(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Report score created successfully"})
-}
-
-func FetchReportScores(ctx *gin.Context) {
-	var reportScores []models.ReportScore
-	if err := config.DB.Find(&reportScores).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report scores"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"data": reportScores})
-
-}
-
-func CreateReportScoreSummary(ctx *gin.Context) {
-	var payload requests.ReportScoreSummaryRequest
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
-		return
-	}
-
-	err := payload.ValidateReportScoreSummary()
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	// Save report score summary
-	reportScoreSummary := models.ReportScoreSummary{
-		ReportSummaryNumber:  payload.ReportSummaryNumber,
-		AssessmentAreaNumber: payload.AssessmentAreaNumber,
-		Aggregate:            payload.Aggregate,
-		Grade:                payload.Grade,
-		Summation:            payload.Summation,
-		UserNumber:           ctx.Request.Header["User-Number"][0],
-		Code:                 payload.Code,
-	}
-
-	if err := config.DB.Create(&reportScoreSummary).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score summary"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Report score summary created successfully"})
 }
 
 func FetchReportScoreSummaries(ctx *gin.Context) {
@@ -645,13 +669,15 @@ func GenerateReportSummary(ctx *gin.Context) {
 	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
 
 	if err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get assessment grade"})
-		return
+		//tx.Rollback()
+		//ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get assessment grade"})
+		//return
+		reportSummary.Grade = "N/A"
+	} else {
+		reportSummary.Grade = assessmentGrade.Name
 	}
 
 	reportSummary.Aggregate = totalAggregates
-	reportSummary.Grade = assessmentGrade.Name
 
 	if err := tx.Save(&reportSummary).Error; err != nil {
 		tx.Rollback()

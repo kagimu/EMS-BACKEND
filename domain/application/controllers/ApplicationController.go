@@ -6,8 +6,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 func FetchApplication(c *gin.Context) {
@@ -23,22 +24,22 @@ func FetchApplication(c *gin.Context) {
 	var applicationNumber = c.Param("application_number")
 
 	if err := config.DB.Model(&models.Application{}).
-		Preload("Student").
-		Preload("Student.CampusClass").
-		Preload("Parent").
-		Preload("PreviousSchools").
-		Where("number = ?", applicationNumber).
-		First(&application).
-		Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
-			return
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal server error",
-			})
-			return
-		}
+		Preload("Parent").Where("number = ?", applicationNumber).First(&application).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+		return
+
+	}
+
+	var student = studentModel.Student{}
+	var previousSchools []previousSchoolModel.PreviousSchool
+
+	if err := config.DB.Preload("PreferredCampus").Where("application_number = ?", applicationNumber).First(&student).Error; err == nil {
+		application.Student = student
+	}
+
+	if err := config.DB.Preload("Classes").Where("application_number = ?", applicationNumber).Find(&previousSchools).Error; err == nil {
+		application.PreviousSchools = previousSchools
+
 	}
 
 	c.JSON(http.StatusOK, application)
@@ -57,7 +58,7 @@ func FetchApplications(c *gin.Context) {
 	var applications []models.Application
 
 	//check for user account type and return applications accordingly
-	if user.Type == "USER" {
+	if user.Type == "User" {
 
 		if err := config.DB.Model(&models.Application{}).Where("user_number = ?", user.Number).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
