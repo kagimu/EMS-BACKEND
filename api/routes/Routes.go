@@ -257,6 +257,7 @@ func SetupRoutes() *gin.Engine {
 			academicYear.GET("by-level", academicYearController.AcademicYearsByLevel)
 			academicYear.GET("by-campus-class", academicYearController.AcademicYearsByCampusClass)
 			academicYear.POST("/new", academicYearController.NewAcademicYear)
+			academicYear.POST("/edit", academicYearController.EditAcademicYear)
 			academicYear.POST("/delete", academicYearController.DeleteAcademicYear)
 		}
 		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
@@ -265,6 +266,7 @@ func SetupRoutes() *gin.Engine {
 		studyPeriod := main.Group("/study-period")
 		{
 			studyPeriod.POST("new", studyPeriodController.NewStudyPeriod)
+			studyPeriod.POST("edit", studyPeriodController.EditStudyPeriod)
 			studyPeriod.GET("info", studyPeriodController.FetchStudyPeriodInfo)
 			studyPeriod.GET("all", studyPeriodController.FetchStudyPeriod)
 			studyPeriod.GET("by-academic-year", studyPeriodController.FetchStudyPeriodByAcademicYear)
