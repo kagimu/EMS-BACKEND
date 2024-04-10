@@ -11,10 +11,12 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strconv"
@@ -307,7 +309,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 	reportSummaryNumber := ctx.Param("report_summary_number")
 
 	var reportSummary models.ReportSummary
-	if err := config.DB.Where("number = ?", reportSummaryNumber).Preload("Student").First(&reportSummary).Error; err != nil {
+	if err := config.DB.Where("number = ?", reportSummaryNumber).Preload("Student").Preload("StudyPeriod").First(&reportSummary).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summary"})
 		return
 	}
@@ -317,36 +319,58 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 	// get curricullum class number from the campus class number
 
 	var campusClass classModel.CampusClass
-	if err := config.DB.Where("number = ?", reportSummary.CampusClassNumber).First(&campusClass).Error; err != nil {
+	if err := config.DB.Preload("CurriculumClass.CurriculumLevel").Preload("Campus").Preload("Campus.School").Where("number = ?", reportSummary.CampusClassNumber).First(&campusClass).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus class"})
 		return
 	}
 
-	var assessmentAreas []assessmentAreaModel.AssessmentArea
-	if err := config.DB.Where("curriculum_class_number = ?", campusClass.CurriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
+	var learningAreas []learningAreaModel.LearningArea
+	if err := config.DB.Where("curriculum_number = ?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).Find(&learningAreas).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch learning areas"})
 		return
 	}
 
-	for _, assessmentArea := range assessmentAreas {
+	var la []responses.LearningArea
+	for _, learningArea := range learningAreas {
 
-		var reportScoreSummary models.ReportScoreSummary
-		if err := config.DB.Where("report_summary_number = ? AND assessment_area_number =? ", reportSummaryNumber, assessmentArea.Number).First(&reportScoreSummary).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report score summaries"})
+		var assessmentAreas []assessmentAreaModel.AssessmentArea
+		if err := config.DB.Where("assessment_areas.curriculum_class_number = ?", campusClass.CurriculumClassNumber).
+			Joins("JOIN subjects on subjects.number = assessment_areas.subject_number AND subjects.curriculum_number=?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).Find(&assessmentAreas).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
 			return
 		}
 
-		var reportScores []models.ReportScore
-		if err := config.DB.Where("report_summary_number = ? AND assessment_area_number = ? ", reportSummaryNumber, assessmentArea.Number).Find(&reportScores).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report scores"})
-			return
+		for _, assessmentArea := range assessmentAreas {
+
+			var reportScoreSummary models.ReportScoreSummary
+			if err := config.DB.Where("report_summary_number = ? AND assessment_area_number =? ", reportSummaryNumber, assessmentArea.Number).First(&reportScoreSummary).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report score summaries"})
+				return
+			}
+
+			var reportScores []models.ReportScore
+			if err := config.DB.Where("report_summary_number = ? AND assessment_area_number = ? ", reportSummaryNumber, assessmentArea.Number).Find(&reportScores).Error; err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report scores"})
+				return
+			}
+
+			assessments = append(assessments, responses.Assessments{
+				Name:               assessmentArea.Name,
+				ReportScores:       reportScores,
+				ReportScoreSummary: reportScoreSummary,
+			})
 		}
 
-		assessments = append(assessments, responses.Assessments{
-			Name:               assessmentArea.Name,
-			ReportScores:       reportScores,
-			ReportScoreSummary: reportScoreSummary,
+		la = append(la, responses.LearningArea{
+			Name:        learningArea.Name,
+			Assessments: assessments,
 		})
+
+	}
+
+	var school schoolModel.School
+	if err := config.DB.Where("number = ?", campusClass.Campus.SchoolNumber).First(&school).Error; err != nil {
+
 	}
 
 	response := responses.FullReportSummary{
@@ -357,10 +381,14 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 			OtherName:  reportSummary.Student.OtherName,
 			Gender:     reportSummary.Student.Gender,
 		},
-		Grade:       reportSummary.Grade,
-		Assessments: assessments,
-		Stream:      "",
-		Class:       campusClass.ClassName,
+		Grade:             reportSummary.Grade,
+		LearningAreas:     la,
+		Stream:            "",
+		Class:             campusClass.ClassName,
+		ClassAbbreviation: campusClass.ClassAbbreviation,
+		School:            campusClass.Campus.School,
+		Campus:            campusClass.Campus,
+		StudyPeriod:       reportSummary.StudyPeriod.StudyPeriodName,
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }

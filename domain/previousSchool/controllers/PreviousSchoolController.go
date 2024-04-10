@@ -83,6 +83,18 @@ func CreatePreviousSchools(c *gin.Context) {
 			}
 		}
 
+		// set application status of the application to SUBMITTED
+
+		application.Status = "SUBMITTED"
+		if err := tx.Save(&application).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "failed to update application status",
+			})
+			return
+
+		}
+
 	}
 
 	tx.Commit()
@@ -101,19 +113,35 @@ func UpdatePreviousSchool(ctx *gin.Context) {
 		return
 	}
 	applicationNumber := ctx.Param("application_number")
-	var previousSchool []previousSchoolModel.PreviousSchool
-	if err := config.DB.Where("application_number = ?", applicationNumber).Find(&previousSchool).Error; err != nil {
+	var previousSchools []previousSchoolModel.PreviousSchool
+	if err := config.DB.Where("application_number = ?", applicationNumber).Find(&previousSchools).Error; err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Previous schools not found"})
 		return
 	}
 
 	tx := config.DB.Begin()
 
-	// remove previous school classes
-	if err := tx.Where("application_number = ?", applicationNumber).Delete(&previousSchoolModel.PreviousSchoolClass{}).Error; err != nil {
+	for _, prevSchool := range previousSchools {
+
+		var previousSchoolClasses previousSchoolModel.PreviousSchoolClass
+
+		// remove previous school classes
+		if err := tx.Where("previous_school_number = ?", prevSchool.Number).Delete(&previousSchoolClasses).Error; err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to update previous school classes"})
+			return
+		}
+
+		// remove previous schools
+
+	}
+	var previousSchool previousSchoolModel.PreviousSchool
+
+	if err := tx.Where("application_number = ?", applicationNumber).Delete(&previousSchool).Error; err != nil {
 		tx.Rollback()
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to update previous school classes"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to update previous schools"})
 		return
+
 	}
 
 	for _, item := range previousSchoolInfo {

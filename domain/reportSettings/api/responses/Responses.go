@@ -57,27 +57,27 @@ type Assessments struct {
 	ReportScoreSummary models.ReportScoreSummary `json:"report_score_summary"`
 }
 
+type LearningArea struct {
+	Name        string        `json:"name"`
+	Assessments []Assessments `json:"assessments"`
+}
+
 type FullReportSummary struct {
-	Student      LeanStudent   `json:"student"`
-	Grade        string        `json:"grade"`
-	Assessments  []Assessments `json:"assessments"`
-	Class        string        `json:"class"`
-	Stream       string        `json:"stream"`
-	SchoolName   string        `json:"school_name"`
-	CampusName   string        `json:"campus_name"`
-	LevelName    string        `json:"level_name"`
-	School       LeanSchool    `json:"school"`
-	Campus       LeanCampus    `json:"campus"`
-	StudyPeriod  string        `json:"study_period"`
-	AcademicYear string        `json:"academic_year"`
+	Student           LeanStudent    `json:"student"`
+	Grade             string         `json:"grade"`
+	LearningAreas     []LearningArea `json:"learning_areas"`
+	Class             string         `json:"class"`
+	ClassAbbreviation string         `json:"class_abbreviation"`
+	Stream            string         `json:"stream"`
+	SchoolName        string         `json:"school_name"`
+	CampusName        string         `json:"campus_name"`
+	LevelName         string         `json:"level_name"`
+	School            LeanSchool     `json:"school"`
+	Campus            LeanCampus     `json:"campus"`
+	StudyPeriod       string         `json:"study_period"`
+	AcademicYear      string         `json:"academic_year"`
 }
 
-type LeanSchool struct {
-	Number string `json:"number"`
-	Name   string `json:"name"`
-}
+type LeanSchool interface{}
 
-type LeanCampus struct {
-	Number string `json:"number"`
-	Name   string `json:"name"`
-}
+type LeanCampus interface{}
