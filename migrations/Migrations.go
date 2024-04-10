@@ -172,6 +172,7 @@ func Init() error {
 		&cateringModels.Feeding{},
 		&cateringModels.FeedingSessionItem{},
 		&cateringModels.Stocking{},
+		&cateringModels.FeedingGroupUser{},
 	)
 
 	if err != nil {

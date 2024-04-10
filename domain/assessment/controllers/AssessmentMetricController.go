@@ -73,7 +73,7 @@ func FetchAssessmentMetrics(c *gin.Context) {
 		filters.ByStudyPeriodNumber(studyPeriodNumber),
 		filters.ByAssessmentAreaNumber(assessmentAreaNumber),
 	).Preload("AssessmentArea").Preload("Metric").Preload("CampusClass").Find(&assessmentMetrics).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics " + err.Error()})
 		return
 	}
 

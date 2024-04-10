@@ -8,7 +8,6 @@ import (
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -132,20 +131,8 @@ func FetchAllInterviews(c *gin.Context) {
 		return
 	}
 
-	paginationParams := helpers.ParsePaginationParams(c)
-
 	var interviews []models.Interview
-	query := config.DB.Model(&models.Interview{})
-
-	_, err := helpers.Paginate(query, paginationParams)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Pagination failed",
-		})
-		return
-	}
-
-	if err := query.Find(&interviews).Error; err != nil {
+	if err := config.DB.Find(&interviews).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interviews"})
 		return
 	}

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
@@ -24,10 +25,16 @@ func CreateFeedingGroupPerDay(c *gin.Context) {
 		return
 	}
 
-	saveFeedingGroupPerDay := models.FeedingGroupPerDay{
+	dayOfTheWeek, err := time.Parse("Monday", payload.Day)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse date"})
+		return
+	}
+
+  saveFeedingGroupPerDay := models.FeedingGroupPerDay{
 		Number:             uuid.NewV4().String(),
 		FeedingGroupNumber: payload.FeedingGroupNumber,
-		Day:                payload.Day,
+		Day:                dayOfTheWeek,
 		UserNumber:         user.Number,
 	}
 

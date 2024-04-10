@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
@@ -50,9 +49,9 @@ func main() {
 	}(sqlDB)
 
 	//All auto migrations
-	if err := migrations.Init(); err != nil {
-		log.Println(err)
-	}
+	//if err := migrations.Init(); err != nil {
+	//	log.Println(err)
+	//}
 
 	rawJSON := []byte(`{
 	  "level": "debug",

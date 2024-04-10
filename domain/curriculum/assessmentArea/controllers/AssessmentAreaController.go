@@ -30,6 +30,15 @@ func CreateAssessmentArea(c *gin.Context) {
 		return
 	}
 
+	//validate for composite unique curriculum_class_number and subject number
+
+	var assessmentArea models.AssessmentArea
+	if err := config.DB.Where("curriculum_class_number = ? AND subject_number = ?", payload.CurriculumClassNumber, payload.SubjectNumber).First(&assessmentArea).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment area already exists for the specified curriculum class and subject"})
+		return
+
+	}
+
 	saveAssessmentArea := models.AssessmentArea{
 		Number:                uuid.NewV4().String(),
 		CurriculumClassNumber: payload.CurriculumClassNumber,
