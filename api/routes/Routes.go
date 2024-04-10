@@ -540,7 +540,7 @@ func SetupRoutes() *gin.Engine {
 			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
 			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
 			gradingStandard.POST("attach-assessment-area", aggregateScaleController.AttachAssessmentAreas)
-			gradingStandard.GET("assessment-areas", aggregateScaleController.FetchAssessmentAreasByGradingStandard)
+			gradingStandard.POST("assessment-areas", aggregateScaleController.FetchAssessmentAreasByGradingStandard)
 		}
 
 		enrollment := main.Group("enrollment")
@@ -644,6 +644,8 @@ func SetupRoutes() *gin.Engine {
 			// Feeding sessions
 			catering.POST("feeding-sessions", cateringController.CreateFeedingSession)
 			catering.GET("feeding-sessions", cateringController.FetchFeedingSessions)
+
+			// Feeding session per day
 			catering.POST("feeding-sessions-per-day", cateringController.CreateFeedingSessionPerDay)
 			catering.GET("feeding-sessions-per-day", cateringController.FetchFeedingSessionsPerDay)
 
@@ -654,6 +656,8 @@ func SetupRoutes() *gin.Engine {
 			// Feeding groups
 			catering.POST("feeding-groups", cateringController.CreateFeedingGroup)
 			catering.GET("feeding-groups", cateringController.FetchFeedingGroups)
+
+			// Feeding groups per day
 			catering.POST("feeding-groups-per-day", cateringController.CreateFeedingGroupPerDay)
 			catering.GET("feeding-groups-per-day", cateringController.FetchFeedingGroupsPerDay)
 
@@ -677,6 +681,9 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("stocking", cateringController.CreateStocking)
 			catering.GET("stocking", cateringController.FetchStockings)
 
+			// Feeding group users
+			catering.POST("feeding-group-users", cateringController.CreateFeedingGroupUser)
+			catering.GET("feeding-group-users", cateringController.FetchFeedingGroupUsers)
 		}
 	}
 

@@ -6,7 +6,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -46,31 +45,34 @@ func FetchApplication(c *gin.Context) {
 }
 
 func FetchApplications(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
+	user, err := commons.GetUserFromHeader(c)
+
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
 		})
 		return
 	}
 
-	paginationParams := helpers.ParsePaginationParams(c)
-
 	var applications []models.Application
-	query := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchools")
 
-	_, err := helpers.Paginate(query, paginationParams)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Pagination failed",
-		})
-		return
-	}
+	//check for user account type and return applications accordingly
+	if user.Type == "USER" {
 
-	if err := query.Find(&applications).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "application fetching failed",
-		})
-		return
+		if err := config.DB.Model(&models.Application{}).Where("user_number = ?", user.Number).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "application fetching failed",
+			})
+			return
+		}
+
+	} else {
+		if err := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "application fetching failed",
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

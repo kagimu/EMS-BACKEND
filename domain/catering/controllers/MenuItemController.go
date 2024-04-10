@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -30,6 +31,11 @@ func CreateMenuItem(c *gin.Context) {
 		return
 	}
 
+	if payload.Type != constants.TYPE_ASSEMBLED && payload.Type != constants.TYPE_ITEM {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid menu item type"})
+		return
+	}
+
 	saveMenuItem := models.MenuItem{
 		Number:              uuid.NewV4().String(),
 		Name:                payload.Name,
@@ -45,7 +51,7 @@ func CreateMenuItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": saveMenuItem})
+	c.JSON(http.StatusOK, gin.H{"data": "Menu item saved successfully"})
 }
 
 func FetchMenuItems(c *gin.Context) {
