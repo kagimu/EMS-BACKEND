@@ -35,6 +35,13 @@ func CreateUnitOfMeasure(c *gin.Context) {
 		Code:       payload.Code,
 		UserNumber: user.Number,
 	}
+
+	var duplicate models.UnitOfMeasure
+	if err := config.DB.Where("name = ?", payload.Name).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unit of measure with this name already exists"})
+		return
+	}
+
 	if err := config.DB.Create(&saveUnitOfMeaure).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create unit of measure"})
 		return

@@ -5,6 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -55,10 +56,22 @@ func FetchItemAssemblies(c *gin.Context) {
 	}
 
 	var itemAssesmblies []models.ItemAssembly
-	if err := config.DB.Find(&itemAssesmblies).Error; err != nil {
+	if err := config.DB.Preload("PrimaryItem").Preload("SecondaryItem").Find(&itemAssesmblies).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": itemAssesmblies})
+	var response []responses.ItemAssemblyResponse
+	for _, itemAssembly := range itemAssesmblies {
+		response = append(response, responses.ItemAssemblyResponse{
+			Number:              itemAssembly.Number,
+			PrimaryItemNumber:   itemAssembly.PrimaryItemNumber,
+			PrimaryItemName:     itemAssembly.SecondaryItem.Name,
+			SecondaryItemNumber: itemAssembly.SecondaryItemNumber,
+			SecondaryItemName:   itemAssembly.SecondaryItem.Name,
+			Quantity:            itemAssembly.Quantity,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }

@@ -20,12 +20,12 @@ func CreateFeedingSession(c *gin.Context) {
 
 	var payload requests.FeedingSessionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input", "err": err.Error()})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate input", "err": err.Error()})
 		return
 	}
 
@@ -38,8 +38,14 @@ func CreateFeedingSession(c *gin.Context) {
 		UserNumber:   user.Number,
 	}
 
+	var duplicateFeedingSession models.FeedingSession
+	if err := config.DB.Where("name = ?", payload.Name).First(&duplicateFeedingSession).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding session name already exists"})
+		return
+	}
+
 	if err := config.DB.Create(&saveFeedingSession).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session", "err": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding session saved successfully"})
