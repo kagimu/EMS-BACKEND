@@ -5,6 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -35,7 +36,7 @@ func CreateStocking(c *gin.Context) {
 		}
 
 		if err := config.DB.Create(&saveStock).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview grade"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create stocking"})
 			return
 		}
 	}
@@ -51,10 +52,24 @@ func FetchStockings(c *gin.Context) {
 	}
 
 	var stockings []models.Stocking
-	if err := config.DB.Find(&stockings).Error; err != nil {
+	if err := config.DB.Preload("MenuItem").Preload("Campus").Find(&stockings).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": stockings})
+	var response []responses.StockingResponse
+	for _, stocking := range stockings {
+		response = append(response, responses.StockingResponse{
+			Number:         stocking.Number,
+			Quantity:       stocking.Quantity,
+			UnitCost:       stocking.UnitCost,
+			MenuItemNumber: stocking.MenuItemNumber,
+			CampusNumber:   stocking.CampusNumber,
+			CampusName:     stocking.Campus.Name,
+			MenuItemName:   stocking.MenuItem.Name,
+			MenuItemType:   stocking.MenuItem.Type,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
