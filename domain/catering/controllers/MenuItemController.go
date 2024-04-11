@@ -46,6 +46,17 @@ func CreateMenuItem(c *gin.Context) {
 		UserNumber:          user.Number,
 	}
 
+	var duplicateMenuItem models.MenuItem
+	if err := config.DB.Where("code = ?", payload.Code).First(&duplicateMenuItem).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item code already exists"})
+		return
+	}
+
+	if err := config.DB.Where("name = ?", payload.Name).First(&duplicateMenuItem).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item name already exists"})
+		return
+	}
+
 	if err := config.DB.Create(&saveMenuItem).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item"})
 		return

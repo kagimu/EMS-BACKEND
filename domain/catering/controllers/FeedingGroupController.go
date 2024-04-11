@@ -45,6 +45,12 @@ func CreateFeedingGroup(c *gin.Context) {
 			UserNumber:   user,
 		}
 
+		var duplicateFeedingGroup models.FeedingGroup
+		if err := config.DB.Where("name = ?", payload.Name).First(&duplicateFeedingGroup).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding group name already exists"})
+			return
+		}
+
 		if err := config.DB.Create(&saveFeedingGroup).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group"})
 			return
