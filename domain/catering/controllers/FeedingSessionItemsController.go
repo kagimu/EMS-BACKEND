@@ -35,7 +35,7 @@ func CreateFeedingSessionItemController(c *gin.Context) {
 		}
 
 		if err := config.DB.Create(&saveItemAssembly).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create feeding session item", "err": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create feeding session item"})
 			return
 		}
 	}

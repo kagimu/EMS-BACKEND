@@ -20,12 +20,12 @@ func CreateFeedingSession(c *gin.Context) {
 
 	var payload requests.FeedingSessionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input", "err": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate input", "err": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -45,7 +45,7 @@ func CreateFeedingSession(c *gin.Context) {
 	}
 
 	if err := config.DB.Create(&saveFeedingSession).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session", "err": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding session saved successfully"})

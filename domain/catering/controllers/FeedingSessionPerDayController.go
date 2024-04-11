@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -30,23 +30,18 @@ func CreateFeedingSessionPerDay(c *gin.Context) {
 		return
 	}
 
-	dayOfWeek, err := time.Parse("Monday", payload.Day)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse day of the week"})
-		return
-	}
-
-	saveFeedingSessionPerDay := models.FeedingGroupPerDay{
-		Number:             uuid.NewV4().String(),
-		FeedingGroupNumber: payload.FeedingSessionNumber,
-		Day:                dayOfWeek,
-		UserNumber:         user.Number,
+	saveFeedingSessionPerDay := models.FeedingSessionPerDay{
+		Number:               uuid.NewV4().String(),
+		FeedingSessionNumber: payload.FeedingSessionNumber,
+		Day:                  payload.Day,
+		UserNumber:           user.Number,
 	}
 
 	if err := config.DB.Create(&saveFeedingSessionPerDay).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session on a specified day"})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding session on the given day has been created"})
 }
 
@@ -58,10 +53,19 @@ func FetchFeedingSessionsPerDay(c *gin.Context) {
 	}
 
 	var feedingSessionsPerDay []models.FeedingSessionPerDay
-	if err := config.DB.Find(&feedingSessionsPerDay).Error; err != nil {
+	if err := config.DB.Preload("FeedingSession").Find(&feedingSessionsPerDay).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding sessions per day"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": feedingSessionsPerDay})
+	var response []responses.FeedingSessionPerDayResponse
+	for _, feedingSession := range feedingSessionsPerDay {
+		response = append(response, responses.FeedingSessionPerDayResponse{
+			Number:               feedingSession.Number,
+			FeedingSessionNumber: feedingSession.FeedingSessionNumber,
+			Day:                  feedingSession.Day,
+			FeedingSessionName:   feedingSession.FeedingSession.Name,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
