@@ -5,6 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -26,14 +27,15 @@ func CreateFeedingSessionItemController(c *gin.Context) {
 
 	for _, feedingItem := range payload.MenuItemQuantity {
 		saveItemAssembly := models.FeedingSessionItem{
-			Number:         uuid.NewV4().String(),
-			MenuItemNumber: feedingItem.MenuItemNumber,
-			Quantity:       feedingItem.Quantity,
-			UserNumber:     user.Number,
+			Number:               uuid.NewV4().String(),
+			FeedingSessionNumber: payload.FeedingSessionNumber,
+			MenuItemNumber:       feedingItem.MenuItemNumber,
+			Quantity:             feedingItem.Quantity,
+			UserNumber:           user.Number,
 		}
 
 		if err := config.DB.Create(&saveItemAssembly).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview grade"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create feeding session item"})
 			return
 		}
 	}
@@ -49,10 +51,22 @@ func FetchFeedingSessionItems(c *gin.Context) {
 	}
 
 	var feedingSessionItems []models.FeedingSessionItem
-	if err := config.DB.Find(&feedingSessionItems).Error; err != nil {
+	if err := config.DB.Preload("FeedingSession").Preload("MenuItem").Find(&feedingSessionItems).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": feedingSessionItems})
+	var response []responses.FeedingSessionItemResponse
+	for _, feedingSessionItem := range feedingSessionItems {
+		response = append(response, responses.FeedingSessionItemResponse{
+			Number:               feedingSessionItem.Number,
+			FeedingSessionNumber: feedingSessionItem.FeedingSession.Number,
+			FeedingSessionName:   feedingSessionItem.FeedingSession.Name,
+			FeedingSessionStatus: feedingSessionItem.FeedingSession.Status,
+			MenuItemNumber:       feedingSessionItem.MenuItemNumber,
+			MenuItemName:         feedingSessionItem.MenuItem.Name,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }

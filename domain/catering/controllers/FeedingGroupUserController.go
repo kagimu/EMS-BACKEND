@@ -32,6 +32,7 @@ func CreateFeedingGroupUser(c *gin.Context) {
 		saveFeedingGroupUser := models.FeedingGroupUser{
 			Number:             uuid.NewV4().String(),
 			FeedingGroupNumber: payload.FeedingGroupNumber,
+			Status:             payload.Status,
 			UserNumber:         user,
 		}
 
@@ -64,7 +65,7 @@ func FetchFeedingGroupUsers(c *gin.Context) {
 			UserNumber:         feedingGroupUser.UserNumber,
 			Gender:             feedingGroupUser.User.Gender,
 			Photo:              feedingGroupUser.User.Photo,
-			Name:               feedingGroupUser.User.FirstName + feedingGroupUser.User.SecondName + feedingGroupUser.User.LastName,
+			Name:               feedingGroupUser.User.FirstName + " " + feedingGroupUser.User.SecondName + " " + feedingGroupUser.User.LastName,
 			FeedingGroupNumber: feedingGroupUser.FeedingGroupNumber,
 			FeedingGroupName:   feedingGroupUser.FeedingGroup.Name,
 			Status:             feedingGroupUser.Status,

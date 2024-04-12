@@ -25,7 +25,7 @@ func CreateFeedingSession(c *gin.Context) {
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -36,6 +36,12 @@ func CreateFeedingSession(c *gin.Context) {
 		CampusNumber: payload.CampusNumber,
 		Code:         payload.Code,
 		UserNumber:   user.Number,
+	}
+
+	var duplicateFeedingSession models.FeedingSession
+	if err := config.DB.Where("name = ?", payload.Name).First(&duplicateFeedingSession).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding session name already exists"})
+		return
 	}
 
 	if err := config.DB.Create(&saveFeedingSession).Error; err != nil {
