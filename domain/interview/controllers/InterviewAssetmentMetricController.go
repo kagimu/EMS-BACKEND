@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -69,7 +70,8 @@ func CreateInterviewAssessmentMetric(c *gin.Context) {
 
 func FetchInterviewAssessmentMetrics(c *gin.Context) {
 	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
-	if err := config.DB.Preload("AssessmentMetric").Preload("Interview").Find(&interviewAssessmentMetrics).Error; err != nil {
+	interviewNumber := c.Param("interview_number")
+	if err := config.DB.Scopes(filters.ByInterviewNumber(interviewNumber)).Preload("AssessmentMetric").Preload("Interview").Find(&interviewAssessmentMetrics).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interview assessment metrics"})
 		return
 	}
