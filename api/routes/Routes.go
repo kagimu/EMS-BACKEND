@@ -550,7 +550,6 @@ func SetupRoutes() *gin.Engine {
 		{
 			enrollment.POST("", enrollmentController.CreateEnrollment)
 			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
-			enrollment.GET("campus", enrollmentController.EnrolledStudentsByCampus)
 		}
 
 		staff := main.Group("staff-management")
