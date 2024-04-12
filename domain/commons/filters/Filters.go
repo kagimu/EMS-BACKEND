@@ -100,3 +100,30 @@ func ByInterviewNumber(interview string) func(db *gorm.DB) *gorm.DB {
 		return db
 	}
 }
+
+func ByStudentNumber(student string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if student != "" {
+			return db.Where("student_number = ?", student)
+		}
+		return db
+	}
+}
+
+func ByUserNumber(user string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if user != "" {
+			return db.Where("user_number = ?", user)
+		}
+		return db
+	}
+}
+
+func ByStatus(status string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if status != "" {
+			return db.Where("status = ?", status)
+		}
+		return db
+	}
+}

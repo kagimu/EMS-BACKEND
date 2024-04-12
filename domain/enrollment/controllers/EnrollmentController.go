@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"gorm.io/gorm"
 	"net/http"
 
@@ -121,28 +123,46 @@ func FetchEnrolledStudents(c *gin.Context) {
 		return
 	}
 
-	var enrolledStudents []models.Enrollment
-	if err := config.DB.Preload("School").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch enrolled students"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": enrolledStudents})
-}
-
-func EnrolledStudentsByCampus(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var enrolledStudents []models.Enrollment
+	schoolNumber := c.Query("school_number")
+	streamNumber := c.Query("stream_number")
 	campusNumber := c.Query("campus_number")
+	campusClassNumber := c.Query("campus_class_number")
+	studyPeriodNumber := c.Query("study_period_number")
+	status := c.Query("status")
 
-	if err := config.DB.Where("campus_number = ?", campusNumber).Find(&enrolledStudents).Error; err != nil {
+	var enrolledStudents []models.Enrollment
+	if err := config.DB.
+		Scopes(
+			filters.BySchoolNumber(schoolNumber),
+			filters.ByStreamNumber(streamNumber),
+			filters.ByCampusNumber(campusNumber),
+			filters.ByCampusClassNumber(campusClassNumber),
+			filters.ByStudyPeriodNumber(studyPeriodNumber),
+			filters.ByStatus(status),
+		).
+		Preload("School").Preload("CampusClass").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch enrolled students"})
 		return
+	}
+
+	var students []responses.Enrollment
+
+	for _, enrollment := range enrolledStudents {
+		students = append(students, responses.Enrollment{
+			StudentSurname:    enrollment.Student.Surname,
+			StudentSecondName: enrollment.Student.SecondName,
+			StudentOtherName:  enrollment.Student.OtherName,
+			StudentNumber:     enrollment.Student.Number,
+			Number:            enrollment.Number,
+			School:            enrollment.School.Name,
+			Campus:            enrollment.Campus.Name,
+			StudyPeriod:       enrollment.StudyPeriod.StudyPeriodName,
+			Status:            enrollment.Status,
+			EnrollmentDate:    enrollment.EnrollmentDate,
+			ContinuingStudent: enrollment.ContinuingStudent,
+			Class:             enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")",
+			Adn:               enrollment.Student.ADN,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": enrolledStudents})
