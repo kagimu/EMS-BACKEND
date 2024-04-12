@@ -186,7 +186,7 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 				Name:    v.AssessmentAreaName,
 				Comment: comment,
 				Score:   int(assessment.ActualScore),
-				Grade:   "Not Graded",
+				Grade:   "Not Graded , no scales ",
 			})
 
 		} else {
@@ -197,13 +197,6 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 						Score:   int(assessment.ActualScore),
 						Grade:   val.Name,
 						Comment: comment,
-					})
-				} else {
-					results = append(results, StudentInterviewResults{
-						Name:    v.AssessmentAreaName,
-						Comment: comment,
-						Score:   int(assessment.ActualScore),
-						Grade:   "Not Graded",
 					})
 				}
 			}
