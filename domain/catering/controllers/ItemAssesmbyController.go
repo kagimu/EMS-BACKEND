@@ -30,19 +30,43 @@ func CreateItemAssembly(c *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin()
+
+	menuItemNumber := uuid.NewV4().String()
+	saveMenuItem := models.MenuItem{
+		Number:              menuItemNumber,
+		Name:                payload.Name,
+		Code:                payload.Code,
+		Type:                payload.Type,
+		CampusNumber:        payload.CampusNumber,
+		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
+	}
+
+	if err := tx.Create(&saveMenuItem).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item"})
+		return
+	}
+
 	for _, secondaryItem := range payload.SecondaryItemQuantity {
 		saveItemAssembly := models.ItemAssembly{
 			Number:              uuid.NewV4().String(),
-			PrimaryItemNumber:   payload.PrimaryItemNumber,
+			PrimaryItemNumber:   menuItemNumber,
 			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
 			Quantity:            secondaryItem.Quantity,
 			UserNumber:          user.Number,
 		}
 
-		if err := config.DB.Create(&saveItemAssembly).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview grade"})
+		if err := tx.Create(&saveItemAssembly).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create interview grade"})
 			return
 		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create assesmbly items"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Item assembly created successfully"})

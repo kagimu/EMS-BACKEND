@@ -312,6 +312,12 @@ func SetupRoutes() *gin.Engine {
 			timetable.GET("subjects-by-class-level-number/:class_level_number", timetableController.FetchSubjectsByClassLevelNumber)
 			timetable.GET("get-classes-by-campus-number-and-level-number", timetableController.FetchClassLevelsByCampusNumberAndLevelNumber)
 			timetable.GET("fetch-levels-by-campus-number/:campus_number", timetableController.FetchLevelsByCampusNumber)
+			timetable.GET("studying-timeblocks", timetableController.CreateStudyingTimeBlock)
+			timetable.POST("studying-timeblocks", timetableController.FetchStudyingTimeBlocks)
+			timetable.POST("studying-timetable", timetableController.CreateStudyingTimeTable)
+			timetable.GET("studying-timetable", timetableController.FetchStudyingTimeTables)
+			timetable.POST("study-periods", timetableController.CreateStudyPeriod)
+			timetable.GET("study-periods", timetableController.FetchStudyPeriods)
 		}
 
 		stream := main.Group("/stream")
