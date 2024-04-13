@@ -40,11 +40,23 @@ func CreateItemAssembly(c *gin.Context) {
 		Type:                payload.Type,
 		CampusNumber:        payload.CampusNumber,
 		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
+		UserNumber:          user.Number,
+	}
+
+	var duplicateMenuItem models.MenuItem
+	if err := config.DB.Where("code = ?", payload.Code).First(&duplicateMenuItem).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item code already exists"})
+		return
+	}
+
+	if err := config.DB.Where("name = ?", payload.Name).First(&duplicateMenuItem).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item name already exists"})
+		return
 	}
 
 	if err := tx.Create(&saveMenuItem).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item", "err": err.Error()})
 		return
 	}
 
@@ -59,13 +71,13 @@ func CreateItemAssembly(c *gin.Context) {
 
 		if err := tx.Create(&saveItemAssembly).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create interview grade"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assembly item", "err": err.Error()})
 			return
 		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create assesmbly items"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create assesmbly items", "err": err.Error()})
 		return
 	}
 

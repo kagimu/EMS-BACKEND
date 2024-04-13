@@ -7,12 +7,8 @@ import (
 
 type ItemAssembly struct {
 	gorm.Model
-	Number              string          `json:"number" gorm:"size:36;unique;not null"`
-	Name                string          `json:"name" gorm:"size:50;"`
-	Code                uint64          `json:"code" gorm:"unique;not null"`
-	Type                string          `json:"type" gorm:"size:50;not null"`
-	CampusNumber        string          `json:"campus_number" gorm:"size:36;not null"`
-	UnitOfMeasureNumber string          `json:"unit_of_measure_number" gorm:"size:36;not null"`
+	Number string `json:"number" gorm:"size:36;unique;not null"`
+
 	PrimaryItemNumber   string          `json:"primary_item_number" gorm:"size:36;not null"`
 	PrimaryItem         MenuItem        `gorm:"foreignKey:PrimaryItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	SecondaryItemNumber string          `json:"secondary_item_number" gorm:"size:36;not null"`
