@@ -167,7 +167,13 @@ func FetchMenuItemDetails(c *gin.Context) {
 	}
 
 	if menuItem.Type == constants.TYPE_ASSEMBLED {
-		for _, menuItem := range menuItem.ItemAssemblies {
+		var ItemAssemblies []models.ItemAssembly
+		if err := config.DB.Where("primary_item_number = ?", menuItem.Number).Find(&ItemAssemblies).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies"})
+			return
+		}
+
+		for _, menuItem := range ItemAssemblies {
 			parts = append(parts, responses.Part{
 				Number:   menuItem.Number,
 				Name:     menuItem.SecondaryItemName,
