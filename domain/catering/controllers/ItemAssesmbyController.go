@@ -56,7 +56,7 @@ func CreateItemAssembly(c *gin.Context) {
 
 	if err := tx.Create(&saveMenuItem).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item", "err": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item"})
 		return
 	}
 
@@ -71,13 +71,13 @@ func CreateItemAssembly(c *gin.Context) {
 
 		if err := tx.Create(&saveItemAssembly).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assembly item", "err": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assembly item"})
 			return
 		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create assesmbly items", "err": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create assesmbly items"})
 		return
 	}
 
@@ -110,4 +110,40 @@ func FetchItemAssemblies(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": response})
+}
+
+func EditItemAssembly(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateItemAssembly
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	itemAssesmblyNumber := c.Query("item_assembly_number")
+	var itemAssembly models.ItemAssembly
+	if err := config.DB.Where("number = ?", itemAssesmblyNumber).First(&itemAssembly).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Item assembly not found"})
+		return
+	}
+
+	for _, secondaryItem := range payload.SecondaryItemQuantity {
+		updateItemAssembly := models.ItemAssembly{
+			PrimaryItemNumber:   payload.PrimaryItemNumber,
+			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
+			Quantity:            secondaryItem.Quantity,
+		}
+
+		if err := config.DB.Model(&itemAssembly).Where("number = ?", itemAssesmblyNumber).Updates(updateItemAssembly).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update item assembly"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": itemAssembly})
 }

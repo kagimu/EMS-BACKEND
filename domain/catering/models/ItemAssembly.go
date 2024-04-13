@@ -7,8 +7,7 @@ import (
 
 type ItemAssembly struct {
 	gorm.Model
-	Number string `json:"number" gorm:"size:36;unique;not null"`
-
+	Number              string          `json:"number" gorm:"size:36;unique;not null"`
 	PrimaryItemNumber   string          `json:"primary_item_number" gorm:"size:36;not null"`
 	PrimaryItem         MenuItem        `gorm:"foreignKey:PrimaryItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	SecondaryItemNumber string          `json:"secondary_item_number" gorm:"size:36;not null"`
