@@ -112,11 +112,6 @@ func EditMenuItem(c *gin.Context) {
 		return
 	}
 
-	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
 	menuItemNumber := c.Param("menu_item_number")
 	var menuItem models.MenuItem
 	if err := config.DB.Where("number = ?", menuItemNumber).First(&menuItem).Error; err != nil {
