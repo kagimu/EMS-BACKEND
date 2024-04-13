@@ -150,14 +150,15 @@ func FetchMenuItemDetails(c *gin.Context) {
 
 	itemNumber := c.Param("menu_item_number")
 	var menuItem models.MenuItem
-	if err := config.DB.Where("number = ?", itemNumber).Preload("Campus").Preload("UnitOfMeasure").First(&menuItem).Error; err != nil {
+	if err := config.DB.Where("number = ?", itemNumber).Preload("Campus").Preload("UnitOfMeasure").Preload("ItemAssemblies").First(&menuItem).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item not found"})
 		return
 	}
 
-	var response []responses.MenuItemResponse
+	var response responses.MenuItemResponse
+	var parts []responses.Part
 
-	response = append(response, responses.MenuItemResponse{
+	response = responses.MenuItemResponse{
 		Number:              menuItem.Number,
 		Name:                menuItem.Name,
 		Code:                menuItem.Code,
@@ -169,7 +170,20 @@ func FetchMenuItemDetails(c *gin.Context) {
 		UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
 		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
 		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
-	})
+	}
+
+	if menuItem.Type == constants.TYPE_ASSEMBLED {
+		for _, menuItem := range menuItem.ItemAssemblies {
+			parts = append(parts, responses.Part{
+				Number:   menuItem.Number,
+				Name:     menuItem.SecondaryItemName,
+				Code:     menuItem.SecondaryItemCode,
+				Quantity: menuItem.Quantity,
+			})
+		}
+
+		response.Parts = parts
+	}
 
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }
