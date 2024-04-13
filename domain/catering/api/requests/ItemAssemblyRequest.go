@@ -18,9 +18,6 @@ type SecondaryItemQuantity struct {
 }
 
 func (i *ItemAssembly) Validate() error {
-	if i.PrimaryItemNumber == "" {
-		return errors.New("primary item number is required")
-	}
 	if len(i.SecondaryItemQuantity) == 0 {
 		return errors.New("secondary item quantity is required")
 	}
