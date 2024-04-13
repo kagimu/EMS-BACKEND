@@ -169,7 +169,7 @@ func FetchMenuItemDetails(c *gin.Context) {
 	if menuItem.Type == constants.TYPE_ASSEMBLED {
 		var ItemAssemblies []models.ItemAssembly
 		if err := config.DB.Where("primary_item_number = ?", menuItem.Number).Find(&ItemAssemblies).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies", "err": err.Error()})
 			return
 		}
 
