@@ -117,7 +117,7 @@ func EditMenuItem(c *gin.Context) {
 		return
 	}
 
-	menuItemNumber := c.Query("menu_item_number")
+	menuItemNumber := c.Param("menu_item_number")
 
 	var menuItem models.MenuItem
 	if err := config.DB.Where("number = ?", menuItemNumber).First(&menuItem).Error; err != nil {
