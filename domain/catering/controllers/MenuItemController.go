@@ -144,7 +144,7 @@ func FetchMenuItemDetails(c *gin.Context) {
 
 	itemNumber := c.Param("menu_item_number")
 	var menuItem models.MenuItem
-	if err := config.DB.Where("number = ?", itemNumber).Preload("Campus").Preload("UnitOfMeasure").Preload("ItemAssemblies").First(&menuItem).Error; err != nil {
+	if err := config.DB.Where("number = ?", itemNumber).First(&menuItem).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item not found"})
 		return
 	}
