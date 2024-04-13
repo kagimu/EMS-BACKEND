@@ -15,5 +15,5 @@ type StudyPeriod struct {
 	User                    authModel.User                      `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Comment                 string                              `json:"comment" gorm:"type:text;"`
 	LessonPlanStepNumber    string                              `json:"lesson_plan_step_number" gorm:"size:36;not null"`
-	LessonPlanStep          lessonPlanStepModels.LessonPlanStep `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	LessonPlanStep          lessonPlanStepModels.LessonPlanStep `gorm:"foreignKey:LessonPlanStepNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
