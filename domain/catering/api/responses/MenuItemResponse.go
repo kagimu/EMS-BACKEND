@@ -13,4 +13,12 @@ type MenuItemResponse struct {
 	UnitOfMeasureNumber string `json:"unit_of_measure_number"`
 	UnitOfMeasureName   string `json:"unit_of_measure_name"`
 	UnitOfMeasureCode   uint64 `json:"unit_of_measure_code"`
+	Parts               []Part `json:"parts"`
+}
+
+type Part struct {
+	Name     string  `json:"name"`
+	Quantity float64 `json:"quantity"`
+	Code     uint64  `json:"code"`
+	Number   string  `json:"number"`
 }
