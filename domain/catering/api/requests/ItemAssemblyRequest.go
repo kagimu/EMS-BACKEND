@@ -4,7 +4,7 @@ import "errors"
 
 type ItemAssembly struct {
 	PrimaryItemNumber     string                  `json:"primary_item_number"`
-	SecondaryItemQuantity []SecondaryItemQuantity `json:"secondary_item_quantity"`
+	SecondaryItemQuantity []SecondaryItemQuantity `json:"secondary_items"`
 	Name                  string                  `json:"name"`
 	Code                  uint64                  `json:"code"`
 	Type                  string                  `json:"type"`
