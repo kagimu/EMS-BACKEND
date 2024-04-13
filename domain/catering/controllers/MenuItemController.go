@@ -118,7 +118,6 @@ func EditMenuItem(c *gin.Context) {
 	}
 
 	menuItemNumber := c.Param("menu_item_number")
-
 	var menuItem models.MenuItem
 	if err := config.DB.Where("number = ?", menuItemNumber).First(&menuItem).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item not found"})
