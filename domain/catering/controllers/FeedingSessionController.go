@@ -48,6 +48,7 @@ func CreateFeedingSession(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session"})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding session saved successfully"})
 }
 
@@ -59,7 +60,7 @@ func FetchFeedingSessions(c *gin.Context) {
 	}
 
 	var feedingSessions []models.FeedingSession
-	if err := config.DB.Find(&feedingSessions).Error; err != nil {
+	if err := config.DB.Preload("Campus").Find(&feedingSessions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding sessions"})
 		return
 	}
