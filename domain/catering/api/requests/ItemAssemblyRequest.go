@@ -17,8 +17,12 @@ type SecondaryItemQuantity struct {
 	Quantity            float64 `json:"quantity"`
 }
 
-func (i *ItemAssembly) Validate() error {
+type UpdateItemAssembly struct {
+	SecondaryItemQuantity []SecondaryItemQuantity `json:"secondary_items"`
+	PrimaryItemNumber     string                  `json:"primary_item_number"`
+}
 
+func (i *ItemAssembly) Validate() error {
 	if len(i.SecondaryItemQuantity) == 0 {
 		return errors.New("secondary item quantity is required")
 	}

@@ -98,3 +98,92 @@ func FetchMenuItems(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }
+
+func EditMenuItem(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ItemAssembly
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	menuItemNumber := c.Param("menu_item_number")
+	var menuItem models.MenuItem
+	if err := config.DB.Where("number = ?", menuItemNumber).First(&menuItem).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item not found"})
+		return
+	}
+
+	updateMenuItem := models.MenuItem{
+		Name:                payload.Name,
+		Code:                payload.Code,
+		Type:                payload.Type,
+		CampusNumber:        payload.CampusNumber,
+		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
+	}
+
+	if err := config.DB.Model(&menuItem).Where("number = ?", menuItemNumber).Updates(updateMenuItem).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": menuItem})
+}
+
+func FetchMenuItemDetails(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	itemNumber := c.Param("menu_item_number")
+	var menuItem models.MenuItem
+	if err := config.DB.Where("number = ?", itemNumber).First(&menuItem).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item not found"})
+		return
+	}
+
+	var response responses.MenuItemResponse
+	var parts []responses.Part
+
+	response = responses.MenuItemResponse{
+		Number:              menuItem.Number,
+		Name:                menuItem.Name,
+		Code:                menuItem.Code,
+		Type:                menuItem.Type,
+		Email:               menuItem.Campus.Email,
+		CampusName:          menuItem.Campus.Name,
+		CampusNumber:        menuItem.CampusNumber,
+		Location:            menuItem.Campus.Location,
+		UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
+		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
+		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
+	}
+
+	if menuItem.Type == constants.TYPE_ASSEMBLED {
+		var ItemAssemblies []models.ItemAssembly
+		if err := config.DB.Where("primary_item_number = ?", menuItem.Number).Find(&ItemAssemblies).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies", "err": err.Error()})
+			return
+		}
+
+		for _, menuItem := range ItemAssemblies {
+			parts = append(parts, responses.Part{
+				Number:   menuItem.Number,
+				Name:     menuItem.SecondaryItemName,
+				Code:     menuItem.SecondaryItemCode,
+				Quantity: menuItem.Quantity,
+			})
+		}
+
+		response.Parts = parts
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
+}
