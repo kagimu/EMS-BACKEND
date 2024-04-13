@@ -17,7 +17,7 @@ type StudyingTimeBlock struct {
 	EndTime            time.Time                      `json:"end_time"`
 	Length             time.Duration                  `json:"length"`
 	AcademicYearNumber string                         `json:"academic_year_number" gorm:"size:36;"`
-	AcademicYear       academicYearModel.AcademicYear `gorm:"foreignKey:-AcademicYearNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	AcademicYear       academicYearModel.AcademicYear `gorm:"foreignKey:AcademicYearNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber       string                         `json:"campus_number" gorm:"size:36;"`
 	Campus             campusModel.Campus             `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	LevelNumber        string                         `json:"level_number" gorm:"size:36;"`
