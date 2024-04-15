@@ -76,6 +76,7 @@ type FullReportSummary struct {
 	Campus            LeanCampus     `json:"campus"`
 	StudyPeriod       string         `json:"study_period"`
 	AcademicYear      string         `json:"academic_year"`
+	ReportColumns     []string       `json:"report_columns"`
 }
 
 type LeanSchool interface{}
