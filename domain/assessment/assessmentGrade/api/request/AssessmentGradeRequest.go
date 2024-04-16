@@ -10,6 +10,7 @@ type AssessmentGradeRequest struct {
 	Name              string `json:"name"`
 	Abbreviation      string `json:"abbreviation"`
 	Remarks           string `json:"remarks"`
+	Illustration      string `json:"illustration"`
 	CampusClassNumber string `json:"campus_class_number"`
 }
 

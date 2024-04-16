@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -98,7 +99,19 @@ func FetchPreviousSchoolResultsByStudent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": previousSchoolResults})
+	var response []responses.PreviousSchoolResultResponses
+	for _, result := range previousSchoolResults {
+		response = append(response, responses.PreviousSchoolResultResponses{
+			Number:             result.Number,
+			StudentName:        result.Application.Student.SecondName + " " + result.Student.OtherName + " " + result.Student.Surname,
+			AssessmentAreaName: result.AssessmentArea.Name,
+			Score:              result.Score,
+			Attachment:         result.Attachment,
+			ApplicationNumber:  result.ApplicationNumber,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
 func FetchAllPreviousSchoolResults(c *gin.Context) {
