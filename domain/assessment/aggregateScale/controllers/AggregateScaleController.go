@@ -2,9 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"path/filepath"
-	"strconv"
-	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
@@ -58,6 +55,12 @@ func CreateAggregateScale(c *gin.Context) {
 		CampusNumber:          payload.CampusNumber,
 		UserNumber:            user.Number,
 		GradingStandardNumber: payload.GradingStandardNumber,
+	}
+
+	var duplicate models.AggregateScale
+	if err := config.DB.Where("name = ?", saveAggregateScale.Name).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale name"})
+		return
 	}
 
 	tx := config.DB.Begin()
@@ -160,22 +163,15 @@ func EditAggregateScale(c *gin.Context) {
 		return
 	}
 
-	attachmentFile, fileError := c.FormFile("illustration")
-	if fileError != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
-		return
-	}
-
-	t := time.Now()
-	name := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
-	illustrationName := attachmentFile.Filename
-	extension := filepath.Ext(attachmentFile.Filename)
-	fileName := name + extension
-	path := "fileRepo/illustrations/" + fileName
-
-	if err := c.SaveUploadedFile(attachmentFile, path); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
-		return
+	var fileName string
+	_, err = c.FormFile("illustration")
+	if err == nil {
+		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
+		fileName = file
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
+			return
+		}
 	}
 
 	updateAggregateScale := models.AggregateScale{
@@ -185,7 +181,7 @@ func EditAggregateScale(c *gin.Context) {
 		MaxValue:              payload.MaxValue,
 		Description:           payload.Description,
 		SchoolNumber:          payload.SchoolNumber,
-		Illustration:          illustrationName,
+		Illustration:          fileName,
 		ClassNumber:           payload.ClassNumber,
 		CampusNumber:          payload.CampusNumber,
 		GradingStandardNumber: payload.GradingStandardNumber,
