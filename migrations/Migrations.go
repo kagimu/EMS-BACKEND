@@ -43,6 +43,7 @@ import (
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
+	staffModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -142,11 +143,11 @@ func Init() error {
 		&assessmentScaleModels.AggregateScale{},
 		&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
-		//&staffModel.JobTitle{},
-		//&staffModel.SalaryScale{},
-		//&staffModel.Task{},
-		//&staffModel.TaskSupervision{},
-		//&staffModel.Staff{},
+		&staffModel.JobTitle{},
+		&staffModel.SalaryScale{},
+		&staffModel.Task{},
+		&staffModel.TaskSupervision{},
+		&staffModel.Staff{},
 		&interviewModel.InterviewAssessmentMetric{},
 		&progressReportModels.ProgressReport{},
 		&reportSettings.ReportSetting{},
