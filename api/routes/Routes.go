@@ -154,7 +154,7 @@ func SetupRoutes() *gin.Engine {
 			class.GET("/info", classController.ClassInfo)
 			class.GET("/curriculum-class", classController.FetchClassesToAdd)
 			class.GET("/campus-class-by-level", classController.FetchCampusClassesByLevel)
-			class.GET("by-campus-number/:campus_number", assessmentAreaController.FetchAssessmentAreasByCampusClassNumber)
+			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
 			class.POST("/edit", classController.EditClass)
 			class.POST("/delete", classController.DeleteClass)
 		}
@@ -473,7 +473,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
 			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
-			assessmentArea.GET("by-campus-class-number/:campus_class_number", assessmentAreaController.FetchAssessmentAreas)
+			assessmentArea.GET("by-campus-class-number/:campus-class-number", assessmentAreaController.FetchAssessmentAreasByCampusClassNumber)
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
 
