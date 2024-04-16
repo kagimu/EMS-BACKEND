@@ -45,20 +45,12 @@ func CreateStaff(c *gin.Context) {
 	staffNumber := fmt.Sprintf("STN%03d", generateStaffNumber.ID)
 
 	saveStaff := models.Staff{
-		Number:                     uuid.NewV4().String(),
-		Surname:                    payload.Surname,
-		StaffNumber:                staffNumber,
-		Firstname:                  payload.FirstName,
-		OtherName:                  payload.OtherName,
-		Gender:                     payload.Gender,
-		MainTelephoneNumber:        payload.MainTelephoneNumber,
-		AlternativeTelephoneNumber: payload.AlternativeTelephoneNumber,
-		MainEmailAddress:           payload.MainEmailAddress,
-		AlternativeEmailAddress:    payload.AlternativeEmailAddress,
-		JobTitleNumber:             payload.JobTitleNumber,
-		CampusNumber:               payload.CampusNumber,
-		SalaryScaleNumber:          payload.SalaryScaleNumber,
-		UserNumber:                 user.Number,
+		Number:            uuid.NewV4().String(),
+		StaffNumber:       staffNumber,
+		JobTitleNumber:    payload.JobTitleNumber,
+		CampusNumber:      payload.CampusNumber,
+		SalaryScaleNumber: payload.SalaryScaleNumber,
+		UserNumber:        user.Number,
 	}
 
 	if err := tx.Create(&saveStaff).Error; err != nil {
@@ -137,17 +129,9 @@ func EditStaff(c *gin.Context) {
 	}
 
 	saveStaff := models.Staff{
-		Surname:                    payload.Surname,
-		Firstname:                  payload.FirstName,
-		OtherName:                  payload.OtherName,
-		Gender:                     payload.Gender,
-		MainTelephoneNumber:        payload.MainTelephoneNumber,
-		AlternativeTelephoneNumber: payload.AlternativeTelephoneNumber,
-		MainEmailAddress:           payload.MainEmailAddress,
-		AlternativeEmailAddress:    payload.AlternativeEmailAddress,
-		JobTitleNumber:             payload.JobTitleNumber,
-		CampusNumber:               payload.CampusNumber,
-		SalaryScaleNumber:          payload.SalaryScaleNumber,
+		JobTitleNumber:    payload.JobTitleNumber,
+		CampusNumber:      payload.CampusNumber,
+		SalaryScaleNumber: payload.SalaryScaleNumber,
 	}
 
 	if err := config.DB.Model(&staff).Where("staff_number = ?", staffNumber).Updates(saveStaff).Error; err != nil {

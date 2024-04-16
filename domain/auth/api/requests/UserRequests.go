@@ -1,6 +1,10 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"html"
+	"strings"
+)
 
 type UserDataRequest struct {
 	FirstName  string `json:"first_name"`
@@ -9,6 +13,46 @@ type UserDataRequest struct {
 	Gender     string `json:"gender"`
 	Email      string `json:"email"`
 	Phone      string `json:"phone"`
+}
+
+func (ur *UserDataRequest) Prepare() {
+	ur.FirstName = html.EscapeString(strings.TrimSpace(ur.FirstName))
+	ur.SecondName = html.EscapeString(strings.TrimSpace(ur.SecondName))
+	ur.LastName = html.EscapeString(strings.TrimSpace(ur.LastName))
+	ur.Email = html.EscapeString(strings.TrimSpace(ur.Email))
+	ur.Phone = html.EscapeString(strings.TrimSpace(ur.Phone))
+}
+
+func (ur *UserDataRequest) Validate() error {
+
+	if ur.FirstName == "" {
+		return errors.New("first Name is required")
+	}
+
+	if ur.SecondName == "" {
+		return errors.New("second Name is required")
+	}
+
+	if ur.Gender == "" {
+		return errors.New("gender is required")
+	}
+
+	if ur.Email == "" {
+		return errors.New("email is required")
+	}
+
+	if ur.Phone == "" {
+		return errors.New("phone is required")
+	}
+
+	validMale := ur.Gender != "Male"
+	validFemale := ur.Gender != "Female"
+
+	if validMale && validFemale {
+		return errors.New("invalid gender")
+	}
+
+	return nil
 }
 
 type StaffAccountRequest struct {

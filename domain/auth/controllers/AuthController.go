@@ -225,46 +225,19 @@ func Register(context *gin.Context) {
 		return
 	}
 
+	userPostData.Prepare()
+
+	if err := userPostData.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	firstName := userPostData.FirstName
 	secondName := userPostData.SecondName
 	lastName := userPostData.LastName
 	userGender := userPostData.Gender
 	userEmail := userPostData.Email
 	userPhone := userPostData.Phone
-
-	// form validation for required fields
-	if firstName == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "First Name is required!"})
-		return
-	}
-
-	if secondName == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "First Name is required!"})
-		return
-	}
-
-	if userGender == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Gender is required!"})
-		return
-	}
-
-	if userEmail == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Email is required!"})
-		return
-	}
-
-	if userPhone == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Phone is required!"})
-		return
-	}
-
-	validMale := userGender != "Male"
-	validFemale := userGender != "Female"
-
-	if validMale && validFemale {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Gender!"})
-		return
-	}
 
 	//remove white space from email and converts to lower case
 	userEmail = strings.TrimSpace(strings.ToLower(userEmail))
@@ -302,6 +275,8 @@ func Register(context *gin.Context) {
 		return
 	}
 
+	///save user data
+
 	//first time registration user type must be admin
 	var user models.User
 	userType := "User"
@@ -313,8 +288,9 @@ func Register(context *gin.Context) {
 	}
 
 	//creates a secure uuid user number
-	userNumber := uuid.NewV4().String()
 
+	tx := config.DB.Begin()
+	userNumber := uuid.NewV4().String()
 	///save user data
 	saveUser := models.User{
 		Number:     userNumber,
@@ -326,7 +302,13 @@ func Register(context *gin.Context) {
 		Status:     userStatus,
 	}
 
-	config.DB.Save(&saveUser)
+	if err := tx.Create(&saveUser).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create user"})
+		return
+	}
 
 	//after you need to save user email
 	saveEmailContact := models.Contact{
@@ -334,7 +316,14 @@ func Register(context *gin.Context) {
 		ContactType: "Email",
 		UserNumber:  saveUser.Number,
 	}
-	config.DB.Save(&saveEmailContact)
+
+	if err := tx.Create(&saveEmailContact).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create email"})
+		return
+	}
 
 	//after you need to save user phone
 	savePhoneContact := models.Contact{
@@ -342,7 +331,14 @@ func Register(context *gin.Context) {
 		ContactType: "Phone",
 		UserNumber:  saveUser.Number,
 	}
-	config.DB.Save(&savePhoneContact)
+
+	if err := tx.Create(&savePhoneContact).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create phone"})
+		return
+	}
 
 	//create / generate a token for the user to reset their password
 	//userToken := tokenGenerator()
@@ -354,12 +350,25 @@ func Register(context *gin.Context) {
 		Status:     userStatus,
 	}
 
-	config.DB.Save(&saveUserPasswordToken)
+	if err := tx.Create(&saveUserPasswordToken).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create token"})
+		return
+	}
 
 	//email sender
 	Token := userToken
 	d := emailSender.Info{Email: userEmail, Token: Token, MailType: "WholesomeEd: User Account Confirmation", UserName: secondName, CurrentYear: time.Now().Year(), Type: "registration"}
-	d.SendEmail()
+	err = d.SendEmail()
+	if err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email"})
+		return
+	}
 
 	var collection []interface{}
 	collection = append(collection, saveEmailContact)
@@ -373,6 +382,13 @@ func Register(context *gin.Context) {
 	UserDataInfo := UserInfo{
 		saveUser,
 		collection,
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create user"})
+		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{
@@ -524,7 +540,6 @@ func UserPassword(context *gin.Context) {
 	checkUserToken := config.DB.
 		Where("token = ?", token).
 		First(&passwordReset)
-
 	if checkUserToken.Error != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid token!"})
 		return
