@@ -2,9 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"path/filepath"
-	"strconv"
-	"time"
 
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
@@ -34,21 +31,9 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	attachmentFile, fileError := c.FormFile("illustration")
-	if fileError != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
-		return
-	}
-
-	t := time.Now()
-	name := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
-	illustrationName := attachmentFile.Filename
-	extension := filepath.Ext(attachmentFile.Filename)
-	fileName := name + extension
-	path := "fileRepo/illustrations/" + fileName
-
-	if err := c.SaveUploadedFile(attachmentFile, path); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
+	fileName, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
 		return
 	}
 
@@ -66,7 +51,7 @@ func CreateAssessmentGrade(c *gin.Context) {
 		MaximumPoints:     payload.MaximumPoints,
 		Abbreviation:      payload.Abbreviation,
 		Remarks:           payload.Remarks,
-		Illustration:      illustrationName,
+		Illustration:      fileName,
 		CampusClassNumber: payload.CampusClassNumber,
 		UserNumber:        user.Number,
 	}

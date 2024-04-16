@@ -3,13 +3,16 @@ package commons
 import (
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 )
 
 func DeleteFileFromPath(path string, context *gin.Context) {
@@ -122,4 +125,29 @@ func PermissionGroups() []PermissionGroup {
 		{"SETTINGS": []string{"create_learning_area", "view_learning_area", "update_learning_area"}},
 	}
 
+}
+
+func HandleFileUpload(c *gin.Context, formFileKey string, savePath string) (string, error) {
+	attachmentFile, fileError := c.FormFile(formFileKey)
+	if fileError != nil {
+		return "", fileError
+	}
+
+	t := time.Now()
+	name := GeneratedFormattedUUID() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
+	extension := filepath.Ext(attachmentFile.Filename)
+	fileName := name + extension
+	filePath := savePath + fileName
+
+	if err := c.SaveUploadedFile(attachmentFile, filePath); err != nil {
+		return "", err
+	}
+
+	return fileName, nil
+}
+
+func GeneratedFormattedUUID() string {
+	u := uuid.NewV4().String()
+	formattedUUID := strings.ReplaceAll(u, "-", "")
+	return formattedUUID
 }
