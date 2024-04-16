@@ -38,7 +38,7 @@ func CreateStudyPeriod(c *gin.Context) {
 		return
 	}
 
-	saveStudyPeriod := models.StudyPeriod{
+	saveStudyPeriod := models.StudyingPeriod{
 		Number:                  uuid.NewV4().String(),
 		Comment:                 payload.Comment,
 		StudyingTimeTableNumber: payload.StudyingTimeTableNumber,
@@ -61,7 +61,7 @@ func FetchStudyPeriods(c *gin.Context) {
 		return
 	}
 
-	var studyingPeriods []models.StudyPeriod
+	var studyingPeriods []models.StudyingPeriod
 	if err := config.DB.Preload("StudyingTimeBlock").Preload("Stream").Preload("Subject").Find(&studyingPeriods).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch studying time tables"})
 		return

@@ -4,12 +4,19 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
 
 func CreateGradingStandard(ctx *gin.Context) {
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(400, gin.H{"message": "Failed to get user from header"})
+		return
+	}
+
 	var payload requests.GradingStandardRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(400, gin.H{"message": "Failed to process payload"})
@@ -21,14 +28,13 @@ func CreateGradingStandard(ctx *gin.Context) {
 		return
 	}
 
-	// Save GradingStandard
 	gradingStandard := models.GradingStandard{
 		Number:            uuid.NewV4().String(),
 		Name:              payload.Name,
 		Description:       payload.Description,
 		Type:              payload.Type,
 		CampusClassNumber: payload.ClassNumber,
-		UserNumber:        ctx.GetHeader("User-Number"),
+		UserNumber:        user.Number,
 	}
 
 	if err := config.DB.Create(&gradingStandard).Error; err != nil {
