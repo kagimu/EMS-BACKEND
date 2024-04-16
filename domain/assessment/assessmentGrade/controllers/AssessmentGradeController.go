@@ -45,6 +45,7 @@ func CreateAssessmentGrade(c *gin.Context) {
 		MaximumPoints:     payload.MaximumPoints,
 		Abbreviation:      payload.Abbreviation,
 		Remarks:           payload.Remarks,
+		Illustration:      payload.Illustration,
 		CampusClassNumber: payload.CampusClassNumber,
 		UserNumber:        user.Number,
 	}
@@ -98,6 +99,7 @@ func EditAssessmentGrade(c *gin.Context) {
 		Name:              payload.Name,
 		MaximumPoints:     payload.MaximumPoints,
 		CampusClassNumber: payload.CampusClassNumber,
+		Illustration:      payload.Illustration,
 		MinimumPoints:     payload.MinimumPoints,
 		Abbreviation:      payload.Abbreviation,
 		Remarks:           payload.Remarks,

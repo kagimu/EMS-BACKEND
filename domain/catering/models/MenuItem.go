@@ -18,5 +18,5 @@ type MenuItem struct {
 	UnitOfMeasure       UnitOfMeasure       `gorm:"foreignKey:UnitOfMeasureNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber          string              `json:"user_number" gorm:"size:36;index;not null"`
 	User                authModels.User     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	ItemAssemblies      []ItemAssembly      `gorm:"foreignKey:PrimaryItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	ItemAssemblies      []ItemAssembly      `gorm:"foreignKey:PrimaryItem;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

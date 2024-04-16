@@ -152,6 +152,7 @@ func FetchMenuItemDetails(c *gin.Context) {
 	var response responses.MenuItemResponse
 	var parts []responses.Part
 
+	// Add school name as well
 	response = responses.MenuItemResponse{
 		Number:              menuItem.Number,
 		Name:                menuItem.Name,
