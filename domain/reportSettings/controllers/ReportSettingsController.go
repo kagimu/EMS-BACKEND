@@ -567,6 +567,14 @@ func GenerateReportSummary(ctx *gin.Context) {
 	user := ctx.Request.Header["User-Number"][0]
 
 	tx := config.DB.Begin()
+	var stream classModel.Stream
+	if err := tx.Where("id > ?", 0).First(&stream).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch stream"})
+		return
+
+	}
+
 	reportSummary := models.ReportSummary{
 		Number:              uuid.NewV4().String(),
 		ReportSettingNumber: reportSettings.Number,
@@ -578,9 +586,11 @@ func GenerateReportSummary(ctx *gin.Context) {
 		Comment:             "",
 		UserNumber:          user,
 		Code:                0,
+		StreamNumber:        stream.Number,
 	}
 
 	if err := tx.Create(&reportSummary).Error; err != nil {
+		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report summary"})
 		return
 	}
