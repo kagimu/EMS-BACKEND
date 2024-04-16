@@ -128,9 +128,9 @@ func PermissionGroups() []PermissionGroup {
 }
 
 func HandleFileUpload(c *gin.Context, formFileKey string, savePath string) (string, error) {
-	attachmentFile, fileError := c.FormFile(formFileKey)
-	if fileError != nil {
-		return "", fileError
+	attachmentFile, err := c.FormFile(formFileKey)
+	if err != nil {
+		return "", err
 	}
 
 	t := time.Now()

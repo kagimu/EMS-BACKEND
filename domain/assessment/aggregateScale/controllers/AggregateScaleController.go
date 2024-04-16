@@ -32,10 +32,17 @@ func CreateAggregateScale(c *gin.Context) {
 		return
 	}
 
-	fileName, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
-		return
+	var fileName string
+
+	_, err = c.FormFile("illustration")
+	if err == nil {
+
+		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
+		fileName = file
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
+			return
+		}
 	}
 
 	saveAggregateScale := models.AggregateScale{
