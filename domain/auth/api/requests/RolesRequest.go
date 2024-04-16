@@ -4,6 +4,29 @@ import (
 	"errors"
 )
 
+type UserPassword struct {
+	Token           string `json:"token"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
+
+func (ur *UserPassword) Validate() error {
+
+	if ur.Token == "" {
+		return errors.New("token is required")
+	}
+
+	if ur.Password == "" {
+		return errors.New("password is required")
+	}
+
+	if ur.Password != ur.ConfirmPassword {
+		return errors.New("password Mismatch")
+	}
+
+	return nil
+}
+
 type NewRoleRequest struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
