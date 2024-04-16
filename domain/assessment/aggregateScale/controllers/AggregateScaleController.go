@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"net/http"
+	"path/filepath"
+	"strconv"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
@@ -29,13 +32,31 @@ func CreateAggregateScale(c *gin.Context) {
 		return
 	}
 
+	attachmentFile, fileError := c.FormFile("illustration")
+	if fileError != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
+		return
+	}
+
+	t := time.Now()
+	name := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
+	illustrationName := attachmentFile.Filename
+	extension := filepath.Ext(attachmentFile.Filename)
+	fileName := name + extension
+	path := "fileRepo/illustrations/" + fileName
+
+	if err := c.SaveUploadedFile(attachmentFile, path); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
+		return
+	}
+
 	saveAggregateScale := models.AggregateScale{
 		Number:                uuid.NewV4().String(),
 		Name:                  payload.Name,
 		Weight:                payload.Weight,
 		MinValue:              payload.MinValue,
 		MaxValue:              payload.MaxValue,
-		Illustration:          payload.Illustration,
+		Illustration:          illustrationName,
 		Description:           payload.Description,
 		SchoolNumber:          payload.SchoolNumber,
 		ClassNumber:           payload.ClassNumber,
@@ -116,6 +137,24 @@ func EditAggregateScale(c *gin.Context) {
 		return
 	}
 
+	attachmentFile, fileError := c.FormFile("illustration")
+	if fileError != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
+		return
+	}
+
+	t := time.Now()
+	name := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
+	illustrationName := attachmentFile.Filename
+	extension := filepath.Ext(attachmentFile.Filename)
+	fileName := name + extension
+	path := "fileRepo/illustrations/" + fileName
+
+	if err := c.SaveUploadedFile(attachmentFile, path); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
+		return
+	}
+
 	updateAggregateScale := models.AggregateScale{
 		Name:                  payload.Name,
 		Weight:                payload.Weight,
@@ -123,7 +162,7 @@ func EditAggregateScale(c *gin.Context) {
 		MaxValue:              payload.MaxValue,
 		Description:           payload.Description,
 		SchoolNumber:          payload.SchoolNumber,
-		Illustration:          payload.Illustration,
+		Illustration:          illustrationName,
 		ClassNumber:           payload.ClassNumber,
 		CampusNumber:          payload.CampusNumber,
 		GradingStandardNumber: payload.GradingStandardNumber,
