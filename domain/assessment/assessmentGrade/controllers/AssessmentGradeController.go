@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"net/http"
+	"path/filepath"
+	"strconv"
+	"time"
 
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
@@ -31,6 +34,24 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
+	attachmentFile, fileError := c.FormFile("illustration")
+	if fileError != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
+		return
+	}
+
+	t := time.Now()
+	name := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
+	illustrationName := attachmentFile.Filename
+	extension := filepath.Ext(attachmentFile.Filename)
+	fileName := name + extension
+	path := "fileRepo/illustrations/" + fileName
+
+	if err := c.SaveUploadedFile(attachmentFile, path); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
+		return
+	}
+
 	var campusClass classModel.CampusClass
 	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No campus class found with the specified number"})
@@ -45,7 +66,7 @@ func CreateAssessmentGrade(c *gin.Context) {
 		MaximumPoints:     payload.MaximumPoints,
 		Abbreviation:      payload.Abbreviation,
 		Remarks:           payload.Remarks,
-		Illustration:      payload.Illustration,
+		Illustration:      illustrationName,
 		CampusClassNumber: payload.CampusClassNumber,
 		UserNumber:        user.Number,
 	}
