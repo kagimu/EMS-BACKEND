@@ -2,6 +2,8 @@ package requests
 
 import (
 	"errors"
+	"html"
+	"strings"
 )
 
 type UserPassword struct {
@@ -22,6 +24,23 @@ func (ur *UserPassword) Validate() error {
 
 	if ur.Password != ur.ConfirmPassword {
 		return errors.New("password Mismatch")
+	}
+
+	return nil
+}
+
+type UserEmail struct {
+	Email string `json:"email"`
+}
+
+func (ur *UserEmail) Prepare() {
+	ur.Email = html.EscapeString(strings.TrimSpace(ur.Email))
+}
+
+func (ur *UserEmail) Validate() error {
+
+	if ur.Email == "" {
+		return errors.New("email is required")
 	}
 
 	return nil
