@@ -12,8 +12,8 @@ type AssessmentGrade struct {
 	Number            string                  `json:"number" gorm:"size:36;unique;not null"`
 	Name              string                  `json:"name"`
 	Description       string                  `json:"description" gorm:"type:text"`
-	MinimumPoints     int64                   `json:"minimum_points"`
-	MaximumPoints     int64                   `json:"maximum_points"`
+	MinimumPoints     float64                 `json:"minimum_points"`
+	MaximumPoints     float64                 `json:"maximum_points"`
 	Abbreviation      string                  `json:"abbreviation" gorm:"size:20;"`
 	Illustration      string                  `json:"illustration" form:"illustration" gorm:"type:text"`
 	Remarks           string                  `json:"remarks" gorm:"type:text;"`

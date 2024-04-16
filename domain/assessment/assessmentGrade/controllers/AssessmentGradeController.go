@@ -7,6 +7,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,7 @@ func CreateAssessmentGrade(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+
 	var fileName string
 	_, err = c.FormFile("illustration")
 	if err == nil {
@@ -81,7 +83,22 @@ func FetchAssessmentGrades(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": assessmentGrades})
+	var response []responses.AssessmentGradeResponse
+	for _, assessmentGrade := range assessmentGrades {
+		response = append(response, responses.AssessmentGradeResponse{
+			Number:           assessmentGrade.Number,
+			Name:             assessmentGrade.Name,
+			Description:      assessmentGrade.Description,
+			MinimumPoints:    assessmentGrade.MinimumPoints,
+			MaximumPoints:    assessmentGrade.MaximumPoints,
+			Abbreviation:     assessmentGrade.Abbreviation,
+			Remarks:          assessmentGrade.Remarks,
+			CampusClassName:  assessmentGrade.CampusClass.ClassName,
+			IllustrationPath: assessmentGrade.Illustration,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
 func EditAssessmentGrade(c *gin.Context) {
@@ -104,12 +121,23 @@ func EditAssessmentGrade(c *gin.Context) {
 		return
 	}
 
+	var fileName string
+	_, err = c.FormFile("illustration")
+	if err == nil {
+		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
+		fileName = file
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
+			return
+		}
+	}
+
 	updateAssessmentGrade := models.AssessmentGrade{
 		Description:       payload.Description,
 		Name:              payload.Name,
 		MaximumPoints:     payload.MaximumPoints,
 		CampusClassNumber: payload.CampusClassNumber,
-		Illustration:      payload.Illustration,
+		Illustration:      fileName,
 		MinimumPoints:     payload.MinimumPoints,
 		Abbreviation:      payload.Abbreviation,
 		Remarks:           payload.Remarks,
