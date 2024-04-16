@@ -57,14 +57,14 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 		return
 	}
 
-	for i, score := range payload.Score {
+	for _, assessment := range payload.AssessmentAndScore {
 		previousSchoolResultsNumber := uuid.NewV4().String()
 
 		savepreviousSchoolResults := models.PreviousSchoolResults{
 			Number:               previousSchoolResultsNumber,
 			StudentNumber:        payload.StudentNumber,
-			AssessmentAreaNumber: payload.AssessmentAreaNumber[i],
-			Score:                score,
+			AssessmentAreaNumber: assessment.AssessmentAreaNumber,
+			Score:                assessment.Score,
 			Attachment:           newFileName,
 			ApplicationNumber:    payload.ApplicationNumber,
 			UserNumber:           user.Number,
