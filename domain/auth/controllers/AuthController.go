@@ -501,38 +501,37 @@ func ResetPassword(context *gin.Context) {
 
 func UserPassword(context *gin.Context) {
 
-	type UserPassword struct {
-		Token           string `json:"token"`
-		Password        string `json:"password"`
-		ConfirmPassword string `json:"confirm_password"`
-	}
-
-	var userPass UserPassword
+	var userPass requests.UserPassword
 	err := context.BindJSON(&userPass)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
+	if err := userPass.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	token := userPass.Token
 	userPassword := userPass.Password
-	confirmPassword := userPass.ConfirmPassword
+	//confirmPassword := userPass.ConfirmPassword
 
 	//	validate if token is provided
-	if token == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Token is required!"})
-		return
-	}
+	/*	if token == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Token is required!"})
+			return
+		}
 
-	if userPassword == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Password is required!"})
-		return
-	}
+		if userPassword == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Password is required!"})
+			return
+		}
 
-	if userPassword != confirmPassword {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Password Mismatch!"})
-		return
-	}
+		if userPassword != confirmPassword {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Password Mismatch!"})
+			return
+		}*/
 
 	//	check if token is valid for the user to set the password
 	//this we need to fetch a token which is active
@@ -560,13 +559,15 @@ func UserPassword(context *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin()
 	var userData models.User
 
 	//check if user is a valid user
-	validateUser := config.DB.
+	validateUser := tx.
 		Where("number = ?", userNumber).
 		First(&userData)
 	if validateUser.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
 		return
 	}
@@ -574,15 +575,16 @@ func UserPassword(context *gin.Context) {
 	//if user already exist the user password should be updated
 	var userPasswordInfo models.UserPassword
 
-	getUserPassword := config.DB.
+	getUserPassword := tx.
 		Where("user_number = ?", userNumber).
 		First(&userPasswordInfo)
 	if getUserPassword.Error == nil {
 		//this will just update user password data
-		updateStatus := config.DB.Model(&userPasswordInfo).
+		updateStatus := tx.Model(&userPasswordInfo).
 			Where("user_number = ?", userNumber).
 			Update("user_password", hashPassword)
 		if updateStatus.Error != nil {
+			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
 			return
 		}
@@ -592,23 +594,39 @@ func UserPassword(context *gin.Context) {
 			UserPassword: hashPassword,
 			UserNumber:   userNumber,
 		}
-		config.DB.Save(&userPasswordData)
+
+		if err := tx.Create(&userPasswordData).Error; err != nil {
+			// If any error occurs, rollback the transaction
+			tx.Rollback()
+			// Handle or return the error as needed
+			context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create password"})
+			return
+		}
 
 	}
 
-	updateUserStatus := config.DB.Model(&userData).
+	updateUserStatus := tx.Model(&userData).
 		Where("number = ?", userNumber).
 		Update("status", "Active")
 	if updateUserStatus.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
 		return
 	}
 
-	updateTokenStatus := config.DB.Model(&passwordReset).
+	updateTokenStatus := tx.Model(&passwordReset).
 		Where("number = ?", passwordReset.Number).
 		Update("status", "Active")
 	if updateTokenStatus.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create password"})
 		return
 	}
 
