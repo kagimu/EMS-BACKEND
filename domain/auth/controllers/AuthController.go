@@ -540,7 +540,6 @@ func UserPassword(context *gin.Context) {
 	checkUserToken := config.DB.
 		Where("token = ?", token).
 		First(&passwordReset)
-
 	if checkUserToken.Error != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid token!"})
 		return
