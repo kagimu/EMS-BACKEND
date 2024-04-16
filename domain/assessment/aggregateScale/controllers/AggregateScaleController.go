@@ -32,21 +32,9 @@ func CreateAggregateScale(c *gin.Context) {
 		return
 	}
 
-	attachmentFile, fileError := c.FormFile("illustration")
-	if fileError != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Excel file is missing"})
-		return
-	}
-
-	t := time.Now()
-	name := uuid.NewV4().String() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
-	illustrationName := attachmentFile.Filename
-	extension := filepath.Ext(attachmentFile.Filename)
-	fileName := name + extension
-	path := "fileRepo/illustrations/" + fileName
-
-	if err := c.SaveUploadedFile(attachmentFile, path); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
+	fileName, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
 		return
 	}
 
@@ -56,7 +44,7 @@ func CreateAggregateScale(c *gin.Context) {
 		Weight:                payload.Weight,
 		MinValue:              payload.MinValue,
 		MaxValue:              payload.MaxValue,
-		Illustration:          illustrationName,
+		Illustration:          fileName,
 		Description:           payload.Description,
 		SchoolNumber:          payload.SchoolNumber,
 		ClassNumber:           payload.ClassNumber,
