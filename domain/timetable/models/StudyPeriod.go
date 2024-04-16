@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type StudyPeriod struct {
+type StudyingPeriod struct {
 	gorm.Model
 	Number                  string                              `json:"number" gorm:"size:36;not null"`
 	StudyingTimeTableNumber string                              `json:"studying_time_table_number" gorm:"size:36;not null"`

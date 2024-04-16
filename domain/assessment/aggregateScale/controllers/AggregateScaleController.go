@@ -8,6 +8,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,6 @@ func CreateAggregateScale(c *gin.Context) {
 
 	_, err = c.FormFile("illustration")
 	if err == nil {
-
 		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
 		fileName = file
 		if err != nil {
@@ -64,7 +64,7 @@ func CreateAggregateScale(c *gin.Context) {
 
 	if err := tx.Create(&saveAggregateScale).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save aggregate scale" + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save aggregate scale"})
 		return
 	}
 
@@ -90,6 +90,11 @@ func FetchAggregateScales(c *gin.Context) {
 }
 
 func FetchAggregateScaleBySchool(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
 
 	campusNumber := c.Query("campus_number")
 	if campusNumber == "" {
@@ -103,13 +108,36 @@ func FetchAggregateScaleBySchool(c *gin.Context) {
 		return
 	}
 
+	classNumber := c.Query("class_number")
+	if classNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Class number is required"})
+		return
+	}
+
+	query := config.DB.Where("campus_number = ? AND school_number AND class_number = ?", campusNumber, schoolNumber, classNumber)
+
 	var aggregateScales []models.AggregateScale
-	if err := config.DB.Where("campus_number = ? AND school_number", campusNumber, schoolNumber).Find(&aggregateScales).Error; err != nil {
+	if err := query.Preload("Class").Preload("Campus").Preload("School").Preload("GradingStandard").Find(&aggregateScales).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": aggregateScales})
+	var response []responses.AggregateScaleResponse
+	for _, aggregateScale := range aggregateScales {
+		response = append(response, responses.AggregateScaleResponse{
+			Number:              aggregateScale.Number,
+			MinValue:            aggregateScale.MinValue,
+			MaxValue:            aggregateScale.MaxValue,
+			Name:                aggregateScale.Name,
+			Weight:              aggregateScale.Weight,
+			Illustration:        aggregateScale.Illustration,
+			Description:         aggregateScale.Description,
+			SchoolName:          aggregateScale.School.Name,
+			CampusName:          aggregateScale.Campus.Name,
+			GradingStandardName: aggregateScale.GradingStandard.Name,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
 func EditAggregateScale(c *gin.Context) {
