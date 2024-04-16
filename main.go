@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
+	"log"
 	"os"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
