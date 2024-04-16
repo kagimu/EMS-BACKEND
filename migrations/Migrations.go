@@ -173,9 +173,9 @@ func Init() error {
 		&cateringModels.FeedingSessionItem{},
 		&cateringModels.Stocking{},
 		&cateringModels.FeedingGroupUser{},
-		&timetableModels.StudyTimetable{},
 		&timetableModels.StudyingTimeBlock{},
-		&timetableModels.StudyPeriod{},
+		&timetableModels.StudyTimetable{},
+		//&timetableModels.StudyPeriod{},
 	)
 
 	if err != nil {
