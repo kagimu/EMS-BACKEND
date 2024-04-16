@@ -11,6 +11,7 @@ type AggregateScaleRequest struct {
 	CampusNumber          string  `json:"campus_number"`
 	SchoolNumber          string  `json:"school_number"`
 	Name                  string  `json:"name"`
+	Illustration          string  `json:"illustration"`
 	GradingStandardNumber string  `json:"grading_standard_number"`
 }
 
