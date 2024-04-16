@@ -402,10 +402,7 @@ func Register(context *gin.Context) {
 
 func ResetPassword(context *gin.Context) {
 
-	type UserEmail struct {
-		Email string `json:"email"`
-	}
-	var userMail UserEmail
+	var userMail requests.UserEmail
 
 	err := context.BindJSON(&userMail)
 	if err != nil {
@@ -413,11 +410,14 @@ func ResetPassword(context *gin.Context) {
 		return
 	}
 
-	Email := userMail.Email
-	if Email == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Email is required!"})
+	userMail.Prepare()
+
+	if err := userMail.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+
+	Email := userMail.Email
 
 	Email = strings.TrimSpace(strings.ToLower(Email))
 
@@ -453,13 +453,15 @@ func ResetPassword(context *gin.Context) {
 	var userData models.User
 
 	//this is done only when user already sent an activation link
+	tx := config.DB.Begin()
 	if userStatus == statusActive {
 		//then we proceed to update the user
 		//var userData models.User
-		updateStatus := config.DB.Model(&userData).
+		updateStatus := tx.Model(&userData).
 			Where("number = ?", userNumber).
 			Update("status", status)
 		if updateStatus.Error != nil {
+			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
 			return
 		}
@@ -472,15 +474,22 @@ func ResetPassword(context *gin.Context) {
 			Status:     status,
 		}
 
-		config.DB.Save(&saveUserPasswordToken)
+		if err := tx.Create(&saveUserPasswordToken).Error; err != nil {
+			// If any error occurs, rollback the transaction
+			tx.Rollback()
+			// Handle or return the error as needed
+			context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create Learning area"})
+			return
+		}
 
 	} else {
 
 		var passwordResetInfo models.PasswordReset
-		if err := config.DB.
+		if err := tx.
 			Where("user_number = ?", userNumber).
 			Where("status = ?", status).
 			First(&passwordResetInfo).Error; err != nil {
+			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Token not found"})
 			return
 		}
@@ -496,6 +505,14 @@ func ResetPassword(context *gin.Context) {
 		context.JSON(http.StatusNotFound, gin.H{"message": "Error " + err.Error()})
 		return
 	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create reset password"})
+		return
+	}
+
 	context.JSON(http.StatusOK, gin.H{"message": "Please check your email to continue resetting your password", "token": userToken})
 }
 
