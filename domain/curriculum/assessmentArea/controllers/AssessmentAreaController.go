@@ -2,14 +2,14 @@ package controllers
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"net/http"
 )
 
 func CreateAssessmentArea(c *gin.Context) {
@@ -114,6 +114,28 @@ func EditAssessmentArea(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Assessment area updated successfully"})
+}
+
+func FetchAssessmentAreasByCampusClassNumber(c *gin.Context) {
+	campusClassNumber := c.Param("campus_class_number")
+	if campusClassNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class number is required"})
+		return
+	}
+
+	var campusClass campusClassModels.CampusClass
+	if err := config.DB.Preload("CurriculumClass").Where("number = ?", campusClassNumber).First(&campusClass).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus class"})
+		return
+	}
+
+	var assessmentAreas []models.AssessmentArea
+	if err := config.DB.Where("curriculum_class_number = ?", campusClass.CurriculumClass.Number).Find(&assessmentAreas).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": assessmentAreas})
 }
 
 //prepare Scope for assessment area

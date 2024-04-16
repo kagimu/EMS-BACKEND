@@ -31,6 +31,12 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
+	fileName, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
+		return
+	}
+
 	var campusClass classModel.CampusClass
 	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No campus class found with the specified number"})
@@ -45,6 +51,7 @@ func CreateAssessmentGrade(c *gin.Context) {
 		MaximumPoints:     payload.MaximumPoints,
 		Abbreviation:      payload.Abbreviation,
 		Remarks:           payload.Remarks,
+		Illustration:      fileName,
 		CampusClassNumber: payload.CampusClassNumber,
 		UserNumber:        user.Number,
 	}
@@ -98,6 +105,7 @@ func EditAssessmentGrade(c *gin.Context) {
 		Name:              payload.Name,
 		MaximumPoints:     payload.MaximumPoints,
 		CampusClassNumber: payload.CampusClassNumber,
+		Illustration:      payload.Illustration,
 		MinimumPoints:     payload.MinimumPoints,
 		Abbreviation:      payload.Abbreviation,
 		Remarks:           payload.Remarks,

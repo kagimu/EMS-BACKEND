@@ -4,11 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
-
-	"github.com/gin-gonic/gin"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"

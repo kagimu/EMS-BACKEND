@@ -216,7 +216,7 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 	}
 
 	var existingReportColumn models.ReportColumnAssessment
-	if err := config.DB.Where("report_column_number = ?", payload.ReportColumnNumber).First(&existingReportColumn).Error; err == nil {
+	if err := config.DB.Where("report_column_number = ? AND assessment_area_number = ? AND assessment_metric_number = ?", payload.ReportColumnNumber, payload.AssessmentAreaNumber, payload.AssessmentMetricNumber).First(&existingReportColumn).Error; err == nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column already configured on an  assessment"})
 		return
 	}
@@ -330,6 +330,27 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		return
 	}
 
+	// find the latest report settings for the class
+	var reportSetting models.ReportSetting
+	if err := config.DB.Where("campus_class_number = ? AND status = ?", campusClass.Number, constants.STATUS_ACTIVE).First(&reportSetting).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
+		return
+
+	}
+
+	var rcs []string
+
+	var reportColumns []models.ReportColumn
+	if err := config.DB.Where("report_setting_number = ?", reportSetting.Number).Find(&reportColumns).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
+		return
+
+	}
+
+	for _, reportColumn := range reportColumns {
+		rcs = append(rcs, reportColumn.Name)
+	}
+
 	var la []responses.LearningArea
 	for _, learningArea := range learningAreas {
 
@@ -352,6 +373,17 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 			if err := config.DB.Where("report_summary_number = ? AND assessment_area_number = ? ", reportSummaryNumber, assessmentArea.Number).Find(&reportScores).Error; err != nil {
 				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report scores"})
 				return
+			}
+
+			if len(reportScores) < len(rcs) {
+				//  get the difference and add dummy report scores to the report scores
+				var diff = len(rcs) - len(reportScores)
+				for i := 0; i < diff; i++ {
+					reportScores = append(reportScores, models.ReportScore{
+						Score: -1,
+					})
+				}
+
 			}
 
 			assessments = append(assessments, responses.Assessments{
@@ -389,6 +421,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		School:            campusClass.Campus.School,
 		Campus:            campusClass.Campus,
 		StudyPeriod:       reportSummary.StudyPeriod.StudyPeriodName,
+		ReportColumns:     rcs,
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
