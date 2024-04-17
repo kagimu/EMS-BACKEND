@@ -32,6 +32,7 @@ import (
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
+	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
 	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	previousSchoolResultsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
@@ -137,9 +138,9 @@ func Init() error {
 		&assessmentModel.AssessmentMetric{},
 		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
-		&authModels.Role{},
-		&authModels.RolePermission{},
-		&authModels.UserRole{},
+		&permissionModels.Role{},
+		&permissionModels.RolePermission{},
+		&permissionModels.UserRole{},
 		&assessmentScaleModels.AggregateScale{},
 		&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
@@ -176,6 +177,13 @@ func Init() error {
 		&timetableModels.StudyTimetable{},
 		&timetableModels.StudyingTimeBlock{},
 		&timetableModels.StudyingPeriod{},
+		&permissionModels.ScopeUserCampus{},
+		&permissionModels.ScopeUserLevel{},
+		&permissionModels.ScopeUserClass{},
+		&permissionModels.ScopeUserLearningArea{},
+		&permissionModels.ScopeUserCurriculum{},
+		&permissionModels.ScopeUserCampus{},
+		&permissionModels.ScopeUserSchool{},
 	)
 
 	if err != nil {

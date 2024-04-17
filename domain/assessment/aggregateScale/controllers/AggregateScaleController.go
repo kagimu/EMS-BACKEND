@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
@@ -125,6 +126,8 @@ func FetchAggregateScaleBySchool(c *gin.Context) {
 		return
 	}
 
+	baseURL := os.Getenv("BASE_URL")
+
 	var response []responses.AggregateScaleResponse
 	for _, aggregateScale := range aggregateScales {
 		response = append(response, responses.AggregateScaleResponse{
@@ -133,7 +136,7 @@ func FetchAggregateScaleBySchool(c *gin.Context) {
 			MaxValue:            aggregateScale.MaxValue,
 			Name:                aggregateScale.Name,
 			Weight:              aggregateScale.Weight,
-			Illustration:        aggregateScale.Illustration,
+			Illustration:        baseURL + aggregateScale.Illustration,
 			Description:         aggregateScale.Description,
 			SchoolName:          aggregateScale.School.Name,
 			CampusName:          aggregateScale.Campus.Name,

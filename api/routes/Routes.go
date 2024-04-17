@@ -33,6 +33,7 @@ import (
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
+	permissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	previousSchoolResultsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/controllers"
@@ -473,7 +474,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
 			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
-			assessmentArea.GET("by-campus-class-number/:campus-class-number", assessmentAreaController.FetchAssessmentAreasByCampusClassNumber)
+			assessmentArea.GET("by-campus-class-number/:campus_class_number", assessmentAreaController.FetchAssessmentAreasByCampusClassNumber)
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
 
@@ -525,11 +526,38 @@ func SetupRoutes() *gin.Engine {
 
 		roles := main.Group("settings/roles")
 		{
-			roles.POST("", authController.CreateRole)
-			roles.GET("", authController.FetchRoles)
-			roles.GET(":role_number", authController.FetchRoleDetails)
-			roles.PUT("assign", authController.AssignRolesToAUser)
-			roles.DELETE("remove", authController.RemoveRoleAssignment)
+			roles.POST("", permissionController.CreateRole)
+			roles.GET("", permissionController.FetchRoles)
+			roles.GET(":role_number", permissionController.FetchRoleDetails)
+			roles.PUT("assign", permissionController.AssignRolesToAUser)
+			roles.DELETE("remove", permissionController.RemoveRoleAssignment)
+
+			scopes := roles.Group("scopes")
+			{
+				// Campus scope
+				scopes.POST("campus", permissionController.CreateScopeUserCampus)
+				scopes.GET("campus", permissionController.FetchScopeUserCampus)
+
+				// Class scope
+				scopes.POST("class", permissionController.CreateScopeUserClass)
+				scopes.GET("class", permissionController.FetchScopeUserClass)
+
+				// School scope
+				scopes.POST("school", permissionController.CreateScopeUserSchool)
+				scopes.GET("school", permissionController.FetchScopeUserSchool)
+
+				// Curriculum scope
+				scopes.POST("curriculum", permissionController.CreateScopeUserCurriculum)
+				scopes.GET("curriculum", permissionController.FetchScopeUserCurriculum)
+
+				// Learning area scope
+				scopes.POST("learning-area", permissionController.CreateScopeUserLearningArea)
+				scopes.GET("", permissionController.FetchScopeUserLearningArea)
+
+				// Level scope
+				scopes.POST("level", permissionController.CreateScopeUserLevel)
+				scopes.GET("level", permissionController.FetchScopeUserLevel)
+			}
 		}
 
 		users := main.Group("users")

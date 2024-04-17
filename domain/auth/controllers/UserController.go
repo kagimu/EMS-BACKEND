@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/hassPassTokenGen"
+	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -119,7 +121,7 @@ func CreateUser(c *gin.Context) {
 
 	// append roles
 
-	var userRole models.UserRole
+	var userRole permissionModels.UserRole
 
 	for _, roleNumber := range user.RoleNumbers {
 		if err := tx.Where("number = ?", roleNumber).First(&userRole.Role).Error; err != nil {
