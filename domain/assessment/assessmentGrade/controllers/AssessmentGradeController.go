@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"os"
 
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
@@ -83,6 +84,8 @@ func FetchAssessmentGrades(c *gin.Context) {
 		return
 	}
 
+	baseURL := os.Getenv("BASE_URL")
+
 	var response []responses.AssessmentGradeResponse
 	for _, assessmentGrade := range assessmentGrades {
 		response = append(response, responses.AssessmentGradeResponse{
@@ -94,7 +97,7 @@ func FetchAssessmentGrades(c *gin.Context) {
 			Abbreviation:     assessmentGrade.Abbreviation,
 			Remarks:          assessmentGrade.Remarks,
 			CampusClassName:  assessmentGrade.CampusClass.ClassName,
-			IllustrationPath: assessmentGrade.Illustration,
+			IllustrationPath: baseURL + assessmentGrade.Illustration,
 		})
 	}
 

@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"errors"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
 	"net/http"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -37,6 +38,7 @@ func CreateRole(c *gin.Context) {
 	saveRole := models.Role{
 		Number:      roleNumber,
 		Name:        payload.Name,
+		Status:      payload.Status,
 		UserNumber:  user.Number,
 		Description: payload.Description,
 	}
@@ -52,8 +54,9 @@ func CreateRole(c *gin.Context) {
 	// save the permissions
 	for _, permission := range payload.Permissions {
 		savePermission := models.RolePermission{
-			RoleNumber: roleNumber,
-			Permission: permission,
+			RoleNumber:    roleNumber,
+			AddedByNumber: user.Number,
+			Permission:    permission,
 		}
 
 		if err := tx.Create(&savePermission).Error; err != nil {
