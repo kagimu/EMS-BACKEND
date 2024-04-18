@@ -516,23 +516,26 @@ func SetupRoutes() *gin.Engine {
 			attendance.POST("", assessmentController.CreateAttendance)
 			attendance.GET("class", assessmentController.FetchAttendanceByClass)
 			attendance.GET("student", assessmentController.FetchStudentAttendance)
-
 		}
 
-		settings := main.Group("settings/permissions")
+		settings := main.Group("settings")
 		{
-			settings.GET("groups", authController.FetchPermissionGroups)
-		}
+			permissions := settings.Group("permissions")
+			{
+				permissions.GET("groups", authController.FetchPermissionGroups)
+			}
 
-		roles := main.Group("settings/roles")
-		{
-			roles.POST("", permissionController.CreateRole)
-			roles.GET("", permissionController.FetchRoles)
-			roles.GET(":role_number", permissionController.FetchRoleDetails)
-			roles.PUT("assign", permissionController.AssignRolesToAUser)
-			roles.DELETE("remove", permissionController.RemoveRoleAssignment)
+			roles := settings.Group("settings/roles")
+			{
+				roles.POST("", permissionController.CreateRole)
+				roles.GET("", permissionController.FetchRoles)
+				roles.GET(":role_number", permissionController.FetchRoleDetails)
+				roles.PUT("assign", permissionController.AssignRolesToAUser)
+				roles.DELETE("remove", permissionController.RemoveRoleAssignment)
 
-			scopes := roles.Group("scopes")
+			}
+
+			scopes := settings.Group("scopes")
 			{
 				// Campus scope
 				scopes.POST("campus", permissionController.CreateScopeUserCampus)
