@@ -162,6 +162,7 @@ func Init() error {
 		&promotionModels.PromotionSetting{},
 		&promotionModels.PromotionSettingsValue{},
 		&previousSchoolResultsModels.PreviousSchoolResults{},
+		&staffModel.Staff{},
 		&cateringModels.FeedingGroup{},
 		&cateringModels.FeedingGroupPerDay{},
 		&cateringModels.FeedingSessionPerDay{},
