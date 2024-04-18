@@ -139,6 +139,7 @@ func FetchAggregateScaleBySchool(c *gin.Context) {
 			Illustration:        baseURL + aggregateScale.Illustration,
 			Description:         aggregateScale.Description,
 			SchoolName:          aggregateScale.School.Name,
+			ClassName:           aggregateScale.Class.Name,
 			CampusName:          aggregateScale.Campus.Name,
 			GradingStandardName: aggregateScale.GradingStandard.Name,
 		})
