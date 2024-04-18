@@ -148,7 +148,6 @@ func Init() error {
 		&staffModel.SalaryScale{},
 		&staffModel.Task{},
 		&staffModel.TaskSupervision{},
-		&staffModel.Staff{},
 		&interviewModel.InterviewAssessmentMetric{},
 		&progressReportModels.ProgressReport{},
 		&reportSettings.ReportSetting{},
@@ -184,6 +183,7 @@ func Init() error {
 		&permissionModels.ScopeUserCurriculum{},
 		&permissionModels.ScopeUserCampus{},
 		&permissionModels.ScopeUserSchool{},
+		&staffModel.Staff{},
 	)
 
 	if err != nil {
