@@ -162,6 +162,7 @@ func Init() error {
 		&promotionModels.PromotionSetting{},
 		&promotionModels.PromotionSettingsValue{},
 		&previousSchoolResultsModels.PreviousSchoolResults{},
+		&staffModel.Staff{},
 		&cateringModels.FeedingGroup{},
 		&cateringModels.FeedingGroupPerDay{},
 		&cateringModels.FeedingSessionPerDay{},
@@ -183,7 +184,6 @@ func Init() error {
 		&permissionModels.ScopeUserCurriculum{},
 		&permissionModels.ScopeUserCampus{},
 		&permissionModels.ScopeUserSchool{},
-		&staffModel.Staff{},
 	)
 
 	if err != nil {
