@@ -58,3 +58,29 @@ func FetchScopeUserSchool(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": schoolScopes})
 }
+
+func DeleteSchoolUserScope(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	scopeNumber := c.Query("scope_number")
+	if scopeNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Scope number is required"})
+		return
+	}
+
+	var schoolScope models.ScopeUserSchool
+	if err := config.DB.Where("number = ?", scopeNumber).First(&schoolScope).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch school scope"})
+		return
+	}
+
+	if err := config.DB.Delete(&schoolScope).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete school scope"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "School scope deleted successfully"})
+}
