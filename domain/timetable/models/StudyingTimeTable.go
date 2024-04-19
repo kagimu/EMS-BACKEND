@@ -11,7 +11,7 @@ import (
 
 type StudyingTimeTable struct {
 	gorm.Model
-	Number                  string                `json:"number" gorm:"size:36;not null"`
+	Number                  string                `json:"number" gorm:"size:36;unique;not null"`
 	StudyingTimeBlockNumber string                `json:"studying_time_block_number" gorm:"size:36;not null"`
 	StudyingTimeBlock       StudyingTimeBlock     `gorm:"foreignKey:StudyingTimeBlockNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StreamNumber            string                `json:"stream_number" gorm:"size:36;not null"`

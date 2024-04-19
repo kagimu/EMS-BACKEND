@@ -174,8 +174,8 @@ func Init() error {
 		&cateringModels.Feeding{},
 		&cateringModels.FeedingSessionItem{},
 		&cateringModels.FeedingGroupUser{},
-		&timetableModels.StudyingTimeTable{},
 		&timetableModels.StudyingTimeBlock{},
+		&timetableModels.StudyingTimeTable{},
 		&timetableModels.StudyingPeriod{},
 		&permissionModels.ScopeUserCampus{},
 		&permissionModels.ScopeUserLevel{},
@@ -184,7 +184,6 @@ func Init() error {
 		&permissionModels.ScopeUserCurriculum{},
 		&permissionModels.ScopeUserCampus{},
 		&permissionModels.ScopeUserSchool{},
-		&staffModel.Staff{},
 	)
 
 	if err != nil {
