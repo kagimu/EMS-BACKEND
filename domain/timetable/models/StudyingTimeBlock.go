@@ -12,7 +12,7 @@ import (
 
 type StudyingTimeBlock struct {
 	gorm.Model
-	Number             string                         `json:"number" gorm:"size:36;not null"`
+	Number             string                         `json:"number" gorm:"size:36;unique;not null"`
 	StartTime          time.Time                      `json:"start_time"`
 	EndTime            time.Time                      `json:"end_time"`
 	Length             time.Duration                  `json:"length"`

@@ -9,7 +9,7 @@ import (
 type Staff struct {
 	gorm.Model
 	Number            string             `json:"number" gorm:"size:36;unique;not null"`
-	StaffNumber       string             `json:"staff_number"`
+	StaffIDNumber     string             `json:"staff_id_number"`
 	JobTitleNumber    string             `json:"job_title_number" gorm:"size:36;not null"`
 	JobTitle          JobTitle           `gorm:"foreignKey:JobTitleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber      string             `json:"campus_number" gorm:"size:36;not null"`
