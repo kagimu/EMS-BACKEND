@@ -113,14 +113,22 @@ func CreateAdmission(c *gin.Context) {
 			Status: "ADMITTED",
 		}
 
-		//// Checks if the campus class applied for is the same as the campus class being admitted for.
-		//if student.CampusClassNumber != payload.CampusClassNumber {
-		//	c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Campus class applied for and selected are different for student: %s %s %s", student.Surname, student.OtherName, student.SecondName)})
-		//	return
-		//}
-
 		if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
+			return
+		}
+
+		//validate if student has been admitted before on the same academic year and study period
+		var admission models.Admission
+		if err := config.DB.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ?", studentPayload, payload.AcademicYearNumber, payload.StudyPeriodNumber).First(&admission).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Student has already been admitted for the selected academic year and study period"})
+			return
+		}
+
+		// validate if student has been admitted before on the same academic year and study period and campus class
+
+		if err := config.DB.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ? AND campus_class_number = ?", studentPayload, payload.AcademicYearNumber, payload.StudyPeriodNumber, payload.CampusClassNumber).First(&admission).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Student has already been admitted for the selected academic year, study period and campus class"})
 			return
 		}
 

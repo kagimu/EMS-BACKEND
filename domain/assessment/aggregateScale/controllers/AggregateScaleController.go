@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"os"
 
@@ -44,6 +45,7 @@ func CreateAggregateScale(c *gin.Context) {
 	}
 
 	saveAggregateScale := models.AggregateScale{
+		Code:                  payload.Code,
 		Number:                uuid.NewV4().String(),
 		Name:                  payload.Name,
 		Weight:                payload.Weight,
@@ -51,8 +53,7 @@ func CreateAggregateScale(c *gin.Context) {
 		MaxValue:              payload.MaxValue,
 		Illustration:          fileName,
 		Description:           payload.Description,
-		SchoolNumber:          payload.SchoolNumber,
-		ClassNumber:           payload.ClassNumber,
+		CampusClassNumber:     payload.CampusClassNumber,
 		CampusNumber:          payload.CampusNumber,
 		UserNumber:            user.Number,
 		GradingStandardNumber: payload.GradingStandardNumber,
@@ -84,8 +85,10 @@ func FetchAggregateScales(c *gin.Context) {
 		return
 	}
 
+	campusClassNumber := c.Query("campus_class_number")
+
 	var aggregateScales []models.AggregateScale
-	if err := config.DB.Where("campus_number = ?", campusNumber).Find(&aggregateScales).Error; err != nil {
+	if err := config.DB.Scopes(filters.ByCampusClassNumber(campusClassNumber), filters.ByCampusNumber(campusNumber)).Find(&aggregateScales).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
 		return
 	}
@@ -131,6 +134,7 @@ func FetchAggregateScaleBySchool(c *gin.Context) {
 	var response []responses.AggregateScaleResponse
 	for _, aggregateScale := range aggregateScales {
 		response = append(response, responses.AggregateScaleResponse{
+			Code:                aggregateScale.Code,
 			Number:              aggregateScale.Number,
 			MinValue:            aggregateScale.MinValue,
 			MaxValue:            aggregateScale.MaxValue,
@@ -138,8 +142,7 @@ func FetchAggregateScaleBySchool(c *gin.Context) {
 			Weight:              aggregateScale.Weight,
 			Illustration:        baseURL + aggregateScale.Illustration,
 			Description:         aggregateScale.Description,
-			SchoolName:          aggregateScale.School.Name,
-			ClassName:           aggregateScale.Class.Name,
+			ClassName:           aggregateScale.CampusClass.ClassName,
 			CampusName:          aggregateScale.Campus.Name,
 			GradingStandardName: aggregateScale.GradingStandard.Name,
 		})
@@ -179,14 +182,14 @@ func EditAggregateScale(c *gin.Context) {
 	}
 
 	updateAggregateScale := models.AggregateScale{
+		Code:                  payload.Code,
 		Name:                  payload.Name,
 		Weight:                payload.Weight,
 		MinValue:              payload.MinValue,
 		MaxValue:              payload.MaxValue,
 		Description:           payload.Description,
-		SchoolNumber:          payload.SchoolNumber,
 		Illustration:          fileName,
-		ClassNumber:           payload.ClassNumber,
+		CampusClassNumber:     payload.CampusClassNumber,
 		CampusNumber:          payload.CampusNumber,
 		GradingStandardNumber: payload.GradingStandardNumber,
 	}
