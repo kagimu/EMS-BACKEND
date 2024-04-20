@@ -7,7 +7,7 @@ type GradingStandardRequest struct {
 	Name              string `json:"name"`
 	Description       string `json:"description"`
 	Type              string `json:"type"`
-	CampusClassNumber string `json:"class_number"`
+	CampusClassNumber string `json:"campus_class_number"`
 }
 
 func (a *GradingStandardRequest) Validate() error {
