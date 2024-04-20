@@ -18,7 +18,7 @@ func CreateGradingStandard(ctx *gin.Context) {
 	}
 
 	var payload requests.GradingStandardRequest
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
+	if err := ctx.BindJSON(&payload); err != nil {
 		ctx.JSON(400, gin.H{"message": "Failed to process payload"})
 		return
 	}
@@ -28,21 +28,36 @@ func CreateGradingStandard(ctx *gin.Context) {
 		return
 	}
 
-	gradingStandard := models.GradingStandard{
+	//validate if code and name already exists on campus class number
+
+	var gradingStandard models.GradingStandard
+	if err := config.DB.Where("code = ? AND campus_class_number = ?", payload.Code, payload.CampusClassNumber).First(&gradingStandard).Error; err == nil {
+		ctx.JSON(400, gin.H{"message": "Grading standard with the same code already exists"})
+		return
+
+	}
+
+	if err := config.DB.Where("name = ? AND campus_class_number = ?", payload.Name, payload.CampusClassNumber).First(&gradingStandard).Error; err == nil {
+		ctx.JSON(400, gin.H{"message": "Grading standard with the same name already exists"})
+		return
+	}
+
+	gs := models.GradingStandard{
+		Code:              payload.Code,
 		Number:            uuid.NewV4().String(),
 		Name:              payload.Name,
 		Description:       payload.Description,
 		Type:              payload.Type,
-		CampusClassNumber: payload.ClassNumber,
+		CampusClassNumber: payload.CampusClassNumber,
 		UserNumber:        user.Number,
 	}
 
-	if err := config.DB.Create(&gradingStandard).Error; err != nil {
+	if err := config.DB.Create(&gs).Error; err != nil {
 		ctx.JSON(400, gin.H{"message": "Failed to save grading standard"})
 		return
 	}
 
-	ctx.JSON(201, gin.H{"message": "Grading standard created successfully", "data": gradingStandard})
+	ctx.JSON(201, gin.H{"message": "Grading standard created successfully"})
 }
 
 func FetchGradingStandards(ctx *gin.Context) {
