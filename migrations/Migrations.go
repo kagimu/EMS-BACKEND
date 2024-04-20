@@ -32,6 +32,7 @@ import (
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
+	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
 	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	previousSchoolResultsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
@@ -43,6 +44,7 @@ import (
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
+	staffModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -136,17 +138,16 @@ func Init() error {
 		&assessmentModel.AssessmentMetric{},
 		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
-		&authModels.Role{},
-		&authModels.RolePermission{},
-		&authModels.UserRole{},
+		&permissionModels.Role{},
+		&permissionModels.RolePermission{},
+		&permissionModels.UserRole{},
 		&assessmentScaleModels.AggregateScale{},
 		&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
-		//&staffModel.JobTitle{},
-		//&staffModel.SalaryScale{},
-		//&staffModel.Task{},
-		//&staffModel.TaskSupervision{},
-		//&staffModel.Staff{},
+		&staffModel.JobTitle{},
+		&staffModel.SalaryScale{},
+		&staffModel.Task{},
+		&staffModel.TaskSupervision{},
 		&interviewModel.InterviewAssessmentMetric{},
 		&progressReportModels.ProgressReport{},
 		&reportSettings.ReportSetting{},
@@ -161,6 +162,7 @@ func Init() error {
 		&promotionModels.PromotionSetting{},
 		&promotionModels.PromotionSettingsValue{},
 		&previousSchoolResultsModels.PreviousSchoolResults{},
+		&staffModel.Staff{},
 		&cateringModels.FeedingGroup{},
 		&cateringModels.FeedingGroupPerDay{},
 		&cateringModels.FeedingSessionPerDay{},
@@ -168,13 +170,20 @@ func Init() error {
 		&cateringModels.UnitOfMeasure{},
 		&cateringModels.MenuItem{},
 		&cateringModels.ItemAssembly{},
+		&cateringModels.Stocking{},
 		&cateringModels.Feeding{},
 		&cateringModels.FeedingSessionItem{},
-		&cateringModels.Stocking{},
 		&cateringModels.FeedingGroupUser{},
 		&timetableModels.StudyingTimeBlock{},
-		&timetableModels.StudyTimetable{},
-		//&timetableModels.StudyPeriod{},
+		&timetableModels.StudyingTimeTable{},
+		&timetableModels.StudyingPeriod{},
+		&permissionModels.ScopeUserCampus{},
+		&permissionModels.ScopeUserLevel{},
+		&permissionModels.ScopeUserClass{},
+		&permissionModels.ScopeUserLearningArea{},
+		&permissionModels.ScopeUserCurriculum{},
+		&permissionModels.ScopeUserCampus{},
+		&permissionModels.ScopeUserSchool{},
 	)
 
 	if err != nil {

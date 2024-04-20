@@ -46,7 +46,7 @@ func CreateStaff(c *gin.Context) {
 
 	saveStaff := models.Staff{
 		Number:            uuid.NewV4().String(),
-		StaffNumber:       staffNumber,
+		StaffIDNumber:     staffNumber,
 		JobTitleNumber:    payload.JobTitleNumber,
 		CampusNumber:      payload.CampusNumber,
 		SalaryScaleNumber: payload.SalaryScaleNumber,
@@ -89,14 +89,14 @@ func FetchMemberByStaffNumber(c *gin.Context) {
 
 	var staff models.Staff
 
-	staffNumber := c.Query("staff_number")
+	staffNumber := c.Query("staff_id_number")
 
 	if staffNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Staff number is missing"})
 		return
 	}
 
-	if err := config.DB.First(&staff, "staff_number = ?", staffNumber).Error; err != nil {
+	if err := config.DB.First(&staff, "staff_id_number = ?", staffNumber).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"message": "No staff member found"})
 		} else {

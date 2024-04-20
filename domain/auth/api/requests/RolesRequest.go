@@ -50,6 +50,7 @@ type NewRoleRequest struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Permissions []string `json:"permissions"`
+	Status      string   `json:"status"`
 }
 
 func (req *NewRoleRequest) Validate() error {

@@ -3,15 +3,16 @@ package requests
 import "errors"
 
 type AssessmentGradeRequest struct {
-	Grade             string `json:"grade"`
-	Description       string `json:"description"`
-	MinimumPoints     int64  `json:"minimum_points"`
-	MaximumPoints     int64  `json:"maximum_points"`
-	Name              string `json:"name"`
-	Abbreviation      string `json:"abbreviation"`
-	Remarks           string `json:"remarks"`
-	Illustration      string `json:"illustration"`
-	CampusClassNumber string `json:"campus_class_number"`
+	Code              int64   `json:"code"`
+	Grade             string  `json:"grade"`
+	Description       string  `json:"description"`
+	MinimumPoints     float64 `json:"minimum_points"`
+	MaximumPoints     float64 `json:"maximum_points"`
+	Name              string  `json:"name"`
+	Abbreviation      string  `json:"abbreviation"`
+	Remarks           string  `json:"remarks"`
+	CampusClassNumber string  `json:"campus_class_number"`
+	CampusNumber      string  `json:"campus_number"`
 }
 
 func (r *AssessmentGradeRequest) Validate() error {
@@ -33,6 +34,12 @@ func (r *AssessmentGradeRequest) Validate() error {
 
 	if r.Remarks == "" {
 		return errors.New("remarks is required")
+	}
+	if r.CampusNumber == "" {
+		return errors.New("campus number is required")
+	}
+	if r.Code == 0 {
+		return errors.New("code is required")
 	}
 	if r.CampusClassNumber == "" {
 		return errors.New("campus class number is required")

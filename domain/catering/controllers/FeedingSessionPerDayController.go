@@ -67,5 +67,6 @@ func FetchFeedingSessionsPerDay(c *gin.Context) {
 			FeedingSessionName:   feedingSession.FeedingSession.Name,
 		})
 	}
+
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }

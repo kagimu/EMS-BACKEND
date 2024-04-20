@@ -14,6 +14,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/hassPassTokenGen"
+	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -118,7 +119,7 @@ func Login(context *gin.Context) {
 
 	//prepare roles and permissions
 	//get user roles
-	var userRoles []models.UserRole
+	var userRoles []permissionModels.UserRole
 	var userRolesList []responses.RoleView
 	var permissions []string
 
@@ -133,7 +134,7 @@ func Login(context *gin.Context) {
 		})
 
 		//get role permissions
-		var rolePermissions []models.RolePermission
+		var rolePermissions []permissionModels.RolePermission
 		config.DB.Where("role_number = ?", item.RoleNumber).Find(&rolePermissions)
 
 		for _, permission := range rolePermissions {

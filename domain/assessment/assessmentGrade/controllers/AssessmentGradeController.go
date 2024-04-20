@@ -1,12 +1,15 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
+	"os"
 
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -31,10 +34,15 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	fileName, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
-		return
+	var fileName string
+	_, err = c.FormFile("illustration")
+	if err == nil {
+		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
+		fileName = file
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
+			return
+		}
 	}
 
 	var campusClass classModel.CampusClass
@@ -44,6 +52,8 @@ func CreateAssessmentGrade(c *gin.Context) {
 	}
 
 	saveAssessmentGrade := models.AssessmentGrade{
+		Code:              payload.Code,
+		CampusNumber:      payload.CampusNumber,
 		Number:            uuid.NewV4().String(),
 		Name:              payload.Name,
 		Description:       payload.Description,
@@ -71,13 +81,34 @@ func FetchAssessmentGrades(c *gin.Context) {
 		return
 	}
 
+	campusClassNumber := c.Query("campus_class_number")
+	campusNumber := c.Query("campus_number")
+
 	var assessmentGrades []models.AssessmentGrade
-	if err := config.DB.Preload("CampusClass").Find(&assessmentGrades).Error; err != nil {
+	if err := config.DB.Scopes(filters.ByCampusClassNumber(campusClassNumber), filters.ByCampusNumber(campusNumber)).Preload("CampusClass").Find(&assessmentGrades).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment grades"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": assessmentGrades})
+	baseURL := os.Getenv("BASE_URL")
+
+	var response []responses.AssessmentGradeResponse
+	for _, assessmentGrade := range assessmentGrades {
+		response = append(response, responses.AssessmentGradeResponse{
+			Code:             assessmentGrade.Code,
+			Number:           assessmentGrade.Number,
+			Name:             assessmentGrade.Name,
+			Description:      assessmentGrade.Description,
+			MinimumPoints:    assessmentGrade.MinimumPoints,
+			MaximumPoints:    assessmentGrade.MaximumPoints,
+			Abbreviation:     assessmentGrade.Abbreviation,
+			Remarks:          assessmentGrade.Remarks,
+			CampusClassName:  assessmentGrade.CampusClass.ClassName,
+			IllustrationPath: baseURL + assessmentGrade.Illustration,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
 func EditAssessmentGrade(c *gin.Context) {
@@ -100,12 +131,25 @@ func EditAssessmentGrade(c *gin.Context) {
 		return
 	}
 
+	var fileName string
+	_, err = c.FormFile("illustration")
+	if err == nil {
+		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
+		fileName = file
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
+			return
+		}
+	}
+
 	updateAssessmentGrade := models.AssessmentGrade{
+		Code:              payload.Code,
 		Description:       payload.Description,
 		Name:              payload.Name,
 		MaximumPoints:     payload.MaximumPoints,
 		CampusClassNumber: payload.CampusClassNumber,
-		Illustration:      payload.Illustration,
+		CampusNumber:      payload.CampusNumber,
+		Illustration:      fileName,
 		MinimumPoints:     payload.MinimumPoints,
 		Abbreviation:      payload.Abbreviation,
 		Remarks:           payload.Remarks,
