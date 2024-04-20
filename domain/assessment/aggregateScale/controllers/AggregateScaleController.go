@@ -23,7 +23,7 @@ func CreateAggregateScale(c *gin.Context) {
 
 	var payload requests.AggregateScaleRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload" + err.Error()})
 		return
 	}
 

@@ -8,7 +8,6 @@ type AggregateScaleRequest struct {
 	MaxValue              float64 `json:"max_value"`
 	Weight                float64 `json:"weight"`
 	Description           string  `json:"description"`
-	ClassNumber           string  `json:"class_number"`
 	CampusNumber          string  `json:"campus_number"`
 	CampusClassNumber     string  `json:"campus_class_number"`
 	Name                  string  `json:"name"`
@@ -30,8 +29,8 @@ func (a *AggregateScaleRequest) Validate() error {
 	if a.MaxValue < 0 {
 		return errors.New("maximum value must be greater than 0")
 	}
-	if a.ClassNumber == "" {
-		return errors.New("class number is required")
+	if a.CampusClassNumber == "" {
+		return errors.New("campus class number is required")
 	}
 	if a.CampusNumber == "" {
 		return errors.New("campus number is required")
