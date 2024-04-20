@@ -9,7 +9,7 @@ import (
 
 type AggregateScale struct {
 	gorm.Model
-	Code                  int64                  `json:"code" gorm:"size:36;unique;not null"`
+	Code                  int64                  `json:"code" gorm:"size:36;not null"`
 	Number                string                 `json:"number" gorm:"size:36;unique;not null"`
 	MinValue              float64                `json:"min_value" gorm:"not null"`
 	MaxValue              float64                `json:"max_value" gorm:"not null"`

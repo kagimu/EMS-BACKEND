@@ -9,7 +9,7 @@ import userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/mo
 
 type GradingStandard struct {
 	gorm.Model
-	Code              int64                   `json:"code" gorm:"size:36;unique;not null"`
+	Code              int64                   `json:"code" gorm:"size:36;not null"`
 	Number            string                  `json:"number" gorm:"size:36;unique;not null"`
 	Name              string                  `json:"name" gorm:"size:255;not null"`
 	Description       string                  `json:"description" gorm:"type:text;"`
