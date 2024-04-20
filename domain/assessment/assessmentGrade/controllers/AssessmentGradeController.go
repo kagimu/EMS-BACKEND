@@ -52,6 +52,7 @@ func CreateAssessmentGrade(c *gin.Context) {
 	}
 
 	saveAssessmentGrade := models.AssessmentGrade{
+		Code:              payload.Code,
 		CampusNumber:      payload.CampusNumber,
 		Number:            uuid.NewV4().String(),
 		Name:              payload.Name,
