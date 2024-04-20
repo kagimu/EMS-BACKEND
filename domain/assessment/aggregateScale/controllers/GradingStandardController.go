@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -50,6 +51,7 @@ func CreateGradingStandard(ctx *gin.Context) {
 		Type:              payload.Type,
 		CampusClassNumber: payload.CampusClassNumber,
 		UserNumber:        user.Number,
+		CampusNumber:      payload.CampusNumber,
 	}
 
 	if err := config.DB.Create(&gs).Error; err != nil {
@@ -61,8 +63,10 @@ func CreateGradingStandard(ctx *gin.Context) {
 }
 
 func FetchGradingStandards(ctx *gin.Context) {
+	campusClassNumber := ctx.Query("campus_class_number")
+	campusNumber := ctx.Query("campus_number")
 	var gradingStandards []models.GradingStandard
-	if err := config.DB.Find(&gradingStandards).Error; err != nil {
+	if err := config.DB.Scopes(filters.ByCampusClassNumber(campusClassNumber), filters.ByCampusNumber(campusNumber)).Find(&gradingStandards).Error; err != nil {
 		ctx.JSON(400, gin.H{"message": "Failed to get grading standards"})
 		return
 	}

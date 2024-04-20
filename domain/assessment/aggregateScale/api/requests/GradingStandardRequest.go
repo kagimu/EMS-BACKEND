@@ -8,6 +8,7 @@ type GradingStandardRequest struct {
 	Description       string `json:"description"`
 	Type              string `json:"type"`
 	CampusClassNumber string `json:"campus_class_number"`
+	CampusNumber      string `json:"campus_number"`
 }
 
 func (a *GradingStandardRequest) Validate() error {
@@ -20,5 +21,11 @@ func (a *GradingStandardRequest) Validate() error {
 	if a.CampusClassNumber == "" {
 		return errors.New("campus class number is required")
 	}
+
+	if a.CampusNumber != "" {
+		return errors.New("campus number is required")
+
+	}
+
 	return nil
 }
