@@ -2,6 +2,7 @@ package models
 
 import (
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	campusClass "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
 	"gorm.io/gorm"
@@ -19,7 +20,7 @@ type AssessmentGrade struct {
 	Illustration      string                  `json:"illustration" form:"illustration" gorm:"type:text"`
 	Remarks           string                  `json:"remarks" gorm:"type:text;"`
 	CampusNumber      string                  `json:"campus_number" gorm:"size:36;not null"`
-	Campus            campusClass.CampusClass `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Campus            campusModel.Campus      `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusClassNumber string                  `json:"campus_class_number" gorm:"size:36;not null"`
 	CampusClass       campusClass.CampusClass `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber        string                  `json:"user_number" gorm:"size:36;index;not null"`
