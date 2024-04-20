@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"os"
 
@@ -51,6 +52,7 @@ func CreateAssessmentGrade(c *gin.Context) {
 	}
 
 	saveAssessmentGrade := models.AssessmentGrade{
+		CampusNumber:      payload.CampusNumber,
 		Number:            uuid.NewV4().String(),
 		Name:              payload.Name,
 		Description:       payload.Description,
@@ -78,8 +80,11 @@ func FetchAssessmentGrades(c *gin.Context) {
 		return
 	}
 
+	campusClassNumber := c.Query("campus_class_number")
+	campusNumber := c.Query("campus_number")
+
 	var assessmentGrades []models.AssessmentGrade
-	if err := config.DB.Preload("CampusClass").Find(&assessmentGrades).Error; err != nil {
+	if err := config.DB.Scopes(filters.ByCampusClassNumber(campusClassNumber), filters.ByCampusNumber(campusNumber)).Preload("CampusClass").Find(&assessmentGrades).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment grades"})
 		return
 	}
@@ -89,6 +94,7 @@ func FetchAssessmentGrades(c *gin.Context) {
 	var response []responses.AssessmentGradeResponse
 	for _, assessmentGrade := range assessmentGrades {
 		response = append(response, responses.AssessmentGradeResponse{
+			Code:             assessmentGrade.Code,
 			Number:           assessmentGrade.Number,
 			Name:             assessmentGrade.Name,
 			Description:      assessmentGrade.Description,
@@ -136,10 +142,12 @@ func EditAssessmentGrade(c *gin.Context) {
 	}
 
 	updateAssessmentGrade := models.AssessmentGrade{
+		Code:              payload.Code,
 		Description:       payload.Description,
 		Name:              payload.Name,
 		MaximumPoints:     payload.MaximumPoints,
 		CampusClassNumber: payload.CampusClassNumber,
+		CampusNumber:      payload.CampusNumber,
 		Illustration:      fileName,
 		MinimumPoints:     payload.MinimumPoints,
 		Abbreviation:      payload.Abbreviation,
