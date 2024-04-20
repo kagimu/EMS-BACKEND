@@ -22,7 +22,7 @@ func (a *GradingStandardRequest) Validate() error {
 		return errors.New("campus class number is required")
 	}
 
-	if a.CampusNumber != "" {
+	if a.CampusNumber == "" {
 		return errors.New("campus number is required")
 
 	}
