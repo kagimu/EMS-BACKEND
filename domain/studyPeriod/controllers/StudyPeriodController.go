@@ -84,6 +84,7 @@ func NewStudyPeriod(context *gin.Context) {
 	var duplicateCode studyPeriodModel.StudyPeriod
 	if duplicate := config.DB.
 		Where("code = ?", code).
+		Where("academic_year_number = ?", academicYearNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -272,6 +273,7 @@ func EditStudyPeriod(context *gin.Context) {
 	var duplicateCode studyPeriodModel.StudyPeriod
 	if duplicate := config.DB.
 		Where("code = ?", code).
+		Where("academic_year_number = ?", academicYearNumber).
 		Where("number != ?", studyPeriodNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
