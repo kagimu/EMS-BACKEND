@@ -188,3 +188,36 @@ func FetchMenuItemDetails(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }
+
+func FetchMenuItemsByCampus(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	campusNumber := c.Param("campus_number")
+	var menuItems []models.MenuItem
+	if err := config.DB.Where("campus_number = ?", campusNumber).Find(&menuItems).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items"})
+		return
+	}
+
+	var response []responses.MenuItemResponse
+	for _, menuItem := range menuItems {
+		response = append(response, responses.MenuItemResponse{
+			Number:              menuItem.Number,
+			Name:                menuItem.Name,
+			Code:                menuItem.Code,
+			Type:                menuItem.Type,
+			Email:               menuItem.Campus.Email,
+			CampusName:          menuItem.Campus.Name,
+			CampusNumber:        menuItem.CampusNumber,
+			Location:            menuItem.Campus.Location,
+			UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
+			UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
+			UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"data": response})
+}

@@ -27,7 +27,6 @@ import (
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
 	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
-	invoicePaymentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/controllers"
 	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/controllers"
 	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
@@ -425,12 +424,9 @@ func SetupRoutes() *gin.Engine {
 		invoices := main.Group("/invoices")
 		{
 			invoices.POST("", invoiceController.CreateInvoice)
-			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
-		}
+			invoices.POST("pay", invoiceController.CreateInvoicePayment)
 
-		invoicePayments := main.Group("/invoice-payments")
-		{
-			invoicePayments.POST("", invoicePaymentController.CreateInvoicePayment)
+			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
 		}
 
 		services := main.Group("/services")
@@ -709,6 +705,7 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("menu-items", cateringController.CreateMenuItem)
 			catering.GET("menu-items", cateringController.FetchMenuItems)
 			catering.GET("menu-items/:menu_item_number", cateringController.FetchMenuItemDetails)
+			catering.GET("menu-items/filter/:campus_number", cateringController.FetchMenuItemsByCampus)
 			catering.PUT("menu-items/:menu_item_number", cateringController.EditMenuItem)
 
 			// Units of measure
@@ -726,6 +723,7 @@ func SetupRoutes() *gin.Engine {
 			// Stocking
 			catering.POST("stocking", cateringController.CreateStocking)
 			catering.GET("stocking", cateringController.FetchStockings)
+			catering.GET("stocking/:stock_item_number", cateringController.FetchItemStock)
 
 			// Feeding group users
 			catering.POST("feeding-group-users", cateringController.CreateFeedingGroupUser)
