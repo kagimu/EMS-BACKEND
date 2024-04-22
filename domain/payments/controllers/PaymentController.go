@@ -21,18 +21,14 @@ func CreatePayment(c *gin.Context) {
 	var payload models.Payment
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   err.Error(),
-			"message": "Failed to process input",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
 	applicationNumber := payload.ApplicationNumber
 	var application applicationModel.Application
 	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Student not found"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student not found"})
 		return
 	}
 
@@ -51,9 +47,7 @@ func CreatePayment(c *gin.Context) {
 	tx := config.DB.Begin()
 	if err := tx.Create(&savePayment).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to save payment information",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save payment information"})
 		return
 	}
 
@@ -62,7 +56,5 @@ func CreatePayment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"data": savePayment,
-	})
+	c.JSON(http.StatusCreated, gin.H{"data": savePayment})
 }

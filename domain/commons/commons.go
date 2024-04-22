@@ -134,6 +134,10 @@ func HandleFileUpload(c *gin.Context, formFileKey string, savePath string) (stri
 		return "", err
 	}
 
+	if attachmentFile.Size > 20971520 {
+		return " ", errors.New("file size should be less than 20MB")
+	}
+
 	t := time.Now()
 	name := GeneratedFormattedUUID() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
 	extension := filepath.Ext(attachmentFile.Filename)

@@ -25,7 +25,6 @@ import (
 	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
-	invoicePaymentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
 	serviceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
@@ -123,13 +122,13 @@ func Init() error {
 		&itemModels.Item{},
 		&productModels.Product{},
 		&serviceModel.Service{},
+		&invoiceModel.InvoiceNumber{},
 		&invoiceModel.Invoice{},
 		&invoiceModel.InvoiceItem{},
 		&serviceModel.SerialCode{},
 		&serviceModel.CampusServices{},
 		&serviceModel.Discount{},
-		&invoicePaymentModel.InvoicePayment{},
-		&invoiceModel.InvoiceNumber{},
+		&invoiceModel.InvoicePayment{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},

@@ -6,8 +6,8 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
