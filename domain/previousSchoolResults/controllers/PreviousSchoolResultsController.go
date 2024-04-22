@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"net/http"
-	"path/filepath"
+	"strconv"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -22,38 +22,26 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 	}
 
 	var payload requests.PreviousSchoolResultsRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input", "err": err.Error()})
-		return
+	payload.StudentNumber = c.Param("student_number")
+	payload.ApplicationNumber = c.Param("application_number")
+
+	var assessmentAreasAndScores []requests.AssessmentAndScore
+	areas := c.PostFormArray("assessment_area_number")
+	scores := c.PostFormArray("score")
+
+	for i := range areas {
+		score, _ := strconv.ParseFloat(scores[i], 64)
+		assessmentAreasAndScores = append(assessmentAreasAndScores, requests.AssessmentAndScore{
+			AssessmentAreaNumber: areas[i],
+			Score:                score,
+		})
 	}
 
-	pdfFile, err := c.FormFile("attachment")
+	payload.AssessmentAndScore = assessmentAreasAndScores
+
+	fileName, err := commons.HandleFileUpload(c, "attachment", "./fileRepo/uploads")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "PDF file is missing"})
-		return
-	}
-
-	if pdfFile.Size > 20971520 {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Pdf file must not exceed 20 mbs!"})
-		return
-	}
-
-	if pdfFile.Size < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Pdf"})
-		return
-	}
-
-	filename := pdfFile.Filename
-
-	ext := filepath.Ext(filename)
-
-	newFileName := uuid.NewV4().String() + ext
-
-	path := filepath.Join("/fileRepo/uploads", newFileName)
-
-	err = c.SaveUploadedFile(pdfFile, path)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
 		return
 	}
 
@@ -65,7 +53,7 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 			StudentNumber:        payload.StudentNumber,
 			AssessmentAreaNumber: assessment.AssessmentAreaNumber,
 			Score:                assessment.Score,
-			Attachment:           newFileName,
+			Attachment:           fileName,
 			ApplicationNumber:    payload.ApplicationNumber,
 			UserNumber:           user.Number,
 		}
