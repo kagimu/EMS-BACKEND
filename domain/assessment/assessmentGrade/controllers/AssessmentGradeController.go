@@ -1,9 +1,10 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"os"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
