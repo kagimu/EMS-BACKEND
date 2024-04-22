@@ -73,3 +73,36 @@ func FetchStockings(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }
+
+func FetchItemStock(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(401, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	stockItemNumber := c.Param("stock_item_number")
+	if stockItemNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Stock item number is required"})
+		return
+	}
+
+	var stocking models.Stocking
+	if err := config.DB.Where("number = ?", stockItemNumber).First(&stocking).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Stocking not found"})
+		return
+	}
+
+	response := responses.StockingResponse{
+		Number:         stocking.Number,
+		Quantity:       stocking.Quantity,
+		UnitCost:       stocking.UnitCost,
+		MenuItemNumber: stocking.MenuItemNumber,
+		CampusNumber:   stocking.CampusNumber,
+		CampusName:     stocking.Campus.Name,
+		MenuItemName:   stocking.MenuItem.Name,
+		MenuItemType:   stocking.MenuItem.Type,
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
+}
