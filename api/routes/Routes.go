@@ -711,6 +711,7 @@ func SetupRoutes() *gin.Engine {
 			// Units of measure
 			catering.POST("units-of-measure", cateringController.CreateUnitOfMeasure)
 			catering.GET("units-of-measure", cateringController.FetchUnitsOfMeasure)
+			catering.PUT("units-of-measure/:number", cateringController.EditUnitOfMeasure)
 
 			// Item assembly
 			catering.POST("item-assembly", cateringController.CreateItemAssembly)
