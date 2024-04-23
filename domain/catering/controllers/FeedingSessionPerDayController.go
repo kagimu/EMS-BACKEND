@@ -37,6 +37,12 @@ func CreateFeedingSessionPerDay(c *gin.Context) {
 		UserNumber:           user.Number,
 	}
 
+	var duplicateFeedingSession models.FeedingSessionPerDay
+	if err := config.DB.Where("day = ? AND feeding_session_number = ?", payload.Day, payload.FeedingSessionNumber).First(&duplicateFeedingSession).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding session on the given day already exists"})
+		return
+	}
+
 	if err := config.DB.Create(&saveFeedingSessionPerDay).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session on a specified day"})
 		return
