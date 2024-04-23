@@ -76,3 +76,42 @@ func FetchUnitsOfMeasure(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Units of measure fetched successfully", "data": unitsOfMeasure})
 }
+
+func EditUnitOfMeasure(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UnitOfMeasureRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	unitOfMeasureNumber := c.Param("number")
+
+	var unitOfMeasure models.UnitOfMeasure
+	if err := config.DB.Where("number = ?", unitOfMeasureNumber).First(&unitOfMeasure).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unit of measure not found"})
+		return
+	}
+
+	editUnitOfMeasure := models.UnitOfMeasure{
+		Name:         payload.Name,
+		Code:         payload.Code,
+		Abbreviation: payload.Abbreviation,
+	}
+
+	if err := config.DB.Model(&unitOfMeasure).Where("number = ?", unitOfMeasureNumber).Updates(editUnitOfMeasure).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update unit of measure"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Unit of measure updated successfully"})
+}
