@@ -27,7 +27,7 @@ func CreateInvoice(c *gin.Context) {
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -49,6 +49,7 @@ func CreateInvoice(c *gin.Context) {
 		StudentNumber: payload.StudentNumber,
 		InvoiceNumber: invoiceNumber,
 		DueDate:       payload.DueDate,
+		Type:          payload.Type,
 		Description:   payload.Description,
 		UserNumber:    user.Number,
 	}
@@ -69,6 +70,7 @@ func UpdateInvoice(c *gin.Context) {
 
 	type Input struct {
 		Status string `json:"status"`
+		Type   string `json:"type"`
 	}
 
 	var payload Input
@@ -93,6 +95,7 @@ func UpdateInvoice(c *gin.Context) {
 
 	updateInvoice := models.Invoice{
 		Status: payload.Status,
+		Type:   payload.Type,
 	}
 
 	if err := config.DB.Model(&invoice).Where("number = ?", invoice.Number).Updates(updateInvoice).Error; err != nil {
