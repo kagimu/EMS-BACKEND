@@ -6,7 +6,6 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -21,28 +20,11 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 		return
 	}
 
-	var payload requests.PreviousSchoolResultsRequest
-	payload.StudentNumber = c.PostForm("student_number")
-	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
+	studentNumber := c.PostForm("student_number")
+	applicationNumber := c.PostForm("application_number")
 
-	payload.ApplicationNumber = c.PostForm("application_number")
-
-	var assessmentAreasAndScores []requests.AssessmentAndScore
 	areas := c.PostFormArray("assessment_area_number")
 	scores := c.PostFormArray("score")
-
-	for i := range areas {
-		score, _ := strconv.ParseFloat(scores[i], 64)
-		assessmentAreasAndScores = append(assessmentAreasAndScores, requests.AssessmentAndScore{
-			AssessmentAreaNumber: areas[i],
-			Score:                score,
-		})
-	}
-
-	payload.AssessmentAndScore = assessmentAreasAndScores
 
 	fileName, err := commons.HandleFileUpload(c, "attachment", "./fileRepo/uploads")
 	if err != nil {
@@ -50,21 +32,23 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 		return
 	}
 
-	for _, assessment := range payload.AssessmentAndScore {
+	for i := range areas {
+		score, _ := strconv.ParseFloat(scores[i], 64)
+
 		previousSchoolResultsNumber := uuid.NewV4().String()
 
 		savepreviousSchoolResults := models.PreviousSchoolResults{
 			Number:               previousSchoolResultsNumber,
-			StudentNumber:        payload.StudentNumber,
-			AssessmentAreaNumber: assessment.AssessmentAreaNumber,
-			Score:                assessment.Score,
+			StudentNumber:        studentNumber,
+			AssessmentAreaNumber: areas[i],
+			Score:                score,
 			Attachment:           fileName,
-			ApplicationNumber:    payload.ApplicationNumber,
+			ApplicationNumber:    applicationNumber,
 			UserNumber:           user.Number,
 		}
 
 		if err := config.DB.Create(&savepreviousSchoolResults).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview grade"})
+			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create previous school results"})
 			return
 		}
 	}
