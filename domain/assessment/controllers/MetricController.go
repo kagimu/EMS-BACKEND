@@ -58,7 +58,7 @@ func FetchMetrics(c *gin.Context) {
 		return
 	}
 
-	curricullumNumber := c.Param("curriculum_number")
+	curricullumNumber := c.Query("curriculum_number")
 
 	if curricullumNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum number is required"})
