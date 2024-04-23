@@ -3,11 +3,11 @@ package requests
 import "errors"
 
 type InvoicePaymentRequest struct {
-	InvoiceNumber string `json:"invoice_number"`
-	Payer         string `json:"payer"`
-	Amount        int    `json:"amount"`
-	Balance       int    `json:"balance"`
-	Date          string `json:"date"`
+	InvoiceNumber string  `json:"invoice_number"`
+	Payer         string  `json:"payer"`
+	Amount        float64 `json:"amount"`
+	Balance       float64 `json:"balance"`
+	Date          string  `json:"date"`
 }
 
 func (i *InvoicePaymentRequest) Validate() error {

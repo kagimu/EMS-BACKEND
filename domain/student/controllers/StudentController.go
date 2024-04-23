@@ -3,8 +3,9 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"net/http"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -122,7 +123,7 @@ func CreateStudent(c *gin.Context) {
 
 	if err := tx.Create(&savStudent).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + " Failed to save student"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save student"})
 		return
 	}
 

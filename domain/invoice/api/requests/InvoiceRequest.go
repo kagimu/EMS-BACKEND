@@ -5,6 +5,7 @@ import "errors"
 type InvoiceRequest struct {
 	StudentNumber string `json:"student_number"`
 	InvoiceNumber string `json:"invoice_number"`
+	Type          string `json:"type"`
 	Description   string `json:"description"`
 	DueDate       string `json:"due_date"`
 }
