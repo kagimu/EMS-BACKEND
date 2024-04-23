@@ -30,10 +30,11 @@ func CreateUnitOfMeasure(c *gin.Context) {
 	}
 
 	saveUnitOfMeaure := models.UnitOfMeasure{
-		Number:     uuid.NewV4().String(),
-		Name:       payload.Name,
-		Code:       payload.Code,
-		UserNumber: user.Number,
+		Number:       uuid.NewV4().String(),
+		Name:         payload.Name,
+		Code:         payload.Code,
+		Abbreviation: payload.Abbreviation,
+		UserNumber:   user.Number,
 	}
 
 	var duplicate models.UnitOfMeasure
@@ -44,6 +45,11 @@ func CreateUnitOfMeasure(c *gin.Context) {
 
 	if err := config.DB.Where("code = ?", payload.Code).First(&duplicate).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Unit of measure with this code already exists"})
+		return
+	}
+
+	if err := config.DB.Where("abbreviation = ?", payload.Abbreviation).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Unit of measure with this abbreviation already exists"})
 		return
 	}
 
