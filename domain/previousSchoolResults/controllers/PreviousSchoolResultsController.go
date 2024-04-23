@@ -22,13 +22,13 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 	}
 
 	var payload requests.PreviousSchoolResultsRequest
-	payload.StudentNumber = c.Param("student_number")
+	payload.StudentNumber = c.PostForm("student_number")
 	if err := payload.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	payload.ApplicationNumber = c.Param("application_number")
+	payload.ApplicationNumber = c.PostForm("application_number")
 
 	var assessmentAreasAndScores []requests.AssessmentAndScore
 	areas := c.PostFormArray("assessment_area_number")
