@@ -539,8 +539,9 @@ func CampusCurriculum(context *gin.Context) {
 
 	for _, items := range campusCurriculum {
 		curriculum_ = append(curriculum_, responses.CurriculumDataList{
-			Number: items.Number,
-			Name:   items.SchoolCurriculum.Curriculum.Name,
+			Number:           items.Number,
+			Name:             items.SchoolCurriculum.Curriculum.Name,
+			CurriculumNumber: items.SchoolCurriculum.Curriculum.Number,
 		})
 	}
 
