@@ -38,8 +38,8 @@ func CreateMetric(c *gin.Context) {
 	}
 
 	var duplicateMetric models.Metric
-	if duplicate := config.DB.Where("name = ?", saveMetric.Name).First(&duplicateMetric).Error; duplicate == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Name already exists"})
+	if duplicate := config.DB.Where("name = ? AND curriculum_number = ? ", saveMetric.Name, saveMetric.CurriculumNumber).First(&duplicateMetric).Error; duplicate == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Name already exists on this curriculum"})
 		return
 	}
 
