@@ -31,6 +31,12 @@ func CreateFeedingGroupPerDay(c *gin.Context) {
 		UserNumber:         user.Number,
 	}
 
+	var duplicateFeedingGroup models.FeedingGroupPerDay
+	if err := config.DB.Where("day = ? AND feeding_group_number = ?", payload.Day, payload.FeedingGroupNumber).First(&duplicateFeedingGroup).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding group on the given day already exists"})
+		return
+	}
+
 	if err := config.DB.Create(&saveFeedingGroupPerDay).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group on a specified day"})
 		return
