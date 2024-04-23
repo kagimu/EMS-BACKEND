@@ -58,8 +58,15 @@ func FetchMetrics(c *gin.Context) {
 		return
 	}
 
+	curricullumNumber := c.Param("curriculum_number")
+
+	if curricullumNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum number is required"})
+		return
+
+	}
 	var metrics []models.Metric
-	if err := config.DB.Find(&metrics).Error; err != nil {
+	if err := config.DB.Where("curriculum_number = ? ", curricullumNumber).Find(&metrics).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch metrics"})
 		return
 	}
