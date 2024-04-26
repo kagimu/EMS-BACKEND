@@ -44,6 +44,11 @@ func CreateFeedingSession(c *gin.Context) {
 		return
 	}
 
+	if err := config.DB.Where("code = ?", payload.Code).First(&duplicateFeedingSession).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding session code already exists"})
+		return
+	}
+
 	if err := config.DB.Create(&saveFeedingSession).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session"})
 		return

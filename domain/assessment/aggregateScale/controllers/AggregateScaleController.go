@@ -1,9 +1,10 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"os"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
@@ -62,6 +63,11 @@ func CreateAggregateScale(c *gin.Context) {
 	var duplicate models.AggregateScale
 	if err := config.DB.Where("name = ?", saveAggregateScale.Name).First(&duplicate).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale name"})
+		return
+	}
+
+	if err := config.DB.Where("code = ?", saveAggregateScale.Code).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale code"})
 		return
 	}
 

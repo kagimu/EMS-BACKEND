@@ -116,11 +116,11 @@ func CreateAdmissionOffer(c *gin.Context) {
 	}
 
 	saveInvoice := invoiceModel.Invoice{
-		Number:        uuid.NewV4().String(),
-		StudentNumber: payload.StudentNumber,
-		InvoiceNumber: invoiceNumber,
-		Description:   "Admission offer",
-		UserNumber:    user.Number,
+		Number:              uuid.NewV4().String(),
+		StudentNumber:       payload.StudentNumber,
+		InvoiceUniqueNumber: invoiceNumber,
+		Description:         "Admission offer",
+		UserNumber:          user.Number,
 	}
 
 	if err := config.DB.Create(&saveInvoice).Error; err != nil {

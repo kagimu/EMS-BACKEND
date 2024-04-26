@@ -174,6 +174,8 @@ func Init() error {
 		&cateringModels.FeedingSessionItem{},
 		&cateringModels.FeedingGroupUser{},
 		&cateringModels.FeedingGroupSession{},
+		&cateringModels.FeedingPerGroup{},
+		&cateringModels.FeedingAllGroups{},
 		&timetableModels.StudyingTimeBlock{},
 		&timetableModels.StudyingTimeTable{},
 		&timetableModels.StudyingPeriod{},
