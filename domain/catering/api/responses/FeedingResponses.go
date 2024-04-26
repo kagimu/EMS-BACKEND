@@ -104,3 +104,21 @@ type FeedingGroupSessionResponse struct {
 	FeedingSessionStatus string `json:"feeding_session_status"`
 	FeedingSessionCampus string `json:"feeding_session_campus"`
 }
+
+type FeedingsPerGroupResponse struct {
+	Number               string `json:"number"`
+	GroupName            string `json:"group_name"`
+	GroupStatus          string `json:"group_status"`
+	Day                  string `json:"day"`
+	FeedingSessionNumber string `json:"feeding_session_number"`
+	FeedingSessionName   string `json:"feeding_session_name"`
+	FeedingSessionStatus string `json:"feeding_session_status"`
+	FeedingSessionCode   uint64 `json:"feeding_session_code"`
+}
+
+type FeedingGroupPerDayResponse struct {
+	Number             string `json:"number"`
+	FeedingGroupNumber string `json:"feeding_group_number"`
+	FeedingGroupName   string `json:"feeding_group_name"`
+	Day                string `json:"day"`
+}

@@ -160,3 +160,21 @@ func GeneratedFormattedUUID() string {
 	formattedUUID := strings.ReplaceAll(u, "-", "")
 	return formattedUUID
 }
+
+func CheckDay(day string) (string, bool) {
+	validDays := map[string]bool{
+		"Monday":    true,
+		"Tuesday":   true,
+		"Wednesday": true,
+		"Thursday":  true,
+		"Friday":    true,
+		"Saturday":  true,
+		"Sunday":    true,
+	}
+
+	if valid := validDays[day]; valid {
+		return "", true
+	}
+
+	return "Invalid day", false
+}

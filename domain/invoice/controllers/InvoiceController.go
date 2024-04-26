@@ -45,13 +45,13 @@ func CreateInvoice(c *gin.Context) {
 	}
 
 	saveInvoice := models.Invoice{
-		Number:        uuid.NewV4().String(),
-		StudentNumber: payload.StudentNumber,
-		InvoiceNumber: invoiceNumber,
-		DueDate:       payload.DueDate,
-		Type:          payload.Type,
-		Description:   payload.Description,
-		UserNumber:    user.Number,
+		Number:              uuid.NewV4().String(),
+		StudentNumber:       payload.StudentNumber,
+		InvoiceUniqueNumber: invoiceNumber,
+		DueDate:             payload.DueDate,
+		Type:                payload.Type,
+		Description:         payload.Description,
+		UserNumber:          user.Number,
 	}
 
 	if err := config.DB.Create(&saveInvoice).Error; err != nil {

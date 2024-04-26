@@ -734,6 +734,13 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("feeding-group-sessions", cateringController.CreateFeedingGroupSession)
 			catering.GET("feeding-group-sessions", cateringController.FetchFeedingGroupSessions)
 
+			// Feeding per group
+			catering.POST("feeding-per-group", cateringController.CreateFeedingPerGroup)
+			catering.GET("feeding-per-group", cateringController.FetchFeedingsPerGroup)
+
+			// Feeding for all groups
+			catering.POST("feeding-for-groups", cateringController.CreateFeedingAllGroups)
+			catering.GET("feeding-for-groups", cateringController.FetchFeedingForAllGroups)
 		}
 	}
 

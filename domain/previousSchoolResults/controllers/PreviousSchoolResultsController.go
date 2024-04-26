@@ -71,7 +71,7 @@ func FetchPreviousSchoolResultsByStudent(c *gin.Context) {
 	}
 
 	var previousSchoolResults []models.PreviousSchoolResults
-	if err := config.DB.Preload("AssessmentArea").Preload("Application").Find(&previousSchoolResults).Error; err != nil {
+	if err := config.DB.Preload("AssessmentArea").Preload("Application").Preload("Student").Find(&previousSchoolResults).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch previous school results"})
 		return
 	}
@@ -79,12 +79,13 @@ func FetchPreviousSchoolResultsByStudent(c *gin.Context) {
 	var response []responses.PreviousSchoolResultResponses
 	for _, result := range previousSchoolResults {
 		response = append(response, responses.PreviousSchoolResultResponses{
-			Number:             result.Number,
-			StudentName:        result.Application.Student.SecondName + " " + result.Student.OtherName + " " + result.Student.Surname,
-			AssessmentAreaName: result.AssessmentArea.Name,
-			Score:              result.Score,
-			Attachment:         result.Attachment,
-			ApplicationNumber:  result.ApplicationNumber,
+			Number:               result.Number,
+			StudentName:          result.Application.Student.SecondName + " " + result.Student.OtherName + " " + result.Student.Surname,
+			AssessmentAreaName:   result.AssessmentArea.Name,
+			Score:                result.Score,
+			Attachment:           result.Attachment,
+			ApplicationNumber:    result.ApplicationNumber,
+			AssessmentAreaNumber: result.AssessmentAreaNumber,
 		})
 	}
 
@@ -100,10 +101,23 @@ func FetchAllPreviousSchoolResults(c *gin.Context) {
 
 	var previousSchoolResults []models.PreviousSchoolResults
 
-	if err := config.DB.Preload("CampusClass").Find(&previousSchoolResults).Error; err != nil {
+	if err := config.DB.Preload("Application").Preload("AssessmentArea").Preload("Student").Find(&previousSchoolResults).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to fetch previous school results"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": previousSchoolResults})
+	var response []responses.PreviousSchoolResultResponses
+	for _, result := range previousSchoolResults {
+		response = append(response, responses.PreviousSchoolResultResponses{
+			Number:               result.Number,
+			StudentName:          result.Application.Student.SecondName + " " + result.Student.OtherName + " " + result.Student.Surname,
+			AssessmentAreaName:   result.AssessmentArea.Name,
+			Score:                result.Score,
+			Attachment:           result.Attachment,
+			ApplicationNumber:    result.ApplicationNumber,
+			AssessmentAreaNumber: result.AssessmentAreaNumber,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }

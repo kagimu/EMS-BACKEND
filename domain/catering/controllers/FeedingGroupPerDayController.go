@@ -5,6 +5,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -53,10 +54,20 @@ func FetchFeedingGroupsPerDay(c *gin.Context) {
 	}
 
 	var feedingGroupsPerDay []models.FeedingGroupPerDay
-	if err := config.DB.Find(&feedingGroupsPerDay).Error; err != nil {
+	if err := config.DB.Preload("FeedingGroup").Find(&feedingGroupsPerDay).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding groups per day"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": feedingGroupsPerDay})
+	var response []responses.FeedingGroupPerDayResponse
+	for _, feedingGroupPerDay := range feedingGroupsPerDay {
+		response = append(response, responses.FeedingGroupPerDayResponse{
+			Number:             feedingGroupPerDay.Number,
+			FeedingGroupNumber: feedingGroupPerDay.FeedingGroupNumber,
+			FeedingGroupName:   feedingGroupPerDay.FeedingGroup.Name,
+			Day:                feedingGroupPerDay.Day,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
