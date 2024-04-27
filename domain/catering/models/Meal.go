@@ -26,4 +26,6 @@ type Meal struct {
 	Time                 time.Time           `json:"time" gorm:"not null"`
 	CampusNumber         string              `json:"campus_number" gorm:"size:36;not null"`
 	Campus               campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	AddedByNumber        string              `json:"added_by_number" gorm:"size:36;not null"`
+	AddedBy              authModels.User     `gorm:"foreignKey:AddedByNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

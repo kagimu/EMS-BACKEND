@@ -14,7 +14,7 @@ import (
 )
 
 func CreateMeal(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	loggedInUser, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
@@ -78,6 +78,7 @@ func CreateMeal(c *gin.Context) {
 		StaffNumber:          payload.StaffNumber,
 		UserNumber:           payload.UserNumber,
 		CampusNumber:         feedingSession.CampusNumber,
+		AddedByNumber:        loggedInUser.Number,
 	}
 
 	if err := config.DB.Create(&saveMeal).Error; err != nil {
