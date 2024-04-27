@@ -126,19 +126,26 @@ type FeedingGroupPerDayResponse struct {
 }
 
 type MealResponse struct {
-	Number               string    `json:"number"`
-	FeedingSessionNumber string    `json:"feeding_session_number"`
-	FeedingSessionName   string    `json:"feeding_session_name"`
-	FeedingSessionCode   uint64    `json:"feeding_session_code"`
-	FeedingSessionStatus string    `json:"feeding_session_status"`
-	StockingNumber       string    `json:"stocking_number"`
-	Quantity             float64   `json:"quantity"`
-	Date                 time.Time `json:"date"`
-	Time                 time.Time `json:"time"`
-	MenuItemNumber       string    `json:"menu_item_number"`
-	MenuItemName         string    `json:"menu_item_name"`
-	MenuItemType         string    `json:"menu_item_type"`
-	MenuItemCode         uint64    `json:"menu_item_code"`
-	StaffIDNumber        string    `json:"staff_id_number"`
-	JobTitle             string    `json:"job_title"`
+	Number               string      `json:"number"`
+	FeedingSessionNumber string      `json:"feeding_session_number"`
+	FeedingSessionName   string      `json:"feeding_session_name"`
+	FeedingSessionCode   uint64      `json:"feeding_session_code"`
+	FeedingSessionStatus string      `json:"feeding_session_status"`
+	StockingNumber       string      `json:"stocking_number"`
+	Quantity             float64     `json:"quantity"`
+	Date                 time.Time   `json:"date"`
+	Time                 time.Time   `json:"time"`
+	MenuItemNumber       string      `json:"menu_item_number"`
+	MenuItemName         string      `json:"menu_item_name"`
+	StaffIDNumber        string      `json:"staff_id_number"`
+	UserMeals            []UserMeals `json:"user_meals"`
+	JobTitle             string      `json:"job_title"`
+}
+
+type UserMeals struct {
+	UserName     string  `json:"user_name"`
+	MenuItemName string  `json:"menu_item_name"`
+	Quantity     float64 `json:"quantity"`
+	MenuItemType string  `json:"menu_item_type"`
+	MenuItemCode uint64  `json:"menu_item_code"`
 }
