@@ -3,19 +3,19 @@ package requests
 import "errors"
 
 type MealRequest struct {
-	UserNumber           string `json:"user_number"`
-	FeedingSessionNumber string `json:"feeding_session_number"`
-	StockingNumber       string `json:"stocking_number"`
-	MenuItemNumber       string `json:"menu_item_number"`
-	StaffNumber          string `json:"staff_number"`
+	UserNumber           string  `json:"user_number"`
+	FeedingSessionNumber string  `json:"feeding_session_number"`
+	MenuItemNumber       string  `json:"menu_item_number"`
+	StaffNumber          string  `json:"staff_number"`
+	Date                 string  `json:"date"`
+	Time                 string  `json:"time"`
+	Quantity             float64 `json:"quantity"`
+	CampusNumber         string  `json:"campus_number"`
 }
 
 func (m *MealRequest) Validate() error {
 	if m.FeedingSessionNumber == "" {
 		return errors.New("feeding session number is required")
-	}
-	if m.StockingNumber == "" {
-		return errors.New("stocking number is required")
 	}
 	if m.MenuItemNumber == "" {
 		return errors.New("menu item number is required")
@@ -25,6 +25,12 @@ func (m *MealRequest) Validate() error {
 	}
 	if m.UserNumber == "" {
 		return errors.New("user number is required")
+	}
+	if m.Date == "" {
+		return errors.New("date is required")
+	}
+	if m.Time == "" {
+		return errors.New("time is required")
 	}
 
 	return nil

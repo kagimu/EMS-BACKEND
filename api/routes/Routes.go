@@ -495,7 +495,7 @@ func SetupRoutes() *gin.Engine {
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
 				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
 				aggregateScale.PUT("", aggregateScaleController.EditAggregateScale)
-				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScaleBySchool)
+				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScales)
 			}
 
 			assessmentGrade := assessment.Group("/assessment-grades")
@@ -741,6 +741,10 @@ func SetupRoutes() *gin.Engine {
 			// Feeding for all groups
 			catering.POST("feeding-for-groups", cateringController.CreateFeedingAllGroups)
 			catering.GET("feeding-for-groups", cateringController.FetchFeedingForAllGroups)
+
+			// Meals
+			catering.POST("meals", cateringController.CreateMeal)
+			catering.GET("meals", cateringController.FetchMeals)
 		}
 	}
 
