@@ -1,144 +1,95 @@
-package responses
+package controllers
 
-import "time"
+import (
+	"net/http"
 
-type FeedingGroupResponse struct {
-	Number       string `json:"number"`
-	Name         string `json:"name"`
-	Status       string `json:"status"`
-	CampusNumber string `json:"campus_number"`
-	CampusName   string `json:"campus_name"`
-	UserName     string `json:"user_name"`
-	Photo        string `json:"photo"`
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	staffModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
+	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+)
+
+func CreateMeal(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.MealRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var feedingSession models.FeedingSession
+	if err := config.DB.Where("number = ?", payload.FeedingSessionNumber).First(&feedingSession).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding session not found"})
+		return
+	}
+
+	var stocking models.Stocking
+	if err := config.DB.Where("number = ?", payload.StockingNumber).First(&stocking).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Stocking not found"})
+		return
+	}
+
+	var menuItem models.MenuItem
+	if err := config.DB.Where("number = ?", payload.MenuItemNumber).First(&menuItem).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item not found"})
+		return
+	}
+
+	var staff staffModels.Staff
+	if err := config.DB.Where("number = ?", payload.StaffNumber).First(&staff).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Staff member not found"})
+		return
+	}
+
+	var user authModels.User
+	if err := config.DB.Where("number = ?", payload.UserNumber).First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User number not found"})
+		return
+	}
+
+	saveMeal := models.Meal{
+		Number:               uuid.NewV4().String(),
+		FeedingSessionNumber: payload.FeedingSessionNumber,
+		StockingNumber:       payload.StockingNumber,
+		MenuItemNumber:       payload.MenuItemNumber,
+		StaffNumber:          payload.StaffNumber,
+		UserNumber:           payload.UserNumber,
+	}
+
+	if err := config.DB.Create(&saveMeal).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create meal"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Meal created successfully"})
 }
 
-type FeedingResponse struct {
-	Number               string `json:"number"`
-	FeedingSessionNumber string `json:"feeding_session_number"`
-	FeedingSessionName   string `json:"feeding_session_name"`
-	FeedingSessionStatus string `json:"feeding_session_status"`
-	FeedingSessionCode   uint64 `json:"feeding_session_code"`
-	Date                 string `json:"date"`
-	StaffNumber          string `json:"staff_number"`
-	StaffName            string `json:"staff_name"`
-	StockingNumber       string `json:"stocking_number"`
-	StockingQuantity     int    `json:"stocking_quantity"`
-}
+func FetchMeals(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
 
-type FeedingSessionItemResponse struct {
-	Number               string `json:"number"`
-	FeedingSessionNumber string `json:"feeding_session_number"`
-	FeedingSessionName   string `json:"feeding_session_name"`
-	FeedingSessionStatus string `json:"feeding_session_status"`
-	MenuItemNumber       string `json:"menu_item_number"`
-	MenuItemName         string `json:"menu_item_name"`
-}
+	var meals []models.Meal
+	if err := config.DB.Find(&meals).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch meals"})
+		return
+	}
 
-type FeedingSessionPerDayResponse struct {
-	Number               string `json:"number"`
-	FeedingSessionNumber string `json:"feeding_session_number"`
-	Day                  string `json:"day"`
-	FeedingSessionName   string `json:"feeding_session_name"`
-}
-
-type FeedingUserGroupResponse struct {
-	UserNumber         string `json:"user_number"`
-	Number             string `json:"number"`
-	Gender             string `json:"gender"`
-	Photo              string `json:"photo"`
-	Name               string `json:"name"`
-	FeedingGroupNumber string `json:"feeding_group_number"`
-	FeedingGroupName   string `json:"feeding_group_name"`
-	Status             string `json:"status"`
-}
-
-type ItemAssemblyResponse struct {
-	Number              string  `json:"number"`
-	PrimaryItemNumber   string  `json:"primary_item_number"`
-	SecondaryItemNumber string  `json:"secondary_item_number"`
-	Quantity            float64 `json:"quantity"`
-	PrimaryItemName     string  `json:"primary_item_name"`
-	SecondaryItemName   string  `json:"secondary_item_name"`
-}
-
-type MenuItemResponse struct {
-	Number              string `json:"number"`
-	Name                string `json:"name"`
-	Code                uint64 `json:"code"`
-	Type                string `json:"type"`
-	CampusNumber        string `json:"campus_number"`
-	CampusName          string `json:"campus_name"`
-	Phone               string `json:"phone"`
-	Email               string `json:"email"`
-	Location            string `json:"location"`
-	UnitOfMeasureNumber string `json:"unit_of_measure_number"`
-	UnitOfMeasureName   string `json:"unit_of_measure_name"`
-	UnitOfMeasureCode   uint64 `json:"unit_of_measure_code"`
-	Parts               []Part `json:"parts"`
-}
-
-type Part struct {
-	Name     string  `json:"name"`
-	Quantity float64 `json:"quantity"`
-	Code     uint64  `json:"code"`
-	Number   string  `json:"number"`
-}
-
-type StockingResponse struct {
-	Number         string  `json:"name"`
-	Quantity       float64 `json:"quantity"`
-	UnitCost       float64 `json:"unit_cost"`
-	MenuItemNumber string  `json:"menu_item_number"`
-	MenuItemName   string  `json:"menu_item_name"`
-	CampusNumber   string  `json:"campus_number"`
-	CampusName     string  `json:"campus_name"`
-	MenuItemType   string  `json:"menu_item_type"`
-}
-
-type FeedingGroupSessionResponse struct {
-	UserNumber           string `json:"user_number"`
-	Number               string `json:"number"`
-	FeedingGroupNumber   string `json:"feeding_group_number"`
-	FeedingGroupName     string `json:"feeding_group_name"`
-	Status               string `json:"status"`
-	FeedingSessionNumber string `json:"feeding_session_number"`
-	FeedingSessionName   string `json:"feeding_session_name"`
-	FeedingSessionStatus string `json:"feeding_session_status"`
-	FeedingSessionCampus string `json:"feeding_session_campus"`
-}
-
-type FeedingsPerGroupResponse struct {
-	Number               string `json:"number"`
-	GroupName            string `json:"group_name"`
-	GroupStatus          string `json:"group_status"`
-	Day                  string `json:"day"`
-	FeedingSessionNumber string `json:"feeding_session_number"`
-	FeedingSessionName   string `json:"feeding_session_name"`
-	FeedingSessionStatus string `json:"feeding_session_status"`
-	FeedingSessionCode   uint64 `json:"feeding_session_code"`
-}
-
-type FeedingGroupPerDayResponse struct {
-	Number             string `json:"number"`
-	FeedingGroupNumber string `json:"feeding_group_number"`
-	FeedingGroupName   string `json:"feeding_group_name"`
-	Day                string `json:"day"`
-}
-
-type MealResponse struct {
-	Number               string    `json:"number"`
-	FeedingSessionNumber string    `json:"feeding_session_number"`
-	FeedingSessionName   string    `json:"feeding_session_name"`
-	FeedingSessionCode   uint64    `json:"feeding_session_code"`
-	FeedingSessionStatus string    `json:"feeding_session_status"`
-	StockingNumber       string    `json:"stocking_number"`
-	Quantity             float64   `json:"quantity"`
-	Date                 time.Time `json:"date"`
-	Time                 time.Time `json:"time"`
-	MenuItemNumber       string    `json:"menu_item_number"`
-	MenuItemName         string    `json:"menu_item_name"`
-	MenuItemType         string    `json:"menu_item_type"`
-	MenuItemCode         uint64    `json:"menu_item_code"`
-	StaffIDNumber        string    `json:"staff_id_number"`
-	JobTitle             string    `json:"job_title"`
+	c.JSON(http.StatusOK, gin.H{"meals": meals})
 }
