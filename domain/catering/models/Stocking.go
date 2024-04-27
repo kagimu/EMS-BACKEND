@@ -10,7 +10,7 @@ type Stocking struct {
 	gorm.Model
 	Number         string              `json:"number" gorm:"size:36;unique;not null"`
 	CampusNumber   string              `json:"campus_number" gorm:"size:36;"`
-	Quantity       int                 `json:"quantity" gorm:"not null"`
+	Quantity       float64             `json:"quantity" gorm:"not null"`
 	UnitCost       float64             `json:"unit_cost" gorm:"not null"`
 	MenuItemNumber string              `json:"menu_item_number" gorm:"size:36;"`
 	MenuItem       MenuItem            `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
