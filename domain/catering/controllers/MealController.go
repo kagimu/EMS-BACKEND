@@ -76,6 +76,7 @@ func CreateMeal(c *gin.Context) {
 		FeedingSessionNumber: payload.FeedingSessionNumber,
 		MenuItemNumber:       payload.MenuItemNumber,
 		StaffNumber:          payload.StaffNumber,
+		Quantity:             payload.Quantity,
 		UserNumber:           payload.UserNumber,
 		CampusNumber:         feedingSession.CampusNumber,
 		AddedByNumber:        loggedInUser.Number,
@@ -135,19 +136,31 @@ func FetchMeals(c *gin.Context) {
 		return
 	}
 
-	var servedItems []models.FeedingSessionItem
+	var servedItems []struct {
+		FeedingSessionItem models.FeedingSessionItem
+		Quantity           float64
+	}
+
 	for _, item := range feedingSessionItems {
 		served := false
+		var quantity float64
 
 		for _, meal := range meals {
 			if meal.MenuItemNumber == item.MenuItemNumber {
+				quantity = meal.Quantity
 				served = true
 				break
 			}
 		}
 
 		if served {
-			servedItems = append(servedItems, item)
+			servedItems = append(servedItems, struct {
+				FeedingSessionItem models.FeedingSessionItem
+				Quantity           float64
+			}{
+				FeedingSessionItem: item,
+				Quantity:           quantity,
+			})
 		}
 	}
 
