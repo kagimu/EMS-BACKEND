@@ -84,7 +84,7 @@ type Part struct {
 
 type StockingResponse struct {
 	Number         string  `json:"name"`
-	Quantity       int     `json:"quantity"`
+	Quantity       float64 `json:"quantity"`
 	UnitCost       float64 `json:"unit_cost"`
 	MenuItemNumber string  `json:"menu_item_number"`
 	MenuItemName   string  `json:"menu_item_name"`

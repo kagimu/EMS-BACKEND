@@ -8,7 +8,7 @@ type StockingRequest struct {
 }
 
 type ItemPriceAndQuantity struct {
-	Quantity       int     `json:"quantity"`
+	Quantity       float64 `json:"quantity"`
 	UnitCost       float64 `json:"unit_cost"`
 	MenuItemNumber string  `json:"menu_item_number"`
 }
