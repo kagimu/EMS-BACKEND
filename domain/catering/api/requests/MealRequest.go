@@ -8,6 +8,9 @@ type MealRequest struct {
 	StockingNumber       string `json:"stocking_number"`
 	MenuItemNumber       string `json:"menu_item_number"`
 	StaffNumber          string `json:"staff_number"`
+	Date                 string `json:"date"`
+	Time                 string `json:"time"`
+	CampusNumber         string `json:"campus_number"`
 }
 
 func (m *MealRequest) Validate() error {
@@ -25,6 +28,12 @@ func (m *MealRequest) Validate() error {
 	}
 	if m.UserNumber == "" {
 		return errors.New("user number is required")
+	}
+	if m.Date == "" {
+		return errors.New("date is required")
+	}
+	if m.Time == "" {
+		return errors.New("time is required")
 	}
 
 	return nil
