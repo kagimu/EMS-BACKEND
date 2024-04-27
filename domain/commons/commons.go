@@ -2,6 +2,7 @@ package commons
 
 import (
 	"errors"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -177,4 +178,9 @@ func CheckDay(day string) (string, bool) {
 	}
 
 	return "Invalid day", false
+}
+
+func RoundFloat(val float64, precision uint) float64 {
+	ratio := math.Pow(10, float64(precision))
+	return math.Round(val*ratio) / ratio
 }

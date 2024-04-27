@@ -7,6 +7,7 @@ import (
 	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
@@ -314,8 +315,6 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		return
 	}
 
-	var assessments []responses.Assessments
-
 	// get curricullum class number from the campus class number
 
 	var campusClass classModel.CampusClass
@@ -353,6 +352,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	var la []responses.LearningArea
 	for _, learningArea := range learningAreas {
+		var assessments []responses.Assessments
 
 		var assessmentAreas []assessmentAreaModel.AssessmentArea
 		if err := config.DB.Where("assessment_areas.curriculum_class_number = ?", campusClass.CurriculumClassNumber).
@@ -575,24 +575,44 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 	}
 
-	reportSummary := models.ReportSummary{
-		Number:              uuid.NewV4().String(),
-		ReportSettingNumber: reportSettings.Number,
-		StudentNumber:       payload.StudentNumber,
-		CampusClassNumber:   payload.CampusClassNumber,
-		StudyPeriodNumber:   payload.StudyPeriodNumber,
-		Grade:               "",
-		Aggregate:           -1,
-		Comment:             "",
-		UserNumber:          user,
-		Code:                0,
-		StreamNumber:        stream.Number,
-	}
+	// find it there is an existing report summary for the student
 
-	if err := tx.Create(&reportSummary).Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report summary"})
-		return
+	var reportSummary models.ReportSummary
+	if err := tx.Where("student_number = ? AND study_period_number = ? AND campus_class_number = ?", payload.StudentNumber, payload.StudyPeriodNumber, payload.CampusClassNumber).First(&reportSummary).Error; err == nil {
+		// update the existing report summary with data from the payload
+		reportSummary.ReportSettingNumber = reportSettings.Number
+		reportSummary.Grade = ""
+		reportSummary.Aggregate = -1
+		reportSummary.Comment = ""
+		reportSummary.UserNumber = user
+		reportSummary.StreamNumber = stream.Number
+
+		if err := tx.Save(&reportSummary).Error; err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update report summary"})
+			return
+		}
+
+	} else {
+		reportSummary = models.ReportSummary{
+			Number:              uuid.NewV4().String(),
+			ReportSettingNumber: reportSettings.Number,
+			StudentNumber:       payload.StudentNumber,
+			CampusClassNumber:   payload.CampusClassNumber,
+			StudyPeriodNumber:   payload.StudyPeriodNumber,
+			Grade:               "",
+			Aggregate:           -1,
+			Comment:             "",
+			UserNumber:          user,
+			Code:                0,
+			StreamNumber:        stream.Number,
+		}
+
+		if err := tx.Create(&reportSummary).Error; err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report summary"})
+			return
+		}
 	}
 
 	var campusClass classModel.CampusClass
@@ -651,24 +671,48 @@ func GenerateReportSummary(ctx *gin.Context) {
 				scale, err = GetProperAggregateScale(scoreAverage, assessmentArea.Number)
 			}
 
-			var reportScore = models.ReportScore{
-				Number:               uuid.NewV4().String(),
-				ReportSummaryNumber:  reportSummary.Number,
-				AssessmentAreaNumber: assessmentArea.Number,
-				ReportColumnNumber:   reportColum.Number,
-				Score:                percentageScore,
-				AverageScore:         scoreAverage,
-				Aggregate:            scale.Weight,
-				Grade:                scale.Name,
-				UserNumber:           user,
-			}
+			//check if the report score already exists with the same report summary number, assessment area number and report column number
+			var reportScore models.ReportScore
+			if err := tx.Where("report_summary_number = ? AND assessment_area_number = ? AND report_column_number = ?", reportSummary.Number, assessmentArea.Number, reportColum.Number).First(&reportScore).Error; err == nil {
+				//update the report score
+				reportScore.Score = commons.RoundFloat(percentageScore, 2)
+				reportScore.AverageScore = commons.RoundFloat(scoreAverage, 2)
+				reportScore.Aggregate = scale.Weight
+				reportScore.Grade = scale.Name
+				reportScore.UserNumber = user
 
-			if score > 0 {
-				if err = tx.Create(&reportScore).Error; err != nil {
-					tx.Rollback()
-					ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score"})
-					return
+				if score > 0 {
+					if err = tx.Save(&reportScore).Error; err != nil {
+						tx.Rollback()
+						ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update report score"})
+						return
+					}
 				}
+
+			} else {
+
+				//create a new report score
+
+				reportScore = models.ReportScore{
+					Number:               uuid.NewV4().String(),
+					ReportSummaryNumber:  reportSummary.Number,
+					AssessmentAreaNumber: assessmentArea.Number,
+					ReportColumnNumber:   reportColum.Number,
+					Score:                commons.RoundFloat(percentageScore, 2),
+					AverageScore:         commons.RoundFloat(scoreAverage, 2),
+					Aggregate:            scale.Weight,
+					Grade:                scale.Name,
+					UserNumber:           user,
+				}
+
+				if score > 0 {
+					if err = tx.Create(&reportScore).Error; err != nil {
+						tx.Rollback()
+						ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score"})
+						return
+					}
+				}
+
 			}
 
 		}
@@ -689,23 +733,41 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 		scale, err = GetProperAggregateScale(summation, assessmentArea.Number)
 
-		var reportScoreSummary = models.ReportScoreSummary{
-			Number:               uuid.NewV4().String(),
-			ReportSummaryNumber:  reportSummary.Number,
-			AssessmentAreaNumber: assessmentArea.Number,
-			Aggregate:            scale.Weight,
-			Grade:                scale.Name,
-			Summation:            summation,
-			Comment:              "Subject teacher comment goes here",
-			UserNumber:           user,
-		}
-
 		totalAggregates += scale.Weight
 
-		if err = tx.Create(&reportScoreSummary).Error; err != nil {
-			tx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score summary"})
-			return
+		//check if the report score summary already exists with the same report summary number and assessment area number
+		var reportScoreSummary models.ReportScoreSummary
+		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).First(&reportScoreSummary).Error; err == nil {
+			//update the report score summary
+			reportScoreSummary.Aggregate = scale.Weight
+			reportScoreSummary.Grade = scale.Name
+			reportScoreSummary.Summation = summation
+			reportScoreSummary.UserNumber = user
+
+			if err = tx.Save(&reportScoreSummary).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update report score summary"})
+				return
+			}
+
+		} else {
+			//create a new report score summary
+			reportScoreSummary = models.ReportScoreSummary{
+				Number:               uuid.NewV4().String(),
+				ReportSummaryNumber:  reportSummary.Number,
+				AssessmentAreaNumber: assessmentArea.Number,
+				Aggregate:            scale.Weight,
+				Grade:                scale.Name,
+				Summation:            summation,
+				Comment:              "Subject teacher comment goes here",
+				UserNumber:           user,
+			}
+
+			if err = tx.Create(&reportScoreSummary).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score summary"})
+				return
+			}
 		}
 
 	}
