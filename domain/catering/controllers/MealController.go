@@ -61,12 +61,15 @@ func CreateMeal(c *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin()
+
 	updateStock := models.Stocking{
 		MenuItemNumber: payload.MenuItemNumber,
 		Quantity:       stocking.Quantity + -payload.Quantity,
 	}
 
-	if err := config.DB.Model(&stocking).Where("number = ?", stocking.Number).Updates(updateStock).Error; err != nil {
+	if err := tx.Model(&stocking).Where("number = ?", stocking.Number).Updates(updateStock).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item stock"})
 		return
 	}
@@ -82,8 +85,14 @@ func CreateMeal(c *gin.Context) {
 		AddedByNumber:        loggedInUser.Number,
 	}
 
-	if err := config.DB.Create(&saveMeal).Error; err != nil {
+	if err := tx.Create(&saveMeal).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create meal"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create meal"})
 		return
 	}
 
