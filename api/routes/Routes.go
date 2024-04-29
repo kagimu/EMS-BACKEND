@@ -533,35 +533,8 @@ func SetupRoutes() *gin.Engine {
 
 			scopes := settings.Group("scopes")
 			{
-				// Campus scope
-				scopes.POST("campus", permissionController.CreateScopeUserCampus)
-				scopes.GET("campus", permissionController.FetchScopeUserCampus)
-				scopes.DELETE("campus", permissionController.DeleteCampusUserScope)
-
-				// Class scope
-				scopes.POST("class", permissionController.CreateScopeUserClass)
-				scopes.GET("class", permissionController.FetchScopeUserClass)
-				scopes.DELETE("class", permissionController.DeleteClassUserScope)
-
-				// School scope
-				scopes.POST("school", permissionController.CreateScopeUserSchool)
-				scopes.GET("school", permissionController.FetchScopeUserSchool)
-				scopes.DELETE("school", permissionController.DeleteSchoolUserScope)
-
-				// Curriculum scope
-				scopes.POST("curriculum", permissionController.CreateScopeUserCurriculum)
-				scopes.GET("curriculum", permissionController.FetchScopeUserCurriculum)
-				scopes.DELETE("curriculum", permissionController.DeleteCurriculumUserScope)
-
-				// Learning area scope
-				scopes.POST("learning-area", permissionController.CreateScopeUserLearningArea)
-				scopes.GET("", permissionController.FetchScopeUserLearningArea)
-				scopes.DELETE("", permissionController.DeleteLearningAreaUserScope)
-
-				// Level scope
-				scopes.POST("level", permissionController.CreateScopeUserLevel)
-				scopes.GET("level", permissionController.FetchScopeUserLevel)
-				scopes.DELETE("level", permissionController.DeleteLevelUserScope)
+				scopes.POST("", permissionController.CreateScope)
+				scopes.GET("", permissionController.FetchScopes)
 			}
 		}
 

@@ -180,13 +180,7 @@ func Init() error {
 		&timetableModels.StudyingTimeBlock{},
 		&timetableModels.StudyingTimeTable{},
 		&timetableModels.StudyingPeriod{},
-		&permissionModels.ScopeUserCampus{},
-		&permissionModels.ScopeUserLevel{},
-		&permissionModels.ScopeUserClass{},
-		&permissionModels.ScopeUserLearningArea{},
-		&permissionModels.ScopeUserCurriculum{},
-		&permissionModels.ScopeUserCampus{},
-		&permissionModels.ScopeUserSchool{},
+		&permissionModels.Scope{},
 	)
 
 	if err != nil {
