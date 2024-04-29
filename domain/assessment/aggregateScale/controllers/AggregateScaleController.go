@@ -95,7 +95,12 @@ func FetchAggregateScales(c *gin.Context) {
 
 	var aggregateScales []models.AggregateScale
 	if err := config.DB.
-		Scopes(filters.ByCampusClassNumber(campusClassNumber), filters.ByCampusNumber(campusNumber)).
+		Scopes(
+			filters.ByCampusClassNumber(campusClassNumber),
+			filters.ByCampusNumber(campusNumber),
+			filters.ByGradingStandardNumber(c.Query("grading_standard_number")),
+			filters.ByAssessmentAreaNumber(c.Query("assessment_area_number")),
+		).
 		Preload("Campus").Preload("CampusClass").Preload("GradingStandard").
 		Find(&aggregateScales).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})

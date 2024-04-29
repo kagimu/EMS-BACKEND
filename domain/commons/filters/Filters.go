@@ -127,3 +127,12 @@ func ByStatus(status string) func(db *gorm.DB) *gorm.DB {
 		return db
 	}
 }
+
+func ByGradingStandardNumber(gradingStandardNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if gradingStandardNumber != "" {
+			return db.Where("grading_standard_number = ?", gradingStandardNumber)
+		}
+		return db
+	}
+}
