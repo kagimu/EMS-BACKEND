@@ -6,7 +6,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	staffModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
@@ -15,7 +14,7 @@ import (
 )
 
 func CreateMeal(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	loggedInUser, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
@@ -62,12 +61,15 @@ func CreateMeal(c *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin()
+
 	updateStock := models.Stocking{
 		MenuItemNumber: payload.MenuItemNumber,
 		Quantity:       stocking.Quantity + -payload.Quantity,
 	}
 
-	if err := config.DB.Model(&stocking).Where("number = ?", stocking.Number).Updates(updateStock).Error; err != nil {
+	if err := tx.Model(&stocking).Where("number = ?", stocking.Number).Updates(updateStock).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item stock"})
 		return
 	}
@@ -77,12 +79,20 @@ func CreateMeal(c *gin.Context) {
 		FeedingSessionNumber: payload.FeedingSessionNumber,
 		MenuItemNumber:       payload.MenuItemNumber,
 		StaffNumber:          payload.StaffNumber,
+		Quantity:             payload.Quantity,
 		UserNumber:           payload.UserNumber,
 		CampusNumber:         feedingSession.CampusNumber,
+		AddedByNumber:        loggedInUser.Number,
 	}
 
-	if err := config.DB.Create(&saveMeal).Error; err != nil {
+	if err := tx.Create(&saveMeal).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create meal"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create meal"})
 		return
 	}
 
@@ -96,41 +106,81 @@ func FetchMeals(c *gin.Context) {
 		return
 	}
 
-	var meals []models.Meal
-	if err := config.DB.Find(&meals).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch meals"})
+	feedingGroupNumber := c.Query("feeding_group_number")
+	if feedingGroupNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding group number is required"})
 		return
 	}
 
-	var response []responses.MealResponse
-	for _, meal := range meals {
-		var userMeals []responses.UserMeals
-
-		response = append(response, responses.MealResponse{
-			Number:               meal.Number,
-			FeedingSessionNumber: meal.FeedingSessionNumber,
-			FeedingSessionName:   meal.FeedingSession.Name,
-			FeedingSessionCode:   meal.FeedingSession.Code,
-			FeedingSessionStatus: meal.FeedingSession.Status,
-			StockingNumber:       meal.StockingNumber,
-			Date:                 meal.Date,
-			Time:                 meal.Time,
-			MenuItemNumber:       meal.MenuItemNumber,
-			StaffIDNumber:        meal.StaffNumber,
-			UserMeals:            userMeals,
-			JobTitle:             meal.Staff.JobTitle.Name,
-		})
-
-		for _, meal := range meals {
-			userMeals = append(userMeals, responses.UserMeals{
-				UserName:     meal.User.FirstName + " " + meal.User.SecondName + " " + meal.User.LastName,
-				MenuItemName: meal.MenuItem.Name,
-				MenuItemType: meal.MenuItem.Type,
-				MenuItemCode: meal.MenuItem.Code,
-			})
-		}
-
+	feedingSessionNumber := c.Query("feeding_session_number")
+	if feedingSessionNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding session number is required"})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"meals": response})
+	var feedingGroupUsers []models.FeedingGroup
+	if err := config.DB.Where("number = ?", feedingGroupNumber).First(&feedingGroupUsers).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding group users"})
+		return
+	}
+
+	var feedingSessionItems []models.FeedingSessionItem
+	if err := config.DB.Where("feeding_session_number = ?", feedingSessionNumber).Preload("MenuItem").First(&feedingSessionItems).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding session items"})
+		return
+	}
+
+	var feedingGroupItems []interface{}
+	for _, v := range feedingGroupUsers {
+		feedingGroupItems = append(feedingGroupItems, v)
+	}
+
+	for _, v := range feedingSessionItems {
+		feedingGroupItems = append(feedingGroupItems, v)
+	}
+
+	var meals []models.Meal
+	if err := config.DB.Where("feeding_session_number = ?", feedingSessionNumber).Find(&meals).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch meals"})
+		return
+	}
+
+	var servedItems []struct {
+		FeedingSessionItem models.FeedingSessionItem
+		Quantity           float64
+	}
+
+	for _, item := range feedingSessionItems {
+		served := false
+		var quantity float64
+
+		for _, meal := range meals {
+			if meal.MenuItemNumber == item.MenuItemNumber {
+				quantity = meal.Quantity
+				served = true
+				break
+			}
+		}
+
+		if served {
+			servedItems = append(servedItems, struct {
+				FeedingSessionItem models.FeedingSessionItem
+				Quantity           float64
+			}{
+				FeedingSessionItem: item,
+				Quantity:           quantity,
+			})
+		}
+	}
+
+	// Feeding group number, feeding session  number as params
+	// Query from feeding group where feeding group number = returns users
+	//  Iterate
+	// Query from feeding session items where feeding session number is given  = returns a list of menu items
+	// Meal - attach menu items (result is the meals a person is supposed to eat)
+	// For each menu item, confirm if the item has been served on this user
+	// if the menu item exists in the meal table, pick the qunaity and supply it, else prefix with a zero
+	// return list of users
+
+	c.JSON(http.StatusOK, gin.H{"meals": servedItems, "menuitems": feedingGroupItems})
 }

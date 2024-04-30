@@ -19,6 +19,7 @@ type Meal struct {
 	StockingNumber       string              `json:"stocking_number" gorm:"size:36;not null"`
 	Stocking             Stocking            `gorm:"foreignKey:StockingNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	MenuItemNumber       string              `json:"menu_item_number" gorm:"size:36;not null"`
+	Quantity             float64             `json:"quantity"`
 	MenuItem             MenuItem            `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StaffNumber          string              `json:"staff_number" gorm:"size:36;not null"`
 	Staff                staffModels.Staff   `gorm:"foreignKey:StaffNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
@@ -26,4 +27,6 @@ type Meal struct {
 	Time                 time.Time           `json:"time" gorm:"not null"`
 	CampusNumber         string              `json:"campus_number" gorm:"size:36;not null"`
 	Campus               campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	AddedByNumber        string              `json:"added_by_number" gorm:"size:36;not null"`
+	AddedBy              authModels.User     `gorm:"foreignKey:AddedByNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
