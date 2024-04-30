@@ -122,12 +122,13 @@ func FetchAssessmentAreasByGradingStandard(ctx *gin.Context) {
 	//gradingStandardNumber := ctx.Param("gradingStandardNumber")
 
 	type response struct {
+		Code                int64  `json:"code"`
 		AssessmentAreaName  string `json:"assessment_area_name"`
 		GradingStandardName string `json:"grading_standard_name"`
 	}
 	var list []response
 	var assessmentAreaGradingStandards []assessmentAreaModel.AssessmentAreaGradingStandard
-	if err := config.DB.Find(&assessmentAreaGradingStandards).Error; err != nil {
+	if err := config.DB.Scopes(filters.ByGradingStandardNumber(ctx.Query("grading_standard_number"))).Find(&assessmentAreaGradingStandards).Error; err != nil {
 		ctx.JSON(400, gin.H{"message": "Failed to get assessment area grading standards"})
 		return
 	}
@@ -138,6 +139,7 @@ func FetchAssessmentAreasByGradingStandard(ctx *gin.Context) {
 		config.DB.First(&gradingStandard, "number = ?", val.GradingStandardNumber)
 		config.DB.First(&assessmentArea, "number = ?", val.AssessmentAreaNumber)
 		list = append(list, response{
+			Code:                val.Code,
 			AssessmentAreaName:  assessmentArea.Name,
 			GradingStandardName: gradingStandard.Name,
 		})
