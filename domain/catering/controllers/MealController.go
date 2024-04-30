@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -63,6 +64,32 @@ func CreateMeal(c *gin.Context) {
 
 	tx := config.DB.Begin()
 
+	// Checks if the menu items, user, date and feeding sessions are the same. Updates the meal details if true.
+	var existingMeal models.Meal
+	if err := config.DB.Where("feeding_session_number = ? AND menu_item_number = ? AND user_number = ? AND date = ?",
+		payload.FeedingSessionNumber, payload.MenuItemNumber, payload.UserNumber, payload.Date).First(&existingMeal).Error; err == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	if existingMeal.Number != "" {
+		updateMeal := models.Meal{
+			FeedingSessionNumber: payload.FeedingSessionNumber,
+			MenuItemNumber:       payload.MenuItemNumber,
+			StaffNumber:          payload.StaffNumber,
+			Quantity:             payload.Quantity,
+			UserNumber:           payload.UserNumber,
+			CampusNumber:         feedingSession.CampusNumber,
+			AddedByNumber:        loggedInUser.Number,
+		}
+
+		if err := config.DB.Model(&existingMeal).Where("number = ?", existingMeal.Number).Updates(updateMeal).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update meal"})
+			return
+		}
+	}
+
 	updateStock := models.Stocking{
 		MenuItemNumber: payload.MenuItemNumber,
 		Quantity:       stocking.Quantity + -payload.Quantity,
@@ -74,6 +101,9 @@ func CreateMeal(c *gin.Context) {
 		return
 	}
 
+	formatDate, _ := time.Parse("2006-01-02", payload.Date)
+	formatTime, _ := time.Parse("15:04:05", payload.Time)
+
 	saveMeal := models.Meal{
 		Number:               uuid.NewV4().String(),
 		FeedingSessionNumber: payload.FeedingSessionNumber,
@@ -81,6 +111,8 @@ func CreateMeal(c *gin.Context) {
 		StaffNumber:          payload.StaffNumber,
 		Quantity:             payload.Quantity,
 		UserNumber:           payload.UserNumber,
+		Date:                 formatDate,
+		Time:                 formatTime,
 		CampusNumber:         feedingSession.CampusNumber,
 		AddedByNumber:        loggedInUser.Number,
 	}
@@ -182,5 +214,5 @@ func FetchMeals(c *gin.Context) {
 	// if the menu item exists in the meal table, pick the qunaity and supply it, else prefix with a zero
 	// return list of users
 
-	c.JSON(http.StatusOK, gin.H{"meals": servedItems, "menuitems": feedingGroupItems})
+	c.JSON(http.StatusOK, gin.H{"data": servedItems, "menuitems": feedingGroupItems})
 }
