@@ -174,7 +174,11 @@ func FetchMeals(c *gin.Context) {
 	var userMeals []UserMeals
 
 	var feedingGroupUsers []models.FeedingGroupUser
-	if err := config.DB.Preload("User").Where("number = ?", feedingGroupNumber).Find(&feedingGroupUsers).Error; err != nil {
+	if err := config.DB.Preload("User").Where("feeding_group_number = ?", feedingGroupNumber).Find(&feedingGroupUsers).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding group does not have any users"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding group users"})
 		return
 	}
