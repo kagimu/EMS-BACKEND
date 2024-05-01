@@ -161,14 +161,14 @@ func FetchMeals(c *gin.Context) {
 	// if the menu item exists in the meal table, pick the qunaity and supply it, else prefix with a zero
 	// return list of users
 	type singleMeal struct {
-		MenuItemNumber string
-		MenuItemName   string
-		Quantity       float64
+		MenuItemNumber string  `json:"menu_item_number"`
+		MenuItemName   string  `json:"menu_item_name"`
+		Quantity       float64 `json:"quantity"`
 	}
 	type UserMeals struct {
-		UserNumber string
-		Name       string
-		Meals      []singleMeal
+		UserNumber string       `json:"user_number"`
+		Name       string       `json:"name"`
+		Meals      []singleMeal `json:"meals"`
 	}
 
 	var userMeals []UserMeals
