@@ -119,10 +119,7 @@ func SetupRoutes() *gin.Engine {
 			school := main.Group("/report-templates")
 			{
 				school.GET("/all", reportTemplate.AllReportTemplates)
-				school.POST("/new", schoolController.NewSchool)
-				school.POST("/edit", schoolController.EditSchool)
-				school.GET("/info", schoolController.FetchSchoolInfo)
-				school.POST("/delete", schoolController.DeleteSchool)
+				school.POST("/new", reportTemplate.NewReportTemplate)
 			}
 
 		}
