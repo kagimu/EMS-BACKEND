@@ -136,3 +136,15 @@ func ByGradingStandardNumber(gradingStandardNumber string) func(db *gorm.DB) *go
 		return db
 	}
 }
+
+func ByName(search string) func(*gorm.DB) *gorm.DB {
+
+	return func(db *gorm.DB) *gorm.DB {
+
+		if search != "" {
+			return db.Where("name like ?", "%"+search+"%")
+		}
+
+		return db
+	}
+}

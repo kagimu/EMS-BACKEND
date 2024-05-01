@@ -38,6 +38,7 @@ import (
 	progressReportModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/models"
 	promotionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	reportSettings "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
@@ -181,6 +182,7 @@ func Init() error {
 		&timetableModels.StudyingTimeTable{},
 		&timetableModels.StudyingPeriod{},
 		&permissionModels.Scope{},
+		&reportTemplateModel.ReportTemplate{},
 	)
 
 	if err != nil {

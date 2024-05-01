@@ -31,14 +31,14 @@ func CreateScope(c *gin.Context) {
 	}
 
 	saveScope := models.Scope{
-		Number:           uuid.NewV4().String(),
-		CampusNumber:     payload.CampusNumber,
-		SchoolNumber:     payload.SchoolNumber,
-		CurriculumNumber: payload.CurriculumNumber,
-		ClassNumber:      payload.ClassNumber,
-		StreamNumber:     payload.StreamNumber,
-		UserNumber:       payload.UserNumber,
-		AddedBy:          user.Number,
+		Number:            uuid.NewV4().String(),
+		CampusNumber:      payload.CampusNumber,
+		SchoolNumber:      payload.SchoolNumber,
+		CurriculumNumber:  payload.CurriculumNumber,
+		CampusClassNumber: payload.ClassNumber,
+		StreamNumber:      payload.StreamNumber,
+		UserNumber:        payload.UserNumber,
+		AddedBy:           user.Number,
 	}
 
 	if err := config.DB.Create(&saveScope).Error; err != nil {
@@ -69,7 +69,7 @@ func FetchScopes(c *gin.Context) {
 			CampusNumber:     scope.CampusNumber,
 			SchoolNumber:     scope.SchoolNumber,
 			CurriculumNumber: scope.CurriculumNumber,
-			ClassNumber:      scope.ClassNumber,
+			ClassNumber:      scope.CampusClassNumber,
 			StreamNumber:     scope.StreamNumber,
 			UserNumber:       scope.UserNumber,
 			UserName:         scope.User.FirstName + " " + scope.User.SecondName + scope.User.LastName,
