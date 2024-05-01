@@ -22,7 +22,7 @@ func PromoteStudent(c *gin.Context) {
 	}
 
 	var payload requests.PromotionRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	if err := c.BindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}

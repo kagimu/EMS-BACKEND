@@ -39,6 +39,7 @@ import (
 	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
 	promotionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/controllers"
 	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
+	reportTemplate "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
@@ -114,6 +115,16 @@ func SetupRoutes() *gin.Engine {
 			school.POST("/edit", schoolController.EditSchool)
 			school.GET("/info", schoolController.FetchSchoolInfo)
 			school.POST("/delete", schoolController.DeleteSchool)
+
+			school := main.Group("/report-templates")
+			{
+				school.GET("/all", reportTemplate.AllReportTemplates)
+				school.POST("/new", schoolController.NewSchool)
+				school.POST("/edit", schoolController.EditSchool)
+				school.GET("/info", schoolController.FetchSchoolInfo)
+				school.POST("/delete", schoolController.DeleteSchool)
+			}
+
 		}
 
 		//manage campus

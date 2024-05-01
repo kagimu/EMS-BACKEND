@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 
 	"log"
 	"os"
@@ -17,14 +19,15 @@ import (
 )
 
 func main() {
-	// err := godotenv.Load(".env")
-	// if err != nil {
-	// 	log.Fatal("Error loading .env file")
-	// }
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+		return
+	}
 
-	// gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.DebugMode)
 
-	err := os.Setenv("TZ", "Africa/Nairobi")
+	err = os.Setenv("TZ", "Africa/Nairobi")
 	if err != nil {
 		return
 	}
@@ -45,12 +48,14 @@ func main() {
 		err := sqlDB.Close()
 		if err != nil {
 			fmt.Println("Error closing database:", err)
+			return
 		}
 	}(sqlDB)
 
 	//All auto migrations
 	if err := migrations.Init(); err != nil {
 		log.Println(err)
+		return
 	}
 
 	rawJSON := []byte(`{

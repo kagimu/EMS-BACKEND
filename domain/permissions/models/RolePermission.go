@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// RolePermission stores the relationship between roles and permissions
+// RolePermission services the relationship between roles and permissions
 type RolePermission struct {
 	gorm.Model
 	ID            uint
