@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"gorm.io/gorm"
 	"net/http"
 	"time"
 
@@ -150,61 +152,6 @@ func FetchMeals(c *gin.Context) {
 		return
 	}
 
-	var feedingGroupUsers []models.FeedingGroup
-	if err := config.DB.Where("number = ?", feedingGroupNumber).First(&feedingGroupUsers).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding group users"})
-		return
-	}
-
-	var feedingSessionItems []models.FeedingSessionItem
-	if err := config.DB.Where("feeding_session_number = ?", feedingSessionNumber).Preload("MenuItem").First(&feedingSessionItems).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding session items"})
-		return
-	}
-
-	var feedingGroupItems []interface{}
-	for _, v := range feedingGroupUsers {
-		feedingGroupItems = append(feedingGroupItems, v)
-	}
-
-	for _, v := range feedingSessionItems {
-		feedingGroupItems = append(feedingGroupItems, v)
-	}
-
-	var meals []models.Meal
-	if err := config.DB.Where("feeding_session_number = ?", feedingSessionNumber).Find(&meals).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch meals"})
-		return
-	}
-
-	var servedItems []struct {
-		FeedingSessionItem models.FeedingSessionItem
-		Quantity           float64
-	}
-
-	for _, item := range feedingSessionItems {
-		served := false
-		var quantity float64
-
-		for _, meal := range meals {
-			if meal.MenuItemNumber == item.MenuItemNumber {
-				quantity = meal.Quantity
-				served = true
-				break
-			}
-		}
-
-		if served {
-			servedItems = append(servedItems, struct {
-				FeedingSessionItem models.FeedingSessionItem
-				Quantity           float64
-			}{
-				FeedingSessionItem: item,
-				Quantity:           quantity,
-			})
-		}
-	}
-
 	// Feeding group number, feeding session  number as params
 	// Query from feeding group where feeding group number = returns users
 	//  Iterate
@@ -213,6 +160,60 @@ func FetchMeals(c *gin.Context) {
 	// For each menu item, confirm if the item has been served on this user
 	// if the menu item exists in the meal table, pick the qunaity and supply it, else prefix with a zero
 	// return list of users
+	type singleMeal struct {
+		MenuItemNumber string
+		MenuItemName   string
+		Quantity       float64
+	}
+	type UserMeals struct {
+		UserNumber string
+		Name       string
+		Meals      []singleMeal
+	}
 
-	c.JSON(http.StatusOK, gin.H{"data": servedItems, "menuitems": feedingGroupItems})
+	var userMeals []UserMeals
+
+	var feedingGroupUsers []models.FeedingGroupUser
+	if err := config.DB.Where("number = ?", feedingGroupNumber).Find(&feedingGroupUsers).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding group users"})
+		return
+	}
+
+	for groupUserIndex, v := range feedingGroupUsers {
+		var feedingSessionItems []models.FeedingSessionItem
+		if err := config.DB.Where("feeding_session_number = ?", feedingSessionNumber).Preload("MenuItem").Find(&feedingSessionItems).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding session items"})
+			return
+		}
+
+		userMeals = append(userMeals, UserMeals{
+			UserNumber: v.UserNumber,
+			Name:       v.User.FirstName + " " + v.User.LastName,
+		})
+
+		for _, item := range feedingSessionItems {
+
+			var meal models.Meal
+			if err := config.DB.Where("feeding_session_number = ? AND user_number = ? ", feedingSessionNumber, v.UserNumber).First(&meal).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					userMeals[groupUserIndex].Meals = append(userMeals[groupUserIndex].Meals, singleMeal{
+						MenuItemNumber: item.MenuItemNumber,
+						MenuItemName:   item.MenuItem.Name,
+						Quantity:       0,
+					})
+
+				}
+			} else {
+				userMeals[groupUserIndex].Meals = append(userMeals[groupUserIndex].Meals, singleMeal{
+					MenuItemNumber: item.MenuItemNumber,
+					MenuItemName:   item.MenuItem.Name,
+					Quantity:       meal.Quantity,
+				})
+			}
+
+		}
+
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": userMeals})
 }
