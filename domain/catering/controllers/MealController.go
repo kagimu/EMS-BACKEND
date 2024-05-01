@@ -166,15 +166,17 @@ func FetchMeals(c *gin.Context) {
 		Quantity       float64 `json:"quantity"`
 	}
 	type UserMeals struct {
-		UserNumber string       `json:"user_number"`
-		Name       string       `json:"name"`
-		Meals      []singleMeal `json:"meals"`
+		UserNumber         string       `json:"user_number"`
+		Name               string       `json:"name"`
+		FeedingGroupName   string       `json:"feeding_group_name"`
+		FeedingGroupNumber string       `json:"feeding_group_number"`
+		Meals              []singleMeal `json:"meals"`
 	}
 
 	var userMeals []UserMeals
 
 	var feedingGroupUsers []models.FeedingGroupUser
-	if err := config.DB.Preload("User").Where("feeding_group_number = ?", feedingGroupNumber).Find(&feedingGroupUsers).Error; err != nil {
+	if err := config.DB.Preload("User").Preload("FeedingGroup").Where("feeding_group_number = ?", feedingGroupNumber).Find(&feedingGroupUsers).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding group does not have any users"})
 			return
@@ -191,8 +193,10 @@ func FetchMeals(c *gin.Context) {
 		}
 
 		userMeals = append(userMeals, UserMeals{
-			UserNumber: v.UserNumber,
-			Name:       v.User.FirstName + " " + v.User.LastName,
+			UserNumber:         v.UserNumber,
+			Name:               v.User.FirstName + " " + v.User.LastName,
+			FeedingGroupName:   v.FeedingGroup.Name,
+			FeedingGroupNumber: v.FeedingGroup.Number,
 		})
 
 		for _, item := range feedingSessionItems {
