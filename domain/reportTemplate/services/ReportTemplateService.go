@@ -1,8 +1,11 @@
 package services
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/repositories"
+	uuid "github.com/satori/go.uuid"
 )
 
 func FetchAllReportTemplates(schoolNumber string, search string) ([]responses.ReportTemplateResponse, error) {
@@ -34,4 +37,31 @@ func FetchAllReportTemplates(schoolNumber string, search string) ([]responses.Re
 	}
 
 	return response, nil
+}
+
+func PostNewReportTemplate(newTemplateRequest requests.NewTemplateRequest, currentUserNumber string) (string, error) {
+
+	reportTemplate, err := repositories.QueryByNameAndSchool(newTemplateRequest.Name, newTemplateRequest.SchoolNumber)
+
+	if err != nil {
+		return "", err
+	}
+
+	if reportTemplate.Number != "" {
+		return "Report with name already exists", nil
+	}
+
+	reportTemplate = models.ReportTemplate{}
+	reportTemplate.Name = newTemplateRequest.Name
+	reportTemplate.SchoolNumber = newTemplateRequest.SchoolNumber
+	reportTemplate.UserNumber = currentUserNumber
+	reportTemplate.Number = uuid.NewV4().String()
+
+	err = repositories.Save(reportTemplate)
+
+	if err != nil {
+		return "", err
+	}
+
+	return "", nil
 }
