@@ -101,40 +101,61 @@ func FetchAllClassReportTemplate(templateNumber string) ([]responses.ClassReport
 
 }
 
-func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateRequest, currentUserNumber string) (string, error) {
+func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateRequest, currentUserNumber string) (string, []string) {
 
 	reportTemplate, err := repositories.QueryByReportTemplateNumber(classReportTemplateRequest.ReportTemplateNumber)
 
+	var errors []string
+
 	if err != nil {
-		return "", err
+		return "", append(errors, err.Error())
 	}
 
 	if reportTemplate.Number == "" {
 		return "Invalid report template number", nil
 	}
 
-	campusClass, err := classRepositories.QueryCampusClassByNumber(classReportTemplateRequest.CampusClassNumber)
+	selectedClasses := classReportTemplateRequest.CampusClasses
+
+	for _, campusClassNumber := range selectedClasses {
+
+		errorMessage := checkAndSaveClass(reportTemplate.Number, campusClassNumber, currentUserNumber)
+
+		errors = append(errors, errorMessage)
+
+	}
+
+	if len(errors) == len(selectedClasses) {
+		return "No class added to the template, try again", errors
+	}
+
+	return "", errors
+}
+
+func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, currentUserNumber string) string {
+
+	campusClass, err := classRepositories.QueryCampusClassByNumber(campusClassNumber)
 
 	if err != nil {
-		return "", err
+		return err.Error()
 	}
 
 	if campusClass.Number == "" {
-		return "Invalid campus class number", nil
+		return "Invalid campus class number"
 	}
 
-	oldClassReportTemplate, err := repositories.QueryByReportTemplateNumberAndCampusClassNumber(reportTemplate.Number, campusClass.Number)
+	oldClassReportTemplate, err := repositories.QueryByReportTemplateNumberAndCampusClassNumber(reportTemplateNumber, campusClass.Number)
 
 	if err != nil {
-		return "", err
+		return err.Error()
 	}
 
 	if oldClassReportTemplate.Number == "" {
-		return "Report template already added to class", nil
+		return "Report template already added to class"
 	}
 
 	classReportTemplate := models.ClassReportTemplate{
-		ReportTemplateNumber: reportTemplate.Number,
+		ReportTemplateNumber: reportTemplateNumber,
 		UserNumber:           currentUserNumber,
 		CampusClassNumber:    campusClass.Number,
 		Number:               uuid.NewV4().String(),
@@ -143,8 +164,8 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 	err = repositories.SaveClassReportTemplate(classReportTemplate)
 
 	if err != nil {
-		return "", err
+		return err.Error()
 	}
 
-	return "", nil
+	return ""
 }

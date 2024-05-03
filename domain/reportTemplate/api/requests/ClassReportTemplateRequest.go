@@ -3,7 +3,7 @@ package requests
 import "errors"
 
 type ClassReportTemplateRequest struct {
-	CampusClassNumber    string
+	CampusClasses        []string
 	ReportTemplateNumber string
 }
 
@@ -13,8 +13,8 @@ func (classReportTemplateRequest *ClassReportTemplateRequest) Validate() error {
 		return errors.New("choose the template")
 	}
 
-	if classReportTemplateRequest.CampusClassNumber == "" {
-		return errors.New("choose the class number")
+	if classReportTemplateRequest.CampusClasses == nil || len(classReportTemplateRequest.CampusClasses) == 0 {
+		return errors.New("provide a list of campus classes")
 	}
 
 	return nil

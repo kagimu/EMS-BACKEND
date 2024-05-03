@@ -102,17 +102,12 @@ func AddTemplateToClass(context *gin.Context) {
 		return
 	}
 
-	savingError, err := services.AddTemplateToClass(templateRequest, currentUser.Number)
-
-	if err != nil {
-		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
-		return
-	}
+	savingError, validationErrors := services.AddTemplateToClass(templateRequest, currentUser.Number)
 
 	if savingError != "" {
-		context.JSON(http.StatusBadRequest, commons.Feedback(savingError))
+		context.JSON(http.StatusBadRequest, gin.H{"message": savingError, "data": validationErrors})
 		return
 	}
 
-	context.JSON(http.StatusOK, commons.Feedback("Class added to report template"))
+	context.JSON(http.StatusOK, gin.H{"message": "Classes added to report template", "data": validationErrors})
 }
