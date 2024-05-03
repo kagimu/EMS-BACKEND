@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/responses"
@@ -57,6 +58,9 @@ func PostNewReportTemplate(newTemplateRequest requests.NewTemplateRequest, curre
 	reportTemplate.SchoolNumber = newTemplateRequest.SchoolNumber
 	reportTemplate.UserNumber = currentUserNumber
 	reportTemplate.Number = uuid.NewV4().String()
+
+	fmt.Println("3: I reach here three!")
+	fmt.Println(reportTemplate)
 
 	err = repositories.Save(reportTemplate)
 
