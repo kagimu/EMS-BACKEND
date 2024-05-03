@@ -11,7 +11,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	staffModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -46,11 +45,11 @@ func CreateMeal(c *gin.Context) {
 		return
 	}
 
-	var staff staffModels.Staff
-	if err := config.DB.Where("number = ?", payload.StaffNumber).First(&staff).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Staff member not found"})
-		return
-	}
+	//var staff staffModels.Staff
+	//if err := config.DB.Where("number = ?", payload.StaffNumber).First(&staff).Error; err != nil {
+	//	c.JSON(http.StatusBadRequest, gin.H{"message": "Staff member not found"})
+	//	return
+	//}
 
 	var user authModels.User
 	if err := config.DB.Where("number = ?", payload.UserNumber).First(&user).Error; err != nil {
@@ -70,7 +69,7 @@ func CreateMeal(c *gin.Context) {
 	var existingMeal models.Meal
 	if err := config.DB.Where("feeding_session_number = ? AND menu_item_number = ? AND user_number = ? AND date = ?",
 		payload.FeedingSessionNumber, payload.MenuItemNumber, payload.UserNumber, payload.Date).First(&existingMeal).Error; err == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -94,10 +93,13 @@ func CreateMeal(c *gin.Context) {
 
 	updateStock := models.Stocking{
 		MenuItemNumber: payload.MenuItemNumber,
-		Quantity:       stocking.Quantity + -payload.Quantity,
+		Quantity:       0 - payload.Quantity,
+		UserNumber:     loggedInUser.Number,
+		CampusNumber:   feedingSession.CampusNumber,
+		UnitCost:       0,
 	}
 
-	if err := tx.Model(&stocking).Where("number = ?", stocking.Number).Updates(updateStock).Error; err != nil {
+	if err := tx.Create(updateStock).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item stock"})
 		return
@@ -117,6 +119,7 @@ func CreateMeal(c *gin.Context) {
 		Time:                 formatTime,
 		CampusNumber:         feedingSession.CampusNumber,
 		AddedByNumber:        loggedInUser.Number,
+		StockingNumber:       updateStock.Number,
 	}
 
 	if err := tx.Create(&saveMeal).Error; err != nil {
