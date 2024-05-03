@@ -15,7 +15,6 @@ func QueryClassReportTemplates(templateNumber string) ([]models.ClassReportTempl
 	var queryResults []models.ClassReportTemplate
 
 	err := db.
-		Preload("ReportTemplate").
 		Preload("User").
 		Preload("CampusClass").
 		Scopes(filters.ByReportTemplateNumber(templateNumber)).
