@@ -70,8 +70,9 @@ func ClassReportTemplates(context *gin.Context) {
 	var classReportTemplateResponses []responses.ClassReportTemplateResponse
 
 	templateNumber := context.Query("template_number")
+	schoolNumber := context.Query("school_number")
 
-	classReportTemplateResponses, errorResponse := services.FetchAllClassReportTemplate(templateNumber)
+	classReportTemplateResponses, errorResponse := services.FetchAllClassReportTemplate(schoolNumber, templateNumber)
 
 	if errorResponse != nil {
 		fmt.Println(errorResponse.Error())
