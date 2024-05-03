@@ -65,3 +65,37 @@ func PostNewReportTemplate(newTemplateRequest requests.NewTemplateRequest, curre
 
 	return "", nil
 }
+
+func FetchAllClassReportTemplate(templateNumber string) ([]responses.ClassReportTemplateResponse, error) {
+
+	var response []responses.ClassReportTemplateResponse
+
+	rawResponses, errorResponse := repositories.QueryClassReportTemplates(templateNumber)
+
+	if errorResponse != nil {
+		return nil, errorResponse
+	}
+
+	for _, rawResponse := range rawResponses {
+
+		reportTemplate := rawResponse.ReportTemplate
+
+		campusClass := rawResponse.CampusClass
+
+		user := rawResponse.User
+		userNames := user.FirstName + " " + user.LastName
+
+		resp := responses.ClassReportTemplateResponse{
+			TemplateName: reportTemplate.Name,
+			ClassName:    campusClass.ClassName,
+			Number:       rawResponse.Number,
+			AddedBy:      userNames,
+		}
+
+		response = append(response, resp)
+
+	}
+
+	return response, nil
+
+}

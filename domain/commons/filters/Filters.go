@@ -148,3 +148,15 @@ func ByName(search string) func(*gorm.DB) *gorm.DB {
 		return db
 	}
 }
+
+func ByReportTemplateNumber(templateNumber string) func(*gorm.DB) *gorm.DB {
+
+	return func(db *gorm.DB) *gorm.DB {
+
+		if templateNumber != "" {
+			return db.Where("report_template_number = ?", templateNumber)
+		}
+
+		return db
+	}
+}

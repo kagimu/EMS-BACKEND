@@ -64,3 +64,19 @@ func NewReportTemplate(context *gin.Context) {
 	context.JSON(http.StatusOK, commons.Feedback("New template created successfully"))
 
 }
+
+func ClassReportTemplates(context *gin.Context) {
+
+	var classReportTemplateResponses []responses.ClassReportTemplateResponse
+
+	templateNumber := context.Query("template_number")
+
+	classReportTemplateResponses, errorResponse := services.FetchAllClassReportTemplate(templateNumber)
+
+	if errorResponse != nil {
+		fmt.Println(errorResponse.Error())
+		context.JSON(http.StatusInternalServerError, commons.Feedback("We could not get results, try again!"))
+	}
+
+	context.JSON(http.StatusOK, classReportTemplateResponses)
+}
