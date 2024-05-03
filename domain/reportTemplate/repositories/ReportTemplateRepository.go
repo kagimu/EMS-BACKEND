@@ -1,9 +1,11 @@
 package repositories
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
+	"gorm.io/gorm"
 )
 
 func QueryReportTemplates(schoolNumber string, search string, reportTemplateNumber string) ([]models.ReportTemplate, error) {
@@ -29,6 +31,11 @@ func QueryByNameAndSchool(templateName string, schoolNumber string) (models.Repo
 	db := config.DB
 
 	if err := db.Where("name = ? ", templateName).Where("school_number = ? ", schoolNumber).First(reportTemplate).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportTemplate, nil
+		}
+
 		return reportTemplate, err
 	}
 
