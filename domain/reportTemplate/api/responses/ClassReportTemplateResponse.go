@@ -1,8 +1,12 @@
 package responses
 
 type ClassReportTemplateResponse struct {
-	Number       string
-	ClassName    string
 	TemplateName string
-	AddedBy      string
+	Classes      []ClassResponse
+}
+
+type ClassResponse struct {
+	Number    string
+	ClassName string
+	AddedBy   string
 }
