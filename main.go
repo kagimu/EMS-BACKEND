@@ -41,6 +41,7 @@ func main() {
 
 	sqlDB, err := config.DB.DB()
 	if err != nil {
+		fmt.Println("Error getting database connection:", err)
 		return
 	}
 
