@@ -1,6 +1,7 @@
 package services
 
 import (
+	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
@@ -98,4 +99,52 @@ func FetchAllClassReportTemplate(templateNumber string) ([]responses.ClassReport
 
 	return response, nil
 
+}
+
+func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateRequest, currentUserNumber string) (string, error) {
+
+	reportTemplate, err := repositories.QueryByReportTemplateNumber(classReportTemplateRequest.ReportTemplateNumber)
+
+	if err != nil {
+		return "", err
+	}
+
+	if reportTemplate.Number == "" {
+		return "Invalid report template number", nil
+	}
+
+	campusClass, err := classRepositories.QueryCampusClassByNumber(classReportTemplateRequest.CampusClassNumber)
+
+	if err != nil {
+		return "", err
+	}
+
+	if campusClass.Number == "" {
+		return "Invalid campus class number", nil
+	}
+
+	oldClassReportTemplate, err := repositories.QueryByReportTemplateNumberAndCampusClassNumber(reportTemplate.Number, campusClass.Number)
+
+	if err != nil {
+		return "", err
+	}
+
+	if oldClassReportTemplate.Number == "" {
+		return "Report template already added to class", nil
+	}
+
+	classReportTemplate := models.ClassReportTemplate{
+		ReportTemplateNumber: reportTemplate.Number,
+		UserNumber:           currentUserNumber,
+		CampusClassNumber:    campusClass.Number,
+		Number:               uuid.NewV4().String(),
+	}
+
+	err = repositories.SaveClassReportTemplate(classReportTemplate)
+
+	if err != nil {
+		return "", err
+	}
+
+	return "", nil
 }

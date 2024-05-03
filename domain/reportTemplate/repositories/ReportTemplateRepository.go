@@ -48,3 +48,18 @@ func Save(reportTemplate models.ReportTemplate) error {
 
 	return nil
 }
+
+func QueryByReportTemplateNumber(reportTemplateNumber string) (models.ReportTemplate, error) {
+
+	db := config.DB
+
+	var reportTemplate models.ReportTemplate
+
+	err := db.Where("number = ? ", reportTemplateNumber).First(reportTemplate).Error
+
+	if err.Error != nil {
+		return reportTemplate, err
+	}
+
+	return reportTemplate, nil
+}
