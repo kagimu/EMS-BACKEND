@@ -120,6 +120,8 @@ func SetupRoutes() *gin.Engine {
 			{
 				school.GET("/all", reportTemplate.AllReportTemplates)
 				school.POST("/new", reportTemplate.NewReportTemplate)
+				school.GET("/by-class", reportTemplate.ClassReportTemplates)
+				school.POST("/add-to-classes", reportTemplate.AddTemplateToClass)
 			}
 
 		}

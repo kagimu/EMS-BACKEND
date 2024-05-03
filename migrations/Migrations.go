@@ -183,6 +183,7 @@ func Init() error {
 		&timetableModels.StudyingPeriod{},
 		&permissionModels.Scope{},
 		&reportTemplateModel.ReportTemplate{},
+		&reportTemplateModel.ClassReportTemplate{},
 	)
 
 	if err != nil {

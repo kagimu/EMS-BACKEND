@@ -1,6 +1,7 @@
 package services
 
 import (
+	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
@@ -64,4 +65,107 @@ func PostNewReportTemplate(newTemplateRequest requests.NewTemplateRequest, curre
 	}
 
 	return "", nil
+}
+
+func FetchAllClassReportTemplate(templateNumber string) ([]responses.ClassReportTemplateResponse, error) {
+
+	var response []responses.ClassReportTemplateResponse
+
+	rawResponses, errorResponse := repositories.QueryClassReportTemplates(templateNumber)
+
+	if errorResponse != nil {
+		return nil, errorResponse
+	}
+
+	for _, rawResponse := range rawResponses {
+
+		reportTemplate := rawResponse.ReportTemplate
+
+		campusClass := rawResponse.CampusClass
+
+		user := rawResponse.User
+		userNames := user.FirstName + " " + user.LastName
+
+		resp := responses.ClassReportTemplateResponse{
+			TemplateName: reportTemplate.Name,
+			ClassName:    campusClass.ClassName,
+			Number:       rawResponse.Number,
+			AddedBy:      userNames,
+		}
+
+		response = append(response, resp)
+
+	}
+
+	return response, nil
+
+}
+
+func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateRequest, currentUserNumber string) (string, []string) {
+
+	reportTemplate, err := repositories.QueryByReportTemplateNumber(classReportTemplateRequest.ReportTemplateNumber)
+
+	var errors []string
+
+	if err != nil {
+		return "", append(errors, err.Error())
+	}
+
+	if reportTemplate.Number == "" {
+		return "Invalid report template number", nil
+	}
+
+	selectedClasses := classReportTemplateRequest.CampusClasses
+
+	for _, campusClassNumber := range selectedClasses {
+
+		errorMessage := checkAndSaveClass(reportTemplate.Number, campusClassNumber, currentUserNumber)
+
+		errors = append(errors, errorMessage)
+
+	}
+
+	if len(errors) == len(selectedClasses) {
+		return "No class added to the template, try again", errors
+	}
+
+	return "", errors
+}
+
+func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, currentUserNumber string) string {
+
+	campusClass, err := classRepositories.QueryCampusClassByNumber(campusClassNumber)
+
+	if err != nil {
+		return err.Error()
+	}
+
+	if campusClass.Number == "" {
+		return "Invalid campus class number"
+	}
+
+	oldClassReportTemplate, err := repositories.QueryByReportTemplateNumberAndCampusClassNumber(reportTemplateNumber, campusClass.Number)
+
+	if err != nil {
+		return err.Error()
+	}
+
+	if oldClassReportTemplate.Number == "" {
+		return "Report template already added to class"
+	}
+
+	classReportTemplate := models.ClassReportTemplate{
+		ReportTemplateNumber: reportTemplateNumber,
+		UserNumber:           currentUserNumber,
+		CampusClassNumber:    campusClass.Number,
+		Number:               uuid.NewV4().String(),
+	}
+
+	err = repositories.SaveClassReportTemplate(classReportTemplate)
+
+	if err != nil {
+		return err.Error()
+	}
+
+	return ""
 }
