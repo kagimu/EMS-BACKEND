@@ -15,10 +15,10 @@ func QueryReportTemplates(schoolNumber string, search string, reportTemplateNumb
 	query := db.
 		Preload("User").
 		Scopes(filters.ByName(search), filters.ByNumber(reportTemplateNumber), filters.BySchoolNumber(schoolNumber)).
-		Find(queryResults)
+		Find(queryResults).Error
 
-	if query.Error != nil {
-		return nil, query.Error
+	if query != nil {
+		return nil, query
 	}
 
 	return queryResults, nil
@@ -30,10 +30,10 @@ func QueryByNameAndSchool(templateName string, schoolNumber string) (models.Repo
 
 	db := config.DB
 
-	query := db.Where("name = ? ", templateName).Where("school_number = ? ", schoolNumber).First(reportTemplate)
+	query := db.Where("name = ? ", templateName).Where("school_number = ? ", schoolNumber).First(reportTemplate).Error
 
-	if query.Error != nil {
-		return reportTemplate, query.Error
+	if query != nil {
+		return reportTemplate, query
 	}
 
 	return reportTemplate, nil
@@ -43,10 +43,10 @@ func Save(reportTemplate models.ReportTemplate) error {
 
 	db := config.DB
 
-	savingError := db.Create(&reportTemplate)
+	savingError := db.Create(&reportTemplate).Error
 
-	if savingError.Error != nil {
-		return savingError.Error
+	if savingError != nil {
+		return savingError
 	}
 
 	return nil
