@@ -39,16 +39,10 @@ func NewReportTemplate(context *gin.Context) {
 
 	var templateRequest newTemplateRequest.NewTemplateRequest
 
-	fmt.Println("1: I reach here")
-	fmt.Println(templateRequest)
-
 	if noBodyError := context.BindJSON(&templateRequest); noBodyError != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Set valid request body"))
 		return
 	}
-
-	fmt.Println("2: I reach here two")
-	fmt.Println(templateRequest)
 
 	if validationError := templateRequest.Validate(); validationError != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(validationError.Error()))
