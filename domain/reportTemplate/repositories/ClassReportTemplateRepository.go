@@ -14,18 +14,16 @@ func QueryClassReportTemplates(templateNumber string) ([]models.ClassReportTempl
 
 	var queryResults []models.ClassReportTemplate
 
-	err := db.
-		Preload("ReportTemplate").
+	if err := db.
 		Preload("User").
 		Preload("CampusClass").
 		Scopes(filters.ByReportTemplateNumber(templateNumber)).
-		Find(queryResults).Error
+		Find(queryResults).Error; err != nil {
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return queryResults, nil
-	}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return queryResults, nil
+		}
 
-	if err != nil {
 		return nil, err
 	}
 
@@ -33,7 +31,12 @@ func QueryClassReportTemplates(templateNumber string) ([]models.ClassReportTempl
 }
 
 func SaveClassReportTemplate(classReportTemplate models.ClassReportTemplate) error {
-	return config.DB.Create(classReportTemplate).Error
+
+	if err := config.DB.Create(classReportTemplate).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func QueryByReportTemplateNumberAndCampusClassNumber(reportTemplateNumber string, campusClassNumber string) (models.ClassReportTemplate, error) {
@@ -42,16 +45,15 @@ func QueryByReportTemplateNumberAndCampusClassNumber(reportTemplateNumber string
 
 	var queryResults models.ClassReportTemplate
 
-	err := db.
+	if err := db.
 		Where("campus_class_number = ? ", campusClassNumber).
 		Where("report_template_number = ? ", reportTemplateNumber).
-		First(queryResults).Error
+		First(queryResults).Error; err != nil {
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return queryResults, nil
-	}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return queryResults, nil
+		}
 
-	if err != nil {
 		return queryResults, err
 	}
 

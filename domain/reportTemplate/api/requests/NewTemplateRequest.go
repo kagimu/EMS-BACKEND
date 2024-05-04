@@ -5,9 +5,9 @@ import (
 )
 
 type NewTemplateRequest struct {
-	Name         string
-	Status       string
-	SchoolNumber string
+	Name         string `json:"name"`
+	Status       string `json:"status"`
+	SchoolNumber string `json:"school_number"`
 }
 
 func (newTemplateRequest *NewTemplateRequest) Validate() error {

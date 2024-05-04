@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/responses"
@@ -13,7 +14,7 @@ func FetchAllReportTemplates(schoolNumber string, search string) ([]responses.Re
 
 	var response []responses.ReportTemplateResponse
 
-	rawResponses, errorResponse := repositories.QueryReportTemplates(schoolNumber, search)
+	rawResponses, errorResponse := repositories.QueryReportTemplates(schoolNumber, search, "")
 
 	if errorResponse != nil {
 
@@ -58,6 +59,9 @@ func PostNewReportTemplate(newTemplateRequest requests.NewTemplateRequest, curre
 	reportTemplate.UserNumber = currentUserNumber
 	reportTemplate.Number = uuid.NewV4().String()
 
+	fmt.Println("3: I reach here three!")
+	fmt.Println(reportTemplate)
+
 	err = repositories.Save(reportTemplate)
 
 	if err != nil {
@@ -67,38 +71,64 @@ func PostNewReportTemplate(newTemplateRequest requests.NewTemplateRequest, curre
 	return "", nil
 }
 
-func FetchAllClassReportTemplate(templateNumber string) ([]responses.ClassReportTemplateResponse, error) {
+func FetchAllClassReportTemplate(schoolNumber string, reportTemplateNumber string) ([]responses.ClassReportTemplateResponse, error) {
 
 	var response []responses.ClassReportTemplateResponse
 
-	rawResponses, errorResponse := repositories.QueryClassReportTemplates(templateNumber)
+	allReportTemplates, err := repositories.QueryReportTemplates(schoolNumber, "", reportTemplateNumber)
 
-	if errorResponse != nil {
-		return nil, errorResponse
+	if err != nil {
+		return nil, err
 	}
 
-	for _, rawResponse := range rawResponses {
+	for _, reportTemplate := range allReportTemplates {
 
-		reportTemplate := rawResponse.ReportTemplate
+		classReportTemplateResponse, err := queryAndSetClassesReportTemplateResponse(reportTemplate)
+
+		if err == nil {
+			response = append(response, classReportTemplateResponse)
+		}
+
+	}
+
+	return response, nil
+
+}
+
+func queryAndSetClassesReportTemplateResponse(reportTemplate models.ReportTemplate) (responses.ClassReportTemplateResponse, error) {
+
+	var classReportTemplateResponse responses.ClassReportTemplateResponse
+
+	rawResponses, errorResponse := repositories.QueryClassReportTemplates(reportTemplate.Number)
+
+	if errorResponse != nil {
+		return classReportTemplateResponse, errorResponse
+	}
+
+	classReportTemplateResponse.TemplateName = reportTemplate.Name
+
+	var classesResponse []responses.ClassResponse
+
+	for _, rawResponse := range rawResponses {
 
 		campusClass := rawResponse.CampusClass
 
 		user := rawResponse.User
 		userNames := user.FirstName + " " + user.LastName
 
-		resp := responses.ClassReportTemplateResponse{
-			TemplateName: reportTemplate.Name,
-			ClassName:    campusClass.ClassName,
-			Number:       rawResponse.Number,
-			AddedBy:      userNames,
+		resp := responses.ClassResponse{
+			ClassName: campusClass.ClassName,
+			AddedBy:   userNames,
+			Number:    rawResponse.Number,
 		}
 
-		response = append(response, resp)
+		classesResponse = append(classesResponse, resp)
 
 	}
 
-	return response, nil
+	classReportTemplateResponse.Classes = classesResponse
 
+	return classReportTemplateResponse, nil
 }
 
 func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateRequest, currentUserNumber string) (string, []string) {
