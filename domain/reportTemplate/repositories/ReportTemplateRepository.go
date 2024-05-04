@@ -18,6 +18,11 @@ func QueryReportTemplates(schoolNumber string, search string, reportTemplateNumb
 		Preload("User").
 		Scopes(filters.ByName(search), filters.ByNumber(reportTemplateNumber), filters.BySchoolNumber(schoolNumber)).
 		Find(queryResults).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return queryResults, nil
+		}
+
 		return nil, err
 	}
 
@@ -60,6 +65,11 @@ func QueryByReportTemplateNumber(reportTemplateNumber string) (models.ReportTemp
 	var reportTemplate models.ReportTemplate
 
 	if err := db.Where("number = ? ", reportTemplateNumber).First(reportTemplate).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportTemplate, nil
+		}
+
 		return reportTemplate, err
 	}
 
