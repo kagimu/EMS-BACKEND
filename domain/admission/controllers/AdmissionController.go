@@ -145,12 +145,6 @@ func CreateAdmission(c *gin.Context) {
 			AcademicYearNumber: payload.AcademicYearNumber,
 		}
 
-		var duplicate models.Admission
-		if err := config.DB.Where("name = ?", saveAdmission.StudentNumber).First(&duplicate).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "A student can not be admitted more than once"})
-			return
-		}
-
 		if err := config.DB.Create(&saveAdmission).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
 			return
