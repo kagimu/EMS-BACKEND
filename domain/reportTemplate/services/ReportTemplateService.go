@@ -181,7 +181,7 @@ func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, cu
 		return err.Error()
 	}
 
-	if oldClassReportTemplate.Number == "" {
+	if oldClassReportTemplate.Number != "" {
 		return "This class already has a report template"
 	}
 
