@@ -136,10 +136,10 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 
 	reportTemplate, err := repositories.QueryByReportTemplateNumber(classReportTemplateRequest.ReportTemplateNumber)
 
-	var errors []string
+	var allError []string
 
 	if err != nil {
-		return "", append(errors, err.Error())
+		return "", append(allError, err.Error())
 	}
 
 	if reportTemplate.Number == "" {
@@ -150,17 +150,17 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 
 	for _, campusClassNumber := range selectedClasses {
 
-		errorMessage := checkAndSaveClass(reportTemplate.Number, campusClassNumber, currentUserNumber)
-
-		errors = append(errors, errorMessage)
+		if errorMessage := checkAndSaveClass(reportTemplate.Number, campusClassNumber, currentUserNumber); errorMessage != "" {
+			allError = append(allError, errorMessage)
+		}
 
 	}
 
-	if len(errors) == len(selectedClasses) {
-		return "No class added to the template, try again", errors
+	if len(allError) == len(selectedClasses) {
+		return "No class added to the template, try again", allError
 	}
 
-	return "", errors
+	return "", allError
 }
 
 func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, currentUserNumber string) string {
