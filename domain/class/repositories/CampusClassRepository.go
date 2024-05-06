@@ -1,8 +1,10 @@
 package repositories
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"gorm.io/gorm"
 )
 
 func QueryCampusClassByNumber(campusClassNumber string) (campusClassModel.CampusClass, error) {
@@ -11,11 +13,18 @@ func QueryCampusClassByNumber(campusClassNumber string) (campusClassModel.Campus
 
 	db := config.DB
 
-	err := db.Where("number = ? ", campusClassNumber).First(campusClass).Error
+	if err := db.Where("number = ? ", campusClassNumber).First(&campusClass).Error; err != nil {
 
-	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return campusClass, nil
+		}
+
 		return campusClass, err
 	}
+
+	/*if err != nil {
+		return campusClass, err
+	}*/
 
 	return campusClass, nil
 }
