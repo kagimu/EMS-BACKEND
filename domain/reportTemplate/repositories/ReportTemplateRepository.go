@@ -17,7 +17,7 @@ func QueryReportTemplates(schoolNumber string, search string, reportTemplateNumb
 	if err := db.
 		Preload("User").
 		Scopes(filters.ByName(search), filters.ByNumber(reportTemplateNumber), filters.BySchoolNumber(schoolNumber)).
-		Find(queryResults).Error; err != nil {
+		Find(&queryResults).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return queryResults, nil
@@ -35,7 +35,7 @@ func QueryByNameAndSchool(templateName string, schoolNumber string) (models.Repo
 
 	db := config.DB
 
-	if err := db.Where("name = ? ", templateName).Where("school_number = ? ", schoolNumber).First(reportTemplate).Error; err != nil {
+	if err := db.Where("name = ? ", templateName).Where("school_number = ? ", schoolNumber).First(&reportTemplate).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return reportTemplate, nil
@@ -64,7 +64,7 @@ func QueryByReportTemplateNumber(reportTemplateNumber string) (models.ReportTemp
 
 	var reportTemplate models.ReportTemplate
 
-	if err := db.Where("number = ? ", reportTemplateNumber).First(reportTemplate).Error; err != nil {
+	if err := db.Where("number = ? ", reportTemplateNumber).First(&reportTemplate).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return reportTemplate, nil
