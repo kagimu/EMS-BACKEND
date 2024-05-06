@@ -2,12 +2,12 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/repositories"
+	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -28,11 +28,15 @@ func FetchAllReportTemplates(schoolNumber string, search string) ([]responses.Re
 
 		userNames := user.FirstName + " " + user.LastName
 
+		school, _ := schoolRepositories.GetSchoolByNumber(rawResponse.SchoolNumber)
+
 		resp := responses.ReportTemplateResponse{
 			Name:             rawResponse.Name,
 			ReportTemplateId: rawResponse.Number,
 			Status:           rawResponse.Status,
 			AddedBy:          userNames,
+			SchoolName:       school.Name,
+			SchoolNumber:     rawResponse.SchoolNumber,
 		}
 
 		response = append(response, resp)
@@ -54,14 +58,12 @@ func PostNewReportTemplate(newTemplateRequest requests.NewTemplateRequest, curre
 		return "Report with name already exists", nil
 	}
 
-	reportTemplate = models.ReportTemplate{}
-	reportTemplate.Name = newTemplateRequest.Name
-	reportTemplate.SchoolNumber = newTemplateRequest.SchoolNumber
-	reportTemplate.UserNumber = currentUserNumber
-	reportTemplate.Number = uuid.NewV4().String()
-
-	fmt.Println("3: I reach here three!")
-	fmt.Println(reportTemplate)
+	reportTemplate = models.ReportTemplate{
+		Name:         newTemplateRequest.Name,
+		SchoolNumber: newTemplateRequest.SchoolNumber,
+		UserNumber:   currentUserNumber,
+		Number:       uuid.NewV4().String(),
+	}
 
 	err = repositories.Save(reportTemplate)
 
