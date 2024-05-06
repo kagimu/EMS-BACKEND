@@ -122,6 +122,7 @@ func SetupRoutes() *gin.Engine {
 				template.POST("/new", reportTemplate.NewReportTemplate)
 				template.GET("/by-class", reportTemplate.ClassReportTemplates)
 				template.POST("/add-to-classes", reportTemplate.AddTemplateToClass)
+				template.POST("/remove-template", reportTemplate.RemoveTemplateFromClass)
 			}
 
 		}

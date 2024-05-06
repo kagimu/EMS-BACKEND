@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
@@ -174,14 +175,14 @@ func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, cu
 		return "Invalid campus class number"
 	}
 
-	oldClassReportTemplate, err := repositories.QueryByReportTemplateNumberAndCampusClassNumber(reportTemplateNumber, campusClass.Number)
+	oldClassReportTemplate, err := repositories.QueryByCampusClassNumber(campusClass.Number)
 
 	if err != nil {
 		return err.Error()
 	}
 
 	if oldClassReportTemplate.Number == "" {
-		return "Report template already added to class"
+		return "This class already has a report template"
 	}
 
 	classReportTemplate := models.ClassReportTemplate{
@@ -198,4 +199,24 @@ func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, cu
 	}
 
 	return ""
+}
+
+func RemoveTemplateFromClass(campusClassNumber string) error {
+
+	classCampusReportTemplate, err := repositories.QueryByCampusClassNumber(campusClassNumber)
+
+	if err != nil {
+		return err
+	}
+
+	if classCampusReportTemplate.Number == "" {
+		return errors.New("this class has no report templated added to it")
+	}
+
+	deletionError := repositories.DeleteCampusClassReportTemplate(classCampusReportTemplate)
+	if deletionError != nil {
+		return deletionError
+	}
+
+	return nil
 }

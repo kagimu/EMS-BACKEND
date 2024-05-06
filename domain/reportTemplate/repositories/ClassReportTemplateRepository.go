@@ -59,3 +59,40 @@ func QueryByReportTemplateNumberAndCampusClassNumber(reportTemplateNumber string
 
 	return queryResults, nil
 }
+
+func QueryByCampusClassNumber(campusClassNumber string) (models.ClassReportTemplate, error) {
+
+	db := config.DB
+
+	var queryResults models.ClassReportTemplate
+
+	if err := db.
+		Where("campus_class_number = ? ", campusClassNumber).
+		First(&queryResults).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return queryResults, nil
+		}
+
+		return queryResults, err
+	}
+
+	return queryResults, nil
+}
+
+func DeleteCampusClassReportTemplate(classReportTemplate models.ClassReportTemplate) error {
+
+	db := config.DB
+
+	if err := db.
+		Delete(&classReportTemplate).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
+}
