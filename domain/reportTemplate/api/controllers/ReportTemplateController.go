@@ -3,7 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	newTemplateRequest "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
+	reportTemplateRequests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
 	"github.com/gin-gonic/gin"
@@ -37,7 +37,7 @@ func NewReportTemplate(context *gin.Context) {
 		return
 	}
 
-	var templateRequest newTemplateRequest.NewTemplateRequest
+	var templateRequest reportTemplateRequests.NewTemplateRequest
 
 	if noBodyError := context.BindJSON(&templateRequest); noBodyError != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Set valid request body"))
@@ -91,7 +91,7 @@ func AddTemplateToClass(context *gin.Context) {
 		return
 	}
 
-	var templateRequest newTemplateRequest.ClassReportTemplateRequest
+	var templateRequest reportTemplateRequests.ClassReportTemplateRequest
 
 	if noBodyError := context.BindJSON(&templateRequest); noBodyError != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Set valid request body"))
@@ -111,4 +111,34 @@ func AddTemplateToClass(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Classes added to report template", "data": validationErrors})
+}
+
+func RemoveTemplateFromClass(context *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(context)
+
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var removeTemplateFromClass reportTemplateRequests.RemoveTemplateFromClass
+
+	if noBodyError := context.BindJSON(&removeTemplateFromClass); noBodyError != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Set valid request body"))
+		return
+	}
+
+	if validationError := removeTemplateFromClass.Validate(); validationError != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(validationError.Error()))
+		return
+	}
+
+	errorResponse := services.RemoveTemplateFromClass(removeTemplateFromClass.CampusClassNumber)
+
+	if errorResponse != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(errorResponse.Error()))
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Report template removed successfully from class"))
 }
