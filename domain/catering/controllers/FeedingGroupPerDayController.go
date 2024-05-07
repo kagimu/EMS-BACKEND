@@ -25,22 +25,31 @@ func CreateFeedingGroupPerDay(c *gin.Context) {
 		return
 	}
 
-	saveFeedingGroupPerDay := models.FeedingGroupPerDay{
-		Number:             uuid.NewV4().String(),
-		FeedingGroupNumber: payload.FeedingGroupNumber,
-		Day:                payload.Day,
-		UserNumber:         user.Number,
-	}
-
-	var duplicateFeedingGroup models.FeedingGroupPerDay
-	if err := config.DB.Where("day = ? AND feeding_group_number = ?", payload.Day, payload.FeedingGroupNumber).First(&duplicateFeedingGroup).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding group on the given day already exists"})
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	if err := config.DB.Create(&saveFeedingGroupPerDay).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group on a specified day"})
-		return
+	tx := config.DB.Begin()
+	for _, day := range payload.Day {
+		var duplicateFeedingGroupPerDay models.FeedingGroupPerDay
+		if err := config.DB.Where("day = ? AND feeding_group_number = ?", day, payload.FeedingGroupNumber).First(&duplicateFeedingGroupPerDay).Error; err == nil {
+			continue
+		}
+
+		saveFeedingGroupPerDay := models.FeedingGroupPerDay{
+			Number:             uuid.NewV4().String(),
+			FeedingGroupNumber: payload.FeedingGroupNumber,
+			Day:                day,
+			UserNumber:         user.Number,
+		}
+
+		if err := tx.Create(&saveFeedingGroupPerDay).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to attach days to the selected feeding group"})
+			return
+		}
+
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding group per given day created successfully"})
