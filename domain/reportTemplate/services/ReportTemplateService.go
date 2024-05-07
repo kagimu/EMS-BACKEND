@@ -233,10 +233,6 @@ func DetermineReportTemplateForClass(campusClassNumber string) (models.ReportTem
 		return reportTemplate, err
 	}
 
-	if classCampusReportTemplate.Number == "" {
-		return reportTemplate, errors.New("this class has no report templated added to it")
-	}
-
 	if reportTemplate, err = repositories.QueryByReportTemplateNumber(classCampusReportTemplate.ReportTemplateNumber); err != nil {
 		return reportTemplate, err
 	}
