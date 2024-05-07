@@ -290,7 +290,14 @@ func FetchReportSummaries(ctx *gin.Context) {
 	var cleanReportSummary []responses.LeanReportSummary
 
 	var reportSummaries []models.ReportSummary
-	if err := config.DB.Preload("Student").Find(&reportSummaries).Error; err != nil {
+	if err := config.DB.Scopes(
+		filters.ByStudyPeriodNumber(ctx.Query("study_period_number")),
+		filters.ByStudentNumber(ctx.Query("student_number")),
+		filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
+		filters.ByStreamNumber(ctx.Query("stream_number")),
+		filters.ByGrade(ctx.Query("grade")),
+	).Preload("Student").Preload("StudyPeriod").
+		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
 		return
 	}
@@ -301,6 +308,9 @@ func FetchReportSummaries(ctx *gin.Context) {
 			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
 			StudentNumber: reportSummary.StudentNumber,
 			Grade:         reportSummary.Grade,
+			Stream:        reportSummary.Stream.Name,
+			StudyPeriod:   reportSummary.StudyPeriod.StudyPeriodName,
+			Class:         reportSummary.CampusClass.ClassName,
 		})
 	}
 
