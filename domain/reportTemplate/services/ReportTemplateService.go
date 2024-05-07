@@ -205,14 +205,14 @@ func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, cu
 
 func RemoveTemplateFromClass(campusClassNumber string) error {
 
-	classCampusReportTemplate, err := repositories.QueryByCampusClassNumber(campusClassNumber)
+	classCampusReportTemplate, err := repositories.QueryByClassReportTemplateNumber(campusClassNumber)
 
 	if err != nil {
 		return err
 	}
 
 	if classCampusReportTemplate.Number == "" {
-		return errors.New("this class has no report templated added to it")
+		return errors.New("this class has no report template added to it")
 	}
 
 	deletionError := repositories.DeleteCampusClassReportTemplate(classCampusReportTemplate)

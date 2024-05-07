@@ -1,12 +1,12 @@
 package responses
 
 type ClassReportTemplateResponse struct {
-	TemplateName string
-	Classes      []ClassResponse
+	TemplateName string          `json:"template_name"`
+	Classes      []ClassResponse `json:"classes"`
 }
 
 type ClassResponse struct {
-	Number    string
-	ClassName string
-	AddedBy   string
+	Number    string `json:"number"`
+	ClassName string `json:"class_name"`
+	AddedBy   string `json:"added_by"`
 }

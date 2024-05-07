@@ -96,3 +96,23 @@ func DeleteCampusClassReportTemplate(classReportTemplate models.ClassReportTempl
 
 	return nil
 }
+
+func QueryByClassReportTemplateNumber(classReportTemplateNumber string) (models.ClassReportTemplate, error) {
+
+	db := config.DB
+
+	var queryResults models.ClassReportTemplate
+
+	if err := db.
+		Where("number = ? ", classReportTemplateNumber).
+		First(&queryResults).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return queryResults, nil
+		}
+
+		return queryResults, err
+	}
+
+	return queryResults, nil
+}
