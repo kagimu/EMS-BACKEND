@@ -3,8 +3,8 @@ package requests
 import "errors"
 
 type ClassReportTemplateRequest struct {
-	CampusClasses        []string
-	ReportTemplateNumber string
+	CampusClasses        []string `json:"campus_classes"`
+	ReportTemplateNumber string   `json:"report_template_number"`
 }
 
 func (classReportTemplateRequest *ClassReportTemplateRequest) Validate() error {
