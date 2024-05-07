@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -45,10 +46,15 @@ func CreateFeedingGroupPerDay(c *gin.Context) {
 		}
 
 		if err := tx.Create(&saveFeedingGroupPerDay).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to attach days to the selected feeding group"})
-			return
+			fmt.Println("Error: ", err.Error())
+			continue
 		}
+
+	}
+	if err = tx.Commit().Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to attach days to the selected feeding group"})
+		return
 
 	}
 
