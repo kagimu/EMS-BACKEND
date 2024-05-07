@@ -172,3 +172,15 @@ func ByNumber(templateNumber string) func(*gorm.DB) *gorm.DB {
 		return db
 	}
 }
+
+func ByGrade(value string) func(*gorm.DB) *gorm.DB {
+
+	return func(db *gorm.DB) *gorm.DB {
+
+		if value != "" {
+			return db.Where("grade = ?", value)
+		}
+
+		return db
+	}
+}
