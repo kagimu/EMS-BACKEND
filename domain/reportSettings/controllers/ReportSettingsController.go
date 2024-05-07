@@ -17,6 +17,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -575,6 +577,20 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 	}
 
+	var reportTemplate reportTemplateModel.ReportTemplate
+
+	if reportTemplate, err = services.DetermineReportTemplateForClass(payload.CampusClassNumber); err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if reportTemplate.Number == "" {
+		tx.Rollback()
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "This class has no report template set up"})
+		return
+	}
+
 	// find it there is an existing report summary for the student
 
 	var reportSummary models.ReportSummary
@@ -586,6 +602,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 		reportSummary.Comment = ""
 		reportSummary.UserNumber = user
 		reportSummary.StreamNumber = stream.Number
+		reportSummary.ReportTemplateName = reportTemplate.Name
 
 		if err := tx.Save(&reportSummary).Error; err != nil {
 			tx.Rollback()
@@ -594,6 +611,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 		}
 
 	} else {
+
 		reportSummary = models.ReportSummary{
 			Number:              uuid.NewV4().String(),
 			ReportSettingNumber: reportSettings.Number,
@@ -606,6 +624,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 			UserNumber:          user,
 			Code:                0,
 			StreamNumber:        stream.Number,
+			ReportTemplateName:  reportTemplate.Name,
 		}
 
 		if err := tx.Create(&reportSummary).Error; err != nil {

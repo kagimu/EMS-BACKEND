@@ -177,7 +177,7 @@ func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, cu
 		return "Invalid campus class number"
 	}
 
-	oldClassReportTemplate, err := repositories.QueryByCampusClassNumber(campusClass.Number)
+	oldClassReportTemplate, err := DetermineReportTemplateForClass(campusClass.Number)
 
 	if err != nil {
 		return err.Error()
@@ -221,4 +221,26 @@ func RemoveTemplateFromClass(campusClassNumber string) error {
 	}
 
 	return nil
+}
+
+func DetermineReportTemplateForClass(campusClassNumber string) (models.ReportTemplate, error) {
+
+	var reportTemplate models.ReportTemplate
+
+	classCampusReportTemplate, err := repositories.QueryByCampusClassNumber(campusClassNumber)
+
+	if err != nil {
+		return reportTemplate, err
+	}
+
+	if classCampusReportTemplate.Number == "" {
+		return reportTemplate, errors.New("this class has no report templated added to it")
+	}
+
+	if reportTemplate, err = repositories.QueryByReportTemplateNumber(classCampusReportTemplate.ReportTemplateNumber); err != nil {
+		return reportTemplate, err
+	}
+
+	return reportTemplate, nil
+
 }

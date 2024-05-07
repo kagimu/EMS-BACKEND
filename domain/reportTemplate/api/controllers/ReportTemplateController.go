@@ -138,6 +138,7 @@ func RemoveTemplateFromClass(context *gin.Context) {
 
 	if errorResponse != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(errorResponse.Error()))
+		return
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Report template removed successfully from class"))

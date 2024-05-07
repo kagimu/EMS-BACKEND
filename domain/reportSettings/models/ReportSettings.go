@@ -56,6 +56,7 @@ type ReportSummary struct {
 	Code                int64                   `json:"code" gorm:"type:bigint;not null;"`
 	ReportSettingNumber string                  `json:"report_setting_number" gorm:"size:36;not null;"`
 	StudentNumber       string                  `json:"student_number" gorm:"size:36;not null;"`
+	ReportTemplateName  string                  `json:"report_template_name" gorm:"size:250;"`
 	CampusClassNumber   string                  `json:"campus_class_number" gorm:"size:36;not null;"`
 	StudyPeriodNumber   string                  `json:"study_period_number" gorm:"size:36;not null;"`
 	Grade               string                  `json:"grade" gorm:"type:text;not null;"`
