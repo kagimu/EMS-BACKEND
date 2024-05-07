@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -30,22 +31,32 @@ func CreateFeedingSessionPerDay(c *gin.Context) {
 		return
 	}
 
-	saveFeedingSessionPerDay := models.FeedingSessionPerDay{
-		Number:               uuid.NewV4().String(),
-		FeedingSessionNumber: payload.FeedingSessionNumber,
-		Day:                  payload.Day,
-		UserNumber:           user.Number,
+	tx := config.DB.Begin()
+	for _, day := range payload.Day {
+
+		var duplicateFeedingSession models.FeedingSessionPerDay
+		if err := config.DB.Where("day = ? AND feeding_session_number = ?", day, payload.FeedingSessionNumber).First(&duplicateFeedingSession).Error; err == nil {
+			continue
+		}
+
+		saveFeedingSessionPerDay := models.FeedingSessionPerDay{
+			Number:               uuid.NewV4().String(),
+			FeedingSessionNumber: payload.FeedingSessionNumber,
+			Day:                  day,
+			UserNumber:           user.Number,
+		}
+
+		if err := tx.Create(&saveFeedingSessionPerDay).Error; err != nil {
+			fmt.Println("Error: ", err.Error())
+		}
 	}
 
-	var duplicateFeedingSession models.FeedingSessionPerDay
-	if err := config.DB.Where("day = ? AND feeding_session_number = ?", payload.Day, payload.FeedingSessionNumber).First(&duplicateFeedingSession).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding session on the given day already exists"})
-		return
-	}
+	if err = tx.Commit().Error; err != nil {
 
-	if err := config.DB.Create(&saveFeedingSessionPerDay).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding session on a specified day"})
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to attach days to feeding session"})
 		return
+
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding session on the given day has been created"})
