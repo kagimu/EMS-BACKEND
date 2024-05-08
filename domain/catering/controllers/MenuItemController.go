@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -81,6 +83,13 @@ func FetchMenuItems(c *gin.Context) {
 	}
 
 	for _, menuItem := range menuItems {
+
+		var currentQuantity float64
+
+		if currentQuantity, err = repositories.GetItemCurrentStock(menuItem.Number); err != nil {
+			fmt.Println("Failed to fetch menu item quantity for: ", menuItem.Name, err.Error())
+		}
+
 		response = append(response, responses.MenuItemResponse{
 			Number:              menuItem.Number,
 			Name:                menuItem.Name,
@@ -93,6 +102,7 @@ func FetchMenuItems(c *gin.Context) {
 			UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
 			UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
 			UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
+			CurrentQuantity:     currentQuantity,
 		})
 	}
 
@@ -204,7 +214,15 @@ func FetchMenuItemsByCampus(c *gin.Context) {
 	}
 
 	var response []responses.MenuItemResponse
+
+	var currentQuantity float64
+
 	for _, menuItem := range menuItems {
+
+		if currentQuantity, err = repositories.GetItemCurrentStock(menuItem.Number); err != nil {
+			fmt.Println("Failed to fetch menu item quantity for: ", menuItem.Name, err.Error())
+		}
+
 		response = append(response, responses.MenuItemResponse{
 			Number:              menuItem.Number,
 			Name:                menuItem.Name,
@@ -217,6 +235,7 @@ func FetchMenuItemsByCampus(c *gin.Context) {
 			UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
 			UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
 			UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
+			CurrentQuantity:     currentQuantity,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"data": response})
