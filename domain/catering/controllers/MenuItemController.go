@@ -86,7 +86,7 @@ func FetchMenuItems(c *gin.Context) {
 
 		var currentQuantity float64
 
-		if currentQuantity, err = repositories.GetItemCurrentStock(menuItem.Number); err != nil {
+		if currentQuantity, err = repositories.GetMenuItemCurrentStock(menuItem.Number); err != nil {
 			fmt.Println("Failed to fetch menu item quantity for: ", menuItem.Name, err.Error())
 		}
 
@@ -162,6 +162,12 @@ func FetchMenuItemDetails(c *gin.Context) {
 	var response responses.MenuItemResponse
 	var parts []responses.Part
 
+	var currentQuantity float64
+
+	if currentQuantity, err = repositories.GetMenuItemCurrentStock(itemNumber); err != nil {
+		fmt.Println("Failed to fetch menu item quantity for: ", itemNumber, err.Error())
+	}
+
 	// Add school name as well
 	response = responses.MenuItemResponse{
 		Number:              menuItem.Number,
@@ -175,6 +181,7 @@ func FetchMenuItemDetails(c *gin.Context) {
 		UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
 		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
 		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
+		CurrentQuantity:     currentQuantity,
 	}
 
 	if menuItem.Type == constants.TYPE_ASSEMBLED {
@@ -219,7 +226,7 @@ func FetchMenuItemsByCampus(c *gin.Context) {
 
 	for _, menuItem := range menuItems {
 
-		if currentQuantity, err = repositories.GetItemCurrentStock(menuItem.Number); err != nil {
+		if currentQuantity, err = repositories.GetMenuItemCurrentStock(menuItem.Number); err != nil {
 			fmt.Println("Failed to fetch menu item quantity for: ", menuItem.Name, err.Error())
 		}
 
