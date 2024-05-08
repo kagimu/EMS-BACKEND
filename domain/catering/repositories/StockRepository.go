@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetItemCurrentStock(menuItemNumber string) (float64, error) {
+func GetMenuItemCurrentStock(menuItemNumber string) (float64, error) {
 
 	db := config.DB
 
