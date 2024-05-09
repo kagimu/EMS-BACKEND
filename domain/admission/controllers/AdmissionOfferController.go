@@ -9,7 +9,6 @@ import (
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
@@ -137,16 +136,8 @@ func FetchAdmissionOffers(c *gin.Context) {
 		return
 	}
 
-	paginationParams := helpers.ParsePaginationParams(c)
-
 	var admissionOffers []models.AdmissionOffer
 	query := config.DB.Model(&models.AdmissionOffer{}).Preload("Student").Preload("Class").Preload("Campus").Preload("School")
-
-	_, err := helpers.Paginate(query, paginationParams)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Pagination failed"})
-		return
-	}
 
 	if err := query.Find(&admissionOffers).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Admission offer fetching failed"})

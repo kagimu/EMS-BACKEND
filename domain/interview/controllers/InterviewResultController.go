@@ -7,7 +7,6 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -91,17 +90,8 @@ func FetchAllInterviewResults(c *gin.Context) {
 
 	var interviewResults []models.InterviewResult
 
-	paginationParams := helpers.ParsePaginationParams(c)
-
 	query := config.DB.Model(&models.InterviewResult{}).Preload("Student").
 		Select("student_number, SUM(score) as total_score").Group("student_number").Order("total_score DESC")
-
-	if _, err := helpers.Paginate(query, paginationParams); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Pagination failed",
-		})
-		return
-	}
 
 	if err := query.Find(&interviewResults).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

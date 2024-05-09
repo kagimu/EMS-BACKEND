@@ -10,6 +10,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
@@ -288,6 +289,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 func FetchReportSummaries(ctx *gin.Context) {
 
 	var cleanReportSummary []responses.LeanReportSummary
+	var paginatedResponse = helpers.Pagination{}
 
 	var reportSummaries []models.ReportSummary
 	if err := config.DB.Scopes(
@@ -296,6 +298,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 		filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
+		helpers.Paginate(ctx, &paginatedResponse),
 	).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
@@ -313,8 +316,9 @@ func FetchReportSummaries(ctx *gin.Context) {
 			Class:         reportSummary.CampusClass.ClassName,
 		})
 	}
+	paginatedResponse.Content = cleanReportSummary
 
-	ctx.JSON(http.StatusOK, gin.H{"data": cleanReportSummary})
+	ctx.JSON(http.StatusOK, paginatedResponse)
 
 }
 
