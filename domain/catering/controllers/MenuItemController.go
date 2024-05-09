@@ -78,7 +78,7 @@ func FetchMenuItems(c *gin.Context) {
 	}
 
 	var menuItems []models.MenuItem
-	if err := config.DB.Preload("Campus").Preload("UnitOfMeasureAbbreviation").Find(&menuItems).Error; err != nil {
+	if err := config.DB.Preload("Campus").Preload("UnitOfMeasure").Find(&menuItems).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items"})
 		return
 	}
@@ -204,7 +204,7 @@ func FetchMenuItemsByCampus(c *gin.Context) {
 
 	campusNumber := c.Param("campus_number")
 	var menuItems []models.MenuItem
-	if err := config.DB.Where("campus_number = ?", campusNumber).Preload("Campus").Preload("UnitOfMeasureAbbreviation").Find(&menuItems).Error; err != nil {
+	if err := config.DB.Where("campus_number = ?", campusNumber).Preload("Campus").Preload("UnitOfMeasure").Find(&menuItems).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items"})
 		return
 	}
