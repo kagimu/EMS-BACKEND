@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -51,7 +52,7 @@ func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber
 			return errors.New("invalid menu item ID")
 		}
 
-		if menuItem.Type == "" {
+		if menuItem.Type == constants.TYPE_ASSEMBLED {
 			err = assembleItem(currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
 			_, err = saveNonAssembled(stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber)
@@ -76,6 +77,8 @@ func assembleItem(currentUserNumber string, stock requests.ItemPriceAndQuantity,
 	}
 
 	//Check stock for each part item
+	var stockReducingParts []models.Stocking
+
 	for _, itemAssemble := range itemAssembles {
 
 		requiredQty := itemAssemble.Quantity * stock.Quantity
@@ -93,13 +96,37 @@ func assembleItem(currentUserNumber string, stock requests.ItemPriceAndQuantity,
 
 		mostRecentStockUnitCost = 1200
 
-		_, err = saveNonAssembled(campusNumber, mostRecentStockUnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
+		negativeStock, err := saveNonAssembled(campusNumber, mostRecentStockUnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
+		if err != nil {
+			return err
+		}
+
+		stockReducingParts = append(stockReducingParts, negativeStock)
+
 	}
 
-	_, err = saveNonAssembled(campusNumber, stock.UnitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
+	newStock, err := saveNonAssembled(campusNumber, stock.UnitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
 
-	return err
+	if err != nil {
+		return err
+	}
 
+	//Create stocking entries that reduced the stock to create new stock
+	for _, stockReducingPart := range stockReducingParts {
+
+		var assembledItem = models.AssembledPart{
+			FromStockingNumber: stockReducingPart.Number,
+			NewStockingNumber:  newStock.Number,
+		}
+
+		err = repositories.SaveAssembledPart(assembledItem)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }
 
 func saveNonAssembled(campusNumber string, unitCost float64, menuItem string, quantity float64, currentUserNumber string) (models.Stocking, error) {
