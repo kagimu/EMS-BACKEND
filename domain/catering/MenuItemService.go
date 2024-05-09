@@ -9,6 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"strconv"
 )
 
@@ -52,6 +53,19 @@ func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 
 func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber string) error {
 
+	db := config.DB
+
+	if err := db.Transaction(func(transaction *gorm.DB) error {
+		return doRunOnTransaction(transaction, stockingRequest, currentUserNumber)
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingRequest, currentUserNumber string) error {
+
 	for _, stock := range stockingRequest.ItemPriceAndQuantity {
 
 		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber)
@@ -65,18 +79,19 @@ func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber
 		}
 
 		if menuItem.Type == constants.TYPE_ASSEMBLED {
-			err = assembleItem(currentUserNumber, stock, stockingRequest.CampusNumber)
+			err = assembleItem(transaction, currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
-			_, err = saveNonAssembled(stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber)
+			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber)
 		}
 
 		return err
 	}
 
 	return nil
+
 }
 
-func assembleItem(currentUserNumber string, stock requests.ItemPriceAndQuantity, campusNumber string) error {
+func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests.ItemPriceAndQuantity, campusNumber string) error {
 
 	itemAssembles, err := repositories.GetAssembledItemParts(stock.MenuItemNumber)
 	if err != nil {
@@ -109,7 +124,7 @@ func assembleItem(currentUserNumber string, stock requests.ItemPriceAndQuantity,
 
 		mostRecentStockUnitCost = 1200
 
-		negativeStock, err := saveNonAssembled(campusNumber, mostRecentStockUnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
+		negativeStock, err := saveNonAssembled(transaction, campusNumber, mostRecentStockUnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
 		if err != nil {
 			return err
 		}
@@ -118,7 +133,7 @@ func assembleItem(currentUserNumber string, stock requests.ItemPriceAndQuantity,
 
 	}
 
-	newStock, err := saveNonAssembled(campusNumber, stock.UnitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
+	newStock, err := saveNonAssembled(transaction, campusNumber, stock.UnitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
 
 	if err != nil {
 		return err
@@ -142,7 +157,7 @@ func assembleItem(currentUserNumber string, stock requests.ItemPriceAndQuantity,
 	return nil
 }
 
-func saveNonAssembled(campusNumber string, unitCost float64, menuItem string, quantity float64, currentUserNumber string) (models.Stocking, error) {
+func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItem string, quantity float64, currentUserNumber string) (models.Stocking, error) {
 
 	saveStock := models.Stocking{
 		Number:         uuid.NewV4().String(),
@@ -153,7 +168,7 @@ func saveNonAssembled(campusNumber string, unitCost float64, menuItem string, qu
 		UserNumber:     currentUserNumber,
 	}
 
-	if err := config.DB.Create(&saveStock).Error; err != nil {
+	if _, err := repositories.CreateStockingEntry(transaction, saveStock); err != nil {
 		return saveStock, err
 	}
 
