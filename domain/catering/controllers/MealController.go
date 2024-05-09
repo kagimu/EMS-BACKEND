@@ -99,14 +99,30 @@ func CreateMeal(c *gin.Context) {
 		UnitCost:       0,
 	}
 
-	if err := tx.Create(updateStock).Error; err != nil {
+	if err := tx.Create(&updateStock).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item stock"})
 		return
 	}
 
-	formatDate, _ := time.Parse("2006-01-02", payload.Date)
-	formatTime, _ := time.Parse("15:04:05", payload.Time)
+	formatDate, err := time.Parse(time.RFC3339, payload.Date)
+
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse date"})
+		return
+	}
+
+	// Use the date part of formatDate
+	formatDate = formatDate.UTC().Truncate(24 * time.Hour)
+
+	formatTime, err := time.Parse("15:04:05", payload.Time)
+
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse time"})
+		return
+	}
 
 	saveMeal := models.Meal{
 		Number:               uuid.NewV4().String(),
