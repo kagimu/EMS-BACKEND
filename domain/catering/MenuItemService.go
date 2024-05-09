@@ -9,6 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
+	"strconv"
 )
 
 func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
@@ -91,15 +92,17 @@ func assembleItem(currentUserNumber string, stock requests.ItemPriceAndQuantity,
 
 	for _, itemAssemble := range itemAssembles {
 
+		secondaryItem := itemAssemble.SecondaryItem
+
 		requiredQty := itemAssemble.Quantity * stock.Quantity
-		availableQty, err := repositories.GetMenuItemCurrentStock(itemAssemble.SecondaryItemNumber)
+		availableQty, err := repositories.GetMenuItemCurrentStock(secondaryItem.Number)
 
 		if err != nil {
 			return err
 		}
 
 		if availableQty < requiredQty {
-			return errors.New("Not enough available quantity for: " + itemAssemble.SecondaryItemName)
+			return errors.New("Not enough available quantity for: " + secondaryItem.Name + " " + strconv.FormatFloat(requiredQty, 'f', 2, 64) + " is required but we have " + strconv.FormatFloat(availableQty, 'f', 2, 64))
 		}
 
 		var mostRecentStockUnitCost float64
