@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering"
 	"net/http"
 
@@ -26,10 +25,15 @@ func CreateStocking(c *gin.Context) {
 		return
 	}
 
+	if err = payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	err = catering.ProcessNewStock(payload, user.Number)
 
 	if err != nil {
-		fmt.Println("Failed to process new stock: ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Stocking error: " + err.Error()})
 		return
 	}
 

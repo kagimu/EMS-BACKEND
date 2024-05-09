@@ -70,7 +70,6 @@ func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber
 		}
 
 		return err
-
 	}
 
 	return nil
