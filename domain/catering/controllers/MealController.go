@@ -99,7 +99,7 @@ func CreateMeal(c *gin.Context) {
 		UnitCost:       0,
 	}
 
-	if err := tx.Create(updateStock).Error; err != nil {
+	if err := tx.Create(&updateStock).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item stock"})
 		return
