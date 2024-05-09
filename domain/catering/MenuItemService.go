@@ -24,11 +24,22 @@ func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 
 		secondaryItem := itemAssemble.SecondaryItem
 
+		unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(secondaryItem.UnitOfMeasureNumber)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if unitOfMeasure.Number == "" {
+			return nil, errors.New("unit of measure number is empty")
+		}
+
 		part := responses.Part{
-			Name:     secondaryItem.Name,
-			Quantity: itemAssemble.Quantity,
-			Code:     secondaryItem.Code,
-			Number:   secondaryItem.Number,
+			Name:                      secondaryItem.Name,
+			Quantity:                  itemAssemble.Quantity,
+			Code:                      secondaryItem.Code,
+			Number:                    secondaryItem.Number,
+			UnitOfMeasureAbbreviation: unitOfMeasure.Abbreviation,
 		}
 
 		parts = append(parts, part)

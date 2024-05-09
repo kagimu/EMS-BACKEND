@@ -79,10 +79,11 @@ type MenuItemResponse struct {
 }
 
 type Part struct {
-	Name     string  `json:"name"`
-	Quantity float64 `json:"quantity"`
-	Code     uint64  `json:"code"`
-	Number   string  `json:"number"`
+	Name                      string  `json:"name"`
+	Quantity                  float64 `json:"quantity"`
+	Code                      uint64  `json:"code"`
+	Number                    string  `json:"number"`
+	UnitOfMeasureAbbreviation string  `json:"unit_of_measure"`
 }
 
 type StockingResponse struct {
