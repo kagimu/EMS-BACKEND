@@ -24,3 +24,12 @@ func GetMenuItemCurrentStock(menuItemNumber string) (float64, error) {
 
 	return totalQuantity, nil
 }
+
+func CreateStockingEntry(transaction *gorm.DB, stocking cateringModels.Stocking) (cateringModels.Stocking, error) {
+
+	if err := transaction.Create(&stocking).Error; err != nil {
+		return stocking, err
+	}
+
+	return stocking, nil
+}
