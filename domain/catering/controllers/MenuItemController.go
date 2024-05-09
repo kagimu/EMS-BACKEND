@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"net/http"
 
@@ -160,7 +161,6 @@ func FetchMenuItemDetails(c *gin.Context) {
 	}
 
 	var response responses.MenuItemResponse
-	var parts []responses.Part
 
 	var currentQuantity float64
 
@@ -169,6 +169,13 @@ func FetchMenuItemDetails(c *gin.Context) {
 	}
 
 	// Add school name as well
+
+	partsResponse, err := catering.GetMenuItemParts(menuItem.Number)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch menu item parts for: " + menuItem.Name})
+	}
+
 	response = responses.MenuItemResponse{
 		Number:              menuItem.Number,
 		Name:                menuItem.Name,
@@ -182,25 +189,7 @@ func FetchMenuItemDetails(c *gin.Context) {
 		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
 		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
 		CurrentQuantity:     currentQuantity,
-	}
-
-	if menuItem.Type == constants.TYPE_ASSEMBLED {
-		var ItemAssemblies []models.ItemAssembly
-		if err := config.DB.Where("primary_item_number = ?", menuItem.Number).Find(&ItemAssemblies).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch item assemblies", "err": err.Error()})
-			return
-		}
-
-		for _, menuItem := range ItemAssemblies {
-			parts = append(parts, responses.Part{
-				Number:   menuItem.Number,
-				Name:     menuItem.SecondaryItemName,
-				Code:     menuItem.SecondaryItemCode,
-				Quantity: menuItem.Quantity,
-			})
-		}
-
-		response.Parts = parts
+		Parts:               partsResponse,
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": response})
