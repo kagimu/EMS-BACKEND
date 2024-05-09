@@ -44,9 +44,6 @@ func Paginate(ctx *gin.Context, pagination *Pagination) func(db *gorm.DB) *gorm.
 
 		totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
 
-		ctx.Set("page", page)
-		ctx.Set("pageSize", pageSize)
-		ctx.Set("totalPages", totalPages)
 		pagination.Page = page
 		pagination.TotalPages = totalPages
 		pagination.TotalRows = total
