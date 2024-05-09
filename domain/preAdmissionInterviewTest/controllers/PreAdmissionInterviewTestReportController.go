@@ -6,7 +6,6 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	"github.com/gin-gonic/gin"
@@ -60,18 +59,8 @@ func GetAllPreAdmissionInterviewReports(c *gin.Context) {
 		return
 	}
 
-	paginationParams := helpers.ParsePaginationParams(c)
-
 	var preAdmissionInterviewReports []models.PreAdmissionInterviewTestReport
 	query := config.DB.Model(&models.PreAdmissionInterviewTestReport{})
-
-	_, err := helpers.Paginate(query, paginationParams)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Pagination failed",
-		})
-		return
-	}
 
 	if err := query.Find(&preAdmissionInterviewReports).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
