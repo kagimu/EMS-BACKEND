@@ -7,7 +7,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -45,16 +44,8 @@ func FetchAdmissionOfferConditions(c *gin.Context) {
 		return
 	}
 
-	paginationParams := helpers.ParsePaginationParams(c)
-
 	var admissions []models.AdmissionOfferCondition
 	query := config.DB.Model(&models.AdmissionOfferCondition{})
-
-	_, err := helpers.Paginate(query, paginationParams)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Pagination failed"})
-		return
-	}
 
 	if err := query.Find(&admissions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Admission offer conditions fetching failed"})

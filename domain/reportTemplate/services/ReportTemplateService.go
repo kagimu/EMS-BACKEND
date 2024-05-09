@@ -48,7 +48,17 @@ func FetchAllReportTemplates(schoolNumber string, search string) ([]responses.Re
 
 func PostNewReportTemplate(newTemplateRequest requests.NewTemplateRequest, currentUserNumber string) (string, error) {
 
-	reportTemplate, err := repositories.QueryByNameAndSchool(newTemplateRequest.Name, newTemplateRequest.SchoolNumber)
+	school, err := schoolRepositories.GetSchoolByNumber(newTemplateRequest.SchoolNumber)
+
+	if err != nil {
+		return "", err
+	}
+
+	if school.Number == "" {
+		return "School number is invalid", nil
+	}
+
+	reportTemplate, err := repositories.QueryByNameAndSchool(newTemplateRequest.Name, school.Number)
 
 	if err != nil {
 		return "", err
