@@ -2,28 +2,19 @@ package controllers
 
 import (
 	"fmt"
-	"strconv"
+	"math/rand"
 	"time"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 )
 
-func InvoiceNumberGenerator() (string, error) {
-	year := strconv.Itoa(time.Now().Year())
-	month := time.Now().Format("01")
+func GenerateNewInvoiceNumber() string {
+	now := time.Now()
+	year := now.Format("06")  // YY format
+	month := now.Format("01") // MM format
 
-	saveInvoiceNumber := models.InvoiceNumber{
-		Year:  year,
-		Month: month,
-	}
+	// Generate random four-digit number
+	rand.Seed(time.Now().UnixNano())
+	randomNum := rand.Intn(10000) // Generate random number between 0 and 9999
 
-	if err := config.DB.Create(&saveInvoiceNumber).Error; err != nil {
-		return "", err
-	}
-
-	savedID := saveInvoiceNumber.ID
-	result := fmt.Sprintf("CST%s%05d", saveInvoiceNumber.Year, savedID)
-
-	return result, nil
+	// Format invoice number
+	return fmt.Sprintf("%s%s%04d", year, month, randomNum)
 }

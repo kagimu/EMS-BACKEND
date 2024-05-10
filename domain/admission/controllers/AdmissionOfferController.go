@@ -108,7 +108,7 @@ func CreateAdmissionOffer(c *gin.Context) {
 		return
 	}
 
-	invoiceNumber, err := invoiceController.InvoiceNumberGenerator()
+	invoiceNumber, err := invoiceController.GenerateNewInvoiceNumber()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number"})
 		return
