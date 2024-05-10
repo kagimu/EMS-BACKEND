@@ -462,14 +462,6 @@ func SetupRoutes() *gin.Engine {
 			admission.GET("", admissionController.FetchAdmissions)
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 
-			offer := admission.Group("/admission-offers")
-			{
-				offer.POST("", admissionController.CreateAdmissionOffer)
-				offer.GET("", admissionController.FetchAdmissionOffers)
-				offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
-				offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
-			}
-
 			conditions := admission.Group("/admission-offer-conditions")
 			{
 				conditions.POST("", admissionController.CreateAdmissionOfferCondition)

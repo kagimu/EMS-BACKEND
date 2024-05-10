@@ -16,6 +16,7 @@ type AdmissionRequest struct {
 	CampusNumber       string   `json:"campus_number"`
 	AcademicYearNumber string   `json:"academic_year_number"`
 	SchoolNumber       string   `json:"school_number"`
+	Items              []string `json:"items"`
 }
 
 func (a *AdmissionRequest) Validate() error {

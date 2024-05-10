@@ -2,24 +2,22 @@ package controllers
 
 import (
 	"fmt"
+	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
+	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-
-	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	studentControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
-	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -42,46 +40,46 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
+	var campusClass campusClassModels.CampusClass
+	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus class not found"})
+		return
+	}
+
+	var campus campusModels.Campus
+	if err := config.DB.First(&campus, "number = ?", payload.CampusNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Campus not found"})
+		return
+	}
+
+	var stream campusClassModels.Stream
+	if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Stream not found"})
+		return
+	}
+
+	var studyPeriod studyPeriodModel.StudyPeriod
+	if err := config.DB.First(&studyPeriod, "number = ?", payload.StudyPeriodNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
+		return
+	}
+
+	//var interview interviewModel.Interview
+	//if err := config.DB.First(&interview, "number = ?", payload.InterviewNumber).Error; err != nil {
+	//	c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Interview not found"})
+	//	return
+	//}
+
+	var academicYear academicYearModel.AcademicYear
+	if err := config.DB.First(&academicYear, "number = ?", payload.AcademicYearNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Academic year not found"})
+		return
+	}
+
 	for _, studentPayload := range payload.StudentNumber {
 		var student studentModels.Student
 		if err := config.DB.First(&student, "number = ?", studentPayload).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
-			return
-		}
-
-		var campusClass campusClassModels.CampusClass
-		if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus class not found"})
-			return
-		}
-
-		var campus campusModels.Campus
-		if err := config.DB.First(&campus, "number = ?", payload.CampusNumber).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Campus not found"})
-			return
-		}
-
-		var stream campusClassModels.Stream
-		if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Stream not found"})
-			return
-		}
-
-		var studyPeriod studyPeriodModel.StudyPeriod
-		if err := config.DB.First(&studyPeriod, "number = ?", payload.StudyPeriodNumber).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
-			return
-		}
-
-		var interview interviewModel.Interview
-		if err := config.DB.First(&interview, "number = ?", payload.InterviewNumber).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Interview not found"})
-			return
-		}
-
-		var academicYear academicYearModel.AcademicYear
-		if err := config.DB.First(&academicYear, "number = ?", payload.AcademicYearNumber).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Academic year not found"})
 			return
 		}
 
@@ -149,6 +147,19 @@ func CreateAdmission(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
 			return
 		}
+
+		for _, admissionOfferConditionNumber := range payload.Items {
+			saveAdmissionOfferConditions := models.AdmissionCondition{
+				AdmissionNumber: saveAdmission.Number,
+				ItemNumber:      admissionOfferConditionNumber,
+			}
+
+			if err := config.DB.Create(&saveAdmissionOfferConditions).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission offer conditions"})
+				return
+			}
+		}
+
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Admission created successfully"})
