@@ -22,7 +22,7 @@ type Meal struct {
 	MenuItem             MenuItem            `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StaffNumber          string              `json:"staff_number" gorm:"size:36;not null"`
 	Staff                authModels.User     `gorm:"foreignKey:StaffNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Date                 time.Time           `json:"date" gorm:"not null"`
+	Date                 time.Time           `json:"date" gorm:"not null;type:date"`
 	Time                 string              `json:"time" gorm:"not null"`
 	CampusNumber         string              `json:"campus_number" gorm:"size:36;not null"`
 	Campus               campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

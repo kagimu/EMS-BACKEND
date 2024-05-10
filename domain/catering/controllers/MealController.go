@@ -124,7 +124,7 @@ func CreateMeal(c *gin.Context) {
 			return
 		}
 
-		formatDate, err := time.Parse(time.DateOnly, payload.Date)
+		formatDate, err := time.Parse(time.RFC3339, payload.Date)
 
 		if err != nil {
 			tx.Rollback()
