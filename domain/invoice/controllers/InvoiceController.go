@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -10,7 +11,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 func CreateInvoice(c *gin.Context) {
@@ -31,31 +31,8 @@ func CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	studentNumber := payload.StudentNumber
-	var student studentModel.Student
-	if err := config.DB.First(&student, "number  = ?", studentNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No student found with the specified number"})
-		return
-	}
-
-	invoiceNumber, err := InvoiceNumberGenerator()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number", "err": err.Error()})
-		return
-	}
-
-	saveInvoice := models.Invoice{
-		Number:              uuid.NewV4().String(),
-		StudentNumber:       payload.StudentNumber,
-		InvoiceUniqueNumber: invoiceNumber,
-		DueDate:             payload.DueDate,
-		Type:                payload.Type,
-		Description:         payload.Description,
-		UserNumber:          user.Number,
-	}
-
-	if err := config.DB.Create(&saveInvoice).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice"})
+	if err = services.CreateNewInvoice(payload, user.Number); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
