@@ -123,7 +123,6 @@ func Init() error {
 		&itemModels.Item{},
 		&productModels.Product{},
 		&serviceModel.Service{},
-		&invoiceModel.InvoiceNumber{},
 		&invoiceModel.Invoice{},
 		&invoiceModel.InvoiceItem{},
 		&serviceModel.SerialCode{},

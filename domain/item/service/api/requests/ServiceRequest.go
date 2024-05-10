@@ -9,7 +9,7 @@ import (
 
 type ServiceRequest struct {
 	Description     string   `json:"description"`
-	Cost            int64    `json:"cost"`
+	Cost            float64  `json:"cost"`
 	Name            string   `json:"name"`
 	Mandatory       bool     `json:"mandatory"`
 	SerialCode      string   `json:"serial_code"`
