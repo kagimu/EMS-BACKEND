@@ -246,6 +246,7 @@ func FetchStudentByNumber(c *gin.Context) {
 
 	detailedStudent.Surname = student.Surname
 	detailedStudent.OtherName = student.OtherName
+	detailedStudent.UserNumber = student.UserNumber
 	detailedStudent.SecondName = student.SecondName
 	detailedStudent.ADNStatus = student.ADNStatus
 	detailedStudent.DateOfBirth = student.DateOfBirth
