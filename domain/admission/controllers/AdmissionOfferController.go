@@ -9,8 +9,6 @@ import (
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
-	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	studentControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -108,7 +106,7 @@ func CreateAdmissionOffer(c *gin.Context) {
 		return
 	}
 
-	invoiceNumber, err := invoiceController.GenerateNewInvoiceNumber()
+	/*invoiceNumber, err := invoiceController.GenerateNewInvoiceNumber()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number"})
 		return
@@ -125,9 +123,9 @@ func CreateAdmissionOffer(c *gin.Context) {
 	if err := config.DB.Create(&saveInvoice).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice"})
 		return
-	}
+	}*/
 
-	c.JSON(http.StatusOK, gin.H{"invoice": saveInvoice, "admission_offer": saveAdmissionOffer})
+	c.JSON(http.StatusOK, gin.H{"admission_offer": saveAdmissionOffer})
 }
 
 func FetchAdmissionOffers(c *gin.Context) {

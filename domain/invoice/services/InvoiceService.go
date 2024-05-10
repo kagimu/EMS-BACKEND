@@ -6,12 +6,12 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
+	invoiceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	itemRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	uuid "github.com/satori/go.uuid"
+	"math/rand"
 	"time"
 )
 
@@ -29,9 +29,9 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 		return errors.New("invalid user number")
 	}
 
-	invoiceNumber := controllers.GenerateNewInvoiceNumber()
+	invoiceNumber := generateNewInvoiceNumber()
 
-	invoice, err := repositories.FindInvoiceByNumber(invoiceNumber)
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
 
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 		DueDate:       dueDate,
 		Description:   payload.Description,
 		UserNumber:    userNumber,
-		InvoiceNumber: invoiceNumber,
+		RefNumber:     invoiceNumber,
 		AddedByNumber: currentUserNumber,
 	}
 
@@ -72,7 +72,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 			return errors.New("invalid item number")
 		}
 
-		if checkItemOnInvoice, err := repositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoice.Number, invoiceItem.ItemNumber); err != nil || checkItemOnInvoice.Number != "" {
+		if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoice.Number, invoiceItem.ItemNumber); err != nil || checkItemOnInvoice.Number != "" {
 
 			if err != nil {
 				return err
@@ -91,7 +91,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 			UnitPrice:     item.Cost,
 		}
 
-		if _, err := repositories.CreateInvoiceItem(newInvoiceItem); err != nil {
+		if _, err := invoiceRepositories.CreateInvoiceItem(newInvoiceItem); err != nil {
 			return err
 		}
 
@@ -99,4 +99,17 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 
 	return nil
 
+}
+
+func generateNewInvoiceNumber() string {
+	now := time.Now()
+	year := now.Format("06")  // YY format
+	month := now.Format("01") // MM format
+
+	// Generate random four-digit number
+	rand.Seed(time.Now().UnixNano())
+	randomNum := rand.Intn(10000) // Generate random number between 0 and 9999
+
+	// Format invoice number
+	return fmt.Sprintf("%s%s%04d", year, month, randomNum)
 }

@@ -13,7 +13,7 @@ type Invoice struct {
 	Description   string         `json:"description" gorm:"type:text"`
 	Type          string         `json:"type" gorm:"default:CLIENT"`
 	DueDate       time.Time      `json:"due_date" gorm:"type:date"`
-	InvoiceNumber string         `json:"invoice_number"  gorm:"unique;not null"`
+	RefNumber     string         `json:"ref_number"  gorm:"size:16;unique;not null"`
 	UserNumber    string         `json:"user_number" gorm:"size:36;not null"`
 	User          authModel.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AddedByNumber string         `json:"added_by_number" gorm:"size:36;not null"`
