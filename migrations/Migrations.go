@@ -184,6 +184,7 @@ func Init() error {
 		&permissionModels.Scope{},
 		&reportTemplateModel.ReportTemplate{},
 		&reportTemplateModel.ClassReportTemplate{},
+		&cateringModels.AssembledPart{},
 	)
 
 	if err != nil {

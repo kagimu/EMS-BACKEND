@@ -92,6 +92,7 @@ func CreateMeal(c *gin.Context) {
 	}
 
 	updateStock := models.Stocking{
+		Number:         uuid.NewV4().String(),
 		MenuItemNumber: payload.MenuItemNumber,
 		Quantity:       0 - payload.Quantity,
 		UserNumber:     loggedInUser.Number,
@@ -116,8 +117,6 @@ func CreateMeal(c *gin.Context) {
 	// Use the date part of formatDate
 	formatDate = formatDate.UTC().Truncate(24 * time.Hour)
 
-	formatTime, err := time.Parse("15:04:05", payload.Time)
-
 	if err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse time"})
@@ -132,7 +131,7 @@ func CreateMeal(c *gin.Context) {
 		Quantity:             payload.Quantity,
 		UserNumber:           payload.UserNumber,
 		Date:                 formatDate,
-		Time:                 formatTime,
+		Time:                 payload.Time,
 		CampusNumber:         feedingSession.CampusNumber,
 		AddedByNumber:        loggedInUser.Number,
 		StockingNumber:       updateStock.Number,

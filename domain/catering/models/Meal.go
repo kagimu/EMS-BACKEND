@@ -24,7 +24,7 @@ type Meal struct {
 	StaffNumber          string              `json:"staff_number" gorm:"size:36;not null"`
 	Staff                staffModels.Staff   `gorm:"foreignKey:StaffNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Date                 time.Time           `json:"date" gorm:"not null"`
-	Time                 time.Time           `json:"time" gorm:"not null"`
+	Time                 string              `json:"time" gorm:"not null"`
 	CampusNumber         string              `json:"campus_number" gorm:"size:36;not null"`
 	Campus               campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AddedByNumber        string              `json:"added_by_number" gorm:"size:36;not null"`
