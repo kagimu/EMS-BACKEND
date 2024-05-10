@@ -5,7 +5,6 @@ import (
 
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	staffModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	"gorm.io/gorm"
 )
 
@@ -22,7 +21,7 @@ type Meal struct {
 	Quantity             float64             `json:"quantity"`
 	MenuItem             MenuItem            `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StaffNumber          string              `json:"staff_number" gorm:"size:36;not null"`
-	Staff                staffModels.Staff   `gorm:"foreignKey:StaffNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Staff                authModels.User     `gorm:"foreignKey:StaffNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Date                 time.Time           `json:"date" gorm:"not null"`
 	Time                 string              `json:"time" gorm:"not null"`
 	CampusNumber         string              `json:"campus_number" gorm:"size:36;not null"`
