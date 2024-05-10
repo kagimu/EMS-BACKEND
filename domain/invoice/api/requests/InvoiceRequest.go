@@ -5,7 +5,7 @@ import (
 )
 
 type InvoiceRequest struct {
-	UserNumber  string               `json:"student_number"`
+	UserNumber  string               `json:"user_number"`
 	Description string               `json:"description"`
 	DueDate     string               `json:"due_date"`
 	Items       []InvoiceItemRequest `json:"items"`
@@ -14,7 +14,7 @@ type InvoiceRequest struct {
 func (i *InvoiceRequest) Validate() error {
 
 	if i.UserNumber == "" {
-		return errors.New("student number is required")
+		return errors.New("user number is required")
 	}
 
 	if len(i.Items) == 0 {
