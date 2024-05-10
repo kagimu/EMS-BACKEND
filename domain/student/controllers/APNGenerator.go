@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"strconv"
 	"strings"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 )
 
-func CreateAPN() (string, error) {
+func CreateAPN(transaction *gorm.DB) (string, error) {
 	year := strconv.Itoa(time.Now().Year())
 	month := time.Now().Format("01")
 
@@ -19,7 +20,11 @@ func CreateAPN() (string, error) {
 		Month: month,
 	}
 
-	if err := config.DB.Create(&saveAPN).Error; err != nil {
+	if transaction == nil {
+		transaction = config.DB
+	}
+
+	if err := transaction.Create(&saveAPN).Error; err != nil {
 		return "", err
 	}
 

@@ -3,6 +3,8 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -57,8 +59,10 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	studentAPN, err := CreateAPN()
+	tx := config.DB.Begin()
+	studentAPN, err := CreateAPN(tx)
 	if err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create APN"})
 		return
 	}
@@ -69,7 +73,7 @@ func CreateStudent(c *gin.Context) {
 	// find Student by application number
 
 	var student models.Student
-	config.DB.Where("application_number = ?", applicationNumber).First(&student)
+	tx.Where("application_number = ?", applicationNumber).First(&student)
 
 	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
 	if student.Number != "" {
@@ -90,7 +94,7 @@ func CreateStudent(c *gin.Context) {
 			CampusClassNumber:         payload.CampusClassNumber,
 		}
 
-		if err := config.DB.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
+		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  http.StatusInternalServerError,
 				"message": "failed to update student",
@@ -99,6 +103,19 @@ func CreateStudent(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "updated student details successfully"})
+		return
+	}
+
+	var createdUser = authModel.User{
+		Number:     uuid.NewV4().String(),
+		FirstName:  payload.SecondName,
+		LastName:   payload.Surname,
+		SecondName: payload.OtherName,
+	}
+
+	if err := tx.Create(&createdUser).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
 		return
 	}
 
@@ -114,12 +131,11 @@ func CreateStudent(c *gin.Context) {
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
 		PreferedCampusNumber:      payload.PreferredCampusNumber,
-		UserNumber:                userNumber,
+		UserNumber:                createdUser.Number,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 		ApplicationNumber:         applicationNumber,
 		CampusClassNumber:         payload.CampusClassNumber,
 	}
-	tx := config.DB.Begin()
 
 	if err := tx.Create(&savStudent).Error; err != nil {
 		tx.Rollback()
@@ -226,7 +242,36 @@ func FetchStudentByNumber(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": student})
+	var detailedStudent = responses.DetailedStudentProfile{}
+
+	detailedStudent.Surname = student.Surname
+	detailedStudent.OtherName = student.OtherName
+	detailedStudent.SecondName = student.SecondName
+	detailedStudent.ADNStatus = student.ADNStatus
+	detailedStudent.DateOfBirth = student.DateOfBirth
+	detailedStudent.ReasonForChoosingSchool = student.ReasonForChoosingSchool
+
+	// find the latest enrollment for the student
+	var enrollment enrollmentModel.Enrollment
+	if err := config.DB.Where("student_number = ?", studentNumber).Order("created_at desc").First(&enrollment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+
+		}
+		return
+	}
+
+	var enrollmentResponse = enrollmentResponse.Enrollment{}
+	enrollmentResponse.StudentNumber = enrollment.StudentNumber
+	enrollmentResponse.EnrollmentDate = enrollment.EnrollmentDate
+	enrollmentResponse.Class = enrollment.CampusClassNumber
+	enrollmentResponse.Status = enrollment.Status
+
+	detailedStudent.CurrentEnrollment = enrollmentResponse
+	//enrollmentResponse.Stream =
+
+	c.JSON(http.StatusOK, detailedStudent)
 }
 
 func FetchAllStudents(c *gin.Context) {
