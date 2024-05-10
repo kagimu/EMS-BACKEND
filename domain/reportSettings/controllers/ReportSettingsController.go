@@ -295,11 +295,11 @@ func FetchReportSummaries(ctx *gin.Context) {
 	if err := config.DB.Scopes(
 		filters.ByStudyPeriodNumber(ctx.Query("study_period_number")),
 		filters.ByStudentNumber(ctx.Query("student_number")),
-		filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
+	).Scopes(
 		helpers.Paginate(ctx, &paginatedResponse),
-	).Preload("Student").Preload("StudyPeriod").
+		filters.ByCampusClassNumber(ctx.Query("campus_class_number"))).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
 		return

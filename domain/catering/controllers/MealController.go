@@ -74,80 +74,99 @@ func CreateMeal(c *gin.Context) {
 	}
 
 	if existingMeal.Number != "" {
-		updateMeal := models.Meal{
-			FeedingSessionNumber: payload.FeedingSessionNumber,
-			MenuItemNumber:       payload.MenuItemNumber,
-			StaffNumber:          payload.StaffNumber,
-			Quantity:             payload.Quantity,
-			UserNumber:           payload.UserNumber,
-			CampusNumber:         feedingSession.CampusNumber,
-			AddedByNumber:        loggedInUser.Number,
-		}
+		// update the meal
 
-		if err := config.DB.Model(&existingMeal).Where("number = ?", existingMeal.Number).Updates(updateMeal).Error; err != nil {
+		// set values to existing meal and save
+		existingMeal.Quantity = payload.Quantity
+		existingMeal.Time = payload.Time
+		existingMeal.StaffNumber = loggedInUser.Number
+		existingMeal.UserNumber = payload.UserNumber
+		existingMeal.AddedByNumber = loggedInUser.Number
+		existingMeal.StockingNumber = stocking.Number
+
+		if err := tx.Save(&existingMeal).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update meal"})
 			return
 		}
-	}
 
-	updateStock := models.Stocking{
-		Number:         uuid.NewV4().String(),
-		MenuItemNumber: payload.MenuItemNumber,
-		Quantity:       0 - payload.Quantity,
-		UserNumber:     loggedInUser.Number,
-		CampusNumber:   feedingSession.CampusNumber,
-		UnitCost:       0,
-	}
+		// update the stocking
 
-	if err := tx.Create(&updateStock).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item stock"})
-		return
-	}
+		var existingStocking models.Stocking
+		if err := tx.Where("number = ?", existingMeal.StockingNumber).First(&existingStocking).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch stocking"})
+			return
+		}
 
-	formatDate, err := time.Parse(time.RFC3339, payload.Date)
+		existingStocking.Quantity = 0 - payload.Quantity
+		if err := tx.Save(&stocking).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update stocking"})
+			return
 
-	if err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse date"})
-		return
-	}
+		}
 
-	// Use the date part of formatDate
-	formatDate = formatDate.UTC().Truncate(24 * time.Hour)
+	} else {
 
-	if err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse time"})
-		return
-	}
+		updateStock := models.Stocking{
+			Number:         uuid.NewV4().String(),
+			MenuItemNumber: payload.MenuItemNumber,
+			Quantity:       0 - payload.Quantity,
+			UserNumber:     loggedInUser.Number,
+			CampusNumber:   feedingSession.CampusNumber,
+			UnitCost:       0,
+		}
 
-	saveMeal := models.Meal{
-		Number:               uuid.NewV4().String(),
-		FeedingSessionNumber: payload.FeedingSessionNumber,
-		MenuItemNumber:       payload.MenuItemNumber,
-		StaffNumber:          loggedInUser.Number,
-		Quantity:             payload.Quantity,
-		UserNumber:           payload.StaffNumber,
-		Date:                 formatDate,
-		Time:                 payload.Time,
-		CampusNumber:         feedingSession.CampusNumber,
-		AddedByNumber:        loggedInUser.Number,
-		StockingNumber:       updateStock.Number,
-	}
+		if err := tx.Create(&updateStock).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item stock"})
+			return
+		}
 
-	if err := tx.Create(&saveMeal).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create meal"})
-		return
+		formatDate, err := time.Parse(time.DateOnly, payload.Date)
+
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse date"})
+			return
+		}
+
+		// Use the date part of formatDate
+		formatDate = formatDate.UTC().Truncate(24 * time.Hour)
+
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse time"})
+			return
+		}
+
+		saveMeal := models.Meal{
+			Number:               uuid.NewV4().String(),
+			FeedingSessionNumber: payload.FeedingSessionNumber,
+			MenuItemNumber:       payload.MenuItemNumber,
+			StaffNumber:          loggedInUser.Number,
+			Quantity:             payload.Quantity,
+			UserNumber:           payload.StaffNumber,
+			Date:                 formatDate,
+			Time:                 payload.Time,
+			CampusNumber:         feedingSession.CampusNumber,
+			AddedByNumber:        loggedInUser.Number,
+			StockingNumber:       updateStock.Number,
+		}
+
+		if err := tx.Create(&saveMeal).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create meal"})
+			return
+		}
+
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create meal"})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "Meal created successfully"})
 }
 
