@@ -288,7 +288,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 
 func FetchReportSummaries(ctx *gin.Context) {
 
-	var cleanReportSummary []responses.LeanReportSummary
+	var cleanReportSummary = make([]responses.LeanReportSummary, 0)
 	var paginatedResponse = helpers.Pagination{}
 
 	var reportSummaries []models.ReportSummary

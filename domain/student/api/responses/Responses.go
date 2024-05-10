@@ -23,4 +23,5 @@ type DetailedStudentProfile struct {
 	DateOfBirth              string                 `json:"date_of_birth"`
 	CurrentEnrollment        responses.Enrollment   `json:"current_enrollment"`
 	UserProfile              authResponses.UserView `json:"user_profile"`
+	UserNumber               string                 `json:"user_number"`
 }
