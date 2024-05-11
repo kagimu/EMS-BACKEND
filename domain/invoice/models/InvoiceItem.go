@@ -13,5 +13,4 @@ type InvoiceItem struct {
 	Item          itemModels.Item `gorm:"foreignKey:ItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Quantity      float64         `json:"quantity" gorm:"not null"`
 	UnitPrice     float64         `json:"unit_price" gorm:"not null"`
-	TotalPrice    float64         `json:"total_price" gorm:"-"`
 }

@@ -293,3 +293,36 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 
 	return nil
 }
+
+func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse, error) {
+
+	paymentsCount, err := invoiceRepositories.CountAllUserPayments(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	invoicesCount, err := invoiceRepositories.CountAllUserInvoices(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	invoiceAmount, err := invoiceRepositories.GetAllInvoicedAmount(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	paymentAmount, err := invoiceRepositories.SumAllUserPayments(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	var financialSummaryResponse = responses.FinancialSummaryResponse{
+		TotalPayments:      paymentsCount,
+		TotalInvoices:      invoicesCount,
+		TotalInvoiceAmount: invoiceAmount,
+		TotalPaidAmount:    paymentAmount,
+		TotalBalanceAmount: invoiceAmount - paymentAmount,
+	}
+
+	return financialSummaryResponse, nil
+}

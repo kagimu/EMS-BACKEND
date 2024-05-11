@@ -54,3 +54,46 @@ func GetInvoicePayments(invoiceNumber string) ([]invoiceModels.InvoicePayment, e
 
 	return invoiceItems, nil
 }
+
+func CountAllUserPayments(userNumber string) (int64, error) {
+
+	db := config.DB
+
+	var countPayments int64
+
+	if err := db.Model(&invoiceModels.Invoice{}).
+		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
+		Where("invoices.user_number = ?", userNumber).
+		Count(&countPayments).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+
+		return countPayments, err
+	}
+
+	return countPayments, nil
+}
+
+func SumAllUserPayments(userNumber string) (float64, error) {
+
+	db := config.DB
+
+	var totalAmount float64
+
+	if err := db.Model(&invoiceModels.Invoice{}).
+		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
+		Where("invoices.user_number = ? ", userNumber).
+		Select("sum(invoice_payments.amount)").
+		Scan(&totalAmount).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+
+		return totalAmount, err
+	}
+
+	return totalAmount, nil
+}
