@@ -8,6 +8,7 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	invoiceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
@@ -35,7 +36,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 
 	invoiceNumber := generateNewInvoiceNumber()
 
-	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	invoice, err := invoiceRepositories.FindInvoiceByRefNumber(invoiceNumber)
 
 	if err != nil {
 		return err
@@ -136,6 +137,47 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 	return nil
 }
 
+func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string) ([]responses.MinInvoiceResponse, error) {
+
+	var invoices []models.Invoice
+
+	var invoiceResponses []responses.MinInvoiceResponse
+
+	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber)
+	if err != nil {
+		return invoiceResponses, err
+	}
+
+	for _, invoice := range invoices {
+		invoiceResponses = append(invoiceResponses, createMinInvoiceResponse(invoice))
+	}
+
+	return invoiceResponses, nil
+}
+
+func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceResponse {
+
+	var _invoiceAmount float64
+
+	if invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoice.Number); err != nil {
+		fmt.Println("Getting invoice amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
+		_invoiceAmount = 0
+	} else {
+		_invoiceAmount = invoiceAmount
+	}
+
+	invoiceResponse := responses.MinInvoiceResponse{
+		RefNumber:   invoice.RefNumber,
+		Date:        invoice.CreatedAt,
+		DueDate:     invoice.DueDate,
+		Number:      invoice.Number,
+		TotalAmount: _invoiceAmount,
+		PaidAmount:  0,
+		Balance:     _invoiceAmount,
+	}
+	return invoiceResponse
+}
+
 func generateNewInvoiceNumber() string {
 	now := time.Now()
 	year := now.Format("06")  // YY format
@@ -147,4 +189,48 @@ func generateNewInvoiceNumber() string {
 
 	// Format invoice number
 	return fmt.Sprintf("%s%s%04d", year, month, randomNum)
+}
+
+func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
+
+	invoice, err := invoiceRepositories.FindInvoiceByRefNumber(refNumber)
+
+	if err != nil {
+		return responses.InvoiceResponse{}, err
+	}
+
+	if invoice.Number == "" {
+		return responses.InvoiceResponse{}, errors.New("invalid invoice ref number")
+	}
+
+	minInvoice := createMinInvoiceResponse(invoice)
+
+	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number)
+	if err != nil {
+		return responses.InvoiceResponse{}, err
+	}
+
+	var invoiceItemsResponse []responses.InvoiceItemResponse
+
+	for _, item := range items {
+		_item := item.Item
+
+		itemResponse := responses.InvoiceItemResponse{
+			ItemName:   _item.Name,
+			ItemNumber: item.Number,
+			UnitCost:   item.UnitPrice,
+			Quantity:   item.Quantity,
+			TotalCost:  item.UnitPrice * item.Quantity,
+		}
+
+		invoiceItemsResponse = append(invoiceItemsResponse, itemResponse)
+
+	}
+
+	invoiceResponses := responses.InvoiceResponse{
+		minInvoice,
+		invoiceItemsResponse,
+	}
+
+	return invoiceResponses, nil
 }

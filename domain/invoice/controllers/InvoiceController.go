@@ -82,3 +82,48 @@ func UpdateInvoice(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Invoice updated successfully", "data": invoice})
 }
+
+func GetAllInvoices(context *gin.Context) {
+
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := context.Query("school_number")
+	status := context.Query("status")
+	campusNumber := context.Query("campus_number")
+	userNumber := context.Query("user_number")
+
+	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber)
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get invoices, try again", "err": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, invoices)
+}
+
+func GetInvoiceDetails(context *gin.Context) {
+
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	refNumber := context.Query("ref_number")
+
+	if refNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide the invoice ref number"))
+		return
+	}
+
+	details, err := services.InvoiceDetails(refNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Getting details failed, try again: "+err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Invoice details", "data": details})
+}

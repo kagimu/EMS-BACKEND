@@ -2,7 +2,6 @@ package models
 
 import (
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
-	"gorm.io/gorm"
 )
 
 type InvoiceItem struct {
@@ -15,11 +14,4 @@ type InvoiceItem struct {
 	Quantity      float64         `json:"quantity" gorm:"not null"`
 	UnitPrice     float64         `json:"unit_price" gorm:"not null"`
 	TotalPrice    float64         `json:"total_price" gorm:"-"`
-}
-
-// Use after find hook to calculate total price and item name
-func (invoiceItem *InvoiceItem) AfterFind(tx *gorm.DB) (err error) {
-	invoiceItem.TotalPrice = invoiceItem.Quantity * invoiceItem.UnitPrice
-	// find item name from table items
-	return
 }
