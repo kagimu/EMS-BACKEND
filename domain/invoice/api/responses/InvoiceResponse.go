@@ -15,4 +15,5 @@ type MinInvoiceResponse struct {
 	TotalAmount float64   `json:"total_amount"`
 	PaidAmount  float64   `json:"paid_amount"`
 	Balance     float64   `json:"balance"`
+	Status      string    `json:"status"`
 }

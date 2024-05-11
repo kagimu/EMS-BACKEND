@@ -174,6 +174,7 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 		TotalAmount: _invoiceAmount,
 		PaidAmount:  0,
 		Balance:     _invoiceAmount,
+		Status:      invoice.Status,
 	}
 	return invoiceResponse
 }
