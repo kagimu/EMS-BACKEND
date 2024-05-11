@@ -158,6 +158,7 @@ func AllInvoices(status string, userNumber string, campusNumber string, schoolNu
 func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceResponse {
 
 	var _invoiceAmount float64
+	var _paidAmount float64
 
 	if invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoice.Number); err != nil {
 		fmt.Println("Getting invoice amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
@@ -166,14 +167,21 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 		_invoiceAmount = invoiceAmount
 	}
 
+	if paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number); err != nil {
+		fmt.Println("Getting invoice paid amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
+		_paidAmount = 0
+	} else {
+		_paidAmount = paidAmount
+	}
+
 	invoiceResponse := responses.MinInvoiceResponse{
 		RefNumber:   invoice.RefNumber,
 		Date:        invoice.CreatedAt,
 		DueDate:     invoice.DueDate,
 		Number:      invoice.Number,
 		TotalAmount: _invoiceAmount,
-		PaidAmount:  0,
-		Balance:     _invoiceAmount,
+		PaidAmount:  _paidAmount,
+		Balance:     _invoiceAmount - _paidAmount,
 		Status:      invoice.Status,
 	}
 	return invoiceResponse
@@ -228,10 +236,60 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 
 	}
 
-	invoiceResponses := responses.InvoiceResponse{
-		minInvoice,
-		invoiceItemsResponse,
+	payments, err := invoiceRepositories.GetInvoicePayments(invoice.Number)
+	if err != nil {
+		return responses.InvoiceResponse{}, err
 	}
 
-	return invoiceResponses, nil
+	var invoicePaymentsResponse []responses.InvoicePaymentResponse
+
+	for _, payment := range payments {
+		_invoice := payment.Invoice
+		_user := payment.User
+
+		paymentResponse := responses.InvoicePaymentResponse{
+			Amount:           payment.Amount,
+			InvoiceRefNumber: _invoice.RefNumber,
+			RecordedBy:       _user.FirstName,
+			DateTime:         payment.Date,
+		}
+
+		invoicePaymentsResponse = append(invoicePaymentsResponse, paymentResponse)
+
+	}
+
+	invoiceResponse := responses.InvoiceResponse{
+		MinInvoiceResponse: minInvoice,
+		Items:              invoiceItemsResponse,
+		Payments:           invoicePaymentsResponse,
+	}
+
+	return invoiceResponse, nil
+}
+
+func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) error {
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber)
+	if err != nil {
+		return err
+	}
+
+	var dateTimePaid time.Time
+	if dateTimePaid, err = time.Parse(time.DateTime, invoicePaymentRequest.Date); err != nil {
+		return errors.New("Date received error: " + invoicePaymentRequest.Date)
+	}
+
+	saveInvoicePayment := models.InvoicePayment{
+		Number:        uuid.NewV4().String(),
+		Amount:        invoicePaymentRequest.Amount,
+		Date:          dateTimePaid,
+		InvoiceNumber: invoice.Number,
+		UserNumber:    currentUserNumber,
+	}
+
+	if _, err := invoiceRepositories.SavePayment(saveInvoicePayment); err != nil {
+		return err
+	}
+
+	return nil
 }

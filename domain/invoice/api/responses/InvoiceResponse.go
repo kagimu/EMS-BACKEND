@@ -4,7 +4,8 @@ import "time"
 
 type InvoiceResponse struct {
 	MinInvoiceResponse
-	Items []InvoiceItemResponse `json:"items"`
+	Items    []InvoiceItemResponse    `json:"items"`
+	Payments []InvoicePaymentResponse `json:"payments"`
 }
 
 type MinInvoiceResponse struct {
