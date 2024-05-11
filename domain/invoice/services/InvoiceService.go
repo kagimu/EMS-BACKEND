@@ -4,12 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	invoiceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	itemRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"math/rand"
 	"time"
@@ -46,6 +50,26 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 		return errors.New("Due date error: " + payload.DueDate)
 	}
 
+	var student studentModel.Student
+
+	if student, err = repositories.FindStudentByUserNumber(userNumber); err != nil {
+		return err
+	}
+
+	if student.Number == "" {
+		return errors.New("no student details found")
+	}
+
+	var admission admissionModel.Admission
+
+	if admission, err = repositories2.FindAdmissionByStudentNumber(student.Number); err != nil {
+		return err
+	}
+
+	if admission.Number == "" {
+		return errors.New("no admission details found")
+	}
+
 	newInvoice := models.Invoice{
 		Number:        uuid.NewV4().String(),
 		DueDate:       dueDate,
@@ -53,6 +77,8 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 		UserNumber:    userNumber,
 		RefNumber:     invoiceNumber,
 		AddedByNumber: currentUserNumber,
+		SchoolNumber:  admission.SchoolNumber,
+		CampusNumber:  admission.CampusNumber,
 	}
 
 	if err := config.DB.Create(&newInvoice).Error; err != nil {
@@ -61,37 +87,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 
 	for _, invoiceItem := range payload.Items {
 
-		var item itemModels.Item
-
-		if item, err = itemRepositories.GetItemByNumber(invoiceItem.ItemNumber); err != nil || item.Number == "" {
-
-			if err != nil {
-				return err
-			}
-
-			return errors.New("invalid item number")
-		}
-
-		if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoice.Number, invoiceItem.ItemNumber); err != nil || checkItemOnInvoice.Number != "" {
-
-			if err != nil {
-				return err
-			}
-
-			fmt.Println("Item '" + invoiceItem.ItemNumber + "' already added to Invoice")
-
-			return errors.New("item already added to Invoice")
-		}
-
-		newInvoiceItem := models.InvoiceItem{
-			Number:        uuid.NewV4().String(),
-			InvoiceNumber: newInvoice.Number,
-			ItemNumber:    invoiceItem.ItemNumber,
-			Quantity:      invoiceItem.Quantity,
-			UnitPrice:     item.Cost,
-		}
-
-		if _, err := invoiceRepositories.CreateInvoiceItem(newInvoiceItem); err != nil {
+		if err = doSaveInvoiceItem(invoiceItem, newInvoice.Number); err != nil {
 			return err
 		}
 
@@ -99,6 +95,45 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 
 	return nil
 
+}
+
+func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string) error {
+
+	var item itemModels.Item
+
+	if item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber); err != nil || item.Number == "" {
+
+		if err != nil {
+			return err
+		}
+
+		return errors.New("invalid item number")
+	}
+
+	if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoiceNumber, invoiceItem.ItemNumber); err != nil || checkItemOnInvoice.Number != "" {
+
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Item '" + invoiceItem.ItemNumber + "' already added to Invoice")
+
+		return errors.New("item already added to Invoice")
+	}
+
+	newInvoiceItem := models.InvoiceItem{
+		Number:        uuid.NewV4().String(),
+		InvoiceNumber: newInvoiceNumber,
+		ItemNumber:    invoiceItem.ItemNumber,
+		Quantity:      invoiceItem.Quantity,
+		UnitPrice:     item.Cost,
+	}
+
+	if _, err := invoiceRepositories.CreateInvoiceItem(newInvoiceItem); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func generateNewInvoiceNumber() string {
