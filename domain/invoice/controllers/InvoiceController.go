@@ -127,3 +127,26 @@ func GetInvoiceDetails(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Invoice details", "data": details})
 }
+
+func FinancialSummary(context *gin.Context) {
+
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	userNumber := context.Query("user_number")
+	if userNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide user number to view financial summary"))
+		return
+	}
+
+	summary, err := services.GetFinancialSummary(userNumber)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Getting financial summary failed, try again: "+err.Error()))
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Financial summary", "data": summary})
+
+}

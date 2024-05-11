@@ -438,6 +438,7 @@ func SetupRoutes() *gin.Engine {
 			invoices.GET("", invoiceController.GetAllInvoices)
 			invoices.POST("pay", invoiceController.CreateInvoicePayment)
 			invoices.GET("details", invoiceController.GetInvoiceDetails)
+			invoices.GET("financial-summary", invoiceController.FinancialSummary)
 			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
 		}
 
