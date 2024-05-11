@@ -63,3 +63,45 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 	}
 	return invoices, nil
 }
+
+func CountAllUserInvoices(userNumber string) (int64, error) {
+
+	db := config.DB
+
+	var invoicesCount int64
+
+	if err := db.Model(&invoiceModel.Invoice{}).
+		Where("user_number = ?", userNumber).
+		Count(&invoicesCount).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+
+		return invoicesCount, err
+	}
+
+	return invoicesCount, nil
+}
+
+func GetAllInvoicedAmount(userNumber string) (float64, error) {
+
+	db := config.DB
+
+	var totalAmount float64
+
+	if err := db.Model(&invoiceModel.Invoice{}).
+		Joins("JOIN invoice_items ON invoices.number = invoice_items.invoice_number").
+		Where("invoices.user_number = ? ", userNumber).
+		Select("sum(invoice_items.quantity * invoice_items.unit_price)").
+		Scan(&totalAmount).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+
+		return totalAmount, err
+	}
+
+	return totalAmount, nil
+}
