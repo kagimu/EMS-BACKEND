@@ -26,6 +26,22 @@ func (a *AdmissionRequest) Validate() error {
 	if a.CampusNumber == "" {
 		return errors.New("campus number is required")
 	}
+	if a.SchoolNumber == "" {
+		return errors.New("school number is required")
+	}
+	if a.AcademicYearNumber == "" {
+		return errors.New("academic year number is required")
+	}
+	if a.StudyPeriodNumber == "" {
+		return errors.New("study period number is required")
+
+	}
+	if a.CampusClassNumber == "" {
+		return errors.New("campus class number is required")
+	}
+	if a.StreamNumber == "" {
+		return errors.New("stream number is required")
+	}
 
 	return nil
 }
