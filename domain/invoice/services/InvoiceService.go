@@ -275,7 +275,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 	}
 
 	var dateTimePaid time.Time
-	if dateTimePaid, err = time.Parse(time.DateTime, invoicePaymentRequest.Date); err != nil {
+	if dateTimePaid, err = time.Parse(time.DateOnly, invoicePaymentRequest.Date); err != nil {
 		return errors.New("Date received error: " + invoicePaymentRequest.Date)
 	}
 
