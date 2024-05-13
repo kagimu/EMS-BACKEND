@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -30,7 +30,7 @@ func CreateStocking(c *gin.Context) {
 		return
 	}
 
-	err = catering.ProcessNewStock(payload, user.Number)
+	err = services.ProcessNewStock(payload, user.Number)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Stocking error: " + err.Error()})

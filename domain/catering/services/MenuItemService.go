@@ -1,4 +1,4 @@
-package catering
+package services
 
 import (
 	"errors"
