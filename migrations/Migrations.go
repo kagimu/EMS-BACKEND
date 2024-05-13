@@ -183,6 +183,9 @@ func Init() error {
 		&reportTemplateModel.ReportTemplate{},
 		&reportTemplateModel.ClassReportTemplate{},
 		&cateringModels.AssembledPart{},
+		&cateringModels.MealCourseCount{},
+		&cateringModels.MealCourseCount{},
+		&cateringModels.MealCourse{},
 	)
 
 	if err != nil {

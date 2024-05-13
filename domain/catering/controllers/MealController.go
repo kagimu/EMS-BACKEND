@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"gorm.io/gorm"
 	"net/http"
 	"time"
@@ -261,4 +262,31 @@ func FetchMeals(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": userMeals})
+}
+
+func SaveMealCourse(ctx *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.MealCourseCountRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err = services.SaveMealCourse(payload, user.Number); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Meal course error: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Meal course successfully saved"})
 }
