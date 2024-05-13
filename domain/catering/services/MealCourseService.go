@@ -24,27 +24,54 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		return errors.New("invalid school number")
 	}
 
-	var oldMealCourse models.MealCourseCount
+	var oldMealCourseCount models.MealCourseCount
 
-	oldMealCourse, err = repositories.GetMealCourseCountBySchoolNumber(school.Number)
+	oldMealCourseCount, err = repositories.GetMealCourseCountBySchoolNumber(school.Number)
 
 	if err != nil {
 		return err
 	}
 
-	newMealCourse := models.MealCourseCount{
+	newMealCourseCount := models.MealCourseCount{
 		Count:        mealCourseCountRequest.Count,
 		UserNumber:   currentUserNumber,
 		Number:       uuid.NewV4().String(),
 		SchoolNumber: mealCourseCountRequest.SchoolNumber,
 	}
 
-	if oldMealCourse.Number != "" {
-		newMealCourse.Number = oldMealCourse.Number
+	if oldMealCourseCount.Number != "" {
+		newMealCourseCount.Number = oldMealCourseCount.Number
 	}
 
-	if _, err = repositories.SaveMealCourseCount(newMealCourse); err != nil {
+	if _, err = repositories.SaveMealCourseCount(newMealCourseCount); err != nil {
 		return err
+	}
+
+	for _, mealCourse := range mealCourseCountRequest.Courses {
+
+		newMealCourse := models.MealCourse{
+			Number:                uuid.NewV4().String(),
+			Name:                  mealCourse.Name,
+			MealCourseCountNumber: newMealCourseCount.Number,
+			Status:                "ACTIVE",
+			UserNumber:            currentUserNumber,
+		}
+
+		var oldMealCourse models.MealCourse
+
+		oldMealCourse, err = repositories.GetMealCourseByName(mealCourse.Name, newMealCourseCount.Number)
+		if err != nil {
+			return err
+		}
+
+		if oldMealCourse.Number != "" {
+			newMealCourse.Number = oldMealCourse.Number
+		}
+
+		if _, err = repositories.SaveMealCourse(newMealCourse); err != nil {
+			return err
+		}
+
 	}
 
 	return nil
