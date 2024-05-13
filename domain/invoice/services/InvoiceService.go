@@ -4,12 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	invoiceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	itemRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"math/rand"
 	"time"
@@ -31,7 +36,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 
 	invoiceNumber := generateNewInvoiceNumber()
 
-	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	invoice, err := invoiceRepositories.FindInvoiceByRefNumber(invoiceNumber)
 
 	if err != nil {
 		return err
@@ -46,6 +51,26 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 		return errors.New("Due date error: " + payload.DueDate)
 	}
 
+	var student studentModel.Student
+
+	if student, err = repositories.FindStudentByUserNumber(userNumber); err != nil {
+		return err
+	}
+
+	if student.Number == "" {
+		return errors.New("no student details found")
+	}
+
+	var admission admissionModel.Admission
+
+	if admission, err = repositories2.FindAdmissionByStudentNumber(student.Number); err != nil {
+		return err
+	}
+
+	if admission.Number == "" {
+		return errors.New("no admission details found")
+	}
+
 	newInvoice := models.Invoice{
 		Number:        uuid.NewV4().String(),
 		DueDate:       dueDate,
@@ -53,6 +78,8 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 		UserNumber:    userNumber,
 		RefNumber:     invoiceNumber,
 		AddedByNumber: currentUserNumber,
+		SchoolNumber:  admission.SchoolNumber,
+		CampusNumber:  admission.CampusNumber,
 	}
 
 	if err := config.DB.Create(&newInvoice).Error; err != nil {
@@ -61,37 +88,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 
 	for _, invoiceItem := range payload.Items {
 
-		var item itemModels.Item
-
-		if item, err = itemRepositories.GetItemByNumber(invoiceItem.ItemNumber); err != nil || item.Number == "" {
-
-			if err != nil {
-				return err
-			}
-
-			return errors.New("invalid item number")
-		}
-
-		if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoice.Number, invoiceItem.ItemNumber); err != nil || checkItemOnInvoice.Number != "" {
-
-			if err != nil {
-				return err
-			}
-
-			fmt.Println("Item '" + invoiceItem.ItemNumber + "' already added to Invoice")
-
-			return errors.New("item already added to Invoice")
-		}
-
-		newInvoiceItem := models.InvoiceItem{
-			Number:        uuid.NewV4().String(),
-			InvoiceNumber: newInvoice.Number,
-			ItemNumber:    invoiceItem.ItemNumber,
-			Quantity:      invoiceItem.Quantity,
-			UnitPrice:     item.Cost,
-		}
-
-		if _, err := invoiceRepositories.CreateInvoiceItem(newInvoiceItem); err != nil {
+		if err = doSaveInvoiceItem(invoiceItem, newInvoice.Number); err != nil {
 			return err
 		}
 
@@ -99,6 +96,95 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 
 	return nil
 
+}
+
+func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string) error {
+
+	var item itemModels.Item
+
+	if item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber); err != nil || item.Number == "" {
+
+		if err != nil {
+			return err
+		}
+
+		return errors.New("invalid item number")
+	}
+
+	if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoiceNumber, invoiceItem.ItemNumber); err != nil || checkItemOnInvoice.Number != "" {
+
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Item '" + invoiceItem.ItemNumber + "' already added to Invoice")
+
+		return errors.New("item already added to Invoice")
+	}
+
+	newInvoiceItem := models.InvoiceItem{
+		Number:        uuid.NewV4().String(),
+		InvoiceNumber: newInvoiceNumber,
+		ItemNumber:    invoiceItem.ItemNumber,
+		Quantity:      invoiceItem.Quantity,
+		UnitPrice:     item.Cost,
+	}
+
+	if _, err := invoiceRepositories.CreateInvoiceItem(newInvoiceItem); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string) ([]responses.MinInvoiceResponse, error) {
+
+	var invoices []models.Invoice
+
+	var invoiceResponses []responses.MinInvoiceResponse
+
+	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber)
+	if err != nil {
+		return invoiceResponses, err
+	}
+
+	for _, invoice := range invoices {
+		invoiceResponses = append(invoiceResponses, createMinInvoiceResponse(invoice))
+	}
+
+	return invoiceResponses, nil
+}
+
+func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceResponse {
+
+	var _invoiceAmount float64
+	var _paidAmount float64
+
+	if invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoice.Number); err != nil {
+		fmt.Println("Getting invoice amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
+		_invoiceAmount = 0
+	} else {
+		_invoiceAmount = invoiceAmount
+	}
+
+	if paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number); err != nil {
+		fmt.Println("Getting invoice paid amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
+		_paidAmount = 0
+	} else {
+		_paidAmount = paidAmount
+	}
+
+	invoiceResponse := responses.MinInvoiceResponse{
+		RefNumber:   invoice.RefNumber,
+		Date:        invoice.CreatedAt,
+		DueDate:     invoice.DueDate,
+		Number:      invoice.Number,
+		TotalAmount: _invoiceAmount,
+		PaidAmount:  _paidAmount,
+		Balance:     _invoiceAmount - _paidAmount,
+		Status:      invoice.Status,
+	}
+	return invoiceResponse
 }
 
 func generateNewInvoiceNumber() string {
@@ -112,4 +198,131 @@ func generateNewInvoiceNumber() string {
 
 	// Format invoice number
 	return fmt.Sprintf("%s%s%04d", year, month, randomNum)
+}
+
+func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
+
+	invoice, err := invoiceRepositories.FindInvoiceByRefNumber(refNumber)
+
+	if err != nil {
+		return responses.InvoiceResponse{}, err
+	}
+
+	if invoice.Number == "" {
+		return responses.InvoiceResponse{}, errors.New("invalid invoice ref number")
+	}
+
+	minInvoice := createMinInvoiceResponse(invoice)
+
+	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number)
+	if err != nil {
+		return responses.InvoiceResponse{}, err
+	}
+
+	var invoiceItemsResponse []responses.InvoiceItemResponse
+
+	for _, item := range items {
+		_item := item.Item
+
+		itemResponse := responses.InvoiceItemResponse{
+			ItemName:   _item.Name,
+			ItemNumber: item.Number,
+			UnitCost:   item.UnitPrice,
+			Quantity:   item.Quantity,
+			TotalCost:  item.UnitPrice * item.Quantity,
+		}
+
+		invoiceItemsResponse = append(invoiceItemsResponse, itemResponse)
+
+	}
+
+	payments, err := invoiceRepositories.GetInvoicePayments(invoice.Number)
+	if err != nil {
+		return responses.InvoiceResponse{}, err
+	}
+
+	var invoicePaymentsResponse []responses.InvoicePaymentResponse
+
+	for _, payment := range payments {
+		_invoice := payment.Invoice
+		_user := payment.User
+
+		paymentResponse := responses.InvoicePaymentResponse{
+			Amount:           payment.Amount,
+			InvoiceRefNumber: _invoice.RefNumber,
+			RecordedBy:       _user.FirstName,
+			DateTime:         payment.Date,
+		}
+
+		invoicePaymentsResponse = append(invoicePaymentsResponse, paymentResponse)
+
+	}
+
+	invoiceResponse := responses.InvoiceResponse{
+		MinInvoiceResponse: minInvoice,
+		Items:              invoiceItemsResponse,
+		Payments:           invoicePaymentsResponse,
+	}
+
+	return invoiceResponse, nil
+}
+
+func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) error {
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber)
+	if err != nil {
+		return err
+	}
+
+	var dateTimePaid time.Time
+	if dateTimePaid, err = time.Parse(time.DateTime, invoicePaymentRequest.Date); err != nil {
+		return errors.New("Date received error: " + invoicePaymentRequest.Date)
+	}
+
+	saveInvoicePayment := models.InvoicePayment{
+		Number:        uuid.NewV4().String(),
+		Amount:        invoicePaymentRequest.Amount,
+		Date:          dateTimePaid,
+		InvoiceNumber: invoice.Number,
+		UserNumber:    currentUserNumber,
+	}
+
+	if _, err := invoiceRepositories.SavePayment(saveInvoicePayment); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse, error) {
+
+	paymentsCount, err := invoiceRepositories.CountAllUserPayments(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	invoicesCount, err := invoiceRepositories.CountAllUserInvoices(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	invoiceAmount, err := invoiceRepositories.GetAllInvoicedAmount(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	paymentAmount, err := invoiceRepositories.SumAllUserPayments(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	var financialSummaryResponse = responses.FinancialSummaryResponse{
+		TotalPayments:      paymentsCount,
+		TotalInvoices:      invoicesCount,
+		TotalInvoiceAmount: invoiceAmount,
+		TotalPaidAmount:    paymentAmount,
+		TotalBalanceAmount: invoiceAmount - paymentAmount,
+	}
+
+	return financialSummaryResponse, nil
 }

@@ -32,6 +32,6 @@ type Student struct {
 	CampusClassNumber         string                  `json:"campus_class_number" gorm:"size:36; not null"`
 	CampusClass               classModels.CampusClass `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	SourceOfSchoolInfo        string                  `json:"source_of_school_info" gorm:"size:100;not null"`
-	UserNumber                string                  `json:"user_number" gorm:"size:36;index;not null"`
+	UserNumber                string                  `json:"user_number" gorm:"size:36;unique;not null"`
 	User                      models.User             `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
