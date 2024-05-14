@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
 )
@@ -96,4 +97,51 @@ func SumAllUserPayments(userNumber string) (float64, error) {
 	}
 
 	return totalAmount, nil
+}
+
+func GetMostRecentPayment(userNumber string) (invoiceModels.InvoicePayment, error) {
+
+	db := config.DB
+
+	var invoicePayment invoiceModels.InvoicePayment
+
+	if err := db.
+		Model(&invoiceModels.Invoice{}).
+		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
+		Where("invoices.user_number = ? ", userNumber).
+		Order("invoice_payments.created_at desc").
+		First(&invoicePayment).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return invoiceModels.InvoicePayment{}, nil
+		}
+
+		return invoiceModels.InvoicePayment{}, err
+	}
+
+	return invoicePayment, nil
+
+}
+
+func GetAllPaymentsForUser(userNumber string, schoolNumber string, refNumber string) ([]invoiceModels.InvoicePayment, error) {
+
+	db := config.DB
+
+	var invoicePayment []invoiceModels.InvoicePayment
+
+	if err := db.
+		Model(&invoiceModels.Invoice{}).
+		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
+		Scopes(filters.ByAnyField("invoices.user_number", userNumber), filters.BySchoolNumber(schoolNumber), filters.ByRefNumber(refNumber)).
+		Order("invoice_payments.created_at desc").
+		Find(&invoicePayment).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return invoicePayment, nil
+		}
+
+		return invoicePayment, err
+	}
+
+	return invoicePayment, nil
 }

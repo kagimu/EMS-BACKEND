@@ -119,6 +119,15 @@ func ByUserNumber(user string) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
+func ByAnyField(fieldName string, fieldValue string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if fieldName != "" && fieldValue != "" {
+			return db.Where(fieldName+" = ?", fieldValue)
+		}
+		return db
+	}
+}
+
 func ByStatus(status string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if status != "" {
@@ -181,6 +190,15 @@ func ByGrade(value string) func(*gorm.DB) *gorm.DB {
 			return db.Where("grade = ?", value)
 		}
 
+		return db
+	}
+}
+
+func ByRefNumber(refNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if refNumber != "" {
+			return db.Where("ref_number = ?", refNumber)
+		}
 		return db
 	}
 }
