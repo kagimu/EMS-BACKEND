@@ -264,7 +264,7 @@ func createPaymentResponse(payment models.InvoicePayment, user authModel.User, i
 		Amount:           payment.Amount,
 		InvoiceRefNumber: invoice.RefNumber,
 		RecordedBy:       user.FirstName,
-		DateTime:         payment.Date.Format(time.DateTime),
+		DateTime:         payment.Date.Format(time.DateOnly),
 	}
 	return paymentResponse
 }
@@ -375,7 +375,7 @@ func GetAllPayments(userNumber string, refNumber string, schoolNumber string) ([
 
 	var invoicePaymentsResponse []responses.InvoicePaymentResponse
 
-	allPayments, err := invoiceRepositories.GetAllPaymentsForUser(userNumber, schoolNumber, refNumber)
+	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber)
 
 	if err != nil {
 		return invoicePaymentsResponse, err
