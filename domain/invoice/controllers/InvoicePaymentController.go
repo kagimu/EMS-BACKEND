@@ -52,7 +52,7 @@ func GetAllPayments(context *gin.Context) {
 	schoolNumber := context.Query("school_number")
 	userNumber := context.Query("user_number")
 
-	if refNumber == "" || schoolNumber == "" || userNumber == "" {
+	if refNumber == "" && schoolNumber == "" && userNumber == "" {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Provide at least the ref number, user number or school number"))
 		return
 	}
