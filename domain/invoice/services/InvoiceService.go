@@ -264,7 +264,7 @@ func createPaymentResponse(payment models.InvoicePayment, user authModel.User, i
 		Amount:           payment.Amount,
 		InvoiceRefNumber: invoice.RefNumber,
 		RecordedBy:       user.FirstName,
-		DateTime:         payment.Date.Format(time.DateTime),
+		DateTime:         payment.Date.Format(time.DateOnly),
 	}
 	return paymentResponse
 }
