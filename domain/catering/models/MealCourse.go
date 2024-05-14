@@ -10,4 +10,5 @@ type MealCourse struct {
 	UserNumber            string          `json:"user_number" gorm:"size:36;not null"`
 	User                  authModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Status                string          `json:"status" gorm:"size:36;not null"`
+	Code                  int             `json:"code" gorm:"size:10;not null"`
 }
