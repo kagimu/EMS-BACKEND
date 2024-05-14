@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"net/http"
 
@@ -29,12 +30,14 @@ func CreateInvoicePayment(c *gin.Context) {
 		return
 	}
 
-	if err = services.ReceiveInvoicePayment(payload, user.Number); err != nil {
+	var minInvoiceResponse responses.MinInvoiceResponse
+	minInvoiceResponse, err = services.ReceiveInvoicePayment(payload, user.Number)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, commons.Feedback("Failed saving payment with error: "+err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Invoice payment received successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Invoice payment received successfully", "data": minInvoiceResponse})
 }
 
 func GetAllPayments(context *gin.Context) {
