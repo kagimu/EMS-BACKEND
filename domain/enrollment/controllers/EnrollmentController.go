@@ -73,6 +73,20 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
+	var items []admissionModel.AdmissionCondition
+
+	if err := config.DB.Preload("Item").Joins("JOIN items on items.number = admission_conditions.item_number AND items.mandatory=?", true).Where("admission_number = ?", admission.Number).Find(&items).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+
+	}
+
+	if len(items) > 0 {
+		//validate if all mandatory items have been checked
+	}
+
 	for _, item := range payload.Items {
 		var enrolmentItem models.EnrollmentItem
 		enrolmentItem.ItemNumber = item.ItemNumber
