@@ -24,7 +24,7 @@ func GetInvoicePaidAmount(invoiceNumber string) (float64, error) {
 
 	if err := db.Model(&invoiceModels.InvoicePayment{}).
 		Where("invoice_number = ? ", invoiceNumber).
-		Select("sum(amount)").
+		Select("COALESCE(sum(amount),0)").
 		Scan(&totalAmount).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
