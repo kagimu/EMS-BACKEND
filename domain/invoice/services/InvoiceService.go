@@ -274,6 +274,10 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		return err
 	}
 
+	if invoice.Number == "" {
+		return errors.New("invalid invoice number: " + invoicePaymentRequest.InvoiceNumber)
+	}
+
 	var dateTimePaid time.Time
 	if dateTimePaid, err = time.Parse(time.DateOnly, invoicePaymentRequest.Date); err != nil {
 		return errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
