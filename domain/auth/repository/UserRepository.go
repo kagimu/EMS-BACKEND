@@ -14,11 +14,9 @@ func GetUserByNumber(userNumber string) (models.User, error) {
 	var user models.User
 
 	if err := db.Where("number = ?", userNumber).First(&user).Error; err != nil {
-		a
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return user, nil
 		}
-
 		return user, err
 	}
 

@@ -3,14 +3,21 @@ package requests
 import "errors"
 
 type EnrollmentRequest struct {
-	StudentNumber     string `json:"student_number"`
-	StudyPeriodNumber string `json:"study_period_number"`
-	CampusNumber      string `json:"campus_number"`
-	SchoolNumber      string `json:"school_number"`
-	EnrollmentDate    string `json:"enrollment_date"`
-	Status            string `json:"status"`
-	CampusClassNumber string `json:"campus_class_number"`
-	ContinuingStudent bool   `json:"continuing_student"`
+	StudentNumber     string           `json:"student_number"`
+	StudyPeriodNumber string           `json:"study_period_number"`
+	CampusNumber      string           `json:"campus_number"`
+	SchoolNumber      string           `json:"school_number"`
+	EnrollmentDate    string           `json:"enrollment_date"`
+	Status            string           `json:"status"`
+	CampusClassNumber string           `json:"campus_class_number"`
+	ContinuingStudent bool             `json:"continuing_student"`
+	Items             []EnrollmentItem `json:"items"`
+}
+
+type EnrollmentItem struct {
+	ItemNumber string  `json:"item_number"`
+	Quantity   float64 `json:"quantity"`
+	Brought    bool    `json:"brought"`
 }
 
 func (e *EnrollmentRequest) Validate() error {

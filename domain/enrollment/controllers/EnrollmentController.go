@@ -73,6 +73,19 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
+	for _, item := range payload.Items {
+		var enrolmentItem models.EnrollmentItem
+		enrolmentItem.ItemNumber = item.ItemNumber
+		enrolmentItem.EnrollmentNumber = saveEnrollment.Number
+		enrolmentItem.Quantity = item.Quantity
+		enrolmentItem.Brought = item.Brought
+		if err := tx.Create(&enrolmentItem).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
+			return
+		}
+	}
+
 	// update admission status to enrolled where student number is equal to payload.StudentNumber
 
 	if err := tx.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
