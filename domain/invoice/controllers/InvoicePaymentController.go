@@ -30,7 +30,7 @@ func CreateInvoicePayment(c *gin.Context) {
 	}
 
 	if err = services.ReceiveInvoicePayment(payload, user.Number); err != nil {
-		c.JSON(http.StatusBadRequest, commons.Feedback("Failed saving payment, try again "+err.Error()))
+		c.JSON(http.StatusBadRequest, commons.Feedback("Failed saving payment with error: "+err.Error()))
 		return
 	}
 
