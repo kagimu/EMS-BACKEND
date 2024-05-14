@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
@@ -243,12 +244,7 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 		_invoice := payment.Invoice
 		_user := payment.User
 
-		paymentResponse := responses.InvoicePaymentResponse{
-			Amount:           payment.Amount,
-			InvoiceRefNumber: _invoice.RefNumber,
-			RecordedBy:       _user.FirstName,
-			DateTime:         payment.Date,
-		}
+		paymentResponse := createPaymentResponse(payment, _user, _invoice)
 
 		invoicePaymentsResponse = append(invoicePaymentsResponse, paymentResponse)
 
@@ -261,6 +257,16 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 	}
 
 	return invoiceResponse, nil
+}
+
+func createPaymentResponse(payment models.InvoicePayment, user authModel.User, invoice models.Invoice) responses.InvoicePaymentResponse {
+	paymentResponse := responses.InvoicePaymentResponse{
+		Amount:           payment.Amount,
+		InvoiceRefNumber: invoice.RefNumber,
+		RecordedBy:       user.FirstName,
+		DateTime:         payment.Date.Format(time.DateTime),
+	}
+	return paymentResponse
 }
 
 func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) error {
@@ -316,13 +322,63 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 		return responses.FinancialSummaryResponse{}, err
 	}
 
+	recentInvoice, err := invoiceRepositories.GetMostRecentInvoice(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+	minInvoice := createMinInvoiceResponse(recentInvoice)
+
+	mostRecentPayment, err := invoiceRepositories.GetMostRecentPayment(userNumber)
+	if err != nil {
+		return responses.FinancialSummaryResponse{}, err
+	}
+
+	mostRecent := responses.MostRecent{
+		InvoiceAmount: minInvoice.TotalAmount,
+		InvoiceDate:   minInvoice.Date,
+		PaidAmount:    mostRecentPayment.Amount,
+		PaidDate:      mostRecentPayment.Date.Format(time.DateOnly),
+	}
+
 	var financialSummaryResponse = responses.FinancialSummaryResponse{
 		TotalPayments:      paymentsCount,
 		TotalInvoices:      invoicesCount,
 		TotalInvoiceAmount: invoiceAmount,
 		TotalPaidAmount:    paymentAmount,
 		TotalBalanceAmount: invoiceAmount - paymentAmount,
+		MostRecent:         mostRecent,
 	}
 
 	return financialSummaryResponse, nil
+}
+
+func GetAllPayments(userNumber string, refNumber string, schoolNumber string) ([]responses.InvoicePaymentResponse, error) {
+
+	var invoicePaymentsResponse []responses.InvoicePaymentResponse
+
+	allPayments, err := invoiceRepositories.GetAllPaymentsForUser(userNumber, schoolNumber, refNumber)
+
+	if err != nil {
+		return invoicePaymentsResponse, err
+	}
+
+	for _, payment := range allPayments {
+
+		_user, err := repository.GetUserByNumber(payment.UserNumber)
+		if err != nil {
+			return invoicePaymentsResponse, err
+		}
+
+		_invoice, err := invoiceRepositories.FindInvoiceByNumber(payment.InvoiceNumber)
+		if err != nil {
+			return invoicePaymentsResponse, err
+		}
+
+		paymentResponse := createPaymentResponse(payment, _user, _invoice)
+
+		invoicePaymentsResponse = append(invoicePaymentsResponse, paymentResponse)
+
+	}
+
+	return invoicePaymentsResponse, nil
 }

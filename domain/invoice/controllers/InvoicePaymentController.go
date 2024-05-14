@@ -36,3 +36,29 @@ func CreateInvoicePayment(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Invoice payment received successfully"})
 }
+
+func GetAllPayments(context *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"Message": "Unauthorized"})
+		return
+	}
+
+	refNumber := context.Query("ref_number")
+	schoolNumber := context.Query("school_number")
+	userNumber := context.Query("user_number")
+
+	if refNumber == "" || schoolNumber == "" || userNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide at least the ref number, user number or school number"))
+		return
+	}
+
+	payments, err := services.GetAllPayments(userNumber, refNumber, schoolNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Getting all payments with error: "+err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": payments})
+}

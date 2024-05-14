@@ -1,7 +1,5 @@
 package responses
 
-import "time"
-
 type FinancialSummaryResponse struct {
 	TotalInvoices      int64      `json:"total_invoices"`
 	TotalInvoiceAmount float64    `json:"total_invoice_amount"`
@@ -12,8 +10,8 @@ type FinancialSummaryResponse struct {
 }
 
 type MostRecent struct {
-	InvoiceAmount float64   `json:"invoice_amount"`
-	InvoiceDate   time.Time `json:"invoice_date"`
-	PaidAmount    float64   `json:"paid_amount"`
-	PaidDate      time.Time `json:"paid_date"`
+	InvoiceAmount float64 `json:"invoice_amount"`
+	InvoiceDate   string  `json:"invoice_date"`
+	PaidAmount    float64 `json:"paid_amount"`
+	PaidDate      string  `json:"paid_date"`
 }
