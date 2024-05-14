@@ -42,6 +42,9 @@ func (a *AdmissionRequest) Validate() error {
 	if a.StreamNumber == "" {
 		return errors.New("stream number is required")
 	}
+	if len(a.Items) == 0 {
+		return errors.New("at least one item is required to be selected for admission")
+	}
 
 	return nil
 }
