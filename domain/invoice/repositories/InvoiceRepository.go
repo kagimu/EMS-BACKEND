@@ -126,3 +126,21 @@ func GetMostRecentInvoice(userNumber string) (invoiceModel.Invoice, error) {
 	return invoice, nil
 
 }
+
+func SaveInvoice(invoice invoiceModel.Invoice) error {
+
+	if err := config.DB.Create(&invoice).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateInvoice(invoice invoiceModel.Invoice) error {
+
+	if err := config.DB.Save(&invoice).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
