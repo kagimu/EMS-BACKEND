@@ -3,11 +3,11 @@ package services
 import (
 	"errors"
 	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
@@ -82,7 +82,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 		CampusNumber:  admission.CampusNumber,
 	}
 
-	if err := config.DB.Create(&newInvoice).Error; err != nil {
+	if err = invoiceRepositories.SaveInvoice(newInvoice); err != nil {
 		return err
 	}
 
@@ -269,20 +269,22 @@ func createPaymentResponse(payment models.InvoicePayment, user authModel.User, i
 	return paymentResponse
 }
 
-func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) error {
+func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) (responses.MinInvoiceResponse, error) {
+
+	var minInvoiceResponse responses.MinInvoiceResponse
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber)
 	if err != nil {
-		return err
+		return minInvoiceResponse, err
 	}
 
 	if invoice.Number == "" {
-		return errors.New("invalid invoice number: " + invoicePaymentRequest.InvoiceNumber)
+		return minInvoiceResponse, errors.New("invalid invoice number: " + invoicePaymentRequest.InvoiceNumber)
 	}
 
 	var dateTimePaid time.Time
 	if dateTimePaid, err = time.Parse(time.DateOnly, invoicePaymentRequest.Date); err != nil {
-		return errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
+		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
 	}
 
 	saveInvoicePayment := models.InvoicePayment{
@@ -294,10 +296,27 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 	}
 
 	if _, err := invoiceRepositories.SavePayment(saveInvoicePayment); err != nil {
-		return err
+		return minInvoiceResponse, err
 	}
 
-	return nil
+	minInvoiceResponse = createMinInvoiceResponse(invoice)
+
+	var newStatus string
+
+	if minInvoiceResponse.PaidAmount >= minInvoiceResponse.TotalAmount {
+		newStatus = constants.STATUS_PAID
+	} else {
+		newStatus = constants.STATUS_PARTIALLY_PAID
+	}
+
+	if newStatus != invoice.Status {
+		invoice.Status = newStatus
+		if err = invoiceRepositories.UpdateInvoice(invoice); err != nil {
+			return minInvoiceResponse, errors.New("Updating invoice failed : " + err.Error())
+		}
+	}
+
+	return minInvoiceResponse, nil
 }
 
 func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse, error) {
