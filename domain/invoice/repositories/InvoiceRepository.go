@@ -105,3 +105,24 @@ func GetAllInvoicedAmount(userNumber string) (float64, error) {
 
 	return totalAmount, nil
 }
+
+func GetMostRecentInvoice(userNumber string) (invoiceModel.Invoice, error) {
+
+	db := config.DB
+	var invoice invoiceModel.Invoice
+
+	if err := db.
+		Where("user_number = ? ", userNumber).
+		Order("created_at desc").
+		First(&invoice).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return invoice, nil
+		}
+
+		return invoice, err
+	}
+
+	return invoice, nil
+
+}
