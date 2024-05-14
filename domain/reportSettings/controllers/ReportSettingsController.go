@@ -10,7 +10,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	paginationCommons "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
@@ -289,7 +289,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 func FetchReportSummaries(ctx *gin.Context) {
 
 	var cleanReportSummary = make([]responses.LeanReportSummary, 0)
-	var paginatedResponse = helpers.Pagination{}
+	var paginatedResponse = paginationCommons.Pagination{}
 
 	var reportSummaries []models.ReportSummary
 	if err := config.DB.Scopes(
@@ -298,7 +298,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
 	).Scopes(
-		helpers.Paginate(ctx, &paginatedResponse),
+		paginationCommons.Paginate(ctx, &paginatedResponse),
 		filters.ByCampusClassNumber(ctx.Query("campus_class_number"))).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
