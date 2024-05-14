@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -170,7 +170,7 @@ func FetchMenuItemDetails(c *gin.Context) {
 
 	// Add school name as well
 
-	partsResponse, err := catering.GetMenuItemParts(menuItem.Number)
+	partsResponse, err := services.GetMenuItemParts(menuItem.Number)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch menu item parts for: " + menuItem.Name})
