@@ -106,8 +106,7 @@ func GetMostRecentPayment(userNumber string) (invoiceModels.InvoicePayment, erro
 	var invoicePayment invoiceModels.InvoicePayment
 
 	if err := db.
-		Model(&invoiceModels.Invoice{}).
-		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
+		Joins("JOIN invoices ON invoices.number = invoice_payments.invoice_number").
 		Where("invoices.user_number = ? ", userNumber).
 		Order("invoice_payments.created_at desc").
 		First(&invoicePayment).Error; err != nil {
