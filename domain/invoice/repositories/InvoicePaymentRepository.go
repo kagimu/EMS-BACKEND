@@ -106,8 +106,7 @@ func GetMostRecentPayment(userNumber string) (invoiceModels.InvoicePayment, erro
 	var invoicePayment invoiceModels.InvoicePayment
 
 	if err := db.
-		Model(&invoiceModels.Invoice{}).
-		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
+		Joins("JOIN invoices ON invoices.number = invoice_payments.invoice_number").
 		Where("invoices.user_number = ? ", userNumber).
 		Order("invoice_payments.created_at desc").
 		First(&invoicePayment).Error; err != nil {
@@ -123,15 +122,14 @@ func GetMostRecentPayment(userNumber string) (invoiceModels.InvoicePayment, erro
 
 }
 
-func GetAllPaymentsForUser(userNumber string, schoolNumber string, refNumber string) ([]invoiceModels.InvoicePayment, error) {
+func GetAllPayments(userNumber string, schoolNumber string, refNumber string) ([]invoiceModels.InvoicePayment, error) {
 
 	db := config.DB
 
 	var invoicePayment []invoiceModels.InvoicePayment
 
 	if err := db.
-		Model(&invoiceModels.Invoice{}).
-		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
+		Joins("JOIN invoices ON invoices.number = invoice_payments.invoice_number").
 		Scopes(filters.ByAnyField("invoices.user_number", userNumber), filters.BySchoolNumber(schoolNumber), filters.ByRefNumber(refNumber)).
 		Order("invoice_payments.created_at desc").
 		Find(&invoicePayment).Error; err != nil {

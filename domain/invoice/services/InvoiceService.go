@@ -375,7 +375,7 @@ func GetAllPayments(userNumber string, refNumber string, schoolNumber string) ([
 
 	var invoicePaymentsResponse []responses.InvoicePaymentResponse
 
-	allPayments, err := invoiceRepositories.GetAllPaymentsForUser(userNumber, schoolNumber, refNumber)
+	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber)
 
 	if err != nil {
 		return invoicePaymentsResponse, err
