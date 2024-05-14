@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
@@ -122,5 +123,63 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 	}
 
 	return courseResponse, nil
+
+}
+
+func MealCourseCalendar(schoolNumber string) (responses.MealCourseCalendarResponse, error) {
+
+	var mealCourseCalendarResponse responses.MealCourseCalendarResponse
+
+	meal, err := repositories.GetMealCourseCountBySchoolNumber(schoolNumber)
+	if err != nil {
+		return mealCourseCalendarResponse, err
+	}
+
+	if meal.Number == "" {
+		return mealCourseCalendarResponse, errors.New("no meal courses configured for the selected school")
+	}
+
+	courses, err := repositories.GetMealCourses(meal.Number, constants.STATUS_ACTIVE)
+	if err != nil {
+		return mealCourseCalendarResponse, err
+	}
+
+	_days := commons.DaysOfTheWeek()
+
+	headers := []string{" "}
+
+	for _, rowDay := range _days {
+		headers = append(headers, rowDay)
+	}
+
+	mealCourseCalendarResponse.Headers = headers
+
+	var calendarRawResponse []responses.CalendarRowResponse
+
+	for _, course := range courses {
+
+		var daysItems []responses.DayItemsResponse
+
+		for _, day := range _days {
+
+			item := responses.DayItemsResponse{
+				Day:   day,
+				Items: []string{"Beans", "Posho", "Rice"},
+			}
+
+			daysItems = append(daysItems, item)
+		}
+
+		calendarRaw := responses.CalendarRowResponse{
+			CourseName: course.Name,
+			DayItems:   daysItems,
+		}
+
+		calendarRawResponse = append(calendarRawResponse, calendarRaw)
+	}
+
+	mealCourseCalendarResponse.CalendarRawResponse = calendarRawResponse
+
+	return mealCourseCalendarResponse, nil
 
 }

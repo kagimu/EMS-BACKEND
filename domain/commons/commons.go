@@ -184,3 +184,22 @@ func RoundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
 	return math.Round(val*ratio) / ratio
 }
+
+func DaysOfTheWeek() []string {
+
+	now := time.Now()
+
+	// Find the first Monday on or before the current time
+	monday := now.AddDate(0, 0, -int(now.Weekday()+6)%7)
+
+	// Create a slice to store the days of the week
+	days := make([]string, 7)
+
+	// Loop through the next 7 days to get the days of the week
+	for i := 0; i < 7; i++ {
+		day := monday.AddDate(0, 0, i)
+		days[i] = day.Format("Mon")
+	}
+
+	return days
+}
