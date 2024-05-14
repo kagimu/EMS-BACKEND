@@ -3,9 +3,11 @@ package models
 import (
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
+	"gorm.io/gorm"
 )
 
 type AdmissionCondition struct {
+	gorm.Model
 	AdmissionNumber string          `json:"admission_offer_number" gorm:"size:36"`
 	Admission       Admission       `gorm:"foreignKey:AdmissionNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	ItemNumber      string          `json:"item_number" gorm:"size:36"`
