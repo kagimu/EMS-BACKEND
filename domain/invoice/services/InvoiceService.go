@@ -11,7 +11,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	invoiceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
-	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	itemRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
@@ -100,14 +99,13 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 
 func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string) error {
 
-	var item itemModels.Item
+	item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber)
 
-	if item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber); err != nil || item.Number == "" {
+	if err != nil {
+		return err
+	}
 
-		if err != nil {
-			return err
-		}
-
+	if item.Number == "" {
 		return errors.New("invalid item number")
 	}
 
@@ -116,8 +114,6 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 		if err != nil {
 			return err
 		}
-
-		fmt.Println("Item '" + invoiceItem.ItemNumber + "' already added to Invoice")
 
 		return errors.New("item already added to Invoice")
 	}
@@ -176,8 +172,8 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 
 	invoiceResponse := responses.MinInvoiceResponse{
 		RefNumber:   invoice.RefNumber,
-		Date:        invoice.CreatedAt,
-		DueDate:     invoice.DueDate,
+		Date:        invoice.CreatedAt.Format(time.DateOnly),
+		DueDate:     invoice.DueDate.Format(time.DateOnly),
 		Number:      invoice.Number,
 		TotalAmount: _invoiceAmount,
 		PaidAmount:  _paidAmount,
