@@ -188,7 +188,7 @@ func FetchAdmissions(c *gin.Context) {
 		filters.ByStreamNumber(streamNumber),
 		filters.ByInterviewNumber(interviewNumber),
 		filters.BySchoolNumber(schoolNumber),
-	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
+	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Preload("").Find(&admissions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
 		return
 	}
@@ -213,4 +213,16 @@ func FetchAdmissionById(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": admission})
+}
+
+func FetchItemsAddedOnAdmission(c *gin.Context) {
+	admissionNumber := c.Param("admission_number")
+	var items []models.AdmissionCondition
+
+	if err := config.DB.Preload("Item").Where("admission_number = ?", admissionNumber).Find(&items).Error; err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": items})
 }
