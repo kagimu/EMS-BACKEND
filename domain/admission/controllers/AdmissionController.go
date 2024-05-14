@@ -234,7 +234,7 @@ func FetchItemsAddedOnAdmission(c *gin.Context) {
 
 	type Item struct {
 		ItemNumber string  `json:"item_number"`
-		Cost       float64 `json:"quantity"`
+		Cost       float64 `json:"cost"`
 		ItemName   string  `json:"item_name"`
 	}
 	filteredItems := make([]Item, 0)
