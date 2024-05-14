@@ -313,3 +313,26 @@ func GetMealCourses(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
+
+func MealCourseCalendar(ctx *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "provide school number"})
+		return
+	}
+
+	response, err := services.MealCourseCalendar(schoolNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Getting Meal course calendar error: "+err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}

@@ -232,5 +232,20 @@ func FetchItemsAddedOnAdmission(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": items})
+	type Item struct {
+		ItemNumber string  `json:"item_number"`
+		Cost       float64 `json:"quantity"`
+		ItemName   string  `json:"item_name"`
+	}
+	filteredItems := make([]Item, 0)
+
+	for _, item := range items {
+		filteredItems = append(filteredItems, Item{
+			ItemNumber: item.ItemNumber,
+			ItemName:   item.Item.Name,
+			Cost:       item.Item.Cost,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": filteredItems})
 }
