@@ -188,7 +188,7 @@ func FetchAdmissions(c *gin.Context) {
 		filters.ByStreamNumber(streamNumber),
 		filters.ByInterviewNumber(interviewNumber),
 		filters.BySchoolNumber(schoolNumber),
-	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Preload("").Find(&admissions).Error; err != nil {
+	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
 		return
 	}
