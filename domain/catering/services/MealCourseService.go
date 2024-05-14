@@ -2,9 +2,12 @@ package services
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
@@ -53,7 +56,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 			Number:                uuid.NewV4().String(),
 			Name:                  mealCourse.Name,
 			MealCourseCountNumber: newMealCourseCount.Number,
-			Status:                "ACTIVE",
+			Status:                constants.STATUS_ACTIVE,
 			UserNumber:            currentUserNumber,
 		}
 
@@ -75,5 +78,49 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 	}
 
 	return nil
+
+}
+
+func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
+
+	school, err := repositories2.GetSchoolByNumber(schoolNumber)
+
+	if err != nil {
+		return responses.MealCourseResponse{}, err
+	}
+
+	mealCourseCount, err := repositories.GetMealCourseCountBySchoolNumber(school.Number)
+	if err != nil {
+		return responses.MealCourseResponse{}, err
+	}
+
+	courses, err := repositories.GetMealCourses(mealCourseCount.Number, constants.STATUS_ACTIVE)
+	if err != nil {
+		return responses.MealCourseResponse{}, err
+	}
+
+	var mealCourseItemResponses []responses.MealCourseItemResponse
+
+	for _, course := range courses {
+
+		user, _ := repository.GetUserByNumber(course.UserNumber)
+
+		courseResponse := responses.MealCourseItemResponse{
+			Name:    course.Name,
+			Code:    course.Code,
+			AddedBy: user.FirstName,
+		}
+
+		mealCourseItemResponses = append(mealCourseItemResponses, courseResponse)
+
+	}
+
+	courseResponse := responses.MealCourseResponse{
+		Count:        mealCourseCount.Count,
+		SchoolNumber: schoolNumber,
+		Courses:      mealCourseItemResponses,
+	}
+
+	return courseResponse, nil
 
 }

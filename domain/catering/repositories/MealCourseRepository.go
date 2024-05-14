@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
@@ -18,13 +19,13 @@ func SaveMealCourse(mealCourse models.MealCourse) (models.MealCourse, error) {
 	return mealCourse, nil
 }
 
-func GetMealCourses(mealCourseCountNumber string) ([]models.MealCourse, error) {
+func GetMealCourses(mealCourseCountNumber string, status string) ([]models.MealCourse, error) {
 
 	db := config.DB
 
 	var mealCourses []models.MealCourse
 
-	if err := db.Where("meal_course_count_number = ? ", mealCourseCountNumber).Find(&mealCourses).Error; err != nil {
+	if err := db.Scopes(filters.ByStatus(status)).Where("meal_course_count_number = ? ", mealCourseCountNumber).Find(&mealCourses).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return mealCourses, nil
