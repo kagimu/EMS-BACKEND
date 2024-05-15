@@ -364,3 +364,26 @@ func FeedingSessionsToMealCourse(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, commons.Feedback("Feeding sessions successfully added"))
 }
+
+func AllMealCourseFeedingSessions(ctx *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	mealCourseNumber := ctx.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "provide the meal course number"})
+		return
+	}
+
+	response, err := services.MealCourseFeedingSessions(mealCourseNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Getting Meal course calendar error: "+err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
