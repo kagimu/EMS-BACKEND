@@ -274,7 +274,7 @@ func SaveMealCourse(ctx *gin.Context) {
 
 	var payload requests.MealCourseCountRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again: " + err.Error()})
 		return
 	}
 
@@ -335,4 +335,32 @@ func MealCourseCalendar(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
+
+func FeedingSessionsToMealCourse(ctx *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.MealCourseFeedingSessionRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.AddFeedingSessionsToMealCourse(payload)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Adding feeding sessions error: "+err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, commons.Feedback("Feeding sessions successfully added"))
 }

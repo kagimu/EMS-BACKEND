@@ -59,6 +59,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 			MealCourseCountNumber: newMealCourseCount.Number,
 			Status:                constants.STATUS_ACTIVE,
 			UserNumber:            currentUserNumber,
+			Code:                  mealCourse.Code,
 		}
 
 		var oldMealCourse models.MealCourse
@@ -182,4 +183,43 @@ func MealCourseCalendar(schoolNumber string) (responses.MealCourseCalendarRespon
 
 	return mealCourseCalendarResponse, nil
 
+}
+
+func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.MealCourseFeedingSessionRequest) error {
+
+	mealCourse, err := repositories.GetMealCourseByNumber(mealCourseFeedingSessionRequest.MealCourseNumber)
+
+	if err != nil {
+		return err
+	}
+
+	if mealCourse.Number == "" {
+		return errors.New("invalid meal course selected")
+	}
+
+	for _, feedingSession := range mealCourseFeedingSessionRequest.FeedingSessions {
+
+		mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Name, feedingSession)
+		if err != nil {
+			return err
+		}
+
+		if mealCourseFeedingSession.Number != "" {
+			return errors.New("feeding session already added to the meal course")
+		}
+
+		newMealCourseFeedingSession := models.MealCourseFeedingSession{
+			MealCourseNumber:     mealCourse.Number,
+			FeedingSessionNumber: feedingSession,
+			Number:               uuid.NewV4().String(),
+		}
+
+		err = repositories.SaveMealCourseFeedingSession(newMealCourseFeedingSession)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }

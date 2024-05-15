@@ -728,6 +728,7 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("meal-courses", cateringController.SaveMealCourse)
 			catering.GET("meal-courses", cateringController.GetMealCourses)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
+			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
 		}
 	}
 
