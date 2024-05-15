@@ -57,3 +57,23 @@ func GetMealCourseByName(name string, mealCourseCountNumber string) (models.Meal
 
 	return mealCourse, nil
 }
+
+func GetMealCourseByNumber(mealCourseNumber string) (models.MealCourse, error) {
+
+	db := config.DB
+
+	var mealCourse models.MealCourse
+
+	if err := db.
+		Where("number = ?", mealCourseNumber).
+		First(&mealCourse).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return mealCourse, nil
+		}
+
+		return mealCourse, err
+	}
+
+	return mealCourse, nil
+}
