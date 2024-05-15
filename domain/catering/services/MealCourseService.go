@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	campusRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -270,12 +271,85 @@ func MealCourseFeedingSessions(mealCourseNumber string) ([]responses.FeedingSess
 		_session := feedingSession.FeedingSession
 
 		session := responses.FeedingSessionResponse{
-			Name: _session.Name,
-			Code: _session.Code,
+			Name:   _session.Name,
+			Code:   _session.Code,
+			Number: _session.Number,
 		}
 
 		feedingSessionsResponse = append(feedingSessionsResponse, session)
 	}
 
 	return feedingSessionsResponse, nil
+}
+
+func ActivateMealCourse(activateMealCourseRequest requests.ActivateMealCourseRequest, currentUserNumber string) error {
+
+	mealCourse, err := repositories.GetMealCourseByNumber(activateMealCourseRequest.MealCourseNumber)
+	if err != nil {
+		return err
+	}
+
+	if mealCourse.Status != constants.STATUS_ACTIVE {
+		return errors.New("selected meal course is not active")
+	}
+
+	feedingSession, err := repositories.GetFeedingSessionByNumber(activateMealCourseRequest.FeedingSessionNumber)
+
+	if err != nil {
+		return err
+	}
+
+	if feedingSession.Status != constants.STATUS_ACTIVE {
+		return errors.New("selected feed session is not active")
+	}
+
+	mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Number, feedingSession.Number)
+
+	if err != nil {
+		return err
+	}
+
+	if mealCourseFeedingSession.Number == "" {
+		return errors.New("feeding session not added to this meal course")
+	}
+
+	for _, day := range activateMealCourseRequest.Days {
+		if err = activateForDay(day, activateMealCourseRequest.Campuses, currentUserNumber, mealCourseFeedingSession.Number); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func activateForDay(day string, campuses []string, currentUserNumber string, mealCourseFeedingSessionNumber string) error {
+
+	for _, campusNumber := range campuses {
+
+		campus, err := campusRepositories.GetCampusByNumber(campusNumber)
+
+		campusMealCourse, err := repositories.GetCampusMealCourseByCampusAndDay(day, mealCourseFeedingSessionNumber, campusNumber)
+		if err != nil {
+			return err
+		}
+
+		if campusMealCourse.Number != "" {
+			return errors.New("this campus already has this meal course activated")
+		}
+
+		campusMealCourse = models.CampusMealCourse{
+			Number:                         uuid.NewV4().String(),
+			UserNumber:                     currentUserNumber,
+			MealCourseFeedingSessionNumber: mealCourseFeedingSessionNumber,
+			Day:                            day,
+			CampusNumber:                   campus.Number,
+		}
+
+		if err = repositories.SaveCampusMealCourse(campusMealCourse); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }

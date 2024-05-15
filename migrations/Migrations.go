@@ -188,6 +188,7 @@ func Init() error {
 		&cateringModels.MealCourse{},
 		&enrollmentModel.EnrollmentItem{},
 		&cateringModels.MealCourseFeedingSession{},
+		&cateringModels.CampusMealCourse{},
 	)
 
 	if err != nil {
