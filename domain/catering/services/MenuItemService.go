@@ -105,6 +105,8 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 	//Check stock for each part item
 	var stockReducingParts []models.Stocking
 
+	var unitCost float64
+
 	for _, itemAssemble := range itemAssembles {
 
 		secondaryItem := itemAssemble.SecondaryItem
@@ -120,11 +122,19 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 			return errors.New("Not enough available quantity for: " + secondaryItem.Name + " " + strconv.FormatFloat(requiredQty, 'f', 2, 64) + " is required but we have " + strconv.FormatFloat(availableQty, 'f', 2, 64))
 		}
 
-		var mostRecentStockUnitCost float64
+		recentStock, err := repositories.GetRecentItemStock(stock.MenuItemNumber)
 
-		mostRecentStockUnitCost = 1200
+		if err != nil {
+			return err
+		}
 
-		negativeStock, err := saveNonAssembled(transaction, campusNumber, mostRecentStockUnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
+		if recentStock.Number == "" {
+			return errors.New("no recent stock for " + stock.MenuItemNumber)
+		}
+
+		unitCost = recentStock.UnitCost + unitCost
+
+		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
 		if err != nil {
 			return err
 		}
@@ -133,7 +143,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 
 	}
 
-	newStock, err := saveNonAssembled(transaction, campusNumber, stock.UnitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
+	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
 
 	if err != nil {
 		return err

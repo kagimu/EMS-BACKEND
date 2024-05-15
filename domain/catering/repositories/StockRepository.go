@@ -33,3 +33,18 @@ func CreateStockingEntry(transaction *gorm.DB, stocking cateringModels.Stocking)
 
 	return stocking, nil
 }
+
+func GetRecentItemStock(menuItemNumber string) (cateringModels.Stocking, error) {
+	db := config.DB
+	var stocking cateringModels.Stocking
+
+	if err := db.Where("menu_item_number = ?", menuItemNumber).First(&stocking).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return stocking, nil
+		}
+
+		return stocking, err
+	}
+
+	return stocking, nil
+}
