@@ -60,3 +60,28 @@ func GetMealCourseFeedingSessionsByMealCourseNumber(mealCourseNumber string) ([]
 
 	return mealCourseFeedingSession, nil
 }
+
+func GetFeedingSessionForCampusAndMealCourseAndDay(day string, mealCourseNumber string, campusNumber string) (session models.MealCourseFeedingSession, err error) {
+
+	db := config.DB
+
+	var mealCourseFeedingSession models.MealCourseFeedingSession
+
+	if err := db.
+		Joins("JOIN meal_courses ON meal_courses.number = meal_course_feeding_sessions.meal_course_number").
+		Joins("JOIN meal_course_feeding_sessions ON meal_course_feeding_sessions.number = campus_meal_courses.meal_course_feeding_session_number").
+		Where("campus_meal_courses.day = ? ", day).
+		Where("meal_courses.number = ? ", mealCourseNumber).
+		Where("campus_meal_courses.campus_number = ? ", campusNumber).
+		Preload("FeedingSession").
+		First(&mealCourseFeedingSession).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return mealCourseFeedingSession, nil
+		}
+
+		return mealCourseFeedingSession, err
+	}
+
+	return mealCourseFeedingSession, nil
+}
