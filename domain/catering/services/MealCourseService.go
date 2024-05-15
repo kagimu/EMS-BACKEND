@@ -21,7 +21,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 	school, err := repositories2.GetSchoolByNumber(mealCourseCountRequest.SchoolNumber)
 
 	if err != nil {
-		return err
+		return errors.New("checking for valid school number error : " + err.Error())
 	}
 
 	if school.Number == "" {
@@ -33,7 +33,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 	oldMealCourseCount, err = repositories.GetMealCourseCountBySchoolNumber(school.Number)
 
 	if err != nil {
-		return err
+		return errors.New("getting course count by school number: " + err.Error())
 	}
 
 	newMealCourseCount := models.MealCourseCount{
@@ -51,12 +51,12 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 	}
 
 	if _, err = repositories.SaveMealCourseCount(oldMealCourseCount); err != nil {
-		return err
+		return errors.New("saving or updating meal course count error: " + err.Error())
 	}
 
 	allOtherMealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(oldMealCourseCount.Number, constants.STATUS_ACTIVE)
 	if err != nil {
-		return err
+		return errors.New("getting all active meal course by course count number error : " + err.Error())
 	}
 
 	for _, otherMealCourse := range allOtherMealCourses {
@@ -64,7 +64,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		otherMealCourse.Status = constants.STATUS_INACTIVE
 
 		if _, err = repositories.SaveMealCourse(otherMealCourse); err != nil {
-			return err
+			return errors.New("updating current meal course names to inactive : " + err.Error())
 		}
 	}
 
@@ -83,7 +83,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 
 		checkMeal, err = repositories.GetMealCourseByName(mealCourse.Name, oldMealCourseCount.Number)
 		if err != nil {
-			return err
+			return errors.New("checking meal course by name error : " + err.Error())
 		}
 
 		if checkMeal.Number != "" {
@@ -96,7 +96,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		}
 
 		if _, err = repositories.SaveMealCourse(checkMeal); err != nil {
-			return err
+			return errors.New("save or update meal course error : " + err.Error())
 		}
 
 	}
