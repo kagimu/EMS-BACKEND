@@ -284,7 +284,7 @@ func SaveMealCourse(ctx *gin.Context) {
 	}
 
 	if err = services.SaveMealCourse(payload, user.Number); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Meal course error: " + err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "ERROR: " + err.Error()})
 		return
 	}
 
