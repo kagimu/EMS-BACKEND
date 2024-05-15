@@ -47,6 +47,7 @@ func CreateMenuItem(c *gin.Context) {
 		CampusNumber:        payload.CampusNumber,
 		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
 		UserNumber:          user.Number,
+		BaseUnitCost:        payload.BasePrice,
 	}
 
 	var duplicateMenuItem models.MenuItem

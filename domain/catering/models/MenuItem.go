@@ -11,6 +11,7 @@ type MenuItem struct {
 	Number              string              `json:"number" gorm:"size:36;unique;not null"`
 	Name                string              `json:"name" gorm:"size:50;"`
 	Code                uint64              `json:"code"`
+	BaseUnitCost        float64             `json:"base_unit_cost"`
 	Type                string              `json:"type"`
 	CampusNumber        string              `json:"campus_number" gorm:"size:36;"`
 	Campus              campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
