@@ -150,17 +150,28 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 
 }
 
-func MealCourseCalendar(schoolNumber string) (responses.MealCourseCalendarResponse, error) {
+func MealCourseCalendar(campusNumber string) (responses.MealCourseCalendarResponse, error) {
 
 	var mealCourseCalendarResponse responses.MealCourseCalendarResponse
 
+	campus, err := campusRepositories.GetCampusByNumber(campusNumber)
+
+	if err != nil {
+		return mealCourseCalendarResponse, err
+	}
+
+	if campus.Number == "" {
+		return mealCourseCalendarResponse, errors.New("invalid campus number")
+	}
+
+	schoolNumber := campus.Number
 	meal, err := repositories.GetMealCourseCountBySchoolNumber(schoolNumber)
 	if err != nil {
 		return mealCourseCalendarResponse, err
 	}
 
 	if meal.Number == "" {
-		return mealCourseCalendarResponse, errors.New("no meal courses configured for the selected school")
+		return mealCourseCalendarResponse, errors.New("no meal courses configured for the school")
 	}
 
 	courses, err := repositories.GetAllMealCoursesByMealCourseCount(meal.Number, constants.STATUS_ACTIVE)
@@ -186,10 +197,7 @@ func MealCourseCalendar(schoolNumber string) (responses.MealCourseCalendarRespon
 
 		for _, day := range _days {
 
-			item := responses.DayItemsResponse{
-				Day:   day,
-				Items: []string{"Beans", "Posho", "Rice"},
-			}
+			item := processItemsOnDayForMealCourseAtCampus(day, course.Number, campusNumber)
 
 			daysItems = append(daysItems, item)
 		}
@@ -206,6 +214,62 @@ func MealCourseCalendar(schoolNumber string) (responses.MealCourseCalendarRespon
 
 	return mealCourseCalendarResponse, nil
 
+}
+
+func processItemsOnDayForMealCourseAtCampus(day string, mealCourseNumber string, campusNumber string) responses.DayItemsResponse {
+
+	item := responses.DayItemsResponse{
+		Day:    day,
+		Active: false,
+	}
+
+	mealFeedingSession, err := repositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
+
+	if err != nil {
+		item.Error = err.Error()
+	} else {
+
+		if mealFeedingSession.Number == "" {
+			item.Error = "no feeding session set for day on this course"
+		} else {
+
+			feedingSession := mealFeedingSession.FeedingSession
+			item.Name = feedingSession.Name
+
+			itemsList, err := processFeedingSessionItemNames(feedingSession.Number)
+			if err != nil {
+				item.Error = err.Error()
+			} else {
+				item.Active = true
+				item.Items = itemsList
+			}
+		}
+
+	}
+
+	return item
+}
+
+func processFeedingSessionItemNames(feedingSessionNumber string) ([]string, error) {
+
+	var items []string
+
+	feedingSessionItems, err := repositories.GetFeedingSessionItems(feedingSessionNumber)
+	if err != nil {
+		return items, err
+	}
+
+	if len(feedingSessionItems) == 0 {
+		return items, errors.New("no menu items set")
+	}
+
+	for _, item := range feedingSessionItems {
+
+		items = append(items, item.MenuItem.Name)
+
+	}
+
+	return items, nil
 }
 
 func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.MealCourseFeedingSessionRequest) error {
