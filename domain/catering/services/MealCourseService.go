@@ -45,10 +45,25 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 
 	if oldMealCourseCount.Number != "" {
 		newMealCourseCount.Number = oldMealCourseCount.Number
+		newMealCourseCount.ID = oldMealCourseCount.ID
 	}
 
 	if _, err = repositories.SaveMealCourseCount(newMealCourseCount); err != nil {
 		return err
+	}
+
+	allOtherMealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(newMealCourseCount.Number, constants.STATUS_ACTIVE)
+	if err != nil {
+		return err
+	}
+
+	for _, otherMealCourse := range allOtherMealCourses {
+
+		otherMealCourse.Status = constants.STATUS_INACTIVE
+
+		if _, err = repositories.SaveMealCourse(otherMealCourse); err != nil {
+			return err
+		}
 	}
 
 	for _, mealCourse := range mealCourseCountRequest.Courses {
@@ -96,7 +111,7 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 		return responses.MealCourseResponse{}, err
 	}
 
-	courses, err := repositories.GetMealCourses(mealCourseCount.Number, constants.STATUS_ACTIVE)
+	courses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, constants.STATUS_ACTIVE)
 	if err != nil {
 		return responses.MealCourseResponse{}, err
 	}
@@ -140,7 +155,7 @@ func MealCourseCalendar(schoolNumber string) (responses.MealCourseCalendarRespon
 		return mealCourseCalendarResponse, errors.New("no meal courses configured for the selected school")
 	}
 
-	courses, err := repositories.GetMealCourses(meal.Number, constants.STATUS_ACTIVE)
+	courses, err := repositories.GetAllMealCoursesByMealCourseCount(meal.Number, constants.STATUS_ACTIVE)
 	if err != nil {
 		return mealCourseCalendarResponse, err
 	}

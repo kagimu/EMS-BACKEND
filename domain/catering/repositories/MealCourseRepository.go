@@ -12,14 +12,14 @@ func SaveMealCourse(mealCourse models.MealCourse) (models.MealCourse, error) {
 
 	db := config.DB
 
-	if err := db.Create(&mealCourse).Error; err != nil {
+	if err := db.Save(&mealCourse).Error; err != nil {
 		return models.MealCourse{}, err
 	}
 
 	return mealCourse, nil
 }
 
-func GetMealCourses(mealCourseCountNumber string, status string) ([]models.MealCourse, error) {
+func GetAllMealCoursesByMealCourseCount(mealCourseCountNumber string, status string) ([]models.MealCourse, error) {
 
 	db := config.DB
 
