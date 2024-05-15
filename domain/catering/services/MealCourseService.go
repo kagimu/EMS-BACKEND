@@ -79,18 +79,23 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 			Code:                  mealCourse.Code,
 		}
 
-		var oldMealCourse models.MealCourse
+		var checkMeal models.MealCourse
 
-		oldMealCourse, err = repositories.GetMealCourseByName(mealCourse.Name, oldMealCourseCount.Number)
+		checkMeal, err = repositories.GetMealCourseByName(mealCourse.Name, oldMealCourseCount.Number)
 		if err != nil {
 			return err
 		}
 
-		if oldMealCourse.Number != "" {
-			newMealCourse.Number = oldMealCourse.Number
+		if checkMeal.Number != "" {
+			checkMeal.Name = newMealCourse.Name
+			checkMeal.Status = newMealCourse.Status
+			checkMeal.UserNumber = newMealCourse.UserNumber
+			checkMeal.Code = newMealCourse.Code
+		} else {
+			checkMeal = newMealCourse
 		}
 
-		if _, err = repositories.SaveMealCourse(newMealCourse); err != nil {
+		if _, err = repositories.SaveMealCourse(checkMeal); err != nil {
 			return err
 		}
 
