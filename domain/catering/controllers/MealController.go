@@ -387,3 +387,32 @@ func AllMealCourseFeedingSessions(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
+
+func ActivateMealCourse(ctx *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ActivateMealCourseRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again: " + err.Error()})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.ActivateMealCourse(payload, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Adding feeding sessions error: "+err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, commons.Feedback("Feeding sessions successfully added"))
+
+}
