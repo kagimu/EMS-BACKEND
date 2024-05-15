@@ -40,7 +40,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		Count:        mealCourseCountRequest.Count,
 		UserNumber:   currentUserNumber,
 		Number:       uuid.NewV4().String(),
-		SchoolNumber: mealCourseCountRequest.SchoolNumber,
+		SchoolNumber: school.Number,
 	}
 
 	if oldMealCourseCount.Number != "" {
