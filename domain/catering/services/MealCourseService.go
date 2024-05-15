@@ -12,7 +12,6 @@ import (
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
-	"time"
 )
 
 func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, currentUserNumber string) error {
@@ -44,18 +43,18 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		SchoolNumber: school.Number,
 	}
 
-	if oldMealCourseCount.Number != "" {
-		newMealCourseCount.Number = oldMealCourseCount.Number
-		newMealCourseCount.ID = oldMealCourseCount.ID
-		newMealCourseCount.CreatedAt = oldMealCourseCount.CreatedAt
-		newMealCourseCount.UpdatedAt = time.Now()
+	if oldMealCourseCount.Number == "" {
+		oldMealCourseCount = newMealCourseCount
+	} else {
+		oldMealCourseCount.UserNumber = currentUserNumber
+		oldMealCourseCount.Count = mealCourseCountRequest.Count
 	}
 
-	if _, err = repositories.SaveMealCourseCount(newMealCourseCount); err != nil {
+	if _, err = repositories.SaveMealCourseCount(oldMealCourseCount); err != nil {
 		return err
 	}
 
-	allOtherMealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(newMealCourseCount.Number, constants.STATUS_ACTIVE)
+	allOtherMealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(oldMealCourseCount.Number, constants.STATUS_ACTIVE)
 	if err != nil {
 		return err
 	}
@@ -74,7 +73,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		newMealCourse := models.MealCourse{
 			Number:                uuid.NewV4().String(),
 			Name:                  mealCourse.Name,
-			MealCourseCountNumber: newMealCourseCount.Number,
+			MealCourseCountNumber: oldMealCourseCount.Number,
 			Status:                constants.STATUS_ACTIVE,
 			UserNumber:            currentUserNumber,
 			Code:                  mealCourse.Code,
@@ -82,7 +81,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 
 		var oldMealCourse models.MealCourse
 
-		oldMealCourse, err = repositories.GetMealCourseByName(mealCourse.Name, newMealCourseCount.Number)
+		oldMealCourse, err = repositories.GetMealCourseByName(mealCourse.Name, oldMealCourseCount.Number)
 		if err != nil {
 			return err
 		}
