@@ -12,6 +12,7 @@ import (
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
+	"time"
 )
 
 func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, currentUserNumber string) error {
@@ -46,6 +47,8 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 	if oldMealCourseCount.Number != "" {
 		newMealCourseCount.Number = oldMealCourseCount.Number
 		newMealCourseCount.ID = oldMealCourseCount.ID
+		newMealCourseCount.CreatedAt = oldMealCourseCount.CreatedAt
+		newMealCourseCount.UpdatedAt = time.Now()
 	}
 
 	if _, err = repositories.SaveMealCourseCount(newMealCourseCount); err != nil {
