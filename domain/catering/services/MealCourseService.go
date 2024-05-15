@@ -223,3 +223,37 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 
 	return nil
 }
+
+func MealCourseFeedingSessions(mealCourseNumber string) ([]responses.FeedingSessionResponse, error) {
+
+	var feedingSessionsResponse []responses.FeedingSessionResponse
+
+	mealCourse, err := repositories.GetMealCourseByNumber(mealCourseNumber)
+
+	if err != nil {
+		return feedingSessionsResponse, err
+	}
+
+	if mealCourse.Number == "" {
+		return feedingSessionsResponse, errors.New("invalid meal course selected")
+	}
+
+	feedingSessions, err := repositories.GetMealCourseFeedingSessionsByMealCourseNumber(mealCourse.Number)
+	if err != nil {
+		return feedingSessionsResponse, err
+	}
+
+	for _, feedingSession := range feedingSessions {
+
+		_session := feedingSession.FeedingSession
+
+		session := responses.FeedingSessionResponse{
+			Name: _session.Name,
+			Code: _session.Code,
+		}
+
+		feedingSessionsResponse = append(feedingSessionsResponse, session)
+	}
+
+	return feedingSessionsResponse, nil
+}
