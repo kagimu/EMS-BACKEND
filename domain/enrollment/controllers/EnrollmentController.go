@@ -93,6 +93,7 @@ func CreateEnrollment(c *gin.Context) {
 		enrolmentItem.EnrollmentNumber = saveEnrollment.Number
 		enrolmentItem.Quantity = item.Quantity
 		enrolmentItem.Brought = item.Brought
+		enrolmentItem.UserNumber = user.Number
 		if err := tx.Create(&enrolmentItem).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
