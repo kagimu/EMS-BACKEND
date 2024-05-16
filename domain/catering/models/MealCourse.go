@@ -3,7 +3,7 @@ package models
 import authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 
 type MealCourse struct {
-	Number                string          `json:"number" gorm:"size:36;unique;not null"`
+	Number                string          `json:"number" gorm:"size:36;unique;not null;primarykey"`
 	MealCourseCountNumber string          `json:"meal_course_count_number" gorm:"size:36;not null"`
 	MealCourseCount       MealCourseCount `gorm:"foreignKey:MealCourseCountNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Name                  string          `json:"name" gorm:"size:120;not null"`
