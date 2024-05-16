@@ -164,7 +164,7 @@ func MealCourseCalendar(campusNumber string) (responses.MealCourseCalendarRespon
 		return mealCourseCalendarResponse, errors.New("invalid campus number")
 	}
 
-	schoolNumber := campus.Number
+	schoolNumber := campus.SchoolNumber
 	meal, err := repositories.GetMealCourseCountBySchoolNumber(schoolNumber)
 	if err != nil {
 		return mealCourseCalendarResponse, err
