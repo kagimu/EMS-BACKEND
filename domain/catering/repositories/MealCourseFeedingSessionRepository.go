@@ -68,8 +68,8 @@ func GetFeedingSessionForCampusAndMealCourseAndDay(day string, mealCourseNumber 
 	var mealCourseFeedingSession models.MealCourseFeedingSession
 
 	if err := db.
-		Joins("JOIN meal_courses ON meal_courses.number = meal_course_feeding_sessions.meal_course_number").
-		Joins("JOIN meal_course_feeding_sessions ON meal_course_feeding_sessions.number = campus_meal_courses.meal_course_feeding_session_number").
+		Joins("JOIN campus_meal_courses ON meal_course_feeding_sessions.number = campus_meal_courses.meal_course_feeding_session_number").
+		Joins("JOIN meal_courses ON meal_course_feeding_sessions.meal_course_number = meal_courses.number").
 		Where("campus_meal_courses.day = ? ", day).
 		Where("meal_courses.number = ? ", mealCourseNumber).
 		Where("campus_meal_courses.campus_number = ? ", campusNumber).
