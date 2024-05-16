@@ -377,7 +377,6 @@ func SetupRoutes() *gin.Engine {
 			// application
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
-			application.GET("", applicationController.FetchApplicationsByStatus)
 			application.PUT("/:application_number", applicationController.EditApplication)
 		}
 
