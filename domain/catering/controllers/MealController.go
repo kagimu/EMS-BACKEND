@@ -322,14 +322,8 @@ func MealCourseCalendar(ctx *gin.Context) {
 		return
 	}
 
-	schoolNumber := ctx.Query("school_number")
-	if schoolNumber == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "provide school number"})
-		return
-	}
-
 	campusNumber := ctx.Query("campus_number")
-	if schoolNumber == "" {
+	if campusNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "provide campus number"})
 		return
 	}
