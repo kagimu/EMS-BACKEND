@@ -378,6 +378,7 @@ func SetupRoutes() *gin.Engine {
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
 			application.PUT("/:application_number", applicationController.EditApplication)
+			application.POST("submit-application/:application_number", applicationController.SubmitApplication)
 		}
 
 		learningMaterials := main.Group("/learning-materials")

@@ -317,7 +317,7 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 
 	var enrollments []enrollmentModel.Enrollment
 
-	if err := config.DB.Where("campus_class_number = ? AND status = ? ", assessmentMetric.CampusClassNumber, constants.STATUS_ACTIVE).Find(&enrollments).Error; err != nil {
+	if err := config.DB.Where("campus_class_number = ? AND status = ? ", assessmentMetric.CampusClassNumber, constants.StatusActive).Find(&enrollments).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
 
