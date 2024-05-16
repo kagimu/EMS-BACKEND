@@ -134,6 +134,7 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 			Name:    course.Name,
 			Code:    course.Code,
 			AddedBy: user.FirstName,
+			Number:  course.Number,
 		}
 
 		mealCourseItemResponses = append(mealCourseItemResponses, courseResponse)
