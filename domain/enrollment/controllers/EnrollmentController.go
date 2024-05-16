@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"gorm.io/gorm"
 	"net/http"
@@ -145,11 +146,9 @@ func CreateEnrollment(c *gin.Context) {
 }
 
 func FetchEnrolledStudents(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
+
+	paginatedResponse := pagination.PaginatedResponse{}
+	students := make([]responses.Enrollment, 0)
 
 	schoolNumber := c.Query("school_number")
 	streamNumber := c.Query("stream_number")
@@ -167,13 +166,12 @@ func FetchEnrolledStudents(c *gin.Context) {
 			filters.ByCampusClassNumber(campusClassNumber),
 			filters.ByStudyPeriodNumber(studyPeriodNumber),
 			filters.ByStatus(status),
+			pagination.Paginate(c, &paginatedResponse),
 		).
 		Preload("School").Preload("CampusClass").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch enrolled students"})
 		return
 	}
-
-	var students []responses.Enrollment
 
 	for _, enrollment := range enrolledStudents {
 		students = append(students, responses.Enrollment{
@@ -193,5 +191,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": students})
+	paginatedResponse.Content = students
+
+	c.JSON(http.StatusOK, paginatedResponse)
 }
