@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
@@ -163,4 +165,10 @@ func CreateUser(c *gin.Context) {
 	tx.Commit()
 
 	c.JSON(http.StatusCreated, commons.Feedback("User created successfully"))
+}
+
+func CreateUserAcc(c *gin.Context) {
+	userRepo := repository.NewSqlUserRepository(config.DB)
+	fmt.Println(userRepo)
+	//userService := services.NewUserService(userRepo)
 }

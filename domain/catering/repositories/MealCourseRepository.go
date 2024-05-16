@@ -12,14 +12,14 @@ func SaveMealCourse(mealCourse models.MealCourse) (models.MealCourse, error) {
 
 	db := config.DB
 
-	if err := db.Create(&mealCourse).Error; err != nil {
+	if err := db.Save(&mealCourse).Error; err != nil {
 		return models.MealCourse{}, err
 	}
 
 	return mealCourse, nil
 }
 
-func GetMealCourses(mealCourseCountNumber string, status string) ([]models.MealCourse, error) {
+func GetAllMealCoursesByMealCourseCount(mealCourseCountNumber string, status string) ([]models.MealCourse, error) {
 
 	db := config.DB
 
@@ -46,6 +46,26 @@ func GetMealCourseByName(name string, mealCourseCountNumber string) (models.Meal
 	if err := db.
 		Where("name = ?", name).
 		Where("meal_course_count_number = ?", mealCourseCountNumber).
+		First(&mealCourse).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return mealCourse, nil
+		}
+
+		return mealCourse, err
+	}
+
+	return mealCourse, nil
+}
+
+func GetMealCourseByNumber(mealCourseNumber string) (models.MealCourse, error) {
+
+	db := config.DB
+
+	var mealCourse models.MealCourse
+
+	if err := db.
+		Where("number = ?", mealCourseNumber).
 		First(&mealCourse).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

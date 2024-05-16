@@ -10,7 +10,7 @@ import (
 func SaveMealCourseCount(mealCourseCount models.MealCourseCount) (models.MealCourseCount, error) {
 	db := config.DB
 
-	if err := db.Create(&mealCourseCount).Error; err != nil {
+	if err := db.Save(&mealCourseCount).Error; err != nil {
 		return models.MealCourseCount{}, err
 	}
 
@@ -30,17 +30,6 @@ func GetMealCourseCountBySchoolNumber(schoolNumber string) (models.MealCourseCou
 		}
 
 		return mealCourseCount, err
-	}
-
-	return mealCourseCount, nil
-}
-
-func UpdateMealCourseCount(mealCourseCount models.MealCourseCount) (models.MealCourseCount, error) {
-
-	db := config.DB
-
-	if err := db.Updates(&mealCourseCount).Error; err != nil {
-		return models.MealCourseCount{}, err
 	}
 
 	return mealCourseCount, nil

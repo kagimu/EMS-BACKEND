@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type Pagination struct {
+type PaginatedResponse struct {
 	PerPage       int         `json:"per_page"`
 	Page          int         `json:"page"`
 	SortColumn    string      `json:"sort_column"`
@@ -19,7 +19,7 @@ type Pagination struct {
 	Content       interface{} `json:"content"`
 }
 
-func Paginate(ctx *gin.Context, pagination *Pagination) func(db *gorm.DB) *gorm.DB {
+func Paginate(ctx *gin.Context, pagination *PaginatedResponse) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		pageStr := html.EscapeString(strings.TrimSpace(strings.ToLower(ctx.DefaultQuery("page", "1"))))
 		page, _ := strconv.Atoi(pageStr)

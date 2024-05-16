@@ -93,7 +93,7 @@ func GetAllInvoicedAmount(userNumber string) (float64, error) {
 	if err := db.Model(&invoiceModel.Invoice{}).
 		Joins("JOIN invoice_items ON invoices.number = invoice_items.invoice_number").
 		Where("invoices.user_number = ? ", userNumber).
-		Select("sum(invoice_items.quantity * invoice_items.unit_price)").
+		Select("COALESCE(sum(invoice_items.quantity * invoice_items.unit_price), 0)").
 		Scan(&totalAmount).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

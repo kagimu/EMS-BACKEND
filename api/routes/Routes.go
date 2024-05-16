@@ -377,7 +377,6 @@ func SetupRoutes() *gin.Engine {
 			// application
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
-			application.GET("", applicationController.FetchApplicationsByStatus)
 			application.PUT("/:application_number", applicationController.EditApplication)
 		}
 
@@ -728,6 +727,9 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("meal-courses", cateringController.SaveMealCourse)
 			catering.GET("meal-courses", cateringController.GetMealCourses)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
+			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
+			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)
+			catering.POST("activate-meal-course", cateringController.ActivateMealCourse)
 		}
 	}
 
