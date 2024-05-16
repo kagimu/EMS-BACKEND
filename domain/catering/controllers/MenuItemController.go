@@ -34,7 +34,7 @@ func CreateMenuItem(c *gin.Context) {
 		return
 	}
 
-	if payload.Type != constants.TYPE_ASSEMBLED && payload.Type != constants.TYPE_ITEM {
+	if payload.Type != constants.TypeAssembled && payload.Type != constants.TypeItem {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid menu item type"})
 		return
 	}

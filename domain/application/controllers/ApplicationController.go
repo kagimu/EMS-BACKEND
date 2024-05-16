@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"net/http"
@@ -165,4 +166,24 @@ func FetchApplicationByNumber(c *gin.Context, applicationNumber string) (*models
 	}
 
 	return &application, nil
+}
+
+func SubmitApplication(context *gin.Context) {
+
+	var applicationNumber = context.Param("application_number")
+	var application models.Application
+	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+		return
+
+	}
+
+	application.Status = constants.StatusSubmitted
+
+	if err := config.DB.Save(&application).Error; err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application"})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully"))
 }

@@ -44,7 +44,7 @@ func CreateReportSettings(c *gin.Context) {
 	//check for existing report settings with the same study period number, academic year number and campus class number and status active
 
 	var existingReportSettings models.ReportSetting
-	if err := config.DB.Where("study_period_number = ? AND academic_year_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.AcademicYearNumber, payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&existingReportSettings).Error; err == nil {
+	if err := config.DB.Where("study_period_number = ? AND academic_year_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.AcademicYearNumber, payload.CampusClassNumber, constants.StatusActive).First(&existingReportSettings).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class  already exists"})
 		return
 
@@ -57,7 +57,7 @@ func CreateReportSettings(c *gin.Context) {
 		AcademicYearNumber: payload.AcademicYearNumber,
 		CampusClassNumber:  payload.CampusClassNumber,
 		Columns:            payload.Columns,
-		Status:             constants.STATUS_ACTIVE,
+		Status:             constants.StatusActive,
 		UserNumber:         c.Request.Header["User-Number"][0],
 		Code:               payload.Code,
 	}
@@ -347,7 +347,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	// find the latest report settings for the class
 	var reportSetting models.ReportSetting
-	if err := config.DB.Where("campus_class_number = ? AND status = ?", campusClass.Number, constants.STATUS_ACTIVE).First(&reportSetting).Error; err != nil {
+	if err := config.DB.Where("campus_class_number = ? AND status = ?", campusClass.Number, constants.StatusActive).First(&reportSetting).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
 
@@ -556,7 +556,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 
 	//check if report settings exists
 	var reportSettings models.ReportSetting
-	if err := config.DB.Where("campus_class_number = ? AND status = ?", payload.CampusClassNumber, constants.STATUS_ACTIVE).First(&reportSettings).Error; err != nil {
+	if err := config.DB.Where("campus_class_number = ? AND status = ?", payload.CampusClassNumber, constants.StatusActive).First(&reportSettings).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class does not exist"})
 			return

@@ -61,7 +61,7 @@ func CreateEnrollment(c *gin.Context) {
 		EnrollmentDate:    payload.EnrollmentDate,
 		StudyPeriodNumber: admission.StudyPeriodNumber,
 		CampusClassNumber: admission.CampusClassNumber,
-		Status:            constants.STATUS_ACTIVE,
+		Status:            constants.StatusActive,
 		UserNumber:        user.Number,
 		ContinuingStudent: payload.ContinuingStudent,
 	}
@@ -111,7 +111,7 @@ func CreateEnrollment(c *gin.Context) {
 	}
 
 	if admission.Number != "" {
-		admission.Status = constants.STATUS_ENROLLED
+		admission.Status = constants.StatusEnrolled
 		if err := tx.Save(&admission).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update admission status"})
@@ -121,7 +121,7 @@ func CreateEnrollment(c *gin.Context) {
 
 	// find all other enrollments for the student and set their status to inactive
 	var enrollments []models.Enrollment
-	if err := tx.Where("student_number = ? AND number != ? AND status = ? ", payload.StudentNumber, saveEnrollment.Number, constants.STATUS_ACTIVE).Find(&enrollments).Error; err != nil {
+	if err := tx.Where("student_number = ? AND number != ? AND status = ? ", payload.StudentNumber, saveEnrollment.Number, constants.StatusActive).Find(&enrollments).Error; err != nil {
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			tx.Rollback()
@@ -132,7 +132,7 @@ func CreateEnrollment(c *gin.Context) {
 	}
 
 	for _, enrollment := range enrollments {
-		enrollment.Status = constants.STATUS_INACTIVE
+		enrollment.Status = constants.StatusInactive
 		if err := tx.Save(&enrollment).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update other enrollments status"})

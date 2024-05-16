@@ -78,7 +78,7 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 			return errors.New("invalid menu item ID")
 		}
 
-		if menuItem.Type == constants.TYPE_ASSEMBLED {
+		if menuItem.Type == constants.TypeAssembled {
 			err = assembleItem(transaction, currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
 			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber)

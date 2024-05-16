@@ -304,9 +304,9 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 	var newStatus string
 
 	if minInvoiceResponse.PaidAmount >= minInvoiceResponse.TotalAmount {
-		newStatus = constants.STATUS_PAID
+		newStatus = constants.StatusPaid
 	} else {
-		newStatus = constants.STATUS_PARTIALLY_PAID
+		newStatus = constants.StatusPartiallyPaid
 	}
 
 	if newStatus != invoice.Status {
