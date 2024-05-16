@@ -5,6 +5,7 @@ import (
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"net/http"
 
@@ -182,11 +183,15 @@ func FetchAdmissions(c *gin.Context) {
 		return
 	}
 
+	paginatedResponse := pagination.PaginatedResponse{}
+	adms := make([]models.Admission, 0)
+
 	campusNumber := c.Query("campus_number")
 	studyPeriodNumber := c.Query("study_period_number")
 	streamNumber := c.Query("stream_number")
 	interviewNumber := c.Query("interview_number")
 	schoolNumber := c.Query("school_number")
+	campusClassNumber := c.Query("campus_class_number")
 
 	var admissions []models.Admission
 
@@ -196,12 +201,20 @@ func FetchAdmissions(c *gin.Context) {
 		filters.ByStreamNumber(streamNumber),
 		filters.ByInterviewNumber(interviewNumber),
 		filters.BySchoolNumber(schoolNumber),
+		filters.ByCampusClassNumber(campusClassNumber),
+		pagination.Paginate(c, &paginatedResponse),
 	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": admissions})
+	if admissions != nil {
+		adms = admissions
+	}
+
+	paginatedResponse.Content = adms
+
+	c.JSON(http.StatusOK, paginatedResponse)
 }
 
 func FetchAdmissionById(c *gin.Context) {
