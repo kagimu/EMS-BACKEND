@@ -287,7 +287,7 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 
 	for _, feedingSession := range mealCourseFeedingSessionRequest.FeedingSessions {
 
-		mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Name, feedingSession)
+		mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Number, feedingSession)
 		if err != nil {
 			return err
 		}
