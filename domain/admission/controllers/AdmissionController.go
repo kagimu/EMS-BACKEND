@@ -151,10 +151,11 @@ func CreateAdmission(c *gin.Context) {
 			return
 		}
 
-		for _, admissionOfferConditionNumber := range payload.Items {
+		for _, admissionOfferCondition := range payload.Items {
 			saveAdmissionOfferConditions := models.AdmissionCondition{
 				AdmissionNumber: saveAdmission.Number,
-				ItemNumber:      admissionOfferConditionNumber,
+				ItemNumber:      admissionOfferCondition.ItemNumber,
+				Quantity:        admissionOfferCondition.Quantity,
 				UserNumber:      user.Number,
 			}
 
