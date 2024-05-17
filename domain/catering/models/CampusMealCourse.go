@@ -13,7 +13,7 @@ type CampusMealCourse struct {
 	User                           userModel.User           `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber                   string                   `json:"campus_number" gorm:"size:36;not null"`
 	Campus                         campusModel.Campus       `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Day                            string                   `json:"day" gorm:"size:4;unique;not null"`
+	Day                            string                   `json:"day" gorm:"size:4;not null"`
 	MealCourseFeedingSessionNumber string                   `json:"meal_course_feeding_session_number" gorm:"size:36;not null"`
 	MealCourseFeedingSession       MealCourseFeedingSession `gorm:"foreignKey:MealCourseFeedingSessionNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
