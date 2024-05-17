@@ -77,8 +77,8 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	tx := config.DB.Begin()
 	for _, studentPayload := range payload.StudentNumber {
+		tx := config.DB.Begin()
 		var student studentModels.Student
 		if err := tx.First(&student, "number = ?", studentPayload).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
@@ -162,9 +162,9 @@ func CreateAdmission(c *gin.Context) {
 			}
 		}
 
-	}
-
-	if err := tx.Commit().Error; err != nil {
+		if err := tx.Commit().Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction"})
+		}
 
 	}
 
