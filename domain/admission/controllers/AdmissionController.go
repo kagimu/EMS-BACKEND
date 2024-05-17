@@ -91,16 +91,12 @@ func CreateAdmission(c *gin.Context) {
 			return
 		}
 
-		updateStudent := studentModels.Student{
-			APNStatus: "Archive",
-			ADN:       generateADN,
-		}
-
-		if err := tx.Model(&student).Where("number= ?", studentPayload).Updates(updateStudent).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
+		student.APNStatus = "Archive"
+		student.ADN = generateADN
+		if err := tx.Save(&student).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
 			return
 		}
-
 		// Update the application status
 		applicationNumber := student.ApplicationNumber
 		application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
