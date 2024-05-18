@@ -196,3 +196,28 @@ func FetchEnrolledStudents(c *gin.Context) {
 
 	c.JSON(http.StatusOK, paginatedResponse)
 }
+
+func TerminateStudentEnrollment(context *gin.Context) {
+
+	studentNumber := context.Param("student_number")
+
+	// get the enrollment number
+	var enrollment models.Enrollment
+	if err := config.DB.Where("student_number = ? AND status = ?", studentNumber, constants.StatusActive).First(&enrollment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Student is not enrolled"})
+			return
+		}
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch student enrollment"})
+		return
+	}
+
+	// update the enrollment status to inactive
+	enrollment.Status = constants.StatusTerminated
+	if err := config.DB.Save(&enrollment).Error; err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to terminate student enrollment"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Student enrollment terminated successfully"})
+}
