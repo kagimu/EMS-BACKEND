@@ -25,4 +25,5 @@ type Enrollment struct {
 	Status            string `json:"status"`
 	EnrollmentDate    string `json:"enrollment_date"`
 	ContinuingStudent bool   `json:"continuing_student"`
+	AcademicYear      string `json:"academic_year"`
 }

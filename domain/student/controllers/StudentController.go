@@ -252,6 +252,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	var enrollment enrollmentModel.Enrollment
 	if err := config.DB.Where("student_number = ?", studentNumber).
 		Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").
+		Preload("StudyPeriod.AcademicYear").
 		Preload("Campus").Preload("School").
 		Order("created_at desc").First(&enrollment).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -272,6 +273,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	response.Campus = enrollment.Campus.Name
 	response.StudyPeriod = enrollment.StudyPeriod.StudyPeriodName
 	response.ContinuingStudent = enrollment.ContinuingStudent
+	response.AcademicYear = enrollment.StudyPeriod.AcademicYear.AcademicYearName
 
 	detailedStudent.CurrentEnrollment = response
 	//enrollmentResponse.Stream =
