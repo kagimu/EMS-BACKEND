@@ -202,3 +202,15 @@ func ByRefNumber(refNumber string) func(db *gorm.DB) *gorm.DB {
 		return db
 	}
 }
+
+func ByMetricNumber(metricNumber string) func(*gorm.DB) *gorm.DB {
+
+	return func(db *gorm.DB) *gorm.DB {
+
+		if metricNumber != "" {
+			return db.Where("metric_number = ?", metricNumber)
+		}
+
+		return db
+	}
+}
