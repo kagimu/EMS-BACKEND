@@ -533,7 +533,7 @@ func SetupRoutes() *gin.Engine {
 				permissions.GET("groups", authController.FetchPermissionGroups)
 			}
 
-			roles := settings.Group("settings/roles")
+			roles := settings.Group("roles")
 			{
 				roles.POST("", permissionController.CreateRole)
 				roles.GET("", permissionController.FetchRoles)
