@@ -251,7 +251,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	// find the latest enrollment for the student
 	var enrollment enrollmentModel.Enrollment
 	if err := config.DB.Where("student_number = ?", studentNumber).
-		Preload("CampusClass").Preload("Stream").Preload("AcademicYear").Preload("StudyPeriod").
+		Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").
 		Preload("Campus").Preload("School").
 		Order("created_at desc").First(&enrollment).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -262,18 +262,18 @@ func FetchStudentByNumber(c *gin.Context) {
 		return
 	}
 
-	var enrollmentResponse = enrollmentResponse.Enrollment{}
-	enrollmentResponse.StudentNumber = enrollment.StudentNumber
-	enrollmentResponse.EnrollmentDate = enrollment.EnrollmentDate
-	enrollmentResponse.Class = enrollment.CampusClass.ClassName
-	enrollmentResponse.Status = enrollment.Status
-	enrollmentResponse.Stream = enrollment.Stream.Name
-	enrollmentResponse.School = enrollment.School.Name
-	enrollmentResponse.Campus = enrollment.Campus.Name
-	enrollmentResponse.StudyPeriod = enrollment.StudyPeriod.StudyPeriodName
-	enrollmentResponse.ContinuingStudent = enrollment.ContinuingStudent
+	var response = enrollmentResponse.Enrollment{}
+	response.StudentNumber = enrollment.StudentNumber
+	response.EnrollmentDate = enrollment.EnrollmentDate
+	response.Class = enrollment.CampusClass.ClassName
+	response.Status = enrollment.Status
+	response.Stream = enrollment.Stream.Name
+	response.School = enrollment.School.Name
+	response.Campus = enrollment.Campus.Name
+	response.StudyPeriod = enrollment.StudyPeriod.StudyPeriodName
+	response.ContinuingStudent = enrollment.ContinuingStudent
 
-	detailedStudent.CurrentEnrollment = enrollmentResponse
+	detailedStudent.CurrentEnrollment = response
 	//enrollmentResponse.Stream =
 
 	c.JSON(http.StatusOK, detailedStudent)
