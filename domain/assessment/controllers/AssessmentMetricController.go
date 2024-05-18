@@ -46,7 +46,6 @@ func CreateAssessmentMetric(c *gin.Context) {
 		CampusClassNumber:     payload.CampusClassNumber,
 		MetricNumber:          payload.MetricNumber,
 		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
-		Weight:                payload.Weight,
 		Description:           payload.Description,
 		MaxScore:              payload.MaxScore,
 	}

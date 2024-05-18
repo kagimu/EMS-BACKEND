@@ -116,10 +116,6 @@ func EditProduct(c *gin.Context) {
 }
 
 func FetchProducts(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
 
 	var products []productModels.Product
 	if err := config.DB.Preload("Item").Find(&products).Error; err != nil {
