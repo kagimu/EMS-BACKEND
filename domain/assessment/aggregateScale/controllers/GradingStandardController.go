@@ -71,6 +71,7 @@ func FetchGradingStandards(ctx *gin.Context) {
 	var gss = make([]responses.GradingStandardResponse, 0)
 	if campusClassNumber == "" {
 		ctx.JSON(http.StatusOK, gin.H{"data": gss})
+		return
 	}
 	var gradingStandards []models.GradingStandard
 	if err := config.DB.Scopes(filters.ByCampusClassNumber(campusClassNumber),
