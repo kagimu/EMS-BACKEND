@@ -98,27 +98,24 @@ func FetchServices(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch services"})
 		return
 	}
+
+	c.JSON(http.StatusOK, services)
+}
+
+func FetchAllItems(c *gin.Context) {
 	var items = make([]models.Item, 0)
 
-	filter := c.Query("filter")
-	if filter != "" {
-
-		var item []models.Item
-		if err := config.DB.Find(&item).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch items"})
-			return
-		}
-
-		for _, service := range item {
-			if service.Name == filter {
-				items = append(items, service)
-			}
-		}
-		c.JSON(http.StatusOK, items)
+	var item []models.Item
+	if err := config.DB.Find(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch items"})
 		return
 	}
 
-	c.JSON(http.StatusOK, services)
+	for _, service := range item {
+		items = append(items, service)
+	}
+	c.JSON(http.StatusOK, items)
+	return
 }
 
 func EditService(c *gin.Context) {

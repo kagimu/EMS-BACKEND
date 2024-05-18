@@ -459,6 +459,11 @@ func SetupRoutes() *gin.Engine {
 			products.DELETE(":product_number", productController.DeleteProduct)
 		}
 
+		items := main.Group("/items")
+		{
+			items.GET("", serviceController.FetchAllItems)
+		}
+
 		admission := main.Group("/admissions")
 		{
 			admission.POST("", admissionController.CreateAdmission)
