@@ -32,7 +32,7 @@ func FetchUsers(c *gin.Context) {
 
 	type CLeanUser struct {
 		models.User
-		Roles []string
+		Roles []string `json:"roles"`
 	}
 
 	var cleanUsers = make([]CLeanUser, 0)

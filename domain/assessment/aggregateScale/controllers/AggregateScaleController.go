@@ -66,8 +66,8 @@ func CreateAggregateScale(c *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Where("code = ?", saveAggregateScale.Code).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale code"})
+	if err := config.DB.Where("code = ? AND campus_class_number = ? ", saveAggregateScale.Code, saveAggregateScale.CampusClassNumber).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This code has already been used on this class"})
 		return
 	}
 

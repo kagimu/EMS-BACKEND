@@ -52,6 +52,17 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
+	var duplicate models.AssessmentGrade
+	if err := config.DB.Where("name = ? AND campus_class_number = ? AND grading_standard_number = ? ", payload.Name, payload.CampusClassNumber).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale name on this class"})
+		return
+	}
+
+	if err := config.DB.Where("code = ? AND campus_class_number = ? ", payload.Code, payload.CampusClassNumber).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This code has already been used on this class"})
+		return
+	}
+
 	saveAssessmentGrade := models.AssessmentGrade{
 		Code:              payload.Code,
 		CampusNumber:      payload.CampusNumber,
