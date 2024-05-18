@@ -220,10 +220,6 @@ func DeleteStudent(c *gin.Context) {
 }
 
 func FetchStudentByNumber(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
-		return
-	}
 
 	var student models.Student
 	studentNumber := c.Param("student_number")
@@ -269,8 +265,13 @@ func FetchStudentByNumber(c *gin.Context) {
 	var enrollmentResponse = enrollmentResponse.Enrollment{}
 	enrollmentResponse.StudentNumber = enrollment.StudentNumber
 	enrollmentResponse.EnrollmentDate = enrollment.EnrollmentDate
-	enrollmentResponse.Class = enrollment.CampusClassNumber
+	enrollmentResponse.Class = enrollment.CampusClass.ClassName
 	enrollmentResponse.Status = enrollment.Status
+	enrollmentResponse.Stream = enrollment.Stream.Name
+	enrollmentResponse.School = enrollment.School.Name
+	enrollmentResponse.Campus = enrollment.Campus.Name
+	enrollmentResponse.StudyPeriod = enrollment.StudyPeriod.StudyPeriodName
+	enrollmentResponse.ContinuingStudent = enrollment.ContinuingStudent
 
 	detailedStudent.CurrentEnrollment = enrollmentResponse
 	//enrollmentResponse.Stream =
