@@ -254,7 +254,10 @@ func FetchStudentByNumber(c *gin.Context) {
 
 	// find the latest enrollment for the student
 	var enrollment enrollmentModel.Enrollment
-	if err := config.DB.Where("student_number = ?", studentNumber).Order("created_at desc").First(&enrollment).Error; err != nil {
+	if err := config.DB.Where("student_number = ?", studentNumber).
+		Preload("CampusClass").Preload("Stream").Preload("AcademicYear").Preload("StudyPeriod").
+		Preload("Campus").Preload("School").
+		Order("created_at desc").First(&enrollment).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
