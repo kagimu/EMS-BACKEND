@@ -56,6 +56,7 @@ func CreateEnrollment(c *gin.Context) {
 	saveEnrollment := models.Enrollment{
 		Number:            uuid.NewV4().String(),
 		StudentNumber:     payload.StudentNumber,
+		StreamNumber:      payload.StreamNumber,
 		CampusNumber:      admission.CampusNumber,
 		SchoolNumber:      admission.SchoolNumber,
 		EnrollmentDate:    payload.EnrollmentDate,
