@@ -173,7 +173,7 @@ func Init() error {
 		&cateringModels.FeedingSessionItem{},
 		&cateringModels.FeedingGroupUser{},
 		&cateringModels.FeedingGroupSession{},
-		&cateringModels.FeedingPerGroup{},
+		//&cateringModels.GroupMealCourse{},
 		&cateringModels.FeedingAllGroups{},
 		&cateringModels.Meal{},
 		&timetableModels.StudyingTimeBlock{},
@@ -189,6 +189,7 @@ func Init() error {
 		&enrollmentModel.EnrollmentItem{},
 		&cateringModels.MealCourseFeedingSession{},
 		&cateringModels.CampusMealCourse{},
+		&cateringModels.FeedingGroupMealCourse{},
 	)
 
 	if err != nil {
