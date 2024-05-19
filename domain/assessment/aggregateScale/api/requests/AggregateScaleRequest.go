@@ -9,11 +9,23 @@ type AggregateScaleRequest struct {
 	Weight                float64  `json:"weight"`
 	Description           string   `json:"description"`
 	CampusNumber          string   `json:"campus_number"`
-	Classes               []string `json:"classes"`
 	Name                  string   `json:"name"`
 	Illustration          string   `json:"illustration"`
 	GradingStandardNumber string   `json:"grading_standard_number"`
-	CampusClassNumber     string   `json:"campus_class_number"`
+	CampusClassNumber     []string `json:"campus_class_number"`
+}
+
+type EditAggregateScaleRequest struct {
+	Code                  int64   `json:"code"`
+	MinValue              float64 `json:"min_value"`
+	MaxValue              float64 `json:"max_value"`
+	Weight                float64 `json:"weight"`
+	Description           string  `json:"description"`
+	CampusNumber          string  `json:"campus_number"`
+	Name                  string  `json:"name"`
+	Illustration          string  `json:"illustration"`
+	GradingStandardNumber string  `json:"grading_standard_number"`
+	CampusClassNumber     string  `json:"campus_class_number"`
 }
 
 func (a *AggregateScaleRequest) Validate() error {
@@ -30,7 +42,7 @@ func (a *AggregateScaleRequest) Validate() error {
 	if a.MaxValue < 0 {
 		return errors.New("maximum value must be greater than 0")
 	}
-	if len(a.Classes) < 1 {
+	if len(a.CampusClassNumber) < 1 {
 		return errors.New("at-least one  class number is required")
 	}
 	if a.CampusNumber == "" {

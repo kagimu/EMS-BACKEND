@@ -45,7 +45,7 @@ func CreateAggregateScale(c *gin.Context) {
 		}
 	}
 
-	for _, class := range payload.Classes {
+	for _, class := range payload.CampusClassNumber {
 
 		saveAggregateScale := models.AggregateScale{
 			Code:                  payload.Code,
@@ -136,7 +136,7 @@ func EditAggregateScale(c *gin.Context) {
 		return
 	}
 
-	var payload requests.AggregateScaleRequest
+	var payload requests.EditAggregateScaleRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
