@@ -5,6 +5,7 @@ import (
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"net/http"
 
@@ -76,8 +77,8 @@ func CreateAdmission(c *gin.Context) {
 		return
 	}
 
-	tx := config.DB.Begin()
 	for _, studentPayload := range payload.StudentNumber {
+		tx := config.DB.Begin()
 		var student studentModels.Student
 		if err := tx.First(&student, "number = ?", studentPayload).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
@@ -90,16 +91,12 @@ func CreateAdmission(c *gin.Context) {
 			return
 		}
 
-		updateStudent := studentModels.Student{
-			APNStatus: "Archive",
-			ADN:       generateADN,
-		}
-
-		if err := tx.Model(&student).Where("number= ?", studentPayload).Updates(updateStudent).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
+		student.APNStatus = "Archive"
+		student.ADN = generateADN
+		if err := tx.Save(&student).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
 			return
 		}
-
 		// Update the application status
 		applicationNumber := student.ApplicationNumber
 		application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
@@ -150,10 +147,11 @@ func CreateAdmission(c *gin.Context) {
 			return
 		}
 
-		for _, admissionOfferConditionNumber := range payload.Items {
+		for _, admissionOfferCondition := range payload.Items {
 			saveAdmissionOfferConditions := models.AdmissionCondition{
 				AdmissionNumber: saveAdmission.Number,
-				ItemNumber:      admissionOfferConditionNumber,
+				ItemNumber:      admissionOfferCondition.ItemNumber,
+				Quantity:        admissionOfferCondition.Quantity,
 				UserNumber:      user.Number,
 			}
 
@@ -164,9 +162,9 @@ func CreateAdmission(c *gin.Context) {
 			}
 		}
 
-	}
-
-	if err := tx.Commit().Error; err != nil {
+		if err := tx.Commit().Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction"})
+		}
 
 	}
 
@@ -182,11 +180,15 @@ func FetchAdmissions(c *gin.Context) {
 		return
 	}
 
+	paginatedResponse := pagination.PaginatedResponse{}
+	adms := make([]models.Admission, 0)
+
 	campusNumber := c.Query("campus_number")
 	studyPeriodNumber := c.Query("study_period_number")
 	streamNumber := c.Query("stream_number")
 	interviewNumber := c.Query("interview_number")
 	schoolNumber := c.Query("school_number")
+	campusClassNumber := c.Query("campus_class_number")
 
 	var admissions []models.Admission
 
@@ -196,12 +198,20 @@ func FetchAdmissions(c *gin.Context) {
 		filters.ByStreamNumber(streamNumber),
 		filters.ByInterviewNumber(interviewNumber),
 		filters.BySchoolNumber(schoolNumber),
+		filters.ByCampusClassNumber(campusClassNumber),
+		pagination.Paginate(c, &paginatedResponse),
 	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": admissions})
+	if admissions != nil {
+		adms = admissions
+	}
+
+	paginatedResponse.Content = adms
+
+	c.JSON(http.StatusOK, paginatedResponse)
 }
 
 func FetchAdmissionById(c *gin.Context) {
@@ -232,5 +242,22 @@ func FetchItemsAddedOnAdmission(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": items})
+	type Item struct {
+		ItemNumber string  `json:"item_number"`
+		Cost       float64 `json:"cost"`
+		ItemName   string  `json:"item_name"`
+		Quantity   float64 `json:"quantity"`
+	}
+	filteredItems := make([]Item, 0)
+
+	for _, item := range items {
+		filteredItems = append(filteredItems, Item{
+			ItemNumber: item.ItemNumber,
+			ItemName:   item.Item.Name,
+			Cost:       item.Item.Cost,
+			Quantity:   item.Quantity,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": filteredItems})
 }

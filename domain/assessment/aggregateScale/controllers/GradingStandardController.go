@@ -10,6 +10,7 @@ import (
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"net/http"
 )
 
 func CreateGradingStandard(ctx *gin.Context) {
@@ -66,6 +67,12 @@ func CreateGradingStandard(ctx *gin.Context) {
 func FetchGradingStandards(ctx *gin.Context) {
 	campusClassNumber := ctx.Query("campus_class_number")
 	campusNumber := ctx.Query("campus_number")
+
+	var gss = make([]responses.GradingStandardResponse, 0)
+	if campusClassNumber == "" {
+		ctx.JSON(http.StatusOK, gin.H{"data": gss})
+		return
+	}
 	var gradingStandards []models.GradingStandard
 	if err := config.DB.Scopes(filters.ByCampusClassNumber(campusClassNumber),
 		filters.ByCampusNumber(campusNumber)).Preload("Campus").Preload("CampusClass").Find(&gradingStandards).Error; err != nil {

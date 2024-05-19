@@ -52,35 +52,44 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	saveAssessmentGrade := models.AssessmentGrade{
-		Code:              payload.Code,
-		CampusNumber:      payload.CampusNumber,
-		Number:            uuid.NewV4().String(),
-		Name:              payload.Name,
-		Description:       payload.Description,
-		MinimumPoints:     payload.MinimumPoints,
-		MaximumPoints:     payload.MaximumPoints,
-		Abbreviation:      payload.Abbreviation,
-		Remarks:           payload.Remarks,
-		Illustration:      fileName,
-		CampusClassNumber: payload.CampusClassNumber,
-		UserNumber:        user.Number,
+	var duplicate models.AssessmentGrade
+	if err := config.DB.Where("name = ? AND campus_class_number = ? AND grading_standard_number = ? ", payload.Name, payload.CampusClassNumber).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale name on this class"})
+		return
 	}
 
-	if err := config.DB.Create(&saveAssessmentGrade).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment grade"})
+	if err := config.DB.Where("code = ? AND campus_class_number = ? ", payload.Code, payload.CampusClassNumber).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This code has already been used on this class"})
 		return
+	}
+
+	for _, class := range payload.CampusClassNumber {
+
+		saveAssessmentGrade := models.AssessmentGrade{
+			Code:              payload.Code,
+			CampusNumber:      payload.CampusNumber,
+			Number:            uuid.NewV4().String(),
+			Name:              payload.Name,
+			Description:       payload.Description,
+			MinimumPoints:     payload.MinimumPoints,
+			MaximumPoints:     payload.MaximumPoints,
+			Abbreviation:      payload.Abbreviation,
+			Remarks:           payload.Remarks,
+			Illustration:      fileName,
+			CampusClassNumber: class,
+			UserNumber:        user.Number,
+		}
+
+		if err := config.DB.Create(&saveAssessmentGrade).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment grade"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Assessment grade created successfully"})
 }
 
 func FetchAssessmentGrades(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
 
 	campusClassNumber := c.Query("campus_class_number")
 	campusNumber := c.Query("campus_number")
@@ -119,7 +128,7 @@ func EditAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	var payload requests.AssessmentGradeRequest
+	var payload requests.EditAssessmentGradeRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return

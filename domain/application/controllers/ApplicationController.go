@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -55,6 +58,9 @@ func FetchApplications(c *gin.Context) {
 		return
 	}
 
+	apps := make([]models.Application, 0)
+	var paginationResponse pagination.PaginatedResponse
+
 	var applications []models.Application
 
 	//check for user account type and return applications accordingly
@@ -68,44 +74,28 @@ func FetchApplications(c *gin.Context) {
 		}
 
 	} else {
-		if err := config.DB.Model(&models.Application{}).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications).Error; err != nil {
+		if err := config.DB.Model(&models.Application{}).
+			Preload("Student").Preload("Parent").
+			Preload("PreviousSchools").
+			Scopes(
+				filters.ByStatus(c.Query("status")),
+				pagination.Paginate(c, &paginationResponse),
+			).
+			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "application fetching failed",
 			})
 			return
 		}
+
+		if applications != nil {
+			apps = applications
+		}
+		paginationResponse.Content = apps
+
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"data":    applications,
-		"message": "applications fetched successfully",
-	})
-}
-
-func FetchApplicationsByStatus(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "User not found",
-		})
-		return
-	}
-
-	status := c.Query("status")
-
-	var applications []models.Application
-	if err := config.DB.Where("status = ?", status).Find(&applications).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Application fetching failed",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"data":    applications,
-		"message": "Applications fetched successfully",
-	})
+	c.JSON(http.StatusOK, paginationResponse)
 }
 
 func EditApplication(c *gin.Context) {
@@ -176,4 +166,24 @@ func FetchApplicationByNumber(c *gin.Context, applicationNumber string) (*models
 	}
 
 	return &application, nil
+}
+
+func SubmitApplication(context *gin.Context) {
+
+	var applicationNumber = context.Param("application_number")
+	var application models.Application
+	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+		return
+
+	}
+
+	application.Status = constants.StatusSubmitted
+
+	if err := config.DB.Save(&application).Error; err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application"})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully"))
 }

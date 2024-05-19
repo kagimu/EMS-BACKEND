@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"gorm.io/gorm"
 	"net/http"
@@ -55,12 +56,13 @@ func CreateEnrollment(c *gin.Context) {
 	saveEnrollment := models.Enrollment{
 		Number:            uuid.NewV4().String(),
 		StudentNumber:     payload.StudentNumber,
+		StreamNumber:      payload.StreamNumber,
 		CampusNumber:      admission.CampusNumber,
 		SchoolNumber:      admission.SchoolNumber,
 		EnrollmentDate:    payload.EnrollmentDate,
 		StudyPeriodNumber: admission.StudyPeriodNumber,
 		CampusClassNumber: admission.CampusClassNumber,
-		Status:            constants.STATUS_ACTIVE,
+		Status:            constants.StatusActive,
 		UserNumber:        user.Number,
 		ContinuingStudent: payload.ContinuingStudent,
 	}
@@ -93,6 +95,7 @@ func CreateEnrollment(c *gin.Context) {
 		enrolmentItem.EnrollmentNumber = saveEnrollment.Number
 		enrolmentItem.Quantity = item.Quantity
 		enrolmentItem.Brought = item.Brought
+		enrolmentItem.UserNumber = user.Number
 		if err := tx.Create(&enrolmentItem).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
@@ -109,7 +112,7 @@ func CreateEnrollment(c *gin.Context) {
 	}
 
 	if admission.Number != "" {
-		admission.Status = constants.STATUS_ENROLLED
+		admission.Status = constants.StatusEnrolled
 		if err := tx.Save(&admission).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update admission status"})
@@ -119,7 +122,7 @@ func CreateEnrollment(c *gin.Context) {
 
 	// find all other enrollments for the student and set their status to inactive
 	var enrollments []models.Enrollment
-	if err := tx.Where("student_number = ? AND number != ? AND status = ? ", payload.StudentNumber, saveEnrollment.Number, constants.STATUS_ACTIVE).Find(&enrollments).Error; err != nil {
+	if err := tx.Where("student_number = ? AND number != ? AND status = ? ", payload.StudentNumber, saveEnrollment.Number, constants.StatusActive).Find(&enrollments).Error; err != nil {
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			tx.Rollback()
@@ -130,7 +133,7 @@ func CreateEnrollment(c *gin.Context) {
 	}
 
 	for _, enrollment := range enrollments {
-		enrollment.Status = constants.STATUS_INACTIVE
+		enrollment.Status = constants.StatusInactive
 		if err := tx.Save(&enrollment).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update other enrollments status"})
@@ -144,11 +147,9 @@ func CreateEnrollment(c *gin.Context) {
 }
 
 func FetchEnrolledStudents(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
+
+	paginatedResponse := pagination.PaginatedResponse{}
+	students := make([]responses.Enrollment, 0)
 
 	schoolNumber := c.Query("school_number")
 	streamNumber := c.Query("stream_number")
@@ -166,13 +167,12 @@ func FetchEnrolledStudents(c *gin.Context) {
 			filters.ByCampusClassNumber(campusClassNumber),
 			filters.ByStudyPeriodNumber(studyPeriodNumber),
 			filters.ByStatus(status),
+			pagination.Paginate(c, &paginatedResponse),
 		).
 		Preload("School").Preload("CampusClass").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch enrolled students"})
 		return
 	}
-
-	var students []responses.Enrollment
 
 	for _, enrollment := range enrolledStudents {
 		students = append(students, responses.Enrollment{
@@ -192,5 +192,57 @@ func FetchEnrolledStudents(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": students})
+	paginatedResponse.Content = students
+
+	c.JSON(http.StatusOK, paginatedResponse)
+}
+
+func TerminateStudentEnrollment(context *gin.Context) {
+
+	studentNumber := context.Param("student_number")
+
+	// get the enrollment number
+	var enrollment models.Enrollment
+	if err := config.DB.Where("student_number = ? AND status = ?", studentNumber, constants.StatusActive).First(&enrollment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Student is not enrolled"})
+			return
+		}
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch student enrollment"})
+		return
+	}
+
+	// update the enrollment status to inactive
+	enrollment.Status = constants.StatusTerminated
+	if err := config.DB.Save(&enrollment).Error; err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to terminate student enrollment"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Student enrollment terminated successfully"})
+}
+
+func ReEnrollStudent(context *gin.Context) {
+	studentNumber := context.Param("student_number")
+
+	// get the enrollment number
+	var enrollment models.Enrollment
+	if err := config.DB.Where("student_number = ? AND status = ?", studentNumber, constants.StatusTerminated).First(&enrollment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Student doesnt have a terminated enrollment"})
+			return
+		}
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch student enrollment"})
+		return
+	}
+
+	// update the enrollment status to active
+	enrollment.Status = constants.StatusActive
+	if err := config.DB.Save(&enrollment).Error; err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to re-enroll student"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Student re-enrolled successfully"})
+
 }

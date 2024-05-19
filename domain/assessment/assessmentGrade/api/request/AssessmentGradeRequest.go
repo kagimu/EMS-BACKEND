@@ -3,6 +3,19 @@ package requests
 import "errors"
 
 type AssessmentGradeRequest struct {
+	Code              int64    `json:"code"`
+	Grade             string   `json:"grade"`
+	Description       string   `json:"description"`
+	MinimumPoints     float64  `json:"minimum_points"`
+	MaximumPoints     float64  `json:"maximum_points"`
+	Name              string   `json:"name"`
+	Abbreviation      string   `json:"abbreviation"`
+	Remarks           string   `json:"remarks"`
+	CampusClassNumber []string `json:"campus_class_number"`
+	CampusNumber      string   `json:"campus_number"`
+}
+
+type EditAssessmentGradeRequest struct {
 	Code              int64   `json:"code"`
 	Grade             string  `json:"grade"`
 	Description       string  `json:"description"`
@@ -41,8 +54,8 @@ func (r *AssessmentGradeRequest) Validate() error {
 	if r.Code == 0 {
 		return errors.New("code is required")
 	}
-	if r.CampusClassNumber == "" {
-		return errors.New("campus class number is required")
+	if len(r.CampusClassNumber) < 1 {
+		return errors.New("at-least one class is required")
 	}
 	return nil
 }

@@ -220,10 +220,6 @@ func DeleteStudent(c *gin.Context) {
 }
 
 func FetchStudentByNumber(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
-		return
-	}
 
 	var student models.Student
 	studentNumber := c.Param("student_number")
@@ -254,7 +250,11 @@ func FetchStudentByNumber(c *gin.Context) {
 
 	// find the latest enrollment for the student
 	var enrollment enrollmentModel.Enrollment
-	if err := config.DB.Where("student_number = ?", studentNumber).Order("created_at desc").First(&enrollment).Error; err != nil {
+	if err := config.DB.Where("student_number = ?", studentNumber).
+		Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").
+		Preload("StudyPeriod.AcademicYear").
+		Preload("Campus").Preload("School").
+		Order("created_at desc").First(&enrollment).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
@@ -263,13 +263,19 @@ func FetchStudentByNumber(c *gin.Context) {
 		return
 	}
 
-	var enrollmentResponse = enrollmentResponse.Enrollment{}
-	enrollmentResponse.StudentNumber = enrollment.StudentNumber
-	enrollmentResponse.EnrollmentDate = enrollment.EnrollmentDate
-	enrollmentResponse.Class = enrollment.CampusClassNumber
-	enrollmentResponse.Status = enrollment.Status
+	var response = enrollmentResponse.Enrollment{}
+	response.StudentNumber = enrollment.StudentNumber
+	response.EnrollmentDate = enrollment.EnrollmentDate
+	response.Class = enrollment.CampusClass.ClassName
+	response.Status = enrollment.Status
+	response.Stream = enrollment.Stream.Name
+	response.School = enrollment.School.Name
+	response.Campus = enrollment.Campus.Name
+	response.StudyPeriod = enrollment.StudyPeriod.StudyPeriodName
+	response.ContinuingStudent = enrollment.ContinuingStudent
+	response.AcademicYear = enrollment.StudyPeriod.AcademicYear.AcademicYearName
 
-	detailedStudent.CurrentEnrollment = enrollmentResponse
+	detailedStudent.CurrentEnrollment = response
 	//enrollmentResponse.Stream =
 
 	c.JSON(http.StatusOK, detailedStudent)
@@ -317,7 +323,7 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 
 	var enrollments []enrollmentModel.Enrollment
 
-	if err := config.DB.Where("campus_class_number = ? AND status = ? ", assessmentMetric.CampusClassNumber, constants.STATUS_ACTIVE).Find(&enrollments).Error; err != nil {
+	if err := config.DB.Where("campus_class_number = ? AND status = ? ", assessmentMetric.CampusClassNumber, constants.StatusActive).Find(&enrollments).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
 

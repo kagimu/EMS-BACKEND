@@ -11,6 +11,7 @@ type EnrollmentRequest struct {
 	Status            string           `json:"status"`
 	CampusClassNumber string           `json:"campus_class_number"`
 	ContinuingStudent bool             `json:"continuing_student"`
+	StreamNumber      string           `json:"stream_number"`
 	Items             []EnrollmentItem `json:"items"`
 }
 
@@ -45,6 +46,9 @@ func (e *EnrollmentRequest) Validate() error {
 	}
 	if e.Status != "active" && e.Status != "inactive" {
 		return errors.New("status must be active or inactive")
+	}
+	if e.StreamNumber == "" {
+		return errors.New("stream number is required")
 	}
 
 	return nil

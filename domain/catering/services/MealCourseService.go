@@ -55,14 +55,14 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		return errors.New("saving or updating meal course count error: " + err.Error())
 	}
 
-	allOtherMealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(oldMealCourseCount.Number, constants.STATUS_ACTIVE)
+	allOtherMealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(oldMealCourseCount.Number, constants.StatusActive)
 	if err != nil {
 		return errors.New("getting all active meal course by course count number error : " + err.Error())
 	}
 
 	for _, otherMealCourse := range allOtherMealCourses {
 
-		otherMealCourse.Status = constants.STATUS_INACTIVE
+		otherMealCourse.Status = constants.StatusInactive
 
 		if _, err = repositories.SaveMealCourse(otherMealCourse); err != nil {
 			return errors.New("updating current meal course names to inactive : " + err.Error())
@@ -75,7 +75,7 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 			Number:                uuid.NewV4().String(),
 			Name:                  mealCourse.Name,
 			MealCourseCountNumber: oldMealCourseCount.Number,
-			Status:                constants.STATUS_ACTIVE,
+			Status:                constants.StatusActive,
 			UserNumber:            currentUserNumber,
 			Code:                  mealCourse.Code,
 		}
@@ -119,7 +119,7 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 		return responses.MealCourseResponse{}, err
 	}
 
-	courses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, constants.STATUS_ACTIVE)
+	courses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, constants.StatusActive)
 	if err != nil {
 		return responses.MealCourseResponse{}, err
 	}
@@ -175,7 +175,7 @@ func MealCourseCalendar(campusNumber string) (responses.MealCourseCalendarRespon
 		return mealCourseCalendarResponse, errors.New("no meal courses configured for the school")
 	}
 
-	courses, err := repositories.GetAllMealCoursesByMealCourseCount(meal.Number, constants.STATUS_ACTIVE)
+	courses, err := repositories.GetAllMealCoursesByMealCourseCount(meal.Number, constants.StatusActive)
 	if err != nil {
 		return mealCourseCalendarResponse, err
 	}
@@ -354,7 +354,7 @@ func ActivateMealCourse(activateMealCourseRequest requests.ActivateMealCourseReq
 		return err
 	}
 
-	if mealCourse.Status != constants.STATUS_ACTIVE {
+	if mealCourse.Status != constants.StatusActive {
 		return errors.New("selected meal course is not active")
 	}
 
@@ -364,7 +364,7 @@ func ActivateMealCourse(activateMealCourseRequest requests.ActivateMealCourseReq
 		return err
 	}
 
-	if feedingSession.Status != constants.STATUS_ACTIVE {
+	if feedingSession.Status != constants.StatusActive {
 		return errors.New("selected feed session is not active")
 	}
 

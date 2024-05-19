@@ -92,10 +92,6 @@ func CreateService(c *gin.Context) {
 }
 
 func FetchServices(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
 
 	var services []models2.Service
 	if err := config.DB.Preload("Item").Find(&services).Error; err != nil {
@@ -104,6 +100,22 @@ func FetchServices(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, services)
+}
+
+func FetchAllItems(c *gin.Context) {
+	var items = make([]models.Item, 0)
+
+	var item []models.Item
+	if err := config.DB.Find(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch items"})
+		return
+	}
+
+	for _, service := range item {
+		items = append(items, service)
+	}
+	c.JSON(http.StatusOK, items)
+	return
 }
 
 func EditService(c *gin.Context) {

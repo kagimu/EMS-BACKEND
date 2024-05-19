@@ -377,8 +377,8 @@ func SetupRoutes() *gin.Engine {
 			// application
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
-			application.GET("", applicationController.FetchApplicationsByStatus)
 			application.PUT("/:application_number", applicationController.EditApplication)
+			application.POST("submit-application/:application_number", applicationController.SubmitApplication)
 		}
 
 		learningMaterials := main.Group("/learning-materials")
@@ -459,6 +459,11 @@ func SetupRoutes() *gin.Engine {
 			products.DELETE(":product_number", productController.DeleteProduct)
 		}
 
+		items := main.Group("/items")
+		{
+			items.GET("", serviceController.FetchAllItems)
+		}
+
 		admission := main.Group("/admissions")
 		{
 			admission.POST("", admissionController.CreateAdmission)
@@ -528,7 +533,7 @@ func SetupRoutes() *gin.Engine {
 				permissions.GET("groups", authController.FetchPermissionGroups)
 			}
 
-			roles := settings.Group("settings/roles")
+			roles := settings.Group("roles")
 			{
 				roles.POST("", permissionController.CreateRole)
 				roles.GET("", permissionController.FetchRoles)
@@ -570,6 +575,8 @@ func SetupRoutes() *gin.Engine {
 		{
 			enrollment.POST("", enrollmentController.CreateEnrollment)
 			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
+			enrollment.POST("terminate-student/:student_number", enrollmentController.TerminateStudentEnrollment)
+			enrollment.POST("re-enroll-student/:student_number", enrollmentController.ReEnrollStudent)
 		}
 
 		staff := main.Group("staff-management")
