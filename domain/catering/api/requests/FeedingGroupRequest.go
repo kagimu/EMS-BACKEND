@@ -5,7 +5,7 @@ import "errors"
 type FeedingGroupRequest struct {
 	Name         string `json:"name"`
 	Status       string `json:"status"`
-	CampusNumber string `json:"campus_number"`
+	SchoolNumber string `json:"school_number"`
 }
 
 func (f *FeedingGroupRequest) Validate() error {
@@ -15,8 +15,8 @@ func (f *FeedingGroupRequest) Validate() error {
 	if f.Status == "" {
 		return errors.New("status is required")
 	}
-	if f.CampusNumber == "" {
-		return errors.New("campus number is required")
+	if f.SchoolNumber == "" {
+		return errors.New("choose the school")
 	}
 
 	return nil
