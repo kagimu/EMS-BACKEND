@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -31,17 +30,10 @@ func CreateFeedingGroup(c *gin.Context) {
 		return
 	}
 
-	campusNumber := payload.CampusNumber
-	var campus campusModels.Campus
-	if err := config.DB.First(&campus, "number = ?", campusNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No campus found with the specified number"})
-		return
-	}
-
 	saveFeedingGroup := models.FeedingGroup{
 		Number:       uuid.NewV4().String(),
 		Name:         payload.Name,
-		CampusNumber: campusNumber,
+		SchoolNumber: payload.SchoolNumber,
 		Status:       payload.Status,
 		UserNumber:   user.Number,
 	}
@@ -76,13 +68,11 @@ func FetchFeedingGroups(c *gin.Context) {
 	var response []responses.FeedingGroupResponse
 	for _, feedingGroup := range feedingGroups {
 		response = append(response, responses.FeedingGroupResponse{
-			Number:       feedingGroup.Number,
-			Name:         feedingGroup.Name,
-			CampusNumber: feedingGroup.Campus.Number,
-			CampusName:   feedingGroup.Campus.Name,
-			Photo:        feedingGroup.User.Photo,
-			UserName:     feedingGroup.User.FirstName + feedingGroup.User.SecondName + feedingGroup.User.LastName,
-			Status:       feedingGroup.Status,
+			Number:   feedingGroup.Number,
+			Name:     feedingGroup.Name,
+			Photo:    feedingGroup.User.Photo,
+			UserName: feedingGroup.User.FirstName + feedingGroup.User.SecondName + feedingGroup.User.LastName,
+			Status:   feedingGroup.Status,
 		})
 	}
 

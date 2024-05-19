@@ -67,7 +67,6 @@ func FetchFeedingGroupSessions(c *gin.Context) {
 			FeedingGroupName:     feedingGroupSession.FeedingGroup.Name,
 			FeedingSessionName:   feedingGroupSession.FeedingSession.Name,
 			FeedingSessionStatus: feedingGroupSession.FeedingSession.Status,
-			FeedingSessionCampus: feedingGroupSession.FeedingGroup.Campus.Name,
 		})
 	}
 
