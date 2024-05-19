@@ -25,7 +25,7 @@ func AddMealCoursesToFeedingGroup(courseToFeedingGroupRequest requests.MealCours
 		return errors.New("invalid feeding group number")
 	}
 
-	if feedingGroup.Status != constants.STATUS_ACTIVE {
+	if feedingGroup.Status != constants.StatusActive {
 		return errors.New("selected group is not active")
 	}
 
@@ -55,7 +55,7 @@ func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models
 			return errors.New(fmt.Sprintf("invalid '%s' meal ID", day))
 		}
 
-		if checkMeal.Status != constants.STATUS_ACTIVE {
+		if checkMeal.Status != constants.StatusActive {
 			return errors.New(fmt.Sprintf("meal course '%s' is not active", checkMeal.Name))
 		}
 
@@ -105,7 +105,7 @@ func GetFeedingGroupMealCourseCalendar(schoolNumber string) (responses.FeedingGr
 		headers = append(headers, day)
 	}
 
-	groups, err := repositories.GetAllFeedingGroups(school.Number, constants.STATUS_ACTIVE)
+	groups, err := repositories.GetAllFeedingGroups(school.Number, constants.StatusActive)
 
 	if err != nil {
 		return response, err
@@ -152,7 +152,7 @@ func getGroupDailyMenu(groupNumber string) []responses.GroupDayMealCourses {
 
 			for _, _mealCourse := range mealCourses {
 				mealCourse := _mealCourse.MealCourse
-				if mealCourse.Status == constants.STATUS_ACTIVE {
+				if mealCourse.Status == constants.StatusActive {
 					meals = append(meals, mealCourse.Name)
 				}
 			}
