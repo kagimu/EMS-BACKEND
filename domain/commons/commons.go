@@ -162,22 +162,17 @@ func GeneratedFormattedUUID() string {
 	return formattedUUID
 }
 
-func CheckDay(day string) (string, bool) {
-	validDays := map[string]bool{
-		"Monday":    true,
-		"Tuesday":   true,
-		"Wednesday": true,
-		"Thursday":  true,
-		"Friday":    true,
-		"Saturday":  true,
-		"Sunday":    true,
+func CheckDay(day string) string {
+
+	for _, _day := range DaysOfTheWeek() {
+
+		if day == _day {
+			return ""
+		}
+
 	}
 
-	if valid := validDays[day]; valid {
-		return "", true
-	}
-
-	return "Invalid day", false
+	return "Invalid day"
 }
 
 func RoundFloat(val float64, precision uint) float64 {
