@@ -63,27 +63,24 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	for _, class := range payload.CampusClassNumber {
+	saveAssessmentGrade := models.AssessmentGrade{
+		Code:              payload.Code,
+		CampusNumber:      payload.CampusNumber,
+		Number:            uuid.NewV4().String(),
+		Name:              payload.Name,
+		Description:       payload.Description,
+		MinimumPoints:     payload.MinimumPoints,
+		MaximumPoints:     payload.MaximumPoints,
+		Abbreviation:      payload.Abbreviation,
+		Remarks:           payload.Remarks,
+		Illustration:      fileName,
+		CampusClassNumber: payload.CampusClassNumber,
+		UserNumber:        user.Number,
+	}
 
-		saveAssessmentGrade := models.AssessmentGrade{
-			Code:              payload.Code,
-			CampusNumber:      payload.CampusNumber,
-			Number:            uuid.NewV4().String(),
-			Name:              payload.Name,
-			Description:       payload.Description,
-			MinimumPoints:     payload.MinimumPoints,
-			MaximumPoints:     payload.MaximumPoints,
-			Abbreviation:      payload.Abbreviation,
-			Remarks:           payload.Remarks,
-			Illustration:      fileName,
-			CampusClassNumber: class,
-			UserNumber:        user.Number,
-		}
-
-		if err := config.DB.Create(&saveAssessmentGrade).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment grade"})
-			return
-		}
+	if err := config.DB.Create(&saveAssessmentGrade).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment grade"})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Assessment grade created successfully"})
