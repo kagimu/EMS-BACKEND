@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
@@ -325,4 +326,47 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 	}
 
 	return items
+}
+
+func GetFeedingGroupsBySchoolNumber(schoolNumber string, status string) ([]responses.FeedingGroupResponse, error) {
+
+	var response []responses.FeedingGroupResponse
+
+	feedingGroups, err := repositories.GetAllFeedingGroups(schoolNumber, status)
+	if err != nil {
+		return response, err
+	}
+
+	for _, feedingGroup := range feedingGroups {
+
+		user, err := repository.GetUserByNumber(feedingGroup.UserNumber)
+		if err != nil {
+			return response, err
+		}
+
+		if user.Number == "" {
+			return response, errors.New("user not found")
+		}
+
+		school, err := repositories2.GetSchoolByNumber(feedingGroup.SchoolNumber)
+		if err != nil {
+			return response, err
+		}
+
+		if school.Number == "" {
+			return response, errors.New("school not found")
+		}
+
+		response = append(response, responses.FeedingGroupResponse{
+			Number:       feedingGroup.Number,
+			Name:         feedingGroup.Name,
+			UserName:     user.FirstName + " " + user.LastName,
+			Status:       feedingGroup.Status,
+			SchoolNumber: school.Number,
+			SchoolName:   school.Name,
+		})
+
+	}
+
+	return response, nil
 }
