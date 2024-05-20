@@ -85,7 +85,7 @@ func GetMealCourseByNumberAndSchool(mealCourseNumber string, schoolNumber string
 	var mealCourse models.MealCourse
 
 	if err := db.
-		Joins("JOIN meal_courses ON meal_course_counts.number = meal_courses.meal_course_count_number").
+		Joins("JOIN meal_course_counts ON meal_courses.meal_course_count_number = meal_course_counts.number").
 		Where("meal_courses.number = ?", mealCourseNumber).
 		Where("school_number = ?", schoolNumber).
 		First(&mealCourse).Error; err != nil {
