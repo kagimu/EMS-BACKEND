@@ -77,3 +77,25 @@ func GetMealCourseByNumber(mealCourseNumber string) (models.MealCourse, error) {
 
 	return mealCourse, nil
 }
+
+func GetMealCourseByNumberAndSchool(mealCourseNumber string, schoolNumber string) (models.MealCourse, error) {
+
+	db := config.DB
+
+	var mealCourse models.MealCourse
+
+	if err := db.
+		Joins("JOIN meal_courses ON meal_course_counts.number = meal_courses.meal_course_count_number").
+		Where("meal_courses.number = ?", mealCourseNumber).
+		Where("school_number = ?", schoolNumber).
+		First(&mealCourse).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return mealCourse, nil
+		}
+
+		return mealCourse, err
+	}
+
+	return mealCourse, nil
+}

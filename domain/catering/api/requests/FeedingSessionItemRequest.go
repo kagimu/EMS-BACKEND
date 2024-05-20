@@ -8,8 +8,8 @@ type FeedingSessionItemRequest struct {
 }
 
 type MenuItemQuantity struct {
-	MenuItemNumber string `json:"menu_item_number"`
-	Quantity       int    `json:"quantity"`
+	MenuItemNumber string  `json:"menu_item_number"`
+	Quantity       float64 `json:"quantity"`
 }
 
 func (f *FeedingSessionItemRequest) Validate() error {

@@ -12,7 +12,7 @@ type FeedingSessionItem struct {
 	FeedingSession       FeedingSession  `gorm:"foreignKey:FeedingSessionNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	MenuItemNumber       string          `json:"menu_item_number" gorm:"size:36;"`
 	MenuItem             MenuItem        `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Quantity             int             `json:"quantity"`
+	Quantity             float64         `json:"quantity"`
 	UserNumber           string          `json:"user_number" gorm:"size:36;index;not null"`
 	User                 authModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
