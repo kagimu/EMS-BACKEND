@@ -59,5 +59,25 @@ func GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber string, day string
 	}
 
 	return feedingGroupMealCourse, nil
+}
 
+func GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber string, day string) ([]models.FeedingGroupMealCourse, error) {
+
+	db := config.DB
+	var feedingGroupMealCourse []models.FeedingGroupMealCourse
+
+	if err := db.
+		Preload("FeedingGroup").
+		Where("day = ?", day).
+		Where("meal_course_number = ?", mealCourseNumber).
+		Find(&feedingGroupMealCourse).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return feedingGroupMealCourse, nil
+		}
+
+		return feedingGroupMealCourse, err
+	}
+
+	return feedingGroupMealCourse, nil
 }

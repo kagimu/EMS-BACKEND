@@ -172,7 +172,7 @@ func CheckDay(day string) string {
 
 	}
 
-	return "Invalid day"
+	return "Invalid day: " + day
 }
 
 func RoundFloat(val float64, precision uint) float64 {
