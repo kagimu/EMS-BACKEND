@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -11,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
+	"time"
 )
 
 func AddMealCoursesToFeedingGroup(courseToFeedingGroupRequest requests.MealCourseToFeedingGroupRequest, currentUser string) error {
@@ -171,4 +173,156 @@ func getGroupDailyMenu(groupNumber string) []responses.GroupDayMealCourses {
 	}
 
 	return weeklyItems
+}
+
+func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumber string) ([]responses.UserMealResponse, error) {
+
+	var mealsResponse []responses.UserMealResponse
+
+	currentTime := time.Now()
+	day := currentTime.Format("Mon")
+	checkDay := commons.CheckDay(day)
+	if checkDay != "" {
+		return mealsResponse, errors.New(checkDay)
+	}
+
+	campus, err := repositories3.GetCampusByNumber(campusNumber)
+
+	if err != nil {
+		return mealsResponse, err
+	}
+
+	if campus.Number == "" {
+		return mealsResponse, errors.New("invalid campus number")
+	}
+
+	mealCourse, err := repositories.GetMealCourseByNumber(mealCourseNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+
+	if mealCourse.Status != constants.StatusActive {
+		return mealsResponse, errors.New("meal course is: '" + mealCourse.Status + "'")
+	}
+
+	checkSchool, err := repositories.GetMealCourseByNumberAndSchool(mealCourse.Number, campus.SchoolNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+
+	if checkSchool.Number == "" {
+		return mealsResponse, errors.New("meal course can not be used on the selected campus")
+	}
+
+	//GetFeedingSessionForCampusAndMealCourseAndDay
+
+	mealCourseFeedingSession, err := repositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+
+	if mealCourseFeedingSession.Number == "" {
+		return mealsResponse, errors.New("menu not set up for this meal course on '" + day + "'")
+	}
+
+	feedingSession := mealCourseFeedingSession.FeedingSession
+
+	feedItems, err := repositories.GetFeedingSessionItems(feedingSession.Number)
+	if err != nil {
+		return mealsResponse, err
+	}
+
+	if len(feedItems) == 0 {
+		return mealsResponse, errors.New("no items set to '" + feedingSession.Number + "' session")
+	}
+
+	var feedingGroups []models.FeedingGroup
+
+	if feedingGroupNumber != "" {
+
+		checkGroup, err := repositories.GetFeedingGroupByNumber(feedingGroupNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+
+		if checkGroup.Number == "" || checkGroup.SchoolNumber != campus.SchoolNumber {
+			return mealsResponse, errors.New("invalid group number")
+		}
+
+		checkAllowedToHaveMeal, err := repositories.GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber, day, feedingGroupNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+
+		if checkAllowedToHaveMeal.Number == "" {
+			return mealsResponse, errors.New("this group should not be served today")
+		}
+
+		feedingGroups = append(feedingGroups, checkGroup)
+
+	} else {
+
+		allFeedingGroupsForMealAndDay, err := repositories.GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber, day)
+		if err != nil {
+			return mealsResponse, err
+		}
+
+		for _, feedingGroup := range allFeedingGroupsForMealAndDay {
+			feedingGroups = append(feedingGroups, feedingGroup.FeedingGroup)
+		}
+
+	}
+
+	for _, feedingGroup := range feedingGroups {
+
+		allUsers, err := repositories.GetFeedingGroupUserByGroupNumber(feedingGroup.Number)
+		if err != nil {
+			return mealsResponse, err
+		}
+
+		for _, _user := range allUsers {
+
+			user := _user.User
+
+			userMeal := responses.UserMealResponse{
+				UserNumber:           user.Number,
+				Name:                 user.FirstName,
+				FeedingGroupNumber:   feedingGroup.Number,
+				FeedingGroupName:     feedingGroup.Name,
+				FeedingSessionNumber: feedingSession.Number,
+			}
+
+			userMeal.Meals = findUserMeal(user.Number, feedItems)
+
+			mealsResponse = append(mealsResponse, userMeal)
+		}
+
+	}
+
+	return mealsResponse, nil
+}
+
+func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSessionItem) []responses.SingleUserMealItem {
+
+	var items []responses.SingleUserMealItem
+
+	for _, feedingSessionItem := range feedingSessionItems {
+
+		menuItem, err := repositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber)
+		if err != nil {
+			fmt.Println("Error getting menu item from feeding session")
+			return items
+		}
+
+		singleUserMenu := responses.SingleUserMealItem{
+			Quantity:       feedingSessionItem.Quantity,
+			ServedQuantity: -1,
+			MenuItemNumber: menuItem.Number,
+			MenuItemName:   menuItem.Name,
+		}
+
+		items = append(items, singleUserMenu)
+	}
+
+	return items
 }

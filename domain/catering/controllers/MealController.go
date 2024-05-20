@@ -416,3 +416,34 @@ func ActivateMealCourse(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, commons.Feedback("Feeding sessions successfully added"))
 
 }
+
+func FetUsersMeals(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	campusNumber := c.Query("campus_number")
+	if campusNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose campus"})
+		return
+	}
+
+	mealCourseNumber := c.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a meal course"})
+		return
+	}
+
+	feedingGroupNumber := c.Query("feeding_group_number")
+
+	usersMeal, err := services.GetUserMeals(mealCourseNumber, campusNumber, feedingGroupNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": usersMeal})
+}
