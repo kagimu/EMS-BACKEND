@@ -553,6 +553,7 @@ func SetupRoutes() *gin.Engine {
 		users := main.Group("users")
 		{
 			users.GET("", authController.FetchUsers)
+			users.GET("all", authController.FetchAllUsers)
 			users.GET(":user_number", authController.FetchUser)
 			users.POST("", authController.CreateUser)
 		}

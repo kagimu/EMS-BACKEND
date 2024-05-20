@@ -57,6 +57,42 @@ func FetchUsers(c *gin.Context) {
 
 	c.JSON(http.StatusOK, paginatedResponse)
 }
+func FetchAllUsers(c *gin.Context) {
+
+	//var paginatedResponse = pagination.PaginatedResponse{}
+	var users []models.User
+	if err := config.DB.Scopes(
+		filters.ByStatus(c.Query("status")),
+	).Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch users"})
+		return
+	}
+
+	type CLeanUser struct {
+		models.User
+		Roles []string `json:"roles"`
+	}
+
+	var cleanUsers = make([]CLeanUser, 0)
+
+	for _, user := range users {
+		var userRoles []permissionModels.UserRole
+		var roles []string
+		if err := config.DB.Preload("Role").Where("user_number = ?", user.Number).Find(&userRoles).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch user roles"})
+			return
+		}
+
+		for _, userRole := range userRoles {
+			roles = append(roles, userRole.Role.Name)
+		}
+
+		cleanUsers = append(cleanUsers, CLeanUser{User: user, Roles: roles})
+
+	}
+
+	c.JSON(http.StatusOK, cleanUsers)
+}
 
 func FetchUser(c *gin.Context) {
 	if _, err := commons.GetUserFromHeader(c); err != nil {
