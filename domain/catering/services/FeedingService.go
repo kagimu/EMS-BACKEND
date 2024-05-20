@@ -144,6 +144,7 @@ func getGroupDailyMenu(groupNumber string) []responses.GroupDayMealCourses {
 
 		var item responses.GroupDayMealCourses
 		item.Day = day
+		item.Active = false
 
 		mealCourses, err := repositories.GetAllFeedingGroupMealCoursesForDay(groupNumber, day)
 
@@ -169,6 +170,11 @@ func getGroupDailyMenu(groupNumber string) []responses.GroupDayMealCourses {
 		}
 
 		item.MealCourses = meals
+
+		if len(meals) > 0 {
+			item.Active = true
+		}
+
 		weeklyItems = append(weeklyItems, item)
 
 	}
