@@ -45,44 +45,42 @@ func CreateAggregateScale(c *gin.Context) {
 		}
 	}
 
-	for _, class := range payload.CampusClassNumber {
-
-		saveAggregateScale := models.AggregateScale{
-			Code:                  payload.Code,
-			Number:                uuid.NewV4().String(),
-			Name:                  payload.Name,
-			Weight:                payload.Weight,
-			MinValue:              payload.MinValue,
-			MaxValue:              payload.MaxValue,
-			Illustration:          fileName,
-			Description:           payload.Description,
-			CampusClassNumber:     class,
-			CampusNumber:          payload.CampusNumber,
-			UserNumber:            user.Number,
-			GradingStandardNumber: payload.GradingStandardNumber,
-		}
-
-		var duplicate models.AggregateScale
-		if err := config.DB.Where("name = ? AND campus_class_number = ? AND grading_standard_number = ? ", saveAggregateScale.Name, class, payload.GradingStandardNumber).First(&duplicate).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale name on this class and grading standard"})
-			return
-		}
-
-		if err := config.DB.Where("code = ? AND campus_class_number = ? ", saveAggregateScale.Code, saveAggregateScale.CampusClassNumber).First(&duplicate).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "This code has already been used on this class"})
-			return
-		}
-
-		tx := config.DB.Begin()
-
-		if err := tx.Create(&saveAggregateScale).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save aggregate scale"})
-			return
-		}
-
-		tx.Commit()
+	saveAggregateScale := models.AggregateScale{
+		Code:                  payload.Code,
+		Number:                uuid.NewV4().String(),
+		Name:                  payload.Name,
+		Weight:                payload.Weight,
+		MinValue:              payload.MinValue,
+		MaxValue:              payload.MaxValue,
+		Illustration:          fileName,
+		Description:           payload.Description,
+		CampusClassNumber:     payload.CampusClassNumber,
+		CampusNumber:          payload.CampusNumber,
+		UserNumber:            user.Number,
+		GradingStandardNumber: payload.GradingStandardNumber,
 	}
+
+	var duplicate models.AggregateScale
+	if err := config.DB.Where("name = ? AND campus_class_number = ? AND grading_standard_number = ? ", saveAggregateScale.Name, payload.CampusClassNumber, payload.GradingStandardNumber).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale name on this class and grading standard"})
+		return
+	}
+
+	if err := config.DB.Where("code = ? AND campus_class_number = ? ", saveAggregateScale.Code, saveAggregateScale.CampusClassNumber).First(&duplicate).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This code has already been used on this class"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	if err := tx.Create(&saveAggregateScale).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save aggregate scale"})
+		return
+	}
+
+	tx.Commit()
+
 	c.JSON(http.StatusCreated, gin.H{"message": "Aggregate scale created successfully"})
 }
 
