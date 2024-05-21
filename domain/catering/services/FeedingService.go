@@ -459,10 +459,10 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	err = repositories.SaveMeal(tx, newMeal)
 	if err != nil {
-		return err
+		return errors.New("error creating meal: " + err.Error())
 	}
 
-	stocking, err := repositories.GetMealStockByMealNumberAndMenuItemNumber(newMeal.Number, mealRequest.MenuItemNumber)
+	stocking, err := repositories.GetMealStockByMealNumberAndMenuItemNumber(tx, newMeal.Number, mealRequest.MenuItemNumber)
 	if err != nil {
 		return err
 	}
@@ -481,10 +481,10 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	err = repositories.SaveStocking(tx, stocking)
 	if err != nil {
-		return err
+		return errors.New("error reducing stock: " + err.Error())
 	}
 
-	mealStocking, err := repositories.GetMealStockingByMealNumberAndStockingNumber(newMeal.Number, stocking.Number)
+	mealStocking, err := repositories.GetMealStockingByMealNumberAndStockingNumber(tx, newMeal.Number, stocking.Number)
 	if err != nil {
 		return err
 	}
@@ -496,7 +496,7 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	err = repositories.SaveMealStocking(tx, mealStocking)
 	if err != nil {
-		return err
+		return errors.New("error mapping stock with meal taken: " + err.Error())
 	}
 
 	if err = tx.Commit().Error; err != nil {
