@@ -222,8 +222,6 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 		return mealsResponse, errors.New("meal course can not be used on the selected campus")
 	}
 
-	//GetFeedingSessionForCampusAndMealCourseAndDay
-
 	mealCourseFeedingSession, err := repositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
 	if err != nil {
 		return mealsResponse, err
@@ -330,6 +328,17 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 			return items
 		}
 
+		unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
+		if err != nil {
+			fmt.Println("Error getting unit of measure" + err.Error())
+			return items
+		}
+
+		unitOfMeasureName := "None"
+		if unitOfMeasure.Number != "" {
+			unitOfMeasureName = unitOfMeasure.Name
+		}
+
 		var served float64
 
 		servedStock, err := repositories.GetMealStockingByMealNumberAndDateUserNumber(mealCourse, date_, userNumber, menuItem.Number)
@@ -350,6 +359,7 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 			ServedQuantity: served,
 			MenuItemNumber: menuItem.Number,
 			MenuItemName:   menuItem.Name,
+			UnitOfMeasure:  unitOfMeasureName,
 		}
 
 		items = append(items, singleUserMenu)
