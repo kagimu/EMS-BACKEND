@@ -427,7 +427,7 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	newMeal, err := repositories.GetMealByMealNumberAndDateAndUserNumber(mealRequest.MealCourseNumber, formatDate, mealRequest.UserNumber)
 	if err != nil {
-		return err
+		return errors.New("Checking if item served error: " + err.Error())
 	}
 
 	groupUser, err := repositories.GetFeedingGroupUserByUserNumber(mealRequest.UserNumber)
