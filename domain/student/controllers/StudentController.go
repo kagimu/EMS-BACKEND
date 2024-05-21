@@ -111,6 +111,9 @@ func CreateStudent(c *gin.Context) {
 		FirstName:  payload.SecondName,
 		LastName:   payload.Surname,
 		SecondName: payload.OtherName,
+		Gender:     payload.Gender,
+		Type:       constants.TypeStudent,
+		Status:     constants.StatusInactive,
 	}
 
 	if err := tx.Create(&createdUser).Error; err != nil {
