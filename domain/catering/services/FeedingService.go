@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
@@ -375,4 +376,109 @@ func GetFeedingGroupsBySchoolNumber(schoolNumber string, status string) ([]respo
 	}
 
 	return response, nil
+}
+
+func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
+
+	currentStock, err := repositories.GetMenuItemCurrentStock(mealRequest.MenuItemNumber)
+	if err != nil {
+		return err
+	}
+
+	if currentStock < mealRequest.Quantity {
+		return errors.New("not enough stock")
+	}
+
+	tx := config.DB.Begin()
+
+	formatDate, err := time.Parse(time.DateOnly, mealRequest.Date)
+	if err != nil {
+		return err
+	}
+
+	day := formatDate.Format("Mon")
+	checkDay := commons.CheckDay(day)
+	if checkDay != "" {
+		return errors.New(checkDay)
+	}
+
+	newMeal, err := repositories.GetMealByMealNumberAndDateAndUserNumber(mealRequest.MealCourseNumber, formatDate, mealRequest.UserNumber)
+	if err != nil {
+		return err
+	}
+
+	groupUser, err := repositories.GetFeedingGroupUserByUserNumber(mealRequest.UserNumber)
+	if err != nil {
+		return err
+	}
+
+	if groupUser.Number == "" {
+		return errors.New("user not added to any group")
+	}
+
+	if newMeal.Number == "" {
+		newMeal.Number = uuid.NewV4().String()
+		newMeal.MealCourseNumber = mealRequest.MealCourseNumber
+		newMeal.FeedingSessionNumber = mealRequest.FeedingSessionNumber
+		newMeal.UserNumber = mealRequest.UserNumber
+		newMeal.Date = formatDate
+		newMeal.Time = mealRequest.Time
+		newMeal.AddedByNumber = currentUser
+		newMeal.StaffNumber = currentUser
+		newMeal.Day = day
+		newMeal.CampusNumber = groupUser.CampusNumber
+	} else {
+		newMeal.StaffNumber = currentUser
+		newMeal.CampusNumber = groupUser.CampusNumber
+		newMeal.FeedingSessionNumber = mealRequest.FeedingSessionNumber
+		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
+	}
+
+	err = repositories.SaveMeal(tx, newMeal)
+	if err != nil {
+		return err
+	}
+
+	stocking, err := repositories.GetMealStockByMealNumberAndMenuItemNumber(newMeal.Number, mealRequest.MenuItemNumber)
+	if err != nil {
+		return err
+	}
+
+	if stocking.Number == "" {
+		stocking.Number = uuid.NewV4().String()
+		stocking.MenuItemNumber = mealRequest.MenuItemNumber
+		stocking.Quantity = mealRequest.Quantity * -1
+		stocking.CampusNumber = groupUser.CampusNumber
+		stocking.UserNumber = currentUser
+	} else {
+		stocking.Quantity = mealRequest.Quantity * -1
+		stocking.CampusNumber = groupUser.CampusNumber
+		stocking.UserNumber = currentUser
+	}
+
+	err = repositories.SaveStocking(tx, stocking)
+	if err != nil {
+		return err
+	}
+
+	mealStocking, err := repositories.GetMealStockingByMealNumberAndStockingNumber(newMeal.Number, stocking.Number)
+	if err != nil {
+		return err
+	}
+
+	if mealStocking.MealNumber == "" {
+		mealStocking.MealNumber = newMeal.Number
+		mealStocking.StockingNumber = stocking.Number
+	}
+
+	err = repositories.SaveMealStocking(tx, mealStocking)
+	if err != nil {
+		return err
+	}
+
+	if err = tx.Commit().Error; err != nil {
+		return errors.New("Commit error: " + err.Error())
+	}
+
+	return nil
 }

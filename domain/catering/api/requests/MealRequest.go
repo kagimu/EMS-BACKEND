@@ -6,11 +6,10 @@ type MealRequest struct {
 	UserNumber           string  `json:"user_number"`
 	FeedingSessionNumber string  `json:"feeding_session_number"`
 	MenuItemNumber       string  `json:"menu_item_number"`
-	StaffNumber          string  `json:"staff_number"`
 	Date                 string  `json:"date"`
 	Time                 string  `json:"time"`
 	Quantity             float64 `json:"quantity"`
-	CampusNumber         string  `json:"campus_number"`
+	MealCourseNumber     string  `json:"meal_course_number"`
 }
 
 func (m *MealRequest) Validate() error {
@@ -19,9 +18,6 @@ func (m *MealRequest) Validate() error {
 	}
 	if m.MenuItemNumber == "" {
 		return errors.New("menu item number is required")
-	}
-	if m.StaffNumber == "" {
-		return errors.New("staff number is required")
 	}
 	if m.UserNumber == "" {
 		return errors.New("user number is required")
