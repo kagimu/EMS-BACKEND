@@ -460,6 +460,7 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		newMeal.StaffNumber = currentUser
 		newMeal.Day = day
 		newMeal.CampusNumber = groupUser.CampusNumber
+		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
 	} else {
 		newMeal.StaffNumber = currentUser
 		newMeal.CampusNumber = groupUser.CampusNumber
