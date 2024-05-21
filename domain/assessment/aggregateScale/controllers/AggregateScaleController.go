@@ -94,7 +94,7 @@ func FetchAggregateScales(c *gin.Context) {
 	campusClassNumber := c.Query("campus_class_number")
 
 	if campusClassNumber == "" {
-		c.JSON(http.StatusOK, make([]responses.AggregateScaleResponse, 0))
+		c.JSON(http.StatusOK, gin.H{"data": make([]responses.AggregateScaleResponse, 0)})
 		return
 	}
 
