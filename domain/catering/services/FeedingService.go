@@ -418,6 +418,10 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		return err
 	}
 
+	if mealRequest.Quantity <= 0 {
+		return errors.New("quantities served can not be zero")
+	}
+
 	if currentStock < mealRequest.Quantity {
 		return errors.New("not enough stock")
 	}
