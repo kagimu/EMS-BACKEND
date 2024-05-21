@@ -29,5 +29,9 @@ func (m *MealRequest) Validate() error {
 		return errors.New("time is required")
 	}
 
+	if m.MealCourseNumber == "" {
+		return errors.New("choose meal being served")
+	}
+
 	return nil
 }
