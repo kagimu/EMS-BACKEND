@@ -1,11 +1,11 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -59,22 +59,20 @@ func FetchFeedingGroups(c *gin.Context) {
 		return
 	}
 
-	var feedingGroups []models.FeedingGroup
-	if err := config.DB.Preload("Campus").Preload("User").Find(&feedingGroups).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding groups"})
+	schoolNumber := c.Query("school_number")
+	if schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Provide school number"))
 		return
 	}
 
-	var response []responses.FeedingGroupResponse
-	for _, feedingGroup := range feedingGroups {
-		response = append(response, responses.FeedingGroupResponse{
-			Number:   feedingGroup.Number,
-			Name:     feedingGroup.Name,
-			Photo:    feedingGroup.User.Photo,
-			UserName: feedingGroup.User.FirstName + feedingGroup.User.SecondName + feedingGroup.User.LastName,
-			Status:   feedingGroup.Status,
-		})
+	status := c.Query("status")
+
+	feedingGroups, err := services.GetFeedingGroupsBySchoolNumber(schoolNumber, status)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Getting feeding groups error: "+err.Error()))
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": response})
+	c.JSON(http.StatusOK, gin.H{"data": feedingGroups})
 }
