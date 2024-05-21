@@ -13,7 +13,7 @@ func GetMenuItemCurrentStock(menuItemNumber string) (float64, error) {
 
 	var totalQuantity float64
 
-	if err := db.Model(&cateringModels.Stocking{}).Where("menu_item_number = ? ", menuItemNumber).Select("sum(quantity)").Scan(&totalQuantity).Error; err != nil {
+	if err := db.Model(&cateringModels.Stocking{}).Where("menu_item_number = ? ", menuItemNumber).Select("COALESCE(sum(quantity),0)").Scan(&totalQuantity).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, nil

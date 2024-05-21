@@ -13,7 +13,7 @@ func GetMealStockByMealNumberAndMenuItemNumber(mealNumber string, menuItemNumber
 	var stocking models.Stocking
 
 	if err := db.
-		Joins("meal_stock INNER JOIN stockings.number = meal_stock.stocking_number").
+		Joins("JOIN meal_stock ON stockings.number = meal_stock.stocking_number").
 		Where("stockings.menu_item_number = ?", menuItemNumber).
 		Where("meal_stock.meal_number", mealNumber).First(&stocking).Error; err != nil {
 
