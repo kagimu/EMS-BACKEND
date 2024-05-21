@@ -29,3 +29,7 @@ type Meal struct {
 	CampusNumber         string             `json:"campus_number" gorm:"size:36;not null"`
 	Campus               campusModel.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
+
+func (reportTemplate *Meal) TableName() string {
+	return "meals"
+}
