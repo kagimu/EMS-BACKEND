@@ -28,11 +28,13 @@ func GetMealStockingByMealNumberAndDateUserNumber(mealCourseNumber string, date 
 
 	var stocking models.Stocking
 
+	formattedDate := date.Format(time.DateOnly)
+
 	if err := db.
 		Joins("JOIN meal_stock ON stockings.number = meal_stock.stocking_number").
 		Joins("JOIN meals ON meal_stock.meal_number = meals.number").
 		Where("meals.meal_course_number = ?", mealCourseNumber).
-		Where("meals.date = ?", date).
+		Where("DATE(meals.date) = ?", formattedDate).
 		Where("meals.user_number = ?", userNumber).
 		Where("stockings.menu_item_number = ?", menuItemNumber).
 		First(&stocking).Error; err != nil {
