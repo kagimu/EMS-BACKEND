@@ -472,11 +472,6 @@ func SetupRoutes() *gin.Engine {
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 			admission.GET("items/:admission_number", admissionController.FetchItemsAddedOnAdmission)
 
-			conditions := admission.Group("/admission-offer-conditions")
-			{
-				conditions.POST("", admissionController.CreateAdmissionOfferCondition)
-				conditions.GET("", admissionController.FetchAdmissionOfferConditions)
-			}
 		}
 
 		assessmentArea := main.Group("/assessment-areas")

@@ -110,21 +110,25 @@ type PermissionGroup map[string][]string
 func PermissionGroups() []PermissionGroup {
 
 	return []PermissionGroup{
-		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete"}},
-		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete"}},
 		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum",
-			"delete_curriculum", "import_curriculum", "view_subject-cluster", "view_subject", "view_strands", "view_topic", "view_sub-topic", "view_concept"}},
+			"delete_curriculum", "import_curriculum", "create_learning_area", "view_learning_area", "update_learning_area", "view_subject-cluster", "view_subject",
+			"view_strands", "view_topic", "view_sub-topic", "view_concept"}},
 		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
-		{"SCHOOL": []string{"view_school", "add_school", "edit_school", "delete_school"}},
-		{"TIMETABLE": []string{"add_timetable", "view_timetable-details"}},
+		{"SETUP": []string{"view_school", "add_school", "edit_school", "delete_school", "create_campus", "edit_campus", "delete_campus", "create_academic-year", "view_academic-year", "update_academic-year",
+			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream"}},
+		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
+		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete", "update_permission"}},
+
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
 		{"CALENDAR": []string{"view_calendar", "view_calendar-details"}},
-		{"INTERVIEWS": []string{"view_interview-details"}},
-		{"PRODUCTS & SERVICES": []string{"view_services", "view_products"}},
-		{"USER ACCOUNTS": []string{"view_account-management", "view_user-management"}},
+		{"INTERVIEWS": []string{"view_interview-details", "create_interview_schedules"}},
+		{"Catering": []string{"view_catering_menu", "create_unit_of_measure",
+			"record_meals", "view_meals", "view_unit_of_measure", "create_feeding_groups", ""}},
+		{"PRODUCTS & SERVICES": []string{"create_product", "create_service", "edit_product", "edit_service", "view_services", "view_products"}},
 		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype"}},
-		{"LEARNING AREAS": []string{"create_learning_area", "view_learning_area", "update_learning_area"}},
-		{"SETTINGS": []string{"create_learning_area", "view_learning_area", "update_learning_area"}},
+		{"ADMISSION": []string{"admit_student", "view_admissions", "cancel_admission"}},
+		{"ENROLLMENT": []string{"enroll_student", "view_enrollments", "terminate_enrollment", "re-instate_enrollment"}},
+		{"SETTINGS": []string{"access_settings_menu", "view_learning_area", "update_learning_area"}},
 	}
 
 }
