@@ -29,7 +29,7 @@ func GetMealStockByMealNumberAndMenuItemNumber(mealNumber string, menuItemNumber
 
 func SaveMealStocking(tx *gorm.DB, stock models.MealStock) error {
 
-	if err := tx.Save(stock).Error; err != nil {
+	if err := tx.Save(&stock).Error; err != nil {
 
 		if err = tx.Rollback().Error; err != nil {
 			return err
