@@ -34,6 +34,7 @@ func CreateFeedingGroupUser(c *gin.Context) {
 			FeedingGroupNumber: payload.FeedingGroupNumber,
 			Status:             payload.Status,
 			UserNumber:         user,
+			CampusNumber:       payload.CampusNumber,
 		}
 
 		if err := config.DB.Create(&saveFeedingGroupUser).Error; err != nil {
