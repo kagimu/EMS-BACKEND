@@ -15,7 +15,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	studentControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -78,25 +77,27 @@ func CreateAdmission(c *gin.Context) {
 	}
 
 	for _, studentPayload := range payload.StudentNumber {
-		tx := config.DB.Begin()
+
 		var student studentModels.Student
-		if err := tx.First(&student, "number = ?", studentPayload).Error; err != nil {
+		if err := config.DB.First(&student, "number = ?", studentPayload).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
 			return
 		}
 
-		generateADN, err := studentControllers.CreateADN(student.APNStatus)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create ADN"})
+		//validate if student has been admitted before on the same academic year and study period
+		var admission models.Admission
+		if err := config.DB.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ?", studentPayload, payload.AcademicYearNumber, payload.StudyPeriodNumber).First(&admission).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Student has already been admitted for the selected academic year and study period"})
 			return
 		}
 
-		student.APNStatus = "Archive"
-		student.ADN = generateADN
-		if err := tx.Save(&student).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
+		// validate if student has been admitted before on the same academic year and study period and campus class
+
+		if err := config.DB.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ? AND campus_class_number = ?", studentPayload, payload.AcademicYearNumber, payload.StudyPeriodNumber, payload.CampusClassNumber).First(&admission).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Student has already been admitted for the selected academic year, study period and campus class"})
 			return
 		}
+
 		// Update the application status
 		applicationNumber := student.ApplicationNumber
 		application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
@@ -104,27 +105,26 @@ func CreateAdmission(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
 			return
 		}
+		application.Status = "ADMITTED"
 
-		updateApplicationStatus := applicationModel.Application{
-			Status: "ADMITTED",
+		tx := config.DB.Begin()
+		generateADN, err := studentControllers.CreateADN(student.APNStatus, tx)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create ADN"})
+			return
 		}
 
-		if err := tx.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
+		student.APNStatus = "Archive"
+		student.ADN = generateADN
+		if err := tx.Save(&student).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
+			return
+		}
+
+		if err := tx.Save(&application).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
-			return
-		}
-
-		//validate if student has been admitted before on the same academic year and study period
-		var admission models.Admission
-		if err := tx.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ?", studentPayload, payload.AcademicYearNumber, payload.StudyPeriodNumber).First(&admission).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Student has already been admitted for the selected academic year and study period"})
-			return
-		}
-
-		// validate if student has been admitted before on the same academic year and study period and campus class
-
-		if err := tx.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ? AND campus_class_number = ?", studentPayload, payload.AcademicYearNumber, payload.StudyPeriodNumber, payload.CampusClassNumber).First(&admission).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Student has already been admitted for the selected academic year, study period and campus class"})
 			return
 		}
 

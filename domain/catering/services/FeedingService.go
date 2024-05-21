@@ -185,7 +185,7 @@ func getGroupDailyMenu(groupNumber string) []responses.GroupDayMealCourses {
 
 func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumber string) ([]responses.UserMealResponse, error) {
 
-	var mealsResponse []responses.UserMealResponse
+	mealsResponse := make([]responses.UserMealResponse, 0)
 
 	currentTime := time.Now()
 	day := currentTime.Format("Mon")

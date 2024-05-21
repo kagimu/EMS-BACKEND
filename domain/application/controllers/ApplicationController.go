@@ -152,11 +152,6 @@ func EditApplication(c *gin.Context) {
 }
 
 func FetchApplicationByNumber(c *gin.Context, applicationNumber string) (*models.Application, error) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return nil, err
-	}
 
 	var application models.Application
 	if err := config.DB.Where("number = ?", applicationNumber).Preload("Parent").First(&application).Error; err != nil {
