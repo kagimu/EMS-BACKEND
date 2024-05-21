@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -29,6 +30,17 @@ func CreateFeedingGroupUser(c *gin.Context) {
 	}
 
 	for _, user := range payload.UserNumber {
+
+		checkExists, err := repositories.GetFeedingGroupUserByUserNumber(user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Checking if user already added to a group error: " + err.Error()})
+			return
+		}
+
+		if checkExists.Number != "" {
+			continue
+		}
+
 		saveFeedingGroupUser := models.FeedingGroupUser{
 			Number:             uuid.NewV4().String(),
 			FeedingGroupNumber: payload.FeedingGroupNumber,
