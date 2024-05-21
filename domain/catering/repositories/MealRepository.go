@@ -10,7 +10,7 @@ import (
 
 func SaveMeal(db *gorm.DB, meal models.Meal) error {
 
-	if err := db.Save(meal).Error; err != nil {
+	if err := db.Save(&meal).Error; err != nil {
 
 		if err = db.Rollback().Error; err != nil {
 			return err
