@@ -26,3 +26,21 @@ func GetFeedingGroupUserByGroupNumber(groupNumber string) ([]models.FeedingGroup
 
 	return feedingGroupUsers, nil
 }
+
+func GetFeedingGroupUserByUserNumber(userNumber string) (models.FeedingGroupUser, error) {
+
+	db := config.DB
+
+	var feedingGroupUser models.FeedingGroupUser
+
+	if err := db.Where("", userNumber).First(&feedingGroupUser).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return feedingGroupUser, nil
+		}
+
+		return feedingGroupUser, err
+	}
+
+	return feedingGroupUser, nil
+}
