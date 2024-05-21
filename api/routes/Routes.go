@@ -46,6 +46,7 @@ import (
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
+	statisticsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/statistics/api/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentDetailsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
@@ -471,11 +472,6 @@ func SetupRoutes() *gin.Engine {
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 			admission.GET("items/:admission_number", admissionController.FetchItemsAddedOnAdmission)
 
-			conditions := admission.Group("/admission-offer-conditions")
-			{
-				conditions.POST("", admissionController.CreateAdmissionOfferCondition)
-				conditions.GET("", admissionController.FetchAdmissionOfferConditions)
-			}
 		}
 
 		assessmentArea := main.Group("/assessment-areas")
@@ -735,6 +731,11 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
 			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)
 			catering.POST("activate-meal-course", cateringController.ActivateMealCourse)
+		}
+
+		statistics := main.Group("statistics")
+		{
+			statistics.GET("summary", statisticsController.FetchStatistics)
 		}
 	}
 
