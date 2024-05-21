@@ -300,7 +300,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 				FeedingSessionNumber: feedingSession.Number,
 			}
 
-			userMeal.Meals = findUserMeal(user.Number, feedItems)
+			userMeal.Meals = findUserMeal(user.Number, feedItems, mealCourse.Number)
 
 			mealsResponse = append(mealsResponse, userMeal)
 		}
@@ -310,9 +310,17 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 	return mealsResponse, nil
 }
 
-func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSessionItem) []responses.SingleUserMealItem {
+func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSessionItem, mealCourse string) []responses.SingleUserMealItem {
 
 	var items []responses.SingleUserMealItem
+
+	currentTime := time.Now()
+	currentDate := currentTime.Format("2006-01-02")
+
+	date_, err := time.Parse(time.DateOnly, currentDate)
+	if err != nil {
+		fmt.Println("Error formatting today's date: " + currentDate)
+	}
 
 	for _, feedingSessionItem := range feedingSessionItems {
 
@@ -322,9 +330,24 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 			return items
 		}
 
+		var served float64
+
+		servedStock, err := repositories.GetMealStockingByMealNumberAndDateUserNumber(mealCourse, date_, userNumber, menuItem.Number)
+
+		if err != nil {
+			fmt.Println("Error getting menu item served quantity: " + err.Error())
+			return items
+		}
+
+		if servedStock.Number != "" {
+			served = -1 * servedStock.Quantity
+		} else {
+			served = 0
+		}
+
 		singleUserMenu := responses.SingleUserMealItem{
 			Quantity:       feedingSessionItem.Quantity,
-			ServedQuantity: -1,
+			ServedQuantity: served,
 			MenuItemNumber: menuItem.Number,
 			MenuItemName:   menuItem.Name,
 		}
