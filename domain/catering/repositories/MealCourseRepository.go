@@ -25,7 +25,7 @@ func GetAllMealCoursesByMealCourseCount(mealCourseCountNumber string, status str
 
 	var mealCourses []models.MealCourse
 
-	if err := db.Scopes(filters.ByStatus(status)).Where("meal_course_count_number = ? ", mealCourseCountNumber).Find(&mealCourses).Error; err != nil {
+	if err := db.Scopes(filters.ByStatus(status)).Where("meal_course_count_number = ? ", mealCourseCountNumber).Order("code ASC").Find(&mealCourses).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return mealCourses, nil

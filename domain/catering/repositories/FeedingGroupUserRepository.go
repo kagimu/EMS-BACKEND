@@ -33,7 +33,7 @@ func GetFeedingGroupUserByUserNumber(userNumber string) (models.FeedingGroupUser
 
 	var feedingGroupUser models.FeedingGroupUser
 
-	if err := db.Where("", userNumber).First(&feedingGroupUser).Error; err != nil {
+	if err := db.Where("user_number", userNumber).First(&feedingGroupUser).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return feedingGroupUser, nil

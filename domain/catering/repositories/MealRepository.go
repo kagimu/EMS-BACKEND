@@ -10,7 +10,7 @@ import (
 
 func SaveMeal(db *gorm.DB, meal models.Meal) error {
 
-	if err := db.Save(meal).Error; err != nil {
+	if err := db.Save(&meal).Error; err != nil {
 
 		if err = db.Rollback().Error; err != nil {
 			return err
@@ -27,9 +27,11 @@ func GetMealByMealNumberAndDateAndUserNumber(mealCourseNumber string, date time.
 
 	var meal models.Meal
 
+	formattedDate := date.Format(time.DateOnly)
+
 	if err := db.
 		Where("meal_course_number = ? ", mealCourseNumber).
-		Where("date = ? ", date).
+		Where("DATE(date) = ? ", formattedDate).
 		Where("user_number", userNumber).
 		First(&meal).Error; err != nil {
 
