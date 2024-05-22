@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -26,6 +27,17 @@ func CreateFeedingSessionItemController(c *gin.Context) {
 	}
 
 	for _, feedingItem := range payload.MenuItemQuantity {
+
+		checkExists, err := repositories.GetFeedingSessionItemByFeedingSessionNumberAndMenuItemNumber(payload.FeedingSessionNumber, feedingItem.MenuItemNumber)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Checking duplicate menu item error: " + err.Error()})
+			return
+		}
+
+		if checkExists.Number != "" {
+			continue
+		}
+
 		saveItemAssembly := models.FeedingSessionItem{
 			Number:               uuid.NewV4().String(),
 			FeedingSessionNumber: payload.FeedingSessionNumber,

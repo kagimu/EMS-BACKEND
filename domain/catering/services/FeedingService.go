@@ -222,8 +222,6 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 		return mealsResponse, errors.New("meal course can not be used on the selected campus")
 	}
 
-	//GetFeedingSessionForCampusAndMealCourseAndDay
-
 	mealCourseFeedingSession, err := repositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
 	if err != nil {
 		return mealsResponse, err
@@ -330,6 +328,17 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 			return items
 		}
 
+		unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
+		if err != nil {
+			fmt.Println("Error getting unit of measure" + err.Error())
+			return items
+		}
+
+		unitOfMeasureName := "None"
+		if unitOfMeasure.Number != "" {
+			unitOfMeasureName = unitOfMeasure.Name
+		}
+
 		var served float64
 
 		servedStock, err := repositories.GetMealStockingByMealNumberAndDateUserNumber(mealCourse, date_, userNumber, menuItem.Number)
@@ -350,6 +359,7 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 			ServedQuantity: served,
 			MenuItemNumber: menuItem.Number,
 			MenuItemName:   menuItem.Name,
+			UnitOfMeasure:  unitOfMeasureName,
 		}
 
 		items = append(items, singleUserMenu)
@@ -408,6 +418,10 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		return err
 	}
 
+	if mealRequest.Quantity <= 0 {
+		return errors.New("quantities served can not be zero")
+	}
+
 	if currentStock < mealRequest.Quantity {
 		return errors.New("not enough stock")
 	}
@@ -427,7 +441,7 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	newMeal, err := repositories.GetMealByMealNumberAndDateAndUserNumber(mealRequest.MealCourseNumber, formatDate, mealRequest.UserNumber)
 	if err != nil {
-		return err
+		return errors.New("Checking if item served error: " + err.Error())
 	}
 
 	groupUser, err := repositories.GetFeedingGroupUserByUserNumber(mealRequest.UserNumber)
@@ -450,6 +464,7 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		newMeal.StaffNumber = currentUser
 		newMeal.Day = day
 		newMeal.CampusNumber = groupUser.CampusNumber
+		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
 	} else {
 		newMeal.StaffNumber = currentUser
 		newMeal.CampusNumber = groupUser.CampusNumber
@@ -459,10 +474,10 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	err = repositories.SaveMeal(tx, newMeal)
 	if err != nil {
-		return err
+		return errors.New("error creating meal: " + err.Error())
 	}
 
-	stocking, err := repositories.GetMealStockByMealNumberAndMenuItemNumber(newMeal.Number, mealRequest.MenuItemNumber)
+	stocking, err := repositories.GetMealStockByMealNumberAndMenuItemNumber(tx, newMeal.Number, mealRequest.MenuItemNumber)
 	if err != nil {
 		return err
 	}
@@ -481,10 +496,10 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	err = repositories.SaveStocking(tx, stocking)
 	if err != nil {
-		return err
+		return errors.New("error reducing stock: " + err.Error())
 	}
 
-	mealStocking, err := repositories.GetMealStockingByMealNumberAndStockingNumber(newMeal.Number, stocking.Number)
+	mealStocking, err := repositories.GetMealStockingByMealNumberAndStockingNumber(tx, newMeal.Number, stocking.Number)
 	if err != nil {
 		return err
 	}
@@ -496,7 +511,7 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	err = repositories.SaveMealStocking(tx, mealStocking)
 	if err != nil {
-		return err
+		return errors.New("error mapping stock with meal taken: " + err.Error())
 	}
 
 	if err = tx.Commit().Error; err != nil {

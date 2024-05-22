@@ -17,5 +17,11 @@ func (f *FeedingSessionItemRequest) Validate() error {
 		return errors.New("menu item quantity is required")
 	}
 
+	for _, menuItem := range f.MenuItemQuantity {
+		if menuItem.Quantity <= 0 {
+			return errors.New("menu item quantity should be greater than zero")
+		}
+	}
+
 	return nil
 }

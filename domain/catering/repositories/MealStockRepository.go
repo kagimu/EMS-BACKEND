@@ -2,13 +2,11 @@ package repositories
 
 import (
 	"errors"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"gorm.io/gorm"
 )
 
-func GetMealStockByMealNumberAndMenuItemNumber(mealNumber string, menuItemNumber string) (models.Stocking, error) {
-	db := config.DB
+func GetMealStockByMealNumberAndMenuItemNumber(db *gorm.DB, mealNumber string, menuItemNumber string) (models.Stocking, error) {
 
 	var stocking models.Stocking
 
@@ -29,7 +27,7 @@ func GetMealStockByMealNumberAndMenuItemNumber(mealNumber string, menuItemNumber
 
 func SaveMealStocking(tx *gorm.DB, stock models.MealStock) error {
 
-	if err := tx.Save(stock).Error; err != nil {
+	if err := tx.Save(&stock).Error; err != nil {
 
 		if err = tx.Rollback().Error; err != nil {
 			return err
@@ -41,9 +39,9 @@ func SaveMealStocking(tx *gorm.DB, stock models.MealStock) error {
 	return nil
 }
 
-func GetMealStockingByMealNumberAndStockingNumber(mealNumber string, stockingNumber string) (models.MealStock, error) {
+func GetMealStockingByMealNumberAndStockingNumber(db *gorm.DB, mealNumber string, stockingNumber string) (models.MealStock, error) {
 
-	db := config.DB
+	//db := config.DB
 
 	var mealStock models.MealStock
 
