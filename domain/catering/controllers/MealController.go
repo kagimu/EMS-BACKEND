@@ -35,6 +35,33 @@ func SaveMealCourse(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Meal course successfully saved"})
 }
 
+func UpdateSaveMealCourse(ctx *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateMealCourseCountRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again: " + err.Error()})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err = services.UpdateSaveMealCourse(payload, user.Number); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Updating ERROR: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Meal course successfully saved"})
+}
+
 func GetMealCourses(ctx *gin.Context) {
 
 	_, err := commons.GetUserFromHeader(ctx)
@@ -217,4 +244,31 @@ func AddMeal(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Meal created successfully"})
+}
+
+func UpdateMealCourseItem(ctx *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateCourseRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again: " + err.Error()})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err = services.UpdateMealCourseName(payload, user.Number); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "ERROR: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Meal course name updated successfully"})
 }

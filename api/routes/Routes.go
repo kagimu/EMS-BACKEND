@@ -731,6 +731,9 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
 			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)
 			catering.POST("activate-meal-course", cateringController.ActivateMealCourse)
+
+			catering.PATCH("meal-courses", cateringController.UpdateSaveMealCourse)
+			catering.PATCH("meal-courses/item", cateringController.UpdateMealCourseItem)
 		}
 
 		statistics := main.Group("statistics")
