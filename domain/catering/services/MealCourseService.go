@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	campusRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
@@ -44,12 +45,11 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		SchoolNumber: school.Number,
 	}
 
-	if oldMealCourseCount.Number == "" {
-		oldMealCourseCount = newMealCourseCount
-	} else {
-		oldMealCourseCount.UserNumber = currentUserNumber
-		oldMealCourseCount.Count = mealCourseCountRequest.Count
+	if oldMealCourseCount.Number != "" {
+		return errors.New("you already have a meal courses defined, click edit to update")
 	}
+
+	oldMealCourseCount = newMealCourseCount
 
 	if _, err = repositories.SaveMealCourseCount(oldMealCourseCount); err != nil {
 		return errors.New("saving or updating meal course count error: " + err.Error())
@@ -88,11 +88,125 @@ func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, curr
 		}
 
 		if checkMeal.Number != "" {
+			fmt.Println("name already added: " + checkMeal.Name)
+			continue
+		}
+
+		checkMeal, err = repositories.GetMealCourseByCode(mealCourse.Code, oldMealCourseCount.Number)
+		if err != nil {
+			return errors.New("checking meal course by code error : " + err.Error())
+		}
+
+		if checkMeal.Number != "" {
+			return errors.New("meal course code '" + fmt.Sprintf("%d", checkMeal.Code) + "'  already used")
+		}
+
+		checkMeal = newMealCourse
+
+		if _, err = repositories.SaveMealCourse(checkMeal); err != nil {
+			return errors.New("save or update meal course error : " + err.Error())
+		}
+
+	}
+
+	return nil
+
+}
+
+func UpdateSaveMealCourse(mealCourseCountRequest requests.UpdateMealCourseCountRequest, currentUserNumber string) error {
+
+	var school schoolModels.School
+
+	school, err := repositories2.GetSchoolByNumber(mealCourseCountRequest.SchoolNumber)
+
+	if err != nil {
+		return errors.New("checking for valid school number error : " + err.Error())
+	}
+
+	if school.Number == "" {
+		return errors.New("invalid school number")
+	}
+
+	var oldMealCourseCount models.MealCourseCount
+
+	oldMealCourseCount, err = repositories.GetMealCourseCountBySchoolNumber(school.Number)
+
+	if err != nil {
+		return errors.New("getting course count by school number: " + err.Error())
+	}
+
+	newMealCourseCount := models.MealCourseCount{
+		Count:        mealCourseCountRequest.Count,
+		UserNumber:   currentUserNumber,
+		Number:       uuid.NewV4().String(),
+		SchoolNumber: school.Number,
+	}
+
+	if oldMealCourseCount.Number == "" {
+		return errors.New("you haven't defined any meal course, try again")
+	}
+
+	oldMealCourseCount.UserNumber = newMealCourseCount.UserNumber
+	oldMealCourseCount.Count = newMealCourseCount.Count
+
+	if _, err = repositories.SaveMealCourseCount(oldMealCourseCount); err != nil {
+		return errors.New("saving or updating meal course count error: " + err.Error())
+	}
+
+	allOtherMealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(oldMealCourseCount.Number, constants.StatusActive)
+	if err != nil {
+		return errors.New("getting all active meal course by course count number error : " + err.Error())
+	}
+
+	for _, otherMealCourse := range allOtherMealCourses {
+
+		otherMealCourse.Status = constants.StatusInactive
+
+		if _, err = repositories.SaveMealCourse(otherMealCourse); err != nil {
+			return errors.New("updating current meal course names to inactive : " + err.Error())
+		}
+	}
+
+	for _, mealCourse := range mealCourseCountRequest.Courses {
+
+		newMealCourse := models.MealCourse{
+			Number:                uuid.NewV4().String(),
+			Name:                  mealCourse.Name,
+			MealCourseCountNumber: oldMealCourseCount.Number,
+			Status:                constants.StatusActive,
+			UserNumber:            currentUserNumber,
+			Code:                  mealCourse.Code,
+		}
+
+		var checkMeal models.MealCourse
+
+		checkMeal, err = repositories.GetMealCourseByName(mealCourse.Name, oldMealCourseCount.Number)
+		if err != nil {
+			return errors.New("checking meal course by name error : " + err.Error())
+		}
+
+		if checkMeal.Number == "" {
+			checkMeal, err = repositories.GetMealCourseByNumber(mealCourse.MealCourseNumber)
+			if err != nil {
+				return errors.New("checking meal course name by number error : " + err.Error())
+			}
+		}
+
+		if checkMeal.Number != "" {
 			checkMeal.Name = newMealCourse.Name
 			checkMeal.Status = newMealCourse.Status
 			checkMeal.UserNumber = newMealCourse.UserNumber
-			checkMeal.Code = newMealCourse.Code
 		} else {
+
+			checkMeal, err = repositories.GetMealCourseByCode(mealCourse.Code, oldMealCourseCount.Number)
+			if err != nil {
+				return errors.New("checking meal course name by code error : " + err.Error())
+			}
+
+			if checkMeal.Number != "" {
+				return errors.New("adding meal course with already used code: " + fmt.Sprintf("%d", mealCourse.Code))
+			}
+
 			checkMeal = newMealCourse
 		}
 
@@ -414,6 +528,51 @@ func activateForDay(day string, campuses []string, currentUserNumber string, mea
 			return err
 		}
 
+	}
+
+	return nil
+}
+
+func UpdateMealCourseName(mealCourseNameRequest requests.UpdateCourseRequest, currentUser string) error {
+
+	if mealCourseNameRequest.MealCourseNumber == "" {
+		return errors.New("provide meal course number")
+	}
+
+	checkMealCourse, err := repositories.GetMealCourseByNumber(mealCourseNameRequest.MealCourseNumber)
+	if err != nil {
+		return errors.New("checking meal course number error: " + err.Error())
+	}
+
+	if checkMealCourse.Number == "" {
+		return errors.New("invalid meal course name number")
+	}
+
+	checkName, err := repositories.GetMealCourseByName(mealCourseNameRequest.Name, checkMealCourse.MealCourseCountNumber)
+	if err != nil {
+		return errors.New("checking meal course name error: " + err.Error())
+	}
+
+	if checkName.Number != "" && checkName.Number != checkMealCourse.Number {
+		return errors.New("this name is already defined")
+	}
+
+	checkCode, err := repositories.GetMealCourseByCode(mealCourseNameRequest.Code, checkMealCourse.MealCourseCountNumber)
+	if err != nil {
+		return errors.New("checking meal course code error: " + err.Error())
+	}
+
+	if checkCode.Number != "" && checkCode.Number != checkMealCourse.Number {
+		return errors.New("code '" + fmt.Sprintf("%d", mealCourseNameRequest.Code) + "' is already used")
+	}
+
+	checkMealCourse.Code = mealCourseNameRequest.Code
+	checkMealCourse.UserNumber = currentUser
+	checkMealCourse.Name = mealCourseNameRequest.Name
+
+	_, err = repositories.SaveMealCourse(checkMealCourse)
+	if err != nil {
+		return errors.New("updating meal course name error: " + err.Error())
 	}
 
 	return nil

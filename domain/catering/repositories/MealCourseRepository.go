@@ -99,3 +99,23 @@ func GetMealCourseByNumberAndSchool(mealCourseNumber string, schoolNumber string
 
 	return mealCourse, nil
 }
+
+func GetMealCourseByCode(code int, mealCourseCountNumber string) (models.MealCourse, error) {
+	db := config.DB
+
+	var mealCourse models.MealCourse
+
+	if err := db.
+		Where("code = ?", code).
+		Where("meal_course_count_number = ?", mealCourseCountNumber).
+		First(&mealCourse).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return mealCourse, nil
+		}
+
+		return mealCourse, err
+	}
+
+	return mealCourse, nil
+}
