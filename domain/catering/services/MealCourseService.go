@@ -535,6 +535,10 @@ func activateForDay(day string, campuses []string, currentUserNumber string, mea
 
 func UpdateMealCourseName(mealCourseNameRequest requests.UpdateCourseRequest, currentUser string) error {
 
+	if mealCourseNameRequest.MealCourseNumber == "" {
+		return errors.New("provide meal course number")
+	}
+
 	checkMealCourse, err := repositories.GetMealCourseByNumber(mealCourseNameRequest.MealCourseNumber)
 	if err != nil {
 		return errors.New("checking meal course number error: " + err.Error())
