@@ -76,3 +76,30 @@ func FetchFeedingGroups(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": feedingGroups})
 }
+
+func UpdateFeedingGroup(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateFeedingGroupRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Check the provided body request."})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.UpdateFeedingGroup(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Updating feeding group error: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Feeding group has been updated"})
+}

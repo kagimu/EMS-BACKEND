@@ -520,3 +520,35 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 	return nil
 }
+
+func UpdateFeedingGroup(payload requests.UpdateFeedingGroupRequest, currentUserNumber string) error {
+
+	feedingGroup, err := repositories.GetFeedingGroupByNumber(payload.FeedingGroupNumber)
+	if err != nil {
+		return err
+	}
+
+	if feedingGroup.Number == "" {
+		return errors.New("invalid feeding group number")
+	}
+
+	checkFeedingGroupDup, err := repositories.GetFeedingGroupByName(payload.Name, feedingGroup.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if checkFeedingGroupDup.Number != "" && checkFeedingGroupDup.Number != feedingGroup.Number {
+		return errors.New("this name is already defined")
+	}
+
+	feedingGroup.Status = payload.Status
+	feedingGroup.Name = payload.Name
+	feedingGroup.UserNumber = currentUserNumber
+
+	err = repositories.SaveFeedingGroup(feedingGroup)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
