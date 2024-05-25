@@ -9,7 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	cateringRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
@@ -19,7 +19,7 @@ import (
 
 func AddMealCoursesToFeedingGroup(courseToFeedingGroupRequest requests.MealCourseToFeedingGroupRequest, currentUser string) error {
 
-	feedingGroup, err := repositories.GetFeedingGroupByNumber(courseToFeedingGroupRequest.FeedingGroupNumber)
+	feedingGroup, err := cateringRepositories.GetFeedingGroupByNumber(courseToFeedingGroupRequest.FeedingGroupNumber)
 
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func AddMealCoursesToFeedingGroup(courseToFeedingGroupRequest requests.MealCours
 func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models.FeedingGroup, currentUser string) error {
 
 	for _, mealCourse := range mealCourses {
-		checkMeal, err := repositories.GetMealCourseByNumber(mealCourse)
+		checkMeal, err := cateringRepositories.GetMealCourseByNumber(mealCourse)
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models
 			return errors.New(fmt.Sprintf("meal course '%s' is not active", checkMeal.Name))
 		}
 
-		groupMeal, err := repositories.GetFeedingGroupMealCourseByMealAndGroup(checkMeal.Number, day, feedingGroup.Number)
+		groupMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(checkMeal.Number, day, feedingGroup.Number)
 		if err != nil {
 			return err
 		}
@@ -80,7 +80,7 @@ func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models
 			UserNumber:         currentUser,
 		}
 
-		if err := repositories.SaveFeedingGroupMealCourse(newGroupMealCourse); err != nil {
+		if err := cateringRepositories.SaveFeedingGroupMealCourse(newGroupMealCourse); err != nil {
 			return err
 		}
 
@@ -109,7 +109,7 @@ func GetFeedingGroupMealCourseCalendar(schoolNumber string) (responses.FeedingGr
 		headers = append(headers, day)
 	}
 
-	groups, err := repositories.GetAllFeedingGroups(school.Number, constants.StatusActive)
+	groups, err := cateringRepositories.GetAllFeedingGroups(school.Number, constants.StatusActive)
 
 	if err != nil {
 		return response, err
@@ -147,7 +147,7 @@ func getGroupDailyMenu(groupNumber string) []responses.GroupDayMealCourses {
 		item.Day = day
 		item.Active = false
 
-		mealCourses, err := repositories.GetAllFeedingGroupMealCoursesForDay(groupNumber, day)
+		mealCourses, err := cateringRepositories.GetAllFeedingGroupMealCoursesForDay(groupNumber, day)
 
 		var meals []string
 
@@ -204,7 +204,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 		return mealsResponse, errors.New("invalid campus number")
 	}
 
-	mealCourse, err := repositories.GetMealCourseByNumber(mealCourseNumber)
+	mealCourse, err := cateringRepositories.GetMealCourseByNumber(mealCourseNumber)
 	if err != nil {
 		return mealsResponse, err
 	}
@@ -213,7 +213,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 		return mealsResponse, errors.New("meal course is: '" + mealCourse.Status + "'")
 	}
 
-	checkSchool, err := repositories.GetMealCourseByNumberAndSchool(mealCourse.Number, campus.SchoolNumber)
+	checkSchool, err := cateringRepositories.GetMealCourseByNumberAndSchool(mealCourse.Number, campus.SchoolNumber)
 	if err != nil {
 		return mealsResponse, err
 	}
@@ -222,7 +222,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 		return mealsResponse, errors.New("meal course can not be used on the selected campus")
 	}
 
-	mealCourseFeedingSession, err := repositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
+	mealCourseFeedingSession, err := cateringRepositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
 	if err != nil {
 		return mealsResponse, err
 	}
@@ -233,7 +233,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 
 	feedingSession := mealCourseFeedingSession.FeedingSession
 
-	feedItems, err := repositories.GetFeedingSessionItems(feedingSession.Number)
+	feedItems, err := cateringRepositories.GetFeedingSessionItems(feedingSession.Number)
 	if err != nil {
 		return mealsResponse, err
 	}
@@ -246,7 +246,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 
 	if feedingGroupNumber != "" {
 
-		checkGroup, err := repositories.GetFeedingGroupByNumber(feedingGroupNumber)
+		checkGroup, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
 		if err != nil {
 			return mealsResponse, err
 		}
@@ -255,7 +255,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 			return mealsResponse, errors.New("invalid group number")
 		}
 
-		checkAllowedToHaveMeal, err := repositories.GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber, day, feedingGroupNumber)
+		checkAllowedToHaveMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber, day, feedingGroupNumber)
 		if err != nil {
 			return mealsResponse, err
 		}
@@ -268,7 +268,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 
 	} else {
 
-		allFeedingGroupsForMealAndDay, err := repositories.GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber, day)
+		allFeedingGroupsForMealAndDay, err := cateringRepositories.GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber, day)
 		if err != nil {
 			return mealsResponse, err
 		}
@@ -281,7 +281,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 
 	for _, feedingGroup := range feedingGroups {
 
-		allUsers, err := repositories.GetFeedingGroupUserByGroupNumber(feedingGroup.Number)
+		allUsers, err := cateringRepositories.GetFeedingGroupUserByGroupNumber(feedingGroup.Number)
 		if err != nil {
 			return mealsResponse, err
 		}
@@ -322,13 +322,13 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 
 	for _, feedingSessionItem := range feedingSessionItems {
 
-		menuItem, err := repositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber)
+		menuItem, err := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber)
 		if err != nil {
 			fmt.Println("Error getting menu item from feeding session")
 			return items
 		}
 
-		unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
+		unitOfMeasure, err := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
 		if err != nil {
 			fmt.Println("Error getting unit of measure" + err.Error())
 			return items
@@ -341,7 +341,7 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 
 		var served float64
 
-		servedStock, err := repositories.GetMealStockingByMealNumberAndDateUserNumber(mealCourse, date_, userNumber, menuItem.Number)
+		servedStock, err := cateringRepositories.GetMealStockingByMealNumberAndDateUserNumber(mealCourse, date_, userNumber, menuItem.Number)
 
 		if err != nil {
 			fmt.Println("Error getting menu item served quantity: " + err.Error())
@@ -372,7 +372,7 @@ func GetFeedingGroupsBySchoolNumber(schoolNumber string, status string) ([]respo
 
 	var response []responses.FeedingGroupResponse
 
-	feedingGroups, err := repositories.GetAllFeedingGroups(schoolNumber, status)
+	feedingGroups, err := cateringRepositories.GetAllFeedingGroups(schoolNumber, status)
 	if err != nil {
 		return response, err
 	}
@@ -413,7 +413,7 @@ func GetFeedingGroupsBySchoolNumber(schoolNumber string, status string) ([]respo
 
 func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
-	currentStock, err := repositories.GetMenuItemCurrentStock(mealRequest.MenuItemNumber)
+	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(mealRequest.MenuItemNumber)
 	if err != nil {
 		return err
 	}
@@ -439,12 +439,12 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		return errors.New(checkDay)
 	}
 
-	newMeal, err := repositories.GetMealByMealNumberAndDateAndUserNumber(mealRequest.MealCourseNumber, formatDate, mealRequest.UserNumber)
+	newMeal, err := cateringRepositories.GetMealByMealNumberAndDateAndUserNumber(mealRequest.MealCourseNumber, formatDate, mealRequest.UserNumber)
 	if err != nil {
 		return errors.New("Checking if item served error: " + err.Error())
 	}
 
-	groupUser, err := repositories.GetFeedingGroupUserByUserNumber(mealRequest.UserNumber)
+	groupUser, err := cateringRepositories.GetFeedingGroupUserByUserNumber(mealRequest.UserNumber)
 	if err != nil {
 		return err
 	}
@@ -472,12 +472,12 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
 	}
 
-	err = repositories.SaveMeal(tx, newMeal)
+	err = cateringRepositories.SaveMeal(tx, newMeal)
 	if err != nil {
 		return errors.New("error creating meal: " + err.Error())
 	}
 
-	stocking, err := repositories.GetMealStockByMealNumberAndMenuItemNumber(tx, newMeal.Number, mealRequest.MenuItemNumber)
+	stocking, err := cateringRepositories.GetMealStockByMealNumberAndMenuItemNumber(tx, newMeal.Number, mealRequest.MenuItemNumber)
 	if err != nil {
 		return err
 	}
@@ -494,12 +494,12 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		stocking.UserNumber = currentUser
 	}
 
-	err = repositories.SaveStocking(tx, stocking)
+	err = cateringRepositories.SaveStocking(tx, stocking)
 	if err != nil {
 		return errors.New("error reducing stock: " + err.Error())
 	}
 
-	mealStocking, err := repositories.GetMealStockingByMealNumberAndStockingNumber(tx, newMeal.Number, stocking.Number)
+	mealStocking, err := cateringRepositories.GetMealStockingByMealNumberAndStockingNumber(tx, newMeal.Number, stocking.Number)
 	if err != nil {
 		return err
 	}
@@ -509,7 +509,7 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		mealStocking.StockingNumber = stocking.Number
 	}
 
-	err = repositories.SaveMealStocking(tx, mealStocking)
+	err = cateringRepositories.SaveMealStocking(tx, mealStocking)
 	if err != nil {
 		return errors.New("error mapping stock with meal taken: " + err.Error())
 	}
@@ -523,7 +523,7 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 func UpdateFeedingGroup(payload requests.UpdateFeedingGroupRequest, currentUserNumber string) error {
 
-	feedingGroup, err := repositories.GetFeedingGroupByNumber(payload.FeedingGroupNumber)
+	feedingGroup, err := cateringRepositories.GetFeedingGroupByNumber(payload.FeedingGroupNumber)
 	if err != nil {
 		return err
 	}
@@ -532,7 +532,7 @@ func UpdateFeedingGroup(payload requests.UpdateFeedingGroupRequest, currentUserN
 		return errors.New("invalid feeding group number")
 	}
 
-	checkFeedingGroupDup, err := repositories.GetFeedingGroupByName(payload.Name, feedingGroup.SchoolNumber)
+	checkFeedingGroupDup, err := cateringRepositories.GetFeedingGroupByName(payload.Name, feedingGroup.SchoolNumber)
 	if err != nil {
 		return err
 	}
@@ -545,7 +545,7 @@ func UpdateFeedingGroup(payload requests.UpdateFeedingGroupRequest, currentUserN
 	feedingGroup.Name = payload.Name
 	feedingGroup.UserNumber = currentUserNumber
 
-	err = repositories.SaveFeedingGroup(feedingGroup)
+	err = cateringRepositories.SaveFeedingGroup(feedingGroup)
 	if err != nil {
 		return err
 	}
@@ -555,7 +555,7 @@ func UpdateFeedingGroup(payload requests.UpdateFeedingGroupRequest, currentUserN
 
 func CreateFeedingGroup(payload requests.FeedingGroupRequest, currentUserNumber string) error {
 
-	checkName, err := repositories.GetFeedingGroupByName(payload.Name, payload.SchoolNumber)
+	checkName, err := cateringRepositories.GetFeedingGroupByName(payload.Name, payload.SchoolNumber)
 	if err != nil {
 		return err
 	}
@@ -571,10 +571,82 @@ func CreateFeedingGroup(payload requests.FeedingGroupRequest, currentUserNumber 
 		UserNumber:   currentUserNumber,
 	}
 
-	err = repositories.SaveFeedingGroup(newFeedingGroup)
+	err = cateringRepositories.SaveFeedingGroup(newFeedingGroup)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func SaveFeedingSession(payload requests.FeedingSessionRequest, currentUserNumber string) error {
+
+	checkFeedingSession, err := cateringRepositories.GetFeedingSessionByNameAndSchool(payload.Name, payload.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if checkFeedingSession.Number != "" {
+		return errors.New("this name is already defined")
+	}
+
+	checkFeedingSession, err = cateringRepositories.GetFeedingSessionByCodeAndSchool(payload.Code, payload.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if checkFeedingSession.Number != "" {
+		return errors.New("the provided code is already used")
+	}
+
+	newFeedingSession := models.FeedingSession{
+		Number:       uuid.NewV4().String(),
+		Name:         payload.Name,
+		Status:       payload.Status,
+		SchoolNumber: payload.SchoolNumber,
+		Code:         payload.Code,
+		UserNumber:   currentUserNumber,
+	}
+
+	err = cateringRepositories.SaveFeedingSession(newFeedingSession)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetFeedingSession(schoolNumber string) ([]responses.FeedingSessionResponse, error) {
+
+	var feedingSessions []responses.FeedingSessionResponse
+
+	sessions, err := cateringRepositories.GetFeedingSessionsBySchoolNumber(schoolNumber)
+
+	if err != nil {
+		return feedingSessions, err
+	}
+
+	for _, session := range sessions {
+		feedingSessions = append(feedingSessions, BuildFeedingSessionResponse(session))
+	}
+
+	return feedingSessions, nil
+}
+
+func BuildFeedingSessionResponse(session models.FeedingSession) responses.FeedingSessionResponse {
+
+	response := responses.FeedingSessionResponse{
+		Name:   session.Name,
+		Code:   session.Code,
+		Number: session.Number,
+	}
+
+	user, err := repository.GetUserByNumber(session.UserNumber)
+	if err != nil {
+		fmt.Println("Getting session user error", err.Error())
+	} else if user.Number == "" {
+		response.AddedBy = user.FirstName
+	}
+
+	return response
 }
