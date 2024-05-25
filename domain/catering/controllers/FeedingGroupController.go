@@ -4,12 +4,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"net/http"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 func CreateFeedingGroup(c *gin.Context) {
@@ -30,23 +27,9 @@ func CreateFeedingGroup(c *gin.Context) {
 		return
 	}
 
-	saveFeedingGroup := models.FeedingGroup{
-		Number:       uuid.NewV4().String(),
-		Name:         payload.Name,
-		SchoolNumber: payload.SchoolNumber,
-		Status:       payload.Status,
-		UserNumber:   user.Number,
-	}
-
-	var duplicateFeedingGroup models.FeedingGroup
-	if err := config.DB.Where("name = ?", payload.Name).First(&duplicateFeedingGroup).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Feeding group name already exists"})
-		return
-	}
-
-	if err := config.DB.Create(&saveFeedingGroup).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save feeding group"})
-		return
+	err = services.CreateFeedingGroup(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Create Feeding Group error: " + err.Error()})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding group has been created"})

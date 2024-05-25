@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
-	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	campusRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
 	"time"
 )
@@ -93,7 +93,7 @@ func GetFeedingGroupMealCourseCalendar(schoolNumber string) (responses.FeedingGr
 
 	var response responses.FeedingGroupMealCourseCalendar
 
-	school, err := repositories2.GetSchoolByNumber(schoolNumber)
+	school, err := schoolRepositories.GetSchoolByNumber(schoolNumber)
 
 	if err != nil {
 		return response, err
@@ -194,7 +194,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 		return mealsResponse, errors.New(checkDay)
 	}
 
-	campus, err := repositories3.GetCampusByNumber(campusNumber)
+	campus, err := campusRepositories.GetCampusByNumber(campusNumber)
 
 	if err != nil {
 		return mealsResponse, err
@@ -388,7 +388,7 @@ func GetFeedingGroupsBySchoolNumber(schoolNumber string, status string) ([]respo
 			return response, errors.New("user not found")
 		}
 
-		school, err := repositories2.GetSchoolByNumber(feedingGroup.SchoolNumber)
+		school, err := schoolRepositories.GetSchoolByNumber(feedingGroup.SchoolNumber)
 		if err != nil {
 			return response, err
 		}
@@ -546,6 +546,32 @@ func UpdateFeedingGroup(payload requests.UpdateFeedingGroupRequest, currentUserN
 	feedingGroup.UserNumber = currentUserNumber
 
 	err = repositories.SaveFeedingGroup(feedingGroup)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreateFeedingGroup(payload requests.FeedingGroupRequest, currentUserNumber string) error {
+
+	checkName, err := repositories.GetFeedingGroupByName(payload.Name, payload.SchoolNumber)
+	if err != nil {
+		return err
+	}
+	if checkName.Number != "" {
+		return errors.New("group with same name already defined")
+	}
+
+	newFeedingGroup := models.FeedingGroup{
+		Number:       uuid.NewV4().String(),
+		Name:         payload.Name,
+		SchoolNumber: payload.SchoolNumber,
+		Status:       payload.Status,
+		UserNumber:   currentUserNumber,
+	}
+
+	err = repositories.SaveFeedingGroup(newFeedingGroup)
 	if err != nil {
 		return err
 	}
