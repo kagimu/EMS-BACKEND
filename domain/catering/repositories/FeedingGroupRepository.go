@@ -47,3 +47,33 @@ func GetAllFeedingGroups(schoolNumber string, status string) ([]models.FeedingGr
 
 	return feedingGroups, nil
 }
+
+func GetFeedingGroupByName(name string, schoolNumber string) (models.FeedingGroup, error) {
+
+	var feedingGroup models.FeedingGroup
+
+	db := config.DB
+
+	if err := db.
+		Where("name = ?", name).
+		Where("school_number = ?", schoolNumber).
+		First(&feedingGroup).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return feedingGroup, nil
+		}
+
+		return feedingGroup, err
+	}
+
+	return feedingGroup, nil
+}
+
+func SaveFeedingGroup(feedingGroup models.FeedingGroup) error {
+	
+	if err := config.DB.Save(&feedingGroup).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
