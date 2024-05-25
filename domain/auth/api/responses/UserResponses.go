@@ -1,6 +1,9 @@
 package responses
 
-import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
+)
 
 type GetUserList struct {
 	//ID         uint                 `json:"id"`
@@ -23,19 +26,6 @@ type UserView struct {
 	Type        string               `json:"type"`
 	Status      string               `json:"status"`
 	Contacts    []models.ContactList `json:"contacts"`
-	Roles       []RoleView           `json:"roles"`
+	Roles       []responses.RoleView `json:"roles"`
 	Permissions []string             `json:"permissions"`
-}
-
-type RoleView struct {
-	Number      string `json:"number"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type RolesList struct {
-	Number      string   `json:"number"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Permissions []string `json:"permissions"`
 }

@@ -536,6 +536,8 @@ func SetupRoutes() *gin.Engine {
 				roles.GET(":role_number", permissionController.FetchRoleDetails)
 				roles.PUT("assign", permissionController.AssignRolesToAUser)
 				roles.DELETE("remove", permissionController.RemoveRoleAssignment)
+				roles.POST("update/:role_number", permissionController.UpdateRole)
+				roles.DELETE("delete/:role_number", permissionController.DeleteRole)
 
 			}
 
@@ -678,8 +680,12 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("feeding-sessions-items", cateringController.FetchFeedingSessionItems)
 
 			// Feeding groups
-			catering.POST("feeding-groups", cateringController.CreateFeedingGroup)
-			catering.GET("feeding-groups", cateringController.FetchFeedingGroups)
+			feedingGroups := catering.Group("feeding-groups")
+			{
+				feedingGroups.POST("", cateringController.CreateFeedingGroup)
+				feedingGroups.GET("", cateringController.FetchFeedingGroups)
+				feedingGroups.POST("update", cateringController.UpdateFeedingGroup)
+			}
 
 			// Feeding groups per day
 			catering.POST("feeding-groups-per-day", cateringController.CreateFeedingGroupPerDay)
@@ -725,12 +731,19 @@ func SetupRoutes() *gin.Engine {
 			// Meals
 			catering.POST("meals", cateringController.AddMeal)
 			catering.GET("meals", cateringController.FetUsersMeals)
-			catering.POST("meal-courses", cateringController.SaveMealCourse)
-			catering.GET("meal-courses", cateringController.GetMealCourses)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
 			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
 			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)
 			catering.POST("activate-meal-course", cateringController.ActivateMealCourse)
+
+			cateringUpdate := catering.Group("meal-courses")
+			{
+				cateringUpdate.POST("", cateringController.SaveMealCourse)
+				cateringUpdate.GET("", cateringController.GetMealCourses)
+				cateringUpdate.POST("update", cateringController.UpdateSaveMealCourse)
+				cateringUpdate.POST("update/item", cateringController.UpdateMealCourseItem)
+			}
+
 		}
 
 		statistics := main.Group("statistics")
