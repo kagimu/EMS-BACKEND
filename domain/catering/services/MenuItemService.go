@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -10,7 +11,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"log"
 	"strconv"
+	"time"
 )
 
 func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
@@ -183,4 +186,89 @@ func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float6
 	}
 
 	return saveStock, nil
+}
+
+func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate time.Time) (responses.ProjectionCalenderResponse, error) {
+
+	var projectionCalenderResponse responses.ProjectionCalenderResponse
+
+	campus, err := repositories2.GetCampusByNumber(campusNumber)
+	if err != nil {
+		return projectionCalenderResponse, err
+	}
+
+	schoolNumber := campus.SchoolNumber
+	mealCourseCount, err := repositories.GetMealCourseCountBySchoolNumber(schoolNumber)
+	if err != nil {
+		return projectionCalenderResponse, err
+	}
+
+	if mealCourseCount.Number == "" {
+		return projectionCalenderResponse, errors.New("the school haven't set up meals")
+	}
+
+	mealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, constants.StatusActive)
+	if err != nil {
+		return projectionCalenderResponse, err
+	}
+
+	calenderDays := make([]responses.ProjectionCalender, 0)
+
+	for date := startDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
+
+		_date := date.Format(time.DateOnly)
+		day := date.Format("Mon")
+
+		calendarItem := responses.ProjectionCalender{
+			Date: _date,
+			Day:  day,
+		}
+
+		calendarItem.Meals = getMealItemsAndQuantitiesPerDayForAllUsers(day, mealCourses, campusNumber)
+
+		calenderDays = append(calenderDays, calendarItem)
+	}
+
+	projectionCalenderResponse.CalenderItems = calenderDays
+
+	return projectionCalenderResponse, nil
+}
+
+func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.MealCourse, campusNumber string) []responses.ProjectionCalenderMeal {
+
+	meals := make([]responses.ProjectionCalenderMeal, 0)
+
+	for _, course := range courses {
+
+		var mealProjection responses.ProjectionCalenderMeal
+		mealProjection.MealName = course.Name
+
+		dayItems, err := GetUserMeals(course.Number, campusNumber, "", day)
+		if err != nil {
+			log.Println("No meals for day " + day + " on " + course.Number + ", error: " + err.Error())
+		} else if len(dayItems) > 0 {
+
+			totalUsers := len(dayItems)
+			mealProjection.NumberOfPeople = totalUsers
+			getItems := dayItems[0].Meals //Since they are all served the same items for the meal. Getting items at index zero is enough
+
+			items := make([]responses.ProjectionCalenderItem, 0)
+
+			for _, _item := range getItems {
+				items = append(items, responses.ProjectionCalenderItem{
+					Name:          _item.MenuItemName,
+					Quantity:      _item.Quantity * float64(totalUsers),
+					UnitOfMeasure: _item.UnitOfMeasure,
+				})
+			}
+
+			mealProjection.Items = items
+
+		}
+
+		meals = append(meals, mealProjection)
+
+	}
+
+	return meals
 }
