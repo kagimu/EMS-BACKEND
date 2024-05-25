@@ -230,6 +230,7 @@ func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate tim
 	}
 
 	projectionCalenderResponse.CalenderItems = calenderDays
+	projectionCalenderResponse.ItemsSummary = make([]responses.ProjectionCalenderItem, 0)
 
 	return projectionCalenderResponse, nil
 }

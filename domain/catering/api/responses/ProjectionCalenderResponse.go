@@ -1,7 +1,8 @@
 package responses
 
 type ProjectionCalenderResponse struct {
-	CalenderItems []ProjectionCalender `json:"calender_items"`
+	CalenderItems []ProjectionCalender     `json:"calender_items"`
+	ItemsSummary  []ProjectionCalenderItem `json:"items_summary"`
 }
 
 type ProjectionCalender struct {
