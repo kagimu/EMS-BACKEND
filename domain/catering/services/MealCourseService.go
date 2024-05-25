@@ -449,11 +449,7 @@ func MealCourseFeedingSessions(mealCourseNumber string) ([]responses.FeedingSess
 
 		_session := feedingSession.FeedingSession
 
-		session := responses.FeedingSessionResponse{
-			Name:   _session.Name,
-			Code:   _session.Code,
-			Number: _session.Number,
-		}
+		session := BuildFeedingSessionResponse(_session)
 
 		feedingSessionsResponse = append(feedingSessionsResponse, session)
 	}
