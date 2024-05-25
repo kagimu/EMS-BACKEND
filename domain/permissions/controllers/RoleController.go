@@ -2,17 +2,17 @@ package controllers
 
 import (
 	"errors"
-	"net/http"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
-
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/repository"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 func CreateRole(c *gin.Context) {
@@ -38,7 +38,7 @@ func CreateRole(c *gin.Context) {
 	saveRole := models.Role{
 		Number:      roleNumber,
 		Name:        payload.Name,
-		Status:      payload.Status,
+		Status:      constants.StatusActive,
 		UserNumber:  user.Number,
 		Description: payload.Description,
 	}
@@ -214,4 +214,115 @@ func RemoveRoleAssignment(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Role assignment has been updated"})
+}
+
+func UpdateRole(ctx *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	roleNumber := ctx.Param("role_number")
+
+	var payload requests.EditRoleRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// find role with the role number and set the new values then save
+
+	var role models.Role
+	if err := config.DB.Where("number = ?", roleNumber).First(&role).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Role not found"})
+		return
+	}
+
+	role.Name = payload.Name
+	role.Description = payload.Description
+	role.Status = constants.StatusActive
+	role.UserNumber = user.Number
+
+	if err := config.DB.Save(&role).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update role"})
+		return
+
+	}
+
+	tx := config.DB.Begin()
+
+	// delete the permissions
+	if err := tx.Where("role_number = ?", roleNumber).Delete(&models.RolePermission{}).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update role permissions"})
+		return
+	}
+
+	// save the permissions
+	for _, permission := range payload.Permissions {
+		savePermission := models.RolePermission{
+			RoleNumber:    roleNumber,
+			AddedByNumber: user.Number,
+			Permission:    permission,
+		}
+
+		if err := tx.Create(&savePermission).Error; err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save role permissions"})
+			return
+		}
+
+	}
+
+	tx.Commit()
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Role has been updated"})
+
+}
+
+func DeleteRole(context *gin.Context) {
+	roleNumber := context.Param("roleNumber")
+	if roleNumber == "" {
+		context.JSON(400, gin.H{"message": "Role number is required"})
+		return
+	}
+
+	//check if role exists
+	_, err := repository.FindRoleByNumber(roleNumber)
+	if err != nil {
+		context.JSON(404, gin.H{"message": "Role not found"})
+		return
+	}
+
+	tx := config.DB.Begin()
+	// delete associated permissions
+	if err := tx.Where("role_number = ?", roleNumber).Delete(&models.RolePermission{}).Error; err != nil {
+		tx.Rollback()
+		context.JSON(500, gin.H{"message": "Failed to delete role permissions"})
+		return
+	}
+
+	// delete the role
+	if err := tx.Where("number = ?", roleNumber).Delete(&models.Role{}).Error; err != nil {
+		tx.Rollback()
+		context.JSON(500, gin.H{"message": "Failed to delete role"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		context.JSON(500, gin.H{"message": "Failed to delete role"})
+		return
+	}
+
+	context.JSON(200, gin.H{"message": "Role has been deleted"})
+
+	//
+
 }
