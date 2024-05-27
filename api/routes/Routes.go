@@ -695,7 +695,6 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("menu-items", cateringController.CreateMenuItem)
 			catering.GET("menu-items", cateringController.FetchMenuItems)
 			catering.GET("menu-items/:menu_item_number", cateringController.FetchMenuItemDetails)
-			catering.GET("menu-items/filter/:campus_number", cateringController.FetchMenuItemsByCampus)
 			catering.PUT("menu-items/:menu_item_number", cateringController.EditMenuItem)
 
 			// Units of measure
