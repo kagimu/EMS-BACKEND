@@ -6,8 +6,8 @@ type FeedingGroupResponse struct {
 	Number       string `json:"number"`
 	Name         string `json:"name"`
 	Status       string `json:"status"`
-	SchoolNumber string `json:"campus_number"`
-	SchoolName   string `json:"campus_name"`
+	SchoolNumber string `json:"school_number"`
+	SchoolName   string `json:"school_name"`
 	UserName     string `json:"user_name"`
 }
 
