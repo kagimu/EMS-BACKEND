@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	rolesResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	"net/http"
 	"regexp"
 	"strings"
@@ -120,14 +121,14 @@ func Login(context *gin.Context) {
 	//prepare roles and permissions
 	//get user roles
 	var userRoles []permissionModels.UserRole
-	var userRolesList []responses.RoleView
+	var userRolesList []rolesResponses.RoleView
 	var permissions []string
 
 	config.DB.Where("user_number = ?", userNumber).Find(&userRoles)
 
 	for _, item := range userRoles {
 
-		userRolesList = append(userRolesList, responses.RoleView{
+		userRolesList = append(userRolesList, rolesResponses.RoleView{
 			Number:      item.Role.Number,
 			Name:        item.Role.Name,
 			Description: item.Role.Description,
