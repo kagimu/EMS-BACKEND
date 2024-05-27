@@ -183,15 +183,20 @@ func getGroupDailyMenu(groupNumber string) []responses.GroupDayMealCourses {
 	return weeklyItems
 }
 
-func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumber string) ([]responses.UserMealResponse, error) {
+func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumber string, weekDay ...string) ([]responses.UserMealResponse, error) {
 
 	mealsResponse := make([]responses.UserMealResponse, 0)
 
 	currentTime := time.Now()
 	day := currentTime.Format("Mon")
-	checkDay := commons.CheckDay(day)
-	if checkDay != "" {
-		return mealsResponse, errors.New(checkDay)
+
+	if len(weekDay) > 0 {
+		day = weekDay[0]
+	} else {
+		checkDay := commons.CheckDay(day)
+		if checkDay != "" {
+			return mealsResponse, errors.New(checkDay)
+		}
 	}
 
 	campus, err := campusRepositories.GetCampusByNumber(campusNumber)
