@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 func SaveMealCourse(ctx *gin.Context) {
@@ -271,4 +272,56 @@ func UpdateMealCourseItem(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Meal course name updated successfully"})
+}
+
+func MealsProjections(context *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	campusNumber := context.Query("campus_number")
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a campus"})
+		return
+	}
+
+	_startDate := context.Query("start_date")
+	if _startDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a start date"})
+		return
+	}
+
+	_endDate := context.Query("end_date")
+	if _endDate == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the end date"})
+		return
+	}
+
+	var startDate time.Time
+	if startDate, err = time.Parse(time.DateOnly, _startDate); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
+		return
+	}
+
+	var endDate time.Time
+	if endDate, err = time.Parse(time.DateOnly, _endDate); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
+		return
+	}
+
+	if endDate.Before(startDate) {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "End date: " + _endDate + " should be after the start date: " + _startDate})
+		return
+	}
+
+	response, err := services.MenuProjectedCalender(startDate, campusNumber, endDate)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Getting projections error: " + err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": response})
 }
