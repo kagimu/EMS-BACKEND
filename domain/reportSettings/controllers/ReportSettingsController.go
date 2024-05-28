@@ -75,8 +75,9 @@ func FetchReportSettings(c *gin.Context) {
 
 	campusClassNumber := c.Query("campus_class_number")
 
-	if campusClassNumber != "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Please at-least a Campus"})
+	if campusClassNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a class"})
+		return
 	}
 
 	var reportSettings []models.ReportSetting
