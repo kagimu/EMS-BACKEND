@@ -536,6 +536,8 @@ func SetupRoutes() *gin.Engine {
 				roles.GET(":role_number", permissionController.FetchRoleDetails)
 				roles.PUT("assign", permissionController.AssignRolesToAUser)
 				roles.DELETE("remove", permissionController.RemoveRoleAssignment)
+				roles.POST("update/:role_number", permissionController.UpdateRole)
+				roles.DELETE("delete/:role_number", permissionController.DeleteRole)
 
 			}
 
@@ -693,7 +695,6 @@ func SetupRoutes() *gin.Engine {
 			catering.POST("menu-items", cateringController.CreateMenuItem)
 			catering.GET("menu-items", cateringController.FetchMenuItems)
 			catering.GET("menu-items/:menu_item_number", cateringController.FetchMenuItemDetails)
-			catering.GET("menu-items/filter/:campus_number", cateringController.FetchMenuItemsByCampus)
 			catering.PUT("menu-items/:menu_item_number", cateringController.EditMenuItem)
 
 			// Units of measure
@@ -729,7 +730,7 @@ func SetupRoutes() *gin.Engine {
 			// Meals
 			catering.POST("meals", cateringController.AddMeal)
 			catering.GET("meals", cateringController.FetUsersMeals)
-			catering.GET("meals-projections", cateringController.MealsProjections)
+			catering.GET("meal-projections", cateringController.MealsProjections)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
 			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
 			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)

@@ -72,8 +72,24 @@ func CreateReportSettings(c *gin.Context) {
 }
 
 func FetchReportSettings(c *gin.Context) {
+
+	campusClassNumber := c.Query("campus_class_number")
+
+	if campusClassNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a class"})
+		return
+	}
+
 	var reportSettings []models.ReportSetting
-	if err := config.DB.Preload("AcademicYear").Preload("CampusClass").Preload("StudyPeriod").Find(&reportSettings).Error; err != nil {
+	if err := config.DB.Preload("AcademicYear").
+		Preload("CampusClass").
+		Preload("StudyPeriod").
+		Scopes(
+			filters.ByCampusClassNumber(campusClassNumber),
+			filters.ByAcademicYearNumber(c.Query("academic_year_number")),
+			filters.ByStudyPeriodNumber(c.Query("study_period_number")),
+		).
+		Find(&reportSettings).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
 	}
@@ -82,11 +98,14 @@ func FetchReportSettings(c *gin.Context) {
 
 	for _, reportSetting := range reportSettings {
 		response := responses.ReportSettingsResponse{
-			Name:    reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
-			Number:  reportSetting.Number,
-			Status:  reportSetting.Status,
-			Columns: reportSetting.Columns,
-			Code:    reportSetting.Code,
+			Name:         reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
+			Number:       reportSetting.Number,
+			Status:       reportSetting.Status,
+			Columns:      reportSetting.Columns,
+			Code:         reportSetting.Code,
+			AcademicYear: reportSetting.AcademicYear.AcademicYearName,
+			StudyPeriod:  reportSetting.StudyPeriod.StudyPeriodName,
+			Class:        reportSetting.CampusClass.ClassName,
 		}
 
 		rs = append(rs, response)
@@ -162,8 +181,16 @@ func CreatReportColumn(ctx *gin.Context) {
 }
 
 func FetchReportColumns(ctx *gin.Context) {
+
+	reportSettingsNumber := ctx.Query("report_setting_number")
+	if reportSettingsNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select at least one Report setting"})
+		return
+	}
+
 	var reportColumns []models.ReportColumn
-	if err := config.DB.Find(&reportColumns).Error; err != nil {
+
+	if err := config.DB.Scopes(filters.ByAnyField("report_setting_number", ctx.Query("report_setting_number"))).Find(&reportColumns).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
 		return
 	}
@@ -297,9 +324,9 @@ func FetchReportSummaries(ctx *gin.Context) {
 		filters.ByStudentNumber(ctx.Query("student_number")),
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
-	).Scopes(
+		filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
 		pagination.Paginate(ctx, &paginatedResponse),
-		filters.ByCampusClassNumber(ctx.Query("campus_class_number"))).Preload("Student").Preload("StudyPeriod").
+	).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
 		return

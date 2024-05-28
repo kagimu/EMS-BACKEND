@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"net/http"
@@ -155,7 +156,7 @@ func CreateUser(c *gin.Context) {
 		SecondName: user.SecondName,
 		LastName:   user.LastName,
 		Gender:     user.Gender,
-		Type:       "Staff",
+		Type:       constants.TypeStaff,
 		Status:     "Active",
 	}
 

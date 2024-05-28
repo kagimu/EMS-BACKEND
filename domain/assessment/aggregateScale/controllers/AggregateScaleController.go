@@ -93,6 +93,11 @@ func FetchAggregateScales(c *gin.Context) {
 
 	campusClassNumber := c.Query("campus_class_number")
 
+	if campusClassNumber == "" {
+		c.JSON(http.StatusOK, gin.H{"data": make([]responses.AggregateScaleResponse, 0)})
+		return
+	}
+
 	var aggregateScales []models.AggregateScale
 	if err := config.DB.
 		Scopes(
