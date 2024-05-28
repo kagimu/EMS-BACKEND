@@ -214,3 +214,16 @@ func ByMetricNumber(metricNumber string) func(*gorm.DB) *gorm.DB {
 		return db
 	}
 }
+
+func ByAssessmentMetricNumber(assessmentMetricNumber string) func(*gorm.DB) *gorm.DB {
+
+	return func(db *gorm.DB) *gorm.DB {
+
+		if assessmentMetricNumber != "" {
+			return db.Where("assessment_metric_number = ?", assessmentMetricNumber)
+		}
+
+		return db
+	}
+
+}
