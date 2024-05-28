@@ -13,7 +13,6 @@ import (
 type AssessmentMetric struct {
 	gorm.Model
 	Number                string                             `json:"number" gorm:"size:36;unique;not null"`
-	Weight                uint8                              `json:"weight" gorm:"default:1; max:3;"`
 	Description           string                             `json:"description" gorm:"type:text;"`
 	MaxScore              uint8                              `json:"max_score"`
 	ScheduledOn           time.Time                          `json:"scheduled_on" gorm:"size:30"`
@@ -28,6 +27,7 @@ type AssessmentMetric struct {
 	CampusClassNumber     string                             `json:"campus_class_number" gorm:"size:36;"`
 	CampusClass           campusClassModel.CampusClass       `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentAreaName    string                             `json:"assessment_area_name" gorm:"-"`
+	Name                  string                             `json:"name" gorm:"-"`
 }
 
 type AssessmentSubMetric struct {
@@ -44,6 +44,14 @@ func (assessmentMetric *AssessmentMetric) AfterFind(tx *gorm.DB) (err error) {
 	if err := tx.First(&assessmentArea, "number = ?", assessmentMetric.AssessmentAreaNumber).Error; err != nil {
 		return err
 	}
+
+	var metric Metric
+
+	if err := tx.First(&metric, "number = ?", assessmentMetric.MetricNumber).Error; err != nil {
+		return err
+	}
+
 	assessmentMetric.AssessmentAreaName = assessmentArea.Name
+	assessmentMetric.Name = metric.Name + " - " + assessmentArea.Name + " - " + assessmentMetric.ScheduledOn.Format("2006-01-02")
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	cateringModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
@@ -19,19 +20,25 @@ import (
 	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
-	invoicePaymentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/models"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
 	serviceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
+	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
 	preInterviewModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/models"
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
+	previousSchoolResultsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
+	progressReportModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/models"
+	promotionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
+	reportSettings "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
@@ -97,11 +104,9 @@ func Init() error {
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&studentModels.ADN{},
-		&preInterviewModels.PreAdmissionInterviewTest{},
 		&gradeModel.Grade{},
 		&admissionModel.Admission{},
-		&admissionModel.AdmissionOfferCondition{},
-		&admissionModel.AdmissionOffer{},
+		&admissionModel.AdmissionCondition{},
 		&previousSchoolModels.PreviousSchoolClass{},
 		&materialModels.CurriculumSubtopicReference{},
 		&schemeOfWorkmodel.SchemeOfWorkImport{},
@@ -120,10 +125,10 @@ func Init() error {
 		&invoiceModel.Invoice{},
 		&invoiceModel.InvoiceItem{},
 		&serviceModel.SerialCode{},
+		&productModels.ProductSerialCode{},
 		&serviceModel.CampusServices{},
 		&serviceModel.Discount{},
-		&invoicePaymentModel.InvoicePayment{},
-		&invoiceModel.InvoiceNumber{},
+		&invoiceModel.InvoicePayment{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
@@ -132,9 +137,9 @@ func Init() error {
 		&assessmentModel.AssessmentMetric{},
 		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
-		&authModels.Role{},
-		&authModels.RolePermission{},
-		&authModels.UserRole{},
+		&permissionModels.Role{},
+		&permissionModels.RolePermission{},
+		&permissionModels.UserRole{},
 		&assessmentScaleModels.AggregateScale{},
 		&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
@@ -142,8 +147,51 @@ func Init() error {
 		&staffModel.SalaryScale{},
 		&staffModel.Task{},
 		&staffModel.TaskSupervision{},
-		&staffModel.Staff{},
 		&interviewModel.InterviewAssessmentMetric{},
+		&progressReportModels.ProgressReport{},
+		&reportSettings.ReportSetting{},
+		&reportSettings.ReportColumn{},
+		&reportSettings.ReportColumnAssessment{},
+		&reportSettings.ReportSummary{},
+		&reportSettings.ReportScore{},
+		&reportSettings.ReportScoreSummary{},
+		&enrollmentModel.Enrollment{},
+		&assessmentAreaModel.AssessmentAreaGradingStandard{},
+		&promotionModels.Promotion{},
+		&promotionModels.PromotionSetting{},
+		&promotionModels.PromotionSettingsValue{},
+		&previousSchoolResultsModels.PreviousSchoolResults{},
+		&staffModel.Staff{},
+		&cateringModels.FeedingGroup{},
+		&cateringModels.FeedingGroupPerDay{},
+		&cateringModels.FeedingSessionPerDay{},
+		&cateringModels.FeedingSession{},
+		&cateringModels.UnitOfMeasure{},
+		&cateringModels.MenuItem{},
+		&cateringModels.ItemAssembly{},
+		&cateringModels.Stocking{},
+		&cateringModels.Feeding{},
+		&cateringModels.FeedingSessionItem{},
+		&cateringModels.FeedingGroupUser{},
+		&cateringModels.FeedingGroupSession{},
+		//&cateringModels.GroupMealCourse{},
+		&cateringModels.FeedingAllGroups{},
+		&cateringModels.Meal{},
+		&timetableModels.StudyingTimeBlock{},
+		&timetableModels.StudyingTimeTable{},
+		&timetableModels.StudyingPeriod{},
+		&permissionModels.Scope{},
+		&reportTemplateModel.ReportTemplate{},
+		&reportTemplateModel.ClassReportTemplate{},
+		&cateringModels.AssembledPart{},
+		&cateringModels.MealCourseCount{},
+		&cateringModels.MealCourseCount{},
+		&cateringModels.MealCourse{},
+		&enrollmentModel.EnrollmentItem{},
+		&cateringModels.MealCourseFeedingSession{},
+		&cateringModels.CampusMealCourse{},
+		&cateringModels.FeedingGroupMealCourse{},
+		&cateringModels.MealStock{},
 	)
 
 	if err != nil {

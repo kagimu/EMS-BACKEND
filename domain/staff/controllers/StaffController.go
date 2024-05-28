@@ -45,20 +45,12 @@ func CreateStaff(c *gin.Context) {
 	staffNumber := fmt.Sprintf("STN%03d", generateStaffNumber.ID)
 
 	saveStaff := models.Staff{
-		Number:                     uuid.NewV4().String(),
-		Surname:                    payload.Surname,
-		StaffNumber:                staffNumber,
-		Firstname:                  payload.FirstName,
-		OtherName:                  payload.OtherName,
-		Gender:                     payload.Gender,
-		MainTelephoneNumber:        payload.MainTelephoneNumber,
-		AlternativeTelephoneNumber: payload.AlternativeTelephoneNumber,
-		MainEmailAddress:           payload.MainEmailAddress,
-		AlternativeEmailAddress:    payload.AlternativeEmailAddress,
-		JobTitleNumber:             payload.JobTitleNumber,
-		CampusNumber:               payload.CampusNumber,
-		SalaryScaleNumber:          payload.SalaryScaleNumber,
-		UserNumber:                 user.Number,
+		Number:            uuid.NewV4().String(),
+		StaffIDNumber:     staffNumber,
+		JobTitleNumber:    payload.JobTitleNumber,
+		CampusNumber:      payload.CampusNumber,
+		SalaryScaleNumber: payload.SalaryScaleNumber,
+		UserNumber:        user.Number,
 	}
 
 	if err := tx.Create(&saveStaff).Error; err != nil {
@@ -97,14 +89,14 @@ func FetchMemberByStaffNumber(c *gin.Context) {
 
 	var staff models.Staff
 
-	staffNumber := c.Query("staff_number")
+	staffNumber := c.Query("staff_id_number")
 
 	if staffNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Staff number is missing"})
 		return
 	}
 
-	if err := config.DB.First(&staff, "staff_number = ?", staffNumber).Error; err != nil {
+	if err := config.DB.First(&staff, "staff_id_number = ?", staffNumber).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"message": "No staff member found"})
 		} else {
@@ -137,17 +129,9 @@ func EditStaff(c *gin.Context) {
 	}
 
 	saveStaff := models.Staff{
-		Surname:                    payload.Surname,
-		Firstname:                  payload.FirstName,
-		OtherName:                  payload.OtherName,
-		Gender:                     payload.Gender,
-		MainTelephoneNumber:        payload.MainTelephoneNumber,
-		AlternativeTelephoneNumber: payload.AlternativeTelephoneNumber,
-		MainEmailAddress:           payload.MainEmailAddress,
-		AlternativeEmailAddress:    payload.AlternativeEmailAddress,
-		JobTitleNumber:             payload.JobTitleNumber,
-		CampusNumber:               payload.CampusNumber,
-		SalaryScaleNumber:          payload.SalaryScaleNumber,
+		JobTitleNumber:    payload.JobTitleNumber,
+		CampusNumber:      payload.CampusNumber,
+		SalaryScaleNumber: payload.SalaryScaleNumber,
 	}
 
 	if err := config.DB.Model(&staff).Where("staff_number = ?", staffNumber).Updates(saveStaff).Error; err != nil {

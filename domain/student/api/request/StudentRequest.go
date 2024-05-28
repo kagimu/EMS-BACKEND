@@ -23,7 +23,7 @@ type StudentRequest struct {
 	SourceOfSchoolInfo        string                  `json:"source_of_school_info"`
 	ApplicationNumber         string                  `json:"application_number"`
 	ParentNumber              string                  `json:"parent_number"`
-	ClassNumber               string                  `json:"class_number"`
+	CampusClassNumber         string                  `json:"campus_class_number"`
 }
 
 func (s *StudentRequest) Validate() error {

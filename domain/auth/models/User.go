@@ -14,6 +14,7 @@ type (
 		LastName   string    `json:"last_name" form:"name" binding:"required" gorm:"size:60;"`
 		Gender     string    `json:"gender" form:"gender" binding:"required" gorm:"size:8;not null"`
 		Type       string    `json:"type" gorm:"size:8;not null"`
+		Photo      string    `json:"photo"`
 		Status     string    `json:"status" gorm:"size:100;not null"`
 		Contacts   []Contact `json:"contacts" gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}

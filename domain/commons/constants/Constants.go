@@ -1,4 +1,14 @@
 package constants
 
-const STATUS_PENDING = "PENDING"
-const STATUS_APPROVED = "APPROVED"
+const StatusPending = "PENDING"
+const StatusActive = "ACTIVE"
+const StatusInactive = "INACTIVE"
+const StatusEnrolled = "Enrolled"
+const StatusSubmitted = "SUBMITTED"
+const TypeItem = "ITEM"
+const TypeAssembled = "ASSEMBLED"
+const StatusPaid = "PAID"
+const StatusPartiallyPaid = "PARTIALLY_PAID"
+const StatusTerminated = "TERMINATED"
+const TypeStudent = "Student"
+const TypeStaff = "Staff"

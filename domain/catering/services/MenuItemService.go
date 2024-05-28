@@ -1,0 +1,275 @@
+package services
+
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
+	"log"
+	"strconv"
+	"time"
+)
+
+func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
+
+	var parts []responses.Part
+
+	itemAssembles, err := repositories.GetAssembledItemParts(menuItemNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, itemAssemble := range itemAssembles {
+
+		secondaryItem := itemAssemble.SecondaryItem
+
+		unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(secondaryItem.UnitOfMeasureNumber)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if unitOfMeasure.Number == "" {
+			return nil, errors.New("unit of measure number is empty")
+		}
+
+		part := responses.Part{
+			Name:                      secondaryItem.Name,
+			Quantity:                  itemAssemble.Quantity,
+			Code:                      secondaryItem.Code,
+			Number:                    secondaryItem.Number,
+			UnitOfMeasureAbbreviation: unitOfMeasure.Abbreviation,
+		}
+
+		parts = append(parts, part)
+
+	}
+
+	return parts, nil
+}
+
+func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber string) error {
+
+	db := config.DB
+
+	if err := db.Transaction(func(transaction *gorm.DB) error {
+		return doRunOnTransaction(transaction, stockingRequest, currentUserNumber)
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingRequest, currentUserNumber string) error {
+
+	for _, stock := range stockingRequest.ItemPriceAndQuantity {
+
+		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber)
+
+		if err != nil {
+			return err
+		}
+
+		if menuItem.Name == "" {
+			return errors.New("invalid menu item ID")
+		}
+
+		if menuItem.Type == constants.TypeAssembled {
+			err = assembleItem(transaction, currentUserNumber, stock, stockingRequest.CampusNumber)
+		} else {
+			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber)
+		}
+
+		return err
+	}
+
+	return nil
+
+}
+
+func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests.ItemPriceAndQuantity, campusNumber string) error {
+
+	itemAssembles, err := repositories.GetAssembledItemParts(stock.MenuItemNumber)
+	if err != nil {
+		return err
+	}
+
+	if len(itemAssembles) == 0 {
+		return errors.New("item does not have parts set")
+	}
+
+	//Check stock for each part item
+	var stockReducingParts []models.Stocking
+
+	var unitCost float64
+
+	for _, itemAssemble := range itemAssembles {
+
+		secondaryItem := itemAssemble.SecondaryItem
+
+		requiredQty := itemAssemble.Quantity * stock.Quantity
+		availableQty, err := repositories.GetMenuItemCurrentStock(secondaryItem.Number)
+
+		if err != nil {
+			return err
+		}
+
+		if availableQty < requiredQty {
+			return errors.New("Not enough available quantity for: " + secondaryItem.Name + " " + strconv.FormatFloat(requiredQty, 'f', 2, 64) + " is required but we have " + strconv.FormatFloat(availableQty, 'f', 2, 64))
+		}
+
+		recentStock, err := repositories.GetRecentItemStock(stock.MenuItemNumber)
+
+		if err != nil {
+			return err
+		}
+
+		if recentStock.Number == "" {
+			return errors.New("no recent stock for " + stock.MenuItemNumber)
+		}
+
+		unitCost = recentStock.UnitCost + unitCost
+
+		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
+		if err != nil {
+			return err
+		}
+
+		stockReducingParts = append(stockReducingParts, negativeStock)
+
+	}
+
+	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
+
+	if err != nil {
+		return err
+	}
+
+	//Create stocking entries that reduced the stock to create new stock
+	for _, stockReducingPart := range stockReducingParts {
+
+		var assembledItem = models.AssembledPart{
+			FromStockingNumber: stockReducingPart.Number,
+			NewStockingNumber:  newStock.Number,
+		}
+
+		err = repositories.SaveAssembledPart(assembledItem)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItem string, quantity float64, currentUserNumber string) (models.Stocking, error) {
+
+	saveStock := models.Stocking{
+		Number:         uuid.NewV4().String(),
+		CampusNumber:   campusNumber,
+		UnitCost:       unitCost,
+		MenuItemNumber: menuItem,
+		Quantity:       quantity,
+		UserNumber:     currentUserNumber,
+	}
+
+	if _, err := repositories.CreateStockingEntry(transaction, saveStock); err != nil {
+		return saveStock, err
+	}
+
+	return saveStock, nil
+}
+
+func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate time.Time) (responses.ProjectionCalenderResponse, error) {
+
+	var projectionCalenderResponse responses.ProjectionCalenderResponse
+
+	campus, err := repositories2.GetCampusByNumber(campusNumber)
+	if err != nil {
+		return projectionCalenderResponse, err
+	}
+
+	schoolNumber := campus.SchoolNumber
+	mealCourseCount, err := repositories.GetMealCourseCountBySchoolNumber(schoolNumber)
+	if err != nil {
+		return projectionCalenderResponse, err
+	}
+
+	if mealCourseCount.Number == "" {
+		return projectionCalenderResponse, errors.New("the school haven't set up meals")
+	}
+
+	mealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, constants.StatusActive)
+	if err != nil {
+		return projectionCalenderResponse, err
+	}
+
+	calenderDays := make([]responses.ProjectionCalender, 0)
+
+	for date := startDate; !date.After(endDate); date = date.AddDate(0, 0, 1) {
+
+		_date := date.Format(time.DateOnly)
+		day := date.Format("Mon")
+
+		calendarItem := responses.ProjectionCalender{
+			Date: _date,
+			Day:  day,
+		}
+
+		calendarItem.Meals = getMealItemsAndQuantitiesPerDayForAllUsers(day, mealCourses, campusNumber)
+
+		calenderDays = append(calenderDays, calendarItem)
+	}
+
+	projectionCalenderResponse.CalenderItems = calenderDays
+	projectionCalenderResponse.ItemsSummary = make([]responses.ProjectionCalenderItem, 0)
+
+	return projectionCalenderResponse, nil
+}
+
+func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.MealCourse, campusNumber string) []responses.ProjectionCalenderMeal {
+
+	meals := make([]responses.ProjectionCalenderMeal, 0)
+
+	for _, course := range courses {
+
+		var mealProjection responses.ProjectionCalenderMeal
+		mealProjection.MealName = course.Name
+
+		dayItems, err := GetUserMeals(course.Number, campusNumber, "", day)
+		if err != nil {
+			log.Println("No meals for day " + day + " on " + course.Number + ", error: " + err.Error())
+		} else if len(dayItems) > 0 {
+
+			totalUsers := len(dayItems)
+			mealProjection.NumberOfPeople = totalUsers
+			getItems := dayItems[0].Meals //Since they are all served the same items for the meal. Getting items at index zero is enough
+
+			items := make([]responses.ProjectionCalenderItem, 0)
+
+			for _, _item := range getItems {
+				items = append(items, responses.ProjectionCalenderItem{
+					Name:          _item.MenuItemName,
+					Quantity:      _item.Quantity * float64(totalUsers),
+					UnitOfMeasure: _item.UnitOfMeasure,
+				})
+			}
+
+			mealProjection.Items = items
+
+		}
+
+		meals = append(meals, mealProjection)
+
+	}
+
+	return meals
+}

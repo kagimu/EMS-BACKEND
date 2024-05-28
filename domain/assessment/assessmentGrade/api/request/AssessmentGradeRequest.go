@@ -3,21 +3,32 @@ package requests
 import "errors"
 
 type AssessmentGradeRequest struct {
-	Grade         string `json:"grade"`
-	Description   string `json:"description"`
-	MinimumPoints int64  `json:"minimum_points"`
-	MaximumPoints int64  `json:"maximum_points"`
-	Name          string `json:"name"`
-	Abbreviation  string `json:"abbreviation"`
-	Condition     string `json:"condition"`
-	Remarks       string `json:"remarks"`
-	LevelNumber   string `json:"level_number"`
+	Code              int64   `json:"code"`
+	Grade             string  `json:"grade"`
+	Description       string  `json:"description"`
+	MinimumPoints     float64 `json:"minimum_points"`
+	MaximumPoints     float64 `json:"maximum_points"`
+	Name              string  `json:"name"`
+	Abbreviation      string  `json:"abbreviation"`
+	Remarks           string  `json:"remarks"`
+	CampusClassNumber string  `json:"campus_class_number"`
+	CampusNumber      string  `json:"campus_number"`
+}
+
+type EditAssessmentGradeRequest struct {
+	Code              int64   `json:"code"`
+	Grade             string  `json:"grade"`
+	Description       string  `json:"description"`
+	MinimumPoints     float64 `json:"minimum_points"`
+	MaximumPoints     float64 `json:"maximum_points"`
+	Name              string  `json:"name"`
+	Abbreviation      string  `json:"abbreviation"`
+	Remarks           string  `json:"remarks"`
+	CampusClassNumber string  `json:"campus_class_number"`
+	CampusNumber      string  `json:"campus_number"`
 }
 
 func (r *AssessmentGradeRequest) Validate() error {
-	if r.Grade == "" {
-		return errors.New("grade is required")
-	}
 	if r.Abbreviation == "" {
 		return errors.New("abbreviation is required")
 	}
@@ -33,14 +44,18 @@ func (r *AssessmentGradeRequest) Validate() error {
 	if r.MaximumPoints == 0 {
 		return errors.New("maximum points is required")
 	}
-	if r.Condition == "" {
-		return errors.New("condition is required")
-	}
+
 	if r.Remarks == "" {
 		return errors.New("remarks is required")
 	}
-	if r.LevelNumber == "" {
-		return errors.New("level number is required")
+	if r.CampusNumber == "" {
+		return errors.New("campus number is required")
+	}
+	if r.Code == 0 {
+		return errors.New("code is required")
+	}
+	if r.CampusClassNumber == "" {
+		return errors.New("at-least one class is required")
 	}
 	return nil
 }

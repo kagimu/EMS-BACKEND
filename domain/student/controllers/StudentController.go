@@ -3,11 +3,19 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	"net/http"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
@@ -44,8 +52,17 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	studentAPN, err := CreateAPN()
+	var campusClass classModels.CampusClass
+	if err := config.DB.Where("number = ?", payload.CampusClassNumber).First(&campusClass).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Campus class not found"})
+		return
+	}
+
+	tx := config.DB.Begin()
+	studentAPN, err := CreateAPN(tx)
 	if err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create APN"})
 		return
 	}
@@ -56,7 +73,7 @@ func CreateStudent(c *gin.Context) {
 	// find Student by application number
 
 	var student models.Student
-	config.DB.Where("application_number = ?", applicationNumber).First(&student)
+	tx.Where("application_number = ?", applicationNumber).First(&student)
 
 	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
 	if student.Number != "" {
@@ -74,10 +91,10 @@ func CreateStudent(c *gin.Context) {
 			UserNumber:                userNumber,
 			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 			ApplicationNumber:         applicationNumber,
-			ClassNumber:               payload.ClassNumber,
+			CampusClassNumber:         payload.CampusClassNumber,
 		}
 
-		if err := config.DB.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
+		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  http.StatusInternalServerError,
 				"message": "failed to update student",
@@ -86,6 +103,22 @@ func CreateStudent(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "updated student details successfully"})
+		return
+	}
+
+	var createdUser = authModel.User{
+		Number:     uuid.NewV4().String(),
+		FirstName:  payload.SecondName,
+		LastName:   payload.Surname,
+		SecondName: payload.OtherName,
+		Gender:     payload.Gender,
+		Type:       constants.TypeStudent,
+		Status:     constants.StatusInactive,
+	}
+
+	if err := tx.Create(&createdUser).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
 		return
 	}
 
@@ -101,16 +134,15 @@ func CreateStudent(c *gin.Context) {
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
 		PreferedCampusNumber:      payload.PreferredCampusNumber,
-		UserNumber:                userNumber,
+		UserNumber:                createdUser.Number,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 		ApplicationNumber:         applicationNumber,
-		ClassNumber:               payload.ClassNumber,
+		CampusClassNumber:         payload.CampusClassNumber,
 	}
-	tx := config.DB.Begin()
 
 	if err := tx.Create(&savStudent).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + " Failed to save student"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save student"})
 		return
 	}
 
@@ -156,7 +188,7 @@ func EditStudent(c *gin.Context) {
 		DateOfBirth:               payload.DateOfBirth,
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
-		ClassNumber:               payload.ClassNumber,
+		CampusClassNumber:         payload.CampusClassNumber,
 	}
 
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
@@ -191,10 +223,6 @@ func DeleteStudent(c *gin.Context) {
 }
 
 func FetchStudentByNumber(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
-		return
-	}
 
 	var student models.Student
 	studentNumber := c.Param("student_number")
@@ -213,7 +241,47 @@ func FetchStudentByNumber(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": student})
+	var detailedStudent = responses.DetailedStudentProfile{}
+
+	detailedStudent.Surname = student.Surname
+	detailedStudent.OtherName = student.OtherName
+	detailedStudent.UserNumber = student.UserNumber
+	detailedStudent.SecondName = student.SecondName
+	detailedStudent.ADNStatus = student.ADNStatus
+	detailedStudent.DateOfBirth = student.DateOfBirth
+	detailedStudent.ReasonForChoosingSchool = student.ReasonForChoosingSchool
+
+	// find the latest enrollment for the student
+	var enrollment enrollmentModel.Enrollment
+	if err := config.DB.Where("student_number = ?", studentNumber).
+		Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").
+		Preload("StudyPeriod.AcademicYear").
+		Preload("Campus").Preload("School").
+		Order("created_at desc").First(&enrollment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+
+		}
+		return
+	}
+
+	var response = enrollmentResponse.Enrollment{}
+	response.StudentNumber = enrollment.StudentNumber
+	response.EnrollmentDate = enrollment.EnrollmentDate
+	response.Class = enrollment.CampusClass.ClassName
+	response.Status = enrollment.Status
+	response.Stream = enrollment.Stream.Name
+	response.School = enrollment.School.Name
+	response.Campus = enrollment.Campus.Name
+	response.StudyPeriod = enrollment.StudyPeriod.StudyPeriodName
+	response.ContinuingStudent = enrollment.ContinuingStudent
+	response.AcademicYear = enrollment.StudyPeriod.AcademicYear.AcademicYearName
+
+	detailedStudent.CurrentEnrollment = response
+	//enrollmentResponse.Stream =
+
+	c.JSON(http.StatusOK, detailedStudent)
 }
 
 func FetchAllStudents(c *gin.Context) {
@@ -225,13 +293,82 @@ func FetchAllStudents(c *gin.Context) {
 
 	var students []models.Student
 
-	if err := config.DB.Find(&students).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "failed to fetch students",
-		})
+	if err := config.DB.Preload("CampusClass").Find(&students).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to fetch students"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": students})
+}
+
+func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	assessmentMetricNumber := c.Param("assessment_metric_number")
+
+	if assessmentMetricNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric number is required"})
+		return
+	}
+
+	var assessmentMetric assessmentMetricModel.AssessmentMetric
+
+	if err := config.DB.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment metric not found"})
+		return
+	}
+
+	//fetch enrollment students from assessment metric campus class number
+
+	var enrollments []enrollmentModel.Enrollment
+
+	if err := config.DB.Where("campus_class_number = ? AND status = ? ", assessmentMetric.CampusClassNumber, constants.StatusActive).Find(&enrollments).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
+		return
+
+	}
+
+	var students []enrollmentResponse.EnrolledStudent
+
+	for _, enrollment := range enrollments {
+		var student models.Student
+		if err := config.DB.Where("number = ?", enrollment.StudentNumber).First(&student).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch student"})
+			return
+		}
+
+		// find assesment for student and assessment metric
+
+		var assessment assessmentMetricModel.Assessment
+
+		if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", student.Number, assessmentMetric.Number).First(&assessment).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
+				return
+			}
+		}
+
+		var campusClass classModels.CampusClass
+		if err := config.DB.Where("number = ?", enrollment.CampusClassNumber).First(&campusClass).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class not found"})
+			return
+		}
+
+		students = append(students, enrollmentResponse.EnrolledStudent{
+
+			Number:            student.Number,
+			StudentSurname:    student.Surname,
+			StudentOtherName:  student.OtherName,
+			StudentSecondName: student.SecondName,
+			Comment:           assessment.Comment,
+			Score:             assessment.ActualScore,
+			Class:             campusClass.ClassName,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": students})
 }

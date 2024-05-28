@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	rolesResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	"net/http"
 	"regexp"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/hassPassTokenGen"
+	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -118,22 +120,22 @@ func Login(context *gin.Context) {
 
 	//prepare roles and permissions
 	//get user roles
-	var userRoles []models.UserRole
-	var userRolesList []responses.RoleView
+	var userRoles []permissionModels.UserRole
+	var userRolesList []rolesResponses.RoleView
 	var permissions []string
 
 	config.DB.Where("user_number = ?", userNumber).Find(&userRoles)
 
 	for _, item := range userRoles {
 
-		userRolesList = append(userRolesList, responses.RoleView{
+		userRolesList = append(userRolesList, rolesResponses.RoleView{
 			Number:      item.Role.Number,
 			Name:        item.Role.Name,
 			Description: item.Role.Description,
 		})
 
 		//get role permissions
-		var rolePermissions []models.RolePermission
+		var rolePermissions []permissionModels.RolePermission
 		config.DB.Where("role_number = ?", item.RoleNumber).Find(&rolePermissions)
 
 		for _, permission := range rolePermissions {
@@ -172,18 +174,16 @@ func Login(context *gin.Context) {
 
 func Profile(context *gin.Context) {
 
-	userId := ""
-	if len(context.Request.Header["User-Number"]) > 0 {
-		userId = context.Request.Header["User-Number"][0]
-	} else {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found!"})
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
 	var userProfile models.User
 
 	if err := config.DB.
-		Where("number = ?", userId).
+		Where("number = ?", user.Number).
 		Preload("Contacts").
 		First(&userProfile).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "User not found"})
@@ -227,46 +227,19 @@ func Register(context *gin.Context) {
 		return
 	}
 
+	userPostData.Prepare()
+
+	if err := userPostData.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	firstName := userPostData.FirstName
 	secondName := userPostData.SecondName
 	lastName := userPostData.LastName
 	userGender := userPostData.Gender
 	userEmail := userPostData.Email
 	userPhone := userPostData.Phone
-
-	// form validation for required fields
-	if firstName == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "First Name is required!"})
-		return
-	}
-
-	if secondName == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "First Name is required!"})
-		return
-	}
-
-	if userGender == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Gender is required!"})
-		return
-	}
-
-	if userEmail == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Email is required!"})
-		return
-	}
-
-	if userPhone == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Phone is required!"})
-		return
-	}
-
-	validMale := userGender != "Male"
-	validFemale := userGender != "Female"
-
-	if validMale && validFemale {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Gender!"})
-		return
-	}
 
 	//remove white space from email and converts to lower case
 	userEmail = strings.TrimSpace(strings.ToLower(userEmail))
@@ -304,6 +277,8 @@ func Register(context *gin.Context) {
 		return
 	}
 
+	///save user data
+
 	//first time registration user type must be admin
 	var user models.User
 	userType := "User"
@@ -315,8 +290,9 @@ func Register(context *gin.Context) {
 	}
 
 	//creates a secure uuid user number
-	userNumber := uuid.NewV4().String()
 
+	tx := config.DB.Begin()
+	userNumber := uuid.NewV4().String()
 	///save user data
 	saveUser := models.User{
 		Number:     userNumber,
@@ -328,7 +304,13 @@ func Register(context *gin.Context) {
 		Status:     userStatus,
 	}
 
-	config.DB.Save(&saveUser)
+	if err := tx.Create(&saveUser).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create user"})
+		return
+	}
 
 	//after you need to save user email
 	saveEmailContact := models.Contact{
@@ -336,7 +318,14 @@ func Register(context *gin.Context) {
 		ContactType: "Email",
 		UserNumber:  saveUser.Number,
 	}
-	config.DB.Save(&saveEmailContact)
+
+	if err := tx.Create(&saveEmailContact).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create email"})
+		return
+	}
 
 	//after you need to save user phone
 	savePhoneContact := models.Contact{
@@ -344,7 +333,14 @@ func Register(context *gin.Context) {
 		ContactType: "Phone",
 		UserNumber:  saveUser.Number,
 	}
-	config.DB.Save(&savePhoneContact)
+
+	if err := tx.Create(&savePhoneContact).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create phone"})
+		return
+	}
 
 	//create / generate a token for the user to reset their password
 	//userToken := tokenGenerator()
@@ -356,12 +352,25 @@ func Register(context *gin.Context) {
 		Status:     userStatus,
 	}
 
-	config.DB.Save(&saveUserPasswordToken)
+	if err := tx.Create(&saveUserPasswordToken).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create token"})
+		return
+	}
 
 	//email sender
 	Token := userToken
 	d := emailSender.Info{Email: userEmail, Token: Token, MailType: "WholesomeEd: User Account Confirmation", UserName: secondName, CurrentYear: time.Now().Year(), Type: "registration"}
-	d.SendEmail()
+	err = d.SendEmail()
+	if err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email"})
+		return
+	}
 
 	var collection []interface{}
 	collection = append(collection, saveEmailContact)
@@ -377,6 +386,13 @@ func Register(context *gin.Context) {
 		collection,
 	}
 
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create user"})
+		return
+	}
+
 	context.JSON(http.StatusOK, gin.H{
 		"status":    http.StatusOK,
 		"message":   "Registered Successfully!",
@@ -388,10 +404,7 @@ func Register(context *gin.Context) {
 
 func ResetPassword(context *gin.Context) {
 
-	type UserEmail struct {
-		Email string `json:"email"`
-	}
-	var userMail UserEmail
+	var userMail requests.UserEmail
 
 	err := context.BindJSON(&userMail)
 	if err != nil {
@@ -399,11 +412,14 @@ func ResetPassword(context *gin.Context) {
 		return
 	}
 
-	Email := userMail.Email
-	if Email == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Email is required!"})
+	userMail.Prepare()
+
+	if err := userMail.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+
+	Email := userMail.Email
 
 	Email = strings.TrimSpace(strings.ToLower(Email))
 
@@ -439,13 +455,15 @@ func ResetPassword(context *gin.Context) {
 	var userData models.User
 
 	//this is done only when user already sent an activation link
+	tx := config.DB.Begin()
 	if userStatus == statusActive {
 		//then we proceed to update the user
 		//var userData models.User
-		updateStatus := config.DB.Model(&userData).
+		updateStatus := tx.Model(&userData).
 			Where("number = ?", userNumber).
 			Update("status", status)
 		if updateStatus.Error != nil {
+			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
 			return
 		}
@@ -458,15 +476,22 @@ func ResetPassword(context *gin.Context) {
 			Status:     status,
 		}
 
-		config.DB.Save(&saveUserPasswordToken)
+		if err := tx.Create(&saveUserPasswordToken).Error; err != nil {
+			// If any error occurs, rollback the transaction
+			tx.Rollback()
+			// Handle or return the error as needed
+			context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create Learning area"})
+			return
+		}
 
 	} else {
 
 		var passwordResetInfo models.PasswordReset
-		if err := config.DB.
+		if err := tx.
 			Where("user_number = ?", userNumber).
 			Where("status = ?", status).
 			First(&passwordResetInfo).Error; err != nil {
+			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Token not found"})
 			return
 		}
@@ -477,46 +502,55 @@ func ResetPassword(context *gin.Context) {
 
 	//email sender
 	d := emailSender.Info{Email: Email, Token: userToken, MailType: "Wholesome: User Account Confirmation", UserName: contact.User.SecondName, CurrentYear: time.Now().Year(), Type: "reset-password"}
-	d.SendEmail()
+	err = d.SendEmail()
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Error " + err.Error()})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create reset password"})
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Please check your email to continue resetting your password", "token": userToken})
-
 }
 
 func UserPassword(context *gin.Context) {
 
-	type UserPassword struct {
-		Token           string `json:"token"`
-		Password        string `json:"password"`
-		ConfirmPassword string `json:"confirm_password"`
-	}
-
-	var userPass UserPassword
+	var userPass requests.UserPassword
 	err := context.BindJSON(&userPass)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
+	if err := userPass.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	token := userPass.Token
 	userPassword := userPass.Password
-	confirmPassword := userPass.ConfirmPassword
+	//confirmPassword := userPass.ConfirmPassword
 
 	//	validate if token is provided
-	if token == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Token is required!"})
-		return
-	}
+	/*	if token == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Token is required!"})
+			return
+		}
 
-	if userPassword == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Password is required!"})
-		return
-	}
+		if userPassword == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Password is required!"})
+			return
+		}
 
-	if userPassword != confirmPassword {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Password Mismatch!"})
-		return
-	}
+		if userPassword != confirmPassword {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Password Mismatch!"})
+			return
+		}*/
 
 	//	check if token is valid for the user to set the password
 	//this we need to fetch a token which is active
@@ -524,7 +558,6 @@ func UserPassword(context *gin.Context) {
 	checkUserToken := config.DB.
 		Where("token = ?", token).
 		First(&passwordReset)
-
 	if checkUserToken.Error != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid token!"})
 		return
@@ -545,13 +578,15 @@ func UserPassword(context *gin.Context) {
 		return
 	}
 
+	tx := config.DB.Begin()
 	var userData models.User
 
 	//check if user is a valid user
-	validateUser := config.DB.
+	validateUser := tx.
 		Where("number = ?", userNumber).
 		First(&userData)
 	if validateUser.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
 		return
 	}
@@ -559,15 +594,16 @@ func UserPassword(context *gin.Context) {
 	//if user already exist the user password should be updated
 	var userPasswordInfo models.UserPassword
 
-	getUserPassword := config.DB.
+	getUserPassword := tx.
 		Where("user_number = ?", userNumber).
 		First(&userPasswordInfo)
 	if getUserPassword.Error == nil {
 		//this will just update user password data
-		updateStatus := config.DB.Model(&userPasswordInfo).
+		updateStatus := tx.Model(&userPasswordInfo).
 			Where("user_number = ?", userNumber).
 			Update("user_password", hashPassword)
 		if updateStatus.Error != nil {
+			tx.Rollback()
 			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
 			return
 		}
@@ -577,23 +613,39 @@ func UserPassword(context *gin.Context) {
 			UserPassword: hashPassword,
 			UserNumber:   userNumber,
 		}
-		config.DB.Save(&userPasswordData)
+
+		if err := tx.Create(&userPasswordData).Error; err != nil {
+			// If any error occurs, rollback the transaction
+			tx.Rollback()
+			// Handle or return the error as needed
+			context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create password"})
+			return
+		}
 
 	}
 
-	updateUserStatus := config.DB.Model(&userData).
+	updateUserStatus := tx.Model(&userData).
 		Where("number = ?", userNumber).
 		Update("status", "Active")
 	if updateUserStatus.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
 		return
 	}
 
-	updateTokenStatus := config.DB.Model(&passwordReset).
+	updateTokenStatus := tx.Model(&passwordReset).
 		Where("number = ?", passwordReset.Number).
 		Update("status", "Active")
 	if updateTokenStatus.Error != nil {
+		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create password"})
 		return
 	}
 

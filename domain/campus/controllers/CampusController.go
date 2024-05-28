@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"time"
 
@@ -90,7 +91,7 @@ func NewCampus(context *gin.Context) {
 	}
 
 	// Parse the string into a time.Time value
-	commencementDateData, err := time.Parse("2006-01-02", commencementDate)
+	commencementDateData, err := time.Parse("2006-01-02T15:04:05.000Z", commencementDate)
 	if err != nil {
 		fmt.Println("Error parsing date:", err)
 		return
@@ -384,15 +385,10 @@ func FetchCampuses(context *gin.Context) {
 
 	schoolNumber := context.Query("school_number")
 
-	if schoolNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "School Number is required!"})
-		return
-	}
-
 	var campuses []campusModel.Campus
 	var campuses_ []responses.CampusDataList
 	if err := config.DB.
-		Where("school_number = ?", schoolNumber).
+		Scopes(filters.BySchoolNumber(schoolNumber)).
 		Order("created_at desc").
 		Find(&campuses).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})
@@ -543,8 +539,9 @@ func CampusCurriculum(context *gin.Context) {
 
 	for _, items := range campusCurriculum {
 		curriculum_ = append(curriculum_, responses.CurriculumDataList{
-			Number: items.Number,
-			Name:   items.SchoolCurriculum.Curriculum.Name,
+			Number:           items.Number,
+			Name:             items.SchoolCurriculum.Curriculum.Name,
+			CurriculumNumber: items.SchoolCurriculum.Curriculum.Number,
 		})
 	}
 

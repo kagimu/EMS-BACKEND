@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"net/http"
 	"time"
 
@@ -21,7 +23,7 @@ func CreateAssessmentMetric(c *gin.Context) {
 
 	var payload requests.AssessmentMetricRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input" + err.Error()})
 		return
 	}
 
@@ -44,7 +46,6 @@ func CreateAssessmentMetric(c *gin.Context) {
 		CampusClassNumber:     payload.CampusClassNumber,
 		MetricNumber:          payload.MetricNumber,
 		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
-		Weight:                payload.Weight,
 		Description:           payload.Description,
 		MaxScore:              payload.MaxScore,
 	}
@@ -64,11 +65,52 @@ func FetchAssessmentMetrics(c *gin.Context) {
 		return
 	}
 
-	var assessmentMetrics []models.AssessmentMetric
-	if err := config.DB.Model(&models.AssessmentMetric{}).Preload("AssessmentArea").Preload("Metric").Find(&assessmentMetrics).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics"})
-		return
-	}
+	assessmentAreaNumber := c.Query("assessment_area_number")
+	studyPeriodNumber := c.Query("study_period_number")
+	campusClassNumber := c.Query("campus_class_number")
+	metricNumber := c.Query("metric_number")
 
-	c.JSON(http.StatusOK, gin.H{"data": assessmentMetrics})
+	var paginated = c.DefaultQuery("paginated", "no")
+
+	if paginated == "yes" {
+		if campusClassNumber == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class number is required"})
+			return
+
+		}
+
+		var paginatedResponse = pagination.PaginatedResponse{}
+
+		var assessmentMetrics []models.AssessmentMetric
+		if err := config.DB.Model(models.AssessmentMetric{}).Scopes(
+			filters.ByStudyPeriodNumber(studyPeriodNumber),
+			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
+			filters.ByCampusClassNumber(c.Query("campus_class_number")),
+			filters.ByMetricNumber(metricNumber),
+			pagination.Paginate(c, &paginatedResponse),
+		).Preload("AssessmentArea").Preload("Metric").Preload("CampusClass").Find(&assessmentMetrics).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics " + err.Error()})
+			return
+		}
+
+		paginatedResponse.Content = assessmentMetrics
+
+		c.JSON(http.StatusOK, paginatedResponse)
+
+	} else {
+
+		var assessmentMetrics []models.AssessmentMetric
+		if err := config.DB.Model(models.AssessmentMetric{}).Scopes(
+			filters.ByStudyPeriodNumber(studyPeriodNumber),
+			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
+			filters.ByCampusClassNumber(c.Query("campus_class_number")),
+			filters.ByMetricNumber(metricNumber),
+		).Preload("AssessmentArea").Preload("Metric").Preload("CampusClass").Find(&assessmentMetrics).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics " + err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": assessmentMetrics})
+
+	}
 }

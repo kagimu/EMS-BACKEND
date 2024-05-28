@@ -2,14 +2,14 @@ package controllers
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"net/http"
 )
 
 func CreateAssessmentArea(c *gin.Context) {
@@ -30,11 +30,21 @@ func CreateAssessmentArea(c *gin.Context) {
 		return
 	}
 
+	//validate for composite unique curriculum_class_number and subject number
+
+	var assessmentArea models.AssessmentArea
+	if err := config.DB.Where("curriculum_class_number = ? AND subject_number = ?", payload.CurriculumClassNumber, payload.SubjectNumber).First(&assessmentArea).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment area already exists for the specified curriculum class and subject"})
+		return
+
+	}
+
 	saveAssessmentArea := models.AssessmentArea{
 		Number:                uuid.NewV4().String(),
 		CurriculumClassNumber: payload.CurriculumClassNumber,
 		Name:                  payload.Name,
 		UserNumber:            user.Number,
+		SubjectNumber:         payload.SubjectNumber,
 	}
 
 	if err := config.DB.Create(&saveAssessmentArea).Error; err != nil {
@@ -46,14 +56,16 @@ func CreateAssessmentArea(c *gin.Context) {
 }
 
 func FetchAssessmentAreas(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
+	var curriculumClassNumber = c.Query("curriculum_class_number")
 	var assessmentAreas []models.AssessmentArea
-	if err := config.DB.Where("user_number = ?", user.Number).Find(&assessmentAreas).Error; err != nil {
+
+	if err := config.DB.Where("curriculum_class_number = ?", curriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
 		return
 	}
@@ -103,3 +115,27 @@ func EditAssessmentArea(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Assessment area updated successfully"})
 }
+
+func FetchAssessmentAreasByCampusClassNumber(c *gin.Context) {
+	campusClassNumber := c.Param("campus_class_number")
+	if campusClassNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class number is required"})
+		return
+	}
+
+	var campusClass campusClassModels.CampusClass
+	if err := config.DB.Preload("CurriculumClass").Where("number = ?", campusClassNumber).First(&campusClass).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus class"})
+		return
+	}
+
+	var assessmentAreas []models.AssessmentArea
+	if err := config.DB.Where("curriculum_class_number = ?", campusClass.CurriculumClass.Number).Find(&assessmentAreas).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": assessmentAreas})
+}
+
+//prepare Scope for assessment area

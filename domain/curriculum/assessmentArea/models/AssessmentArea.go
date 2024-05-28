@@ -21,7 +21,7 @@ type AssessmentArea struct {
 func (as *AssessmentArea) AfterFind(tx *gorm.DB) error {
 	if as.SubjectNumber != "" {
 		var subject subjectModel.Subject
-		tx.Model(&as).Where("number = ?", as.SubjectNumber).First(&subject)
+		tx.Where("number = ?", as.SubjectNumber).First(&subject)
 		as.Name = subject.Name
 	}
 

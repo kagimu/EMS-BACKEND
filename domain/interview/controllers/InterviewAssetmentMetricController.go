@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -69,7 +70,8 @@ func CreateInterviewAssessmentMetric(c *gin.Context) {
 
 func FetchInterviewAssessmentMetrics(c *gin.Context) {
 	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
-	if err := config.DB.Preload("AssessmentMetric").Preload("Interview").Find(&interviewAssessmentMetrics).Error; err != nil {
+	interviewNumber := c.Param("interview_number")
+	if err := config.DB.Scopes(filters.ByInterviewNumber(interviewNumber)).Preload("AssessmentMetric").Preload("Interview").Find(&interviewAssessmentMetrics).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interview assessment metrics"})
 		return
 	}
@@ -102,8 +104,8 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 		return
 	}
 
-	var assessment []assessmentModel.Assessment
-	if err := config.DB.Where("student_number = ?", studentNumber).Preload("AssessmentMetric").Preload("Student").Find(&assessment).Error; err != nil {
+	var assessments []assessmentModel.Assessment
+	if err := config.DB.Where("student_number = ?", studentNumber).Preload("AssessmentMetric").Preload("Student").Find(&assessments).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Assessment not found"})
 		return
 	}
@@ -142,7 +144,9 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 	var assessmentMetrics []assessmentModel.AssessmentMetric
 
 	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
-	if err := config.DB.Where("interview_number = ?", interviewNumber).Find(&interviewAssessmentMetrics).Error; err != nil {
+	if err := config.DB.
+		Joins("join assessment_metrics on assessment_metrics.number = interview_assessment_metrics.assessment_metric_number AND assessment_metrics.campus_class_number=?", student.CampusClassNumber).
+		Where("interview_number = ?", interviewNumber).Find(&interviewAssessmentMetrics).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interview assessment metrics"})
 		return
 	}
@@ -181,8 +185,8 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 			results = append(results, StudentInterviewResults{
 				Name:    v.AssessmentAreaName,
 				Comment: comment,
-				Score:   0,
-				Grade:   "Not Graded",
+				Score:   int(assessment.ActualScore),
+				Grade:   "Not Graded , no scales ",
 			})
 
 		} else {
@@ -193,13 +197,6 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 						Score:   int(assessment.ActualScore),
 						Grade:   val.Name,
 						Comment: comment,
-					})
-				} else {
-					results = append(results, StudentInterviewResults{
-						Name:    v.AssessmentAreaName,
-						Comment: comment,
-						Score:   0,
-						Grade:   "Not Graded",
 					})
 				}
 			}

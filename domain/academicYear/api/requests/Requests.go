@@ -16,6 +16,7 @@ type AcademicYearInfo struct {
 	AcademicYearStartDate string `json:"academic_year_start_date"`
 	AcademicYearEndDate   string `json:"academic_year_end_date"`
 	LevelNumber           string `json:"level_number"`
+	AcademicYearNumber    string `json:"academic_year_number"`
 	Code                  string `json:"code"`
 }
 

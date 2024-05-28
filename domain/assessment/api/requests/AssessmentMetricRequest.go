@@ -5,7 +5,6 @@ import (
 )
 
 type AssessmentMetricRequest struct {
-	Weight                uint8  `json:"weight"`
 	MaxScore              uint8  `json:"max_score"`
 	GradingStandardNumber string `json:"grading_standard_number"`
 	Description           string `json:"description"`
@@ -17,9 +16,6 @@ type AssessmentMetricRequest struct {
 }
 
 func (a *AssessmentMetricRequest) Validate() error {
-	if a.Weight == 0 {
-		return errors.New("weight is required")
-	}
 	if a.GradingStandardNumber == "" {
 		return errors.New("grading standard number is required")
 	}

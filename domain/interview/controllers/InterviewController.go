@@ -1,14 +1,17 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
+	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	"gorm.io/gorm"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	helpers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -132,20 +135,8 @@ func FetchAllInterviews(c *gin.Context) {
 		return
 	}
 
-	paginationParams := helpers.ParsePaginationParams(c)
-
 	var interviews []models.Interview
-	query := config.DB.Model(&models.Interview{})
-
-	_, err := helpers.Paginate(query, paginationParams)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Pagination failed",
-		})
-		return
-	}
-
-	if err := query.Find(&interviews).Error; err != nil {
+	if err := config.DB.Find(&interviews).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interviews"})
 		return
 	}
@@ -173,14 +164,46 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 	}
 
 	var students []models.InterviewStudent
-	if err := config.DB.Where("interview_number = ?", interviewNumber).Find(&students).Error; err != nil {
+	if err := config.DB.Preload("Student").Where("interview_number = ?", interviewNumber).Find(&students).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Failed to fetch students",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": students})
+	assessmentMetricNumber := c.Query("assessment_metric_number")
+	var stds []enrollmentResponse.EnrolledStudent
+	if assessmentMetricNumber != "" {
+
+		for _, student := range students {
+			var assessment assessmentModel.Assessment
+
+			if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", student.StudentNumber, assessmentMetricNumber).First(&assessment).Error; err != nil {
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
+					return
+				}
+			}
+
+			//var campusClass classModels.CampusClass
+			//if err := config.DB.Where("number = ?", enrollment.CampusClassNumber).First(&campusClass).Error; err != nil {
+			//	c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class not found"})
+			//	return
+			//}
+
+			stds = append(stds, enrollmentResponse.EnrolledStudent{
+
+				Number:            student.Student.Number,
+				StudentSurname:    student.Student.Surname,
+				StudentOtherName:  student.Student.OtherName,
+				StudentSecondName: student.Student.SecondName,
+				Comment:           assessment.Comment,
+				Score:             assessment.ActualScore,
+			})
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": stds})
 
 }
 

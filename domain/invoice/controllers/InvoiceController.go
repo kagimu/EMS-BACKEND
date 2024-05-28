@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -10,7 +11,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 func CreateInvoice(c *gin.Context) {
@@ -27,34 +27,12 @@ func CreateInvoice(c *gin.Context) {
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	studentNumber := payload.StudentNumber
-	var student studentModel.Student
-	if err := config.DB.First(&student, "number  = ?", studentNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No student found with the specified number"})
-		return
-	}
-
-	invoiceNumber, err := InvoiceNumberGenerator()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate invoice number", "err": err.Error()})
-		return
-	}
-
-	saveInvoice := models.Invoice{
-		Number:        uuid.NewV4().String(),
-		StudentNumber: payload.StudentNumber,
-		InvoiceNumber: invoiceNumber,
-		DueDate:       payload.DueDate,
-		Description:   payload.Description,
-		UserNumber:    user.Number,
-	}
-
-	if err := config.DB.Create(&saveInvoice).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create invoice"})
+	if err = services.CreateNewInvoice(payload, user.Number); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -69,6 +47,7 @@ func UpdateInvoice(c *gin.Context) {
 
 	type Input struct {
 		Status string `json:"status"`
+		Type   string `json:"type"`
 	}
 
 	var payload Input
@@ -93,6 +72,7 @@ func UpdateInvoice(c *gin.Context) {
 
 	updateInvoice := models.Invoice{
 		Status: payload.Status,
+		Type:   payload.Type,
 	}
 
 	if err := config.DB.Model(&invoice).Where("number = ?", invoice.Number).Updates(updateInvoice).Error; err != nil {
@@ -101,4 +81,72 @@ func UpdateInvoice(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Invoice updated successfully", "data": invoice})
+}
+
+func GetAllInvoices(context *gin.Context) {
+
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := context.Query("school_number")
+	status := context.Query("status")
+	campusNumber := context.Query("campus_number")
+	userNumber := context.Query("user_number")
+
+	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber)
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get invoices, try again", "err": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, invoices)
+}
+
+func GetInvoiceDetails(context *gin.Context) {
+
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	refNumber := context.Query("ref_number")
+
+	if refNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide the invoice ref number"))
+		return
+	}
+
+	details, err := services.InvoiceDetails(refNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Getting details failed, try again: "+err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Invoice details", "data": details})
+}
+
+func FinancialSummary(context *gin.Context) {
+
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	userNumber := context.Query("user_number")
+	if userNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide user number to view financial summary"))
+		return
+	}
+
+	summary, err := services.GetFinancialSummary(userNumber)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Getting financial summary failed, try again: "+err.Error()))
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Financial summary", "data": summary})
+
 }

@@ -128,31 +128,37 @@ func FetchParents(c *gin.Context) {
 }
 
 func UpdateParent(c *gin.Context) {
-	parent := models.Parent{}
-	parentID := c.Param("id")
-
-	err := config.DB.First(&parent, parentID).Error
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "no parent found",
-		})
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	if err := c.BindJSON(&parent); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "invalid request",
-		})
+	var parentId = c.Param("id")
+
+	var parentRequest requests.ParentRequest
+
+	if err := c.BindJSON(&parentRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request please prepare a valid request"})
 		return
 	}
+
+	var parent models.Parent
+
+	if err := config.DB.Where("number =? ", parentId).First(&parent).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "no parent found"})
+		return
+	}
+
+	parent.Surname = parentRequest.Surname
+	parent.SecondName = parentRequest.SecondName
+	parent.OtherName = parentRequest.OtherName
+	parent.MainTelephoneNumber = parentRequest.MainTelephoneNumber
+	parent.AlternativeTelephoneNumber = parentRequest.AlternativeTelephoneNumber
+	parent.Email = parentRequest.Email
+	parent.AlternativeEmail = parentRequest.AlternativeEmail
 
 	if err := config.DB.Save(&parent).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "failed to update parent",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update parent"})
 		return
 	}
 

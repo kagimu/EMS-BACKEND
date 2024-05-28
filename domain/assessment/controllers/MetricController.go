@@ -38,8 +38,8 @@ func CreateMetric(c *gin.Context) {
 	}
 
 	var duplicateMetric models.Metric
-	if duplicate := config.DB.Where("name = ?", saveMetric.Name).First(&duplicateMetric).Error; duplicate == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Name already exists"})
+	if duplicate := config.DB.Where("name = ? AND curriculum_number = ? ", saveMetric.Name, saveMetric.CurriculumNumber).First(&duplicateMetric).Error; duplicate == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Name already exists on this curriculum"})
 		return
 	}
 
@@ -58,8 +58,15 @@ func FetchMetrics(c *gin.Context) {
 		return
 	}
 
+	curricullumNumber := c.Query("curriculum_number")
+
+	if curricullumNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum number is required"})
+		return
+
+	}
 	var metrics []models.Metric
-	if err := config.DB.Find(&metrics).Error; err != nil {
+	if err := config.DB.Where("curriculum_number = ? ", curricullumNumber).Find(&metrics).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch metrics"})
 		return
 	}

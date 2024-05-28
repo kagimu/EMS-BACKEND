@@ -12,6 +12,7 @@ import (
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
+	cateringController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/controllers"
 	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
@@ -26,21 +27,26 @@ import (
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
 	invoiceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/controllers"
-	invoicePaymentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoicePayment/controllers"
 	productController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/controllers"
 	serviceController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/controllers"
 	lessonPlanControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/controllers"
 	parentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/controllers"
 	paymentsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/controllers"
+	permissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/controllers"
 	preInterviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/preAdmissionInterviewTest/controllers"
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
-	reportCardController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportCards/controllers"
+	previousSchoolResultsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/controllers"
+	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
+	promotionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/controllers"
+	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
+	reportTemplate "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
+	statisticsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/statistics/api/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentDetailsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
@@ -110,6 +116,16 @@ func SetupRoutes() *gin.Engine {
 			school.POST("/edit", schoolController.EditSchool)
 			school.GET("/info", schoolController.FetchSchoolInfo)
 			school.POST("/delete", schoolController.DeleteSchool)
+
+			template := school.Group("/report-templates")
+			{
+				template.GET("/all", reportTemplate.AllReportTemplates)
+				template.POST("/new", reportTemplate.NewReportTemplate)
+				template.GET("/by-class", reportTemplate.ClassReportTemplates)
+				template.POST("/add-to-classes", reportTemplate.AddTemplateToClass)
+				template.POST("/remove-template", reportTemplate.RemoveTemplateFromClass)
+			}
+
 		}
 
 		//manage campus
@@ -149,6 +165,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			class.GET("/info", classController.ClassInfo)
 			class.GET("/curriculum-class", classController.FetchClassesToAdd)
+			class.GET("/campus-class-by-level", classController.FetchCampusClassesByLevel)
 			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
 			class.POST("/edit", classController.EditClass)
 			class.POST("/delete", classController.DeleteClass)
@@ -248,9 +265,11 @@ func SetupRoutes() *gin.Engine {
 		academicYear := main.Group("/academic-year")
 		{
 			academicYear.GET("all", academicYearController.FetchAcademicYearInfo)
+			academicYear.GET("info", academicYearController.FetchAcademicYearData)
 			academicYear.GET("by-level", academicYearController.AcademicYearsByLevel)
 			academicYear.GET("by-campus-class", academicYearController.AcademicYearsByCampusClass)
 			academicYear.POST("/new", academicYearController.NewAcademicYear)
+			academicYear.POST("/edit", academicYearController.EditAcademicYear)
 			academicYear.POST("/delete", academicYearController.DeleteAcademicYear)
 		}
 		main.GET("academic-by-class", academicYearController.FetchAcademicByClass)
@@ -258,10 +277,12 @@ func SetupRoutes() *gin.Engine {
 		//adds study period
 		studyPeriod := main.Group("/study-period")
 		{
+			studyPeriod.POST("new", studyPeriodController.NewStudyPeriod)
+			studyPeriod.POST("edit", studyPeriodController.EditStudyPeriod)
+			studyPeriod.GET("info", studyPeriodController.FetchStudyPeriodInfo)
 			studyPeriod.GET("all", studyPeriodController.FetchStudyPeriod)
 			studyPeriod.GET("by-academic-year", studyPeriodController.FetchStudyPeriodByAcademicYear)
 		}
-		main.POST("new-study-period", studyPeriodController.NewStudyPeriod)
 
 		//adds scheme of work
 		schemeOfWork := main.Group("/scheme-of-work")
@@ -303,6 +324,12 @@ func SetupRoutes() *gin.Engine {
 			timetable.GET("subjects-by-class-level-number/:class_level_number", timetableController.FetchSubjectsByClassLevelNumber)
 			timetable.GET("get-classes-by-campus-number-and-level-number", timetableController.FetchClassLevelsByCampusNumberAndLevelNumber)
 			timetable.GET("fetch-levels-by-campus-number/:campus_number", timetableController.FetchLevelsByCampusNumber)
+			timetable.GET("studying-timeblocks", timetableController.CreateStudyingTimeBlock)
+			timetable.POST("studying-timeblocks", timetableController.FetchStudyingTimeBlocks)
+			timetable.POST("studying-timetable", timetableController.CreateStudyingTimeTable)
+			timetable.GET("studying-timetable", timetableController.FetchStudyingTimeTables)
+			timetable.POST("study-periods", timetableController.CreateStudyPeriod)
+			timetable.GET("study-periods", timetableController.FetchStudyPeriods)
 		}
 
 		stream := main.Group("/stream")
@@ -334,7 +361,7 @@ func SetupRoutes() *gin.Engine {
 			application.POST("new-parent", parentController.CreateParent)
 			application.GET("parents", parentController.FetchParents)
 			application.GET("parents/:id", parentController.FetchParentInfo)
-			application.PATCH("parents/:id", parentController.UpdateParent)
+			application.PUT("parents/:id", parentController.UpdateParent)
 			application.POST("parents/:id", parentController.DeleteParent)
 
 			// students
@@ -346,12 +373,13 @@ func SetupRoutes() *gin.Engine {
 
 			// previous schools
 			application.POST(":application_number/previous-schools", previousSchoolController.CreatePreviousSchools)
+			application.PUT(":application_number/previous-schools", previousSchoolController.UpdatePreviousSchool)
 
 			// application
 			application.GET("/:application_number", applicationController.FetchApplication)
 			application.GET("all", applicationController.FetchApplications)
-			application.GET("", applicationController.FetchApplicationsByStatus)
 			application.PUT("/:application_number", applicationController.EditApplication)
+			application.POST("submit-application/:application_number", applicationController.SubmitApplication)
 		}
 
 		learningMaterials := main.Group("/learning-materials")
@@ -373,11 +401,6 @@ func SetupRoutes() *gin.Engine {
 			preAdmissionInterviewTestReport.POST("", preInterviewController.CreatePreAdmissionInterviewReport)
 			preAdmissionInterviewTestReport.GET(":number", preInterviewController.FetchPreAdmissionInterviewReportByNumber)
 			preAdmissionInterviewTestReport.GET("/all", preInterviewController.GetAllPreAdmissionInterviewReports)
-		}
-
-		preAdmissionInterviewTest := main.Group("/pre-admission-interview-tests")
-		{
-			preAdmissionInterviewTest.POST("", preInterviewController.CreatePreAdmissionInterviewTest)
 		}
 
 		interview := main.Group("/interviews")
@@ -413,12 +436,12 @@ func SetupRoutes() *gin.Engine {
 		invoices := main.Group("/invoices")
 		{
 			invoices.POST("", invoiceController.CreateInvoice)
+			invoices.GET("", invoiceController.GetAllInvoices)
+			invoices.POST("pay", invoiceController.CreateInvoicePayment)
+			invoices.GET("details", invoiceController.GetInvoiceDetails)
+			invoices.GET("financial-summary", invoiceController.FinancialSummary)
+			invoices.GET("payments", invoiceController.GetAllPayments)
 			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
-		}
-
-		invoicePayments := main.Group("/invoice-payments")
-		{
-			invoicePayments.POST("", invoicePaymentController.CreateInvoicePayment)
 		}
 
 		services := main.Group("/services")
@@ -437,32 +460,25 @@ func SetupRoutes() *gin.Engine {
 			products.DELETE(":product_number", productController.DeleteProduct)
 		}
 
+		items := main.Group("/items")
+		{
+			items.GET("", serviceController.FetchAllItems)
+		}
+
 		admission := main.Group("/admissions")
 		{
 			admission.POST("", admissionController.CreateAdmission)
-			admission.PUT("/:number/admit", admissionController.AdmitStudent)
-			admission.PUT("/admit", admissionController.BulkAdmitStudents)
-			admission.GET("", admissionController.FetchAdmittedStudentsByClass)
+			admission.GET("", admissionController.FetchAdmissions)
+			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
+			admission.GET("items/:admission_number", admissionController.FetchItemsAddedOnAdmission)
 
-			offer := admission.Group("/admission-offers")
-			{
-				offer.POST("", admissionController.CreateAdmissionOffer)
-				offer.GET("", admissionController.FetchAdmissionOffers)
-				offer.GET("/:admission_offer_number", admissionController.FetchAnAdmissionOffer)
-				offer.GET("/student/:student_number", admissionController.FetchAdmissionOfferByStudentNumber)
-			}
-
-			conditions := admission.Group("/admission-offer-conditions")
-			{
-				conditions.POST("", admissionController.CreateAdmissionOfferCondition)
-				conditions.GET("", admissionController.FetchAdmissionOfferConditions)
-			}
 		}
 
 		assessmentArea := main.Group("/assessment-areas")
 		{
 			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
 			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
+			assessmentArea.GET("by-campus-class-number/:campus_class_number", assessmentAreaController.FetchAssessmentAreasByCampusClassNumber)
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
 
@@ -486,14 +502,15 @@ func SetupRoutes() *gin.Engine {
 			{
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
 				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
-				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScaleBySchool)
+				aggregateScale.PUT("", aggregateScaleController.EditAggregateScale)
+				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScales)
 			}
 
-			assessmentGrade := assessment.Group("/aggregate-grades")
+			assessmentGrade := assessment.Group("/assessment-grades")
 			{
 				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
 				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
-				assessmentGrade.PUT(":assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
+				assessmentGrade.PUT("/update/:assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
 				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
 			}
 		}
@@ -503,47 +520,62 @@ func SetupRoutes() *gin.Engine {
 			attendance.POST("", assessmentController.CreateAttendance)
 			attendance.GET("class", assessmentController.FetchAttendanceByClass)
 			attendance.GET("student", assessmentController.FetchStudentAttendance)
-
 		}
 
-		settings := main.Group("settings/permissions")
+		settings := main.Group("settings")
 		{
-			settings.GET("groups", authController.FetchPermissionGroups)
-		}
+			permissions := settings.Group("permissions")
+			{
+				permissions.GET("groups", authController.FetchPermissionGroups)
+			}
 
-		roles := main.Group("settings/roles")
-		{
-			roles.POST("", authController.CreateRole)
-			roles.GET("", authController.FetchRoles)
-			roles.GET(":role_number", authController.FetchRoleDetails)
-			roles.PUT("assign", authController.AssignRolesToAUser)
-			roles.DELETE("remove", authController.RemoveRoleAssignment)
+			roles := settings.Group("roles")
+			{
+				roles.POST("", permissionController.CreateRole)
+				roles.GET("", permissionController.FetchRoles)
+				roles.GET(":role_number", permissionController.FetchRoleDetails)
+				roles.PUT("assign", permissionController.AssignRolesToAUser)
+				roles.DELETE("remove", permissionController.RemoveRoleAssignment)
+				roles.POST("update/:role_number", permissionController.UpdateRole)
+				roles.DELETE("delete/:role_number", permissionController.DeleteRole)
+
+			}
+
+			scopes := settings.Group("scopes")
+			{
+				scopes.POST("", permissionController.CreateScope)
+				scopes.GET("", permissionController.FetchScopes)
+			}
 		}
 
 		users := main.Group("users")
 		{
 			users.GET("", authController.FetchUsers)
+			users.GET("all", authController.FetchAllUsers)
 			users.GET(":user_number", authController.FetchUser)
 			users.POST("", authController.CreateUser)
 		}
 
 		reportCards := main.Group("report-cards")
 		{
-			reportCards.POST("", reportCardController.CreateReportCard)
-			reportCards.GET("", reportCardController.FetchAllPromotions)
+			reportCards.POST("", progressReportController.CreateProgressReport)
+			reportCards.GET("", progressReportController.FetchAllProgressReports)
 		}
 
 		gradingStandard := main.Group("grading-standard")
 		{
 			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
 			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
+			gradingStandard.POST("attach-assessment-area", aggregateScaleController.AttachAssessmentAreas)
+			gradingStandard.GET("assessment-areas", aggregateScaleController.FetchAssessmentAreasByGradingStandard)
 		}
 
 		enrollment := main.Group("enrollment")
 		{
 			enrollment.POST("", enrollmentController.CreateEnrollment)
 			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
-			enrollment.GET("campus", enrollmentController.EnrolledStudentsByCampus)
+			enrollment.POST("terminate-student/:student_number", enrollmentController.TerminateStudentEnrollment)
+			enrollment.POST("re-enroll-student/:student_number", enrollmentController.ReEnrollStudent)
 		}
 
 		staff := main.Group("staff-management")
@@ -582,6 +614,141 @@ func SetupRoutes() *gin.Engine {
 				joTitles.PUT("", staffController.EditJobTitle)
 			}
 
+		}
+
+		reportSettings := main.Group("report-settings")
+		{
+			reportSettings.POST("", reportSettingsController.CreateReportSettings)
+			reportSettings.GET("", reportSettingsController.FetchReportSettings)
+			reportSettings.POST("columns", reportSettingsController.CreatReportColumn)
+			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
+			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
+			reportSettings.GET("report-column-assessment", reportSettingsController.FetchReportColumnAssessments)
+			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
+			reportSettings.POST("report-score", reportSettingsController.CreateReportScore)
+			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
+			reportSettings.GET("report-settings-by-student", reportSettingsController.FetchReportSummaryByStudentAndStudyPeriodAndClass)
+			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
+			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)
+
+		}
+
+		promotions := main.Group("promotions")
+		{
+			promotions.POST("", promotionController.PromoteStudent)
+			promotions.GET("", promotionController.FetchAllPromotions)
+			promotions.PUT(":promotion_number", promotionController.EditPromotion)
+
+			promotionSettings := promotions.Group("settings")
+			{
+				promotionSettings.POST("", promotionController.CreatePromotionSettings)
+				promotionSettings.GET("", promotionController.FetchPromotionSettings)
+			}
+
+			promotionSettingsValues := promotions.Group("settings-values")
+			{
+				promotionSettingsValues.POST("", promotionController.CreatePromotionSettingValue)
+				promotionSettingsValues.GET("", promotionController.FetchPromotionSettingsValues)
+			}
+		}
+
+		previousSchoolResults := main.Group("previous-school-results")
+		{
+			previousSchoolResults.POST("", previousSchoolResultsController.CreatePreviousSchoolResults)
+			previousSchoolResults.GET("all", previousSchoolResultsController.FetchAllPreviousSchoolResults)
+			previousSchoolResults.GET("", previousSchoolResultsController.FetchPreviousSchoolResultsByStudent)
+		}
+
+		// TODO: Organize the student routes
+		students := main.Group("students")
+		{
+			students.GET("/by-assessment-metric/:assessment_metric_number", studentController.FetchStudentsByAssessmentMetricNumber)
+		}
+
+		catering := main.Group("catering")
+		{
+			// Feeding sessions
+			catering.POST("feeding-sessions", cateringController.CreateFeedingSession)
+			catering.GET("feeding-sessions", cateringController.FetchFeedingSessions)
+
+			// Feeding session per day
+			catering.POST("feeding-sessions-per-day", cateringController.CreateFeedingSessionPerDay)
+			catering.GET("feeding-sessions-per-day", cateringController.FetchFeedingSessionsPerDay)
+
+			// Feeding session items
+			catering.POST("feeding-sessions-items", cateringController.CreateFeedingSessionItemController)
+			catering.GET("feeding-sessions-items", cateringController.FetchFeedingSessionItems)
+
+			// Feeding groups
+			feedingGroups := catering.Group("feeding-groups")
+			{
+				feedingGroups.POST("", cateringController.CreateFeedingGroup)
+				feedingGroups.GET("", cateringController.FetchFeedingGroups)
+				feedingGroups.POST("update", cateringController.UpdateFeedingGroup)
+			}
+
+			// Feeding groups per day
+			catering.POST("feeding-groups-per-day", cateringController.CreateFeedingGroupPerDay)
+			catering.GET("feeding-groups-per-day", cateringController.FetchFeedingGroupsPerDay)
+
+			// Menu items
+			catering.POST("menu-items", cateringController.CreateMenuItem)
+			catering.GET("menu-items", cateringController.FetchMenuItems)
+			catering.GET("menu-items/:menu_item_number", cateringController.FetchMenuItemDetails)
+			catering.PUT("menu-items/:menu_item_number", cateringController.EditMenuItem)
+
+			// Units of measure
+			catering.POST("units-of-measure", cateringController.CreateUnitOfMeasure)
+			catering.GET("units-of-measure", cateringController.FetchUnitsOfMeasure)
+			catering.PUT("units-of-measure/:number", cateringController.EditUnitOfMeasure)
+
+			// Item assembly
+			catering.POST("item-assembly", cateringController.CreateItemAssembly)
+			catering.GET("item-assembly", cateringController.FetchItemAssemblies)
+
+			// Feedings
+			catering.POST("feedings", cateringController.CreateFeeding)
+			catering.GET("feedings", cateringController.FetchFeedings)
+
+			// Stocking
+			catering.POST("stocking", cateringController.CreateStocking)
+			catering.GET("stocking", cateringController.FetchStockings)
+			catering.GET("stocking/:stock_item_number", cateringController.FetchItemStock)
+
+			// Feeding group users
+			catering.POST("feeding-group-users", cateringController.CreateFeedingGroupUser)
+			catering.GET("feeding-group-users", cateringController.FetchFeedingGroupUsers)
+
+			// Feeding group session
+			catering.POST("feeding-group-sessions", cateringController.CreateFeedingGroupSession)
+			catering.GET("feeding-group-sessions", cateringController.FetchFeedingGroupSessions)
+
+			// Feeding per group
+			catering.POST("meal-courses-per-group", cateringController.AddMealCoursesToFeedingGroup)
+			catering.GET("meal-courses-per-group", cateringController.FetchFeedingsPerGroup)
+
+			// Meals
+			catering.POST("meals", cateringController.AddMeal)
+			catering.GET("meals", cateringController.FetUsersMeals)
+			catering.GET("meal-projections", cateringController.MealsProjections)
+			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
+			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
+			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)
+			catering.POST("activate-meal-course", cateringController.ActivateMealCourse)
+
+			cateringUpdate := catering.Group("meal-courses")
+			{
+				cateringUpdate.POST("", cateringController.SaveMealCourse)
+				cateringUpdate.GET("", cateringController.GetMealCourses)
+				cateringUpdate.POST("update", cateringController.UpdateSaveMealCourse)
+				cateringUpdate.POST("update/item", cateringController.UpdateMealCourseItem)
+			}
+
+		}
+
+		statistics := main.Group("statistics")
+		{
+			statistics.GET("summary", statisticsController.FetchStatistics)
 		}
 	}
 
