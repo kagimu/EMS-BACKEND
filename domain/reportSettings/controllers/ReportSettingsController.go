@@ -72,8 +72,23 @@ func CreateReportSettings(c *gin.Context) {
 }
 
 func FetchReportSettings(c *gin.Context) {
+
+	campusClassNumber := c.Query("campus_class_number")
+
+	if campusClassNumber != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please at-least a Campus"})
+	}
+
 	var reportSettings []models.ReportSetting
-	if err := config.DB.Preload("AcademicYear").Preload("CampusClass").Preload("StudyPeriod").Find(&reportSettings).Error; err != nil {
+	if err := config.DB.Preload("AcademicYear").
+		Preload("CampusClass").
+		Preload("StudyPeriod").
+		Scopes(
+			filters.ByCampusClassNumber(campusClassNumber),
+			filters.ByAcademicYearNumber(c.Query("academic_year_number")),
+			filters.ByStudyPeriodNumber(c.Query("study_period_number")),
+		).
+		Find(&reportSettings).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
 	}
