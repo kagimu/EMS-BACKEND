@@ -182,7 +182,7 @@ func CreatReportColumn(ctx *gin.Context) {
 
 func FetchReportColumns(ctx *gin.Context) {
 
-	reportSettingsNumber := ctx.Query("report_settings_number")
+	reportSettingsNumber := ctx.Query("report_setting_number")
 	if reportSettingsNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select at least one Report setting"})
 		return
@@ -190,7 +190,7 @@ func FetchReportColumns(ctx *gin.Context) {
 
 	var reportColumns []models.ReportColumn
 
-	if err := config.DB.Scopes(filters.ByAnyField("report_settings_number", ctx.Query("report_settings_number"))).Find(&reportColumns).Error; err != nil {
+	if err := config.DB.Scopes(filters.ByAnyField("report_setting_number", ctx.Query("report_setting_number"))).Find(&reportColumns).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
 		return
 	}
