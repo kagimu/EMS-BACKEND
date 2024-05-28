@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
@@ -298,11 +299,21 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 			items := make([]responses.ProjectionMenuItem, 0)
 
 			for _, _item := range getItems {
+
+				_baseItem, err := repositories.GetMenuItemByNumber(_item.MenuItemNumber)
+				if err != nil {
+					fmt.Println("Getting base price item error: " + err.Error())
+					continue
+				}
+
+				_totalQuantity := _item.Quantity * float64(totalUsers)
+
 				items = append(items, responses.ProjectionMenuItem{
 					Name:           _item.MenuItemName,
-					Quantity:       _item.Quantity * float64(totalUsers),
+					Quantity:       _totalQuantity,
 					UnitOfMeasure:  _item.UnitOfMeasure,
 					MenuItemNumber: _item.MenuItemNumber,
+					TotalCost:      _totalQuantity * determineUnitCost(_baseItem),
 				})
 			}
 
@@ -315,4 +326,32 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 	}
 
 	return meals
+}
+
+func determineUnitCost(item models.MenuItem) float64 {
+
+	if item.Number == "" {
+		return 0.0
+	}
+
+	if item.Type == constants.TypeItem {
+		return item.BaseUnitCost
+	}
+
+	var unitCost float64
+	parts, err := repositories.GetAssembledItemParts(item.Number)
+	if err != nil {
+		log.Println("Getting items parts for unit cost error: " + err.Error())
+		return 0.0
+	}
+
+	for _, part := range parts {
+		partItem, err := repositories.GetMenuItemByNumber(part.SecondaryItemNumber)
+		if err != nil {
+			continue
+		}
+		unitCost += part.Quantity * determineUnitCost(partItem)
+	}
+
+	return unitCost
 }
