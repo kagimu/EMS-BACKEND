@@ -3,11 +3,14 @@ package responses
 import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 
 type ReportSettingsResponse struct {
-	Number  string `json:"number"`
-	Name    string `json:"name"`
-	Columns int64  `json:"columns"`
-	Status  string `json:"status"`
-	Code    int64  `json:"code"`
+	Number       string `json:"number"`
+	Name         string `json:"name"`
+	Columns      int64  `json:"columns"`
+	Status       string `json:"status"`
+	Code         int64  `json:"code"`
+	StudyPeriod  string `json:"study_period"`
+	AcademicYear string `json:"academic_year"`
+	Class        string `json:"class"`
 }
 
 type ReportColumnResponse struct {
