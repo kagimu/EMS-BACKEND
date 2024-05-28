@@ -1,8 +1,8 @@
 package responses
 
 type ProjectionCalenderResponse struct {
-	CalenderItems []ProjectionCalender     `json:"calender_items"`
-	ItemsSummary  []ProjectionCalenderItem `json:"items_summary"`
+	CalenderItems []ProjectionCalender `json:"calender_items"`
+	ItemsSummary  []ProjectionMenuItem `json:"items_summary"`
 }
 
 type ProjectionCalender struct {
@@ -12,13 +12,15 @@ type ProjectionCalender struct {
 }
 
 type ProjectionCalenderMeal struct {
-	MealName       string                   `json:"meal_name"`
-	Items          []ProjectionCalenderItem `json:"items"`
-	NumberOfPeople int                      `json:"number_of_people"`
+	MealName       string               `json:"meal_name"`
+	Items          []ProjectionMenuItem `json:"items"`
+	NumberOfPeople int                  `json:"number_of_people"`
 }
 
-type ProjectionCalenderItem struct {
-	Name          string  `json:"name"`
-	Quantity      float64 `json:"quantity"`
-	UnitOfMeasure string  `json:"unit_of_measure"`
+type ProjectionMenuItem struct {
+	Name           string  `json:"name"`
+	Quantity       float64 `json:"quantity"`
+	UnitOfMeasure  string  `json:"unit_of_measure"`
+	TotalCost      float64 `json:"total_cost"`
+	MenuItemNumber string  `json:"menu_item_number"`
 }
