@@ -233,19 +233,24 @@ func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate tim
 	projectionCalenderResponse.CalenderItems = calenderDays
 
 	var summary = make([]responses.ProjectionMenuItem, 0)
+	var totalCost float64
 
 	if len(calenderDays) > 0 {
-		summary = buildProjectionSummary(calenderDays)
+		summary, totalCost = buildProjectionSummary(calenderDays)
 	}
 
 	projectionCalenderResponse.ItemsSummary = summary
 
+	projectionCalenderResponse.TotalCost = totalCost
+
 	return projectionCalenderResponse, nil
 }
 
-func buildProjectionSummary(calenderDays []responses.ProjectionCalender) []responses.ProjectionMenuItem {
+func buildProjectionSummary(calenderDays []responses.ProjectionCalender) ([]responses.ProjectionMenuItem, float64) {
 
 	var items []responses.ProjectionMenuItem
+
+	var totalCost float64
 
 	for _, calendarItem := range calenderDays {
 
@@ -253,13 +258,14 @@ func buildProjectionSummary(calenderDays []responses.ProjectionCalender) []respo
 
 			for _, menuItem := range meal.Items {
 				items = updateItemOrAppend(items, menuItem)
+				totalCost += menuItem.TotalCost
 			}
 
 		}
 
 	}
 
-	return items
+	return items, totalCost
 
 }
 
