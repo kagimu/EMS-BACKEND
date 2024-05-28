@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
@@ -230,9 +231,57 @@ func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate tim
 	}
 
 	projectionCalenderResponse.CalenderItems = calenderDays
-	projectionCalenderResponse.ItemsSummary = make([]responses.ProjectionCalenderItem, 0)
+
+	var summary = make([]responses.ProjectionMenuItem, 0)
+	var totalCost float64
+
+	if len(calenderDays) > 0 {
+		summary, totalCost = buildProjectionSummary(calenderDays)
+	}
+
+	projectionCalenderResponse.ItemsSummary = summary
+
+	projectionCalenderResponse.TotalCost = totalCost
 
 	return projectionCalenderResponse, nil
+}
+
+func buildProjectionSummary(calenderDays []responses.ProjectionCalender) ([]responses.ProjectionMenuItem, float64) {
+
+	var items []responses.ProjectionMenuItem
+
+	var totalCost float64
+
+	for _, calendarItem := range calenderDays {
+
+		for _, meal := range calendarItem.Meals {
+
+			for _, menuItem := range meal.Items {
+				items = updateItemOrAppend(items, menuItem)
+				totalCost += menuItem.TotalCost
+			}
+
+		}
+
+	}
+
+	return items, totalCost
+
+}
+
+func updateItemOrAppend(items []responses.ProjectionMenuItem, newItem responses.ProjectionMenuItem) []responses.ProjectionMenuItem {
+
+	for index, item := range items {
+
+		if item.MenuItemNumber == newItem.MenuItemNumber {
+			items[index].Quantity += newItem.Quantity
+			items[index].TotalCost += newItem.TotalCost
+			return items
+		}
+
+	}
+
+	return append(items, newItem)
 }
 
 func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.MealCourse, campusNumber string) []responses.ProjectionCalenderMeal {
@@ -253,13 +302,24 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 			mealProjection.NumberOfPeople = totalUsers
 			getItems := dayItems[0].Meals //Since they are all served the same items for the meal. Getting items at index zero is enough
 
-			items := make([]responses.ProjectionCalenderItem, 0)
+			items := make([]responses.ProjectionMenuItem, 0)
 
 			for _, _item := range getItems {
-				items = append(items, responses.ProjectionCalenderItem{
-					Name:          _item.MenuItemName,
-					Quantity:      _item.Quantity * float64(totalUsers),
-					UnitOfMeasure: _item.UnitOfMeasure,
+
+				_baseItem, err := repositories.GetMenuItemByNumber(_item.MenuItemNumber)
+				if err != nil {
+					fmt.Println("Getting base price item error: " + err.Error())
+					continue
+				}
+
+				_totalQuantity := _item.Quantity * float64(totalUsers)
+
+				items = append(items, responses.ProjectionMenuItem{
+					Name:           _item.MenuItemName,
+					Quantity:       _totalQuantity,
+					UnitOfMeasure:  _item.UnitOfMeasure,
+					MenuItemNumber: _item.MenuItemNumber,
+					TotalCost:      _totalQuantity * determineUnitCost(_baseItem),
 				})
 			}
 
@@ -272,4 +332,32 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 	}
 
 	return meals
+}
+
+func determineUnitCost(item models.MenuItem) float64 {
+
+	if item.Number == "" {
+		return 0.0
+	}
+
+	if item.Type == constants.TypeItem {
+		return item.BaseUnitCost
+	}
+
+	var unitCost float64
+	parts, err := repositories.GetAssembledItemParts(item.Number)
+	if err != nil {
+		log.Println("Getting items parts for unit cost error: " + err.Error())
+		return 0.0
+	}
+
+	for _, part := range parts {
+		partItem, err := repositories.GetMenuItemByNumber(part.SecondaryItemNumber)
+		if err != nil {
+			continue
+		}
+		unitCost += part.Quantity * determineUnitCost(partItem)
+	}
+
+	return unitCost
 }
