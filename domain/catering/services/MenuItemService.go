@@ -230,9 +230,51 @@ func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate tim
 	}
 
 	projectionCalenderResponse.CalenderItems = calenderDays
-	projectionCalenderResponse.ItemsSummary = make([]responses.ProjectionCalenderItem, 0)
+
+	var summary = make([]responses.ProjectionMenuItem, 0)
+
+	if len(calenderDays) > 0 {
+		summary = buildProjectionSummary(calenderDays)
+	}
+
+	projectionCalenderResponse.ItemsSummary = summary
 
 	return projectionCalenderResponse, nil
+}
+
+func buildProjectionSummary(calenderDays []responses.ProjectionCalender) []responses.ProjectionMenuItem {
+
+	var items []responses.ProjectionMenuItem
+
+	for _, calendarItem := range calenderDays {
+
+		for _, meal := range calendarItem.Meals {
+
+			for _, menuItem := range meal.Items {
+				items = updateItemOrAppend(items, menuItem)
+			}
+
+		}
+
+	}
+
+	return items
+
+}
+
+func updateItemOrAppend(items []responses.ProjectionMenuItem, newItem responses.ProjectionMenuItem) []responses.ProjectionMenuItem {
+
+	for index, item := range items {
+
+		if item.MenuItemNumber == newItem.MenuItemNumber {
+			items[index].Quantity += newItem.Quantity
+			items[index].TotalCost += newItem.TotalCost
+			return items
+		}
+
+	}
+
+	return append(items, newItem)
 }
 
 func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.MealCourse, campusNumber string) []responses.ProjectionCalenderMeal {
@@ -253,13 +295,14 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 			mealProjection.NumberOfPeople = totalUsers
 			getItems := dayItems[0].Meals //Since they are all served the same items for the meal. Getting items at index zero is enough
 
-			items := make([]responses.ProjectionCalenderItem, 0)
+			items := make([]responses.ProjectionMenuItem, 0)
 
 			for _, _item := range getItems {
-				items = append(items, responses.ProjectionCalenderItem{
-					Name:          _item.MenuItemName,
-					Quantity:      _item.Quantity * float64(totalUsers),
-					UnitOfMeasure: _item.UnitOfMeasure,
+				items = append(items, responses.ProjectionMenuItem{
+					Name:           _item.MenuItemName,
+					Quantity:       _item.Quantity * float64(totalUsers),
+					UnitOfMeasure:  _item.UnitOfMeasure,
+					MenuItemNumber: _item.MenuItemNumber,
 				})
 			}
 
