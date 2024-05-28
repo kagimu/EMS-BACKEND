@@ -3,6 +3,7 @@ package responses
 type ProjectionCalenderResponse struct {
 	CalenderItems []ProjectionCalender `json:"calender_items"`
 	ItemsSummary  []ProjectionMenuItem `json:"items_summary"`
+	TotalCost     float64              `json:"total_cost"`
 }
 
 type ProjectionCalender struct {
