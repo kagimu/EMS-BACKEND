@@ -98,11 +98,14 @@ func FetchReportSettings(c *gin.Context) {
 
 	for _, reportSetting := range reportSettings {
 		response := responses.ReportSettingsResponse{
-			Name:    reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
-			Number:  reportSetting.Number,
-			Status:  reportSetting.Status,
-			Columns: reportSetting.Columns,
-			Code:    reportSetting.Code,
+			Name:         reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
+			Number:       reportSetting.Number,
+			Status:       reportSetting.Status,
+			Columns:      reportSetting.Columns,
+			Code:         reportSetting.Code,
+			AcademicYear: reportSetting.AcademicYear.AcademicYearName,
+			StudyPeriod:  reportSetting.StudyPeriod.StudyPeriodName,
+			Class:        reportSetting.CampusClass.ClassName,
 		}
 
 		rs = append(rs, response)
@@ -179,7 +182,8 @@ func CreatReportColumn(ctx *gin.Context) {
 
 func FetchReportColumns(ctx *gin.Context) {
 	var reportColumns []models.ReportColumn
-	if err := config.DB.Find(&reportColumns).Error; err != nil {
+
+	if err := config.DB.Scopes(filters.ByAnyField("report_settings_number", ctx.Query("report_settings_number"))).Find(&reportColumns).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
 		return
 	}
