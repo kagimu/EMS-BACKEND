@@ -6,7 +6,7 @@ type ItemAssembly struct {
 	PrimaryItemNumber     string                  `json:"primary_item_number"`
 	SecondaryItemQuantity []SecondaryItemQuantity `json:"secondary_items"`
 	Name                  string                  `json:"name"`
-	Code                  uint64                  `json:"code"`
+	Code                  int64                   `json:"code"`
 	Type                  string                  `json:"type"`
 	UnitOfMeasureNumber   string                  `json:"unit_of_measure_number"`
 	CampusNumber          string                  `json:"campus_number"`
