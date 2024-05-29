@@ -692,11 +692,17 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("feeding-groups-per-day", cateringController.FetchFeedingGroupsPerDay)
 
 			// Menu items
-			catering.POST("menu-items", cateringController.CreateMenuItem)
-			catering.GET("menu-items", cateringController.FetchMenuItems)
+
+			menuItems := catering.Group("menu-items")
+			{
+				menuItems.POST("", cateringController.CreateMenuItem)
+				menuItems.GET("", cateringController.FetchMenuItems)
+				menuItems.GET("details", cateringController.FetchMenuItemDetails)
+				menuItems.POST("update", cateringController.EditMenuItem)
+				menuItems.POST("delete:menu_item_number", cateringController.DeleteMenuItem)
+			}
+
 			catering.GET("menu-items-paginated", cateringController.FetchMenuItemsPaginated)
-			catering.GET("menu-items/:menu_item_number", cateringController.FetchMenuItemDetails)
-			catering.PUT("menu-items/:menu_item_number", cateringController.EditMenuItem)
 
 			// Units of measure
 			catering.POST("units-of-measure", cateringController.CreateUnitOfMeasure)
