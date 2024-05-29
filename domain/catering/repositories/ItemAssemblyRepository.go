@@ -57,3 +57,13 @@ func FindAssemblyItemByPrimaryNumberAndSecondaryNumber(primaryItemNumber string,
 
 	return item, nil
 }
+
+func DeleteItemAssembly(itemAssemble models.ItemAssembly) error {
+	db := config.DB
+
+	if err := db.Delete(&itemAssemble).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

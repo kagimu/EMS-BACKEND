@@ -628,3 +628,50 @@ func CreateItemAssembly(currentUser string, payload requests.ItemAssembly) error
 
 	return nil
 }
+
+func UpdateItemAssembly(currentUser string, payload requests.UpdateItemAssembly) error {
+
+	err := UpdateMenuItem(payload.UpdateMenuItemRequest, currentUser)
+	if err != nil {
+		return errors.New("updating assembled menu item error: " + err.Error())
+	}
+
+	oldParts, err := repositories.GetAssembledItemParts(payload.MenuItemNumber)
+	if err != nil {
+		return errors.New("getting assembled item parts error: " + err.Error())
+	}
+
+	for _, oldPart := range oldParts {
+		err = repositories.DeleteItemAssembly(oldPart)
+		if err != nil {
+			fmt.Println("deleting assembled item error: " + err.Error())
+			continue
+		}
+	}
+
+	for _, secondaryItem := range payload.SecondaryItemQuantity {
+
+		duplicate, err := repositories.FindAssemblyItemByPrimaryNumberAndSecondaryNumber(payload.MenuItemNumber, secondaryItem.SecondaryItemNumber)
+		if err != nil {
+			fmt.Println("checking assembly error on update: " + err.Error())
+			continue
+		}
+
+		if duplicate.Number != "" {
+			continue
+		}
+
+		saveItemAssembly := models.ItemAssembly{
+			Number:              uuid.NewV4().String(),
+			PrimaryItemNumber:   payload.MenuItemNumber,
+			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
+			Quantity:            secondaryItem.Quantity,
+			UserNumber:          currentUser,
+		}
+
+		err = repositories.SaveItemAssembly(saveItemAssembly)
+
+	}
+
+	return nil
+}

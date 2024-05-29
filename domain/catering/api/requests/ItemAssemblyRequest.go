@@ -13,14 +13,47 @@ type SecondaryItemQuantity struct {
 }
 
 type UpdateItemAssembly struct {
+	UpdateMenuItemRequest
 	SecondaryItemQuantity []SecondaryItemQuantity `json:"secondary_items"`
-	PrimaryItemNumber     string                  `json:"primary_item_number"`
 }
 
 func (r *ItemAssembly) Validate() error {
 
 	if r.SchoolNumber == "" {
 		return errors.New("choose the school")
+	}
+
+	if r.Name == "" {
+		return errors.New("provide item name")
+	}
+
+	if r.Code <= 0 {
+		return errors.New("sorting code is required")
+	}
+
+	if len(r.SecondaryItemQuantity) < 2 {
+		return errors.New("provide at least two secondary items")
+	}
+
+	for _, secItem := range r.SecondaryItemQuantity {
+
+		if secItem.SecondaryItemNumber == "" {
+			return errors.New("one of the secondary items has no number set")
+		}
+
+		if secItem.Quantity <= 0 {
+			return errors.New("one of the secondary items has no quantity set")
+		}
+
+	}
+
+	return nil
+}
+
+func (r *UpdateItemAssembly) Validate() error {
+
+	if r.MenuItemNumber == "" {
+		return errors.New("choose the item to edit")
 	}
 
 	if r.Name == "" {
