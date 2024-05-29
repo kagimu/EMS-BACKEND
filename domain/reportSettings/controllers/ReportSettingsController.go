@@ -273,7 +273,7 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 func FetchReportColumnAssessments(ctx *gin.Context) {
 
 	var reportColumnAssessments []models.ReportColumnAssessment
-	if err := config.DB.Joins("JOIN report_columns  on report_columns.number = report_colum_assessments.report_colum_number").
+	if err := config.DB.Joins("JOIN report_columns  on report_columns.number = report_column_assessments.report_column_number").
 		Joins("JOIN report_settings rs on rs.number = report_columns.report_setting_number").
 		Scopes(
 			filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
