@@ -273,17 +273,18 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 func FetchReportColumnAssessments(ctx *gin.Context) {
 
 	var reportColumnAssessments []models.ReportColumnAssessment
-	if err := config.DB.Scopes(
-		filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
-		filters.ByAssessmentMetricNumber(ctx.Query("assessment_metric_number")),
-		filters.ByAnyField("report_column_number", ctx.Query("report_column_number")),
-		filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
-		filters.ByAnyField("report_settings.number", ctx.Query("report_setting_number")),
-		filters.ByAnyField("report_settings.campus_class_number", ctx.Query("campus_class_number")),
-		filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
-		filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
-	).Joins("JOIN report_columns rc on rc.number = report_colum_assessments.report_colum_number").
-		Joins("JOIN report_settings rs on rs.number = rc.report_setting_number").
+	if err := config.DB.Joins("JOIN report_columns  on report_columns.number = report_colum_assessments.report_colum_number").
+		Joins("JOIN report_settings rs on rs.number = report_columns.report_setting_number").
+		Scopes(
+			filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
+			filters.ByAssessmentMetricNumber(ctx.Query("assessment_metric_number")),
+			filters.ByAnyField("report_column_number", ctx.Query("report_column_number")),
+			filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
+			filters.ByAnyField("report_settings.number", ctx.Query("report_setting_number")),
+			filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
+			filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
+			filters.ByAnyField("report_settings.campus_class_number", ctx.Query("campus_class_number")),
+		).
 		Find(&reportColumnAssessments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column assessments"})
 		return
