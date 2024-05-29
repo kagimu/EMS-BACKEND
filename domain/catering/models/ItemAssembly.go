@@ -16,7 +16,7 @@ type ItemAssembly struct {
 	UserNumber          string          `json:"user_number" gorm:"size:36;index;not null"`
 	User                authModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	SecondaryItemName   string          `json:"secondary_item_name" gorm:"-"`
-	SecondaryItemCode   uint64          `json:"secondary_item_code" gorm:"-"`
+	SecondaryItemCode   int64           `json:"secondary_item_code" gorm:"-"`
 }
 
 func (itemAssembly *ItemAssembly) AfterFind(tx *gorm.DB) (err error) {

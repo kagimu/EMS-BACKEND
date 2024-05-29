@@ -10,6 +10,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"log"
@@ -360,4 +363,111 @@ func determineUnitCost(item models.MenuItem) float64 {
 	}
 
 	return unitCost
+}
+
+func SaveMenuItem(payload requests.MenuItemRequest, currentUserNumber string) error {
+
+	school, err := repositories3.GetSchoolByNumber(payload.SchoolNumber)
+
+	if err != nil {
+		return errors.New("checking school number error: " + err.Error())
+	}
+
+	checkName, err := repositories.GetMenuItemByNameAndSchool(school.Number, payload.Name)
+	if err != nil {
+		return errors.New("checking menu item name error: " + err.Error())
+	}
+
+	if checkName.Number != "" {
+		return errors.New("menu item name '" + payload.Name + "' already exists")
+	}
+
+	checkCode, err := repositories.GetMenuItemByCodeAndSchool(school.Number, payload.Code)
+	if err != nil {
+		return errors.New("checking menu item code error: " + err.Error())
+	}
+
+	if checkCode.Number != "" {
+		return errors.New("item code already used")
+	}
+
+	saveMenuItem := models.MenuItem{
+		Number:              uuid.NewV4().String(),
+		Name:                payload.Name,
+		Code:                payload.Code,
+		Type:                payload.Type,
+		SchoolNumber:        school.Number,
+		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
+		UserNumber:          currentUserNumber,
+		BaseUnitCost:        payload.BasePrice,
+		Status:              constants.StatusActive,
+	}
+
+	err = repositories.SaveMenuItem(saveMenuItem)
+	if err != nil {
+		return errors.New("saving menu item error: " + err.Error())
+	}
+
+	return nil
+}
+
+func GetAllMenuItems(schoolNumber string, campusNumber string, context *gin.Context) (pagination.PaginatedResponse, error) {
+
+	response := make([]responses.MenuItemResponse, 0)
+
+	var paginatedResponse pagination.PaginatedResponse
+	paginatedResponse.Content = response
+
+	menuItems, err := repositories.GetAllMenuItems(schoolNumber, campusNumber, paginatedResponse, context)
+
+	if err != nil {
+		return pagination.PaginatedResponse{}, errors.New("getting all menu items error: " + err.Error())
+	}
+
+	for _, menuItem := range menuItems {
+
+		itemResp, err := createMenuItemResponse(menuItem)
+		if err != nil {
+			return pagination.PaginatedResponse{}, err
+		}
+
+		response = append(response, itemResp)
+
+	}
+
+	paginatedResponse.Content = response
+
+	return paginatedResponse, nil
+}
+
+func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemResponse, error) {
+
+	currentQuantity, err := repositories.GetMenuItemCurrentStock(menuItem.Number)
+	if err != nil {
+		return responses.MenuItemResponse{}, errors.New("getting current stock error: " + err.Error())
+	}
+
+	return responses.MenuItemResponse{
+		Number:              menuItem.Number,
+		Name:                menuItem.Name,
+		Code:                menuItem.Code,
+		Type:                menuItem.Type,
+		SchoolName:          menuItem.School.Name,
+		SchoolNumber:        menuItem.SchoolNumber,
+		UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
+		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
+		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
+		CurrentQuantity:     currentQuantity,
+	}, nil
+}
+
+func MenuItemDetails(menuItemNumber string) (responses.MenuItemResponse, error) {
+
+	item, err := repositories.GetMenuItemByNumber(menuItemNumber)
+
+	if err != nil {
+		return responses.MenuItemResponse{}, errors.New("getting menu item by number error: " + err.Error())
+	}
+
+	return createMenuItemResponse(item)
 }
