@@ -3,13 +3,8 @@ package requests
 import "errors"
 
 type ItemAssembly struct {
-	PrimaryItemNumber     string                  `json:"primary_item_number"`
 	SecondaryItemQuantity []SecondaryItemQuantity `json:"secondary_items"`
-	Name                  string                  `json:"name"`
-	Code                  int64                   `json:"code"`
-	Type                  string                  `json:"type"`
-	UnitOfMeasureNumber   string                  `json:"unit_of_measure_number"`
-	CampusNumber          string                  `json:"campus_number"`
+	MenuItemRequest
 }
 
 type SecondaryItemQuantity struct {
@@ -22,9 +17,34 @@ type UpdateItemAssembly struct {
 	PrimaryItemNumber     string                  `json:"primary_item_number"`
 }
 
-func (i *ItemAssembly) Validate() error {
-	if len(i.SecondaryItemQuantity) == 0 {
-		return errors.New("secondary item quantity is required")
+func (r *ItemAssembly) Validate() error {
+
+	if r.SchoolNumber == "" {
+		return errors.New("choose the school")
+	}
+
+	if r.Name == "" {
+		return errors.New("provide item name")
+	}
+
+	if r.Code <= 0 {
+		return errors.New("sorting code is required")
+	}
+
+	if len(r.SecondaryItemQuantity) < 2 {
+		return errors.New("provide at least two secondary items")
+	}
+
+	for _, secItem := range r.SecondaryItemQuantity {
+
+		if secItem.SecondaryItemNumber == "" {
+			return errors.New("one of the secondary items has no number set")
+		}
+
+		if secItem.Quantity <= 0 {
+			return errors.New("one of the secondary items has no quantity set")
+		}
+
 	}
 
 	return nil

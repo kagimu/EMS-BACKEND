@@ -81,12 +81,12 @@ func SaveMenuItem(menuItem models.MenuItem) error {
 
 }
 
-func GetPaginatedMenuItems(schoolNumber string, paginatedResponse pagination.PaginatedResponse, c *gin.Context) ([]models.MenuItem, error) {
+func GetPaginatedMenuItems(schoolNumber string, status string, paginatedResponse pagination.PaginatedResponse, c *gin.Context) ([]models.MenuItem, error) {
 
 	var menuItems []models.MenuItem
 
 	if err := config.DB.
-		Scopes(filters.BySchoolNumber(schoolNumber), pagination.
+		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByStatus(status), pagination.
 			Paginate(c, &paginatedResponse)).Preload("School").Preload("UnitOfMeasure").
 		Find(&menuItems).Error; err != nil {
 
@@ -100,12 +100,12 @@ func GetPaginatedMenuItems(schoolNumber string, paginatedResponse pagination.Pag
 	return menuItems, nil
 }
 
-func GetAllMenuItems(schoolNumber string) ([]models.MenuItem, error) {
+func GetAllMenuItems(schoolNumber string, status string) ([]models.MenuItem, error) {
 
 	var menuItems []models.MenuItem
 
 	if err := config.DB.
-		Scopes(filters.BySchoolNumber(schoolNumber)).Preload("School").Preload("UnitOfMeasure").
+		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByStatus(status)).Preload("School").Preload("UnitOfMeasure").
 		Find(&menuItems).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -116,4 +116,15 @@ func GetAllMenuItems(schoolNumber string) ([]models.MenuItem, error) {
 	}
 
 	return menuItems, nil
+}
+
+func DeleteMenuItem(item models.MenuItem) error {
+
+	db := config.DB
+
+	if err := db.Delete(&item).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
