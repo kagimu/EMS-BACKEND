@@ -283,7 +283,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 			filters.ByAnyField("report_settings.number", ctx.Query("report_setting_number")),
 			filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
 			filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
-			filters.ByAnyField("report_settings.campus_class_number", ctx.Query("campus_class_number")),
+			//filters.ByAnyField("report_settings.campus_class_number", ctx.Query("campus_class_number")),
 		).
 		Find(&reportColumnAssessments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column assessments"})
