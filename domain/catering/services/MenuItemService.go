@@ -582,11 +582,27 @@ func DeleteMenuItem(menuItemNumber string) error {
 		return errors.New("invalid menu item number" + menuItemNumber)
 	}
 
-	err = repositories.DeleteMenuItem(menuItem)
+	parts, err := repositories.GetAssembledItemParts(menuItem.Number)
+	if err != nil {
+		return errors.New("checking menu item parts before delete error: " + err.Error())
+	}
+
+	tx := config.DB.Begin()
+
+	for _, part := range parts {
+		err = repositories.DeleteItemAssembly(part, tx)
+		if err != nil {
+			return errors.New("clearing assembled parts error: " + err.Error())
+		}
+	}
+
+	err = repositories.DeleteMenuItem(menuItem, tx)
 	if err != nil {
 		fmt.Println("delete menu item error: " + err.Error())
 		return errors.New("item can not be removed, you may need to delete all other dependencies first")
 	}
+
+	tx.Commit()
 
 	return nil
 }

@@ -118,11 +118,10 @@ func GetAllMenuItems(schoolNumber string, status string) ([]models.MenuItem, err
 	return menuItems, nil
 }
 
-func DeleteMenuItem(item models.MenuItem) error {
+func DeleteMenuItem(item models.MenuItem, tx *gorm.DB) error {
 
-	db := config.DB
-
-	if err := db.Delete(&item).Error; err != nil {
+	if err := tx.Delete(&item).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
