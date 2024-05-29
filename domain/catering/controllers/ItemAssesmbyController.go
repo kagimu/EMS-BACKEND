@@ -38,7 +38,6 @@ func CreateItemAssembly(c *gin.Context) {
 		Name:                payload.Name,
 		Code:                payload.Code,
 		Type:                payload.Type,
-		CampusNumber:        payload.CampusNumber,
 		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
 		UserNumber:          user.Number,
 	}
