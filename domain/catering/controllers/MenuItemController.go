@@ -69,7 +69,7 @@ func FetchMenuItems(c *gin.Context) {
 		return
 	}
 
-	response, err := services.GetAllMenuItems(schoolNumber, campusNumber, c)
+	response, err := services.GetAllMenuItems(schoolNumber, campusNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items: " + err.Error()})
 		return

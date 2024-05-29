@@ -418,7 +418,20 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, context *gi
 	var paginatedResponse pagination.PaginatedResponse
 	paginatedResponse.Content = response
 
-	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, campusNumber, paginatedResponse, context)
+	if campusNumber != "" {
+		campus, err := repositories2.GetCampusByNumber(campusNumber)
+		if err != nil {
+			return paginatedResponse, errors.New("validating campus number error: " + err.Error())
+		}
+
+		if campus.Number == "" {
+			return paginatedResponse, errors.New("invalid campus number: " + campusNumber)
+		}
+
+		schoolNumber = campus.SchoolNumber
+	}
+
+	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, paginatedResponse, context)
 
 	if err != nil {
 		return pagination.PaginatedResponse{}, errors.New("getting all menu items error: " + err.Error())
@@ -439,11 +452,24 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, context *gi
 
 	return paginatedResponse, nil
 }
-func GetAllMenuItems(schoolNumber string, campusNumber string, context *gin.Context) ([]responses.MenuItemResponse, error) {
+func GetAllMenuItems(schoolNumber string, campusNumber string) ([]responses.MenuItemResponse, error) {
 
 	response := make([]responses.MenuItemResponse, 0)
 
-	menuItems, err := repositories.GetAllMenuItems(schoolNumber, campusNumber, context)
+	if campusNumber != "" {
+		campus, err := repositories2.GetCampusByNumber(campusNumber)
+		if err != nil {
+			return response, errors.New("validating campus number error: " + err.Error())
+		}
+
+		if campus.Number == "" {
+			return response, errors.New("invalid campus number: " + campusNumber)
+		}
+
+		schoolNumber = campus.SchoolNumber
+	}
+
+	menuItems, err := repositories.GetAllMenuItems(schoolNumber)
 
 	for _, menuItem := range menuItems {
 
