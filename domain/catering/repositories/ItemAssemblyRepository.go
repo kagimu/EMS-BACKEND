@@ -58,10 +58,19 @@ func FindAssemblyItemByPrimaryNumberAndSecondaryNumber(primaryItemNumber string,
 	return item, nil
 }
 
-func DeleteItemAssembly(itemAssemble models.ItemAssembly) error {
+func DeleteItemAssembly(itemAssemble models.ItemAssembly, tx ...*gorm.DB) error {
 	db := config.DB
 
+	if tx != nil {
+		db = tx[0]
+	}
+
 	if err := db.Delete(&itemAssemble).Error; err != nil {
+
+		if tx != nil {
+			db.Rollback()
+		}
+
 		return err
 	}
 
