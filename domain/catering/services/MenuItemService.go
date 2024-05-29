@@ -582,6 +582,18 @@ func DeleteMenuItem(menuItemNumber string) error {
 		return errors.New("invalid menu item number" + menuItemNumber)
 	}
 
+	parts, err := repositories.GetAssembledItemParts(menuItem.Number)
+	if err != nil {
+		return errors.New("checking menu item parts before delete error: " + err.Error())
+	}
+
+	for _, part := range parts {
+		err = repositories.DeleteItemAssembly(part)
+		if err != nil {
+			return errors.New("clearing assembled parts error: " + err.Error())
+		}
+	}
+
 	err = repositories.DeleteMenuItem(menuItem)
 	if err != nil {
 		fmt.Println("delete menu item error: " + err.Error())
