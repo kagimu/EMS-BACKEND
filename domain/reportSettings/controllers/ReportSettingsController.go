@@ -277,6 +277,8 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 		filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
 		filters.ByAssessmentMetricNumber(ctx.Query("assessment_metric_number")),
 		filters.ByAnyField("report_column_number", ctx.Query("report_column_number")),
+		filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
+		filters.ByAnyField("report_setting_number", ctx.Query("report_setting_number")),
 	).Find(&reportColumnAssessments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column assessments"})
 		return
