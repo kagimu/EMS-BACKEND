@@ -411,14 +411,14 @@ func SaveMenuItem(payload requests.MenuItemRequest, currentUserNumber string) er
 	return nil
 }
 
-func GetAllMenuItems(schoolNumber string, campusNumber string, context *gin.Context) (pagination.PaginatedResponse, error) {
+func GetPaginatedMenuItems(schoolNumber string, campusNumber string, context *gin.Context) (pagination.PaginatedResponse, error) {
 
 	response := make([]responses.MenuItemResponse, 0)
 
 	var paginatedResponse pagination.PaginatedResponse
 	paginatedResponse.Content = response
 
-	menuItems, err := repositories.GetAllMenuItems(schoolNumber, campusNumber, paginatedResponse, context)
+	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, campusNumber, paginatedResponse, context)
 
 	if err != nil {
 		return pagination.PaginatedResponse{}, errors.New("getting all menu items error: " + err.Error())
@@ -438,6 +438,25 @@ func GetAllMenuItems(schoolNumber string, campusNumber string, context *gin.Cont
 	paginatedResponse.Content = response
 
 	return paginatedResponse, nil
+}
+func GetAllMenuItems(schoolNumber string, campusNumber string, context *gin.Context) ([]responses.MenuItemResponse, error) {
+
+	response := make([]responses.MenuItemResponse, 0)
+
+	menuItems, err := repositories.GetAllMenuItems(schoolNumber, campusNumber, context)
+
+	for _, menuItem := range menuItems {
+
+		itemResp, err := createMenuItemResponse(menuItem)
+		if err != nil {
+			return response, err
+		}
+
+		response = append(response, itemResp)
+
+	}
+
+	return response, err
 }
 
 func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemResponse, error) {

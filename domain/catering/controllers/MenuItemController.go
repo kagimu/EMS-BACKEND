@@ -38,6 +38,26 @@ func CreateMenuItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": "Menu item saved successfully"})
 }
 
+func FetchMenuItemsPaginated(c *gin.Context) {
+	var err error
+
+	campusNumber := c.Query("campus_number")
+	schoolNumber := c.Query("school_number")
+
+	if campusNumber == "" && schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide at least a campus or school number"})
+		return
+	}
+
+	paginatedResponse, err := services.GetPaginatedMenuItems(schoolNumber, campusNumber, c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, paginatedResponse)
+}
+
 func FetchMenuItems(c *gin.Context) {
 	var err error
 
@@ -49,13 +69,13 @@ func FetchMenuItems(c *gin.Context) {
 		return
 	}
 
-	paginatedResponse, err := services.GetAllMenuItems(schoolNumber, campusNumber, c)
+	response, err := services.GetAllMenuItems(schoolNumber, campusNumber, c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, paginatedResponse)
+	c.JSON(http.StatusOK, response)
 }
 
 func EditMenuItem(c *gin.Context) {
