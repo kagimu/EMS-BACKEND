@@ -290,7 +290,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 		return
 	}
 
-	var rca []responses.ReportColumnAssessmentResponse
+	var rca = make([]responses.ReportColumnAssessmentResponse, 0)
 
 	for _, reportColumnAssessment := range reportColumnAssessments {
 		var assessmentArea assessmentAreaModel.AssessmentArea
