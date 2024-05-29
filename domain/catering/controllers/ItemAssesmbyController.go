@@ -68,7 +68,7 @@ func FetchItemAssemblies(c *gin.Context) {
 }
 
 func EditItemAssembly(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -80,25 +80,11 @@ func EditItemAssembly(c *gin.Context) {
 		return
 	}
 
-	itemAssesmblyNumber := c.Query("item_assembly_number")
-	var itemAssembly models.ItemAssembly
-	if err := config.DB.Where("number = ?", itemAssesmblyNumber).First(&itemAssembly).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Item assembly not found"})
+	err = services.UpdateItemAssembly(user.Number, payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	for _, secondaryItem := range payload.SecondaryItemQuantity {
-		updateItemAssembly := models.ItemAssembly{
-			PrimaryItemNumber:   payload.PrimaryItemNumber,
-			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
-			Quantity:            secondaryItem.Quantity,
-		}
-
-		if err := config.DB.Model(&itemAssembly).Where("number = ?", itemAssesmblyNumber).Updates(updateItemAssembly).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update item assembly"})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": itemAssembly})
+	c.JSON(http.StatusOK, commons.Feedback("Item updated successfully"))
 }
