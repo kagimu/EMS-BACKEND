@@ -3,15 +3,13 @@ package requests
 import "errors"
 
 type ProductRequest struct {
-	Name               string  `json:"name"`
-	Description        string  `json:"description"`
-	SerialCode         string  `json:"serial_code"`
-	DiscountPercentage uint    `json:"discount_percentage"`
-	DiscountAmount     uint    `json:"discount_amount"`
-	Cost               float64 `json:"cost"`
-	Prefix             string  `json:"prefix"`
-	RepeatCycle        string  `json:"repeat_cycle"`
-	OneTimePurchase    bool    `json:"one_time_purchase"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description"`
+	SerialCode      string  `json:"serial_code"`
+	Cost            float64 `json:"cost"`
+	Prefix          string  `json:"prefix"`
+	RepeatCycle     string  `json:"repeat_cycle"`
+	OneTimePurchase bool    `json:"one_time_purchase"`
 }
 
 func (p *ProductRequest) Validate() error {
