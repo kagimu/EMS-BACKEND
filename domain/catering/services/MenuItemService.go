@@ -493,6 +493,11 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		return responses.MenuItemResponse{}, errors.New("getting current stock error: " + err.Error())
 	}
 
+	parts, err := GetMenuItemParts(menuItem.Number)
+	if err != nil {
+		return responses.MenuItemResponse{}, errors.New("getting parts error: " + err.Error())
+	}
+
 	return responses.MenuItemResponse{
 		Number:              menuItem.Number,
 		Name:                menuItem.Name,
@@ -504,6 +509,7 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
 		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
 		CurrentQuantity:     currentQuantity,
+		Parts:               parts,
 	}, nil
 }
 
