@@ -23,6 +23,7 @@ require (
 require github.com/go-sql-driver/mysql v1.7.0 // indirect
 
 require (
+	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.9.2
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -59,5 +60,4 @@ require (
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.2
-	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.7.2
 )
