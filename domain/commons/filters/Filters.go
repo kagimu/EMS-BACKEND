@@ -227,3 +227,12 @@ func ByAssessmentMetricNumber(assessmentMetricNumber string) func(*gorm.DB) *gor
 	}
 
 }
+
+func ByType(itemType string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if itemType != "" {
+			return db.Where("type = ?", itemType)
+		}
+		return db
+	}
+}
