@@ -760,6 +760,7 @@ func SetupRoutes() *gin.Engine {
 		statistics := main.Group("statistics")
 		{
 			statistics.GET("summary", statisticsController.FetchStatistics)
+			statistics.GET("print", statisticsController.PrintReport)
 		}
 	}
 
