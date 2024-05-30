@@ -286,7 +286,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 
 	for _, feedingGroup := range feedingGroups {
 
-		allUsers, err := cateringRepositories.GetFeedingGroupUserByGroupNumber(feedingGroup.Number)
+		allUsers, err := cateringRepositories.GetFeedingGroupUserByGroupNumber("", "", feedingGroup.Number)
 		if err != nil {
 			return mealsResponse, err
 		}
@@ -654,4 +654,40 @@ func BuildFeedingSessionResponse(session models.FeedingSession) responses.Feedin
 	}
 
 	return response
+}
+
+func MealUsers(schoolNumber string, campusNumber string, groupNumber string) ([]responses.FeedingUserGroupResponse, error) {
+
+	var response = make([]responses.FeedingUserGroupResponse, 0)
+
+	users, err := cateringRepositories.GetFeedingGroupUserByGroupNumber(schoolNumber, campusNumber, groupNumber)
+	if err != nil {
+		return nil, errors.New("Getting group users error: " + err.Error())
+	}
+
+	for _, user := range users {
+
+		response = append(response, createFeedingUserResponse(user))
+
+	}
+
+	return response, nil
+
+}
+
+func createFeedingUserResponse(user models.FeedingGroupUser) responses.FeedingUserGroupResponse {
+
+	_user := user.User
+
+	userNames := _user.FirstName + " " + _user.LastName
+
+	return responses.FeedingUserGroupResponse{
+		Number:             user.Number,
+		UserNumber:         user.UserNumber,
+		FeedingGroupName:   user.FeedingGroup.Name,
+		FeedingGroupNumber: user.FeedingGroupNumber,
+		CampusName:         user.Campus.Name,
+		Gender:             user.User.Gender,
+		Name:               userNames,
+	}
 }
