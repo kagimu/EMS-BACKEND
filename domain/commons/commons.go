@@ -86,9 +86,10 @@ func CheckValidPhone(phone string) string {
 
 }
 
-func Feedback(message string) map[string]any {
+func Feedback(message string, data interface{}) map[string]any {
 	response := make(map[string]any)
 	response["message"] = message
+	response["data"] = data
 	return response
 }
 

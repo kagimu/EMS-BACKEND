@@ -59,4 +59,5 @@ require (
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.2
+	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.7.2
 )
