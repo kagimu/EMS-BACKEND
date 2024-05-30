@@ -4,17 +4,19 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
-func GetFeedingGroupUserByGroupNumber(groupNumber string) ([]models.FeedingGroupUser, error) {
+func GetFeedingGroupUserByGroupNumber(schoolNumber string, campusNumber string, groupNumber string) ([]models.FeedingGroupUser, error) {
 
 	db := config.DB
 
 	var feedingGroupUsers []models.FeedingGroupUser
 
-	if err := db.Preload("User").
-		Where("feeding_group_number = ?", groupNumber).
+	if err := db.Preload("User").Preload("Campus").Preload("FeedingGroup").
+		Joins("JOIN feeding_groups ON feeding_group_users.feeding_group_number = feeding_groups.number").
+		Scopes(filters.ByAnyField("feeding_groups.school_number", schoolNumber), filters.ByCampusNumber(campusNumber), filters.ByAnyField("feeding_group_number", groupNumber)).
 		Find(&feedingGroupUsers).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
