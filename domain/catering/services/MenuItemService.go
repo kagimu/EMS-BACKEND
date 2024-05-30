@@ -22,7 +22,7 @@ import (
 
 func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 
-	var parts []responses.Part
+	var parts = make([]responses.Part, 0)
 
 	itemAssembles, err := repositories.GetAssembledItemParts(menuItemNumber)
 	if err != nil {
