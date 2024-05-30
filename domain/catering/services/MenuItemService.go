@@ -411,7 +411,7 @@ func SaveMenuItem(itemType string, payload requests.MenuItemRequest, currentUser
 	return saveMenuItem, nil
 }
 
-func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status string, context *gin.Context) (pagination.PaginatedResponse, error) {
+func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status string, itemType string, context *gin.Context) (pagination.PaginatedResponse, error) {
 
 	response := make([]responses.MenuItemResponse, 0)
 
@@ -431,7 +431,7 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status stri
 		schoolNumber = campus.SchoolNumber
 	}
 
-	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, status, paginatedResponse, context)
+	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, status, itemType, paginatedResponse, context)
 
 	if err != nil {
 		return pagination.PaginatedResponse{}, errors.New("getting all menu items error: " + err.Error())
@@ -453,7 +453,7 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status stri
 	return paginatedResponse, nil
 }
 
-func GetAllMenuItems(schoolNumber string, campusNumber string, status string) ([]responses.MenuItemResponse, error) {
+func GetAllMenuItems(schoolNumber string, campusNumber string, status string, itemType string) ([]responses.MenuItemResponse, error) {
 
 	response := make([]responses.MenuItemResponse, 0)
 
@@ -470,7 +470,7 @@ func GetAllMenuItems(schoolNumber string, campusNumber string, status string) ([
 		schoolNumber = campus.SchoolNumber
 	}
 
-	menuItems, err := repositories.GetAllMenuItems(schoolNumber, status)
+	menuItems, err := repositories.GetAllMenuItems(schoolNumber, status, itemType)
 
 	for _, menuItem := range menuItems {
 
