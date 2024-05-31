@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	authResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/services"
 	campusRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
@@ -690,4 +692,20 @@ func createFeedingUserResponse(user models.FeedingGroupUser) responses.FeedingUs
 		Gender:             user.User.Gender,
 		Name:               userNames,
 	}
+}
+
+func AvailableUser(schoolNumber string, userType string) ([]authResponse.UserResponse, error) {
+
+	var response = make([]authResponse.UserResponse, 0)
+
+	users, err := cateringRepositories.AvailableUsers(schoolNumber, constants.StatusActive, userType)
+	if err != nil {
+		return nil, errors.New("Getting available users error: " + err.Error())
+	}
+
+	for _, user := range users {
+		response = append(response, services.CreateUserResponse(user))
+	}
+
+	return response, nil
 }
