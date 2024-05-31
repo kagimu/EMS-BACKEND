@@ -77,3 +77,23 @@ func FetchFeedingGroupUsers(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }
+
+func FetchAvailableUsers(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := context.Query("school_number")
+	userType := context.Query("type")
+
+	response, err := services.AvailableUser(schoolNumber, userType)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": response})
+
+}
