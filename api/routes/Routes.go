@@ -727,8 +727,13 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("stocking/:stock_item_number", cateringController.FetchItemStock)
 
 			// Feeding group users
-			catering.POST("feeding-group-users", cateringController.CreateFeedingGroupUser)
-			catering.GET("feeding-group-users", cateringController.FetchFeedingGroupUsers)
+
+			feedingGroupUsers := catering.Group("feeding-group-users")
+			{
+				feedingGroupUsers.POST("", cateringController.CreateFeedingGroupUser)
+				feedingGroupUsers.GET("", cateringController.FetchFeedingGroupUsers)
+				feedingGroupUsers.GET("available", cateringController.FetchAvailableUsers)
+			}
 
 			// Feeding group session
 			catering.POST("feeding-group-sessions", cateringController.CreateFeedingGroupSession)
