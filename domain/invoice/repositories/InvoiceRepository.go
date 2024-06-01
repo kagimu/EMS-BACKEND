@@ -42,7 +42,7 @@ func FindInvoiceByNumber(invoiceNumber string) (invoiceModel.Invoice, error) {
 	return invoice, nil
 }
 
-func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string) ([]invoiceModel.Invoice, error) {
+func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string) ([]invoiceModel.Invoice, error) {
 
 	db := config.DB
 
@@ -52,7 +52,10 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 		filters.ByStatus(status),
 		filters.ByUserNumber(userNumber),
 		filters.BySchoolNumber(schoolNumber),
+		filters.ByValueIn("invoice_items.item_number", invoiceItems),
 		filters.ByCampusNumber(campusNumber)).
+		Joins("JOIN invoice_items ON invoices.number = invoice_items.invoice_number").
+		Group("invoices.number").
 		Find(&invoices).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

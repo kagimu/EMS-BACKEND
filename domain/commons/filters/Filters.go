@@ -1,6 +1,9 @@
 package filters
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"strings"
+)
 
 func ByCurriculumLevelNumber(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
@@ -233,6 +236,27 @@ func ByType(itemType string) func(db *gorm.DB) *gorm.DB {
 		if itemType != "" {
 			return db.Where("type = ?", itemType)
 		}
+		return db
+	}
+}
+
+func ByValueIn(fieldName string, fieldValues []string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+
+		if fieldValues != nil {
+			for i, fieldValue := range fieldValues {
+				fieldValues[i] = strings.TrimSpace(fieldValue)
+			}
+		}
+
+		if fieldName != "" {
+			fieldName = strings.TrimSpace(fieldName)
+		}
+
+		if fieldName != "" && fieldValues != nil && len(fieldValues) > 0 {
+			return db.Where(fieldName+" IN ?", fieldValues)
+		}
+
 		return db
 	}
 }
