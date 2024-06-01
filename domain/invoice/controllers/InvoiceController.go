@@ -94,8 +94,9 @@ func GetAllInvoices(context *gin.Context) {
 	status := context.Query("status")
 	campusNumber := context.Query("campus_number")
 	userNumber := context.Query("user_number")
+	itemNumbers := context.Query("items")
 
-	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber)
+	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber, itemNumbers)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get invoices, try again", "err": err.Error()})
