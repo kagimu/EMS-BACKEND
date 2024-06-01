@@ -131,7 +131,7 @@ func DeleteMenuItem(context *gin.Context) {
 		return
 	}
 
-	itemNumber := context.Param("menu_item_number")
+	itemNumber := context.Query("menu_item_number")
 
 	err = services.DeleteMenuItem(itemNumber)
 	if err != nil {

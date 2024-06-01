@@ -673,7 +673,7 @@ func SetupRoutes() *gin.Engine {
 				feedingSession.POST("", cateringController.CreateFeedingSession)
 				feedingSession.GET("", cateringController.FetchFeedingSessions)
 				feedingSession.POST("update", cateringController.UpdateFeedingSession)
-				feedingSession.POST("delete:feeding_session_number", cateringController.DeleteFeedingSession)
+				feedingSession.POST("delete", cateringController.DeleteFeedingSession)
 			}
 
 			// Feeding session per day
@@ -690,7 +690,7 @@ func SetupRoutes() *gin.Engine {
 				feedingGroups.POST("", cateringController.CreateFeedingGroup)
 				feedingGroups.GET("", cateringController.FetchFeedingGroups)
 				feedingGroups.POST("update", cateringController.UpdateFeedingGroup)
-				feedingGroups.POST("delete:feeding_group_number", cateringController.DeleteFeedingGroup)
+				feedingGroups.POST("delete", cateringController.DeleteFeedingGroup)
 			}
 
 			// Feeding groups per day
@@ -705,7 +705,7 @@ func SetupRoutes() *gin.Engine {
 				menuItems.GET("", cateringController.FetchMenuItems)
 				menuItems.GET("details", cateringController.FetchMenuItemDetails)
 				menuItems.POST("update", cateringController.EditMenuItem)
-				menuItems.POST("delete:menu_item_number", cateringController.DeleteMenuItem)
+				menuItems.POST("delete", cateringController.DeleteMenuItem)
 			}
 
 			catering.GET("menu-items-paginated", cateringController.FetchMenuItemsPaginated)
