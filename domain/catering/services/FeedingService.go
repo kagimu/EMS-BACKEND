@@ -786,7 +786,8 @@ func DeleteFeedingSession(feedingSessionNumber string) error {
 
 	err = cateringRepositories.DeleteFeedingSession(feedingSession)
 	if err != nil {
-		return errors.New("Deleting feed session error: " + err.Error())
+		fmt.Println("Deleting feed session error: " + err.Error())
+		return errors.New("this feeding session could not be removed, try removing all its usages first")
 	}
 
 	return nil
