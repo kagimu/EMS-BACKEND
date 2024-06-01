@@ -5,6 +5,11 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 )
 
+type UpdateFeedingSessionRequest struct {
+	FeedingSessionRequest
+	FeedingSessionNumber string `json:"feeding_session_number"`
+}
+
 type FeedingSessionRequest struct {
 	Name         string `json:"name"`
 	Code         uint64 `json:"code"`
@@ -28,5 +33,19 @@ func (r *FeedingSessionRequest) Validate() error {
 	if r.SchoolNumber == "" {
 		return errors.New("choose the school and set the number")
 	}
+	return nil
+}
+
+func (r *UpdateFeedingSessionRequest) Validate() error {
+
+	err := r.FeedingSessionRequest.Validate()
+	if err != nil {
+		return err
+	}
+
+	if r.FeedingSessionNumber == "" {
+		return errors.New("choose feeding session to update")
+	}
+
 	return nil
 }

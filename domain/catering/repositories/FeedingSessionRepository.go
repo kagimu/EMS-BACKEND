@@ -4,16 +4,17 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
-func GetFeedingSessionByNumber(feedingSession string) (models.FeedingSession, error) {
+func GetFeedingSessionByNumberAndSchoolNumber(feedingSession string, schoolNumber string) (models.FeedingSession, error) {
 
 	var session models.FeedingSession
 
 	db := config.DB
 
-	if err := db.Where("number = ?", feedingSession).First(&session).Error; err != nil {
+	if err := db.Where("number = ?", feedingSession).Scopes(filters.BySchoolNumber(schoolNumber)).First(&session).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return session, nil
