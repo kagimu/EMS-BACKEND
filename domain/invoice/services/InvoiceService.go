@@ -135,13 +135,13 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 	return nil
 }
 
-func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, commaSeperatedItems string) ([]responses.MinInvoiceResponse, error) {
+func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, commaSeperatedItems string, startDate time.Time, endDate time.Time) ([]responses.MinInvoiceResponse, error) {
 
 	var invoiceResponses = make([]responses.MinInvoiceResponse, 0)
 
 	invoiceItems := strings.Split(commaSeperatedItems, ",")
 
-	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber, invoiceItems)
+	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber, invoiceItems, startDate, endDate)
 	if err != nil {
 		return invoiceResponses, err
 	}
