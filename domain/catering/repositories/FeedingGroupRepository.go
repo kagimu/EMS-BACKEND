@@ -70,8 +70,17 @@ func GetFeedingGroupByName(name string, schoolNumber string) (models.FeedingGrou
 }
 
 func SaveFeedingGroup(feedingGroup models.FeedingGroup) error {
-	
+
 	if err := config.DB.Save(&feedingGroup).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RemoveFeedingGroup(feedingGroup models.FeedingGroup) error {
+
+	if err := config.DB.Delete(&feedingGroup).Error; err != nil {
 		return err
 	}
 

@@ -685,6 +685,7 @@ func SetupRoutes() *gin.Engine {
 				feedingGroups.POST("", cateringController.CreateFeedingGroup)
 				feedingGroups.GET("", cateringController.FetchFeedingGroups)
 				feedingGroups.POST("update", cateringController.UpdateFeedingGroup)
+				feedingGroups.POST("delete:feeding_group_number", cateringController.DeleteFeedingGroup)
 			}
 
 			// Feeding groups per day

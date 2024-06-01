@@ -709,3 +709,24 @@ func AvailableUser(schoolNumber string, userType string) ([]authResponse.UserRes
 
 	return response, nil
 }
+
+func DeleteFeedingGroup(feedingGroupNumber string) error {
+
+	group, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
+	if err != nil {
+		return errors.New("Checking group number error: " + err.Error())
+	}
+
+	if group.Number == "" {
+		return errors.New("invalid group number")
+	}
+
+	err = cateringRepositories.RemoveFeedingGroup(group)
+	if err != nil {
+		fmt.Println("Removing feed group error: " + err.Error())
+		return errors.New("Can not remove '" + group.Name + "' group, try removing all its usages first.")
+	}
+
+	return nil
+
+}
