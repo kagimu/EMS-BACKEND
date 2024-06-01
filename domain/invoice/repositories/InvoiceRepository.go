@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
+	"time"
 )
 
 func FindInvoiceByRefNumber(refNumber string) (invoiceModel.Invoice, error) {
@@ -42,7 +43,7 @@ func FindInvoiceByNumber(invoiceNumber string) (invoiceModel.Invoice, error) {
 	return invoice, nil
 }
 
-func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string) ([]invoiceModel.Invoice, error) {
+func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string, startDate time.Time, endDate time.Time) ([]invoiceModel.Invoice, error) {
 
 	db := config.DB
 
@@ -53,6 +54,7 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 		filters.ByUserNumber(userNumber),
 		filters.BySchoolNumber(schoolNumber),
 		filters.ByValueIn("invoice_items.item_number", invoiceItems),
+		filters.ByDateBetween("created_at", startDate, endDate),
 		filters.ByCampusNumber(campusNumber)).
 		Joins("JOIN invoice_items ON invoices.number = invoice_items.invoice_number").
 		Group("invoices.number").
