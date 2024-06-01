@@ -137,9 +137,7 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 
 func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, commaSeperatedItems string) ([]responses.MinInvoiceResponse, error) {
 
-	var invoices []models.Invoice
-
-	var invoiceResponses []responses.MinInvoiceResponse
+	var invoiceResponses = make([]responses.MinInvoiceResponse, 0)
 
 	invoiceItems := strings.Split(commaSeperatedItems, ",")
 
