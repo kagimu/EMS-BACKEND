@@ -91,7 +91,7 @@ func DeleteFeedingSession(c *gin.Context) {
 		return
 	}
 
-	feedingSessionNumber := c.Param("feeding_session_number")
+	feedingSessionNumber := c.Query("feeding_session_number")
 	if feedingSessionNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide feeding session number"})
 		return
