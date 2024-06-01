@@ -49,14 +49,15 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 
 	var invoices []invoiceModel.Invoice
 
-	if err := db.Scopes(
-		filters.ByStatus(status),
-		filters.ByUserNumber(userNumber),
-		filters.BySchoolNumber(schoolNumber),
-		filters.ByValueIn("invoice_items.item_number", invoiceItems),
-		filters.ByDateBetween("created_at", startDate, endDate),
-		filters.ByCampusNumber(campusNumber)).
-		Joins("JOIN invoice_items ON invoices.number = invoice_items.invoice_number").
+	if err := db.
+		Joins("JOIN invoice_items ON invoice_items.invoice_number =  invoices.number").
+		Scopes(
+			filters.ByStatus(status),
+			filters.ByUserNumber(userNumber),
+			filters.BySchoolNumber(schoolNumber),
+			filters.ByValueIn("invoice_items.item_number", invoiceItems),
+			filters.ByDateBetween("created_at", startDate, endDate),
+			filters.ByCampusNumber(campusNumber)).
 		Group("invoices.number").
 		Find(&invoices).Error; err != nil {
 
