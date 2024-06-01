@@ -17,6 +17,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -134,13 +135,15 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 	return nil
 }
 
-func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string) ([]responses.MinInvoiceResponse, error) {
+func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, commaSeperatedItems string) ([]responses.MinInvoiceResponse, error) {
 
 	var invoices []models.Invoice
 
 	var invoiceResponses []responses.MinInvoiceResponse
 
-	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber)
+	invoiceItems := strings.Split(commaSeperatedItems, ",")
+
+	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber, invoiceItems)
 	if err != nil {
 		return invoiceResponses, err
 	}
