@@ -372,11 +372,11 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 	return financialSummaryResponse, nil
 }
 
-func GetAllPayments(userNumber string, refNumber string, schoolNumber string) ([]responses.InvoicePaymentResponse, error) {
+func GetAllPayments(userNumber string, refNumber string, schoolNumber string, startDate time.Time, endDate time.Time) ([]responses.InvoicePaymentResponse, error) {
 
 	var invoicePaymentsResponse []responses.InvoicePaymentResponse
 
-	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber)
+	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber, startDate, endDate)
 
 	if err != nil {
 		return invoicePaymentsResponse, err
