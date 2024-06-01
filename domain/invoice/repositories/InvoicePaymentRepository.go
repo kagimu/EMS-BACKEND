@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
+	"time"
 )
 
 func SavePayment(invoicePayment invoiceModels.InvoicePayment) (invoiceModels.InvoicePayment, error) {
@@ -122,7 +123,7 @@ func GetMostRecentPayment(userNumber string) (invoiceModels.InvoicePayment, erro
 
 }
 
-func GetAllPayments(userNumber string, schoolNumber string, refNumber string) ([]invoiceModels.InvoicePayment, error) {
+func GetAllPayments(userNumber string, schoolNumber string, refNumber string, startDate time.Time, endDate time.Time) ([]invoiceModels.InvoicePayment, error) {
 
 	db := config.DB
 
@@ -130,7 +131,11 @@ func GetAllPayments(userNumber string, schoolNumber string, refNumber string) ([
 
 	if err := db.
 		Joins("JOIN invoices ON invoices.number = invoice_payments.invoice_number").
-		Scopes(filters.ByAnyField("invoices.user_number", userNumber), filters.BySchoolNumber(schoolNumber), filters.ByRefNumber(refNumber)).
+		Scopes(
+			filters.ByAnyField("invoices.user_number", userNumber),
+			filters.BySchoolNumber(schoolNumber),
+			filters.ByRefNumber(refNumber),
+			filters.ByDateBetween("invoice_payments.date", startDate, endDate)).
 		Order("invoice_payments.created_at desc").
 		Find(&invoicePayment).Error; err != nil {
 
