@@ -95,7 +95,7 @@ func DeleteFeedingGroup(context *gin.Context) {
 		return
 	}
 
-	feedingGroupNumber := context.Param("feeding_group_number")
+	feedingGroupNumber := context.Query("feeding_group_number")
 
 	err = services.DeleteFeedingGroup(feedingGroupNumber)
 	if err != nil {
