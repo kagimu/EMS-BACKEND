@@ -772,3 +772,22 @@ func UpdateFeedingSession(updateFeedingSessionRequest requests.UpdateFeedingSess
 
 	return nil
 }
+
+func DeleteFeedingSession(feedingSessionNumber string) error {
+
+	feedingSession, err := cateringRepositories.GetFeedingSessionByNumberAndSchoolNumber(feedingSessionNumber, "")
+	if err != nil {
+		return errors.New("Checking feed session number error: " + err.Error())
+	}
+
+	if feedingSession.Number == "" {
+		return errors.New("invalid feed session number")
+	}
+
+	err = cateringRepositories.DeleteFeedingSession(feedingSession)
+	if err != nil {
+		return errors.New("Deleting feed session error: " + err.Error())
+	}
+
+	return nil
+}

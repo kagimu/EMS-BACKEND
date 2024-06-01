@@ -91,3 +91,15 @@ func GetFeedingSessionsBySchoolNumber(schoolNumber string) ([]models.FeedingSess
 
 	return sessions, nil
 }
+
+func DeleteFeedingSession(feedingSession models.FeedingSession) error {
+
+	db := config.DB
+
+	if err := db.Delete(&feedingSession).Error; err != nil {
+		return err
+	}
+
+	return nil
+
+}

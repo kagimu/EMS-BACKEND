@@ -673,6 +673,7 @@ func SetupRoutes() *gin.Engine {
 				feedingSession.POST("", cateringController.CreateFeedingSession)
 				feedingSession.GET("", cateringController.FetchFeedingSessions)
 				feedingSession.POST("update", cateringController.UpdateFeedingSession)
+				feedingSession.POST("delete:feeding_session_number", cateringController.DeleteFeedingSession)
 			}
 
 			// Feeding session per day
