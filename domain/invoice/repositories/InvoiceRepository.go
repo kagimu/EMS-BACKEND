@@ -59,7 +59,7 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 			filters.ByDateBetween("created_at", startDate, endDate),
 			filters.ByCampusNumber(campusNumber)).
 		Group("invoices.number").
-		Find(&invoices).Debug().Error; err != nil {
+		Find(&invoices).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return invoices, nil
