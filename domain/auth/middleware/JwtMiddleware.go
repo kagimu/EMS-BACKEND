@@ -59,34 +59,3 @@ func AuthorizeJWT() gin.HandlerFunc {
 
 	}
 }
-
-func ValidatePermission(auth error, permission string) gin.HandlerFunc {
-
-	return func(c *gin.Context) {
-		if auth != nil && permission != "" {
-			var err error
-			var allowed = true
-			//	allowed, err := auth.CheckPermission(c.GetHeader("User-Number"), permission)
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-					"message": fmt.Sprintf("%s", err),
-				})
-			}
-
-			if !allowed {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-					"message": "You don't have permission to access this resource",
-				})
-				return
-			} else {
-				c.Next()
-			}
-		}
-
-		/*c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"message": "Invalid token",
-		})*/
-
-	}
-
-}
