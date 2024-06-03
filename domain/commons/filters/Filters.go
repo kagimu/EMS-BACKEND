@@ -242,6 +242,7 @@ func ByType(itemType string) func(db *gorm.DB) *gorm.DB {
 }
 
 func ByValueIn(fieldName string, fieldValues []string) func(db *gorm.DB) *gorm.DB {
+
 	return func(db *gorm.DB) *gorm.DB {
 
 		if fieldValues != nil {

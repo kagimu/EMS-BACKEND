@@ -139,7 +139,11 @@ func AllInvoices(status string, userNumber string, campusNumber string, schoolNu
 
 	var invoiceResponses = make([]responses.MinInvoiceResponse, 0)
 
-	invoiceItems := strings.Split(commaSeperatedItems, ",")
+	var invoiceItems = make([]string, 0)
+
+	if commaSeperatedItems != "" {
+		invoiceItems = strings.Split(commaSeperatedItems, ",")
+	}
 
 	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber, invoiceItems, startDate, endDate)
 	if err != nil {
