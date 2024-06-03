@@ -86,3 +86,22 @@ func UpdateFeedingGroup(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Feeding group has been updated"})
 }
+
+func DeleteFeedingGroup(context *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	feedingGroupNumber := context.Query("feeding_group_number")
+
+	err = services.DeleteFeedingGroup(feedingGroupNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Removing feeding group error: " + err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Feeding group has been removed"})
+}

@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
+	"time"
 )
 
 func FindInvoiceByRefNumber(refNumber string) (invoiceModel.Invoice, error) {
@@ -42,18 +43,23 @@ func FindInvoiceByNumber(invoiceNumber string) (invoiceModel.Invoice, error) {
 	return invoice, nil
 }
 
-func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string) ([]invoiceModel.Invoice, error) {
+func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string, startDate time.Time, endDate time.Time) ([]invoiceModel.Invoice, error) {
 
 	db := config.DB
 
 	var invoices []invoiceModel.Invoice
 
-	if err := db.Scopes(
-		filters.ByStatus(status),
-		filters.ByUserNumber(userNumber),
-		filters.BySchoolNumber(schoolNumber),
-		filters.ByCampusNumber(campusNumber)).
-		Find(&invoices).Error; err != nil {
+	if err := db.
+		Joins("JOIN invoice_items ON invoice_items.invoice_number =  invoices.number").
+		Scopes(
+			filters.ByStatus(status),
+			filters.ByUserNumber(userNumber),
+			filters.BySchoolNumber(schoolNumber),
+			filters.ByValueIn("invoice_items.item_number", invoiceItems),
+			filters.ByDateBetween("created_at", startDate, endDate),
+			filters.ByCampusNumber(campusNumber)).
+		Group("invoices.number").
+		Find(&invoices).Debug().Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return invoices, nil

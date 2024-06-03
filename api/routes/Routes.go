@@ -668,8 +668,13 @@ func SetupRoutes() *gin.Engine {
 		catering := main.Group("catering")
 		{
 			// Feeding sessions
-			catering.POST("feeding-sessions", cateringController.CreateFeedingSession)
-			catering.GET("feeding-sessions", cateringController.FetchFeedingSessions)
+			feedingSession := catering.Group("feeding-sessions")
+			{
+				feedingSession.POST("", cateringController.CreateFeedingSession)
+				feedingSession.GET("", cateringController.FetchFeedingSessions)
+				feedingSession.POST("update", cateringController.UpdateFeedingSession)
+				feedingSession.POST("delete", cateringController.DeleteFeedingSession)
+			}
 
 			// Feeding session per day
 			catering.POST("feeding-sessions-per-day", cateringController.CreateFeedingSessionPerDay)
@@ -685,6 +690,7 @@ func SetupRoutes() *gin.Engine {
 				feedingGroups.POST("", cateringController.CreateFeedingGroup)
 				feedingGroups.GET("", cateringController.FetchFeedingGroups)
 				feedingGroups.POST("update", cateringController.UpdateFeedingGroup)
+				feedingGroups.POST("delete", cateringController.DeleteFeedingGroup)
 			}
 
 			// Feeding groups per day
@@ -692,11 +698,17 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("feeding-groups-per-day", cateringController.FetchFeedingGroupsPerDay)
 
 			// Menu items
-			catering.POST("menu-items", cateringController.CreateMenuItem)
-			catering.GET("menu-items", cateringController.FetchMenuItems)
+
+			menuItems := catering.Group("menu-items")
+			{
+				menuItems.POST("", cateringController.CreateMenuItem)
+				menuItems.GET("", cateringController.FetchMenuItems)
+				menuItems.GET("details", cateringController.FetchMenuItemDetails)
+				menuItems.POST("update", cateringController.EditMenuItem)
+				menuItems.POST("delete", cateringController.DeleteMenuItem)
+			}
+
 			catering.GET("menu-items-paginated", cateringController.FetchMenuItemsPaginated)
-			catering.GET("menu-items/:menu_item_number", cateringController.FetchMenuItemDetails)
-			catering.PUT("menu-items/:menu_item_number", cateringController.EditMenuItem)
 
 			// Units of measure
 			catering.POST("units-of-measure", cateringController.CreateUnitOfMeasure)
@@ -704,8 +716,12 @@ func SetupRoutes() *gin.Engine {
 			catering.PUT("units-of-measure/:number", cateringController.EditUnitOfMeasure)
 
 			// Item assembly
-			catering.POST("item-assembly", cateringController.CreateItemAssembly)
-			catering.GET("item-assembly", cateringController.FetchItemAssemblies)
+			itemAssembly := catering.Group("item-assembly")
+			{
+				itemAssembly.POST("", cateringController.CreateItemAssembly)
+				itemAssembly.GET("", cateringController.FetchItemAssemblies)
+				itemAssembly.POST("update", cateringController.EditItemAssembly)
+			}
 
 			// Feedings
 			catering.POST("feedings", cateringController.CreateFeeding)
@@ -717,8 +733,13 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("stocking/:stock_item_number", cateringController.FetchItemStock)
 
 			// Feeding group users
-			catering.POST("feeding-group-users", cateringController.CreateFeedingGroupUser)
-			catering.GET("feeding-group-users", cateringController.FetchFeedingGroupUsers)
+
+			feedingGroupUsers := catering.Group("feeding-group-users")
+			{
+				feedingGroupUsers.POST("", cateringController.CreateFeedingGroupUser)
+				feedingGroupUsers.GET("", cateringController.FetchFeedingGroupUsers)
+				feedingGroupUsers.GET("available", cateringController.FetchAvailableUsers)
+			}
 
 			// Feeding group session
 			catering.POST("feeding-group-sessions", cateringController.CreateFeedingGroupSession)
@@ -750,6 +771,7 @@ func SetupRoutes() *gin.Engine {
 		statistics := main.Group("statistics")
 		{
 			statistics.GET("summary", statisticsController.FetchStatistics)
+			statistics.GET("print", statisticsController.PrintReport)
 		}
 	}
 

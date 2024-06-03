@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"net/http"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
@@ -57,7 +58,33 @@ func GetAllPayments(context *gin.Context) {
 		return
 	}
 
-	payments, err := services.GetAllPayments(userNumber, refNumber, schoolNumber)
+	_startDate := context.Query("start_date")
+	_endDate := context.Query("end_date")
+
+	currentDateTime := time.Now()
+
+	if _startDate == "" {
+		startOfMonth := time.Date(currentDateTime.Year(), currentDateTime.Month(), 1, 0, 0, 0, 0, currentDateTime.Location())
+		_startDate = startOfMonth.Format(time.DateOnly)
+	}
+
+	var startDate time.Time
+	if startDate, err = time.Parse(time.DateOnly, _startDate); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
+		return
+	}
+
+	if _endDate == "" {
+		_endDate = currentDateTime.Format(time.DateOnly)
+	}
+
+	var endDate time.Time
+	if endDate, err = time.Parse(time.DateOnly, _endDate); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
+		return
+	}
+
+	payments, err := services.GetAllPayments(userNumber, refNumber, schoolNumber, startDate, endDate)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Getting all payments with error: "+err.Error()))
 		return

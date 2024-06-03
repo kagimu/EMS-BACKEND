@@ -468,7 +468,7 @@ func ActivateMealCourse(activateMealCourseRequest requests.ActivateMealCourseReq
 		return errors.New("selected meal course is not active")
 	}
 
-	feedingSession, err := repositories.GetFeedingSessionByNumber(activateMealCourseRequest.FeedingSessionNumber)
+	feedingSession, err := repositories.GetFeedingSessionByNumberAndSchoolNumber(activateMealCourseRequest.FeedingSessionNumber, "")
 
 	if err != nil {
 		return err

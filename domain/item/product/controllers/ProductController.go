@@ -46,15 +46,13 @@ func CreateProduct(c *gin.Context) {
 
 	itemNumber := uuid.NewV4().String()
 	saveProductItem := models.Item{
-		Number:             itemNumber,
-		Name:               payload.Name,
-		Cost:               payload.Cost,
-		SerialCode:         payload.SerialCode,
-		Description:        payload.Description,
-		Prefix:             payload.Prefix,
-		DiscountPercentage: payload.DiscountPercentage,
-		DiscountAmount:     payload.DiscountAmount,
-		UserNumber:         user.Number,
+		Number:      itemNumber,
+		Name:        payload.Name,
+		Cost:        payload.Cost,
+		SerialCode:  payload.SerialCode,
+		Description: payload.Description,
+		Prefix:      payload.Prefix,
+		UserNumber:  user.Number,
 	}
 
 	if err := tx.Create(&saveProductItem).Error; err != nil {
@@ -97,14 +95,12 @@ func EditProduct(c *gin.Context) {
 	}
 
 	updateProduct := models.Item{
-		Number:             uuid.NewV4().String(),
-		Name:               payload.Name,
-		Cost:               payload.Cost,
-		Description:        payload.Description,
-		Prefix:             payload.Prefix,
-		DiscountPercentage: payload.DiscountPercentage,
-		DiscountAmount:     payload.DiscountAmount,
-		UserNumber:         user.Number,
+		Number:      uuid.NewV4().String(),
+		Name:        payload.Name,
+		Cost:        payload.Cost,
+		Description: payload.Description,
+		Prefix:      payload.Prefix,
+		UserNumber:  user.Number,
 	}
 
 	if err := config.DB.Model(&product).Where("number = ?", productNumber).Updates(updateProduct).Error; err != nil {

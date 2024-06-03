@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -9,7 +10,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 func CreateItemAssembly(c *gin.Context) {
@@ -30,53 +30,9 @@ func CreateItemAssembly(c *gin.Context) {
 		return
 	}
 
-	tx := config.DB.Begin()
-
-	menuItemNumber := uuid.NewV4().String()
-	saveMenuItem := models.MenuItem{
-		Number:              menuItemNumber,
-		Name:                payload.Name,
-		Code:                payload.Code,
-		Type:                payload.Type,
-		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
-		UserNumber:          user.Number,
-	}
-
-	var duplicateMenuItem models.MenuItem
-	if err := config.DB.Where("code = ?", payload.Code).First(&duplicateMenuItem).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item code already exists"})
-		return
-	}
-
-	if err := config.DB.Where("name = ?", payload.Name).First(&duplicateMenuItem).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item name already exists"})
-		return
-	}
-
-	if err := tx.Create(&saveMenuItem).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item"})
-		return
-	}
-
-	for _, secondaryItem := range payload.SecondaryItemQuantity {
-		saveItemAssembly := models.ItemAssembly{
-			Number:              uuid.NewV4().String(),
-			PrimaryItemNumber:   menuItemNumber,
-			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
-			Quantity:            secondaryItem.Quantity,
-			UserNumber:          user.Number,
-		}
-
-		if err := tx.Create(&saveItemAssembly).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assembly item"})
-			return
-		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create assesmbly items"})
+	err = services.CreateItemAssembly(user.Number, payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -112,7 +68,7 @@ func FetchItemAssemblies(c *gin.Context) {
 }
 
 func EditItemAssembly(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -124,25 +80,11 @@ func EditItemAssembly(c *gin.Context) {
 		return
 	}
 
-	itemAssesmblyNumber := c.Query("item_assembly_number")
-	var itemAssembly models.ItemAssembly
-	if err := config.DB.Where("number = ?", itemAssesmblyNumber).First(&itemAssembly).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Item assembly not found"})
+	err = services.UpdateItemAssembly(user.Number, payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	for _, secondaryItem := range payload.SecondaryItemQuantity {
-		updateItemAssembly := models.ItemAssembly{
-			PrimaryItemNumber:   payload.PrimaryItemNumber,
-			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
-			Quantity:            secondaryItem.Quantity,
-		}
-
-		if err := config.DB.Model(&itemAssembly).Where("number = ?", itemAssesmblyNumber).Updates(updateItemAssembly).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update item assembly"})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": itemAssembly})
+	c.JSON(http.StatusOK, commons.Feedback("Item updated successfully"))
 }

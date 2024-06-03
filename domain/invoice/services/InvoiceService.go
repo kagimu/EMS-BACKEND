@@ -17,6 +17,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -134,13 +135,13 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 	return nil
 }
 
-func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string) ([]responses.MinInvoiceResponse, error) {
+func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, commaSeperatedItems string, startDate time.Time, endDate time.Time) ([]responses.MinInvoiceResponse, error) {
 
-	var invoices []models.Invoice
+	var invoiceResponses = make([]responses.MinInvoiceResponse, 0)
 
-	var invoiceResponses []responses.MinInvoiceResponse
+	invoiceItems := strings.Split(commaSeperatedItems, ",")
 
-	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber)
+	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber, invoiceItems, startDate, endDate)
 	if err != nil {
 		return invoiceResponses, err
 	}
@@ -371,11 +372,11 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 	return financialSummaryResponse, nil
 }
 
-func GetAllPayments(userNumber string, refNumber string, schoolNumber string) ([]responses.InvoicePaymentResponse, error) {
+func GetAllPayments(userNumber string, refNumber string, schoolNumber string, startDate time.Time, endDate time.Time) ([]responses.InvoicePaymentResponse, error) {
 
 	var invoicePaymentsResponse []responses.InvoicePaymentResponse
 
-	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber)
+	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber, startDate, endDate)
 
 	if err != nil {
 		return invoicePaymentsResponse, err

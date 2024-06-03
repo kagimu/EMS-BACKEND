@@ -22,7 +22,7 @@ import (
 
 func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 
-	var parts []responses.Part
+	var parts = make([]responses.Part, 0)
 
 	itemAssembles, err := repositories.GetAssembledItemParts(menuItemNumber)
 	if err != nil {
@@ -365,37 +365,37 @@ func determineUnitCost(item models.MenuItem) float64 {
 	return unitCost
 }
 
-func SaveMenuItem(payload requests.MenuItemRequest, currentUserNumber string) error {
+func SaveMenuItem(itemType string, payload requests.MenuItemRequest, currentUserNumber string) (models.MenuItem, error) {
 
 	school, err := repositories3.GetSchoolByNumber(payload.SchoolNumber)
 
 	if err != nil {
-		return errors.New("checking school number error: " + err.Error())
+		return models.MenuItem{}, errors.New("checking school number error: " + err.Error())
 	}
 
 	checkName, err := repositories.GetMenuItemByNameAndSchool(school.Number, payload.Name)
 	if err != nil {
-		return errors.New("checking menu item name error: " + err.Error())
+		return models.MenuItem{}, errors.New("checking menu item name error: " + err.Error())
 	}
 
 	if checkName.Number != "" {
-		return errors.New("menu item name '" + payload.Name + "' already exists")
+		return models.MenuItem{}, errors.New("menu item name '" + payload.Name + "' already exists")
 	}
 
 	checkCode, err := repositories.GetMenuItemByCodeAndSchool(school.Number, payload.Code)
 	if err != nil {
-		return errors.New("checking menu item code error: " + err.Error())
+		return models.MenuItem{}, errors.New("checking menu item code error: " + err.Error())
 	}
 
 	if checkCode.Number != "" {
-		return errors.New("item code already used")
+		return models.MenuItem{}, errors.New("item code already used")
 	}
 
 	saveMenuItem := models.MenuItem{
 		Number:              uuid.NewV4().String(),
 		Name:                payload.Name,
 		Code:                payload.Code,
-		Type:                payload.Type,
+		Type:                itemType,
 		SchoolNumber:        school.Number,
 		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
 		UserNumber:          currentUserNumber,
@@ -405,13 +405,13 @@ func SaveMenuItem(payload requests.MenuItemRequest, currentUserNumber string) er
 
 	err = repositories.SaveMenuItem(saveMenuItem)
 	if err != nil {
-		return errors.New("saving menu item error: " + err.Error())
+		return models.MenuItem{}, errors.New("saving menu item error: " + err.Error())
 	}
 
-	return nil
+	return saveMenuItem, nil
 }
 
-func GetPaginatedMenuItems(schoolNumber string, campusNumber string, context *gin.Context) (pagination.PaginatedResponse, error) {
+func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status string, itemType string, context *gin.Context) (pagination.PaginatedResponse, error) {
 
 	response := make([]responses.MenuItemResponse, 0)
 
@@ -431,7 +431,7 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, context *gi
 		schoolNumber = campus.SchoolNumber
 	}
 
-	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, paginatedResponse, context)
+	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, status, itemType, paginatedResponse, context)
 
 	if err != nil {
 		return pagination.PaginatedResponse{}, errors.New("getting all menu items error: " + err.Error())
@@ -452,7 +452,8 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, context *gi
 
 	return paginatedResponse, nil
 }
-func GetAllMenuItems(schoolNumber string, campusNumber string) ([]responses.MenuItemResponse, error) {
+
+func GetAllMenuItems(schoolNumber string, campusNumber string, status string, itemType string) ([]responses.MenuItemResponse, error) {
 
 	response := make([]responses.MenuItemResponse, 0)
 
@@ -469,7 +470,7 @@ func GetAllMenuItems(schoolNumber string, campusNumber string) ([]responses.Menu
 		schoolNumber = campus.SchoolNumber
 	}
 
-	menuItems, err := repositories.GetAllMenuItems(schoolNumber)
+	menuItems, err := repositories.GetAllMenuItems(schoolNumber, status, itemType)
 
 	for _, menuItem := range menuItems {
 
@@ -492,6 +493,11 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		return responses.MenuItemResponse{}, errors.New("getting current stock error: " + err.Error())
 	}
 
+	parts, err := GetMenuItemParts(menuItem.Number)
+	if err != nil {
+		return responses.MenuItemResponse{}, errors.New("getting parts error: " + err.Error())
+	}
+
 	return responses.MenuItemResponse{
 		Number:              menuItem.Number,
 		Name:                menuItem.Name,
@@ -503,6 +509,7 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
 		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
 		CurrentQuantity:     currentQuantity,
+		Parts:               parts,
 	}, nil
 }
 
@@ -514,5 +521,179 @@ func MenuItemDetails(menuItemNumber string) (responses.MenuItemResponse, error) 
 		return responses.MenuItemResponse{}, errors.New("getting menu item by number error: " + err.Error())
 	}
 
+	if item.Number == "" {
+		return responses.MenuItemResponse{}, errors.New("invalid menu item number" + menuItemNumber)
+	}
+
 	return createMenuItemResponse(item)
+}
+
+func UpdateMenuItem(payload requests.UpdateMenuItemRequest, currentUserNumber string) error {
+
+	menuItem, err := repositories.GetMenuItemByNumber(payload.MenuItemNumber)
+	if err != nil {
+		return errors.New("checking menu item number error: " + err.Error())
+	}
+
+	if menuItem.Number == "" {
+		return errors.New("invalid menu item number" + payload.MenuItemNumber)
+	}
+
+	school, err := repositories3.GetSchoolByNumber(payload.SchoolNumber)
+
+	if err != nil {
+		return errors.New("checking school number error: " + err.Error())
+	}
+
+	checkName, err := repositories.GetMenuItemByNameAndSchool(school.Number, payload.Name)
+	if err != nil {
+		return errors.New("checking menu item name error: " + err.Error())
+	}
+
+	if checkName.Number != "" && checkName.Number != menuItem.Number {
+		return errors.New("menu item name '" + payload.Name + "' already exists")
+	}
+
+	checkCode, err := repositories.GetMenuItemByCodeAndSchool(school.Number, payload.Code)
+	if err != nil {
+		return errors.New("checking menu item code error: " + err.Error())
+	}
+
+	if checkCode.Number != "" && checkCode.Number != menuItem.Number {
+		return errors.New("item code already used")
+	}
+
+	menuItem.Status = payload.Status
+	menuItem.Name = payload.Name
+	menuItem.Code = payload.Code
+	menuItem.UnitOfMeasureNumber = payload.UnitOfMeasureNumber
+	menuItem.UserNumber = currentUserNumber
+	menuItem.BaseUnitCost = payload.BasePrice
+
+	err = repositories.SaveMenuItem(menuItem)
+	if err != nil {
+		return errors.New("updating menu item error: " + err.Error())
+	}
+
+	return nil
+}
+
+func DeleteMenuItem(menuItemNumber string) error {
+	menuItem, err := repositories.GetMenuItemByNumber(menuItemNumber)
+	if err != nil {
+		return errors.New("checking menu item number error: " + err.Error())
+	}
+
+	if menuItem.Number == "" {
+		return errors.New("invalid menu item number" + menuItemNumber)
+	}
+
+	parts, err := repositories.GetAssembledItemParts(menuItem.Number)
+	if err != nil {
+		return errors.New("checking menu item parts before delete error: " + err.Error())
+	}
+
+	tx := config.DB.Begin()
+
+	for _, part := range parts {
+		err = repositories.DeleteItemAssembly(part, tx)
+		if err != nil {
+			return errors.New("clearing assembled parts error: " + err.Error())
+		}
+	}
+
+	err = repositories.DeleteMenuItem(menuItem, tx)
+	if err != nil {
+		fmt.Println("delete menu item error: " + err.Error())
+		return errors.New("item can not be removed, you may need to delete all other dependencies first")
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
+func CreateItemAssembly(currentUser string, payload requests.ItemAssembly) error {
+
+	menuItem, err := SaveMenuItem(constants.TypeAssembled, payload.MenuItemRequest, currentUser)
+	if err != nil {
+		return errors.New("saving assembly menu item error: " + err.Error())
+	}
+
+	if menuItem.Number == "" {
+		return errors.New("saved assembly item returned no number")
+	}
+
+	for _, secondaryItem := range payload.SecondaryItemQuantity {
+
+		duplicate, err := repositories.FindAssemblyItemByPrimaryNumberAndSecondaryNumber(menuItem.Number, secondaryItem.SecondaryItemNumber)
+		if err != nil {
+			fmt.Println("checking assembly error: " + err.Error())
+			continue
+		}
+
+		if duplicate.Number != "" {
+			continue
+		}
+
+		saveItemAssembly := models.ItemAssembly{
+			Number:              uuid.NewV4().String(),
+			PrimaryItemNumber:   menuItem.Number,
+			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
+			Quantity:            secondaryItem.Quantity,
+			UserNumber:          currentUser,
+		}
+
+		err = repositories.SaveItemAssembly(saveItemAssembly)
+
+	}
+
+	return nil
+}
+
+func UpdateItemAssembly(currentUser string, payload requests.UpdateItemAssembly) error {
+
+	err := UpdateMenuItem(payload.UpdateMenuItemRequest, currentUser)
+	if err != nil {
+		return errors.New("updating assembled menu item error: " + err.Error())
+	}
+
+	oldParts, err := repositories.GetAssembledItemParts(payload.MenuItemNumber)
+	if err != nil {
+		return errors.New("getting assembled item parts error: " + err.Error())
+	}
+
+	for _, oldPart := range oldParts {
+		err = repositories.DeleteItemAssembly(oldPart)
+		if err != nil {
+			fmt.Println("deleting assembled item error: " + err.Error())
+			continue
+		}
+	}
+
+	for _, secondaryItem := range payload.SecondaryItemQuantity {
+
+		duplicate, err := repositories.FindAssemblyItemByPrimaryNumberAndSecondaryNumber(payload.MenuItemNumber, secondaryItem.SecondaryItemNumber)
+		if err != nil {
+			fmt.Println("checking assembly error on update: " + err.Error())
+			continue
+		}
+
+		if duplicate.Number != "" {
+			continue
+		}
+
+		saveItemAssembly := models.ItemAssembly{
+			Number:              uuid.NewV4().String(),
+			PrimaryItemNumber:   payload.MenuItemNumber,
+			SecondaryItemNumber: secondaryItem.SecondaryItemNumber,
+			Quantity:            secondaryItem.Quantity,
+			UserNumber:          currentUser,
+		}
+
+		err = repositories.SaveItemAssembly(saveItemAssembly)
+
+	}
+
+	return nil
 }
