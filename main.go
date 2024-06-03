@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm/logger"
 	"log"
 	"os"
 
@@ -11,7 +12,7 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/logger"
+	logs "github.com/Noregrets-Systems/wholesomeEdBackEnd/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -30,7 +31,9 @@ func main() {
 		return
 	}
 	//var err error
-	config.DB, err = gorm.Open(mysql.Open(config.DbURL(config.BuildDBConfig())), &gorm.Config{})
+	config.DB, err = gorm.Open(mysql.Open(config.DbURL(config.BuildDBConfig())), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 
 	if err != nil {
 		fmt.Println("Error connecting to database:", err)
@@ -70,12 +73,12 @@ func main() {
 	  }
 	}`)
 
-	loger, err := logger.Init(rawJSON)
+	logg, err := logs.Init(rawJSON)
 	if err != nil {
 		fmt.Println("Error initializing logger:", err)
 		return
 	}
-	loger.Info("Logger construction succeeded")
+	logg.Info("Logger construction succeeded")
 
 	router := routes.SetupRoutes()
 	port := os.Getenv("APP_PORT")
