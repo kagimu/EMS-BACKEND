@@ -2,8 +2,9 @@ FROM golang:alpine AS build
 RUN apk --no-cache add gcc g++ make git
 
 # Install wkhtmltopdf
-# https://stackoverflow.com/a/56925361/152016
-RUN apk add --no-cache wkhtmltopdf ttf-dejavu
+RUN apt-get install -y wget wkhtmltopdf
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb
+
 
 WORKDIR /go/src/app
 
