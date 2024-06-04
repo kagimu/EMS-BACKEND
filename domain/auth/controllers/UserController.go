@@ -172,6 +172,7 @@ func CreateUser(c *gin.Context) {
 		ContactType: "Email",
 		UserNumber:  userObject.Number,
 	}
+
 	if err := tx.Create(&saveEmailContact).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
