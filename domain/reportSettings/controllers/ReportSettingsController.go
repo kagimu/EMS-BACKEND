@@ -43,7 +43,7 @@ func CreateReportSettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	//check for existing report settings with the same study period number, academic year number and campus class number and status active
+	//check for existing report settings with the same study period number, academic year number and campus class number and status active.
 
 	var existingReportSettings models.ReportSetting
 	if err := config.DB.Where("study_period_number = ? AND academic_year_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.AcademicYearNumber, payload.CampusClassNumber, constants.StatusActive).First(&existingReportSettings).Error; err == nil {
@@ -285,7 +285,6 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 			filters.ByAnyField("report_settings.number", ctx.Query("report_setting_number")),
 			filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
 			filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
-			//filters.ByAnyField("report_settings.campus_class_number", ctx.Query("campus_class_number")),
 		).
 		Find(&reportColumnAssessments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column assessments"})
