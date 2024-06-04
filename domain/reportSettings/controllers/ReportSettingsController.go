@@ -489,7 +489,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 	}*/
 
 	//err = pdfObject.WriteFile("output.pdf") if you want to save this document
-	ctx.JSON(http.StatusOK, gin.H{"data": response})
+	ctx.JSON(http.StatusOK, gin.H{"message": "report", "data": response})
 }
 
 func CreateReportScore(ctx *gin.Context) {
