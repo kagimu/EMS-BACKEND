@@ -480,15 +480,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		ReportColumns:      rcs,
 		ReportTemplateName: reportSummary.ReportTemplateName,
 	}
-	//fmt.Println(response)
-	//pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, response)
-	/*pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, nil)
-	if err != nil {
-		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
-		return
-	}*/
 
-	//err = pdfObject.WriteFile("output.pdf") if you want to save this document
 	ctx.JSON(http.StatusOK, gin.H{"message": "report", "data": response})
 }
 
