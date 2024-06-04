@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
@@ -15,6 +16,7 @@ import (
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/pdfGenerator"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -364,6 +366,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 func FetchReportSummaryDetails(ctx *gin.Context) {
 	reportSummaryNumber := ctx.Param("report_summary_number")
+	htmlReportTemplate := ctx.DefaultQuery("html_report_template", "victorious-report-primary")
 
 	var reportSummary models.ReportSummary
 	if err := config.DB.Where("number = ?", reportSummaryNumber).Preload("Student").Preload("StudyPeriod").First(&reportSummary).Error; err != nil {
@@ -480,7 +483,15 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		ReportColumns:      rcs,
 		ReportTemplateName: reportSummary.ReportTemplateName,
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": response})
+
+	pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, response)
+	if err != nil {
+		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
+		return
+	}
+
+	//err = pdfObject.WriteFile("output.pdf")
+	ctx.JSON(http.StatusOK, gin.H{"data": base64.StdEncoding.EncodeToString(pdfObject.Bytes())})
 }
 
 func CreateReportScore(ctx *gin.Context) {
