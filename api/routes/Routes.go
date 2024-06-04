@@ -96,7 +96,7 @@ func SetupRoutes() *gin.Engine {
 
 		curriculum := main.Group("/curriculum")
 		{
-			curriculum.GET("all", curriculumController.FetchCurriculum)
+			curriculum.GET("all", curriculumController.FetchCurriculum, middleware.ValidatePermission("view_curriculum"))
 			curriculum.POST("new", curriculumController.NewCurriculum)
 			curriculum.GET("/info", curriculumController.CurriculumInfo)
 			curriculum.GET("/campus-curriculum-level", curriculumController.FetchCampusCurriculumLevel)
