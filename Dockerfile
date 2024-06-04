@@ -1,4 +1,5 @@
 FROM golang:alpine AS build
+FROM openjdk:8-jre-alpine
 RUN apk --no-cache add gcc g++ make git
 
 # Install wkhtmltopdf
