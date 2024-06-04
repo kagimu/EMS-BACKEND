@@ -28,7 +28,7 @@ func GeneratePdf(templateName string, data interface{}) (*wkhtmltopdf.PDFGenerat
 	//read the template
 	var templ *template.Template
 	var err error
-	classReportTemplateUrl := "/fileRepo/classReportTemplates/" + templateName + ".html"
+	classReportTemplateUrl := "fileRepo/classReportTemplates/" + templateName + ".html"
 	templ, err = template.ParseFiles(classReportTemplateUrl)
 	if err != nil {
 		return nil, err
