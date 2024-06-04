@@ -480,8 +480,17 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		ReportColumns:      rcs,
 		ReportTemplateName: reportSummary.ReportTemplateName,
 	}
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "report", "data": response})
+	/*//pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, response)
+	pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, nil)
+	if err != nil {
+		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
+		return
+	}
+
+	//err = pdfObject.WriteFile("output.pdf")
+	ctx.JSON(http.StatusOK, gin.H{"data": base64.StdEncoding.EncodeToString(pdfObject.Bytes())})*/
 }
 
 func CreateReportScore(ctx *gin.Context) {
