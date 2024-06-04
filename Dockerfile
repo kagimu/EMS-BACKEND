@@ -1,5 +1,10 @@
 FROM golang:alpine AS build
 RUN apk --no-cache add gcc g++ make git
+
+# Install wkhtmltopdf
+# https://stackoverflow.com/a/56925361/152016
+RUN apk add --no-cache wkhtmltopdf ttf-dejavu
+
 WORKDIR /go/src/app
 
 COPY go.mod .
