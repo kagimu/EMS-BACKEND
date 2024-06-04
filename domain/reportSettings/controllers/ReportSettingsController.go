@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
@@ -482,8 +483,9 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		ReportColumns:      rcs,
 		ReportTemplateName: reportSummary.ReportTemplateName,
 	}
-
-	pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, response)
+	fmt.Println(response)
+	//pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, response)
+	pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, nil)
 	if err != nil {
 		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
 		return
