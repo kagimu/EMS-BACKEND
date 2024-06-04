@@ -488,7 +488,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		return
 	}*/
 
-	//err = pdfObject.WriteFile("output.pdf")
+	//err = pdfObject.WriteFile("output.pdf") if you want to save this document
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
 
