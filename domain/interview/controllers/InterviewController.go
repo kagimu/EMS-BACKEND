@@ -199,6 +199,7 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 				StudentSecondName: student.Student.SecondName,
 				Comment:           assessment.Comment,
 				Score:             assessment.ActualScore,
+				Status:            student.Student.Status,
 			})
 		}
 	}

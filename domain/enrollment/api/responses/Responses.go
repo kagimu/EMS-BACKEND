@@ -8,6 +8,7 @@ type EnrolledStudent struct {
 	Score             float64 `json:"score"`
 	Comment           string  `json:"comment"`
 	Class             string  `json:"class"`
+	Status            string  `json:"status"`
 }
 
 type Enrollment struct {
