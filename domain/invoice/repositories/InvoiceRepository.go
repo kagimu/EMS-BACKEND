@@ -150,3 +150,12 @@ func UpdateInvoice(invoice invoiceModel.Invoice) error {
 
 	return nil
 }
+
+func DeleteInvoice(invoice invoiceModel.Invoice) error {
+
+	if err := config.DB.Delete(&invoice).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
