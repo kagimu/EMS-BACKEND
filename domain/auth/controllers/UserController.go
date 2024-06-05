@@ -31,23 +31,30 @@ func FetchUsers(c *gin.Context) {
 		return
 	}
 
+	type roleObject struct {
+		RoleName   string `json:"role_name"`
+		RoleNumber string `json:"role_number"`
+	}
+
 	type CLeanUser struct {
 		models.User
-		Roles []string `json:"roles"`
+		Roles []roleObject `json:"roles"`
 	}
 
 	var cleanUsers = make([]CLeanUser, 0)
 
 	for _, user := range users {
 		var userRoles []permissionModels.UserRole
-		var roles []string
+
+		var roles []roleObject
 		if err := config.DB.Preload("Role").Where("user_number = ?", user.Number).Find(&userRoles).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch user roles"})
 			return
 		}
 
 		for _, userRole := range userRoles {
-			roles = append(roles, userRole.Role.Name)
+			roles = append(roles, roleObject{RoleName: userRole.Role.Name,
+				RoleNumber: userRole.Role.Number})
 		}
 
 		cleanUsers = append(cleanUsers, CLeanUser{User: user, Roles: roles})
