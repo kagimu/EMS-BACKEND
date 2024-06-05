@@ -6,11 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
-	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,7 +29,7 @@ func CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	if err = services.CreateNewInvoice(payload, user.Number); err != nil {
+	if err = services.CreateInvoice(payload, user.Number); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
@@ -41,47 +38,30 @@ func CreateInvoice(c *gin.Context) {
 }
 
 func UpdateInvoice(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
+
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	type Input struct {
-		Status string `json:"status"`
-		Type   string `json:"type"`
-	}
-
-	var payload Input
+	var payload requests.UpdateInvoiceRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
-	studentNumber := c.Param("student_number")
-	var student studentModel.Student
-	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No student found with the specified number"})
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	paymentReference := c.Query("payment_reference")
-	var invoice models.Invoice
-	if err := config.DB.First(&invoice, "payment_reference  = ?", paymentReference).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No invoice found with the specified number"})
+	if err = services.UpdateInvoice(payload, user.Number); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	updateInvoice := models.Invoice{
-		Status: payload.Status,
-		Type:   payload.Type,
-	}
-
-	if err := config.DB.Model(&invoice).Where("number = ?", invoice.Number).Updates(updateInvoice).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update invoice", "err": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Invoice updated successfully", "data": invoice})
+	c.JSON(http.StatusOK, gin.H{"message": "Invoice updated successfully"})
 }
 
 func GetAllInvoices(context *gin.Context) {
