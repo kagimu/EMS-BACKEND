@@ -429,3 +429,25 @@ func DeleteInvoice(invoiceNumber string) error {
 
 	return nil
 }
+
+func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	if err != nil {
+		return errors.New("checking invoice number error: " + err.Error())
+	}
+
+	if invoice.Number == "" {
+		return errors.New("invalid invoice number")
+	}
+
+	invoice.Status = constants.StatusCancelled
+	invoice.UserNumber = currentUserNumber
+
+	err = invoiceRepositories.UpdateInvoice(invoice)
+	if err != nil {
+		return errors.New("updating invoice failed : " + err.Error())
+	}
+
+	return nil
+}

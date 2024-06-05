@@ -443,6 +443,7 @@ func SetupRoutes() *gin.Engine {
 			invoices.GET("payments", invoiceController.GetAllPayments)
 			invoices.PUT(":student_number", invoiceController.UpdateInvoice)
 			invoices.POST("delete", invoiceController.DeleteInvoice)
+			invoices.POST("cancel", invoiceController.CancelInvoice)
 		}
 
 		services := main.Group("/services")

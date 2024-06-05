@@ -188,7 +188,7 @@ func DeleteInvoice(context *gin.Context) {
 
 	invoiceNumber := context.Query("invoice_number")
 	if invoiceNumber == "" {
-		context.JSON(http.StatusBadRequest, commons.Feedback("Provide invoice number"))
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide invoice number to delete"))
 		return
 	}
 
@@ -199,4 +199,28 @@ func DeleteInvoice(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Invoice removed successfully"))
+}
+
+func CancelInvoice(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	invoiceNumber := context.Query("invoice_number")
+	if invoiceNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide invoice number to cancel"))
+		return
+	}
+
+	err = services.CancelInvoice(invoiceNumber, user.Number)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Invoice cancelled successfully"))
 }
