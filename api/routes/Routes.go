@@ -63,7 +63,7 @@ func SetupRoutes() *gin.Engine {
 	//setting cors in the system
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:2054", "https://wholesome-api.noregrets.ug"},
-		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "OPTIONS"},
+		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "OPTIONS", "DELETE"},
 		AllowHeaders:     []string{"Access-Control-Allow-Origin", "Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host", "Token", "Authorization", "Accept-Encoding", "X-CSRF-Token", "Access-Control-Allow-Headers", "Content-Type", "user-number"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
