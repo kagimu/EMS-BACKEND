@@ -92,3 +92,27 @@ func GetAllPayments(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": payments})
 }
+
+func CancelPayment(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"Message": "Unauthorized"})
+		return
+	}
+
+	paymentNumber := context.Query("payment_number")
+	if paymentNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("provide a payment number to cancel"))
+		return
+	}
+
+	err = services.CancelPayment(paymentNumber, user.Number)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Payment cancelled successfully"))
+
+}
