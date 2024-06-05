@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
@@ -26,6 +27,7 @@ func GetInvoicePaidAmount(invoiceNumber string) (float64, error) {
 
 	if err := db.Model(&invoiceModels.InvoicePayment{}).
 		Where("invoice_number = ? ", invoiceNumber).
+		Where("status = ? ", constants.StatusActive).
 		Select("COALESCE(sum(amount),0)").
 		Scan(&totalAmount).Error; err != nil {
 
@@ -66,6 +68,7 @@ func CountAllUserPayments(userNumber string) (int64, error) {
 	if err := db.Model(&invoiceModels.Invoice{}).
 		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
 		Where("invoices.user_number = ?", userNumber).
+		Where("invoice_payments.status = ?", constants.StatusActive).
 		Count(&countPayments).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -87,6 +90,7 @@ func SumAllUserPayments(userNumber string) (float64, error) {
 	if err := db.Model(&invoiceModels.Invoice{}).
 		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
 		Where("invoices.user_number = ? ", userNumber).
+		Where("invoice_payments.status = ? ", constants.StatusActive).
 		Select("COALESCE(sum(invoice_payments.amount),0)").
 		Scan(&totalAmount).Error; err != nil {
 
@@ -109,6 +113,7 @@ func GetMostRecentPayment(userNumber string) (invoiceModels.InvoicePayment, erro
 	if err := db.
 		Joins("JOIN invoices ON invoices.number = invoice_payments.invoice_number").
 		Where("invoices.user_number = ? ", userNumber).
+		Where("invoice_payments.status = ? ", constants.StatusActive).
 		Order("invoice_payments.created_at desc").
 		First(&invoicePayment).Error; err != nil {
 
