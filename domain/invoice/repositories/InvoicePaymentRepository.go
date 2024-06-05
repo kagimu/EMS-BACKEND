@@ -11,7 +11,7 @@ import (
 
 func SavePayment(invoicePayment invoiceModels.InvoicePayment) (invoiceModels.InvoicePayment, error) {
 
-	if err := config.DB.Create(&invoicePayment).Error; err != nil {
+	if err := config.DB.Save(&invoicePayment).Error; err != nil {
 		return invoicePayment, err
 	}
 
@@ -143,6 +143,22 @@ func GetAllPayments(userNumber string, schoolNumber string, refNumber string, st
 			return invoicePayment, nil
 		}
 
+		return invoicePayment, err
+	}
+
+	return invoicePayment, nil
+}
+
+func GetInvoicePaymentByNumber(paymentNumber string) (invoiceModels.InvoicePayment, error) {
+
+	db := config.DB
+
+	var invoicePayment invoiceModels.InvoicePayment
+
+	if err := db.Where("number = ?", paymentNumber).First(&invoicePayment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return invoicePayment, nil
+		}
 		return invoicePayment, err
 	}
 
