@@ -406,3 +406,70 @@ func GetAllPayments(userNumber string, refNumber string, schoolNumber string, st
 
 	return invoicePaymentsResponse, nil
 }
+
+func DeleteInvoice(invoiceNumber string) error {
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	if err != nil {
+		return errors.New("checking invoice number error: " + err.Error())
+	}
+
+	if invoice.Number == "" {
+		return errors.New("invalid invoice number")
+	}
+
+	if invoice.Status != constants.StatusNotPaid {
+		return errors.New("you can only delete a not paid invoice")
+	}
+
+	err = invoiceRepositories.DeleteInvoice(invoice)
+	if err != nil {
+		return errors.New("deleting invoice failed : " + err.Error())
+	}
+
+	return nil
+}
+
+func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	if err != nil {
+		return errors.New("checking invoice number error: " + err.Error())
+	}
+
+	if invoice.Number == "" {
+		return errors.New("invalid invoice number")
+	}
+
+	invoice.Status = constants.StatusCancelled
+	invoice.UserNumber = currentUserNumber
+
+	err = invoiceRepositories.UpdateInvoice(invoice)
+	if err != nil {
+		return errors.New("updating invoice failed : " + err.Error())
+	}
+
+	return nil
+}
+
+func CancelPayment(paymentNumber string, currentUser string) error {
+
+	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	if err != nil {
+		return errors.New("checking payment number error: " + err.Error())
+	}
+
+	if invoicePayment.Number == "" {
+		return errors.New("invalid payment number")
+	}
+
+	invoicePayment.UserNumber = currentUser
+	invoicePayment.Status = constants.StatusCancelled
+
+	_, err = invoiceRepositories.SavePayment(invoicePayment)
+	if err != nil {
+		return errors.New("updating payment failed : " + err.Error())
+	}
+
+	return nil
+}
