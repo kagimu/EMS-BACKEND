@@ -191,8 +191,8 @@ func FetchRoleDetails(c *gin.Context) {
 func RemoveRoleAssignment(c *gin.Context) {
 
 	type Input struct {
-		UserNumber string   `json:"user_number"`
-		RoleNumber []string `json:"role_number"`
+		UserNumber string `json:"user_number"`
+		RoleNumber string `json:"role_number"`
 	}
 
 	var payload Input
