@@ -451,3 +451,25 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 
 	return nil
 }
+
+func CancelPayment(paymentNumber string, currentUser string) error {
+
+	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	if err != nil {
+		return errors.New("checking payment number error: " + err.Error())
+	}
+
+	if invoicePayment.Number == "" {
+		return errors.New("invalid payment number")
+	}
+
+	invoicePayment.UserNumber = currentUser
+	invoicePayment.Status = constants.StatusCancelled
+
+	_, err = invoiceRepositories.SavePayment(invoicePayment)
+	if err != nil {
+		return errors.New("updating payment failed : " + err.Error())
+	}
+
+	return nil
+}
