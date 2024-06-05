@@ -169,3 +169,13 @@ func GetInvoicePaymentByNumber(paymentNumber string) (invoiceModels.InvoicePayme
 
 	return invoicePayment, nil
 }
+
+func DeleteInvoicePayment(invoicePayment invoiceModels.InvoicePayment) error {
+
+	if err := config.DB.Delete(&invoicePayment).Error; err != nil {
+		return err
+	}
+
+	return nil
+
+}

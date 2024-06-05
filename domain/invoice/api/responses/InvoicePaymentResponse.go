@@ -5,4 +5,5 @@ type InvoicePaymentResponse struct {
 	DateTime         string  `json:"date_time"`
 	RecordedBy       string  `json:"recorded_by"`
 	InvoiceRefNumber string  `json:"invoice_ref_number"`
+	Status           string  `json:"status"`
 }

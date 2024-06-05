@@ -445,6 +445,7 @@ func SetupRoutes() *gin.Engine {
 			{
 				payments.GET("", invoiceController.GetAllPayments)
 				payments.POST("cancel", invoiceController.CancelPayment)
+				payments.POST("delete", invoiceController.DeletePayment)
 			}
 
 			invoices.PUT(":student_number", invoiceController.UpdateInvoice)

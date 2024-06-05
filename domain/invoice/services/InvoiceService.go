@@ -270,6 +270,7 @@ func createPaymentResponse(payment models.InvoicePayment, user authModel.User, i
 		InvoiceRefNumber: invoice.RefNumber,
 		RecordedBy:       user.FirstName,
 		DateTime:         payment.Date.Format(time.DateOnly),
+		Status:           payment.Status,
 	}
 	return paymentResponse
 }
@@ -469,6 +470,25 @@ func CancelPayment(paymentNumber string, currentUser string) error {
 	_, err = invoiceRepositories.SavePayment(invoicePayment)
 	if err != nil {
 		return errors.New("updating payment failed : " + err.Error())
+	}
+
+	return nil
+}
+
+func DeletePayment(paymentNumber string) error {
+
+	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	if err != nil {
+		return errors.New("checking payment number error: " + err.Error())
+	}
+
+	if invoicePayment.Number == "" {
+		return errors.New("invalid payment number")
+	}
+
+	err = invoiceRepositories.DeleteInvoicePayment(invoicePayment)
+	if err != nil {
+		return errors.New("deleting payment failed : " + err.Error())
 	}
 
 	return nil
