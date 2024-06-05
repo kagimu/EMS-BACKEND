@@ -288,7 +288,7 @@ func UpdateRole(ctx *gin.Context) {
 }
 
 func DeleteRole(context *gin.Context) {
-	roleNumber := context.Param("roleNumber")
+	roleNumber := context.Param("role_number")
 	if roleNumber == "" {
 		context.JSON(400, gin.H{"message": "Role number is required"})
 		return
