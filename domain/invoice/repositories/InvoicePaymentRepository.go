@@ -19,9 +19,13 @@ func SavePayment(invoicePayment invoiceModels.InvoicePayment) (invoiceModels.Inv
 	return invoicePayment, nil
 }
 
-func GetInvoicePaidAmount(invoiceNumber string) (float64, error) {
+func GetInvoicePaidAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error) {
 
 	db := config.DB
+
+	if tx != nil {
+		db = tx[0]
+	}
 
 	var totalAmount float64
 

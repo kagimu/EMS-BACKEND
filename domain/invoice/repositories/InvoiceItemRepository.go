@@ -26,11 +26,15 @@ func GetInvoiceItemByInvoiceNumberAndItemNumber(invoiceNumber string, itemNumber
 
 }
 
-func CreateInvoiceItem(invoiceItem invoiceModel.InvoiceItem) (invoiceModel.InvoiceItem, error) {
+func SaveInvoiceItem(invoiceItem invoiceModel.InvoiceItem, tx ...*gorm.DB) (invoiceModel.InvoiceItem, error) {
 
 	db := config.DB
 
-	if err := db.Create(&invoiceItem).Error; err != nil {
+	if tx != nil {
+		db = tx[0]
+	}
+
+	if err := db.Save(&invoiceItem).Error; err != nil {
 		return invoiceModel.InvoiceItem{}, err
 	}
 
@@ -59,9 +63,13 @@ func GetInvoiceAmount(invoiceNumber string) (float64, error) {
 	return totalAmount, nil
 }
 
-func GetInvoiceItems(invoiceNumber string) ([]invoiceModel.InvoiceItem, error) {
+func GetInvoiceItems(invoiceNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItem, error) {
 
 	db := config.DB
+
+	if tx != nil {
+		db = tx[0]
+	}
 
 	var invoiceItems []invoiceModel.InvoiceItem
 
@@ -75,4 +83,12 @@ func GetInvoiceItems(invoiceNumber string) ([]invoiceModel.InvoiceItem, error) {
 	}
 
 	return invoiceItems, nil
+}
+
+func DeleteInvoiceItem(item invoiceModel.InvoiceItem, tx *gorm.DB) error {
+
+	if err := tx.Delete(&item).Error; err != nil {
+		return err
+	}
+	return nil
 }

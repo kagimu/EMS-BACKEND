@@ -26,9 +26,14 @@ func FindInvoiceByRefNumber(refNumber string) (invoiceModel.Invoice, error) {
 	return invoice, nil
 }
 
-func FindInvoiceByNumber(invoiceNumber string) (invoiceModel.Invoice, error) {
+func FindInvoiceByNumber(invoiceNumber string, tx ...*gorm.DB) (invoiceModel.Invoice, error) {
 
 	db := config.DB
+
+	if tx != nil {
+		db = tx[0]
+	}
+
 	var invoice invoiceModel.Invoice
 
 	if err := db.Where("number = ?", invoiceNumber).First(&invoice).Error; err != nil {
@@ -142,9 +147,15 @@ func SaveInvoice(invoice invoiceModel.Invoice) error {
 	return nil
 }
 
-func UpdateInvoice(invoice invoiceModel.Invoice) error {
+func UpdateInvoice(invoice invoiceModel.Invoice, tx ...*gorm.DB) error {
 
-	if err := config.DB.Save(&invoice).Error; err != nil {
+	db := config.DB
+
+	if tx != nil {
+		db = tx[0]
+	}
+
+	if err := db.Save(&invoice).Error; err != nil {
 		return err
 	}
 
