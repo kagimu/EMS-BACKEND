@@ -190,12 +190,12 @@ func FetchRoleDetails(c *gin.Context) {
 
 func RemoveRoleAssignment(c *gin.Context) {
 
-	type Input struct {
+	type RemoveRoleRequest struct {
 		UserNumber string `json:"user_number"`
 		RoleNumber string `json:"role_number"`
 	}
 
-	var payload Input
+	var payload RemoveRoleRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return

@@ -543,7 +543,7 @@ func SetupRoutes() *gin.Engine {
 				roles.GET("", permissionController.FetchRoles)
 				roles.GET(":role_number", permissionController.FetchRoleDetails)
 				roles.PUT("assign", permissionController.AssignRolesToAUser)
-				roles.DELETE("remove", permissionController.RemoveRoleAssignment)
+				roles.POST("remove", permissionController.RemoveRoleAssignment)
 				roles.POST("update/:role_number", permissionController.UpdateRole)
 				roles.DELETE("delete/:role_number", permissionController.DeleteRole)
 
