@@ -406,3 +406,26 @@ func GetAllPayments(userNumber string, refNumber string, schoolNumber string, st
 
 	return invoicePaymentsResponse, nil
 }
+
+func DeleteInvoice(invoiceNumber string) error {
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	if err != nil {
+		return errors.New("checking invoice number error: " + err.Error())
+	}
+
+	if invoice.Number == "" {
+		return errors.New("invalid invoice number")
+	}
+
+	if invoice.Status != constants.StatusNotPaid {
+		return errors.New("you can only delete a not paid invoice")
+	}
+
+	err = invoiceRepositories.DeleteInvoice(invoice)
+	if err != nil {
+		return errors.New("deleting invoice failed : " + err.Error())
+	}
+
+	return nil
+}

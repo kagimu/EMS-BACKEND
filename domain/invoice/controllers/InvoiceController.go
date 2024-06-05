@@ -127,7 +127,7 @@ func GetAllInvoices(context *gin.Context) {
 	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber, itemNumbers, startDate, endDate)
 
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get invoices, try again", "err": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get invoices, try again", "err": err.Error()})
 		return
 	}
 
@@ -178,4 +178,25 @@ func FinancialSummary(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Financial summary", "data": summary})
 
+}
+
+func DeleteInvoice(context *gin.Context) {
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	invoiceNumber := context.Query("invoice_number")
+	if invoiceNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide invoice number"))
+		return
+	}
+
+	err := services.DeleteInvoice(invoiceNumber)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Invoice removed successfully"))
 }
