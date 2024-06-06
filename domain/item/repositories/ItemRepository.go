@@ -11,7 +11,7 @@ func GetItemByNumber(itemNumber string, tx ...*gorm.DB) (itemModels.Item, error)
 
 	db := config.DB
 
-	if len(tx) == 0 {
+	if len(tx) > 0 {
 		db = tx[0]
 	}
 
