@@ -202,3 +202,16 @@ func DaysOfTheWeek() []string {
 
 	return days
 }
+
+func StringToSate(dateString string) (time.Time, error) {
+
+	var dueDate time.Time
+
+	if _dueDate, err := time.Parse(time.DateOnly, dateString); err != nil {
+		return dueDate, errors.New("Due date error: " + dateString)
+	} else {
+		dueDate = _dueDate
+	}
+
+	return dueDate, nil
+}

@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
@@ -18,14 +19,19 @@ func SavePayment(invoicePayment invoiceModels.InvoicePayment) (invoiceModels.Inv
 	return invoicePayment, nil
 }
 
-func GetInvoicePaidAmount(invoiceNumber string) (float64, error) {
+func GetInvoicePaidAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error) {
 
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var totalAmount float64
 
 	if err := db.Model(&invoiceModels.InvoicePayment{}).
 		Where("invoice_number = ? ", invoiceNumber).
+		Where("status = ? ", constants.StatusActive).
 		Select("COALESCE(sum(amount),0)").
 		Scan(&totalAmount).Error; err != nil {
 
@@ -66,6 +72,7 @@ func CountAllUserPayments(userNumber string) (int64, error) {
 	if err := db.Model(&invoiceModels.Invoice{}).
 		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
 		Where("invoices.user_number = ?", userNumber).
+		Where("invoice_payments.status = ?", constants.StatusActive).
 		Count(&countPayments).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -87,6 +94,7 @@ func SumAllUserPayments(userNumber string) (float64, error) {
 	if err := db.Model(&invoiceModels.Invoice{}).
 		Joins("JOIN invoice_payments ON invoices.number = invoice_payments.invoice_number").
 		Where("invoices.user_number = ? ", userNumber).
+		Where("invoice_payments.status = ? ", constants.StatusActive).
 		Select("COALESCE(sum(invoice_payments.amount),0)").
 		Scan(&totalAmount).Error; err != nil {
 
@@ -109,6 +117,7 @@ func GetMostRecentPayment(userNumber string) (invoiceModels.InvoicePayment, erro
 	if err := db.
 		Joins("JOIN invoices ON invoices.number = invoice_payments.invoice_number").
 		Where("invoices.user_number = ? ", userNumber).
+		Where("invoice_payments.status = ? ", constants.StatusActive).
 		Order("invoice_payments.created_at desc").
 		First(&invoicePayment).Error; err != nil {
 
@@ -163,4 +172,14 @@ func GetInvoicePaymentByNumber(paymentNumber string) (invoiceModels.InvoicePayme
 	}
 
 	return invoicePayment, nil
+}
+
+func DeleteInvoicePayment(invoicePayment invoiceModels.InvoicePayment) error {
+
+	if err := config.DB.Delete(&invoicePayment).Error; err != nil {
+		return err
+	}
+
+	return nil
+
 }
