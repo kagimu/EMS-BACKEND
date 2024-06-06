@@ -23,7 +23,7 @@ func GetInvoicePaidAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error)
 
 	db := config.DB
 
-	if tx != nil {
+	if len(tx) > 0 {
 		db = tx[0]
 	}
 

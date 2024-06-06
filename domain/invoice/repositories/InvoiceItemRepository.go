@@ -30,7 +30,7 @@ func SaveInvoiceItem(invoiceItem invoiceModel.InvoiceItem, tx ...*gorm.DB) (invo
 
 	db := config.DB
 
-	if tx != nil {
+	if len(tx) > 0 {
 		db = tx[0]
 	}
 
@@ -67,7 +67,7 @@ func GetInvoiceItems(invoiceNumber string, tx ...*gorm.DB) ([]invoiceModel.Invoi
 
 	db := config.DB
 
-	if tx != nil {
+	if len(tx) > 0 {
 		db = tx[0]
 	}
 
