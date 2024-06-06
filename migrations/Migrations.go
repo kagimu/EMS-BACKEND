@@ -192,6 +192,8 @@ func Init() error {
 		&cateringModels.CampusMealCourse{},
 		&cateringModels.FeedingGroupMealCourse{},
 		&cateringModels.MealStock{},
+		&eosModels.EntityUser{},
+		&reportSettings.HeadTeacherComment{},
 	)
 
 	if err != nil {

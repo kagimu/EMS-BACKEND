@@ -342,11 +342,13 @@ func SetupRoutes() *gin.Engine {
 		eos := main.Group("/eos")
 		{
 			eos.POST("entity/add", eosController.AddEntity)
+			eos.GET("my-entities", eosController.GetUserEntities)
 			eos.GET("calendars", eosController.GetAllCalendars)
 			eos.POST("calendars", eosController.AddGeneralCalendar)
 			eos.GET("calendars/:calendar_number", eosController.GetCalendarDetails)
 			eos.POST("calendars/update", eosController.AddCalendarEvent)
 			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
+			eos.POST("add-user-to-entity", eosController.AddUserToEntity)
 		}
 
 		application := main.Group("/applications")
@@ -638,6 +640,8 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("report-settings-by-student", reportSettingsController.FetchReportSummaryByStudentAndStudyPeriodAndClass)
 			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
 			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)
+			reportSettings.POST("add-head-teachers-comment/:report_setting_number", reportSettingsController.CreateHeadTeacherComment)
+			reportSettings.GET("head-teachers-comment", reportSettingsController.FetchHeadTeacherComments)
 
 		}
 

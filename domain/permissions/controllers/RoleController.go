@@ -153,6 +153,15 @@ func AssignRolesToAUser(c *gin.Context) {
 			AddedBy:    user.Number,
 		}
 
+		// validate if the role and user exists
+
+		var userRole models.UserRole
+		if err := config.DB.Preload("Role").Where("user_number = ?", payload.UserNumber).Where("role_number = ?", roleNumber).First(&userRole).Error; err == nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "User already has the role " + userRole.Role.Name})
+			return
+		}
+
 		if err := tx.Create(&saveRole).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user" + err.Error()})
@@ -160,7 +169,10 @@ func AssignRolesToAUser(c *gin.Context) {
 		}
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign roles to the user"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User has been updated"})
 }

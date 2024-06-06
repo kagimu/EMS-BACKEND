@@ -919,3 +919,58 @@ func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentG
 	return assessmentGrade, errors.New("no grade found")
 
 }
+func CreateHeadTeacherComment(ctx *gin.Context) {
+	var payload requests.HeadTeacherCommentRequest
+	reportSettingNumber := ctx.Param("report_setting_number")
+
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var reportSummary models.ReportSetting
+	if err := config.DB.Where("number = ?", reportSettingNumber).First(&reportSummary).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch given  report setting"})
+		return
+	}
+
+	var headTeacherComment models.HeadTeacherComment
+	if err := config.DB.Where("report_setting_number = ?", reportSettingNumber).First(&headTeacherComment).Error; err == nil {
+		headTeacherComment.Comment = payload.Comment
+		headTeacherComment.UserNumber = ctx.Request.Header["User-Number"][0]
+
+		if err := config.DB.Save(&headTeacherComment).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update head teacher comment"})
+			return
+		}
+
+	} else {
+		headTeacherComment = models.HeadTeacherComment{
+			MinAggregate:        payload.MinAggregate,
+			MaxAggregate:        payload.MaxAggregate,
+			ReportSettingNumber: reportSettingNumber,
+			Comment:             payload.Comment,
+			UserNumber:          ctx.Request.Header["User-Number"][0],
+		}
+
+		if err := config.DB.Create(&headTeacherComment).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create head teacher comment"})
+			return
+		}
+	}
+
+}
+
+func FetchHeadTeacherComments(ctx *gin.Context) {
+	var headTeacherComment models.HeadTeacherComment
+	if err := config.DB.Find(&headTeacherComment).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch head teacher comment"})
+		return
+	}
+}
