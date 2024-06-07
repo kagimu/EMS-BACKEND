@@ -30,10 +30,30 @@ func AddEntity(ctx *gin.Context) {
 	entity.Address = entityRequest.Address
 	entity.Number = uuid.NewV4().String()
 
-	err = config.DB.Create(&entity).Error
+	tx := config.DB.Begin()
 
-	if err != nil {
+	if err = tx.Create(&entity).Error; err != nil {
+		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+		return
+	}
+
+	var entityUser models.EntityUser
+	entityUser.EntityNumber = entity.Number
+	entityUser.UserNumber = ctx.GetHeader("User-Number")
+	entityUser.AddedBy = ctx.GetHeader("User-Number")
+
+	if err := tx.Create(&entityUser).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+		return
+
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+		return
+
 	}
 
 	ctx.JSON(http.StatusOK, commons.Feedback("Entity added successfully"))
