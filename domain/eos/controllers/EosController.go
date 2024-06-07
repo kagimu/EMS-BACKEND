@@ -179,7 +179,7 @@ func AddUserToEntity(context *gin.Context) {
 }
 
 func GetUserEntities(ctx *gin.Context) {
-	var entities models.Entity
+	var entities []models.Entity
 	user, err := commons.GetUserFromHeader(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, commons.Feedback("Unauthorized"))
