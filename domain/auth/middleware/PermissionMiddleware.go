@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -10,6 +11,13 @@ import (
 func ValidatePermission(permission string) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
+		var user models.User
+		user = c.MustGet("user").(models.User)
+		if user.Type == "Admin" {
+			c.Next()
+			return
+		}
+
 		if permission != "" {
 
 			var allowed = false
