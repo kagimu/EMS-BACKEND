@@ -12,16 +12,16 @@ type SchoolInfo struct {
 
 func (r *SchoolInfo) Validate() error {
 	if r.Name == "" {
-		return errors.New("School name is required")
+		return errors.New("school name is required")
 	}
 	if r.EntityNumber == "" {
-		return errors.New("Entity number is required")
+		return errors.New("entity number is required")
 	}
 	if r.CommencementDate == "" {
-		return errors.New("Commencement date is required")
+		return errors.New("commencement date is required")
 	}
 	if len(r.Curriculum) == 0 {
-		return errors.New("At least one curriculum is required")
+		return errors.New("at least one curriculum is required")
 	}
 
 	return nil
