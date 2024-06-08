@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
@@ -26,6 +27,7 @@ func FetchUsers(c *gin.Context) {
 	if err := config.DB.Scopes(
 		filters.ByStatus(c.Query("status")),
 		pagination.Paginate(c, &paginatedResponse),
+		filters.ByEntityNumber(c.Query("entity_number")),
 	).Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch users"})
 		return
@@ -236,6 +238,21 @@ func CreateUser(c *gin.Context) {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
 		return
+	}
+
+	// attach user to this entity
+	if user.EntityNumber != "" {
+		var entityUser = eosModels.EntityUser{
+			EntityNumber: user.EntityNumber,
+			UserNumber:   userObject.Number,
+		}
+
+		if err := tx.Create(&entityUser).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
+			return
+		}
+
 	}
 
 	tx.Commit()
