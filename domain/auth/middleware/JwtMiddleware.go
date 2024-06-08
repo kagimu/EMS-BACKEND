@@ -57,6 +57,8 @@ func AuthorizeJWT() gin.HandlerFunc {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
 				return
 			}
+			c.Set("user", userData)
+
 			c.Next()
 
 		} else {
