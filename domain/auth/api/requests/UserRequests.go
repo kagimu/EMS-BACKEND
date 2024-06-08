@@ -65,6 +65,7 @@ type StaffAccountRequest struct {
 	RoleNumbers     []string `json:"role_numbers"`
 	Password        string   `json:"password"`
 	ConfirmPassword string   `json:"confirm_password"`
+	EntityNumber    string   `json:"entity_number"`
 }
 
 func (sr *StaffAccountRequest) ValidateStaffAccountRequest() error {
@@ -98,6 +99,9 @@ func (sr *StaffAccountRequest) ValidateStaffAccountRequest() error {
 	}
 	if sr.Password != sr.ConfirmPassword {
 		return errors.New("passwords do not match")
+	}
+	if sr.EntityNumber == "" {
+		return errors.New("entity number is required")
 	}
 
 	return nil
