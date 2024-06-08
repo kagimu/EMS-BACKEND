@@ -280,3 +280,12 @@ func ByDateBetween(dateField string, startDate time.Time, endDate time.Time) fun
 		return db
 	}
 }
+
+func ByEntityNumber(entityNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if entityNumber != "" {
+			return db.Where("entity_number = ?", entityNumber)
+		}
+		return db
+	}
+}
