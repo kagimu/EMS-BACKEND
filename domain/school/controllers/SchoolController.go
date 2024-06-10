@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
@@ -28,30 +29,10 @@ func NewSchool(context *gin.Context) {
 	commencementDate := schoolInfo.CommencementDate
 
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+	if err := schoolInfo.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
-	}
 
-	if commencementDate == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Date of Commencement is required!"})
-		return
-	}
-
-	if len(curriculum) == 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
-		return
-	}
-
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
 	}
 
 	var duplicateSchool schoolCurriculumModels.School
@@ -79,6 +60,7 @@ func NewSchool(context *gin.Context) {
 		Name:             name,
 		CommencementDate: commencementDateData,
 		UserNumber:       userNumber,
+		EntityNumber:     schoolInfo.EntityNumber,
 	}
 
 	if err := tx.Create(&saveSchool).Error; err != nil {
@@ -182,7 +164,7 @@ func EditSchool(context *gin.Context) {
 	var schoolData schoolCurriculumModels.School
 	updateSchool := tx.Model(&schoolData).
 		Where("number = ?", schoolNumber).
-		Updates(schoolCurriculumModels.School{Name: name, UserNumber: userNumber, CommencementDate: commencementDateData})
+		Updates(schoolCurriculumModels.School{Name: name, UserNumber: userNumber, CommencementDate: commencementDateData, EntityNumber: schoolInfo.EntityNumber})
 	if updateSchool.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
@@ -368,6 +350,7 @@ func FetchSchools(context *gin.Context) {
 		Preload("SchoolCurriculum.Curriculum").
 		Preload("SchoolCurriculum").
 		Order("created_at desc").
+		Scopes(filters.ByEntityNumber(context.Query("entity_number"))).
 		Find(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return

@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"gorm.io/gorm"
 	"time"
 )
@@ -10,6 +11,8 @@ type (
 	School struct {
 		gorm.Model
 		Number           string             `json:"number" gorm:"size:36;unique;not null"`
+		EntityNumber     string             `json:"entity_number" gorm:"size:36;not null"`
+		Entity           eosModels.Entity   `gorm:"foreignKey:EntityNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Name             string             `json:"name" form:"name" binding:"required" gorm:"size:200;unique;not null"`
 		CommencementDate time.Time          `json:"commencement_date" form:"name" binding:"required" gorm:"not null"`
 		SchoolCurriculum []SchoolCurriculum `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
