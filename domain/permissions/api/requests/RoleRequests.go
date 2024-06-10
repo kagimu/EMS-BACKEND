@@ -9,9 +9,10 @@ type EditRoleRequest struct {
 }
 
 type NewRoleRequest struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Permissions []string `json:"permissions"`
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
+	Permissions  []string `json:"permissions"`
+	EntityNumber string   `json:"entity_number"`
 }
 
 func (req *NewRoleRequest) Validate() error {
@@ -24,6 +25,10 @@ func (req *NewRoleRequest) Validate() error {
 	if len(req.Permissions) == 0 {
 		return errors.New("at least one permission is required")
 	}
+	if req.EntityNumber == "" {
+		return errors.New("entity number is required")
+	}
+
 	return nil
 }
 

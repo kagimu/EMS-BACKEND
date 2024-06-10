@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
@@ -36,11 +37,12 @@ func CreateRole(c *gin.Context) {
 
 	roleNumber := uuid.NewV4().String()
 	saveRole := models.Role{
-		Number:      roleNumber,
-		Name:        payload.Name,
-		Status:      constants.StatusActive,
-		UserNumber:  user.Number,
-		Description: payload.Description,
+		Number:       roleNumber,
+		Name:         payload.Name,
+		Status:       constants.StatusActive,
+		UserNumber:   user.Number,
+		Description:  payload.Description,
+		EntityNumber: payload.EntityNumber,
 	}
 
 	tx := config.DB.Begin()
@@ -79,10 +81,16 @@ func FetchRoles(c *gin.Context) {
 		return
 	}
 
+	entity_number := c.Query("entity_number")
+	if entity_number == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Entity number is required"})
+		return
+	}
+
 	var rolesResponse []responses.RolesList
 
 	var roles []models.Role
-	if err := config.DB.Find(&roles).Error; err != nil {
+	if err := config.DB.Scopes(filters.ByEntityNumber(entity_number)).Find(&roles).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch roles"})
 		return
 	}
