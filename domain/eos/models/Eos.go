@@ -13,6 +13,7 @@ type Entity struct {
 	Email   string `json:"email" gorm:"size:100"`
 	Phone   string `json:"phone" gorm:"size:100"`
 	Address string `json:"address" gorm:"size:100"`
+	AddedBy string `json:"added_by" gorm:"size:36;not null"`
 }
 
 type GeneralCalendar struct {

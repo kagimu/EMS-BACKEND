@@ -29,6 +29,7 @@ func AddEntity(ctx *gin.Context) {
 	entity.Email = entityRequest.Email
 	entity.Address = entityRequest.Address
 	entity.Number = uuid.NewV4().String()
+	entity.AddedBy = ctx.GetHeader("User-Number")
 
 	tx := config.DB.Begin()
 
