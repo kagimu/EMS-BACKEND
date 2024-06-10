@@ -3,6 +3,7 @@ package migrations
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
+	reportingActivityModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/activityreporting/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
@@ -194,6 +195,7 @@ func Init() error {
 		&cateringModels.MealStock{},
 		&eosModels.EntityUser{},
 		&reportSettings.HeadTeacherComment{},
+		&reportingActivityModels.Indicator{},
 	)
 
 	if err != nil {
