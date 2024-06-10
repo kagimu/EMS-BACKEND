@@ -4,6 +4,7 @@ import (
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
+	activityReportingControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/activityreporting/api/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	aggregateScaleController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/controllers"
@@ -785,6 +786,14 @@ func SetupRoutes() *gin.Engine {
 		{
 			statistics.GET("summary", statisticsController.FetchStatistics)
 			statistics.GET("print", statisticsController.PrintReport)
+		}
+
+		activityReporting := main.Group("activity-reporting")
+		{
+			indicators := activityReporting.Group("indicators")
+			{
+				indicators.POST("", activityReportingControllers.SaveIndicator)
+			}
 		}
 	}
 
