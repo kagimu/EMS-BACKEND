@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/activityreporting/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
@@ -41,4 +42,24 @@ func SaveIndicator(indicator models.Indicator) error {
 		return err
 	}
 	return nil
+}
+
+func GetIndicators(entityNumber string, indicatorName string, status string) ([]models.Indicator, error) {
+
+	db := config.DB
+
+	var indicators = make([]models.Indicator, 0)
+
+	if err := db.Scopes(filters.ByStatus(status), filters.ByName(indicatorName)).
+		Where("entity_number = ?", entityNumber).
+		Find(&indicators).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return indicators, nil
+		}
+
+		return indicators, err
+	}
+
+	return indicators, nil
 }

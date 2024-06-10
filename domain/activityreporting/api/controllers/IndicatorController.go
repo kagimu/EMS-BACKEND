@@ -37,3 +37,28 @@ func SaveIndicator(context *gin.Context) {
 	context.JSON(http.StatusOK, commons.Feedback("Indicator added successfully"))
 
 }
+
+func GetIndicators(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	entityNumber := context.Query("entity_number")
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("provide entity number"))
+		return
+	}
+
+	name := context.Query("name")
+	status := context.Query("status")
+
+	response, err := activityReportingServices.GetIndicators(entityNumber, name, status)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": response})
+}

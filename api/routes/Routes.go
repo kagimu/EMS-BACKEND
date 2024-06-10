@@ -793,6 +793,7 @@ func SetupRoutes() *gin.Engine {
 			indicators := activityReporting.Group("indicators")
 			{
 				indicators.POST("", activityReportingControllers.SaveIndicator)
+				indicators.GET("", activityReportingControllers.GetIndicators)
 			}
 		}
 	}
