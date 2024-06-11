@@ -43,7 +43,7 @@ func AddEntity(ctx *gin.Context) {
 	var entityUser models.EntityUser
 	entityUser.EntityNumber = entity.Number
 	entityUser.UserNumber = ctx.GetHeader("User-Number")
-	entityUser.AddedBy = ctx.GetHeader("User-Number")
+	entityUser.AddedByNumber = ctx.GetHeader("User-Number")
 
 	if err := tx.Create(&entityUser).Error; err != nil {
 		tx.Rollback()
