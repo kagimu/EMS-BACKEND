@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 	"net/http"
 	"time"
 
@@ -212,4 +213,47 @@ func GetUserEntities(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, entities)
+}
+
+func SaveCurrentEntity(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	entityNumber := context.Query("entity_number")
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number"))
+		return
+	}
+
+	entity, err := services.SaveCurrentEntity(entityNumber, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": entity, "message": "Current entity set successfully"})
+}
+
+func GetCurrentEntity(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	entity, err := services.GetCurrentEntity(user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	if entity.Number == "" {
+		context.JSON(http.StatusOK, gin.H{"data": entity, "message": "No active entity set"})
+	} else {
+		context.JSON(http.StatusOK, gin.H{"data": entity, "message": "Your current active entity"})
+	}
+
 }

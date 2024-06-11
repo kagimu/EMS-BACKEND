@@ -196,6 +196,7 @@ func Init() error {
 		&eosModels.EntityUser{},
 		&reportSettings.HeadTeacherComment{},
 		&reportingActivityModels.Indicator{},
+		&eosModels.ActiveUserEntity{},
 	)
 
 	if err != nil {
