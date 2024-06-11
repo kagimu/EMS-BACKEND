@@ -36,3 +36,14 @@ func SaveActiveUserEntity(activeUserEntity models.ActiveUserEntity) error {
 
 	return nil
 }
+
+func DeleteActiveUserEntity(activeUserEntity models.ActiveUserEntity) error {
+
+	db := config.DB
+
+	if err := db.Delete(&activeUserEntity).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

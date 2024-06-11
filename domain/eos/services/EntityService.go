@@ -27,14 +27,18 @@ func SaveCurrentEntity(entityNumber string, currentUserNumber string) (responses
 		return entity, errors.New("checking for any active entity error: " + err.Error())
 	}
 
-	if activeEntity.UserNumber == "" {
-		activeEntity.UserNumber = currentUserNumber
-		activeEntity.EntityNumber = entityNumber
-	} else {
-		activeEntity.EntityNumber = entityNumber
+	if activeEntity.UserNumber != "" {
+		err = repositories.DeleteActiveUserEntity(activeEntity)
+		if err != nil {
+			return entity, errors.New("removing previous active entity error: " + err.Error())
+		}
 	}
 
-	err = repositories.SaveActiveUserEntity(activeEntity)
+	err = repositories.SaveActiveUserEntity(models.ActiveUserEntity{
+		EntityNumber: entityNumber,
+		UserNumber:   currentUserNumber,
+	})
+
 	if err != nil {
 		return entity, errors.New("setting current entity error: " + err.Error())
 	}
