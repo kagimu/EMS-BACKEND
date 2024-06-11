@@ -11,7 +11,7 @@ func SaveCurrentEntity(entityNumber string, currentUserNumber string) (responses
 
 	var entity responses.EntityResponse
 
-	entityUser, err := repositories.FindEntityUser(entityNumber, currentUserNumber)
+	entityUser, err := repositories.FindEntityUser(currentUserNumber, entityNumber)
 	if err != nil {
 		return entity, errors.New("checking entity with user error: " + err.Error())
 	}
