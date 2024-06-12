@@ -2,6 +2,9 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
@@ -43,16 +46,7 @@ func SaveCurrentEntity(entityNumber string, currentUserNumber string) (responses
 		return entity, errors.New("setting current entity error: " + err.Error())
 	}
 
-	entityDetails, err := repositories.FindEntityByNumber(entityNumber)
-	if err != nil {
-		return entity, errors.New("getting entity details error: " + err.Error())
-	}
-
-	if entityDetails.Number == "" {
-		return entity, errors.New("entity details not found")
-	}
-
-	entity = createEntityResponse(entityDetails)
+	entity = createEntityResponse(entityUser.Entity)
 
 	return entity, nil
 }
@@ -79,4 +73,99 @@ func GetCurrentEntity(currentUserNumber string) (responses.EntityResponse, error
 	}
 
 	return createEntityResponse(activeUserEntity.Entity), nil
+}
+
+func UpdateEntity(updateEntityRequest requests.UpdateEntityRequest, currentUserNumber string) error {
+
+	entityUser, err := repositories.FindEntityUser(currentUserNumber, updateEntityRequest.EntityNumber)
+	if err != nil {
+		return errors.New("checking entity with user error: " + err.Error())
+	}
+
+	if entityUser.UserNumber == "" {
+		return errors.New("you are not attached to this entity")
+	}
+
+	checkName, err := repositories.FindEntityByName(updateEntityRequest.Name)
+	if err != nil {
+		return errors.New("checking name error: " + err.Error())
+	}
+
+	if checkName.Number != "" && checkName.Number != updateEntityRequest.EntityNumber {
+		return errors.New("name already used")
+	}
+
+	update := entityUser.Entity
+	update.Name = updateEntityRequest.Name
+	update.Address = updateEntityRequest.Address
+	update.Phone = updateEntityRequest.Phone
+	update.AddedBy = currentUserNumber
+
+	err = repositories.SaveEntity(update)
+	if err != nil {
+		return errors.New("updating entity error: " + err.Error())
+	}
+
+	return nil
+}
+
+func DeleteEntity(entityNumber string, currentUserNumber string) error {
+
+	checkUserOnEntity, err := repositories.FindEntityUser(currentUserNumber, entityNumber)
+	if err != nil {
+		return errors.New("checking entity with user error: " + err.Error())
+	}
+
+	if checkUserOnEntity.UserNumber == "" {
+		return errors.New("you are not attached to this entity")
+	}
+
+	entityUsers, err := repositories.FindAllEntityUsers(entityNumber)
+	if err != nil {
+		return errors.New("getting all entity users: " + err.Error())
+	}
+
+	activeEntries, err := repositories.FindAllActiveEntries(entityNumber)
+	if err != nil {
+		return errors.New("getting all entity users: " + err.Error())
+	}
+
+	tx := config.DB.Begin()
+
+	for _, activeEntry := range activeEntries {
+
+		err = repositories.DeleteActiveUserEntity(activeEntry, tx)
+		if err != nil {
+			tx.Rollback()
+			fmt.Println(err.Error())
+			return errors.New("clearing active entity error")
+		}
+
+	}
+
+	for _, entityUser := range entityUsers {
+
+		err = repositories.DeleteEntityUser(entityUser, tx)
+		if err != nil {
+			tx.Rollback()
+			fmt.Println(err.Error())
+			return errors.New("removing users from entity failed")
+		}
+
+	}
+
+	err = repositories.DeleteEntity(checkUserOnEntity.Entity)
+	if err != nil {
+		tx.Rollback()
+		fmt.Println(err.Error())
+		return errors.New("removing entity failed, confirm if this entity has never been used")
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		fmt.Println(err.Error())
+		return errors.New("confirm remove error, try again")
+	}
+
+	return nil
 }

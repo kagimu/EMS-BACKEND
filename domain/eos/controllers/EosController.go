@@ -25,6 +25,12 @@ func AddEntity(ctx *gin.Context) {
 		return
 	}
 
+	err = entityRequest.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
 	entity.Name = entityRequest.Name
 	entity.Phone = entityRequest.Phone
 	entity.Email = entityRequest.Email
@@ -256,4 +262,48 @@ func GetCurrentEntity(context *gin.Context) {
 		context.JSON(http.StatusOK, gin.H{"data": entity, "message": "Your current active entity"})
 	}
 
+}
+
+func UpdateEntity(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateEntityRequest
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.UpdateEntity(payload, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Entity updated successfully"))
+}
+
+func DeleteEntity(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	entityNumber := context.Param("entity_number")
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to delete"))
+		return
+	}
+
+	err = services.DeleteEntity(entityNumber, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Entity removed successfully"))
 }
