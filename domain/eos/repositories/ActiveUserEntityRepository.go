@@ -37,13 +37,31 @@ func SaveActiveUserEntity(activeUserEntity models.ActiveUserEntity) error {
 	return nil
 }
 
-func DeleteActiveUserEntity(activeUserEntity models.ActiveUserEntity) error {
+func DeleteActiveUserEntity(activeUserEntity models.ActiveUserEntity, tx ...*gorm.DB) error {
 
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Delete(&activeUserEntity).Error; err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func FindAllActiveEntries(entityNumber string) ([]models.ActiveUserEntity, error) {
+	db := config.DB
+	var activeUserEntities []models.ActiveUserEntity
+	if err := db.Where("entity_number = ?", entityNumber).Find(&activeUserEntities).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return activeUserEntities, nil
+		}
+
+		return activeUserEntities, err
+	}
+	return activeUserEntities, nil
 }
