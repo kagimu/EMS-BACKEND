@@ -55,17 +55,22 @@ func (ur *UserDataRequest) Validate() error {
 	return nil
 }
 
+type RoleAssignment struct {
+	RoleNumber string `json:"role_number"`
+	ExpiryDate string `json:"expiry_date"`
+}
+
 type StaffAccountRequest struct {
-	FirstName       string   `json:"first_name"`
-	SecondName      string   `json:"second_name"`
-	LastName        string   `json:"last_name"`
-	Gender          string   `json:"gender"`
-	Email           string   `json:"email"`
-	Phone           string   `json:"phone"`
-	RoleNumbers     []string `json:"role_numbers"`
-	Password        string   `json:"password"`
-	ConfirmPassword string   `json:"confirm_password"`
-	EntityNumber    string   `json:"entity_number"`
+	FirstName       string           `json:"first_name"`
+	SecondName      string           `json:"second_name"`
+	LastName        string           `json:"last_name"`
+	Gender          string           `json:"gender"`
+	Email           string           `json:"email"`
+	Phone           string           `json:"phone"`
+	Roles           []RoleAssignment `json:"roles"`
+	Password        string           `json:"password"`
+	ConfirmPassword string           `json:"confirm_password"`
+	EntityNumber    string           `json:"entity_number"`
 }
 
 func (sr *StaffAccountRequest) ValidateStaffAccountRequest() error {
@@ -87,7 +92,7 @@ func (sr *StaffAccountRequest) ValidateStaffAccountRequest() error {
 	if sr.Phone == "" {
 		return errors.New("phone is required")
 	}
-	if len(sr.RoleNumbers) < 1 {
+	if len(sr.Roles) < 1 {
 		return errors.New("please select at least one role")
 	}
 
