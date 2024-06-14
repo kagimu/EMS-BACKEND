@@ -243,7 +243,7 @@ func CreateUser(c *gin.Context) {
 
 	if err := tx.Create(&userPassword).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user" + err.Error()})
 		return
 	}
 
