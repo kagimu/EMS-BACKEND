@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
@@ -342,11 +343,13 @@ func SetupRoutes() *gin.Engine {
 
 		eos := main.Group("/eos")
 		{
-			entit := eos.Group("/entity")
+			entity := eos.Group("/entity")
 			{
-				entit.POST("add", eosController.AddEntity)
-				entit.POST("current", eosController.SaveCurrentEntity)
-				entit.GET("current", eosController.GetCurrentEntity)
+				entity.POST("add", eosController.AddEntity)
+				entity.POST("update", eosController.UpdateEntity, middleware.ValidatePermission(constants.CanUpdateEntity))
+				entity.POST("delete", eosController.DeleteEntity, middleware.ValidatePermission(constants.CanDeleteEntity))
+				entity.POST("current", eosController.SaveCurrentEntity)
+				entity.GET("current", eosController.GetCurrentEntity)
 			}
 
 			eos.GET("my-entities", eosController.GetUserEntities)

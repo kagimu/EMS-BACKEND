@@ -13,7 +13,7 @@ func FindEntityUser(userNumber string, entityNumber string) (models.EntityUser, 
 
 	var entityUser models.EntityUser
 
-	if err := db.Where("entity_number = ? AND user_number = ? ", entityNumber, userNumber).Find(&entityUser).Error; err != nil {
+	if err := db.Preload("Entity").Where("entity_number = ? AND user_number = ? ", entityNumber, userNumber).Find(&entityUser).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return entityUser, nil
@@ -23,4 +23,33 @@ func FindEntityUser(userNumber string, entityNumber string) (models.EntityUser, 
 	}
 
 	return entityUser, nil
+}
+
+func FindAllEntityUsers(entityNumber string) ([]models.EntityUser, error) {
+	db := config.DB
+
+	var entities []models.EntityUser
+
+	if err := db.Where("entity_number = ? ", entityNumber).Find(&entities).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities, nil
+		}
+		return entities, err
+	}
+	return entities, nil
+}
+
+func DeleteEntityUser(entityUser models.EntityUser, tx ...*gorm.DB) error {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Delete(&entityUser).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
