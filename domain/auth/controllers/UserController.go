@@ -203,15 +203,22 @@ func CreateUser(c *gin.Context) {
 
 	var userRole permissionModels.UserRole
 
-	for _, roleNumber := range user.RoleNumbers {
-		if err := tx.Where("number = ?", roleNumber).First(&userRole.Role).Error; err != nil {
+	for _, role := range user.Roles {
+		if err := tx.Where("number = ?", role.RoleNumber).First(&userRole.Role).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch role"})
 			return
 		}
 
 		userRole.UserNumber = userObject.Number
-		userRole.RoleNumber = roleNumber
+		userRole.RoleNumber = role.RoleNumber
+		date, err := commons.ConvertStringToDate(role.ExpiryDate)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to append role to user"})
+			return
+		}
+		userRole.ExpiryDate = date
 		userRole.AddedBy = c.GetHeader("User-Number")
 
 		if err := tx.Create(&userRole).Error; err != nil {
