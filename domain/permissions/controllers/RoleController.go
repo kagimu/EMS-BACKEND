@@ -132,9 +132,13 @@ func AssignRolesToAUser(c *gin.Context) {
 		return
 	}
 
+	type RoleAssignment struct {
+		RoleNumber string `json:"role_number"`
+		ExpiryDate string `json:"expiry_date"`
+	}
 	type Input struct {
-		UserNumber string   `json:"user_number"`
-		RoleNumber []string `json:"role_number"`
+		UserNumber string           `json:"user_number"`
+		Roles      []RoleAssignment `json:"roles"`
 	}
 
 	var payload Input
@@ -143,7 +147,7 @@ func AssignRolesToAUser(c *gin.Context) {
 		return
 	}
 
-	if len(payload.RoleNumber) == 0 {
+	if len(payload.Roles) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "At least one role is required"})
 		return
 	}
@@ -154,17 +158,26 @@ func AssignRolesToAUser(c *gin.Context) {
 	}
 	tx := config.DB.Begin()
 
-	for _, roleNumber := range payload.RoleNumber {
+	for _, role := range payload.Roles {
+
+		// convert the expiry date to a time object
+		date, err := commons.ConvertStringToDate(role.ExpiryDate)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid date format"})
+			return
+		}
 		saveRole := models.UserRole{
-			RoleNumber: roleNumber,
+			RoleNumber: role.RoleNumber,
 			UserNumber: payload.UserNumber,
 			AddedBy:    user.Number,
+			ExpiryDate: date,
 		}
 
 		// validate if the role and user exists
 
 		var userRole models.UserRole
-		if err := config.DB.Preload("Role").Where("user_number = ?", payload.UserNumber).Where("role_number = ?", roleNumber).First(&userRole).Error; err == nil {
+		if err := config.DB.Preload("Role").Where("user_number = ?", payload.UserNumber).Where("role_number = ?", role.RoleNumber).First(&userRole).Error; err == nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "User already has the role " + userRole.Role.Name})
 			return

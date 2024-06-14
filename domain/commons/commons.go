@@ -203,7 +203,7 @@ func DaysOfTheWeek() []string {
 	return days
 }
 
-func StringToSate(dateString string) (time.Time, error) {
+func ConvertStringToDate(dateString string) (time.Time, error) {
 
 	var dueDate time.Time
 
