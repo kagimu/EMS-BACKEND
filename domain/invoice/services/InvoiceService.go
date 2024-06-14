@@ -49,7 +49,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 		return errors.New("try again to generate a new invoice number")
 	}
 
-	dueDate, err := commons.StringToSate(payload.DueDate)
+	dueDate, err := commons.ConvertStringToDate(payload.DueDate)
 
 	var student studentModel.Student
 
@@ -517,7 +517,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 		return errors.New("you cannot update an invoice with payments")
 	}
 
-	dueDate, err := commons.StringToSate(updateInvoiceRequest.DueDate)
+	dueDate, err := commons.ConvertStringToDate(updateInvoiceRequest.DueDate)
 	if err != nil {
 		return err
 	}
