@@ -6,11 +6,13 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 )
 
 func CreateGrade(ctx *gin.Context, request requests.GradeDataRequest) error {
 	// create grade
 	var grade = models.Grade{
+		Number:     uuid.NewV4().String(),
 		Name:       request.Name,
 		Code:       request.Code,
 		UserNumber: ctx.GetHeader("User-Number"),
