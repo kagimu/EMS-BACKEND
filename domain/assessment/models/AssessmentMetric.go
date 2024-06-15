@@ -13,6 +13,7 @@ import (
 type AssessmentMetric struct {
 	gorm.Model
 	Number                string                             `json:"number" gorm:"size:36;unique;not null"`
+	RequireComment        string                             `json:"require_comment" gorm:"size:5;not null;default:'YES'"`
 	Description           string                             `json:"description" gorm:"type:text;"`
 	MaxScore              uint8                              `json:"max_score"`
 	ScheduledOn           time.Time                          `json:"scheduled_on" gorm:"size:30"`
