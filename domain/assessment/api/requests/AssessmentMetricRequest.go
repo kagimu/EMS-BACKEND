@@ -13,6 +13,7 @@ type AssessmentMetricRequest struct {
 	ScheduledOn           string  `json:"scheduled_on"`
 	MetricNumber          string  `json:"metric_number"`
 	CampusClassNumber     string  `json:"campus_class_number"`
+	CommentStatus         string  `json:"comment_status"`
 }
 
 func (a *AssessmentMetricRequest) Validate() error {
@@ -34,6 +35,9 @@ func (a *AssessmentMetricRequest) Validate() error {
 	if a.ScheduledOn == "" {
 		return errors.New("scheduled on is required")
 	}
+	if a.CommentStatus == "" {
+		return errors.New("please specify of the comment  is mandatory or optional")
 
+	}
 	return nil
 }

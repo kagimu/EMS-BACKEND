@@ -135,7 +135,6 @@ func Init() error {
 		&assessmentModel.Metric{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
-		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
