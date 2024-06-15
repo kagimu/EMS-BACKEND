@@ -11,6 +11,7 @@ import (
 	aggregateScaleController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/controllers"
 	assessmentGradeController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/controllers"
 	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
+	gradesController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -511,9 +512,6 @@ func SetupRoutes() *gin.Engine {
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
 
-			assessment.POST("assessment-sub-metrics", assessmentController.CreateAssessmentSubMetric)
-			assessment.GET("assessment-sub-metrics", assessmentController.FetchAssessmentSubMetrics)
-
 			assessment.POST("metrics", assessmentController.CreateMetric)
 			assessment.GET("metrics", assessmentController.FetchMetrics)
 			assessment.DELETE("metrics/:metric_number", assessmentController.DeleteMetric)
@@ -533,6 +531,13 @@ func SetupRoutes() *gin.Engine {
 				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
 				assessmentGrade.PUT("/update/:assessment_grade_number", assessmentGradeController.EditAssessmentGrade)
 				assessmentGrade.DELETE(":assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
+			}
+
+			grades := assessment.Group("/grades")
+			{
+				grades.POST("", gradesController.CreateGrade)
+				grades.GET("", gradesController.FetchGrades)
+				grades.PUT("", gradesController.UpdateGrade)
 			}
 		}
 

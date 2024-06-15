@@ -250,13 +250,14 @@ func CreateUser(c *gin.Context) {
 	// attach user to this entity
 	if user.EntityNumber != "" {
 		var entityUser = eosModels.EntityUser{
-			EntityNumber: user.EntityNumber,
-			UserNumber:   userObject.Number,
+			EntityNumber:  user.EntityNumber,
+			UserNumber:    userObject.Number,
+			AddedByNumber: c.GetHeader("User-Number"),
 		}
 
 		if err := tx.Create(&entityUser).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user" + err.Error()})
 			return
 		}
 

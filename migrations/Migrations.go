@@ -8,6 +8,7 @@ import (
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	gradesModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
@@ -23,7 +24,6 @@ import (
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
-	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
@@ -105,7 +105,6 @@ func Init() error {
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&studentModels.ADN{},
-		&gradeModel.Grade{},
 		&admissionModel.Admission{},
 		&admissionModel.AdmissionCondition{},
 		&previousSchoolModels.PreviousSchoolClass{},
@@ -136,7 +135,6 @@ func Init() error {
 		&assessmentModel.Metric{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
-		&assessmentModel.AssessmentSubMetric{},
 		&assessmentModel.Attendance{},
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
@@ -197,6 +195,7 @@ func Init() error {
 		&reportSettings.HeadTeacherComment{},
 		&reportingActivityModels.Indicator{},
 		&eosModels.ActiveUserEntity{},
+		&gradesModels.Grade{},
 	)
 
 	if err != nil {

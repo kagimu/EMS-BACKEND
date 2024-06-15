@@ -48,7 +48,6 @@ func CreateAggregateScale(c *gin.Context) {
 	saveAggregateScale := models.AggregateScale{
 		Code:                  payload.Code,
 		Number:                uuid.NewV4().String(),
-		Name:                  payload.Name,
 		Weight:                payload.Weight,
 		MinValue:              payload.MinValue,
 		MaxValue:              payload.MaxValue,
@@ -57,6 +56,7 @@ func CreateAggregateScale(c *gin.Context) {
 		CampusClassNumber:     payload.CampusClassNumber,
 		CampusNumber:          payload.CampusNumber,
 		UserNumber:            user.Number,
+		GradeNumber:           payload.GradeNumber,
 		GradingStandardNumber: payload.GradingStandardNumber,
 	}
 
@@ -165,7 +165,6 @@ func EditAggregateScale(c *gin.Context) {
 
 	updateAggregateScale := models.AggregateScale{
 		Code:                  payload.Code,
-		Name:                  payload.Name,
 		Weight:                payload.Weight,
 		MinValue:              payload.MinValue,
 		MaxValue:              payload.MaxValue,
