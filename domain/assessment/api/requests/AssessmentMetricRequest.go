@@ -5,14 +5,14 @@ import (
 )
 
 type AssessmentMetricRequest struct {
-	MaxScore              uint8  `json:"max_score"`
-	GradingStandardNumber string `json:"grading_standard_number"`
-	Description           string `json:"description"`
-	AssessmentAreaNumber  string `json:"assessment_area_number"`
-	StudyPeriodNumber     string `json:"study_period_number"`
-	ScheduledOn           string `json:"scheduled_on"`
-	MetricNumber          string `json:"metric_number"`
-	CampusClassNumber     string `json:"campus_class_number"`
+	MaxScore              float64 `json:"max_score"`
+	GradingStandardNumber string  `json:"grading_standard_number"`
+	Description           string  `json:"description"`
+	AssessmentAreaNumber  string  `json:"assessment_area_number"`
+	StudyPeriodNumber     string  `json:"study_period_number"`
+	ScheduledOn           string  `json:"scheduled_on"`
+	MetricNumber          string  `json:"metric_number"`
+	CampusClassNumber     string  `json:"campus_class_number"`
 }
 
 func (a *AssessmentMetricRequest) Validate() error {

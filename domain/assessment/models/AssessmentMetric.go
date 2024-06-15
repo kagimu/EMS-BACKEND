@@ -14,7 +14,7 @@ type AssessmentMetric struct {
 	gorm.Model
 	Number                string                             `json:"number" gorm:"size:36;unique;not null"`
 	Description           string                             `json:"description" gorm:"type:text;"`
-	MaxScore              uint8                              `json:"max_score"`
+	MaxScore              float64                            `json:"max_score"`
 	ScheduledOn           time.Time                          `json:"scheduled_on" gorm:"size:30"`
 	GradingStandardNumber string                             `json:"grading_standard_number"`
 	GradingStandard       models.GradingStandard             `gorm:"foreignKey:GradingStandardNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

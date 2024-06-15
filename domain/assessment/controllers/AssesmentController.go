@@ -45,6 +45,17 @@ func CreateAssessment(c *gin.Context) {
 		return
 	}
 
+	if payload.ActualScore < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Actual score should not be less than 0"})
+		return
+	}
+
+	if payload.ActualScore > assessmentMetric.MaxScore {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Actual score should not be more than "})
+		return
+
+	}
+
 	//check if there is existing enrollment for the student
 
 	var enrollment enrollmentModel.Enrollment
