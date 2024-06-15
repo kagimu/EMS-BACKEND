@@ -28,7 +28,7 @@ type AssessmentMetric struct {
 	CampusClass           campusClassModel.CampusClass       `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentAreaName    string                             `json:"assessment_area_name" gorm:"-"`
 	Name                  string                             `json:"name" gorm:"-"`
-	CommentStatus         string                             `json:"comment_status" gorm:"size:10;"`
+	RequireComment        string                             `json:"require_comment" gorm:"size:5;not null;default:'YES'"`
 }
 
 // Set value for assessmentAreaname field in afterfind hook
