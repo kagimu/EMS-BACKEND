@@ -24,7 +24,6 @@ import (
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
-	gradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/grades/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
@@ -106,7 +105,6 @@ func Init() error {
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&studentModels.ADN{},
-		&gradeModel.Grade{},
 		&admissionModel.Admission{},
 		&admissionModel.AdmissionCondition{},
 		&previousSchoolModels.PreviousSchoolClass{},

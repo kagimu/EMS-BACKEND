@@ -30,7 +30,7 @@ func main() {
 	if err != nil {
 		return
 	}
-	//var err error
+
 	config.DB, err = gorm.Open(mysql.Open(config.DbURL(config.BuildDBConfig())), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
