@@ -117,6 +117,8 @@ func CreateAdmission(c *gin.Context) {
 
 		student.APNStatus = "Archive"
 		student.ADN = generateADN
+		// Update the student status
+		student.Status = "ADMITTED"
 		if err := tx.Save(&student).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
