@@ -32,13 +32,13 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 		return errors.New("assessment metric not found")
 	}
 
-	if assessmentRequest.ActualScore > float64(assessmentMetric.MaxScore) {
+	if assessmentRequest.ActualScore > assessmentMetric.MaxScore {
 		return errors.New("score exceeds the max value set at: " + strconv.Itoa(int(assessmentMetric.MaxScore)))
 	}
 
 	var actualScore float64
 	if assessmentMetric.MaxScore > 0 && assessmentRequest.ActualScore > 0 {
-		actualScore = (assessmentRequest.ActualScore / float64(assessmentMetric.MaxScore)) * 100
+		actualScore = (assessmentRequest.ActualScore / assessmentMetric.MaxScore) * 100
 	} else {
 		actualScore = 0
 	}
