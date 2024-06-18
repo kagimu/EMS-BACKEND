@@ -5,4 +5,5 @@ type MealCourseItemResponse struct {
 	AddedBy string `json:"added_by"`
 	Code    int    `json:"code"`
 	Number  string `json:"number"`
+	Status  string `json:"status"`
 }

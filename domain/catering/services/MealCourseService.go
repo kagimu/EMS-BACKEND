@@ -220,7 +220,7 @@ func UpdateSaveMealCourse(mealCourseCountRequest requests.UpdateMealCourseCountR
 
 }
 
-func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
+func GetMealCourses(schoolNumber string, status string) (responses.MealCourseResponse, error) {
 
 	school, err := repositories2.GetSchoolByNumber(schoolNumber)
 
@@ -233,7 +233,7 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 		return responses.MealCourseResponse{}, err
 	}
 
-	courses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, constants.StatusActive)
+	courses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, status)
 	if err != nil {
 		return responses.MealCourseResponse{}, err
 	}
@@ -249,6 +249,7 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 			Code:    course.Code,
 			AddedBy: user.FirstName,
 			Number:  course.Number,
+			Status:  course.Status,
 		}
 
 		mealCourseItemResponses = append(mealCourseItemResponses, courseResponse)
