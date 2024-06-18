@@ -408,7 +408,8 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 		}
 
 		if mealCourseFeedingSession.Number != "" {
-			return errors.New("feeding session already added to the meal course")
+			fmt.Println("feeding session already added to the meal course")
+			continue
 		}
 
 		newMealCourseFeedingSession := models.MealCourseFeedingSession{
@@ -510,7 +511,8 @@ func activateForDay(day string, campuses []string, currentUserNumber string, mea
 		}
 
 		if campusMealCourse.Number != "" {
-			return errors.New("this campus already has this meal course activated")
+			fmt.Println("this campus already has this meal course activated")
+			continue
 		}
 
 		campusMealCourse = models.CampusMealCourse{
