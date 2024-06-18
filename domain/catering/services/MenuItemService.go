@@ -322,13 +322,7 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 					items = splitAssembledItem(_baseItem, items, _totalQuantity)
 
 				} else {
-					items = append(items, responses.ProjectionMenuItem{
-						Name:           _item.MenuItemName,
-						Quantity:       _totalQuantity,
-						UnitOfMeasure:  _item.UnitOfMeasure,
-						MenuItemNumber: _item.MenuItemNumber,
-						TotalCost:      _totalQuantity * determineUnitCost(_baseItem),
-					})
+					items = append(items, createProjectionMenuItem(_baseItem, _totalQuantity))
 				}
 
 			}
@@ -344,6 +338,26 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 	return meals
 }
 
+func createProjectionMenuItem(menuItem models.MenuItem, totalQuantity float64) responses.ProjectionMenuItem {
+
+	projectionMenuItem := responses.ProjectionMenuItem{
+		Name:           menuItem.Name,
+		Quantity:       totalQuantity,
+		MenuItemNumber: menuItem.Number,
+		TotalCost:      totalQuantity * determineUnitCost(menuItem),
+	}
+
+	unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
+	if err != nil {
+		fmt.Println("Error getting unit of measure for assembled split error: " + err.Error())
+		return projectionMenuItem
+	}
+
+	projectionMenuItem.UnitOfMeasure = unitOfMeasure.Abbreviation
+
+	return projectionMenuItem
+}
+
 func splitAssembledItem(item models.MenuItem, items []responses.ProjectionMenuItem, requiredQty float64) []responses.ProjectionMenuItem {
 
 	parts, err := repositories.GetAssembledItemParts(item.Number)
@@ -356,29 +370,17 @@ func splitAssembledItem(item models.MenuItem, items []responses.ProjectionMenuIt
 
 		partsQty := part.Quantity * requiredQty
 
-		checkMenuItem, err := repositories.GetMenuItemByNumber(part.SecondaryItemNumber)
+		menuItem, err := repositories.GetMenuItemByNumber(part.SecondaryItemNumber)
 		if err != nil {
 			fmt.Println("Getting base price item error: " + err.Error())
 			continue
 		}
 
-		if checkMenuItem.Type == constants.TypeAssembled {
-			items = splitAssembledItem(checkMenuItem, items, partsQty)
+		if menuItem.Type == constants.TypeAssembled {
+			items = splitAssembledItem(menuItem, items, partsQty)
 		} else {
 
-			unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(checkMenuItem.UnitOfMeasureNumber)
-			if err != nil {
-				fmt.Println("Error getting unit of measure for assembled split error: " + err.Error())
-				continue
-			}
-
-			items = append(items, responses.ProjectionMenuItem{
-				Name:           checkMenuItem.Name,
-				Quantity:       partsQty,
-				UnitOfMeasure:  unitOfMeasure.Name,
-				MenuItemNumber: checkMenuItem.Number,
-				TotalCost:      partsQty * determineUnitCost(checkMenuItem),
-			})
+			items = append(items, createProjectionMenuItem(menuItem, partsQty))
 
 		}
 
