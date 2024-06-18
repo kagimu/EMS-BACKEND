@@ -12,10 +12,14 @@ import (
 func CreateGrade(ctx *gin.Context, request requests.GradeDataRequest) error {
 	// create grade
 	var grade = models.FormatsOfMeasure{
-		Number:     uuid.NewV4().String(),
-		Name:       request.Name,
-		Code:       request.Code,
-		UserNumber: ctx.GetHeader("User-Number"),
+		Number:       uuid.NewV4().String(),
+		Name:         request.Name,
+		Code:         request.Code,
+		UserNumber:   ctx.GetHeader("User-Number"),
+		ShortName:    request.ShortName,
+		Description:  request.Description,
+		SchoolNumber: request.SchoolNumber,
+		Weight:       request.Weight,
 	}
 
 	if err := config.DB.Create(&grade).Error; err != nil {
@@ -41,6 +45,9 @@ func UpdateGrade(ctx *gin.Context, request requests.EditGradeDataRequest) error 
 
 	grade.Name = request.Name
 	grade.Code = request.Code
+	grade.Weight = request.Weight
+	grade.Description = request.Description
+	grade.ShortName = request.ShortName
 	grade.UserNumber = ctx.GetHeader("User-Number")
 
 	if err := repository.UpdateGrade(grade); err != nil {
