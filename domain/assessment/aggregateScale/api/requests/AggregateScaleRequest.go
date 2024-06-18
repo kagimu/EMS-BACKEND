@@ -6,8 +6,6 @@ type AggregateScaleRequest struct {
 	Code                  int64   `json:"code"`
 	MinValue              float64 `json:"min_value"`
 	MaxValue              float64 `json:"max_value"`
-	Weight                float64 `json:"weight"`
-	Description           string  `json:"description"`
 	CampusNumber          string  `json:"campus_number"`
 	GradeNumber           string  `json:"grade_number"`
 	Illustration          string  `json:"illustration"`
@@ -19,8 +17,6 @@ type EditAggregateScaleRequest struct {
 	Code                  int64   `json:"code"`
 	MinValue              float64 `json:"min_value"`
 	MaxValue              float64 `json:"max_value"`
-	Weight                float64 `json:"weight"`
-	Description           string  `json:"description"`
 	CampusNumber          string  `json:"campus_number"`
 	Illustration          string  `json:"illustration"`
 	GradingStandardNumber string  `json:"grading_standard_number"`
@@ -46,9 +42,6 @@ func (a *AggregateScaleRequest) Validate() error {
 	}
 	if a.CampusNumber == "" {
 		return errors.New("campus number is required")
-	}
-	if a.Weight == 0 {
-		return errors.New("weight for this scale are required")
 	}
 	if a.GradingStandardNumber == "" {
 		return errors.New("grading standard number is required")

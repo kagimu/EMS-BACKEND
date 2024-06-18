@@ -17,7 +17,6 @@ type AggregateScale struct {
 	Name                  string                  `json:"name" gorm:"-"`
 	Weight                float64                 `json:"weight" gorm:"-"`
 	Illustration          string                  `json:"illustration" form:"illustration" gorm:"type:text;"`
-	Description           string                  `json:"description" gorm:"type:text"`
 	CampusClassNumber     string                  `json:"class_number" gorm:"size:36;not null"`
 	CampusClass           classModel.CampusClass  `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber          string                  `json:"campus_number" gorm:"size:36;not null"`
