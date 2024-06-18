@@ -195,7 +195,7 @@ func Init() error {
 		&reportSettings.HeadTeacherComment{},
 		&reportingActivityModels.Indicator{},
 		&eosModels.ActiveUserEntity{},
-		&gradesModels.MeasureOfAssessment{},
+		&gradesModels.FormatsOfMeasure{},
 	)
 
 	if err != nil {
