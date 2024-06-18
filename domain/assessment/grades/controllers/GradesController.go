@@ -21,7 +21,7 @@ func CreateGrade(ctx *gin.Context) {
 	}
 
 	if err := services.CreateGrade(ctx, request); err != nil {
-		ctx.JSON(500, gin.H{"message": "Failed to create grade"})
+		ctx.JSON(500, gin.H{"message": "Failed to create grade" + err.Error()})
 		return
 	}
 
