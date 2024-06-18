@@ -3,8 +3,11 @@ package requests
 import "errors"
 
 type GradeDataRequest struct {
-	Name string `json:"name"`
-	Code int64  `json:"code"`
+	Name        string  `json:"name"`
+	Code        int64   `json:"code"`
+	ShortName   string  `json:"short_name"`
+	Description string  `json:"description"`
+	Weight      float64 `json:"weight"`
 }
 
 type EditGradeDataRequest struct {

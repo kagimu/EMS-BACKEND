@@ -11,7 +11,7 @@ import (
 
 func CreateGrade(ctx *gin.Context, request requests.GradeDataRequest) error {
 	// create grade
-	var grade = models.Grade{
+	var grade = models.MeasureOfAssessment{
 		Number:     uuid.NewV4().String(),
 		Name:       request.Name,
 		Code:       request.Code,
@@ -24,8 +24,8 @@ func CreateGrade(ctx *gin.Context, request requests.GradeDataRequest) error {
 	return nil
 }
 
-func FetchGrades(ctx *gin.Context) ([]models.Grade, error) {
-	var grades []models.Grade
+func FetchGrades(ctx *gin.Context) ([]models.MeasureOfAssessment, error) {
+	var grades []models.MeasureOfAssessment
 	grades, err := repository.FindAllGrades()
 	if err != nil {
 		return nil, err
