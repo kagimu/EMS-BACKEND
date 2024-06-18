@@ -317,13 +317,20 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 
 				_totalQuantity := _item.Quantity * float64(totalUsers)
 
-				items = append(items, responses.ProjectionMenuItem{
-					Name:           _item.MenuItemName,
-					Quantity:       _totalQuantity,
-					UnitOfMeasure:  _item.UnitOfMeasure,
-					MenuItemNumber: _item.MenuItemNumber,
-					TotalCost:      _totalQuantity * determineUnitCost(_baseItem),
-				})
+				if _baseItem.Type == constants.TypeAssembled {
+
+					items = splitAssembledItem(_baseItem, items, _totalQuantity)
+
+				} else {
+					items = append(items, responses.ProjectionMenuItem{
+						Name:           _item.MenuItemName,
+						Quantity:       _totalQuantity,
+						UnitOfMeasure:  _item.UnitOfMeasure,
+						MenuItemNumber: _item.MenuItemNumber,
+						TotalCost:      _totalQuantity * determineUnitCost(_baseItem),
+					})
+				}
+
 			}
 
 			mealProjection.Items = items
@@ -335,6 +342,49 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 	}
 
 	return meals
+}
+
+func splitAssembledItem(item models.MenuItem, items []responses.ProjectionMenuItem, requiredQty float64) []responses.ProjectionMenuItem {
+
+	parts, err := repositories.GetAssembledItemParts(item.Number)
+	if err != nil {
+		fmt.Println("Getting items parts error: " + err.Error())
+		return items
+	}
+
+	for _, part := range parts {
+
+		partsQty := part.Quantity * requiredQty
+
+		checkMenuItem, err := repositories.GetMenuItemByNumber(part.SecondaryItemNumber)
+		if err != nil {
+			fmt.Println("Getting base price item error: " + err.Error())
+			continue
+		}
+
+		if checkMenuItem.Type == constants.TypeAssembled {
+			items = splitAssembledItem(checkMenuItem, items, partsQty)
+		} else {
+
+			unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(checkMenuItem.UnitOfMeasureNumber)
+			if err != nil {
+				fmt.Println("Error getting unit of measure for assembled split error: " + err.Error())
+				continue
+			}
+
+			items = append(items, responses.ProjectionMenuItem{
+				Name:           checkMenuItem.Name,
+				Quantity:       partsQty,
+				UnitOfMeasure:  unitOfMeasure.Name,
+				MenuItemNumber: checkMenuItem.Number,
+				TotalCost:      partsQty * determineUnitCost(checkMenuItem),
+			})
+
+		}
+
+	}
+
+	return items
 }
 
 func determineUnitCost(item models.MenuItem) float64 {

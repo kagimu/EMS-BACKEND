@@ -24,3 +24,21 @@ func FindStudentByUserNumber(userNumber string) (studentModel.Student, error) {
 	return student, nil
 
 }
+
+func FindStudentByNumber(studentNumber string) (studentModel.Student, error) {
+
+	db := config.DB
+	var student studentModel.Student
+
+	if err := db.Where("number = ?", studentNumber).First(&student).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return student, nil
+		}
+
+		return student, err
+	}
+
+	return student, nil
+
+}
