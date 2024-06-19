@@ -70,6 +70,7 @@ type ReportSummary struct {
 	User                userModels.User         `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StreamNumber        string                  `json:"stream_number" gorm:"size:36;"`
 	Stream              classModel.Stream       `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	TeacherComment      string                  `json:"teacher_comment" gorm:"size:100"`
 }
 
 type ReportScore struct {

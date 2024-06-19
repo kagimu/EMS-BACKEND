@@ -658,6 +658,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)
 			reportSettings.POST("add-head-teachers-comment/:report_setting_number", reportSettingsController.CreateHeadTeacherComment)
 			reportSettings.GET("head-teachers-comments", reportSettingsController.FetchHeadTeacherComments)
+			reportSettings.POST("add-teacher-comment", reportSettingsController.CreateTeachersComment)
 
 		}
 
