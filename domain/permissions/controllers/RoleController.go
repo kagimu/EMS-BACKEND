@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
@@ -36,11 +37,12 @@ func CreateRole(c *gin.Context) {
 
 	roleNumber := uuid.NewV4().String()
 	saveRole := models.Role{
-		Number:      roleNumber,
-		Name:        payload.Name,
-		Status:      constants.StatusActive,
-		UserNumber:  user.Number,
-		Description: payload.Description,
+		Number:       roleNumber,
+		Name:         payload.Name,
+		Status:       constants.StatusActive,
+		UserNumber:   user.Number,
+		Description:  payload.Description,
+		EntityNumber: payload.EntityNumber,
 	}
 
 	tx := config.DB.Begin()
@@ -79,10 +81,16 @@ func FetchRoles(c *gin.Context) {
 		return
 	}
 
+	entity_number := c.Query("entity_number")
+	if entity_number == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Entity number is required"})
+		return
+	}
+
 	var rolesResponse []responses.RolesList
 
 	var roles []models.Role
-	if err := config.DB.Find(&roles).Error; err != nil {
+	if err := config.DB.Scopes(filters.ByEntityNumber(entity_number)).Find(&roles).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch roles"})
 		return
 	}
@@ -124,9 +132,13 @@ func AssignRolesToAUser(c *gin.Context) {
 		return
 	}
 
+	type RoleAssignment struct {
+		RoleNumber string `json:"role_number"`
+		ExpiryDate string `json:"expiry_date"`
+	}
 	type Input struct {
-		UserNumber string   `json:"user_number"`
-		RoleNumber []string `json:"role_number"`
+		UserNumber string           `json:"user_number"`
+		Roles      []RoleAssignment `json:"roles"`
 	}
 
 	var payload Input
@@ -135,7 +147,7 @@ func AssignRolesToAUser(c *gin.Context) {
 		return
 	}
 
-	if len(payload.RoleNumber) == 0 {
+	if len(payload.Roles) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "At least one role is required"})
 		return
 	}
@@ -146,11 +158,29 @@ func AssignRolesToAUser(c *gin.Context) {
 	}
 	tx := config.DB.Begin()
 
-	for _, roleNumber := range payload.RoleNumber {
+	for _, role := range payload.Roles {
+
+		// convert the expiry date to a time object
+		date, err := commons.ConvertStringToDate(role.ExpiryDate)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid date format"})
+			return
+		}
 		saveRole := models.UserRole{
-			RoleNumber: roleNumber,
+			RoleNumber: role.RoleNumber,
 			UserNumber: payload.UserNumber,
 			AddedBy:    user.Number,
+			ExpiryDate: date,
+		}
+
+		// validate if the role and user exists
+
+		var userRole models.UserRole
+		if err := config.DB.Preload("Role").Where("user_number = ?", payload.UserNumber).Where("role_number = ?", role.RoleNumber).First(&userRole).Error; err == nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "User already has the role " + userRole.Role.Name})
+			return
 		}
 
 		if err := tx.Create(&saveRole).Error; err != nil {
@@ -160,7 +190,10 @@ func AssignRolesToAUser(c *gin.Context) {
 		}
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign roles to the user"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User has been updated"})
 }
@@ -190,12 +223,12 @@ func FetchRoleDetails(c *gin.Context) {
 
 func RemoveRoleAssignment(c *gin.Context) {
 
-	type Input struct {
-		UserNumber string   `json:"user_number"`
-		RoleNumber []string `json:"role_number"`
+	type RemoveRoleRequest struct {
+		UserNumber string `json:"user_number"`
+		RoleNumber string `json:"role_number"`
 	}
 
-	var payload Input
+	var payload RemoveRoleRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
@@ -288,7 +321,7 @@ func UpdateRole(ctx *gin.Context) {
 }
 
 func DeleteRole(context *gin.Context) {
-	roleNumber := context.Param("roleNumber")
+	roleNumber := context.Param("role_number")
 	if roleNumber == "" {
 		context.JSON(400, gin.H{"message": "Role number is required"})
 		return

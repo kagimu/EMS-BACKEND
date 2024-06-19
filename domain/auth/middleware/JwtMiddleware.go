@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/services"
@@ -31,7 +33,7 @@ func AuthorizeJWT() gin.HandlerFunc {
 
 		if tokenString == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "Barer not set",
+				"message": "Bearer not set",
 			})
 			return
 		}
@@ -48,6 +50,15 @@ func AuthorizeJWT() gin.HandlerFunc {
 		if token.Valid {
 			claims := token.Claims.(*services.AuthCustomClaims)
 			c.Request.Header.Add("User-Number", claims.UserNumber)
+
+			var userData models.User
+			//check if user is a valid user
+			if err := config.DB.Where("number = ?", claims.UserNumber).First(&userData).Error; err != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+				return
+			}
+			c.Set("user", userData)
+
 			c.Next()
 
 		} else {
@@ -58,35 +69,4 @@ func AuthorizeJWT() gin.HandlerFunc {
 		}
 
 	}
-}
-
-func ValidatePermission(auth error, permission string) gin.HandlerFunc {
-
-	return func(c *gin.Context) {
-		if auth != nil && permission != "" {
-			var err error
-			var allowed = true
-			//	allowed, err := auth.CheckPermission(c.GetHeader("User-Number"), permission)
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-					"message": fmt.Sprintf("%s", err),
-				})
-			}
-
-			if !allowed {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-					"message": "You don't have permission to access this resource",
-				})
-				return
-			} else {
-				c.Next()
-			}
-		}
-
-		/*c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"message": "Invalid token",
-		})*/
-
-	}
-
 }

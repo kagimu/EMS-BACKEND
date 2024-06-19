@@ -89,3 +89,12 @@ type FullReportSummary struct {
 type LeanSchool interface{}
 
 type LeanCampus interface{}
+
+type HeadTeacherCommentResponse struct {
+	Comment      string  `json:"comment"`
+	AcademicYear string  `json:"academic_year"`
+	MinAggregate float64 `json:"min_aggregate"`
+	MaxAggregate float64 `json:"max_aggregate"`
+	StudyPeriod  string  `json:"study_period"`
+	Class        string  `json:"class"`
+}

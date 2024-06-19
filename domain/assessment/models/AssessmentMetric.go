@@ -14,7 +14,7 @@ type AssessmentMetric struct {
 	gorm.Model
 	Number                string                             `json:"number" gorm:"size:36;unique;not null"`
 	Description           string                             `json:"description" gorm:"type:text;"`
-	MaxScore              uint8                              `json:"max_score"`
+	MaxScore              float64                            `json:"max_score"`
 	ScheduledOn           time.Time                          `json:"scheduled_on" gorm:"size:30"`
 	GradingStandardNumber string                             `json:"grading_standard_number"`
 	GradingStandard       models.GradingStandard             `gorm:"foreignKey:GradingStandardNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
@@ -28,14 +28,7 @@ type AssessmentMetric struct {
 	CampusClass           campusClassModel.CampusClass       `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentAreaName    string                             `json:"assessment_area_name" gorm:"-"`
 	Name                  string                             `json:"name" gorm:"-"`
-}
-
-type AssessmentSubMetric struct {
-	gorm.Model
-	Number                 string           `json:"number" gorm:"size:36;unique;not null"`
-	Name                   string           `json:"name" gorm:"size:255;"`
-	AssessmentMetricNumber string           `json:"assessment_metric_number" gorm:"size:36;not null"`
-	AssessmentMetric       AssessmentMetric `gorm:"foreignKey:AssessmentMetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	RequireComment        string                             `json:"require_comment" gorm:"size:5;not null;default:'YES'"`
 }
 
 // Set value for assessmentAreaname field in afterfind hook

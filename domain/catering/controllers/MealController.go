@@ -77,7 +77,9 @@ func GetMealCourses(ctx *gin.Context) {
 		return
 	}
 
-	response, err := services.GetMealCourses(schoolNumber)
+	status := ctx.Query("status")
+
+	response, err := services.GetMealCourses(schoolNumber, status)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, commons.Feedback("Getting meal courses error: "+err.Error()))
 		return

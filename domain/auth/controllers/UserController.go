@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
@@ -26,28 +27,36 @@ func FetchUsers(c *gin.Context) {
 	if err := config.DB.Scopes(
 		filters.ByStatus(c.Query("status")),
 		pagination.Paginate(c, &paginatedResponse),
-	).Find(&users).Error; err != nil {
+		filters.ByAnyField("entity_users.entity_number", c.Query("entity_number")),
+	).Joins("JOIN entity_users ON entity_users.user_number = users.number").Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch users"})
 		return
 	}
 
+	type roleObject struct {
+		RoleName   string `json:"role_name"`
+		RoleNumber string `json:"role_number"`
+	}
+
 	type CLeanUser struct {
 		models.User
-		Roles []string `json:"roles"`
+		Roles []roleObject `json:"roles"`
 	}
 
 	var cleanUsers = make([]CLeanUser, 0)
 
 	for _, user := range users {
 		var userRoles []permissionModels.UserRole
-		var roles []string
+
+		var roles []roleObject
 		if err := config.DB.Preload("Role").Where("user_number = ?", user.Number).Find(&userRoles).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch user roles"})
 			return
 		}
 
 		for _, userRole := range userRoles {
-			roles = append(roles, userRole.Role.Name)
+			roles = append(roles, roleObject{RoleName: userRole.Role.Name,
+				RoleNumber: userRole.Role.Number})
 		}
 
 		cleanUsers = append(cleanUsers, CLeanUser{User: user, Roles: roles})
@@ -172,6 +181,7 @@ func CreateUser(c *gin.Context) {
 		ContactType: "Email",
 		UserNumber:  userObject.Number,
 	}
+
 	if err := tx.Create(&saveEmailContact).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
@@ -193,15 +203,22 @@ func CreateUser(c *gin.Context) {
 
 	var userRole permissionModels.UserRole
 
-	for _, roleNumber := range user.RoleNumbers {
-		if err := tx.Where("number = ?", roleNumber).First(&userRole.Role).Error; err != nil {
+	for _, role := range user.Roles {
+		if err := tx.Where("number = ?", role.RoleNumber).First(&userRole.Role).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch role"})
 			return
 		}
 
 		userRole.UserNumber = userObject.Number
-		userRole.RoleNumber = roleNumber
+		userRole.RoleNumber = role.RoleNumber
+		date, err := commons.ConvertStringToDate(role.ExpiryDate)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to append role to user"})
+			return
+		}
+		userRole.ExpiryDate = date
 		userRole.AddedBy = c.GetHeader("User-Number")
 
 		if err := tx.Create(&userRole).Error; err != nil {
@@ -226,8 +243,24 @@ func CreateUser(c *gin.Context) {
 
 	if err := tx.Create(&userPassword).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user" + err.Error()})
 		return
+	}
+
+	// attach user to this entity
+	if user.EntityNumber != "" {
+		var entityUser = eosModels.EntityUser{
+			EntityNumber:  user.EntityNumber,
+			UserNumber:    userObject.Number,
+			AddedByNumber: c.GetHeader("User-Number"),
+		}
+
+		if err := tx.Create(&entityUser).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user" + err.Error()})
+			return
+		}
+
 	}
 
 	tx.Commit()

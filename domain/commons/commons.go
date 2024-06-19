@@ -116,8 +116,8 @@ func PermissionGroups() []PermissionGroup {
 		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
 		{"SETUP": []string{"view_school", "add_school", "edit_school", "delete_school", "create_campus", "edit_campus", "delete_campus", "create_academic-year", "view_academic-year", "update_academic-year",
 			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream"}},
-		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
-		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete", "update_permission"}},
+		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
+		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete_permission", "update_permission"}},
 
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
 		{"CALENDAR": []string{"view_calendar", "view_calendar-details"}},
@@ -201,4 +201,17 @@ func DaysOfTheWeek() []string {
 	}
 
 	return days
+}
+
+func ConvertStringToDate(dateString string) (time.Time, error) {
+
+	var dueDate time.Time
+
+	if _dueDate, err := time.Parse(time.DateOnly, dateString); err != nil {
+		return dueDate, errors.New("Due date error: " + dateString)
+	} else {
+		dueDate = _dueDate
+	}
+
+	return dueDate, nil
 }

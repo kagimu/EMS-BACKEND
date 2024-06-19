@@ -1,6 +1,10 @@
 package filters
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"strings"
+	"time"
+)
 
 func ByCurriculumLevelNumber(level string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
@@ -211,6 +215,77 @@ func ByMetricNumber(metricNumber string) func(*gorm.DB) *gorm.DB {
 			return db.Where("metric_number = ?", metricNumber)
 		}
 
+		return db
+	}
+}
+
+func ByAssessmentMetricNumber(assessmentMetricNumber string) func(*gorm.DB) *gorm.DB {
+
+	return func(db *gorm.DB) *gorm.DB {
+
+		if assessmentMetricNumber != "" {
+			return db.Where("assessment_metric_number = ?", assessmentMetricNumber)
+		}
+
+		return db
+	}
+
+}
+
+func ByType(itemType string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if itemType != "" {
+			return db.Where("type = ?", itemType)
+		}
+		return db
+	}
+}
+
+func ByValueIn(fieldName string, fieldValues []string) func(db *gorm.DB) *gorm.DB {
+
+	return func(db *gorm.DB) *gorm.DB {
+
+		if fieldValues != nil {
+			for i, fieldValue := range fieldValues {
+				fieldValues[i] = strings.TrimSpace(fieldValue)
+			}
+		}
+
+		if fieldName != "" {
+			fieldName = strings.TrimSpace(fieldName)
+		}
+
+		if fieldName != "" && fieldValues != nil && len(fieldValues) > 0 {
+			return db.Where(fieldName+" IN ?", fieldValues)
+		}
+
+		return db
+	}
+}
+
+func ByDateBetween(dateField string, startDate time.Time, endDate time.Time) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if dateField != "" {
+
+			if startDate.After(endDate) {
+				_startDate := startDate
+				_endDate := endDate
+
+				startDate = _endDate
+				endDate = _startDate
+			}
+
+			return db.Where("DATE( "+dateField+") BETWEEN ? AND ?", startDate, endDate)
+		}
+		return db
+	}
+}
+
+func ByEntityNumber(entityNumber string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if entityNumber != "" {
+			return db.Where("entity_number = ?", entityNumber)
+		}
 		return db
 	}
 }

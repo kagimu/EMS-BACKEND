@@ -1,21 +1,13 @@
 package controllers
 
 import (
-	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"net/http"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 func CreateMenuItem(c *gin.Context) {
@@ -36,120 +28,85 @@ func CreateMenuItem(c *gin.Context) {
 		return
 	}
 
-	if payload.Type != constants.TypeAssembled && payload.Type != constants.TypeItem {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid menu item type"})
-		return
-	}
-
-	saveMenuItem := models.MenuItem{
-		Number:              uuid.NewV4().String(),
-		Name:                payload.Name,
-		Code:                payload.Code,
-		Type:                payload.Type,
-		CampusNumber:        payload.CampusNumber,
-		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
-		UserNumber:          user.Number,
-		BaseUnitCost:        payload.BasePrice,
-	}
-
-	var duplicateMenuItem models.MenuItem
-	if err := config.DB.Where("code = ?", payload.Code).First(&duplicateMenuItem).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item code already exists"})
-		return
-	}
-
-	if err := config.DB.Where("name = ?", payload.Name).First(&duplicateMenuItem).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item name already exists"})
-		return
-	}
-
-	if err := config.DB.Create(&saveMenuItem).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create menu item"})
+	_, err = services.SaveMenuItem(constants.TypeItem, payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": "Menu item saved successfully"})
 }
 
-func FetchMenuItems(c *gin.Context) {
-	response := make([]responses.MenuItemResponse, 0)
-	var paginatedResponse pagination.PaginatedResponse
+func FetchMenuItemsPaginated(c *gin.Context) {
 	var err error
 
-	if c.Query("campus_number") == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at least a Campus  to see the menu items"})
-		return
+	campusNumber := c.Query("campus_number")
+	schoolNumber := c.Query("school_number")
+	status := c.Query("status")
+	itemType := c.Query("type")
 
-	}
-
-	var menuItems []models.MenuItem
-	if err := config.DB.Scopes(filters.ByCampusNumber(c.Query("campus_number")), pagination.Paginate(c, &paginatedResponse)).Preload("Campus").Preload("UnitOfMeasure").Find(&menuItems).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items"})
+	if campusNumber == "" && schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide at least a campus or school number"})
 		return
 	}
 
-	for _, menuItem := range menuItems {
-
-		var currentQuantity float64
-
-		if currentQuantity, err = repositories.GetMenuItemCurrentStock(menuItem.Number); err != nil {
-			fmt.Println("Failed to fetch menu item quantity for: ", menuItem.Name, err.Error())
-		}
-
-		response = append(response, responses.MenuItemResponse{
-			Number:              menuItem.Number,
-			Name:                menuItem.Name,
-			Code:                menuItem.Code,
-			Type:                menuItem.Type,
-			Email:               menuItem.Campus.Email,
-			CampusName:          menuItem.Campus.Name,
-			CampusNumber:        menuItem.CampusNumber,
-			Location:            menuItem.Campus.Location,
-			UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
-			UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
-			UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
-			CurrentQuantity:     currentQuantity,
-		})
+	paginatedResponse, err := services.GetPaginatedMenuItems(schoolNumber, campusNumber, status, itemType, c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items: " + err.Error()})
+		return
 	}
-	paginatedResponse.Content = response
 
 	c.JSON(http.StatusOK, paginatedResponse)
 }
 
-func EditMenuItem(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+func FetchMenuItems(c *gin.Context) {
+	var err error
+
+	campusNumber := c.Query("campus_number")
+	schoolNumber := c.Query("school_number")
+	status := c.Query("status")
+	itemType := c.Query("type")
+
+	if campusNumber == "" && schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide at least a campus or school number"})
 		return
 	}
 
-	var payload requests.ItemAssembly
+	response, err := services.GetAllMenuItems(schoolNumber, campusNumber, status, itemType)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func EditMenuItem(c *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateMenuItemRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	menuItemNumber := c.Param("menu_item_number")
-	var menuItem models.MenuItem
-	if err := config.DB.Where("number = ?", menuItemNumber).First(&menuItem).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item not found"})
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	updateMenuItem := models.MenuItem{
-		Name:                payload.Name,
-		Code:                payload.Code,
-		Type:                payload.Type,
-		CampusNumber:        payload.CampusNumber,
-		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
-	}
-
-	if err := config.DB.Model(&menuItem).Where("number = ?", menuItemNumber).Updates(updateMenuItem).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update menu item"})
+	err = services.UpdateMenuItem(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": menuItem})
+	c.JSON(http.StatusOK, gin.H{"data": "Menu item updated successfully"})
 }
 
 func FetchMenuItemDetails(c *gin.Context) {
@@ -159,44 +116,28 @@ func FetchMenuItemDetails(c *gin.Context) {
 		return
 	}
 
-	itemNumber := c.Param("menu_item_number")
-	var menuItem models.MenuItem
-	if err := config.DB.Where("number = ?", itemNumber).First(&menuItem).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Menu item not found"})
+	itemNumber := c.Query("menu_item_number")
+
+	response, err := services.MenuItemDetails(itemNumber)
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
+}
+
+func DeleteMenuItem(context *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	var response responses.MenuItemResponse
+	itemNumber := context.Query("menu_item_number")
 
-	var currentQuantity float64
-
-	if currentQuantity, err = repositories.GetMenuItemCurrentStock(itemNumber); err != nil {
-		fmt.Println("Failed to fetch menu item quantity for: ", itemNumber, err.Error())
-	}
-
-	// Add school name as well
-
-	partsResponse, err := services.GetMenuItemParts(menuItem.Number)
-
+	err = services.DeleteMenuItem(itemNumber)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch menu item parts for: " + menuItem.Name})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Remove menu item error: " + err.Error()})
+		return
 	}
 
-	response = responses.MenuItemResponse{
-		Number:              menuItem.Number,
-		Name:                menuItem.Name,
-		Code:                menuItem.Code,
-		Type:                menuItem.Type,
-		Email:               menuItem.Campus.Email,
-		CampusName:          menuItem.Campus.Name,
-		CampusNumber:        menuItem.CampusNumber,
-		Location:            menuItem.Campus.Location,
-		UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
-		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
-		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
-		CurrentQuantity:     currentQuantity,
-		Parts:               partsResponse,
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": response})
+	context.JSON(http.StatusOK, gin.H{"data": "Menu item removed successfully"})
 }

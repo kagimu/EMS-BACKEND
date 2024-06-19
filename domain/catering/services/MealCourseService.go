@@ -220,7 +220,7 @@ func UpdateSaveMealCourse(mealCourseCountRequest requests.UpdateMealCourseCountR
 
 }
 
-func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
+func GetMealCourses(schoolNumber string, status string) (responses.MealCourseResponse, error) {
 
 	school, err := repositories2.GetSchoolByNumber(schoolNumber)
 
@@ -233,7 +233,7 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 		return responses.MealCourseResponse{}, err
 	}
 
-	courses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, constants.StatusActive)
+	courses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, status)
 	if err != nil {
 		return responses.MealCourseResponse{}, err
 	}
@@ -249,6 +249,7 @@ func GetMealCourses(schoolNumber string) (responses.MealCourseResponse, error) {
 			Code:    course.Code,
 			AddedBy: user.FirstName,
 			Number:  course.Number,
+			Status:  course.Status,
 		}
 
 		mealCourseItemResponses = append(mealCourseItemResponses, courseResponse)
@@ -407,7 +408,8 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 		}
 
 		if mealCourseFeedingSession.Number != "" {
-			return errors.New("feeding session already added to the meal course")
+			fmt.Println("feeding session already added to the meal course")
+			continue
 		}
 
 		newMealCourseFeedingSession := models.MealCourseFeedingSession{
@@ -468,7 +470,7 @@ func ActivateMealCourse(activateMealCourseRequest requests.ActivateMealCourseReq
 		return errors.New("selected meal course is not active")
 	}
 
-	feedingSession, err := repositories.GetFeedingSessionByNumber(activateMealCourseRequest.FeedingSessionNumber)
+	feedingSession, err := repositories.GetFeedingSessionByNumberAndSchoolNumber(activateMealCourseRequest.FeedingSessionNumber, "")
 
 	if err != nil {
 		return err
@@ -509,7 +511,8 @@ func activateForDay(day string, campuses []string, currentUserNumber string, mea
 		}
 
 		if campusMealCourse.Number != "" {
-			return errors.New("this campus already has this meal course activated")
+			fmt.Println("this campus already has this meal course activated")
+			continue
 		}
 
 		campusMealCourse = models.CampusMealCourse{

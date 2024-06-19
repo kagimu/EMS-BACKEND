@@ -44,11 +44,10 @@ type FeedingUserGroupResponse struct {
 	UserNumber         string `json:"user_number"`
 	Number             string `json:"number"`
 	Gender             string `json:"gender"`
-	Photo              string `json:"photo"`
 	Name               string `json:"name"`
 	FeedingGroupNumber string `json:"feeding_group_number"`
 	FeedingGroupName   string `json:"feeding_group_name"`
-	Status             string `json:"status"`
+	CampusName         string `json:"campus_name"`
 }
 
 type ItemAssemblyResponse struct {
@@ -63,13 +62,10 @@ type ItemAssemblyResponse struct {
 type MenuItemResponse struct {
 	Number              string  `json:"number"`
 	Name                string  `json:"name"`
-	Code                uint64  `json:"code"`
+	Code                int64   `json:"code"`
 	Type                string  `json:"type"`
-	CampusNumber        string  `json:"campus_number"`
-	CampusName          string  `json:"campus_name"`
-	Phone               string  `json:"phone"`
-	Email               string  `json:"email"`
-	Location            string  `json:"location"`
+	SchoolName          string  `json:"school_name"`
+	SchoolNumber        string  `json:"school_number"`
 	UnitOfMeasureNumber string  `json:"unit_of_measure_number"`
 	UnitOfMeasureName   string  `json:"unit_of_measure_name"`
 	UnitOfMeasureCode   uint64  `json:"unit_of_measure_code"`
@@ -80,7 +76,7 @@ type MenuItemResponse struct {
 type Part struct {
 	Name                      string  `json:"name"`
 	Quantity                  float64 `json:"quantity"`
-	Code                      uint64  `json:"code"`
+	Code                      int64   `json:"code"`
 	Number                    string  `json:"number"`
 	UnitOfMeasureAbbreviation string  `json:"unit_of_measure"`
 }

@@ -77,9 +77,10 @@ func NewCurriculum(context *gin.Context) {
 	tx := config.DB.Begin()
 	///save user data
 	saveCurriculum := models5.Curriculum{
-		Number:     uuid.NewV4().String(),
-		Name:       name,
-		UserNumber: userNumber,
+		Number:       uuid.NewV4().String(),
+		Name:         name,
+		UserNumber:   userNumber,
+		EntityNumber: context.GetString("entity_number"),
 	}
 
 	if err := tx.Create(&saveCurriculum).Error; err != nil {

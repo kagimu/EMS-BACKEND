@@ -3,10 +3,12 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
@@ -17,10 +19,11 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"math/rand"
+	"strings"
 	"time"
 )
 
-func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string) error {
+func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) error {
 
 	userNumber := payload.UserNumber
 
@@ -46,10 +49,7 @@ func CreateNewInvoice(payload requests.InvoiceRequest, currentUserNumber string)
 		return errors.New("try again to generate a new invoice number")
 	}
 
-	var dueDate time.Time
-	if dueDate, err = time.Parse(time.DateOnly, payload.DueDate); err != nil {
-		return errors.New("Due date error: " + payload.DueDate)
-	}
+	dueDate, err := commons.ConvertStringToDate(payload.DueDate)
 
 	var student studentModel.Student
 
@@ -120,27 +120,32 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 	}
 
 	newInvoiceItem := models.InvoiceItem{
-		Number:        uuid.NewV4().String(),
-		InvoiceNumber: newInvoiceNumber,
-		ItemNumber:    invoiceItem.ItemNumber,
-		Quantity:      invoiceItem.Quantity,
-		UnitPrice:     item.Cost,
+		Number:          uuid.NewV4().String(),
+		InvoiceNumber:   newInvoiceNumber,
+		ItemNumber:      invoiceItem.ItemNumber,
+		Quantity:        invoiceItem.Quantity,
+		UnitPrice:       invoiceItem.UnitCost,
+		ActualUnitPrice: item.Cost,
 	}
 
-	if _, err := invoiceRepositories.CreateInvoiceItem(newInvoiceItem); err != nil {
+	if _, err := invoiceRepositories.SaveInvoiceItem(newInvoiceItem); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string) ([]responses.MinInvoiceResponse, error) {
+func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, commaSeperatedItems string, startDate time.Time, endDate time.Time) ([]responses.MinInvoiceResponse, error) {
 
-	var invoices []models.Invoice
+	var invoiceResponses = make([]responses.MinInvoiceResponse, 0)
 
-	var invoiceResponses []responses.MinInvoiceResponse
+	var invoiceItems = make([]string, 0)
 
-	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber)
+	if commaSeperatedItems != "" {
+		invoiceItems = strings.Split(commaSeperatedItems, ",")
+	}
+
+	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber, invoiceItems, startDate, endDate)
 	if err != nil {
 		return invoiceResponses, err
 	}
@@ -265,6 +270,8 @@ func createPaymentResponse(payment models.InvoicePayment, user authModel.User, i
 		InvoiceRefNumber: invoice.RefNumber,
 		RecordedBy:       user.FirstName,
 		DateTime:         payment.Date.Format(time.DateOnly),
+		Status:           payment.Status,
+		PaymentNumber:    payment.Number,
 	}
 	return paymentResponse
 }
@@ -371,11 +378,11 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 	return financialSummaryResponse, nil
 }
 
-func GetAllPayments(userNumber string, refNumber string, schoolNumber string) ([]responses.InvoicePaymentResponse, error) {
+func GetAllPayments(userNumber string, refNumber string, schoolNumber string, startDate time.Time, endDate time.Time) ([]responses.InvoicePaymentResponse, error) {
 
 	var invoicePaymentsResponse []responses.InvoicePaymentResponse
 
-	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber)
+	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber, startDate, endDate)
 
 	if err != nil {
 		return invoicePaymentsResponse, err
@@ -400,4 +407,178 @@ func GetAllPayments(userNumber string, refNumber string, schoolNumber string) ([
 	}
 
 	return invoicePaymentsResponse, nil
+}
+
+func DeleteInvoice(invoiceNumber string) error {
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	if err != nil {
+		return errors.New("checking invoice number error: " + err.Error())
+	}
+
+	if invoice.Number == "" {
+		return errors.New("invalid invoice number")
+	}
+
+	if invoice.Status != constants.StatusNotPaid {
+		return errors.New("you can only delete a not paid invoice")
+	}
+
+	err = invoiceRepositories.DeleteInvoice(invoice)
+	if err != nil {
+		return errors.New("deleting invoice failed : " + err.Error())
+	}
+
+	return nil
+}
+
+func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	if err != nil {
+		return errors.New("checking invoice number error: " + err.Error())
+	}
+
+	if invoice.Number == "" {
+		return errors.New("invalid invoice number")
+	}
+
+	invoice.Status = constants.StatusCancelled
+	invoice.UserNumber = currentUserNumber
+
+	err = invoiceRepositories.UpdateInvoice(invoice)
+	if err != nil {
+		return errors.New("updating invoice failed : " + err.Error())
+	}
+
+	return nil
+}
+
+func CancelPayment(paymentNumber string, currentUser string) error {
+
+	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	if err != nil {
+		return errors.New("checking payment number error: " + err.Error())
+	}
+
+	if invoicePayment.Number == "" {
+		return errors.New("invalid payment number")
+	}
+
+	invoicePayment.UserNumber = currentUser
+	invoicePayment.Status = constants.StatusCancelled
+
+	_, err = invoiceRepositories.SavePayment(invoicePayment)
+	if err != nil {
+		return errors.New("updating payment failed : " + err.Error())
+	}
+
+	return nil
+}
+
+func DeletePayment(paymentNumber string) error {
+
+	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	if err != nil {
+		return errors.New("checking payment number error: " + err.Error())
+	}
+
+	if invoicePayment.Number == "" {
+		return errors.New("invalid payment number")
+	}
+
+	err = invoiceRepositories.DeleteInvoicePayment(invoicePayment)
+	if err != nil {
+		return errors.New("deleting payment failed : " + err.Error())
+	}
+
+	return nil
+}
+
+func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUser string) error {
+
+	tx := config.DB.Begin()
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(updateInvoiceRequest.InvoiceNumber, tx)
+	if err != nil {
+		return errors.New("checking invoice number error: " + err.Error())
+	}
+
+	if invoice.Number == "" {
+		return errors.New("invalid invoice number")
+	}
+
+	paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number, tx)
+	if err != nil {
+		return errors.New("checking paid amount error: " + err.Error())
+	}
+
+	if paidAmount > 0 {
+		return errors.New("you cannot update an invoice with payments")
+	}
+
+	dueDate, err := commons.ConvertStringToDate(updateInvoiceRequest.DueDate)
+	if err != nil {
+		return err
+	}
+
+	invoice.AddedByNumber = currentUser
+	invoice.Description = updateInvoiceRequest.Description
+	invoice.DueDate = dueDate
+
+	err = invoiceRepositories.UpdateInvoice(invoice, tx)
+	if err != nil {
+		tx.Rollback()
+		return errors.New("updating invoice failed : " + err.Error())
+	}
+
+	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number, tx)
+	if err != nil {
+		tx.Rollback()
+		return errors.New("getting current invoice items failed : " + err.Error())
+	}
+
+	for _, item := range items {
+		err = invoiceRepositories.DeleteInvoiceItem(item, tx)
+		if err != nil {
+			tx.Rollback()
+			return errors.New("removing invoice item failed : " + err.Error())
+		}
+	}
+
+	for _, itemUpdate := range updateInvoiceRequest.Items {
+
+		item, err := itemRepositories.GetItemByNumber(itemUpdate.ItemNumber, tx)
+		if err != nil {
+			tx.Rollback()
+			return errors.New("checking item failed : " + err.Error())
+		}
+
+		if item.Number == "" {
+			tx.Rollback()
+			return errors.New("invalid item number")
+		}
+
+		newInvoiceItem := models.InvoiceItem{
+			Number:          uuid.NewV4().String(),
+			InvoiceNumber:   invoice.Number,
+			ItemNumber:      itemUpdate.ItemNumber,
+			Quantity:        itemUpdate.Quantity,
+			UnitPrice:       itemUpdate.UnitCost,
+			ActualUnitPrice: item.Cost,
+		}
+
+		if _, err := invoiceRepositories.SaveInvoiceItem(newInvoiceItem, tx); err != nil {
+			tx.Rollback()
+			return err
+		}
+
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		fmt.Println("commit error : " + err.Error())
+		return errors.New("completing invoice editing failed")
+	}
+
+	return nil
 }

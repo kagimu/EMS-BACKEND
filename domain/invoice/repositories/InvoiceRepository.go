@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
+	"time"
 )
 
 func FindInvoiceByRefNumber(refNumber string) (invoiceModel.Invoice, error) {
@@ -25,9 +26,14 @@ func FindInvoiceByRefNumber(refNumber string) (invoiceModel.Invoice, error) {
 	return invoice, nil
 }
 
-func FindInvoiceByNumber(invoiceNumber string) (invoiceModel.Invoice, error) {
+func FindInvoiceByNumber(invoiceNumber string, tx ...*gorm.DB) (invoiceModel.Invoice, error) {
 
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var invoice invoiceModel.Invoice
 
 	if err := db.Where("number = ?", invoiceNumber).First(&invoice).Error; err != nil {
@@ -42,17 +48,22 @@ func FindInvoiceByNumber(invoiceNumber string) (invoiceModel.Invoice, error) {
 	return invoice, nil
 }
 
-func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string) ([]invoiceModel.Invoice, error) {
+func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string, startDate time.Time, endDate time.Time) ([]invoiceModel.Invoice, error) {
 
 	db := config.DB
 
 	var invoices []invoiceModel.Invoice
 
-	if err := db.Scopes(
-		filters.ByStatus(status),
-		filters.ByUserNumber(userNumber),
-		filters.BySchoolNumber(schoolNumber),
-		filters.ByCampusNumber(campusNumber)).
+	if err := db.
+		Joins("JOIN invoice_items ON invoice_items.invoice_number =  invoices.number").
+		Scopes(
+			filters.ByStatus(status),
+			filters.ByUserNumber(userNumber),
+			filters.BySchoolNumber(schoolNumber),
+			filters.ByValueIn("invoice_items.item_number", invoiceItems),
+			filters.ByDateBetween("created_at", startDate, endDate),
+			filters.ByCampusNumber(campusNumber)).
+		Group("invoices.number").
 		Find(&invoices).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -136,9 +147,24 @@ func SaveInvoice(invoice invoiceModel.Invoice) error {
 	return nil
 }
 
-func UpdateInvoice(invoice invoiceModel.Invoice) error {
+func UpdateInvoice(invoice invoiceModel.Invoice, tx ...*gorm.DB) error {
 
-	if err := config.DB.Save(&invoice).Error; err != nil {
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Save(&invoice).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteInvoice(invoice invoiceModel.Invoice) error {
+
+	if err := config.DB.Delete(&invoice).Error; err != nil {
 		return err
 	}
 

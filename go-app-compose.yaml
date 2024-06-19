@@ -11,3 +11,9 @@ services:
     environment:
       - VIRTUAL_HOST=104.248.175.232
       - JWT_SECRET=supersecret
+  wkhtmltopdf:
+    image: wkhtmltopdf
+    container_name: wkhtmltopdf
+    build:
+      dockerfile: Dockerfile
+      context: .

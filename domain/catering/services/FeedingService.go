@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	authResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/services"
 	campusRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
@@ -286,7 +288,7 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 
 	for _, feedingGroup := range feedingGroups {
 
-		allUsers, err := cateringRepositories.GetFeedingGroupUserByGroupNumber(feedingGroup.Number)
+		allUsers, err := cateringRepositories.GetFeedingGroupUserByGroupNumber("", "", feedingGroup.Number)
 		if err != nil {
 			return mealsResponse, err
 		}
@@ -654,4 +656,139 @@ func BuildFeedingSessionResponse(session models.FeedingSession) responses.Feedin
 	}
 
 	return response
+}
+
+func MealUsers(schoolNumber string, campusNumber string, groupNumber string) ([]responses.FeedingUserGroupResponse, error) {
+
+	var response = make([]responses.FeedingUserGroupResponse, 0)
+
+	users, err := cateringRepositories.GetFeedingGroupUserByGroupNumber(schoolNumber, campusNumber, groupNumber)
+	if err != nil {
+		return nil, errors.New("Getting group users error: " + err.Error())
+	}
+
+	for _, user := range users {
+
+		response = append(response, createFeedingUserResponse(user))
+
+	}
+
+	return response, nil
+
+}
+
+func createFeedingUserResponse(user models.FeedingGroupUser) responses.FeedingUserGroupResponse {
+
+	_user := user.User
+
+	userNames := _user.FirstName + " " + _user.LastName
+
+	return responses.FeedingUserGroupResponse{
+		Number:             user.Number,
+		UserNumber:         user.UserNumber,
+		FeedingGroupName:   user.FeedingGroup.Name,
+		FeedingGroupNumber: user.FeedingGroupNumber,
+		CampusName:         user.Campus.Name,
+		Gender:             user.User.Gender,
+		Name:               userNames,
+	}
+}
+
+func AvailableUser(schoolNumber string, userType string) ([]authResponse.UserResponse, error) {
+
+	var response = make([]authResponse.UserResponse, 0)
+
+	users, err := cateringRepositories.AvailableUsers(schoolNumber, constants.StatusActive, userType)
+	if err != nil {
+		return nil, errors.New("Getting available users error: " + err.Error())
+	}
+
+	for _, user := range users {
+		response = append(response, services.CreateUserResponse(user))
+	}
+
+	return response, nil
+}
+
+func DeleteFeedingGroup(feedingGroupNumber string) error {
+
+	group, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
+	if err != nil {
+		return errors.New("Checking group number error: " + err.Error())
+	}
+
+	if group.Number == "" {
+		return errors.New("invalid group number")
+	}
+
+	err = cateringRepositories.RemoveFeedingGroup(group)
+	if err != nil {
+		fmt.Println("Removing feed group error: " + err.Error())
+		return errors.New("Can not remove '" + group.Name + "' group, try removing all its usages first.")
+	}
+
+	return nil
+
+}
+
+func UpdateFeedingSession(updateFeedingSessionRequest requests.UpdateFeedingSessionRequest, currentUserNumber string) error {
+	feedingSession, err := cateringRepositories.GetFeedingSessionByNumberAndSchoolNumber(updateFeedingSessionRequest.FeedingSessionNumber, updateFeedingSessionRequest.SchoolNumber)
+
+	if err != nil {
+		return errors.New("Checking feed session number error: " + err.Error())
+	}
+
+	if feedingSession.Number == "" {
+		return errors.New("invalid feed session number")
+	}
+
+	checkName, err := cateringRepositories.GetFeedingSessionByNameAndSchool(updateFeedingSessionRequest.Name, feedingSession.SchoolNumber)
+	if err != nil {
+		return errors.New("Checking feed session name error: " + err.Error())
+	}
+
+	if checkName.Number != "" && checkName.Number != updateFeedingSessionRequest.FeedingSessionNumber {
+		return errors.New("name already used, choose a unique one")
+	}
+
+	checkCode, err := cateringRepositories.GetFeedingSessionByCodeAndSchool(updateFeedingSessionRequest.Code, updateFeedingSessionRequest.SchoolNumber)
+	if err != nil {
+		return errors.New("Checking feeding session code error: " + err.Error())
+	}
+
+	if checkCode.Number != "" && checkCode.Number != updateFeedingSessionRequest.FeedingSessionNumber {
+		return errors.New("feeding session code already used, choose a unique one")
+	}
+
+	feedingSession.Code = updateFeedingSessionRequest.Code
+	feedingSession.UserNumber = currentUserNumber
+	feedingSession.Name = updateFeedingSessionRequest.Name
+	feedingSession.Status = updateFeedingSessionRequest.Status
+
+	err = cateringRepositories.SaveFeedingSession(feedingSession)
+	if err != nil {
+		return errors.New("updating feed session error: " + err.Error())
+	}
+
+	return nil
+}
+
+func DeleteFeedingSession(feedingSessionNumber string) error {
+
+	feedingSession, err := cateringRepositories.GetFeedingSessionByNumberAndSchoolNumber(feedingSessionNumber, "")
+	if err != nil {
+		return errors.New("Checking feed session number error: " + err.Error())
+	}
+
+	if feedingSession.Number == "" {
+		return errors.New("invalid feed session number")
+	}
+
+	err = cateringRepositories.DeleteFeedingSession(feedingSession)
+	if err != nil {
+		fmt.Println("Deleting feed session error: " + err.Error())
+		return errors.New("this feeding session could not be removed, try removing all its usages first")
+	}
+
+	return nil
 }

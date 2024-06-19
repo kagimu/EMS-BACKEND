@@ -48,15 +48,13 @@ func CreateAggregateScale(c *gin.Context) {
 	saveAggregateScale := models.AggregateScale{
 		Code:                  payload.Code,
 		Number:                uuid.NewV4().String(),
-		Name:                  payload.Name,
-		Weight:                payload.Weight,
 		MinValue:              payload.MinValue,
 		MaxValue:              payload.MaxValue,
 		Illustration:          fileName,
-		Description:           payload.Description,
 		CampusClassNumber:     payload.CampusClassNumber,
 		CampusNumber:          payload.CampusNumber,
 		UserNumber:            user.Number,
+		GradeNumber:           payload.GradeNumber,
 		GradingStandardNumber: payload.GradingStandardNumber,
 	}
 
@@ -122,7 +120,6 @@ func FetchAggregateScales(c *gin.Context) {
 			Name:                aggregateScale.Name,
 			Weight:              aggregateScale.Weight,
 			Illustration:        baseURL + aggregateScale.Illustration,
-			Description:         aggregateScale.Description,
 			ClassName:           aggregateScale.CampusClass.ClassName,
 			CampusName:          aggregateScale.Campus.Name,
 			GradingStandardName: aggregateScale.GradingStandard.Name,
@@ -165,11 +162,8 @@ func EditAggregateScale(c *gin.Context) {
 
 	updateAggregateScale := models.AggregateScale{
 		Code:                  payload.Code,
-		Name:                  payload.Name,
-		Weight:                payload.Weight,
 		MinValue:              payload.MinValue,
 		MaxValue:              payload.MaxValue,
-		Description:           payload.Description,
 		Illustration:          fileName,
 		CampusClassNumber:     payload.CampusClassNumber,
 		CampusNumber:          payload.CampusNumber,

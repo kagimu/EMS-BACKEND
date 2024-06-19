@@ -7,9 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetItemByNumber(itemNumber string) (itemModels.Item, error) {
+func GetItemByNumber(itemNumber string, tx ...*gorm.DB) (itemModels.Item, error) {
 
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var item itemModels.Item
 

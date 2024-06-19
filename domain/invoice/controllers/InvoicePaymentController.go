@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"net/http"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
@@ -57,11 +58,84 @@ func GetAllPayments(context *gin.Context) {
 		return
 	}
 
-	payments, err := services.GetAllPayments(userNumber, refNumber, schoolNumber)
+	_startDate := context.Query("start_date")
+	_endDate := context.Query("end_date")
+
+	currentDateTime := time.Now()
+
+	if _startDate == "" {
+		startOfMonth := time.Date(currentDateTime.Year(), currentDateTime.Month(), 1, 0, 0, 0, 0, currentDateTime.Location())
+		_startDate = startOfMonth.Format(time.DateOnly)
+	}
+
+	var startDate time.Time
+	if startDate, err = time.Parse(time.DateOnly, _startDate); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
+		return
+	}
+
+	if _endDate == "" {
+		_endDate = currentDateTime.Format(time.DateOnly)
+	}
+
+	var endDate time.Time
+	if endDate, err = time.Parse(time.DateOnly, _endDate); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
+		return
+	}
+
+	payments, err := services.GetAllPayments(userNumber, refNumber, schoolNumber, startDate, endDate)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Getting all payments with error: "+err.Error()))
 		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"data": payments})
+}
+
+func CancelPayment(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"Message": "Unauthorized"})
+		return
+	}
+
+	paymentNumber := context.Query("payment_number")
+	if paymentNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("provide a payment number to cancel"))
+		return
+	}
+
+	err = services.CancelPayment(paymentNumber, user.Number)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Payment cancelled successfully"))
+
+}
+
+func DeletePayment(context *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"Message": "Unauthorized"})
+		return
+	}
+
+	paymentNumber := context.Query("payment_number")
+	if paymentNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("provide a payment number to delete"))
+		return
+	}
+
+	err = services.DeletePayment(paymentNumber)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Payment deleted successfully"))
 }

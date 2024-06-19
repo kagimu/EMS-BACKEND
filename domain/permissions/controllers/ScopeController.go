@@ -30,6 +30,15 @@ func CreateScope(c *gin.Context) {
 		return
 	}
 
+	// validate if user has existing scope
+
+	var scope models.Scope
+	if err := config.DB.Where("user_number = ?", payload.UserNumber).First(&scope).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User already has a scope please delete the existing scope first"})
+		return
+
+	}
+
 	saveScope := models.Scope{
 		Number:            uuid.NewV4().String(),
 		CampusNumber:      payload.CampusNumber,

@@ -41,7 +41,7 @@ func CreateReportSettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	//check for existing report settings with the same study period number, academic year number and campus class number and status active
+	//check for existing report settings with the same study period number, academic year number and campus class number and status active.
 
 	var existingReportSettings models.ReportSetting
 	if err := config.DB.Where("study_period_number = ? AND academic_year_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.AcademicYearNumber, payload.CampusClassNumber, constants.StatusActive).First(&existingReportSettings).Error; err == nil {
@@ -271,13 +271,25 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 }
 
 func FetchReportColumnAssessments(ctx *gin.Context) {
+
 	var reportColumnAssessments []models.ReportColumnAssessment
-	if err := config.DB.Find(&reportColumnAssessments).Error; err != nil {
+	if err := config.DB.Joins("JOIN report_columns  on report_columns.number = report_column_assessments.report_column_number").
+		Joins("JOIN report_settings rs on rs.number = report_columns.report_setting_number").
+		Scopes(
+			filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
+			filters.ByAssessmentMetricNumber(ctx.Query("assessment_metric_number")),
+			filters.ByAnyField("report_column_number", ctx.Query("report_column_number")),
+			filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
+			filters.ByAnyField("report_settings.number", ctx.Query("report_setting_number")),
+			filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
+			filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
+		).
+		Find(&reportColumnAssessments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column assessments"})
 		return
 	}
 
-	var rca []responses.ReportColumnAssessmentResponse
+	var rca = make([]responses.ReportColumnAssessmentResponse, 0)
 
 	for _, reportColumnAssessment := range reportColumnAssessments {
 		var assessmentArea assessmentAreaModel.AssessmentArea
@@ -351,6 +363,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 func FetchReportSummaryDetails(ctx *gin.Context) {
 	reportSummaryNumber := ctx.Param("report_summary_number")
+	//htmlReportTemplate := ctx.DefaultQuery("html_report_template", "victorious-report-primary")
 
 	var reportSummary models.ReportSummary
 	if err := config.DB.Where("number = ?", reportSummaryNumber).Preload("Student").Preload("StudyPeriod").First(&reportSummary).Error; err != nil {
@@ -468,6 +481,16 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		ReportTemplateName: reportSummary.ReportTemplateName,
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
+
+	/*//pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, response)
+	pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, nil)
+	if err != nil {
+		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
+		return
+	}
+
+	//err = pdfObject.WriteFile("output.pdf")
+	ctx.JSON(http.StatusOK, gin.H{"data": base64.StdEncoding.EncodeToString(pdfObject.Bytes())})*/
 }
 
 func CreateReportScore(ctx *gin.Context) {
@@ -894,5 +917,82 @@ func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentG
 	}
 
 	return assessmentGrade, errors.New("no grade found")
+
+}
+func CreateHeadTeacherComment(ctx *gin.Context) {
+	var payload requests.HeadTeacherCommentRequest
+	reportSettingNumber := ctx.Param("report_setting_number")
+
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var reportSummary models.ReportSetting
+	if err := config.DB.Where("number = ?", reportSettingNumber).First(&reportSummary).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch given  report setting"})
+		return
+	}
+
+	var headTeacherComment models.HeadTeacherComment
+	if err := config.DB.Where("report_setting_number = ?", reportSettingNumber).First(&headTeacherComment).Error; err == nil {
+		headTeacherComment.Comment = payload.Comment
+		headTeacherComment.UserNumber = ctx.Request.Header["User-Number"][0]
+
+		if err := config.DB.Save(&headTeacherComment).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update head teacher comment"})
+			return
+		}
+
+	} else {
+		headTeacherComment = models.HeadTeacherComment{
+			MinAggregate:        payload.MinAggregate,
+			MaxAggregate:        payload.MaxAggregate,
+			ReportSettingNumber: reportSettingNumber,
+			Comment:             payload.Comment,
+			UserNumber:          ctx.Request.Header["User-Number"][0],
+		}
+
+		if err := config.DB.Create(&headTeacherComment).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create head teacher comment"})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Head teacher comment created successfully"})
+
+}
+
+func FetchHeadTeacherComments(ctx *gin.Context) {
+	var headTeacherComment []models.HeadTeacherComment
+	if err := config.DB.Preload("ReportSetting").
+		Preload("ReportSetting.AcademicYear").
+		Preload("ReportSetting.StudyPeriod").
+		Preload("ReportSetting.CampusClass").
+		Find(&headTeacherComment).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch head teacher comment"})
+		return
+	}
+
+	var comments = make([]responses.HeadTeacherCommentResponse, 0)
+
+	for _, comment := range headTeacherComment {
+		comments = append(comments, responses.HeadTeacherCommentResponse{
+			MinAggregate: comment.MinAggregate,
+			MaxAggregate: comment.MaxAggregate,
+			Comment:      comment.Comment,
+			AcademicYear: comment.ReportSetting.AcademicYear.AcademicYearName,
+			StudyPeriod:  comment.ReportSetting.StudyPeriod.StudyPeriodName,
+			Class:        comment.ReportSetting.CampusClass.ClassName,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, comments)
 
 }

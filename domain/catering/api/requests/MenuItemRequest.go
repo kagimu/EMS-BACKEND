@@ -1,32 +1,64 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+)
 
 type MenuItemRequest struct {
+	BasicMenuItemRequest
+}
+
+type UpdateMenuItemRequest struct {
+	BasicMenuItemRequest
+	MenuItemNumber string `json:"menu_item_number"`
+}
+
+type BasicMenuItemRequest struct {
 	Name                string  `json:"name"`
-	Code                uint64  `json:"code"`
-	Type                string  `json:"type"`
+	Code                int64   `json:"code"`
 	UnitOfMeasureNumber string  `json:"unit_of_measure_number"`
-	CampusNumber        string  `json:"campus_number"`
+	SchoolNumber        string  `json:"school_number"`
 	BasePrice           float64 `json:"base_price"`
+	Status              string  `json:"status"`
 }
 
 func (r *MenuItemRequest) Validate() error {
 
+	if r.SchoolNumber == "" {
+		return errors.New("choose the school")
+	}
+
 	if r.Name == "" {
-		return errors.New("name is required")
+		return errors.New("provide item name")
 	}
 
-	if r.Code == 0 {
-		return errors.New("code is required")
-	}
-
-	if r.Type == "" {
-		return errors.New("type is required")
+	if r.Code <= 0 {
+		return errors.New("sorting code is required")
 	}
 
 	if r.BasePrice <= 0 {
 		return errors.New("provide base item unit price")
+	}
+
+	return nil
+}
+
+func (r *UpdateMenuItemRequest) Validate() error {
+
+	if r.SchoolNumber == "" {
+		return errors.New("choose the school")
+	}
+
+	if r.Name == "" {
+		return errors.New("provide item name")
+	}
+
+	if r.Code <= 0 {
+		return errors.New("sorting code is required")
+	}
+
+	if r.MenuItemNumber == "" {
+		return errors.New("set the menu_item number to update")
 	}
 
 	return nil
