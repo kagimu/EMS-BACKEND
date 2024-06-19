@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	campusRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
@@ -14,6 +15,7 @@ import (
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func SaveMealCourse(mealCourseCountRequest requests.MealCourseCountRequest, currentUserNumber string) error {
@@ -490,22 +492,48 @@ func ActivateMealCourse(activateMealCourseRequest requests.ActivateMealCourseReq
 		return errors.New("feeding session not added to this meal course")
 	}
 
+	trx := config.DB.Begin()
+
+	for _, campus := range activateMealCourseRequest.Campuses {
+		mealCourses, err := repositories.GetCampusMealCourseByCampus(mealCourseFeedingSession.Number, campus, trx)
+		if err != nil {
+			trx.Rollback()
+			return errors.New("getting previous meal course failed: " + err.Error())
+		}
+
+		for _, mealCourse := range mealCourses {
+			err = repositories.DeleteCampusMealCourse(mealCourse, trx)
+			if err != nil {
+				trx.Rollback()
+				return errors.New("clearing meal course failed: " + err.Error())
+			}
+		}
+	}
+
 	for _, day := range activateMealCourseRequest.Days {
-		if err = activateForDay(day, activateMealCourseRequest.Campuses, currentUserNumber, mealCourseFeedingSession.Number); err != nil {
+		if err = activateForDay(day, activateMealCourseRequest.Campuses, currentUserNumber, mealCourseFeedingSession.Number, trx); err != nil {
+			trx.Rollback()
 			return err
 		}
+	}
+
+	if err = trx.Commit().Error; err != nil {
+		return errors.New("committing transaction failed: " + err.Error())
 	}
 
 	return nil
 }
 
-func activateForDay(day string, campuses []string, currentUserNumber string, mealCourseFeedingSessionNumber string) error {
+func activateForDay(day string, campuses []string, currentUserNumber string, mealCourseFeedingSessionNumber string, tx *gorm.DB) error {
 
 	for _, campusNumber := range campuses {
 
-		campus, err := campusRepositories.GetCampusByNumber(campusNumber)
+		campus, err := campusRepositories.GetCampusByNumber(campusNumber, tx)
+		if err != nil {
+			return err
+		}
 
-		campusMealCourse, err := repositories.GetCampusMealCourseByCampusAndDay(day, mealCourseFeedingSessionNumber, campusNumber)
+		campusMealCourse, err := repositories.GetCampusMealCourseByCampusAndDay(day, mealCourseFeedingSessionNumber, campusNumber, tx)
 		if err != nil {
 			return err
 		}
@@ -523,7 +551,7 @@ func activateForDay(day string, campuses []string, currentUserNumber string, mea
 			CampusNumber:                   campus.Number,
 		}
 
-		if err = repositories.SaveCampusMealCourse(campusMealCourse); err != nil {
+		if err = repositories.SaveCampusMealCourse(campusMealCourse, tx); err != nil {
 			return err
 		}
 
