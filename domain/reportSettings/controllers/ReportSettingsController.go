@@ -1000,7 +1000,6 @@ func FetchHeadTeacherComments(ctx *gin.Context) {
 func CreateTeachersComment(ctx *gin.Context) {
 
 	var payload requests.TeacherCommentRequest
-	reportSummaryNumber := ctx.Param("report_summary_number")
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
@@ -1014,7 +1013,7 @@ func CreateTeachersComment(ctx *gin.Context) {
 	}
 
 	var reportSummary models.ReportSummary
-	if err := config.DB.Where("number = ?", reportSummaryNumber).First(&reportSummary).Error; err != nil {
+	if err := config.DB.Where("number = ?", payload.ReportSummaryNumber).First(&reportSummary).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch given  report summary"})
 		return
 	}
