@@ -965,6 +965,8 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 		}
 	}
 
+	ctx.JSON(http.StatusOK, gin.H{"message": "Head teacher comment created successfully"})
+
 }
 
 func FetchHeadTeacherComments(ctx *gin.Context) {
