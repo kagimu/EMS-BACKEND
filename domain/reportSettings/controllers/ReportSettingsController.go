@@ -970,9 +970,29 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 }
 
 func FetchHeadTeacherComments(ctx *gin.Context) {
-	var headTeacherComment models.HeadTeacherComment
-	if err := config.DB.Find(&headTeacherComment).Error; err != nil {
+	var headTeacherComment []models.HeadTeacherComment
+	if err := config.DB.Preload("ReportSetting").
+		Preload("ReportSetting.AcademicYear").
+		Preload("ReportSetting.StudyPeriod").
+		Preload("ReportSetting.CampusClass").
+		Find(&headTeacherComment).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch head teacher comment"})
 		return
 	}
+
+	var comments = make([]responses.HeadTeacherCommentResponse, 0)
+
+	for _, comment := range headTeacherComment {
+		comments = append(comments, responses.HeadTeacherCommentResponse{
+			MinAggregate: comment.MinAggregate,
+			MaxAggregate: comment.MaxAggregate,
+			Comment:      comment.Comment,
+			AcademicYear: comment.ReportSetting.AcademicYear.AcademicYearName,
+			StudyPeriod:  comment.ReportSetting.StudyPeriod.StudyPeriodName,
+			Class:        comment.ReportSetting.CampusClass.ClassName,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, comments)
+
 }
