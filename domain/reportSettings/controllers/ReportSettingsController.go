@@ -996,3 +996,38 @@ func FetchHeadTeacherComments(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, comments)
 
 }
+
+func CreateTeachersComment(ctx *gin.Context) {
+
+	var payload requests.TeacherCommentRequest
+	reportSummaryNumber := ctx.Param("report_summary_number")
+
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var reportSummary models.ReportSummary
+	if err := config.DB.Where("number = ?", reportSummaryNumber).First(&reportSummary).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch given  report summary"})
+		return
+	}
+
+	// update the teacher_comment field in the report summary
+	reportSummary.Comment = payload.Comment
+	reportSummary.UserNumber = ctx.Request.Header["User-Number"][0]
+
+	if err := config.DB.Save(&reportSummary).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update teacher comment"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Teacher comment created successfully"})
+
+}
