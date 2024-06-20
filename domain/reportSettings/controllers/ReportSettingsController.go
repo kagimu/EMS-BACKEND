@@ -408,7 +408,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	var la []responses.LearningArea
 	for _, learningArea := range learningAreas {
-		var assessments []responses.Assessments
+		assessments := make([]responses.Assessments, 0)
 
 		var assessmentAreas []assessmentAreaModel.AssessmentArea
 		if err := config.DB.Where("assessment_areas.curriculum_class_number = ?", campusClass.CurriculumClassNumber).
@@ -471,16 +471,18 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 			OtherName:  reportSummary.Student.OtherName,
 			Gender:     reportSummary.Student.Gender,
 		},
-		Grade:              reportSummary.Grade,
-		LearningAreas:      la,
-		Stream:             "",
-		Class:              campusClass.ClassName,
-		ClassAbbreviation:  campusClass.ClassAbbreviation,
-		School:             campusClass.Campus.School,
-		Campus:             campusClass.Campus,
-		StudyPeriod:        reportSummary.StudyPeriod.StudyPeriodName,
-		ReportColumns:      rcs,
-		ReportTemplateName: reportSummary.ReportTemplateName,
+		Grade:               reportSummary.Grade,
+		LearningAreas:       la,
+		Stream:              "",
+		Class:               campusClass.ClassName,
+		ClassAbbreviation:   campusClass.ClassAbbreviation,
+		School:              campusClass.Campus.School,
+		Campus:              campusClass.Campus,
+		StudyPeriod:         reportSummary.StudyPeriod.StudyPeriodName,
+		ReportColumns:       rcs,
+		ReportTemplateName:  reportSummary.ReportTemplateName,
+		TeacherComment:      reportSummary.TeacherComment,
+		HeadTeachersComment: reportSummary.HeadTeacherComment,
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 
@@ -659,6 +661,16 @@ func GenerateReportSummary(ctx *gin.Context) {
 	}
 
 	// find it there is an existing report summary for the student
+	// find existing headteacher comment for this report setting
+
+	var headTeacherComment models.HeadTeacherComment
+	if err := tx.Where("report_setting_number =?", reportSettings.Number).First(&headTeacherComment).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Something to fetch head teacher comment"})
+			return
+		}
+
+	}
 
 	var reportSummary models.ReportSummary
 	if err := tx.Where("student_number = ? AND study_period_number = ? AND campus_class_number = ?", payload.StudentNumber, payload.StudyPeriodNumber, payload.CampusClassNumber).First(&reportSummary).Error; err == nil {
@@ -670,6 +682,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 		reportSummary.UserNumber = user
 		reportSummary.StreamNumber = stream.Number
 		reportSummary.ReportTemplateName = reportTemplate.Name
+		reportSummary.HeadTeacherComment = headTeacherComment.Comment
 
 		if err := tx.Save(&reportSummary).Error; err != nil {
 			tx.Rollback()
@@ -692,6 +705,7 @@ func GenerateReportSummary(ctx *gin.Context) {
 			Code:                0,
 			StreamNumber:        stream.Number,
 			ReportTemplateName:  reportTemplate.Name,
+			HeadTeacherComment:  headTeacherComment.Comment,
 		}
 
 		if err := tx.Create(&reportSummary).Error; err != nil {
