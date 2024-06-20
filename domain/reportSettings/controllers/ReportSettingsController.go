@@ -412,7 +412,9 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 		var assessmentAreas []assessmentAreaModel.AssessmentArea
 		if err := config.DB.Where("assessment_areas.curriculum_class_number = ?", campusClass.CurriculumClassNumber).
-			Joins("JOIN subjects on subjects.number = assessment_areas.subject_number AND subjects.curriculum_number=?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).Find(&assessmentAreas).Error; err != nil {
+			Joins("JOIN subjects on subjects.number = assessment_areas.subject_number AND subjects.curriculum_number=?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).
+			Joins("JOIN subject_clusters on subject_clusters.number = subjects.subject_cluster_number AND subject_clusters.learning_area_number =?", learningArea.Number).
+			Find(&assessmentAreas).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
 			return
 		}
