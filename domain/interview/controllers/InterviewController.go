@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"gorm.io/gorm"
 	"net/http"
@@ -154,6 +155,18 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 	}
 
 	interviewNumber := c.Param("interview_number")
+	assessmentMetricNumber := c.Query("assessment_metric_number")
+
+	assessmentMetric, err := assessmentMetricRepositories.FindAssessmentMetricByNumber(assessmentMetricNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("assessment metric not found"+err.Error()))
+		return
+	}
+
+	if assessmentMetric.Number == "" {
+		c.JSON(http.StatusBadRequest, commons.Feedback("assessment metric not found"))
+		return
+	}
 
 	var interview models.Interview
 	if err := config.DB.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
@@ -163,22 +176,28 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 		return
 	}
 
-	var students []models.InterviewStudent
-	if err := config.DB.Preload("Student").Where("interview_number = ?", interviewNumber).Find(&students).Error; err != nil {
+	var interviewStudents []models.InterviewStudent
+	if err := config.DB.Preload("Student").Where("interview_number = ?", interviewNumber).Find(&interviewStudents).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Failed to fetch students",
 		})
 		return
 	}
 
-	assessmentMetricNumber := c.Query("assessment_metric_number")
+	//assessmentMetricNumber := c.Query("assessment_metric_number")
 	var stds []enrollmentResponse.EnrolledStudent
 	if assessmentMetricNumber != "" {
 
-		for _, student := range students {
+		for _, interviewStudent := range interviewStudents {
+			student := interviewStudent.Student
+
+			if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
+				continue
+			}
+
 			var assessment assessmentModel.Assessment
 
-			if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", student.StudentNumber, assessmentMetricNumber).First(&assessment).Error; err != nil {
+			if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", interviewStudent.StudentNumber, assessmentMetricNumber).First(&assessment).Error; err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
 					c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
 					return
@@ -193,13 +212,13 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 			stds = append(stds, enrollmentResponse.EnrolledStudent{
 
-				Number:            student.Student.Number,
-				StudentSurname:    student.Student.Surname,
-				StudentOtherName:  student.Student.OtherName,
-				StudentSecondName: student.Student.SecondName,
+				Number:            student.Number,
+				StudentSurname:    student.Surname,
+				StudentOtherName:  student.OtherName,
+				StudentSecondName: student.SecondName,
 				Comment:           assessment.Comment,
 				Score:             assessment.ActualScore,
-				Status:            student.Student.Status,
+				Status:            student.Status,
 			})
 		}
 	}

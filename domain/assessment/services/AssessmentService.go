@@ -57,7 +57,7 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	//}
 
 	if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
-		return errors.New("this assessment is not for this student")
+		return errors.New("You can not add results on thithis assessment is not for this student")
 	}
 
 	//find if assessment with student number and assessment metric  already exists
