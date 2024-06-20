@@ -7,9 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetCampusMealCourseByCampusAndDay(day string, mealCourseFeedingSessionNumber string, campusNumber string) (models.CampusMealCourse, error) {
+func GetCampusMealCourseByCampusAndDay(day string, mealCourseFeedingSessionNumber string, campusNumber string, tx ...*gorm.DB) (models.CampusMealCourse, error) {
 
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var campusMealCourse models.CampusMealCourse
 
@@ -28,9 +32,52 @@ func GetCampusMealCourseByCampusAndDay(day string, mealCourseFeedingSessionNumbe
 	return campusMealCourse, nil
 }
 
-func SaveCampusMealCourse(campusMealCourse models.CampusMealCourse) error {
+func SaveCampusMealCourse(campusMealCourse models.CampusMealCourse, tx ...*gorm.DB) error {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Create(&campusMealCourse).Error; err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func GetCampusMealCourseByCampus(mealCourseFeedingSessionNumber string, campusNumber string, tx ...*gorm.DB) ([]models.CampusMealCourse, error) {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var campusMealCourses []models.CampusMealCourse
+
+	if err := db.Where("campus_number = ?", campusNumber).
+		Where("meal_course_feeding_session_number = ?", mealCourseFeedingSessionNumber).
+		Find(&campusMealCourses).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return campusMealCourses, nil
+		}
+
+		return campusMealCourses, err
+	}
+
+	return campusMealCourses, nil
+}
+
+func DeleteCampusMealCourse(campusMealCourse models.CampusMealCourse, tx ...*gorm.DB) error {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Create(&campusMealCourse).Error; err != nil {
 		return err

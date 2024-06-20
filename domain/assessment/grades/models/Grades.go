@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type FormatsOfMeasure struct {
+type Grade struct {
 	gorm.Model
 	Number       string             `json:"number" gorm:"size:36;not null;unique"`
 	Name         string             `json:"name" gorm:"size:36;not null; primaryKey"`
