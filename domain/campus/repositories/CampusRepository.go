@@ -7,9 +7,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetCampusByNumber(campusNumber string) (campusModel.Campus, error) {
+func GetCampusByNumber(campusNumber string, tx ...*gorm.DB) (campusModel.Campus, error) {
 
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var campus campusModel.Campus
 	if err := db.Where("number = ?", campusNumber).First(&campus).Error; err != nil {
 

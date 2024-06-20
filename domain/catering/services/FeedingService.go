@@ -16,6 +16,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -35,25 +36,46 @@ func AddMealCoursesToFeedingGroup(courseToFeedingGroupRequest requests.MealCours
 		return errors.New("selected group is not active")
 	}
 
+	trn := config.DB.Begin()
+
 	for _, day := range courseToFeedingGroupRequest.Days {
 
 		if checkErr := commons.CheckDay(day); checkErr != "" {
 			return errors.New(checkErr)
 		}
 
-		if err = saveMealCoursesForDay(courseToFeedingGroupRequest.MealCourses, day, feedingGroup, currentUser); err != nil {
+		groupMealCourses, err := cateringRepositories.GetAllFeedingGroupMealCoursesForDay(feedingGroup.Number, day, trn)
+		if err != nil {
+			trn.Rollback()
+			return errors.New("failed to get all feeding group meal courses: " + err.Error())
+		}
+
+		for _, groupMealCourse := range groupMealCourses {
+			err = cateringRepositories.DeleteFeedingGroupMealCourse(groupMealCourse, trn)
+			if err != nil {
+				trn.Rollback()
+				return errors.New("failed to clear feeding group meal course: " + err.Error())
+			}
+		}
+
+		if err = saveMealCoursesForDay(courseToFeedingGroupRequest.MealCourses, day, feedingGroup, currentUser, trn); err != nil {
+			trn.Rollback()
 			return err
 		}
 
 	}
 
+	if err = trn.Commit().Error; err != nil {
+		return errors.New("failed to commit transaction: " + err.Error())
+	}
+
 	return nil
 }
 
-func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models.FeedingGroup, currentUser string) error {
+func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models.FeedingGroup, currentUser string, trn *gorm.DB) error {
 
 	for _, mealCourse := range mealCourses {
-		checkMeal, err := cateringRepositories.GetMealCourseByNumber(mealCourse)
+		checkMeal, err := cateringRepositories.GetMealCourseByNumber(mealCourse, trn)
 		if err != nil {
 			return err
 		}
@@ -65,7 +87,7 @@ func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models
 			return errors.New(fmt.Sprintf("meal course '%s' is not active", checkMeal.Name))
 		}
 
-		groupMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(checkMeal.Number, day, feedingGroup.Number)
+		groupMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(checkMeal.Number, day, feedingGroup.Number, trn)
 		if err != nil {
 			return err
 		}
@@ -82,7 +104,7 @@ func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models
 			UserNumber:         currentUser,
 		}
 
-		if err := cateringRepositories.SaveFeedingGroupMealCourse(newGroupMealCourse); err != nil {
+		if err := cateringRepositories.SaveFeedingGroupMealCourse(newGroupMealCourse, trn); err != nil {
 			return err
 		}
 
