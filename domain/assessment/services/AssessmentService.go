@@ -6,7 +6,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"strconv"
@@ -48,14 +47,14 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	}
 
 	//check if there is existing enrollment for the student
-	enrollment, err := repository.FindEnrollmentByStudentNumber(student.Number)
-	if err != nil {
-		return errors.New("checking student enrollment error: " + err.Error())
-	}
-
-	if enrollment.Number == "" {
-		return errors.New("student is not enrolled yet")
-	}
+	//enrollment, err := repository.FindEnrollmentByStudentNumber(student.Number)
+	//if err != nil {
+	//	return errors.New("checking student enrollment error: " + err.Error())
+	//}
+	//
+	//if enrollment.Number == "" {
+	//	return errors.New("student is not enrolled yet")
+	//}
 
 	if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
 		return errors.New("this assessment is not for this student")

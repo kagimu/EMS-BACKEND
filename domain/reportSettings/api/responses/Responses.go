@@ -69,21 +69,23 @@ type LearningArea struct {
 }
 
 type FullReportSummary struct {
-	Student            LeanStudent    `json:"student"`
-	Grade              string         `json:"grade"`
-	LearningAreas      []LearningArea `json:"learning_areas"`
-	Class              string         `json:"class"`
-	ClassAbbreviation  string         `json:"class_abbreviation"`
-	Stream             string         `json:"stream"`
-	SchoolName         string         `json:"school_name"`
-	CampusName         string         `json:"campus_name"`
-	LevelName          string         `json:"level_name"`
-	School             LeanSchool     `json:"school"`
-	Campus             LeanCampus     `json:"campus"`
-	StudyPeriod        string         `json:"study_period"`
-	AcademicYear       string         `json:"academic_year"`
-	ReportColumns      []string       `json:"report_columns"`
-	ReportTemplateName string         `json:"report_template_name"`
+	Student             LeanStudent    `json:"student"`
+	Grade               string         `json:"grade"`
+	LearningAreas       []LearningArea `json:"learning_areas"`
+	Class               string         `json:"class"`
+	ClassAbbreviation   string         `json:"class_abbreviation"`
+	Stream              string         `json:"stream"`
+	SchoolName          string         `json:"school_name"`
+	CampusName          string         `json:"campus_name"`
+	LevelName           string         `json:"level_name"`
+	School              LeanSchool     `json:"school"`
+	Campus              LeanCampus     `json:"campus"`
+	StudyPeriod         string         `json:"study_period"`
+	AcademicYear        string         `json:"academic_year"`
+	ReportColumns       []string       `json:"report_columns"`
+	ReportTemplateName  string         `json:"report_template_name"`
+	TeacherComment      string         `json:"teacher_comment"`
+	HeadTeachersComment string         `json:"head_teachers_comment"`
 }
 
 type LeanSchool interface{}
