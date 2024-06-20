@@ -23,7 +23,6 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}*/
 	gin.SetMode(gin.DebugMode)
-
 	err := os.Setenv("TZ", "Africa/Nairobi")
 	if err != nil {
 		return
