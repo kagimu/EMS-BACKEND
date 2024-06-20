@@ -157,6 +157,11 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 	interviewNumber := c.Param("interview_number")
 	assessmentMetricNumber := c.Query("assessment_metric_number")
 
+	if assessmentMetricNumber == "" {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Choose the assessment schedule"))
+		return
+	}
+
 	assessmentMetric, err := assessmentMetricRepositories.FindAssessmentMetricByNumber(assessmentMetricNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, commons.Feedback("assessment metric not found"+err.Error()))
@@ -186,44 +191,46 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 	//assessmentMetricNumber := c.Query("assessment_metric_number")
 	var stds []enrollmentResponse.EnrolledStudent
-	if assessmentMetricNumber != "" {
 
-		for _, interviewStudent := range interviewStudents {
-			student := interviewStudent.Student
+	for _, interviewStudent := range interviewStudents {
+		student := interviewStudent.Student
 
-			if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
-				continue
-			}
-
-			var assessment assessmentModel.Assessment
-
-			if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", interviewStudent.StudentNumber, assessmentMetricNumber).First(&assessment).Error; err != nil {
-				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
-					return
-				}
-			}
-
-			//var campusClass classModels.CampusClass
-			//if err := config.DB.Where("number = ?", enrollment.CampusClassNumber).First(&campusClass).Error; err != nil {
-			//	c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class not found"})
-			//	return
-			//}
-
-			stds = append(stds, enrollmentResponse.EnrolledStudent{
-
-				Number:            student.Number,
-				StudentSurname:    student.Surname,
-				StudentOtherName:  student.OtherName,
-				StudentSecondName: student.SecondName,
-				Comment:           assessment.Comment,
-				Score:             assessment.ActualScore,
-				Status:            student.Status,
-			})
+		if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
+			continue
 		}
+
+		var assessment assessmentModel.Assessment
+
+		if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", interviewStudent.StudentNumber, assessmentMetricNumber).First(&assessment).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
+				return
+			}
+		}
+
+		//var campusClass classModels.CampusClass
+		//if err := config.DB.Where("number = ?", enrollment.CampusClassNumber).First(&campusClass).Error; err != nil {
+		//	c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class not found"})
+		//	return
+		//}
+
+		stds = append(stds, enrollmentResponse.EnrolledStudent{
+
+			Number:            student.Number,
+			StudentSurname:    student.Surname,
+			StudentOtherName:  student.OtherName,
+			StudentSecondName: student.SecondName,
+			Comment:           assessment.Comment,
+			Score:             assessment.ActualScore,
+			Status:            student.Status,
+		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": stds})
+	if len(stds) == 0 {
+		c.JSON(http.StatusBadRequest, commons.Feedback("No student on this interview for the selected assessment in class "+assessmentMetric.CampusClassNumber))
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": stds})
+	}
 
 }
 
