@@ -41,3 +41,46 @@ func FindAssessmentAreaBySubjectNumberAndCurriculumClassNumber(subjectNumber str
 
 	return assessmentArea, nil
 }
+
+func FindAssessmentAreaByNameAndCurriculumClassNumber(otherName string, curriculumClassNUmber string, trn ...*gorm.DB) (assessmentAreaModels.AssessmentArea, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentArea assessmentAreaModels.AssessmentArea
+
+	if err := db.Where("curriculum_class_number = ? AND name = ? ", curriculumClassNUmber, otherName).First(&assessmentArea).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentArea, nil
+		}
+
+		return assessmentArea, err
+	}
+
+	return assessmentArea, nil
+}
+
+func GetAssessmentAreaByNumber(assessmentAreaNumber string, trn ...*gorm.DB) (assessmentAreaModels.AssessmentArea, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentArea assessmentAreaModels.AssessmentArea
+
+	if err := db.Where("number = ?", assessmentAreaNumber).First(&assessmentArea).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentArea, nil
+		}
+
+		return assessmentArea, err
+	}
+
+	return assessmentArea, nil
+
+}

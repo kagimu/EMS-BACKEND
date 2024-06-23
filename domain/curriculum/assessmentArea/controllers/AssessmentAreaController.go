@@ -59,25 +59,13 @@ func FetchAssessmentAreas(c *gin.Context) {
 }
 
 func EditAssessmentArea(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	var assessmentArea models.AssessmentArea
-	assessmentAreaNumber := c.Param("assessment_area_number")
-	if assessmentAreaNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment area number is required"})
-		return
-	}
-
-	if err := config.DB.First(&assessmentArea, "number = ?", assessmentAreaNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No assessment area found with the specified number"})
-		return
-	}
-
-	var payload requests.AssessmentAreaRequest
+	var payload requests.UpdateAssessmentAreaRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input: %s", err.Error())})
 		return
@@ -88,13 +76,9 @@ func EditAssessmentArea(c *gin.Context) {
 		return
 	}
 
-	updateAssessmentArea := models.AssessmentArea{
-		Name: payload.Name,
-	}
-
-	if err := config.DB.Model(&assessmentArea).Where("number = ?").Updates(updateAssessmentArea).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Failed to update assessment area"})
+	err = services.UpdateAssessmentArea(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to update assessment area: %s", err.Error())})
 		return
 	}
 
