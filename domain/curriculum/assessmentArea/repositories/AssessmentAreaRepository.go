@@ -10,7 +10,6 @@ import (
 func SaveAssessmentArea(assessmentArea assessmentAreaModels.AssessmentArea, trn ...*gorm.DB) (assessmentAreaModels.AssessmentArea, error) {
 
 	db := config.DB
-
 	if len(trn) > 0 {
 		db = trn[0]
 	}
@@ -22,9 +21,12 @@ func SaveAssessmentArea(assessmentArea assessmentAreaModels.AssessmentArea, trn 
 	return assessmentArea, nil
 }
 
-func FindAssessmentAreaBySubjectNumberAndCurriculumClassNumber(subjectNumber string, curriculumClassNUmber string) (assessmentAreaModels.AssessmentArea, error) {
+func FindAssessmentAreaBySubjectNumberAndCurriculumClassNumber(subjectNumber string, curriculumClassNUmber string, trn ...*gorm.DB) (assessmentAreaModels.AssessmentArea, error) {
 
 	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
 
 	var assessmentArea assessmentAreaModels.AssessmentArea
 
