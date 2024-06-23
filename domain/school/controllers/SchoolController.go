@@ -375,5 +375,5 @@ func FetchSchools(context *gin.Context) {
 		})
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_, "message": "Schools fetched successfully!"})
 }
