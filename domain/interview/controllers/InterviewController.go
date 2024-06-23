@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"gorm.io/gorm"
 	"net/http"
@@ -154,6 +155,23 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 	}
 
 	interviewNumber := c.Param("interview_number")
+	assessmentMetricNumber := c.Query("assessment_metric_number")
+
+	if assessmentMetricNumber == "" {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Choose the assessment schedule"))
+		return
+	}
+
+	assessmentMetric, err := assessmentMetricRepositories.FindAssessmentMetricByNumber(assessmentMetricNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("assessment metric not found"+err.Error()))
+		return
+	}
+
+	if assessmentMetric.Number == "" {
+		c.JSON(http.StatusBadRequest, commons.Feedback("assessment metric not found"))
+		return
+	}
 
 	var interview models.Interview
 	if err := config.DB.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
@@ -163,48 +181,56 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 		return
 	}
 
-	var students []models.InterviewStudent
-	if err := config.DB.Preload("Student").Where("interview_number = ?", interviewNumber).Find(&students).Error; err != nil {
+	var interviewStudents []models.InterviewStudent
+	if err := config.DB.Preload("Student").Where("interview_number = ?", interviewNumber).Find(&interviewStudents).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Failed to fetch students",
 		})
 		return
 	}
 
-	assessmentMetricNumber := c.Query("assessment_metric_number")
+	//assessmentMetricNumber := c.Query("assessment_metric_number")
 	var stds []enrollmentResponse.EnrolledStudent
-	if assessmentMetricNumber != "" {
 
-		for _, student := range students {
-			var assessment assessmentModel.Assessment
+	for _, interviewStudent := range interviewStudents {
+		student := interviewStudent.Student
 
-			if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", student.StudentNumber, assessmentMetricNumber).First(&assessment).Error; err != nil {
-				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
-					return
-				}
-			}
-
-			//var campusClass classModels.CampusClass
-			//if err := config.DB.Where("number = ?", enrollment.CampusClassNumber).First(&campusClass).Error; err != nil {
-			//	c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class not found"})
-			//	return
-			//}
-
-			stds = append(stds, enrollmentResponse.EnrolledStudent{
-
-				Number:            student.Student.Number,
-				StudentSurname:    student.Student.Surname,
-				StudentOtherName:  student.Student.OtherName,
-				StudentSecondName: student.Student.SecondName,
-				Comment:           assessment.Comment,
-				Score:             assessment.ActualScore,
-				Status:            student.Student.Status,
-			})
+		if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
+			continue
 		}
+
+		var assessment assessmentModel.Assessment
+
+		if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", interviewStudent.StudentNumber, assessmentMetricNumber).First(&assessment).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
+				return
+			}
+		}
+
+		//var campusClass classModels.CampusClass
+		//if err := config.DB.Where("number = ?", enrollment.CampusClassNumber).First(&campusClass).Error; err != nil {
+		//	c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class not found"})
+		//	return
+		//}
+
+		stds = append(stds, enrollmentResponse.EnrolledStudent{
+
+			Number:            student.Number,
+			StudentSurname:    student.Surname,
+			StudentOtherName:  student.OtherName,
+			StudentSecondName: student.SecondName,
+			Comment:           assessment.Comment,
+			Score:             assessment.ActualScore,
+			Status:            student.Status,
+		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": stds})
+	if len(stds) == 0 {
+		c.JSON(http.StatusBadRequest, commons.Feedback("No student on this interview for the selected assessment in class "+assessmentMetric.CampusClassNumber))
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": stds})
+	}
 
 }
 

@@ -39,7 +39,7 @@ func SaveCampusMealCourse(campusMealCourse models.CampusMealCourse, tx ...*gorm.
 		db = tx[0]
 	}
 
-	if err := db.Create(&campusMealCourse).Error; err != nil {
+	if err := db.Save(&campusMealCourse).Error; err != nil {
 		return err
 	}
 
@@ -79,7 +79,7 @@ func DeleteCampusMealCourse(campusMealCourse models.CampusMealCourse, tx ...*gor
 		db = tx[0]
 	}
 
-	if err := db.Create(&campusMealCourse).Error; err != nil {
+	if err := db.Delete(&campusMealCourse).Error; err != nil {
 		return err
 	}
 
