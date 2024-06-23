@@ -7,8 +7,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
@@ -30,25 +30,10 @@ func CreateAssessmentArea(c *gin.Context) {
 		return
 	}
 
-	//validate for composite unique curriculum_class_number and subject number
+	err = services.SaveAssessmentArea(payload, user.Number)
 
-	var assessmentArea models.AssessmentArea
-	if err := config.DB.Where("curriculum_class_number = ? AND subject_number = ?", payload.CurriculumClassNumber, payload.SubjectNumber).First(&assessmentArea).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Assessment area already exists for the specified curriculum class and subject"})
-		return
-
-	}
-
-	saveAssessmentArea := models.AssessmentArea{
-		Number:                uuid.NewV4().String(),
-		CurriculumClassNumber: payload.CurriculumClassNumber,
-		Name:                  payload.Name,
-		UserNumber:            user.Number,
-		SubjectNumber:         payload.SubjectNumber,
-	}
-
-	if err := config.DB.Create(&saveAssessmentArea).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment area"})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to save assessment area: %s", err.Error())})
 		return
 	}
 
