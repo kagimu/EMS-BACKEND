@@ -501,7 +501,7 @@ func SetupRoutes() *gin.Engine {
 			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
 			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
 			assessmentArea.GET("by-campus-class-number/:campus_class_number", assessmentAreaController.FetchAssessmentAreasByCampusClassNumber)
-			assessmentArea.POST("", assessmentAreaController.EditAssessmentArea)
+			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
 		}
 
 		assessment := main.Group("/assessments")
