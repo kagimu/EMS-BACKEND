@@ -16,7 +16,7 @@ func SaveAssessmentArea(payload requests.AssessmentAreaRequest, currentUser stri
 
 	trn := config.DB.Begin()
 
-	for _, subjectNumber := range payload.SubjectNumber {
+	for _, subjectNumber := range payload.Subjects {
 		err := processSaveAssessmentArea(subjectNumber, payload.CurriculumClassNumber, currentUser, trn)
 		if err != nil {
 			trn.Rollback()

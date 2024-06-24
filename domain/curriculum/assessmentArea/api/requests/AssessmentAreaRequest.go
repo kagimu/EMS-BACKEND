@@ -4,12 +4,12 @@ import "errors"
 
 type AssessmentAreaRequest struct {
 	CurriculumClassNumber string   `json:"curriculum_class_number"`
-	SubjectNumber         []string `json:"subject_numbers"`
+	Subjects              []string `json:"subjects"`
 }
 
 func (assessmentRequest *AssessmentAreaRequest) Validate() error {
 
-	if len(assessmentRequest.SubjectNumber) == 0 {
+	if len(assessmentRequest.Subjects) == 0 {
 		return errors.New("choose subject numbers or custom names")
 	}
 
@@ -17,7 +17,7 @@ func (assessmentRequest *AssessmentAreaRequest) Validate() error {
 		return errors.New("curriculum class number can not be empty")
 	}
 
-	for _, subjectNumber := range assessmentRequest.SubjectNumber {
+	for _, subjectNumber := range assessmentRequest.Subjects {
 		if subjectNumber == "" {
 			return errors.New("subject number can not be empty")
 		}
