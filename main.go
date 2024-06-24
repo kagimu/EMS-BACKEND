@@ -13,7 +13,6 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
-	logs "github.com/Noregrets-Systems/wholesomeEdBackEnd/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -59,26 +58,6 @@ func main() {
 		log.Println(err)
 		return
 	}
-
-	rawJSON := []byte(`{
-	  "level": "debug",
-	  "encoding": "json",
-	  "outputPaths": ["stdout", "/tmp/logs"],
-	  "errorOutputPaths": ["stderr"],
-	  "initialFields": {"foo": "bar"},
-	  "encoderConfig": {
-	    "messageKey": "message",
-	    "levelKey": "level",
-	    "levelEncoder": "lowercase"
-	  }
-	}`)
-
-	logg, err := logs.Init(rawJSON)
-	if err != nil {
-		fmt.Println("Error initializing logger:", err)
-		return
-	}
-	logg.Info("Logger construction succeeded")
 
 	router := routes.SetupRoutes()
 	port := os.Getenv("APP_PORT")
