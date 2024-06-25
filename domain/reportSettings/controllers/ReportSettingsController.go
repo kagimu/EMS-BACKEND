@@ -15,6 +15,7 @@ import (
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -116,63 +117,28 @@ func FetchReportSettings(c *gin.Context) {
 }
 
 func CreatReportColumn(ctx *gin.Context) {
+
+	currentUser, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
 	var payload requests.ReportColumnRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	err := payload.ValidateReportColumn()
+	err = payload.ValidateReportColumn()
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	// validate the current number of entries in the report column table for the report setting
-
-	var reportSetting models.ReportSetting
-	if err := config.DB.Where("number = ?", payload.ReportSettingNumber).First(&reportSetting).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
-		return
-	}
-
-	var reportColumns []models.ReportColumn
-	if err := config.DB.Where("report_setting_number = ?", payload.ReportSettingNumber).Find(&reportColumns).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
-		return
-	}
-
-	if len(reportColumns) >= int(reportSetting.Columns) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report columns for this class are already set up"})
-		return
-	}
-
-	//validate name and code to be unique on each report setting
-
-	var existingReportColumn models.ReportColumn
-	if err := config.DB.Where("name = ? AND report_setting_number = ?", payload.Name, payload.ReportSettingNumber).First(&existingReportColumn).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column with the same name already exists"})
-		return
-	}
-
-	if err := config.DB.Where("code = ? AND report_setting_number = ?", payload.Code, payload.ReportSettingNumber).First(&existingReportColumn).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column with the same code already exists"})
-		return
-
-	}
-
-	// Save report column
-	reportColumn := models.ReportColumn{
-		Number:              uuid.NewV4().String(),
-		ReportSettingNumber: payload.ReportSettingNumber,
-		Name:                payload.Name,
-		PercentageShare:     payload.PercentageShare,
-		UserNumber:          ctx.Request.Header["User-Number"][0],
-		Code:                payload.Code,
-	}
-
-	if err := config.DB.Create(&reportColumn).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report column"})
+	err = reportSettings.SaveReportColumn(payload, currentUser.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
