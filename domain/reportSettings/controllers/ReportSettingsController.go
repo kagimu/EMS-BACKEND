@@ -213,8 +213,8 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 	}
 
 	var existingReportColumn models.ReportColumnAssessment
-	if err := config.DB.Where("report_column_number = ? AND assessment_area_number = ? AND assessment_metric_number = ?", payload.ReportColumnNumber, payload.AssessmentAreaNumber, payload.AssessmentMetricNumber).First(&existingReportColumn).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column already configured on an  assessment"})
+	if err := config.DB.Where("assessment_metric_number = ?", payload.AssessmentMetricNumber).First(&existingReportColumn).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Assessment schedule already added to a report"})
 		return
 	}
 
