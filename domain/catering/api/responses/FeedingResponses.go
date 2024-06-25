@@ -68,9 +68,9 @@ type MenuItemResponse struct {
 	SchoolNumber        string  `json:"school_number"`
 	UnitOfMeasureNumber string  `json:"unit_of_measure_number"`
 	UnitOfMeasureName   string  `json:"unit_of_measure_name"`
-	UnitOfMeasureCode   uint64  `json:"unit_of_measure_code"`
 	Parts               []Part  `json:"parts"`
 	CurrentQuantity     float64 `json:"current_quantity"`
+	UnitCost            float64 `json:"unit_cost"`
 }
 
 type Part struct {
