@@ -300,6 +300,28 @@ func AddStudentToInterview(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Student added to the interview"})
 }
+func RemoveStudentFromInterview(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		return
+	}
+
+	interviewNumber := c.Query("interview_number")
+	studentNumber := c.Query("student_number")
+
+	var InterviewStudent models.InterviewStudent
+	if err := config.DB.Where("interview_number = ? AND student_number = ?", interviewNumber, studentNumber).First(&InterviewStudent).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student not found in interview"})
+		return
+	}
+
+	if err := config.DB.Delete(&InterviewStudent).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to remove student from interview"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Student removed from interview"})
+}
 
 func FetchQuestionsByInterviewNumber(c *gin.Context) {
 	if _, err := commons.GetUserFromHeader(c); err != nil {

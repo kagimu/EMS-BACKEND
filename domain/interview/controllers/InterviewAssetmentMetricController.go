@@ -233,3 +233,25 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 //	}
 //
 //}
+
+func RemoveInterviewAssessmentMetric(c *gin.Context) {
+
+	interviewAssessmentMetricNumber := c.Query("interview_assessment_metric_number")
+	if interviewAssessmentMetricNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview assessment metric number is missing"})
+		return
+	}
+
+	var interviewAssessmentMetric models.InterviewAssessmentMetric
+	if err := config.DB.Where("number = ?", interviewAssessmentMetricNumber).First(&interviewAssessmentMetric).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview assessment metric not found"})
+		return
+	}
+
+	if err := config.DB.Delete(&interviewAssessmentMetric).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete interview assessment metric"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Interview assessment metric deleted successfully"})
+}
