@@ -546,9 +546,9 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		SchoolNumber:        menuItem.SchoolNumber,
 		UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
 		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
-		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
 		CurrentQuantity:     currentQuantity,
 		Parts:               parts,
+		UnitCost:            determineUnitCost(menuItem),
 	}, nil
 }
 
