@@ -505,22 +505,9 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status stri
 	return paginatedResponse, nil
 }
 
-func GetAllMenuItems(schoolNumber string, campusNumber string, status string, itemType string) ([]responses.MenuItemResponse, error) {
+func GetAllMenuItems(schoolNumber string, status string, itemType string) ([]responses.MenuItemResponse, error) {
 
 	response := make([]responses.MenuItemResponse, 0)
-
-	if campusNumber != "" {
-		campus, err := repositories2.GetCampusByNumber(campusNumber)
-		if err != nil {
-			return response, errors.New("validating campus number error: " + err.Error())
-		}
-
-		if campus.Number == "" {
-			return response, errors.New("invalid campus number: " + campusNumber)
-		}
-
-		schoolNumber = campus.SchoolNumber
-	}
 
 	menuItems, err := repositories.GetAllMenuItems(schoolNumber, status, itemType)
 
