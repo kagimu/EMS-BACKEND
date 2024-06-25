@@ -62,17 +62,16 @@ func FetchMenuItemsPaginated(c *gin.Context) {
 func FetchMenuItems(c *gin.Context) {
 	var err error
 
-	campusNumber := c.Query("campus_number")
 	schoolNumber := c.Query("school_number")
 	status := c.Query("status")
 	itemType := c.Query("type")
 
-	if campusNumber == "" && schoolNumber == "" {
+	if schoolNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide at least a campus or school number"})
 		return
 	}
 
-	response, err := services.GetAllMenuItems(schoolNumber, campusNumber, status, itemType)
+	response, err := services.GetAllMenuItems(schoolNumber, status, itemType)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch menu items: " + err.Error()})
 		return
