@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
@@ -16,52 +17,55 @@ import (
 func CreateGradingStandard(ctx *gin.Context) {
 	user, err := commons.GetUserFromHeader(ctx)
 	if err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to get user from header"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get user from header"})
 		return
 	}
 
 	var payload requests.GradingStandardRequest
 	if err := ctx.BindJSON(&payload); err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to process payload"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		ctx.JSON(400, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	//validate if code and name already exists on campus class number
-
-	var gradingStandard models.GradingStandard
-	if err := config.DB.Where("code = ? AND campus_class_number = ?", payload.Code, payload.CampusClassNumber).First(&gradingStandard).Error; err == nil {
-		ctx.JSON(400, gin.H{"message": "Grading standard with the same code already exists"})
-		return
-
-	}
-
-	if err := config.DB.Where("name = ? AND campus_class_number = ?", payload.Name, payload.CampusClassNumber).First(&gradingStandard).Error; err == nil {
-		ctx.JSON(400, gin.H{"message": "Grading standard with the same name already exists"})
+	err = services.SaveGradingStandard(payload, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	gs := models.GradingStandard{
-		Code:              payload.Code,
-		Number:            uuid.NewV4().String(),
-		Name:              payload.Name,
-		Description:       payload.Description,
-		Type:              payload.Type,
-		CampusClassNumber: payload.CampusClassNumber,
-		UserNumber:        user.Number,
-		CampusNumber:      payload.CampusNumber,
-	}
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Grading standard created successfully"})
+}
 
-	if err := config.DB.Create(&gs).Error; err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to save grading standard"})
+func UpdateGradingStandard(ctx *gin.Context) {
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get user from header"})
 		return
 	}
 
-	ctx.JSON(201, gin.H{"message": "Grading standard created successfully"})
+	var payload requests.UpdateGradingStandardRequest
+	if err := ctx.BindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.UpdateGradingStandard(payload, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Grading standard updated successfully"})
 }
 
 func FetchGradingStandards(ctx *gin.Context) {
