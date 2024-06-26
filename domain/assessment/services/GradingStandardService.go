@@ -25,7 +25,7 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 	}
 
 	if byName.Number != "" {
-		return errors.New("name already used: " + byName.Number)
+		return errors.New("name already used: " + byName.Name)
 	}
 
 	gs := models.GradingStandard{
@@ -73,7 +73,7 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 	}
 
 	if byName.Number != "" && byCode.Number != gradingStandard.Number {
-		return errors.New("name already used: " + byName.Number)
+		return errors.New("name already used: " + byName.Name)
 	}
 
 	gs := models.GradingStandard{
