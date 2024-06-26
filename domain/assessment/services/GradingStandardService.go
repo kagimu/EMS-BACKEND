@@ -76,18 +76,15 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 		return errors.New("name already used: " + byName.Name)
 	}
 
-	gs := models.GradingStandard{
-		Code:              gradingStandardRequest.Code,
-		Number:            uuid.NewV4().String(),
-		Name:              gradingStandardRequest.Name,
-		Description:       gradingStandardRequest.Description,
-		Type:              gradingStandardRequest.Type,
-		CampusClassNumber: gradingStandardRequest.CampusClassNumber,
-		UserNumber:        currentUser,
-		CampusNumber:      gradingStandardRequest.CampusNumber,
-	}
+	gradingStandard.Code = gradingStandardRequest.Code
+	gradingStandard.Name = gradingStandardRequest.Name
+	gradingStandard.Description = gradingStandardRequest.Description
+	gradingStandard.Type = gradingStandardRequest.Type
+	gradingStandard.CampusClassNumber = gradingStandardRequest.CampusClassNumber
+	gradingStandard.CampusNumber = gradingStandardRequest.CampusNumber
+	gradingStandard.UserNumber = currentUser
 
-	err = repositories.SaveGradingStandard(gs)
+	err = repositories.SaveGradingStandard(gradingStandard)
 	if err != nil {
 		return errors.New("Saving grading standard error: " + err.Error())
 	}
