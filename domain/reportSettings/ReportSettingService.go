@@ -141,7 +141,7 @@ func addAssessmentToReportColumn(assessmentMetricNumber string, reportColumn mod
 
 	assessmentMetric, err := reporsitory.GetReportColumnAssessmentByAssessmentMetricNumber(assessmentMetricNumber)
 	if err != nil {
-		return errors.New("Error checking assessment metric number: " + assessmentMetricNumber)
+		return errors.New("Error checking assessment metric number: " + err.Error())
 	}
 
 	if assessmentMetric.Number != "" {
