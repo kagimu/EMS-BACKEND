@@ -12,7 +12,7 @@ func GetReportColumnAssessmentByAssessmentMetricNumber(assessmentMetricNumber st
 	db := config.DB
 	var reportColumnAssessment models.ReportColumnAssessment
 
-	if err := db.Where("assessment_metric_umber = ? ", assessmentMetricNumber).First(&reportColumnAssessment).Error; err != nil {
+	if err := db.Where("assessment_metric_number = ? ", assessmentMetricNumber).First(&reportColumnAssessment).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return reportColumnAssessment, nil
