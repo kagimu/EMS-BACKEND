@@ -6,6 +6,7 @@ import (
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -981,5 +982,23 @@ func CreateTeachersComment(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Teacher comment created successfully"})
+
+}
+
+func FetchNarrativeScore(c *gin.Context) {
+
+	studentNumber := c.Query("student_number")
+	if studentNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide student number"})
+		return
+	}
+
+	narrations, err := services2.FetchLearnerNarrative(studentNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": narrations})
 
 }

@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func QueryCampusClassByNumber(campusClassNumber string) (campusClassModel.CampusClass, error) {
+func GetCampusClassByNumber(campusClassNumber string) (campusClassModel.CampusClass, error) {
 
 	var campusClass campusClassModel.CampusClass
 

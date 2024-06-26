@@ -2,13 +2,21 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	userModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"strconv"
+	"time"
 )
 
 func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNumber string) error {
@@ -61,7 +69,7 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	}
 
 	//find if assessment with student number and assessment metric  already exists
-	currentAssessment, err := assessmentMetricRepositories.FindAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assessmentMetric.Number)
+	currentAssessment, err := assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assessmentMetric.Number)
 	if err != nil {
 		return errors.New("checking student current score error: " + err.Error())
 	}
@@ -96,4 +104,76 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	}
 
 	return nil
+}
+
+func FetchLearnerNarrative(studentNumber string) ([]responses.NarrativeResponse, error) {
+
+	student, err := studentRepositories.FindStudentByNumber(studentNumber)
+	if err != nil {
+		return nil, errors.New("checking student number error: " + err.Error())
+	}
+
+	if student.Number == "" {
+		return nil, errors.New("student not found")
+	}
+
+	var assessmentsResponse = make([]responses.NarrativeResponse, 0)
+
+	var assessments []models.Assessment
+
+	assessments, err = assessmentMetricRepositories.FindAssessmentByStudentNumberAndAssessmentMetricNumber(studentNumber, "")
+	if err != nil {
+		return assessmentsResponse, errors.New("checking student assessments error: " + err.Error())
+	}
+
+	for _, assessment := range assessments {
+		assessmentsResponse = append(assessmentsResponse, buildNarrativeResponse(assessment))
+	}
+
+	return assessmentsResponse, nil
+}
+
+func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeResponse {
+
+	user, err := repository.GetUserByNumber(assessment.UserNumber)
+	if err != nil {
+		fmt.Println("user not found")
+		user = userModels.User{}
+	}
+
+	assessmentMetric, err := assessmentMetricRepositories.FindAssessmentMetricByNumber(assessment.AssessmentMetricNumber)
+	if err != nil {
+		fmt.Println("assessment metric not found")
+		return responses.NarrativeResponse{}
+	}
+
+	if assessmentMetric.Number == "" {
+		return responses.NarrativeResponse{}
+	}
+
+	class, err := repositories.GetCampusClassByNumber(assessmentMetric.CampusClassNumber)
+	if err != nil {
+		return responses.NarrativeResponse{}
+	}
+
+	studyPeriod, err := repositories2.GetStudyPeriodByNumber(assessmentMetric.StudyPeriodNumber)
+	if err != nil {
+		return responses.NarrativeResponse{}
+	}
+
+	academicYear, err := repositories3.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
+	if err != nil {
+		return responses.NarrativeResponse{}
+	}
+
+	return responses.NarrativeResponse{
+		Date:           assessment.CreatedAt.Format(time.DateOnly),
+		Number:         assessment.Number,
+		Narration:      assessment.Comment,
+		Teacher:        user.FirstName + " " + user.LastName,
+		AssessmentArea: assessmentMetric.AssessmentAreaName,
+		Class:          class.ClassName,
+		StudyPeriod:    studyPeriod.StudyPeriodName,
+		AcademicYear:   academicYear.AcademicYearName,
+	}
 }
