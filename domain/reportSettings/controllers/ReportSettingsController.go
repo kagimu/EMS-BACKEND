@@ -180,60 +180,32 @@ func FetchReportColumns(ctx *gin.Context) {
 }
 
 func CreateReportColumnAssessment(ctx *gin.Context) {
+
+	currentUser, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
 	var payload requests.ReportColumnAssessmentRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	err := payload.ValidateReportColumnAssessment()
+	err = payload.ValidateReportColumnAssessment()
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	//check if report column exists
-	var reportColumn models.ReportColumn
-	if err := config.DB.Where("number = ?", payload.ReportColumnNumber).First(&reportColumn).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column does not exist"})
-			return
-		}
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report column"})
-		return
-
-	}
-
-	// check code uniqueness
-
-	var existingReportColumnAssessment models.ReportColumnAssessment
-	if err := config.DB.Where("code = ? AND report_column_number = ?", payload.Code, payload.ReportColumnNumber).First(&existingReportColumnAssessment).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column assessment with the same code already exists"})
+	err = reportSettings.SaveAssessmentToReportColumn(payload, currentUser.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var existingReportColumn models.ReportColumnAssessment
-	if err := config.DB.Where("assessment_metric_number = ?", payload.AssessmentMetricNumber).First(&existingReportColumn).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Assessment schedule already added to a report"})
-		return
-	}
-
-	// Save report column assessment
-	reportColumnAssessment := models.ReportColumnAssessment{
-		Number:                 uuid.NewV4().String(),
-		ReportColumnNumber:     payload.ReportColumnNumber,
-		AssessmentAreaNumber:   payload.AssessmentAreaNumber,
-		AssessmentMetricNumber: payload.AssessmentMetricNumber,
-		UserNumber:             ctx.Request.Header["User-Number"][0],
-		Code:                   payload.Code,
-	}
-
-	if err := config.DB.Create(&reportColumnAssessment).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report column assessment"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Report column assessment created successfully"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Report column assessment added successfully"})
 }
 
 func FetchReportColumnAssessments(ctx *gin.Context) {
@@ -280,7 +252,6 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 			Number:           reportColumnAssessment.Number,
 			AssessmentArea:   assessmentArea.Name,
 			AssessmentMetric: assessmentMetric.Name,
-			Code:             reportColumnAssessment.Code,
 			ReportColumn:     reportColumn.Name,
 		}
 		rca = append(rca, response)

@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentUser string) error {
@@ -103,6 +104,61 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 	err = reporsitory.SaveReportColumn(newReportColumn)
 	if err != nil {
 		return errors.New("Error saving report column: " + err.Error())
+	}
+
+	return nil
+}
+
+func SaveAssessmentToReportColumn(reportColumnAssessmentRequest requests.ReportColumnAssessmentRequest, currentUser string) error {
+
+	reportColumn, err := reporsitory.GetReportColumnByNumber(reportColumnAssessmentRequest.ReportColumnNumber)
+	if err != nil {
+		return errors.New("Error checking report column by number: " + reportColumnAssessmentRequest.ReportColumnNumber)
+	}
+
+	if reportColumn.Number == "" {
+		return errors.New("invalid report column number")
+	}
+
+	trn := config.DB.Begin()
+
+	for _, assessmentMetricNumber := range reportColumnAssessmentRequest.AssessmentMetrics {
+		err = addAssessmentToReportColumn(assessmentMetricNumber, reportColumn, reportColumnAssessmentRequest.AssessmentAreaNumber, currentUser, trn)
+		if err != nil {
+			trn.Rollback()
+			return err
+		}
+	}
+
+	if err := trn.Commit(); err != nil {
+		return errors.New("Failed to finalize processing: " + err.Error.Error())
+	}
+
+	return nil
+}
+
+func addAssessmentToReportColumn(assessmentMetricNumber string, reportColumn models.ReportColumn, assessmentAreaNumber string, currentUser string, trn *gorm.DB) error {
+
+	assessmentMetric, err := reporsitory.GetReportColumnAssessmentByAssessmentMetricNumber(assessmentMetricNumber)
+	if err != nil {
+		return errors.New("Error checking assessment metric number: " + assessmentMetricNumber)
+	}
+
+	if assessmentMetric.Number != "" {
+		return errors.New("The assessment metric number is already used: " + assessmentAreaNumber)
+	}
+
+	reportColumnAssessment := models.ReportColumnAssessment{
+		Number:                 uuid.NewV4().String(),
+		ReportColumnNumber:     reportColumn.Number,
+		AssessmentAreaNumber:   assessmentAreaNumber,
+		AssessmentMetricNumber: assessmentMetricNumber,
+		UserNumber:             currentUser,
+	}
+
+	err = reporsitory.SaveReportColumnAssessment(reportColumnAssessment, trn)
+	if err != nil {
+		return errors.New("Error saving report column assessment: " + err.Error())
 	}
 
 	return nil

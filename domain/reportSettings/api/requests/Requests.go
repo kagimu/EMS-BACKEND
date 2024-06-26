@@ -24,10 +24,10 @@ type ReportColumnRequestItem struct {
 }
 
 type ReportColumnAssessmentRequest struct {
-	Code                   int64  `json:"code"`
-	ReportColumnNumber     string `json:"report_column_number"`
-	AssessmentAreaNumber   string `json:"assessment_area_number"`
-	AssessmentMetricNumber string `json:"assessment_metric_number"`
+	Code                 int64    `json:"code"`
+	ReportColumnNumber   string   `json:"report_column_number"`
+	AssessmentAreaNumber string   `json:"assessment_area_number"`
+	AssessmentMetrics    []string `json:"assessment_schedule"`
 }
 
 type ReportSummaryRequest struct {
@@ -172,13 +172,14 @@ func (reportColumnAssessment *ReportColumnAssessmentRequest) ValidateReportColum
 	if reportColumnAssessment.AssessmentAreaNumber == "" {
 		return errors.New("assessment area is required")
 	}
-	if reportColumnAssessment.AssessmentMetricNumber == "" {
-		return errors.New("assessment metric is required")
+	if len(reportColumnAssessment.AssessmentMetrics) == 0 {
+		return errors.New("select some assessment schedules")
 	}
 
 	if reportColumnAssessment.Code == 0 {
 		return errors.New("code is required")
 	}
+
 	return nil
 
 }

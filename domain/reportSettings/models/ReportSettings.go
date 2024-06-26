@@ -41,10 +41,9 @@ type ReportColumn struct {
 type ReportColumnAssessment struct {
 	gorm.Model
 	Number                 string          `json:"number" gorm:"size:36;unique;not null"`
-	Code                   int64           `json:"code" gorm:"type:bigint;not null;"`
 	ReportColumnNumber     string          `json:"report_column_number" gorm:"size:36;not null;"`
 	AssessmentAreaNumber   string          `json:"assessment_number" gorm:"size:36;not null;"`
-	AssessmentMetricNumber string          `json:"assessment_metric_number" gorm:"size:36;not null;"`
+	AssessmentMetricNumber string          `json:"assessment_metric_number" gorm:"size:36;not null;unique;"`
 	ReportColumn           ReportColumn    `gorm:"foreignKey:ReportColumnNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber             string          `json:"user_number" gorm:"size:36;not null;"`
 	User                   userModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
