@@ -2,6 +2,7 @@ package reportSettings
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
@@ -18,6 +19,31 @@ func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentU
 	if reportSetting.Number == "" {
 		return errors.New("invalid report setting number")
 	}
+
+	if reportSetting.Columns < int64(len(reportColumnRequest.Columns)) {
+		return errors.New("you should define upto the specified columns")
+	}
+
+	trn := config.DB.Begin()
+
+	for _, reportColumn := range reportColumnRequest.Columns {
+
+		err = processReportColumn(reportColumn, currentUser, reportSetting)
+		if err != nil {
+			trn.Rollback()
+			return err
+		}
+
+	}
+
+	if err := trn.Commit(); err != nil {
+		return errors.New("failed to commit report columns transaction: " + err.Error.Error())
+	}
+
+	return nil
+}
+
+func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, currentUser string, reportSetting models.ReportSetting) error {
 
 	checkName, err := reporsitory.GetReportColumnByNameAndReportSettingsNumber(reportColumnRequest.Name, reportSetting.Number)
 	if err != nil {
@@ -62,7 +88,7 @@ func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentU
 	remainingPercentageScore := 100 - savedColumnsPercentageShare
 
 	if remainingPercentageScore > reportColumnRequest.PercentageShare && (savedReportColumn+1) >= reportSetting.Columns {
-		return errors.New("this report column should cover upto percentage 100%")
+		return errors.New("the report column '" + reportColumnRequest.Name + "' should cover upto percentage")
 	}
 
 	newReportColumn := models.ReportColumn{

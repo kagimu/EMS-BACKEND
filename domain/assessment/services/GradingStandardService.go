@@ -49,13 +49,13 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 
 func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandardRequest, currentUser string) error {
 
-	gradingStandard, err := repositories.GetGradingStandardByNumber(gradingStandardRequest.GradingStandard)
+	gradingStandard, err := repositories.GetGradingStandardByNumber(gradingStandardRequest.GradingStandardNumber)
 	if err != nil {
 		return errors.New("Checking grading standard error: " + err.Error())
 	}
 
 	if gradingStandard.Number == "" {
-		return errors.New("grading standard number is empty: " + gradingStandardRequest.GradingStandard)
+		return errors.New("grading standard number is empty: " + gradingStandardRequest.GradingStandardNumber)
 	}
 
 	byCode, err := repositories.FindGradingStandardByCodeAndClassNumber(gradingStandardRequest.Code, gradingStandardRequest.CampusClassNumber)
