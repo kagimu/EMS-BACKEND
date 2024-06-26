@@ -177,7 +177,7 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 
 func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, currentUserNumber string) string {
 
-	campusClass, err := classRepositories.QueryCampusClassByNumber(campusClassNumber)
+	campusClass, err := classRepositories.GetCampusClassByNumber(campusClassNumber)
 
 	if err != nil {
 		return err.Error()
