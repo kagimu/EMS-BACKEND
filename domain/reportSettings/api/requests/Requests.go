@@ -13,10 +13,14 @@ type ReportSettingsRequest struct {
 }
 
 type ReportColumnRequest struct {
-	Code                int64   `json:"code"`
-	ReportSettingNumber string  `json:"report_setting_number"`
-	Name                string  `json:"name"`
-	PercentageShare     float64 `json:"percentage_share"`
+	ReportSettingNumber string                    `json:"report_setting_number"`
+	Columns             []ReportColumnRequestItem `json:"columns"`
+}
+
+type ReportColumnRequestItem struct {
+	Code            int64   `json:"code"`
+	Name            string  `json:"name"`
+	PercentageShare float64 `json:"percentage_share"`
 }
 
 type ReportColumnAssessmentRequest struct {
@@ -179,20 +183,26 @@ func (reportColumnAssessment *ReportColumnAssessmentRequest) ValidateReportColum
 
 }
 
-func (reportColumn *ReportColumnRequest) ValidateReportColumn() error {
-	if reportColumn.ReportSettingNumber == "" {
+func (reportColumnRequest *ReportColumnRequest) ValidateReportColumn() error {
+	if reportColumnRequest.ReportSettingNumber == "" {
 		return errors.New("report setting is required")
 	}
-	if reportColumn.Name == "" {
-		return errors.New("name is required")
-	}
-	if reportColumn.PercentageShare == 0 {
-		return errors.New("percentage share is required")
+
+	for _, reportColumn := range reportColumnRequest.Columns {
+
+		if reportColumn.Name == "" {
+			return errors.New("name is required")
+		}
+
+		if reportColumn.PercentageShare <= 0 {
+			return errors.New("percentage share is required")
+		}
+
+		if reportColumn.Code <= 0 {
+			return errors.New("code is required")
+		}
 	}
 
-	if reportColumn.Code == 0 {
-		return errors.New("code is required")
-	}
 	return nil
 
 }

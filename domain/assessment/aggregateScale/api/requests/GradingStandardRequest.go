@@ -32,7 +32,7 @@ func (a *GradingStandardRequest) Validate() error {
 
 type UpdateGradingStandardRequest struct {
 	GradingStandardRequest
-	GradingStandard string `json:"grading_standard"`
+	GradingStandardNumber string `json:"grading_standard_number"`
 }
 
 func (a *UpdateGradingStandardRequest) Validate() error {
@@ -41,7 +41,7 @@ func (a *UpdateGradingStandardRequest) Validate() error {
 		return err
 	}
 
-	if a.GradingStandard == "" {
+	if a.GradingStandardNumber == "" {
 		return errors.New("provide grading standard number to edit")
 	}
 
