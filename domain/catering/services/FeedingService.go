@@ -360,7 +360,7 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 		unitOfMeasure, err := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
 		if err != nil {
 			fmt.Println("Error getting unit of measure" + err.Error())
-			return items
+			unitOfMeasure = models.UnitOfMeasure{}
 		}
 
 		unitOfMeasureName := "None"
