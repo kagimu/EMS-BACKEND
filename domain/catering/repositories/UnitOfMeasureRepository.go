@@ -16,7 +16,7 @@ func GetUnitOfMeasureByNumber(unitOfMeasureNumber string) (models.UnitOfMeasure,
 	if err := db.Where("number = ? ", unitOfMeasureNumber).First(&unitOfMeasure).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return unitOfMeasure, errors.New("invalid Unit Of Measure Number")
+			return unitOfMeasure, nil
 		}
 
 		return unitOfMeasure, err
