@@ -155,28 +155,13 @@ func FetchReportColumns(ctx *gin.Context) {
 		return
 	}
 
-	var reportColumns []models.ReportColumn
-
-	if err := config.DB.Scopes(filters.ByAnyField("report_setting_number", ctx.Query("report_setting_number"))).Find(&reportColumns).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
+	response, err := reportSettings.GetReportColumns(reportSettingsNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var rc []responses.ReportColumnResponse
-
-	for _, reportColumn := range reportColumns {
-		response := responses.ReportColumnResponse{
-			Name:              reportColumn.Name,
-			Number:            reportColumn.Number,
-			PercentageShare:   reportColumn.PercentageShare,
-			Code:              reportColumn.Code,
-			ReportSettingName: reportColumn.ReportSettingName,
-		}
-		rc = append(rc, response)
-
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"data": rc})
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
 
 }
 
