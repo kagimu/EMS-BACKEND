@@ -38,3 +38,20 @@ func SaveReportColumnAssessment(reportColumnAssessment models.ReportColumnAssess
 
 	return nil
 }
+
+func FindReportColumnAssessmentsByReportColumnNumber(reportColumnNumber string) ([]models.ReportColumnAssessment, error) {
+
+	db := config.DB
+	var reportColumnAssessments []models.ReportColumnAssessment
+
+	if err := db.Where("report_column_number = ?", reportColumnNumber).Find(&reportColumnAssessments).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportColumnAssessments, nil
+		}
+
+		return reportColumnAssessments, err
+	}
+
+	return reportColumnAssessments, nil
+}

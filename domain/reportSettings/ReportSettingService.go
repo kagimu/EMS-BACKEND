@@ -3,11 +3,15 @@ package reportSettings
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"time"
 )
 
 func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentUser string) error {
@@ -162,4 +166,75 @@ func addAssessmentToReportColumn(assessmentMetricNumber string, reportColumn mod
 	}
 
 	return nil
+}
+
+func GetReportColumns(reportSettingNumber string) ([]responses.ReportColumnResponse, error) {
+
+	reportSetting, err := reporsitory.GetReportSettingByNumber(reportSettingNumber)
+	if err != nil {
+		return nil, errors.New("Error getting report setting: " + err.Error())
+	}
+
+	if reportSetting.Number == "" {
+		return nil, errors.New("invalid report settings number")
+	}
+
+	columns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number)
+	if err != nil {
+		return nil, errors.New("Error getting report columns: " + err.Error())
+	}
+
+	var reportColumns = make([]responses.ReportColumnResponse, 0)
+
+	for _, column := range columns {
+
+		reportColumn := responses.ReportColumnResponse{
+			Name:            column.Name,
+			Number:          column.Number,
+			PercentageShare: column.PercentageShare,
+			Code:            column.Code,
+		}
+
+		reportColumnAssessments, err := reporsitory.FindReportColumnAssessmentsByReportColumnNumber(column.Number)
+		if err != nil {
+			return nil, errors.New("Error getting report column assessments: " + err.Error())
+		}
+
+		var reportColumnAssessmentResponse []responses.ReportColumnAssessmentResponse
+
+		for _, reportColumnAssessment := range reportColumnAssessments {
+
+			assessmentArea, err := repositories.GetAssessmentAreaByNumber(reportColumnAssessment.AssessmentAreaNumber)
+			if err != nil {
+				return nil, errors.New("Error getting report column assessment area: " + err.Error())
+			}
+
+			if assessmentArea.Number == "" {
+				return nil, errors.New("invalid report column assessment area number")
+			}
+
+			assessmentSchedule, err := repositories2.FindAssessmentMetricByNumber(reportColumnAssessment.AssessmentMetricNumber)
+			if err != nil {
+				return nil, errors.New("Error getting report column assessment metric number: " + err.Error())
+			}
+
+			if assessmentSchedule.Number == "" {
+				return nil, errors.New("invalid report column assessment metric number")
+			}
+
+			reportColumnAssessmentResponse = append(reportColumnAssessmentResponse, responses.ReportColumnAssessmentResponse{
+				Number:           reportColumnAssessment.Number,
+				AssessmentArea:   assessmentArea.Name,
+				AssessmentMetric: assessmentSchedule.Name,
+				ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateOnly),
+			})
+		}
+
+		reportColumn.Assessments = reportColumnAssessmentResponse
+
+		reportColumns = append(reportColumns, reportColumn)
+
+	}
+
+	return reportColumns, nil
 }

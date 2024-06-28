@@ -189,7 +189,12 @@ func (reportColumnRequest *ReportColumnRequest) ValidateReportColumn() error {
 		return errors.New("report setting is required")
 	}
 
-	for _, reportColumn := range reportColumnRequest.Columns {
+	columns := reportColumnRequest.Columns
+	if columns == nil {
+		return errors.New("set columns list")
+	}
+
+	for _, reportColumn := range columns {
 
 		if reportColumn.Name == "" {
 			return errors.New("name is required")
