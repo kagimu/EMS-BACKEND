@@ -2,10 +2,13 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest, currentUser string) error {
@@ -87,6 +90,87 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 	err = repositories.SaveGradingStandard(gradingStandard)
 	if err != nil {
 		return errors.New("Saving grading standard error: " + err.Error())
+	}
+
+	return nil
+}
+
+func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, currentUser string) error {
+	aggregateStandard, err := repositories.GetGradingStandardByNumber(aggregateScaleRequest.GradingStandardNumber)
+	if err != nil {
+		return errors.New("Checking grading standard error: " + err.Error())
+	}
+
+	if aggregateStandard.Number == "" {
+		return errors.New("invalid grading standard number: " + aggregateScaleRequest.GradingStandardNumber)
+	}
+
+	grades := aggregateScaleRequest.Grades
+
+	err = checkDuplicates(grades)
+
+	trn := config.DB.Begin()
+
+	for _, grade := range grades {
+
+		err = createGrade(trn, grade, currentUser, aggregateStandard)
+		if err != nil {
+			trn.Rollback()
+			return err
+		}
+	}
+
+	if err := trn.Commit().Error; err != nil {
+		return errors.New("commit grading scales error: " + err.Error())
+	}
+
+	return nil
+}
+
+func checkDuplicates(grades []requests.AggregateScaleItem) error {
+
+	cleanGrades := make([]requests.AggregateScaleItem, len(grades))
+
+	for i, grade := range grades {
+
+		shouldReject := ""
+
+		for _, cleanGrade := range cleanGrades {
+
+			if cleanGrade.GradeNumber == grade.GradeNumber {
+				shouldReject = fmt.Sprintf("grade %s already exists", grade.GradeNumber)
+			}
+
+		}
+
+		if shouldReject == "" {
+			cleanGrades[i] = grade
+		} else {
+			return errors.New(shouldReject)
+		}
+
+	}
+
+	return nil
+}
+
+func createGrade(trn *gorm.DB, aggregateScaleItem requests.AggregateScaleItem, user string, gradingStandard models.GradingStandard) error {
+
+	newAggregateScale := models.AggregateScale{
+		Code:                  aggregateScaleItem.Code,
+		Number:                uuid.NewV4().String(),
+		MinValue:              aggregateScaleItem.MinValue,
+		MaxValue:              aggregateScaleItem.MaxValue,
+		CampusClassNumber:     gradingStandard.CampusClassNumber,
+		CampusNumber:          gradingStandard.CampusNumber,
+		UserNumber:            user,
+		GradeNumber:           aggregateScaleItem.GradeNumber,
+		GradingStandardNumber: gradingStandard.Number,
+	}
+
+	err := repositories.SaveAggregateScale(newAggregateScale, trn)
+	if err != nil {
+		return errors.New("Saving grading scale error: " + err.Error())
 	}
 
 	return nil

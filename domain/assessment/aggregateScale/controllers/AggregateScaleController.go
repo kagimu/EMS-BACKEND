@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"net/http"
 	"os"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 func CreateAggregateScale(c *gin.Context) {
@@ -33,51 +33,12 @@ func CreateAggregateScale(c *gin.Context) {
 		return
 	}
 
-	var fileName string
+	err = services.SaveAggregateScale(payload, user.Number)
 
-	_, err = c.FormFile("illustration")
-	if err == nil {
-		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
-		fileName = file
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
-			return
-		}
-	}
-
-	saveAggregateScale := models.AggregateScale{
-		Code:                  payload.Code,
-		Number:                uuid.NewV4().String(),
-		MinValue:              payload.MinValue,
-		MaxValue:              payload.MaxValue,
-		Illustration:          fileName,
-		CampusClassNumber:     payload.CampusClassNumber,
-		CampusNumber:          payload.CampusNumber,
-		UserNumber:            user.Number,
-		GradeNumber:           payload.GradeNumber,
-		GradingStandardNumber: payload.GradingStandardNumber,
-	}
-
-	var duplicate models.AggregateScale
-	if err := config.DB.Where("name = ? AND campus_class_number = ? AND grading_standard_number = ? ", saveAggregateScale.Name, payload.CampusClassNumber, payload.GradingStandardNumber).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale name on this class and grading standard"})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-
-	if err := config.DB.Where("code = ? AND campus_class_number = ? ", saveAggregateScale.Code, saveAggregateScale.CampusClassNumber).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "This code has already been used on this class"})
-		return
-	}
-
-	tx := config.DB.Begin()
-
-	if err := tx.Create(&saveAggregateScale).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save aggregate scale"})
-		return
-	}
-
-	tx.Commit()
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Aggregate scale created successfully"})
 }
