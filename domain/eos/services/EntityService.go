@@ -169,3 +169,28 @@ func DeleteEntity(entityNumber string, currentUserNumber string) error {
 
 	return nil
 }
+
+func FindCalendarEvents(entityNumber string) ([]responses.Calendar, error) {
+
+	var calendars = make([]responses.Calendar, 0)
+
+	calendarEvents, err := repositories.FindCalendarEvent(entityNumber)
+	if err != nil {
+		return calendars, errors.New("finding calendar events error: " + err.Error())
+	}
+
+	for _, calendarEvent := range calendarEvents {
+		calendars = append(calendars, createCalendarResponse(calendarEvent))
+	}
+
+	return calendars, nil
+}
+
+func createCalendarResponse(calendarEvent models.CalendarEvent) responses.Calendar {
+	return responses.Calendar{
+		Name:      calendarEvent.Name,
+		Number:    calendarEvent.Number,
+		StartDate: calendarEvent.StartDate,
+		EndDate:   calendarEvent.EndDate,
+	}
+}

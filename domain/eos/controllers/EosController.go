@@ -307,3 +307,19 @@ func DeleteEntity(context *gin.Context) {
 
 	context.JSON(http.StatusOK, commons.Feedback("Entity removed successfully"))
 }
+
+func AllCalendarEvents(context *gin.Context) {
+	entityNumber := context.Query("entity_number")
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to delete"))
+		return
+	}
+
+	calendars, err := services.FindCalendarEvents(entityNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": calendars})
+}
