@@ -10,6 +10,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
 )
 
+type EntityService struct{}
+
 func SaveCurrentEntity(entityNumber string, currentUserNumber string) (responses.EntityResponse, error) {
 
 	var entity responses.EntityResponse
@@ -61,7 +63,7 @@ func createEntityResponse(details models.Entity) responses.EntityResponse {
 	}
 }
 
-func GetCurrentEntity(currentUserNumber string) (responses.EntityResponse, error) {
+func (entity *EntityService) GetCurrentEntity(currentUserNumber string) (responses.EntityResponse, error) {
 
 	activeUserEntity, err := repositories.FindActiveUserEntityByUserNumber(currentUserNumber)
 	if err != nil {
@@ -75,7 +77,7 @@ func GetCurrentEntity(currentUserNumber string) (responses.EntityResponse, error
 	return createEntityResponse(activeUserEntity.Entity), nil
 }
 
-func UpdateEntity(updateEntityRequest requests.UpdateEntityRequest, currentUserNumber string) error {
+func (entity *EntityService) UpdateEntity(updateEntityRequest requests.UpdateEntityRequest, currentUserNumber string) error {
 
 	entityUser, err := repositories.FindEntityUser(currentUserNumber, updateEntityRequest.EntityNumber)
 	if err != nil {
