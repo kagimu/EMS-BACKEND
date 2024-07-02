@@ -315,7 +315,7 @@ func DeleteEntity(context *gin.Context) {
 func AllCalendarEvents(context *gin.Context) {
 	entityNumber := context.GetString("entity_number")
 	if entityNumber == "" {
-		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to delete"))
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to get events from."))
 		return
 	}
 
