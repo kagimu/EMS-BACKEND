@@ -7,4 +7,5 @@ type UserMealResponse struct {
 	FeedingGroupNumber   string               `json:"feeding_group_number"`
 	Meals                []SingleUserMealItem `json:"meals"`
 	FeedingSessionNumber string               `json:"feeding_session_number"`
+	Served               bool                 `json:"served"`
 }
