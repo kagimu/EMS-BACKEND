@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"gorm.io/gorm"
 	"net/http"
@@ -199,6 +200,10 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 			continue
 		}
 
+		if student.Status != constants.StatusInterviewScheduled {
+			continue
+		}
+
 		var assessment assessmentModel.Assessment
 
 		if err := config.DB.Where("student_number = ? AND assessment_metric_number = ?", interviewStudent.StudentNumber, assessmentMetricNumber).First(&assessment).Error; err != nil {
@@ -215,13 +220,13 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 		//}
 
 		stds = append(stds, enrollmentResponse.EnrolledStudent{
-
 			Number:            student.Number,
 			StudentSurname:    student.Surname,
 			StudentOtherName:  student.OtherName,
 			StudentSecondName: student.SecondName,
 			Comment:           assessment.Comment,
-			Score:             assessment.ActualScore,
+			Score:             assessment.Score,
+			ActualScore:       assessment.ActualScore,
 			Status:            student.Status,
 		})
 	}
@@ -290,7 +295,7 @@ func AddStudentToInterview(c *gin.Context) {
 	}
 
 	updateApplicationStatus := applicationModel.Application{
-		Status: "INTERVIEW_SCHEDULED",
+		Status: constants.StatusInterviewScheduled,
 	}
 
 	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
