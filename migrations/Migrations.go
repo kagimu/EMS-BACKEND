@@ -196,6 +196,7 @@ func Init() error {
 		&reportingActivityModels.Indicator{},
 		&eosModels.ActiveUserEntity{},
 		&gradesModels.Grade{},
+		&cateringModels.CalendarEventFeedingGroup{},
 	)
 
 	if err != nil {

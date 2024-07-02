@@ -360,6 +360,7 @@ func SetupRoutes() *gin.Engine {
 			eos.POST("calendars/update", eosController.AddCalendarEvent)
 			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 			eos.POST("add-user-to-entity", eosController.AddUserToEntity)
+			eos.GET("calendars/events", eosController.AllCalendarEvents)
 		}
 
 		application := main.Group("/applications")
@@ -776,6 +777,7 @@ func SetupRoutes() *gin.Engine {
 
 			// Feeding group session
 			catering.POST("feeding-group-sessions", cateringController.CreateFeedingGroupSession)
+			catering.POST("feeding-group-calendar", cateringController.ActivateFeedingGroupOnCalendars)
 			catering.GET("feeding-group-sessions", cateringController.FetchFeedingGroupSessions)
 
 			// Feeding per group
