@@ -2,6 +2,8 @@ package commons
 
 import (
 	"errors"
+	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 	"math"
 	"net/http"
 	"os"
@@ -100,6 +102,17 @@ func GetUserFromHeader(c *gin.Context) (*models.User, error) {
 		Where("number = ?", userNumber).
 		First(&user).Error; err != nil {
 		return nil, err
+	}
+
+	entityService := services.EntityService{}
+
+	if user.Number != "" {
+		currentEntity, err := entityService.GetCurrentEntity(user.Number)
+		if err != nil {
+			fmt.Println("Getting user current entity error: " + err.Error())
+		} else {
+			c.Set("entity_number", currentEntity.Number)
+		}
 	}
 
 	return &user, nil

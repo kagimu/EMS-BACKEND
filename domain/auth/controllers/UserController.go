@@ -27,7 +27,7 @@ func FetchUsers(c *gin.Context) {
 	if err := config.DB.Scopes(
 		filters.ByStatus(c.Query("status")),
 		pagination.Paginate(c, &paginatedResponse),
-		filters.ByAnyField("entity_users.entity_number", c.Query("entity_number")),
+		filters.ByAnyField("entity_users.entity_number", c.GetString("entity_number")),
 	).Joins("JOIN entity_users ON entity_users.user_number = users.number").Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch users"})
 		return

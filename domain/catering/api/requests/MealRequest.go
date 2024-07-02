@@ -16,9 +16,9 @@ func (m *MealRequest) Validate() error {
 	if m.FeedingSessionNumber == "" {
 		return errors.New("feeding session number is required")
 	}
-	if m.MenuItemNumber == "" {
+	/*if m.MenuItemNumber == "" {
 		return errors.New("menu item number is required")
-	}
+	}*/
 	if m.UserNumber == "" {
 		return errors.New("user number is required")
 	}
