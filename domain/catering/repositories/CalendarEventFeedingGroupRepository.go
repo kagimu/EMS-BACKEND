@@ -37,7 +37,7 @@ func GetCalendarEventFeedingGroupsByGroupNumber(groupNumber string, calendarEven
 
 	var calendarEventFeedingGroups models.CalendarEventFeedingGroup
 
-	if err := db.Where("feeding_group_number = ? AND calendar_event_number", groupNumber, calendarEventNumber).Find(&calendarEventFeedingGroups).Error; err != nil {
+	if err := db.Where("feeding_group_number = ? AND calendar_event_number = ? ", groupNumber, calendarEventNumber).Find(&calendarEventFeedingGroups).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return calendarEventFeedingGroups, nil
