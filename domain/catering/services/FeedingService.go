@@ -903,7 +903,9 @@ func GetFeedingGroupCalendarEvent(schoolNumber string, entityNumber string) (res
 
 	var feedingGroupCalendarEvent responses.FeedingGroupCalendarEvent
 
-	calendarEvents, err := repositories.FindCalendarEvent(entityNumber)
+	endDateAfter := time.Now()
+
+	calendarEvents, err := repositories.FindCalendarEvent(entityNumber, endDateAfter)
 	if err != nil {
 		return feedingGroupCalendarEvent, errors.New("Getting calendar event error: " + err.Error())
 	}

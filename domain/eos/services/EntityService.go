@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
+	"time"
 )
 
 type EntityService struct{}
@@ -176,7 +177,9 @@ func FindCalendarEvents(entityNumber string) ([]responses.Calendar, error) {
 
 	var calendars = make([]responses.Calendar, 0)
 
-	calendarEvents, err := repositories.FindCalendarEvent(entityNumber)
+	endDateAfter := time.Now()
+
+	calendarEvents, err := repositories.FindCalendarEvent(entityNumber, endDateAfter)
 	if err != nil {
 		return calendars, errors.New("finding calendar events error: " + err.Error())
 	}
