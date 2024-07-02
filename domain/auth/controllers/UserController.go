@@ -201,9 +201,8 @@ func CreateUser(c *gin.Context) {
 
 	// append roles
 
-	var userRole permissionModels.UserRole
-
 	for _, role := range user.Roles {
+		var userRole permissionModels.UserRole
 		var roleModel permissionModels.Role
 		if err := tx.Where("number = ?", role.RoleNumber).First(&roleModel).Error; err != nil {
 			tx.Rollback()
@@ -224,7 +223,7 @@ func CreateUser(c *gin.Context) {
 
 		if err := tx.Create(&userRole).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to append role to user"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create role to user"})
 			return
 
 		}
