@@ -327,7 +327,15 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 				FeedingSessionNumber: feedingSession.Number,
 			}
 
-			userMeal.Meals = findUserMeal(user.Number, feedItems, mealCourse.Number)
+			meals := findUserMeal(user.Number, feedItems, mealCourse.Number)
+
+			for _, meal := range meals {
+				if meal.ServedQuantity != 0 {
+					userMeal.Served = true
+				}
+			}
+
+			userMeal.Meals = meals
 
 			mealsResponse = append(mealsResponse, userMeal)
 		}
