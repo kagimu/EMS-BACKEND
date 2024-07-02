@@ -216,7 +216,7 @@ func CreateUser(c *gin.Context) {
 		date, err := commons.ConvertStringToDate(role.ExpiryDate)
 		if err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to append role to user"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to append role to user" + err.Error()})
 			return
 		}
 		userRole.ExpiryDate = date
