@@ -45,7 +45,7 @@ func GetIndicators(context *gin.Context) {
 		return
 	}
 
-	entityNumber := context.GetString("entity_number")
+	entityNumber, _ := commons.GetUserEntityNumber(context)
 	if entityNumber == "" {
 		context.JSON(http.StatusBadRequest, commons.Feedback("provide entity number"))
 		return
