@@ -1,7 +1,5 @@
 package responses
 
-import "time"
-
 type FeedingGroupResponse struct {
 	Number       string `json:"number"`
 	Name         string `json:"name"`
@@ -9,19 +7,6 @@ type FeedingGroupResponse struct {
 	SchoolNumber string `json:"school_number"`
 	SchoolName   string `json:"school_name"`
 	UserName     string `json:"user_name"`
-}
-
-type FeedingResponse struct {
-	Number               string `json:"number"`
-	FeedingSessionNumber string `json:"feeding_session_number"`
-	FeedingSessionName   string `json:"feeding_session_name"`
-	FeedingSessionStatus string `json:"feeding_session_status"`
-	FeedingSessionCode   uint64 `json:"feeding_session_code"`
-	Date                 string `json:"date"`
-	StaffNumber          string `json:"staff_number"`
-	StaffName            string `json:"staff_name"`
-	StockingNumber       string `json:"stocking_number"`
-	StockingQuantity     int    `json:"stocking_quantity"`
 }
 
 type FeedingSessionItemResponse struct {
@@ -104,39 +89,11 @@ type FeedingGroupSessionResponse struct {
 	FeedingSessionCampus string `json:"feeding_session_campus"`
 }
 
-type FeedingsPerGroupResponse struct {
-	Number               string `json:"number"`
-	GroupName            string `json:"group_name"`
-	GroupStatus          string `json:"group_status"`
-	Day                  string `json:"day"`
-	FeedingSessionNumber string `json:"feeding_session_number"`
-	FeedingSessionName   string `json:"feeding_session_name"`
-	FeedingSessionStatus string `json:"feeding_session_status"`
-	FeedingSessionCode   uint64 `json:"feeding_session_code"`
-}
-
 type FeedingGroupPerDayResponse struct {
 	Number             string `json:"number"`
 	FeedingGroupNumber string `json:"feeding_group_number"`
 	FeedingGroupName   string `json:"feeding_group_name"`
 	Day                string `json:"day"`
-}
-
-type MealResponse struct {
-	Number               string      `json:"number"`
-	FeedingSessionNumber string      `json:"feeding_session_number"`
-	FeedingSessionName   string      `json:"feeding_session_name"`
-	FeedingSessionCode   uint64      `json:"feeding_session_code"`
-	FeedingSessionStatus string      `json:"feeding_session_status"`
-	StockingNumber       string      `json:"stocking_number"`
-	Quantity             float64     `json:"quantity"`
-	Date                 time.Time   `json:"date"`
-	Time                 time.Time   `json:"time"`
-	MenuItemNumber       string      `json:"menu_item_number"`
-	MenuItemName         string      `json:"menu_item_name"`
-	StaffIDNumber        string      `json:"staff_id_number"`
-	UserMeals            []UserMeals `json:"user_meals"`
-	JobTitle             string      `json:"job_title"`
 }
 
 type UserMeals struct {
