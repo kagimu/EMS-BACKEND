@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
@@ -344,13 +345,15 @@ func FetchSchoolInfo(context *gin.Context) {
 
 func FetchSchools(context *gin.Context) {
 
+	entity, _ := commons.GetUserEntityNumber(context)
+
 	var schools []schoolCurriculumModels.School
 	var schools_ []responses.SchoolResponseInfo
 	if err := config.DB.
 		Preload("SchoolCurriculum.Curriculum").
 		Preload("SchoolCurriculum").
 		Order("created_at desc").
-		Scopes(filters.ByEntityNumber(context.GetString("entity_number"))).
+		Scopes(filters.ByEntityNumber(entity)).
 		Find(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return

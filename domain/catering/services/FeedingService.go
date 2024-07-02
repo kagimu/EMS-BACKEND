@@ -442,19 +442,6 @@ func GetFeedingGroupsBySchoolNumber(schoolNumber string, status string) ([]respo
 
 func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
-	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(mealRequest.MenuItemNumber)
-	if err != nil {
-		return err
-	}
-
-	if mealRequest.Quantity <= 0 {
-		return errors.New("quantities served can not be zero")
-	}
-
-	if currentStock < mealRequest.Quantity {
-		return errors.New("not enough stock")
-	}
-
 	formatDate, err := time.Parse(time.DateOnly, mealRequest.Date)
 	if err != nil {
 		return err
@@ -504,6 +491,16 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSessionItem models.FeedingSessionItem, mealRequest requests.MealRequest, newMeal models.Meal, groupUser models.FeedingGroupUser, currentUser string) error {
 
+	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(feedingSessionItem.MenuItemNumber)
+	if err != nil {
+		return err
+	}
+
+	if currentStock < feedingSessionItem.Quantity {
+		menu, _ := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber)
+		return errors.New("not enough stock for '" + menu.Name + "'")
+	}
+
 	if newMeal.Number == "" {
 		newMeal.Number = uuid.NewV4().String()
 		newMeal.MealCourseNumber = mealRequest.MealCourseNumber
@@ -523,7 +520,7 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
 	}
 
-	err := cateringRepositories.SaveMeal(tx, newMeal)
+	err = cateringRepositories.SaveMeal(tx, newMeal)
 	if err != nil {
 		return errors.New("error creating meal: " + err.Error())
 	}

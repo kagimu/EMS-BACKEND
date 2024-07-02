@@ -81,7 +81,7 @@ func FetchRoles(c *gin.Context) {
 		return
 	}
 
-	entity_number := c.GetString("entity_number")
+	entity_number, _ := commons.GetUserEntityNumber(c)
 	if entity_number == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Entity number is required"})
 		return
