@@ -204,7 +204,8 @@ func CreateUser(c *gin.Context) {
 	var userRole permissionModels.UserRole
 
 	for _, role := range user.Roles {
-		if err := tx.Where("number = ?", role.RoleNumber).First(&userRole.Role).Error; err != nil {
+		var roleModel permissionModels.Role
+		if err := tx.Where("number = ?", role.RoleNumber).First(&roleModel).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch role"})
 			return

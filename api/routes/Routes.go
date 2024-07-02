@@ -523,7 +523,7 @@ func SetupRoutes() *gin.Engine {
 			{
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
 				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
-				aggregateScale.PUT("", aggregateScaleController.EditAggregateScale)
+				aggregateScale.POST("update", aggregateScaleController.UpdateAggregateScale)
 				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScales)
 			}
 
@@ -539,7 +539,7 @@ func SetupRoutes() *gin.Engine {
 			{
 				grades.POST("", gradesController.CreateGrade)
 				grades.GET("", gradesController.FetchGrades)
-				grades.PUT("", gradesController.UpdateGrade)
+				grades.POST("update", gradesController.UpdateGrade)
 			}
 		}
 

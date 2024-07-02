@@ -90,7 +90,7 @@ func FetchAggregateScales(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
-func EditAggregateScale(c *gin.Context) {
+func UpdateAggregateScale(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
