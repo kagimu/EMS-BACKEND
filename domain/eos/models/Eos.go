@@ -22,6 +22,7 @@ type GeneralCalendar struct {
 	Number         string          `json:"number" gorm:"size:36;unique;not null"`
 	StartDate      time.Time       `json:"start_date" gorm:"not null"`
 	EndDate        time.Time       `json:"end_date" gorm:"not null"`
+	Entity         Entity          `gorm:"foreignKey:EntityNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	Name           string          `json:"name" gorm:"size:250;not null"`
 	Description    string          `json:"description" gorm:"size:250"`
 	UserNumber     string          `json:"user_number" gorm:"size:36;not null"`
