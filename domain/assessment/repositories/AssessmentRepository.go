@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindAssessmentByStudentNumberAndAssessmentMetricNumber(studentNumber string, assessmentMetricNumber string) (assessmentModel.Assessment, error) {
+func GetAssessmentByStudentNumberAndAssessmentMetricNumber(studentNumber string, assessmentMetricNumber string) (assessmentModel.Assessment, error) {
 
 	db := config.DB
 
@@ -36,4 +36,22 @@ func SaveAssessment(assessment assessmentModel.Assessment) error {
 
 	return nil
 
+}
+
+func FindAssessmentByStudentNumberAndAssessmentMetricNumber(studentNumber string, assessmentMetricNumber string) ([]assessmentModel.Assessment, error) {
+
+	db := config.DB
+
+	var assessment []assessmentModel.Assessment
+
+	if err := db.Scopes(filters.ByStudentNumber(studentNumber), filters.ByAssessmentMetricNumber(assessmentMetricNumber)).Find(&assessment).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessment, nil
+		}
+
+		return assessment, err
+	}
+
+	return assessment, nil
 }

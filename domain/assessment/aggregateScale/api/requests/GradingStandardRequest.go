@@ -29,3 +29,21 @@ func (a *GradingStandardRequest) Validate() error {
 
 	return nil
 }
+
+type UpdateGradingStandardRequest struct {
+	GradingStandardRequest
+	GradingStandardNumber string `json:"grading_standard_number"`
+}
+
+func (a *UpdateGradingStandardRequest) Validate() error {
+
+	if err := a.GradingStandardRequest.Validate(); err != nil {
+		return err
+	}
+
+	if a.GradingStandardNumber == "" {
+		return errors.New("provide grading standard number to edit")
+	}
+
+	return nil
+}

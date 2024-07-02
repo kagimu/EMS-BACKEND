@@ -82,3 +82,15 @@ func GetReportColumnByCodeAndReportSettingsNumber(code int64, reportSettingsNumb
 
 	return reportColumn, nil
 }
+
+func GetReportColumnByNumber(reportColumnNumber string) (reportSettings.ReportColumn, error) {
+	db := config.DB
+	var reportColumn reportSettings.ReportColumn
+	if err := db.Where("number = ?", reportColumnNumber).First(&reportColumn).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportColumn, nil
+		}
+		return reportColumn, err
+	}
+	return reportColumn, nil
+}

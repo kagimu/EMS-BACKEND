@@ -360,7 +360,7 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 		unitOfMeasure, err := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
 		if err != nil {
 			fmt.Println("Error getting unit of measure" + err.Error())
-			return items
+			unitOfMeasure = models.UnitOfMeasure{}
 		}
 
 		unitOfMeasureName := "None"
@@ -810,6 +810,65 @@ func DeleteFeedingSession(feedingSessionNumber string) error {
 	if err != nil {
 		fmt.Println("Deleting feed session error: " + err.Error())
 		return errors.New("this feeding session could not be removed, try removing all its usages first")
+	}
+
+	return nil
+}
+
+func SaveFeedingGroupCalendar(feedingGroupCalendarRequest requests.FeedingGroupCalendarRequest, currentUser string) error {
+
+	trn := config.DB.Begin()
+
+	for _, groupNumber := range feedingGroupCalendarRequest.FeedingGroups {
+		err := processGroupCalendar(groupNumber, trn, feedingGroupCalendarRequest.CalendarEvents, currentUser)
+		if err != nil {
+			trn.Rollback()
+			return err
+		}
+	}
+
+	if err := trn.Commit().Error; err != nil {
+		return errors.New(fmt.Sprintf("Finalizing groups calendars error: %v", err))
+	}
+
+	return nil
+}
+
+func processGroupCalendar(groupNumber string, trn *gorm.DB, calendarEvents []string, currentUser string) error {
+
+	groupCalendars, err := cateringRepositories.FindCalendarEventFeedingGroupsByGroupNumber(groupNumber, trn)
+	if err != nil {
+		return errors.New("Finding group calendars error: " + err.Error())
+	}
+
+	for _, groupCalendar := range groupCalendars {
+		err = cateringRepositories.RemoveCalendarEventFeedingGroup(groupCalendar, trn)
+		if err != nil {
+			return errors.New("Clearing previous group calendar error: " + err.Error())
+		}
+	}
+
+	for _, calendarEvent := range calendarEvents {
+
+		checkDuplicate, err := cateringRepositories.GetCalendarEventFeedingGroupsByGroupNumber(groupNumber, calendarEvent, trn)
+		if err != nil {
+			return errors.New("Checking group calendar duplicates error: " + err.Error())
+		}
+
+		if checkDuplicate.Number != "" {
+			continue
+		}
+
+		err = cateringRepositories.SavedCalendarEventFeedingGroup(models.CalendarEventFeedingGroup{
+			Number:              uuid.NewV4().String(),
+			UserNumber:          currentUser,
+			FeedingGroupNumber:  groupNumber,
+			CalendarEventNumber: calendarEvent,
+		}, trn)
+
+		if err != nil {
+			return errors.New("Activating group calendars error: " + err.Error())
+		}
 	}
 
 	return nil

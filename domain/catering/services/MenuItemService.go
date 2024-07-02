@@ -40,7 +40,8 @@ func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 		}
 
 		if unitOfMeasure.Number == "" {
-			return nil, errors.New("unit of measure number is empty")
+			//return nil, errors.New("unit of measure number is empty")
+			unitOfMeasure = models.UnitOfMeasure{}
 		}
 
 		part := responses.Part{

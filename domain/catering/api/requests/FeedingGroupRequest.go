@@ -44,3 +44,21 @@ type MinFeedingGroupRequest struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
 }
+
+type FeedingGroupCalendarRequest struct {
+	FeedingGroups  []string `json:"feeding_groups"`
+	CalendarEvents []string `json:"calendar_events"`
+}
+
+func (f *FeedingGroupCalendarRequest) Validate() error {
+
+	if f.FeedingGroups == nil || len(f.FeedingGroups) == 0 {
+		return errors.New("select at least one group")
+	}
+
+	if f.CalendarEvents == nil || len(f.CalendarEvents) == 0 {
+		return errors.New("select at least one calendar")
+	}
+
+	return nil
+}

@@ -14,11 +14,12 @@ type ReportSettingsResponse struct {
 }
 
 type ReportColumnResponse struct {
-	Number            string  `json:"number"`
-	Name              string  `json:"name"`
-	ReportSettingName string  `json:"report_setting_name"`
-	PercentageShare   float64 `json:"percentage_share"`
-	Code              int64   `json:"code"`
+	Number            string                           `json:"number"`
+	Name              string                           `json:"name"`
+	ReportSettingName string                           `json:"report_setting_name"`
+	PercentageShare   float64                          `json:"percentage_share"`
+	Code              int64                            `json:"code"`
+	Assessments       []ReportColumnAssessmentResponse `json:"assessments"`
 }
 
 type ReportColumnAssessmentResponse struct {
@@ -27,6 +28,7 @@ type ReportColumnAssessmentResponse struct {
 	AssessmentMetric string `json:"assessment_metric"`
 	Code             int64  `json:"code"`
 	ReportColumn     string `json:"report_column"`
+	ScheduledOn      string `json:"scheduled_on"`
 }
 
 type SummarizedFinalReportResponse struct {

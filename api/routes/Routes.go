@@ -360,6 +360,7 @@ func SetupRoutes() *gin.Engine {
 			eos.POST("calendars/update", eosController.AddCalendarEvent)
 			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 			eos.POST("add-user-to-entity", eosController.AddUserToEntity)
+			eos.GET("calendars/events", eosController.AllCalendarEvents)
 		}
 
 		application := main.Group("/applications")
@@ -523,7 +524,7 @@ func SetupRoutes() *gin.Engine {
 			{
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
 				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
-				aggregateScale.PUT("", aggregateScaleController.EditAggregateScale)
+				aggregateScale.POST("update", aggregateScaleController.UpdateAggregateScale)
 				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScales)
 			}
 
@@ -539,7 +540,7 @@ func SetupRoutes() *gin.Engine {
 			{
 				grades.POST("", gradesController.CreateGrade)
 				grades.GET("", gradesController.FetchGrades)
-				grades.PUT("", gradesController.UpdateGrade)
+				grades.POST("update", gradesController.UpdateGrade)
 			}
 		}
 
@@ -594,6 +595,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
 			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
+			gradingStandard.POST("update", aggregateScaleController.UpdateGradingStandard)
 			gradingStandard.POST("attach-assessment-area", aggregateScaleController.AttachAssessmentAreas)
 			gradingStandard.GET("assessment-areas", aggregateScaleController.FetchAssessmentAreasByGradingStandard)
 		}
@@ -661,6 +663,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("add-head-teachers-comment/:report_setting_number", reportSettingsController.CreateHeadTeacherComment)
 			reportSettings.GET("head-teachers-comments", reportSettingsController.FetchHeadTeacherComments)
 			reportSettings.POST("add-teacher-comment", reportSettingsController.CreateTeachersComment)
+			reportSettings.GET("narrative", reportSettingsController.FetchNarrativeScore)
 
 		}
 
@@ -774,6 +777,7 @@ func SetupRoutes() *gin.Engine {
 
 			// Feeding group session
 			catering.POST("feeding-group-sessions", cateringController.CreateFeedingGroupSession)
+			catering.POST("feeding-group-calendar", cateringController.ActivateFeedingGroupOnCalendars)
 			catering.GET("feeding-group-sessions", cateringController.FetchFeedingGroupSessions)
 
 			// Feeding per group
