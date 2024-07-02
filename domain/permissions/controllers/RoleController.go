@@ -81,7 +81,7 @@ func FetchRoles(c *gin.Context) {
 		return
 	}
 
-	entity_number := c.Query("entity_number")
+	entity_number := c.GetString("entity_number")
 	if entity_number == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Entity number is required"})
 		return
