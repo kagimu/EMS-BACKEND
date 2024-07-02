@@ -124,18 +124,23 @@ func GetUserEntityNumber(c *gin.Context) (string, error) {
 
 	userNumber := c.Request.Header["User-Number"][0]
 
+	fmt.Println("Getting current entity for: " + userNumber)
+
+	var currentEntity string
+
 	if userNumber != "" {
-		currentEntity, err := entityService.GetCurrentEntity(userNumber)
+		checkEntity, err := entityService.GetCurrentEntity(userNumber)
 		if err != nil {
 			fmt.Println("Getting user current entity error: " + err.Error())
-			return "", nil
 		} else {
-			c.Set("entity_number", currentEntity.Number)
-			return currentEntity.Number, nil
+			currentEntity = checkEntity.Number
+			c.Set("entity_number", currentEntity)
 		}
 	}
 
-	return "", nil
+	fmt.Println("Current entity set to: " + currentEntity)
+
+	return currentEntity, nil
 }
 
 type PermissionGroup map[string][]string
