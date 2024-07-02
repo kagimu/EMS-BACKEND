@@ -455,8 +455,6 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		return errors.New("not enough stock")
 	}
 
-	tx := config.DB.Begin()
-
 	formatDate, err := time.Parse(time.DateOnly, mealRequest.Date)
 	if err != nil {
 		return err
@@ -482,10 +480,34 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		return errors.New("user not added to any group")
 	}
 
+	sessionItems, err := cateringRepositories.GetFeedingSessionItems(mealRequest.FeedingSessionNumber)
+	if err != nil {
+		return errors.New("Fetching session items error: " + err.Error())
+	}
+
+	tx := config.DB.Begin()
+
+	for _, sessionItem := range sessionItems {
+		err = processSingleItem(tx, day, formatDate, sessionItem, mealRequest, newMeal, groupUser, currentUser)
+		if err != nil {
+			tx.Rollback()
+			return errors.New("marking meal failed, try again: " + err.Error())
+		}
+	}
+
+	if err = tx.Commit().Error; err != nil {
+		return errors.New("Commit error: " + err.Error())
+	}
+
+	return nil
+}
+
+func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSessionItem models.FeedingSessionItem, mealRequest requests.MealRequest, newMeal models.Meal, groupUser models.FeedingGroupUser, currentUser string) error {
+
 	if newMeal.Number == "" {
 		newMeal.Number = uuid.NewV4().String()
 		newMeal.MealCourseNumber = mealRequest.MealCourseNumber
-		newMeal.FeedingSessionNumber = mealRequest.FeedingSessionNumber
+		newMeal.FeedingSessionNumber = feedingSessionItem.FeedingSessionNumber
 		newMeal.UserNumber = mealRequest.UserNumber
 		newMeal.Date = formatDate
 		newMeal.Time = mealRequest.Time
@@ -497,28 +519,28 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 	} else {
 		newMeal.StaffNumber = currentUser
 		newMeal.CampusNumber = groupUser.CampusNumber
-		newMeal.FeedingSessionNumber = mealRequest.FeedingSessionNumber
+		newMeal.FeedingSessionNumber = feedingSessionItem.FeedingSessionNumber
 		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
 	}
 
-	err = cateringRepositories.SaveMeal(tx, newMeal)
+	err := cateringRepositories.SaveMeal(tx, newMeal)
 	if err != nil {
 		return errors.New("error creating meal: " + err.Error())
 	}
 
-	stocking, err := cateringRepositories.GetMealStockByMealNumberAndMenuItemNumber(tx, newMeal.Number, mealRequest.MenuItemNumber)
+	stocking, err := cateringRepositories.GetMealStockByMealNumberAndMenuItemNumber(tx, newMeal.Number, feedingSessionItem.MenuItemNumber)
 	if err != nil {
 		return err
 	}
 
 	if stocking.Number == "" {
 		stocking.Number = uuid.NewV4().String()
-		stocking.MenuItemNumber = mealRequest.MenuItemNumber
-		stocking.Quantity = mealRequest.Quantity * -1
+		stocking.MenuItemNumber = feedingSessionItem.MenuItemNumber
+		stocking.Quantity = feedingSessionItem.Quantity * -1
 		stocking.CampusNumber = groupUser.CampusNumber
 		stocking.UserNumber = currentUser
 	} else {
-		stocking.Quantity = mealRequest.Quantity * -1
+		stocking.Quantity = feedingSessionItem.Quantity * -1
 		stocking.CampusNumber = groupUser.CampusNumber
 		stocking.UserNumber = currentUser
 	}
@@ -541,10 +563,6 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 	err = cateringRepositories.SaveMealStocking(tx, mealStocking)
 	if err != nil {
 		return errors.New("error mapping stock with meal taken: " + err.Error())
-	}
-
-	if err = tx.Commit().Error; err != nil {
-		return errors.New("Commit error: " + err.Error())
 	}
 
 	return nil
