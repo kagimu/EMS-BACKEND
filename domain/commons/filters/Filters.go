@@ -281,6 +281,24 @@ func ByDateBetween(dateField string, startDate time.Time, endDate time.Time) fun
 	}
 }
 
+func ByDateAfter(dateField string, afterDate time.Time) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if dateField != "" {
+			return db.Where("DATE( "+dateField+") >= ?", afterDate)
+		}
+		return db
+	}
+}
+
+func ByDateBefore(dateField string, beforeDate time.Time) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if dateField != "" {
+			return db.Where("DATE( "+dateField+") < ?", beforeDate)
+		}
+		return db
+	}
+}
+
 func ByEntityNumber(entityNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if entityNumber != "" {
