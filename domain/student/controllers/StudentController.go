@@ -359,13 +359,13 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 		}
 
 		students = append(students, enrollmentResponse.EnrolledStudent{
-
 			Number:            student.Number,
 			StudentSurname:    student.Surname,
 			StudentOtherName:  student.OtherName,
 			StudentSecondName: student.SecondName,
 			Comment:           assessment.Comment,
-			Score:             assessment.ActualScore,
+			ActualScore:       assessment.ActualScore,
+			Score:             assessment.Score,
 			Class:             campusClass.ClassName,
 		})
 	}

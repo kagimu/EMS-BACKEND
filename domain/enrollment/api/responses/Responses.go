@@ -6,6 +6,7 @@ type EnrolledStudent struct {
 	StudentSecondName string  `json:"student_second_name"`
 	StudentOtherName  string  `json:"student_other_name"`
 	Score             float64 `json:"score"`
+	ActualScore       float64 `json:"actual_score"`
 	Comment           string  `json:"comment"`
 	Class             string  `json:"class"`
 	Status            string  `json:"status"`
