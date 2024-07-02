@@ -228,7 +228,7 @@ func SaveCurrentEntity(context *gin.Context) {
 		return
 	}
 
-	entityNumber := context.GetString("entity_number")
+	entityNumber, _ := commons.GetUserEntityNumber(context)
 	if entityNumber == "" {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number"))
 		return
@@ -297,7 +297,8 @@ func DeleteEntity(context *gin.Context) {
 		return
 	}
 
-	entityNumber := context.GetString("entity_number")
+	entityNumber, _ := commons.GetUserEntityNumber(context)
+	//entityNumber := context.GetString("entity_number")
 	if entityNumber == "" {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to delete"))
 		return
@@ -313,7 +314,7 @@ func DeleteEntity(context *gin.Context) {
 }
 
 func AllCalendarEvents(context *gin.Context) {
-	entityNumber := context.GetString("entity_number")
+	entityNumber, _ := commons.GetUserEntityNumber(context)
 	if entityNumber == "" {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to get events from."))
 		return
