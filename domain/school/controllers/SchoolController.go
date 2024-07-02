@@ -350,7 +350,7 @@ func FetchSchools(context *gin.Context) {
 		Preload("SchoolCurriculum.Curriculum").
 		Preload("SchoolCurriculum").
 		Order("created_at desc").
-		Scopes(filters.ByEntityNumber(context.Query("entity_number"))).
+		Scopes(filters.ByEntityNumber(context.GetString("entity_number"))).
 		Find(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return
