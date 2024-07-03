@@ -105,13 +105,37 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 		return errors.New("invalid grading standard number: " + aggregateScaleRequest.GradingStandardNumber)
 	}
 
+	oldScales, err := repositories.FindAggregateScaleByGradingStandardNumber(aggregateStandard.Number)
+	if err != nil {
+		return errors.New("checking previous scale error: " + err.Error())
+	}
+
 	grades := aggregateScaleRequest.Grades
 
 	err = checkDuplicates(grades)
+	if err != nil {
+		return err
+	}
 
 	trn := config.DB.Begin()
 
+	for _, oldScale := range oldScales {
+		err = repositories.RemoveAggregateScale(oldScale, trn)
+		if err != nil {
+			return errors.New("failed clearing old scale, try again.")
+		}
+	}
+
 	for _, grade := range grades {
+
+		checkDuplicate, err := repositories.GetAggregateScaleByGradingStandardNumberAndGradeNumber(aggregateStandard.Number, grade.GradeNumber, trn)
+		if err != nil {
+			return errors.New("checking grade duplicate error: " + err.Error())
+		}
+
+		if checkDuplicate.Number != "" {
+			return errors.New("you have a used grade in your scale")
+		}
 
 		err = createGrade(trn, grade, currentUser, aggregateStandard)
 		if err != nil {
