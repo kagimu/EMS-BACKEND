@@ -153,6 +153,11 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 
 func checkDuplicates(grades []requests.AggregateScaleItem) error {
 
+	err := CheckOverlaps(grades)
+	if err != nil {
+		return err
+	}
+
 	cleanGrades := make([]requests.AggregateScaleItem, len(grades))
 
 	for i, grade := range grades {
@@ -171,6 +176,29 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 			cleanGrades[i] = grade
 		} else {
 			return errors.New(shouldReject)
+		}
+
+	}
+
+	return nil
+}
+
+func Overlap(aggregateScaleItem1, aggregateScaleItem2 requests.AggregateScaleItem) bool {
+	return aggregateScaleItem1.MinValue <= aggregateScaleItem2.MaxValue && aggregateScaleItem2.MinValue <= aggregateScaleItem1.MaxValue
+}
+
+func CheckOverlaps(aggregateScaleItems []requests.AggregateScaleItem) error {
+
+	scaleLength := len(aggregateScaleItems)
+
+	for i := 0; i < scaleLength; i++ {
+
+		for j := i + 1; j < scaleLength; j++ {
+
+			if Overlap(aggregateScaleItems[i], aggregateScaleItems[j]) {
+				return errors.New("the scale has overlapping entries")
+			}
+
 		}
 
 	}
