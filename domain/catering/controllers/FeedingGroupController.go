@@ -133,3 +133,25 @@ func ActivateFeedingGroupOnCalendars(context *gin.Context) {
 
 	context.JSON(http.StatusOK, commons.Feedback("Groups activated on calendars"))
 }
+
+func FetchFeedingGroupOnCalendars(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide school number"))
+		return
+	}
+
+	entityNumber, _ := commons.GetUserEntityNumber(context)
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Set current entity"))
+		return
+	}
+
+	groupCalendarEventResponse, err := services.GetFeedingGroupCalendarEvent(schoolNumber, entityNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": groupCalendarEventResponse})
+}

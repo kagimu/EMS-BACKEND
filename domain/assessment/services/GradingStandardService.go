@@ -105,13 +105,37 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 		return errors.New("invalid grading standard number: " + aggregateScaleRequest.GradingStandardNumber)
 	}
 
+	oldScales, err := repositories.FindAggregateScaleByGradingStandardNumber(aggregateStandard.Number)
+	if err != nil {
+		return errors.New("checking previous scale error: " + err.Error())
+	}
+
 	grades := aggregateScaleRequest.Grades
 
 	err = checkDuplicates(grades)
+	if err != nil {
+		return err
+	}
 
 	trn := config.DB.Begin()
 
+	for _, oldScale := range oldScales {
+		err = repositories.RemoveAggregateScale(oldScale, trn)
+		if err != nil {
+			return errors.New("failed clearing old scale, try again.")
+		}
+	}
+
 	for _, grade := range grades {
+
+		checkDuplicate, err := repositories.GetAggregateScaleByGradingStandardNumberAndGradeNumber(aggregateStandard.Number, grade.GradeNumber, trn)
+		if err != nil {
+			return errors.New("checking grade duplicate error: " + err.Error())
+		}
+
+		if checkDuplicate.Number != "" {
+			return errors.New("you have a used grade in your scale")
+		}
 
 		err = createGrade(trn, grade, currentUser, aggregateStandard)
 		if err != nil {
@@ -128,6 +152,11 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 }
 
 func checkDuplicates(grades []requests.AggregateScaleItem) error {
+
+	err := CheckOverlaps(grades)
+	if err != nil {
+		return err
+	}
 
 	cleanGrades := make([]requests.AggregateScaleItem, len(grades))
 
@@ -147,6 +176,29 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 			cleanGrades[i] = grade
 		} else {
 			return errors.New(shouldReject)
+		}
+
+	}
+
+	return nil
+}
+
+func Overlap(aggregateScaleItem1, aggregateScaleItem2 requests.AggregateScaleItem) bool {
+	return aggregateScaleItem1.MinValue <= aggregateScaleItem2.MaxValue && aggregateScaleItem2.MinValue <= aggregateScaleItem1.MaxValue
+}
+
+func CheckOverlaps(aggregateScaleItems []requests.AggregateScaleItem) error {
+
+	scaleLength := len(aggregateScaleItems)
+
+	for i := 0; i < scaleLength; i++ {
+
+		for j := i + 1; j < scaleLength; j++ {
+
+			if Overlap(aggregateScaleItems[i], aggregateScaleItems[j]) {
+				return errors.New("the scale has overlapping entries")
+			}
+
 		}
 
 	}

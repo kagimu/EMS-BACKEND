@@ -14,6 +14,8 @@ import (
 	cateringRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
 	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -327,7 +329,15 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 				FeedingSessionNumber: feedingSession.Number,
 			}
 
-			userMeal.Meals = findUserMeal(user.Number, feedItems, mealCourse.Number)
+			meals := findUserMeal(user.Number, feedItems, mealCourse.Number)
+
+			for _, meal := range meals {
+				if meal.ServedQuantity != 0 {
+					userMeal.Served = true
+				}
+			}
+
+			userMeal.Meals = meals
 
 			mealsResponse = append(mealsResponse, userMeal)
 		}
@@ -442,19 +452,6 @@ func GetFeedingGroupsBySchoolNumber(schoolNumber string, status string) ([]respo
 
 func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
-	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(mealRequest.MenuItemNumber)
-	if err != nil {
-		return err
-	}
-
-	if mealRequest.Quantity <= 0 {
-		return errors.New("quantities served can not be zero")
-	}
-
-	if currentStock < mealRequest.Quantity {
-		return errors.New("not enough stock")
-	}
-
 	formatDate, err := time.Parse(time.DateOnly, mealRequest.Date)
 	if err != nil {
 		return err
@@ -504,6 +501,16 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSessionItem models.FeedingSessionItem, mealRequest requests.MealRequest, newMeal models.Meal, groupUser models.FeedingGroupUser, currentUser string) error {
 
+	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(feedingSessionItem.MenuItemNumber)
+	if err != nil {
+		return err
+	}
+
+	if currentStock < feedingSessionItem.Quantity {
+		menu, _ := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber)
+		return errors.New("not enough stock for '" + menu.Name + "'")
+	}
+
 	if newMeal.Number == "" {
 		newMeal.Number = uuid.NewV4().String()
 		newMeal.MealCourseNumber = mealRequest.MealCourseNumber
@@ -523,7 +530,7 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
 	}
 
-	err := cateringRepositories.SaveMeal(tx, newMeal)
+	err = cateringRepositories.SaveMeal(tx, newMeal)
 	if err != nil {
 		return errors.New("error creating meal: " + err.Error())
 	}
@@ -890,4 +897,76 @@ func processGroupCalendar(groupNumber string, trn *gorm.DB, calendarEvents []str
 	}
 
 	return nil
+}
+
+func GetFeedingGroupCalendarEvent(schoolNumber string, entityNumber string) (responses.FeedingGroupCalendarEvent, error) {
+
+	var feedingGroupCalendarEvent responses.FeedingGroupCalendarEvent
+
+	endDateAfter := time.Now()
+
+	calendarEvents, err := repositories.FindCalendarEvent(entityNumber, endDateAfter)
+	if err != nil {
+		return feedingGroupCalendarEvent, errors.New("Getting calendar event error: " + err.Error())
+	}
+
+	var feedingGroupCalendarEventItems []responses.FeedingGroupCalendarEventItem
+	feedingGroupCalendarEventItems = append(feedingGroupCalendarEventItems, responses.FeedingGroupCalendarEventItem{})
+
+	for _, calendarEvent := range calendarEvents {
+		feedingGroupCalendarEventItems = append(feedingGroupCalendarEventItems, calendarEventFrom(calendarEvent))
+	}
+
+	feedingGroupCalendarEvent.CalendarEvents = feedingGroupCalendarEventItems
+
+	feedingGroups, err := cateringRepositories.GetAllFeedingGroups(schoolNumber, constants.StatusActive)
+	if err != nil {
+		return feedingGroupCalendarEvent, errors.New("Getting groups error: " + err.Error())
+	}
+
+	var calendarGroupItems []responses.CalendarGroupItem
+
+	for _, feedingGroup := range feedingGroups {
+
+		calendarGroupItem := responses.CalendarGroupItem{
+			GroupName: feedingGroup.Name,
+			Number:    feedingGroup.Number,
+		}
+
+		var activeCalendarItems []responses.ActiveCalendarItem
+
+		for _, calendarEvent := range calendarEvents {
+			activeCalendarItem := responses.ActiveCalendarItem{}
+			activeCalendarItem.FeedingGroupCalendarEventItem = calendarEventFrom(calendarEvent)
+
+			check, err := cateringRepositories.GetCalendarEventFeedingGroupsByGroupNumber(feedingGroup.Number, calendarEvent.Number)
+			if err != nil {
+				return feedingGroupCalendarEvent, errors.New("Checking group " + feedingGroup.Number + " on calendar " + calendarEvent.Name + " error: " + err.Error())
+			}
+
+			if check.Number == "" {
+				activeCalendarItem.Active = false
+				activeCalendarItem.Message = "Not active during this period"
+			} else {
+				activeCalendarItem.Active = true
+				activeCalendarItem.Message = "Activated for this period"
+			}
+
+			activeCalendarItems = append(activeCalendarItems, activeCalendarItem)
+		}
+
+		calendarGroupItem.ActiveCalendars = activeCalendarItems
+		calendarGroupItems = append(calendarGroupItems, calendarGroupItem)
+	}
+
+	feedingGroupCalendarEvent.CalendarGroups = calendarGroupItems
+
+	return feedingGroupCalendarEvent, nil
+}
+
+func calendarEventFrom(calendarEvent eosModels.CalendarEvent) responses.FeedingGroupCalendarEventItem {
+	return responses.FeedingGroupCalendarEventItem{
+		CalendarName: calendarEvent.Name,
+		Number:       calendarEvent.Number,
+	}
 }
