@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -96,21 +97,20 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 }
 
 func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, currentUser string) error {
-	aggregateStandard, err := repositories.GetGradingStandardByNumber(aggregateScaleRequest.GradingStandardNumber)
+	scale, err := repositories.GetScaleByNameAndSchoolNumber(aggregateScaleRequest.ScaleName, aggregateScaleRequest.SchoolNumber)
 	if err != nil {
-		return errors.New("Checking grading standard error: " + err.Error())
+		return errors.New("Checking scale name error: " + err.Error())
 	}
 
-	if aggregateStandard.Number == "" {
-		return errors.New("invalid grading standard number: " + aggregateScaleRequest.GradingStandardNumber)
-	}
-
-	oldScales, err := repositories.FindAggregateScaleByGradingStandardNumber(aggregateStandard.Number)
-	if err != nil {
-		return errors.New("checking previous scale error: " + err.Error())
+	if scale.Number != "" {
+		return errors.New("Name already used: " + aggregateScaleRequest.ScaleName)
 	}
 
 	grades := aggregateScaleRequest.Grades
+
+	if len(grades) != aggregateScaleRequest.Count {
+		return errors.New("you should define the grades up to set count")
+	}
 
 	err = checkDuplicates(grades)
 	if err != nil {
@@ -119,25 +119,21 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 
 	trn := config.DB.Begin()
 
-	for _, oldScale := range oldScales {
-		err = repositories.RemoveAggregateScale(oldScale, trn)
-		if err != nil {
-			return errors.New("failed clearing old scale, try again.")
-		}
+	scale, err = repositories.SaveScale(models2.Scale{
+		Number:       uuid.NewV4().String(),
+		Name:         aggregateScaleRequest.ScaleName,
+		SchoolNumber: aggregateScaleRequest.SchoolNumber,
+		Count:        aggregateScaleRequest.Count,
+		UserNumber:   currentUser,
+	}, trn)
+
+	if err != nil {
+		return errors.New("creating base scale error: " + err.Error())
 	}
 
 	for _, grade := range grades {
 
-		checkDuplicate, err := repositories.GetAggregateScaleByGradingStandardNumberAndGradeNumber(aggregateStandard.Number, grade.GradeNumber, trn)
-		if err != nil {
-			return errors.New("checking grade duplicate error: " + err.Error())
-		}
-
-		if checkDuplicate.Number != "" {
-			return errors.New("you have a used grade in your scale")
-		}
-
-		err = createGrade(trn, grade, currentUser, aggregateStandard)
+		err = createGrade(trn, grade, scale.Number)
 		if err != nil {
 			trn.Rollback()
 			return err
@@ -206,21 +202,55 @@ func CheckOverlaps(aggregateScaleItems []requests.AggregateScaleItem) error {
 	return nil
 }
 
-func createGrade(trn *gorm.DB, aggregateScaleItem requests.AggregateScaleItem, user string, gradingStandard models.GradingStandard) error {
+func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber string) error {
 
-	newAggregateScale := models.AggregateScale{
-		Code:                  aggregateScaleItem.Code,
-		Number:                uuid.NewV4().String(),
-		MinValue:              aggregateScaleItem.MinValue,
-		MaxValue:              aggregateScaleItem.MaxValue,
-		CampusClassNumber:     gradingStandard.CampusClassNumber,
-		CampusNumber:          gradingStandard.CampusNumber,
-		UserNumber:            user,
-		GradeNumber:           aggregateScaleItem.GradeNumber,
-		GradingStandardNumber: gradingStandard.Number,
+	checkDuplicate, err := repositories.GetAggregateScaleByScaleNumberAndCode(scaleNumber, grade.Code, trn)
+	if err != nil {
+		return errors.New("checking code duplicate error: " + err.Error())
 	}
 
-	err := repositories.SaveAggregateScale(newAggregateScale, trn)
+	if checkDuplicate.Number != "" {
+		return errors.New("you have already used this code")
+	}
+
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndAssessmentGradeNumber(scaleNumber, grade.GradeNumber, trn)
+	if err != nil {
+		return errors.New("checking grade duplicate error: " + err.Error())
+	}
+
+	if checkDuplicate.Number != "" {
+		return errors.New("you have already used grade in your scale")
+	}
+
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndWeight(scaleNumber, grade.Weight, trn)
+	if err != nil {
+		return errors.New("checking weight duplicate error: " + err.Error())
+	}
+
+	if checkDuplicate.Number != "" {
+		return errors.New("you have already used weight on this scale")
+	}
+
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndRemarks(scaleNumber, grade.Remark, trn)
+	if err != nil {
+		return errors.New("checking remark duplicate error: " + err.Error())
+	}
+
+	if checkDuplicate.Number != "" {
+		return errors.New("you have already used remark on this scale")
+	}
+
+	newAggregateScale := models.AggregateScale{
+		Weight:                grade.Weight,
+		AssessmentGradeNumber: grade.GradeNumber,
+		ScaleNumber:           scaleNumber,
+		Code:                  grade.Code,
+		Number:                uuid.NewV4().String(),
+		MinValue:              grade.MinValue,
+		MaxValue:              grade.MaxValue,
+	}
+
+	err = repositories.SaveAggregateScale(newAggregateScale, trn)
 	if err != nil {
 		return errors.New("Saving grading scale error: " + err.Error())
 	}

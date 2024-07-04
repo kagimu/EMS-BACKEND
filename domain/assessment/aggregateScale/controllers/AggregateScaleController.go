@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"net/http"
 	"os"
@@ -74,16 +75,12 @@ func FetchAggregateScales(c *gin.Context) {
 	baseURL := os.Getenv("BASE_URL")
 	for _, aggregateScale := range aggregateScales {
 		response = append(response, responses.AggregateScaleResponse{
-			Code:                aggregateScale.Code,
-			Number:              aggregateScale.Number,
-			MinValue:            aggregateScale.MinValue,
-			MaxValue:            aggregateScale.MaxValue,
-			Name:                aggregateScale.Name,
-			Weight:              aggregateScale.Weight,
-			Illustration:        baseURL + aggregateScale.Illustration,
-			ClassName:           aggregateScale.CampusClass.ClassName,
-			CampusName:          aggregateScale.Campus.Name,
-			GradingStandardName: aggregateScale.GradingStandard.Name,
+			Code:         aggregateScale.Code,
+			Number:       aggregateScale.Number,
+			MinValue:     aggregateScale.MinValue,
+			MaxValue:     aggregateScale.MaxValue,
+			Weight:       aggregateScale.Weight,
+			Illustration: baseURL + aggregateScale.Illustration,
 		})
 	}
 
@@ -91,7 +88,7 @@ func FetchAggregateScales(c *gin.Context) {
 }
 
 func UpdateAggregateScale(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
@@ -103,14 +100,19 @@ func UpdateAggregateScale(c *gin.Context) {
 		return
 	}
 
-	aggregateScaleNumber := c.Query("aggregate_scale_number")
-	var aggregateScale models.AggregateScale
-	if err := config.DB.First(&aggregateScale, "number = ?", aggregateScaleNumber).Error; err != nil {
+	if err = payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	scaleNumber := payload.ScaleNumber
+	var scale models2.Scale
+	if err := config.DB.First(&scale, "number = ?", scaleNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No aggregate scale found with the specified number"})
 		return
 	}
 
-	var fileName string
+	/*var fileName string
 	_, err = c.FormFile("illustration")
 	if err == nil {
 		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
@@ -119,22 +121,15 @@ func UpdateAggregateScale(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
 			return
 		}
-	}
+	}*/
 
-	updateAggregateScale := models.AggregateScale{
-		Code:                  payload.Code,
-		MinValue:              payload.MinValue,
-		MaxValue:              payload.MaxValue,
-		Illustration:          fileName,
-		CampusClassNumber:     payload.CampusClassNumber,
-		CampusNumber:          payload.CampusNumber,
-		GradingStandardNumber: payload.GradingStandardNumber,
-	}
+	scale.Name = payload.ScaleName
+	scale.UserNumber = user.Number
 
-	if err := config.DB.Model(&aggregateScale).Where("number  = ?", aggregateScaleNumber).Updates(updateAggregateScale).Error; err != nil {
+	if err := config.DB.Model(&scale).Where("number  = ?", scale.Number).Updates(scale).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update aggregate scale"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": aggregateScale})
+	c.JSON(http.StatusOK, gin.H{"data": scale})
 }

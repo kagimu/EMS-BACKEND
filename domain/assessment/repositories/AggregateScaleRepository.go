@@ -18,7 +18,7 @@ func SaveAggregateScale(aggregateScale models.AggregateScale, trn ...*gorm.DB) e
 	return db.Save(&aggregateScale).Error
 }
 
-func FindAggregateScaleByGradingStandardNumber(gradingStandardNumber string, trn ...*gorm.DB) ([]models.AggregateScale, error) {
+func FindAggregateScaleByScaleNumber(scaleNumber string, trn ...*gorm.DB) ([]models.AggregateScale, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -27,7 +27,7 @@ func FindAggregateScaleByGradingStandardNumber(gradingStandardNumber string, trn
 
 	var aggregateScales []models.AggregateScale
 
-	if err := db.Where("grading_standard_number = ?", gradingStandardNumber).Find(&aggregateScales).Error; err != nil {
+	if err := db.Where("scale_number = ?", scaleNumber).Find(&aggregateScales).Error; err != nil {
 
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			return aggregateScales, nil
@@ -39,7 +39,7 @@ func FindAggregateScaleByGradingStandardNumber(gradingStandardNumber string, trn
 	return aggregateScales, nil
 }
 
-func GetAggregateScaleByGradingStandardNumberAndGradeNumber(gradingStandardNumber string, gradeNumber string, trn ...*gorm.DB) (models.AggregateScale, error) {
+func GetAggregateScaleByScaleNumberAndAssessmentGradeNumber(scaleNumber, assessmentGradeNumber string, trn ...*gorm.DB) (models.AggregateScale, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -48,7 +48,7 @@ func GetAggregateScaleByGradingStandardNumberAndGradeNumber(gradingStandardNumbe
 
 	var aggregateScales models.AggregateScale
 
-	if err := db.Where("grading_standard_number = ? AND grade_number = ?", gradingStandardNumber, gradeNumber).Find(&aggregateScales).Error; err != nil {
+	if err := db.Where("scale_number = ? AND assessment_grade_number = ?", scaleNumber, assessmentGradeNumber).Find(&aggregateScales).Error; err != nil {
 
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			return aggregateScales, nil
@@ -69,4 +69,91 @@ func RemoveAggregateScale(aggregateScale models.AggregateScale, trn ...*gorm.DB)
 	}
 
 	return db.Delete(&aggregateScale).Error
+}
+
+func GetAggregateScaleByScaleNumberAndWeight(scaleNumber string, weight float64, trn ...*gorm.DB) (models.AggregateScale, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var aggregateScales models.AggregateScale
+
+	if err := db.Where("scale_number = ? AND weight = ?", scaleNumber, weight).Find(&aggregateScales).Error; err != nil {
+
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return aggregateScales, nil
+		}
+
+		return aggregateScales, err
+	}
+
+	return aggregateScales, nil
+}
+
+func GetAggregateScaleByScaleNumberAndRemarks(scaleNumber, remarks string, trn ...*gorm.DB) (models.AggregateScale, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var aggregateScales models.AggregateScale
+
+	if err := db.Where("scale_number = ? AND remarks = ?", scaleNumber, remarks).Find(&aggregateScales).Error; err != nil {
+
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return aggregateScales, nil
+		}
+
+		return aggregateScales, err
+	}
+
+	return aggregateScales, nil
+}
+
+func GetAggregateScaleByScaleNumberAndCode(scaleNumber string, code int64, trn ...*gorm.DB) (models.AggregateScale, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var aggregateScales models.AggregateScale
+
+	if err := db.Where("scale_number = ? AND code = ?", scaleNumber, code).Find(&aggregateScales).Error; err != nil {
+
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return aggregateScales, nil
+		}
+
+		return aggregateScales, err
+	}
+
+	return aggregateScales, nil
+}
+
+func FindAggregateScaleByClassNumberAndGradingStandardNumber(classNumber, gradingStandardNumber string, trn ...*gorm.DB) ([]models.AggregateScale, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var aggregateScales []models.AggregateScale
+
+	if err := db.
+		Joins("join scales on scales.number = aggregate_scales.scale_number").
+		Joins("join grading_standard_class_scale on grading_standard_class_scale.scale_number = scales.number").
+		Where("grading_standard_class_scale.class_number = ? AND grading_standard_class_scale.grading_standard_number = ?", classNumber, gradingStandardNumber).Find(&aggregateScales).Error; err != nil {
+
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return aggregateScales, nil
+		}
+
+		return aggregateScales, err
+	}
+
+	return aggregateScales, nil
 }

@@ -3,8 +3,11 @@ package requests
 import "errors"
 
 type AggregateScaleRequest struct {
-	Grades                []AggregateScaleItem `json:"grades"`
-	GradingStandardNumber string               `json:"grading_standard_number"`
+	Grades       []AggregateScaleItem `json:"grades"`
+	ScaleName    string               `json:"scale_name"`
+	Count        int                  `json:"count"`
+	SchoolNumber string               `json:"school_number"`
+	Illustration string               `json:"illustration"`
 }
 
 type AggregateScaleItem struct {
@@ -12,16 +15,13 @@ type AggregateScaleItem struct {
 	GradeNumber string  `json:"grade_number"`
 	MinValue    float64 `json:"min_value"`
 	MaxValue    float64 `json:"max_value"`
+	Weight      float64 `json:"weight"`
+	Remark      string  `json:"remark"`
 }
 
 type EditAggregateScaleRequest struct {
-	Code                  int64   `json:"code"`
-	MinValue              float64 `json:"min_value"`
-	MaxValue              float64 `json:"max_value"`
-	CampusNumber          string  `json:"campus_number"`
-	Illustration          string  `json:"illustration"`
-	GradingStandardNumber string  `json:"grading_standard_number"`
-	CampusClassNumber     string  `json:"campus_class_number"`
+	AggregateScaleRequest
+	ScaleNumber string `json:"scale_number"`
 }
 
 func (aggregateScale *AggregateScaleRequest) Validate() error {
@@ -30,12 +30,29 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 		return errors.New("please select the grades")
 	}
 
-	if aggregateScale.GradingStandardNumber == "" {
-		return errors.New("grading standard number is required")
+	if aggregateScale.SchoolNumber == "" {
+		return errors.New("choose school")
+
+	}
+
+	if aggregateScale.ScaleName == "" {
+		return errors.New("provide scale name")
 
 	}
 
 	for _, grade := range aggregateScale.Grades {
+
+		if grade.Weight <= 0 {
+			return errors.New("set the weight for this score")
+		}
+
+		if grade.Remark == "" {
+			return errors.New("set the remark for this score")
+		}
+
+		if grade.GradeNumber == "" {
+			return errors.New("choose the assessment grade")
+		}
 
 		if grade.Code <= 0 {
 			return errors.New("code is required")
@@ -61,6 +78,19 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 			return errors.New("maximum value must be greater than minimum value")
 		}
 
+	}
+
+	return nil
+}
+
+func (aggregateScale *EditAggregateScaleRequest) Validate() error {
+	if aggregateScale.ScaleNumber == "" {
+		return errors.New("choose the scale to edit")
+
+	}
+
+	if err := aggregateScale.AggregateScaleRequest.Validate(); err != nil {
+		return err
 	}
 
 	return nil

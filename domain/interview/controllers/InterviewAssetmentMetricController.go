@@ -134,13 +134,6 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 		GradingStandardNumber string
 	}
 
-	type StudentInterviewResults struct {
-		Name    string
-		Score   int
-		Grade   string
-		Comment string
-	}
-
 	var assessmentMetrics []assessmentModel.AssessmentMetric
 
 	var interviewAssessmentMetrics []models.InterviewAssessmentMetric

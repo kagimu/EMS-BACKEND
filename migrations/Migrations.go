@@ -139,8 +139,9 @@ func Init() error {
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
 		&permissionModels.UserRole{},
+		&assessmentGradeModels.Scale{},
 		&assessmentScaleModels.AggregateScale{},
-		&assessmentScaleModels.AlternativeAggregateScale{},
+		//&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
 		&staffModel.JobTitle{},
 		&staffModel.SalaryScale{},
@@ -196,7 +197,8 @@ func Init() error {
 		&reportingActivityModels.Indicator{},
 		&eosModels.ActiveUserEntity{},
 		&gradesModels.Grade{},
-		&cateringModels.CalendarEventFeedingGroup{},
+		&cateringModels.CalendarEventFeedingGroup{}, //GradingStandardClassScale
+		&assessmentGradeModels.GradingStandardClassScale{},
 	)
 
 	if err != nil {
