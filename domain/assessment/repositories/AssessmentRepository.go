@@ -42,7 +42,7 @@ func FindAssessmentByStudentNumberAndAssessmentMetricNumber(studentNumber string
 
 	db := config.DB
 
-	var assessment []assessmentModel.Assessment
+	var assessment = make([]assessmentModel.Assessment, 0)
 
 	if err := db.Scopes(filters.ByStudentNumber(studentNumber), filters.ByAssessmentMetricNumber(assessmentMetricNumber)).Find(&assessment).Error; err != nil {
 
