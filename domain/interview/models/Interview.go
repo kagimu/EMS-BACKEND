@@ -3,6 +3,7 @@ package models
 import (
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"gorm.io/gorm"
 )
 
@@ -14,6 +15,8 @@ type Interview struct {
 	Name              string                             `json:"name" gorm:"size:100;"`
 	InterviewDate     string                             `json:"interview_date" gorm:"size:100;not null"`
 	UserNumber        string                             `json:"user_number" gorm:"size:36;not null"`
+	CampusClassNumber string                             `json:"campus_class_number" gorm:"size:36;not null"`
+	CampusClass       models.CampusClass                 `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	User              authModel.User                     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentMetrics []assessmentModel.AssessmentMetric `gorm:"-"`
 }
