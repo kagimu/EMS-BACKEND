@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
@@ -146,7 +147,8 @@ func FindAggregateScaleByClassNumberAndGradingStandardNumber(classNumber, gradin
 	if err := db.
 		Joins("join scales on scales.number = aggregate_scales.scale_number").
 		Joins("join grading_standard_class_scale on grading_standard_class_scale.scale_number = scales.number").
-		Where("grading_standard_class_scale.class_number = ? AND grading_standard_class_scale.grading_standard_number = ?", classNumber, gradingStandardNumber).Find(&aggregateScales).Error; err != nil {
+		Scopes(filters.ByAnyField("grading_standard_class_scale.class_number", classNumber), filters.ByAnyField("grading_standard_class_scale.grading_standard_number", gradingStandardNumber)).
+		Find(&aggregateScales).Error; err != nil {
 
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			return aggregateScales, nil

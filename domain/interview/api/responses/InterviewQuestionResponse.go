@@ -10,7 +10,7 @@ type InterviewQuestionResponse struct {
 
 type StudentInterviewResults struct {
 	Name    string
-	Score   int
+	Score   float64
 	Grade   string
 	Comment string
 }

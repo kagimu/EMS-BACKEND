@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -256,4 +258,59 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 	}
 
 	return nil
+}
+
+func FetchAggregateScales(campusClassNumber, campusNumber, gradingStandardNumber, assessmentAreaNumber string) ([]responses.AggregateScaleResponse, error) {
+
+	var response []responses.AggregateScaleResponse
+
+	classNumber := campusClassNumber
+
+	if campusClassNumber != "" {
+		class, err := repositories2.GetClassByCampusClassNumber(campusClassNumber)
+		if err != nil {
+			return response, errors.New("checking class error: " + err.Error())
+		}
+
+		if class.Number == "" {
+			return response, errors.New("invalid class campus number")
+		}
+
+		classNumber = class.Number
+	}
+
+	aggregateScales, err := repositories.FindAggregateScaleByClassNumberAndGradingStandardNumber(classNumber, gradingStandardNumber)
+	if err != nil {
+		return response, errors.New("getting aggregate scale error: " + err.Error())
+	}
+
+	for _, aggregateScale := range aggregateScales {
+		assessmentGrade, err := repositories.GetAssessmentGradeByNumber(aggregateScale.AssessmentGradeNumber)
+		if err != nil {
+			return response, errors.New("getting assessment grade error: " + err.Error())
+		}
+
+		scale, err := repositories.GetScaleByNumber(aggregateScale.ScaleNumber)
+		if err != nil {
+			return response, errors.New("getting scale error: " + err.Error())
+		}
+
+		response = append(response, createAggregateScaleResponse(aggregateScale, assessmentGrade, scale))
+	}
+
+	return response, nil
+}
+
+func createAggregateScaleResponse(aggregateScale models.AggregateScale, assessmentGrade models2.AssessmentGrade, scale models2.Scale) responses.AggregateScaleResponse {
+	//baseURL + aggregateScale.Illustration
+	return responses.AggregateScaleResponse{
+		Code:         aggregateScale.Code,
+		Number:       aggregateScale.Number,
+		MinValue:     aggregateScale.MinValue,
+		MaxValue:     aggregateScale.MaxValue,
+		Weight:       aggregateScale.Weight,
+		Illustration: "",
+		Name:         assessmentGrade.Name,
+		ScaleName:    scale.Name,
+	}
 }

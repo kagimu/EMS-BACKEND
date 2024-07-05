@@ -12,4 +12,5 @@ type AggregateScaleResponse struct {
 	ClassName           string  `json:"class_name"`
 	CampusName          string  `json:"campus_name"`
 	GradingStandardName string  `json:"grading_standard_name"`
+	ScaleName           string  `json:"scale_name"`
 }

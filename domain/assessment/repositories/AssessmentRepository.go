@@ -55,3 +55,24 @@ func FindAssessmentByStudentNumberAndAssessmentMetricNumber(studentNumber string
 
 	return assessment, nil
 }
+
+func GetAssessmentByNumber(assessmentNumber string, trn ...*gorm.DB) (assessmentModel.Assessment, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessment assessmentModel.Assessment
+
+	if err := db.Where("number = ?", assessmentNumber).First(&assessment).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessment, nil
+		}
+
+		return assessment, err
+	}
+
+	return assessment, nil
+}
