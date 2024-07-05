@@ -153,7 +153,7 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 		assessmentMetrics = append(assessmentMetrics, assessmentMetric)
 	}
 
-	var results []StudentInterviewResults
+	var results []StudentInterviewResult
 
 	for _, v := range assessmentMetrics {
 		var aggregateScales []aggregateSaceltModel.AggregateScale
@@ -175,7 +175,7 @@ func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {
 		}
 
 		if len(aggregateScales) == 0 {
-			results = append(results, StudentInterviewResults{
+			results = append(results, StudentInterviewResult{
 				Name:    v.AssessmentAreaName,
 				Comment: comment,
 				Score:   int(assessment.ActualScore),
