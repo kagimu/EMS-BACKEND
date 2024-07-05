@@ -314,3 +314,28 @@ func createAggregateScaleResponse(aggregateScale models.AggregateScale, assessme
 		ScaleName:    scale.Name,
 	}
 }
+
+func FetchGradingStandards(campusNumber, campusClassNumber string) ([]responses.GradingStandardResponse, error) {
+	var gradingStandardResponses = make([]responses.GradingStandardResponse, 0)
+
+	gradingStandards, err := repositories.FindGradingStandardByCampusNumberAndCampusClassNumber(campusNumber, campusClassNumber)
+	if err != nil {
+		return gradingStandardResponses, errors.New("getting grading standard error: " + err.Error())
+	}
+
+	for _, gradingStandard := range gradingStandards {
+		gradingStandardResponses = append(gradingStandardResponses, createGradingStandardResponse(gradingStandard))
+	}
+
+	return gradingStandardResponses, nil
+}
+
+func createGradingStandardResponse(gradingStandard models.GradingStandard) responses.GradingStandardResponse {
+	return responses.GradingStandardResponse{
+		Number:      gradingStandard.Number,
+		Name:        gradingStandard.Name,
+		Code:        gradingStandard.Code,
+		Description: gradingStandard.Description,
+		Type:        gradingStandard.Type,
+	}
+}

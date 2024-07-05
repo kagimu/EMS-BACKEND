@@ -3,7 +3,6 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -72,33 +71,13 @@ func FetchGradingStandards(ctx *gin.Context) {
 	campusClassNumber := ctx.Query("campus_class_number")
 	campusNumber := ctx.Query("campus_number")
 
-	var gss = make([]responses.GradingStandardResponse, 0)
-	if campusClassNumber == "" {
-		ctx.JSON(http.StatusOK, gin.H{"data": gss})
-		return
-	}
-	var gradingStandards []models.GradingStandard
-	if err := config.DB.Scopes(filters.ByCampusClassNumber(campusClassNumber),
-		filters.ByCampusNumber(campusNumber)).Preload("Campus").Preload("CampusClass").Find(&gradingStandards).Error; err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to get grading standards"})
+	response, err := services.FetchGradingStandards(campusNumber, campusClassNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var gs []responses.GradingStandardResponse
-
-	for _, val := range gradingStandards {
-		gs = append(gs, responses.GradingStandardResponse{
-			Code:        val.Code,
-			Number:      val.Number,
-			Name:        val.Name,
-			Description: val.Description,
-			Type:        val.Type,
-			Campus:      val.Campus.Name,
-			Class:       val.CampusClass.ClassName,
-		})
-	}
-
-	ctx.JSON(200, gin.H{"data": gs})
+	ctx.JSON(200, gin.H{"data": response})
 }
 
 func AttachAssessmentAreas(ctx *gin.Context) {

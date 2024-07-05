@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
@@ -64,4 +65,24 @@ func GetGradingStandardByNumber(gradingStandardNumber string) (models.GradingSta
 		return gradingStandard, err
 	}
 	return gradingStandard, nil
+}
+
+func FindGradingStandardByCampusNumberAndCampusClassNumber(campusNumber, campusClassNumber string, trn ...*gorm.DB) ([]models.GradingStandard, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var gradingStandards []models.GradingStandard
+
+	if err := db.
+		Scopes(filters.ByCampusClassNumber(campusClassNumber), filters.ByCampusNumber(campusNumber)).
+		Find(&gradingStandards).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return gradingStandards, nil
+		}
+		return gradingStandards, err
+	}
+	return gradingStandards, nil
 }
