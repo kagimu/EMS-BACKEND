@@ -126,12 +126,6 @@ func FetchAnInterview(c *gin.Context) {
 }
 
 func FetchAllInterviews(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "User not found",
-		})
-		return
-	}
 
 	var interviews []models.Interview
 	if err := config.DB.Find(&interviews).Error; err != nil {
