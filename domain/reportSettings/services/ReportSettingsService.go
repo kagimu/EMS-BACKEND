@@ -2,11 +2,23 @@ package services
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, currentUserNumber string) error {
@@ -38,4 +50,316 @@ func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, cu
 	}
 
 	return nil
+}
+
+func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNumber string) error {
+
+	//check if report settings exists
+	reportSettings, err := reporsitory.GetReportSettingByCampusClassNumberAndStatus(payload.CampusClassNumber, constants.StatusActive)
+
+	if err != nil {
+		return errors.New("Failed to fetch settings  for this class")
+	}
+
+	//check if report columns exists
+	reportColumns, err := reporsitory.FindReportColumnsByReportSettingNumber(reportSettings.Number)
+	if err != nil {
+		return errors.New("failed to fetch columns  for this class")
+	}
+
+	if len(reportColumns) != int(reportSettings.Columns) {
+		return errors.New("report columns set for the settings are not yet fully set up")
+
+	}
+
+	tx := config.DB.Begin()
+	enrollment, err := repository.GetEnrollmentByStudentNumber(payload.StudentNumber, tx)
+
+	if err != nil {
+		return errors.New("failed to fetch enrollment for this student to pick stream")
+
+	}
+
+	var reportTemplate reportTemplateModel.ReportTemplate
+
+	if reportTemplate, err = services.DetermineReportTemplateForClass(payload.CampusClassNumber); err != nil {
+		return err
+	}
+
+	if reportTemplate.Number == "" {
+		tx.Rollback()
+		return errors.New("this class has no report template set up")
+	}
+
+	headTeacherComment, err := reporsitory.GetHeadTeacherCommentByReportSettingNumber(reportSettings.Number)
+
+	if err != nil {
+		tx.Rollback()
+		return errors.New("failed to fetch head teacher comment")
+
+	}
+
+	reportSummary, err := reporsitory.GetReportSummaryByStudentNumberAndStudyPeriodNumberAndCampusClassNumber(payload.StudentNumber, payload.StudyPeriodNumber, payload.CampusClassNumber)
+	if err == nil {
+		// update the existing report summary with data from the payload
+		reportSummary.ReportSettingNumber = reportSettings.Number
+		reportSummary.Grade = ""
+		reportSummary.Aggregate = -1
+		reportSummary.Comment = ""
+		reportSummary.UserNumber = userNumber
+		reportSummary.StreamNumber = enrollment.StreamNumber
+		reportSummary.ReportTemplateName = reportTemplate.Name
+		reportSummary.HeadTeacherComment = headTeacherComment.Comment
+
+		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
+			tx.Rollback()
+			return errors.New("failed to update report summary")
+
+		}
+
+	} else {
+
+		reportSummary = models.ReportSummary{
+			Number:              uuid.NewV4().String(),
+			ReportSettingNumber: reportSettings.Number,
+			StudentNumber:       payload.StudentNumber,
+			CampusClassNumber:   payload.CampusClassNumber,
+			StudyPeriodNumber:   payload.StudyPeriodNumber,
+			Grade:               "",
+			Aggregate:           -1,
+			Comment:             "",
+			UserNumber:          userNumber,
+			Code:                0,
+			StreamNumber:        enrollment.StreamNumber,
+			ReportTemplateName:  reportTemplate.Name,
+			HeadTeacherComment:  headTeacherComment.Comment,
+		}
+
+		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
+			tx.Rollback()
+			return errors.New("failed to create report summary")
+
+		}
+	}
+
+	campusClass, err := repositories.GetCampusClassByNumber(payload.CampusClassNumber)
+
+	if err != nil {
+		tx.Rollback()
+		return errors.New("failed to fetch campus class")
+	}
+
+	assessmentAreas, err := assessmentAreaRepo.FindAssessmentAreasByCurriculumClassNumber(campusClass.CurriculumClassNumber, tx)
+
+	if err != nil {
+		tx.Rollback()
+		return errors.New("failed to fetch assessment areas")
+
+	}
+
+	var totalAggregates float64
+	for _, assessmentArea := range assessmentAreas {
+		var scale aggregateSaceltModel.AggregateScale
+
+		for _, reportColum := range reportColumns {
+
+			rcas, err := reporsitory.FindReportColumnAssessmentByReportColumnNumberAndAssessmentAreaNumber(reportColum.Number, assessmentArea.Number)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					continue
+				}
+			}
+
+			var score float64
+			for _, rca := range rcas {
+				var assessment assesmentModel.Assessment
+
+				if err := tx.Where("assessment_metric_number = ? AND student_number = ? ", rca.AssessmentMetricNumber, payload.StudentNumber).First(&assessment).Error; err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						continue
+					}
+				}
+				score += assessment.ActualScore
+
+			}
+			length := float64(len(rcas))
+
+			var scoreAverage = score / length
+			if length == 0 || score == 0 {
+				scoreAverage = -1
+			}
+
+			// find the aggregate scale with from grading standard of the  assessment metric
+			var percentageScore float64
+
+			if length > 0 && score > 0 {
+				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
+				scale, err = GetProperAggregateScale(scoreAverage, assessmentArea.Number)
+			}
+
+			//check if the report score already exists with the same report summary number, assessment area number and report column number
+			var reportScore models.ReportScore
+			if err := tx.Where("report_summary_number = ? AND assessment_area_number = ? AND report_column_number = ?", reportSummary.Number, assessmentArea.Number, reportColum.Number).First(&reportScore).Error; err == nil {
+				//update the report score
+				reportScore.Score = commons.RoundFloat(percentageScore, 2)
+				reportScore.AverageScore = commons.RoundFloat(scoreAverage, 2)
+				reportScore.Aggregate = scale.Weight
+				//TODO reportScore.Grade = scale.Name
+				reportScore.UserNumber = userNumber
+
+				//kkk
+
+				if score > 0 {
+					if err := reporsitory.SaveReportScore(reportScore); err != nil {
+						tx.Rollback()
+						return errors.New("failed to update report score")
+					}
+				}
+
+			} else {
+
+				//create a new report score
+
+				reportScore = models.ReportScore{
+					Number:               uuid.NewV4().String(),
+					ReportSummaryNumber:  reportSummary.Number,
+					AssessmentAreaNumber: assessmentArea.Number,
+					ReportColumnNumber:   reportColum.Number,
+					Score:                commons.RoundFloat(percentageScore, 2),
+					AverageScore:         commons.RoundFloat(scoreAverage, 2),
+					Aggregate:            scale.Weight,
+					//TODO
+					//Grade:                scale.Name,
+					UserNumber: userNumber,
+				}
+
+				if score > 0 {
+					if err := reporsitory.CreateReportScore(reportScore, tx); err != nil {
+						tx.Rollback()
+						return errors.New("failed to create report score")
+					}
+
+				}
+
+			}
+
+		}
+
+		var rs []models.ReportScore
+
+		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).Find(&rs).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				continue
+			}
+		}
+		// sum report scores
+
+		var summation float64
+		for _, r := range rs {
+			summation += r.Score
+		}
+
+		scale, err = GetProperAggregateScale(summation, assessmentArea.Number)
+
+		totalAggregates += scale.Weight
+
+		//check if the report score summary already exists with the same report summary number and assessment area number
+		var reportScoreSummary models.ReportScoreSummary
+		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).First(&reportScoreSummary).Error; err == nil {
+			//update the report score summary
+			reportScoreSummary.Aggregate = scale.Weight
+			//TODO: //reportScoreSummary.Grade = scale.Name
+			//reportScoreSummary.Grade = scale.Name
+			reportScoreSummary.Summation = summation
+			reportScoreSummary.UserNumber = userNumber
+
+			if err := reporsitory.SaveReportScoreSummary(reportScoreSummary, tx); err != nil {
+				tx.Rollback()
+				return errors.New("failed to update report score summary")
+			}
+
+		} else {
+			//create a new report score summary
+			reportScoreSummary = models.ReportScoreSummary{
+				Number:               uuid.NewV4().String(),
+				ReportSummaryNumber:  reportSummary.Number,
+				AssessmentAreaNumber: assessmentArea.Number,
+				Aggregate:            scale.Weight,
+				// TODO Grade:                scale.Name,
+				Summation:  summation,
+				Comment:    "Subject teacher comment goes here",
+				UserNumber: userNumber,
+			}
+
+			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {
+				tx.Rollback()
+				return errors.New("failed to create report score summary")
+			}
+
+		}
+
+	}
+	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
+
+	if err != nil {
+		//tx.Rollback()
+		//ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get assessment grade"})
+		//return
+		reportSummary.Grade = "N/A"
+	} else {
+		reportSummary.Grade = assessmentGrade.Name
+	}
+
+	reportSummary.Aggregate = totalAggregates
+
+	if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
+		tx.Rollback()
+		return errors.New("failed to update report summary")
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+	}
+	return nil
+
+}
+
+func GetProperAggregateScale(score float64, assessmentAreaNumber string) (aggregateSaceltModel.AggregateScale, error) {
+	var scale aggregateSaceltModel.AggregateScale
+	var aggregateScales []aggregateSaceltModel.AggregateScale
+	var aags assessmentAreaModel.AssessmentAreaGradingStandard
+
+	if err := config.DB.Where("assessment_area_number = ?", assessmentAreaNumber).First(&aags).Error; err != nil {
+	}
+	if err := config.DB.Where("grading_standard_number = ?", aags.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
+	}
+
+	for _, val := range aggregateScales {
+		if score >= val.MinValue && score <= val.MaxValue {
+			scale = val
+
+			return scale, nil
+		}
+	}
+
+	return scale, errors.New("no scale found")
+}
+
+func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGrade, error) {
+	var assessmentGrade assesmentGradeModel.AssessmentGrade
+	var assessmentGrades []assesmentGradeModel.AssessmentGrade
+
+	if err := config.DB.Where("campus_class_number = ?", campusClassNumber).Find(&assessmentGrades).Error; err != nil {
+	}
+
+	for _, val := range assessmentGrades {
+		if points >= float64(val.MinimumPoints) && points <= float64(val.MaximumPoints) {
+			assessmentGrade = val
+
+			return assessmentGrade, nil
+		}
+	}
+
+	return assessmentGrade, errors.New("no grade found")
+
 }

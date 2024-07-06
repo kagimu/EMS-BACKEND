@@ -84,3 +84,20 @@ func GetAssessmentAreaByNumber(assessmentAreaNumber string, trn ...*gorm.DB) (as
 	return assessmentArea, nil
 
 }
+
+func FindAssessmentAreasByCurriculumClassNumber(curriculumClassNumber string, trn ...*gorm.DB) ([]assessmentAreaModels.AssessmentArea, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentAreas []assessmentAreaModels.AssessmentArea
+
+	if err := db.Where("curriculum_class_number = ?", curriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
+
+		return assessmentAreas, err
+	}
+
+	return assessmentAreas, nil
+}

@@ -215,7 +215,7 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 		return errors.New("you have already used this code")
 	}
 
-	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndAssessmentGradeNumber(scaleNumber, grade.GradeNumber, trn)
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberGradeNumber(scaleNumber, grade.GradeNumber, trn)
 	if err != nil {
 		return errors.New("checking grade duplicate error: " + err.Error())
 	}
@@ -243,13 +243,13 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 	}
 
 	newAggregateScale := models.AggregateScale{
-		Weight:                grade.Weight,
-		AssessmentGradeNumber: grade.GradeNumber,
-		ScaleNumber:           scaleNumber,
-		Code:                  grade.Code,
-		Number:                uuid.NewV4().String(),
-		MinValue:              grade.MinValue,
-		MaxValue:              grade.MaxValue,
+		Weight:      grade.Weight,
+		GradeNumber: grade.GradeNumber,
+		ScaleNumber: scaleNumber,
+		Code:        grade.Code,
+		Number:      uuid.NewV4().String(),
+		MinValue:    grade.MinValue,
+		MaxValue:    grade.MaxValue,
 	}
 
 	err = repositories.SaveAggregateScale(newAggregateScale, trn)
@@ -285,7 +285,7 @@ func FetchAggregateScales(campusClassNumber, campusNumber, gradingStandardNumber
 	}
 
 	for _, aggregateScale := range aggregateScales {
-		assessmentGrade, err := repositories.GetAssessmentGradeByNumber(aggregateScale.AssessmentGradeNumber)
+		assessmentGrade, err := repositories.GetAssessmentGradeByNumber(aggregateScale.GradeNumber)
 		if err != nil {
 			return response, errors.New("getting assessment grade error: " + err.Error())
 		}

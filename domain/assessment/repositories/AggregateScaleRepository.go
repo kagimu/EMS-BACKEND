@@ -40,7 +40,7 @@ func FindAggregateScaleByScaleNumber(scaleNumber string, trn ...*gorm.DB) ([]mod
 	return aggregateScales, nil
 }
 
-func GetAggregateScaleByScaleNumberAndAssessmentGradeNumber(scaleNumber, assessmentGradeNumber string, trn ...*gorm.DB) (models.AggregateScale, error) {
+func GetAggregateScaleByScaleNumberGradeNumber(scaleNumber, gradeNumber string, trn ...*gorm.DB) (models.AggregateScale, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -49,7 +49,7 @@ func GetAggregateScaleByScaleNumberAndAssessmentGradeNumber(scaleNumber, assessm
 
 	var aggregateScales models.AggregateScale
 
-	if err := db.Where("scale_number = ? AND assessment_grade_number = ?", scaleNumber, assessmentGradeNumber).Find(&aggregateScales).Error; err != nil {
+	if err := db.Where("scale_number = ? AND grade_number = ?", scaleNumber, gradeNumber).Find(&aggregateScales).Error; err != nil {
 
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			return aggregateScales, nil

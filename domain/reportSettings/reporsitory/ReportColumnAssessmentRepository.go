@@ -55,3 +55,16 @@ func FindReportColumnAssessmentsByReportColumnNumber(reportColumnNumber string) 
 
 	return reportColumnAssessments, nil
 }
+
+func FindReportColumnAssessmentByReportColumnNumberAndAssessmentAreaNumber(reportColumnNumber string, assessmentAreaNumber string) ([]models.ReportColumnAssessment, error) {
+
+	db := config.DB
+	var reportColumnAssessment []models.ReportColumnAssessment
+
+	if err := db.Where("report_column_number = ? AND assessment_area_number = ?", reportColumnNumber, assessmentAreaNumber).Find(&reportColumnAssessment).Error; err != nil {
+		return reportColumnAssessment, err
+	}
+
+	return reportColumnAssessment, nil
+	//tx.Where("assessment_area_number = ? AND report_column_number = ? ", assessmentArea.Number, reportColum.Number).Find(&rcas).Error;
+}
