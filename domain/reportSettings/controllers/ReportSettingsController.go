@@ -20,6 +20,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
@@ -32,40 +33,28 @@ import (
 )
 
 func CreateReportSettings(c *gin.Context) {
+
+	currentUser, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
 	var payload requests.ReportSettingsRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	if err = c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	err := payload.ValidateReportSetting()
+	err = payload.ValidateReportSetting()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	//check for existing report settings with the same study period number, academic year number and campus class number and status active.
 
-	var existingReportSettings models.ReportSetting
-	if err := config.DB.Where("study_period_number = ? AND academic_year_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.AcademicYearNumber, payload.CampusClassNumber, constants.StatusActive).First(&existingReportSettings).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class  already exists"})
-		return
-
-	}
-
-	// Save report settings
-	reportSettings := models.ReportSetting{
-		Number:             uuid.NewV4().String(),
-		StudyPeriodNumber:  payload.StudyPeriodNumber,
-		AcademicYearNumber: payload.AcademicYearNumber,
-		CampusClassNumber:  payload.CampusClassNumber,
-		Columns:            payload.Columns,
-		Status:             constants.StatusActive,
-		UserNumber:         c.Request.Header["User-Number"][0],
-		Code:               payload.Code,
-	}
-
-	if err := config.DB.Create(&reportSettings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report settings" + err.Error()})
+	err = services3.SaveReportSettings(payload, currentUser.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 

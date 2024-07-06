@@ -125,30 +125,30 @@ func UpdateAssessmentArea(payload requests.UpdateAssessmentAreaRequest, currentU
 	return nil
 }
 
-func FetchAssessmentAreasByGradingStandard(assessmentAreaNumber, gradingStandardNumber string) ([]responses.AssessmentAreaResponse, error) {
+func FetchAssessmentAreasByGradingStandard(schoolNumber, assessmentAreaNumber, gradingStandardNumber string) ([]responses.AssessmentAreaResponse, error) {
 
-	var response = make([]responses.AssessmentAreaResponse, 0)
+	var assessmentAreaResponses = make([]responses.AssessmentAreaResponse, 0)
 
-	assessmentAreaGradingStandards, err := repositories.FindAssessmentAreaGradingStandardsByGradingStandardNumber(assessmentAreaNumber, gradingStandardNumber)
+	assessmentAreaGradingStandards, err := repositories.FindAssessmentAreaGradingStandardsByGradingStandardNumber(schoolNumber, assessmentAreaNumber, gradingStandardNumber)
 	if err != nil {
-		return response, errors.New("getting assessment area grading standard error: " + err.Error())
+		return assessmentAreaResponses, errors.New("getting assessment area grading standard error: " + err.Error())
 	}
 
 	for _, assessmentAreaGradingStandard := range assessmentAreaGradingStandards {
 
 		assessmentArea, gradingStandard, err := findAssessmentAreaAndGradingStandard(assessmentAreaGradingStandard.AssessmentAreaNumber, assessmentAreaGradingStandard.GradingStandardNumber)
 		if err != nil {
-			return response, err
+			return assessmentAreaResponses, err
 		}
 
-		response = append(response, responses.AssessmentAreaResponse{
+		assessmentAreaResponses = append(assessmentAreaResponses, responses.AssessmentAreaResponse{
 			Code:                assessmentAreaGradingStandard.Code,
 			GradingStandardName: gradingStandard.Name,
 			AssessmentAreaName:  assessmentArea.Name,
 		})
 	}
 
-	return response, nil
+	return assessmentAreaResponses, nil
 }
 
 func SaveAssessmentAreaGradingStandard(assessmentAreaGradingStandardRequest aggregateScaleRequests.AssessmentAreaGradingStandardRequest) error {

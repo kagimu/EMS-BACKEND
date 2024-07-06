@@ -102,8 +102,13 @@ func FetchAssessmentAreasByGradingStandard(ctx *gin.Context) {
 
 	gradingStandardNumber := ctx.Query("grading_standard_number")
 	assessmentAreaNumber := ctx.Query("assessment_area_number")
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "choose a school"})
+		return
+	}
 
-	response, err := assessmentAreaServices.FetchAssessmentAreasByGradingStandard(assessmentAreaNumber, gradingStandardNumber)
+	response, err := assessmentAreaServices.FetchAssessmentAreasByGradingStandard(schoolNumber, assessmentAreaNumber, gradingStandardNumber)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

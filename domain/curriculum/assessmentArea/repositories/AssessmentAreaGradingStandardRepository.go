@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindAssessmentAreaGradingStandardsByGradingStandardNumber(assessmentAreaNumber, gradingStandardNumber string, trn ...*gorm.DB) ([]models.AssessmentAreaGradingStandard, error) {
+func FindAssessmentAreaGradingStandardsByGradingStandardNumber(schoolNumber, assessmentAreaNumber, gradingStandardNumber string, trn ...*gorm.DB) ([]models.AssessmentAreaGradingStandard, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
@@ -16,7 +16,7 @@ func FindAssessmentAreaGradingStandardsByGradingStandardNumber(assessmentAreaNum
 
 	var gradingStandards []models.AssessmentAreaGradingStandard
 
-	if err := db.Scopes(filters.ByGradingStandardNumber(gradingStandardNumber), filters.ByAssessmentAreaNumber(assessmentAreaNumber)).Find(&gradingStandards).Error; err != nil {
+	if err := db.Scopes(filters.ByGradingStandardNumber(gradingStandardNumber), filters.BySchoolNumber(schoolNumber), filters.ByAssessmentAreaNumber(assessmentAreaNumber)).Find(&gradingStandards).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return gradingStandards, nil
