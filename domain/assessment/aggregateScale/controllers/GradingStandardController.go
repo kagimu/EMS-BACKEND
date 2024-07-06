@@ -1,15 +1,11 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	assessmentAreaServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
@@ -84,57 +80,35 @@ func AttachAssessmentAreas(ctx *gin.Context) {
 
 	var payload requests.AssessmentAreaGradingStandardRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to process payload"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		ctx.JSON(400, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	assessmentAreaGradingStandard := assessmentAreaModel.AssessmentAreaGradingStandard{
-		Number:                uuid.NewV4().String(),
-		Code:                  payload.Code,
-		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
-		GradingStandardNumber: payload.GradingStandardNumber,
-	}
-
-	if err := config.DB.Create(&assessmentAreaGradingStandard).Error; err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to save assessment area grading standard"})
+	err := assessmentAreaServices.SaveAssessmentAreaGradingStandard(payload)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	ctx.JSON(201, gin.H{"message": "Assessment area grading standard created successfully", "data": assessmentAreaGradingStandard})
+	ctx.JSON(201, gin.H{"message": "Assessment area grading standard created successfully"})
 }
 
 func FetchAssessmentAreasByGradingStandard(ctx *gin.Context) {
-	//gradingStandardNumber := ctx.Param("gradingStandardNumber")
 
-	type response struct {
-		Code                int64  `json:"code"`
-		AssessmentAreaName  string `json:"assessment_area_name"`
-		GradingStandardName string `json:"grading_standard_name"`
-	}
-	var list []response
-	var assessmentAreaGradingStandards []assessmentAreaModel.AssessmentAreaGradingStandard
-	if err := config.DB.Scopes(filters.ByGradingStandardNumber(ctx.Query("grading_standard_number"))).Find(&assessmentAreaGradingStandards).Error; err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to get assessment area grading standards"})
+	gradingStandardNumber := ctx.Query("grading_standard_number")
+	assessmentAreaNumber := ctx.Query("assessment_area_number")
+
+	response, err := assessmentAreaServices.FetchAssessmentAreasByGradingStandard(assessmentAreaNumber, gradingStandardNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	for _, val := range assessmentAreaGradingStandards {
-		var gradingStandard models.GradingStandard
-		var assessmentArea assessmentAreaModel.AssessmentArea
-		config.DB.First(&gradingStandard, "number = ?", val.GradingStandardNumber)
-		config.DB.First(&assessmentArea, "number = ?", val.AssessmentAreaNumber)
-		list = append(list, response{
-			Code:                val.Code,
-			AssessmentAreaName:  assessmentArea.Name,
-			GradingStandardName: gradingStandard.Name,
-		})
-	}
-
-	ctx.JSON(200, gin.H{"data": list})
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
 
 }

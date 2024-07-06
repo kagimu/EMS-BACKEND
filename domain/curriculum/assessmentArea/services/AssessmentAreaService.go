@@ -4,10 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	aggregateScaleRequests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
+	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	assessmentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
-	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
+	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	subjectRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -35,7 +40,7 @@ func processSaveAssessmentArea(subjectNumber string, curriculumClassNumber strin
 
 	var otherName string
 
-	subject, err := repositories2.GetSubjectByNumber(subjectNumber, trn)
+	subject, err := subjectRepositories.GetSubjectByNumber(subjectNumber, trn)
 	if err != nil {
 		return errors.New("checking subject error: " + err.Error())
 	}
@@ -118,4 +123,97 @@ func UpdateAssessmentArea(payload requests.UpdateAssessmentAreaRequest, currentU
 	}
 
 	return nil
+}
+
+func FetchAssessmentAreasByGradingStandard(assessmentAreaNumber, gradingStandardNumber string) ([]responses.AssessmentAreaResponse, error) {
+
+	var response = make([]responses.AssessmentAreaResponse, 0)
+
+	assessmentAreaGradingStandards, err := repositories.FindAssessmentAreaGradingStandardsByGradingStandardNumber(assessmentAreaNumber, gradingStandardNumber)
+	if err != nil {
+		return response, errors.New("getting assessment area grading standard error: " + err.Error())
+	}
+
+	for _, assessmentAreaGradingStandard := range assessmentAreaGradingStandards {
+
+		assessmentArea, gradingStandard, err := findAssessmentAreaAndGradingStandard(assessmentAreaGradingStandard.AssessmentAreaNumber, assessmentAreaGradingStandard.GradingStandardNumber)
+		if err != nil {
+			return response, err
+		}
+
+		response = append(response, responses.AssessmentAreaResponse{
+			Code:                assessmentAreaGradingStandard.Code,
+			GradingStandardName: gradingStandard.Name,
+			AssessmentAreaName:  assessmentArea.Name,
+		})
+	}
+
+	return response, nil
+}
+
+func SaveAssessmentAreaGradingStandard(assessmentAreaGradingStandardRequest aggregateScaleRequests.AssessmentAreaGradingStandardRequest) error {
+
+	school, err := schoolRepositories.GetSchoolByNumber(assessmentAreaGradingStandardRequest.SchoolNumber)
+	if err != nil {
+		return errors.New("checking school number error: " + err.Error())
+	}
+
+	if school.Number == "" {
+		return errors.New("invalid school number")
+	}
+
+	checkDuplicate, err := repositories.GetAssessmentAreaGradingStandardsByCodeAndSchoolNumber(assessmentAreaGradingStandardRequest.Code, school.Number)
+	if err != nil {
+		return errors.New("checking duplicate error: " + err.Error())
+	}
+
+	if checkDuplicate.Number != "" {
+		return errors.New("code already used")
+	}
+
+	assessmentArea, gradingStandard, err := findAssessmentAreaAndGradingStandard(assessmentAreaGradingStandardRequest.AssessmentAreaNumber, assessmentAreaGradingStandardRequest.GradingStandardNumber)
+	if err != nil {
+		return err
+	}
+
+	assessmentAreaGradingStandard := models.AssessmentAreaGradingStandard{
+		Number:                uuid.NewV4().String(),
+		Code:                  assessmentAreaGradingStandardRequest.Code,
+		AssessmentAreaNumber:  assessmentArea.Number,
+		GradingStandardNumber: gradingStandard.Number,
+		SchoolNumber:          school.Number,
+	}
+
+	err = repositories.SaveAssessmentAreaGradingStandard(assessmentAreaGradingStandard)
+	if err != nil {
+		return errors.New("failed saving grading standard for the assessment area")
+	}
+
+	return nil
+}
+
+func findAssessmentAreaAndGradingStandard(assessmentAreaNumber string, gradingStandardNumber string) (models.AssessmentArea, assessmentScaleModels.GradingStandard, error) {
+
+	var assessmentArea models.AssessmentArea
+	var gradingStandard assessmentScaleModels.GradingStandard
+
+	assessmentArea, err := repositories.GetAssessmentAreaByNumber(assessmentAreaNumber)
+	if err != nil {
+		return assessmentArea, gradingStandard, errors.New("checking assessment area error: " + err.Error())
+	}
+
+	if assessmentArea.Number == "" {
+		return assessmentArea, gradingStandard, errors.New("invalid assessment area number")
+	}
+
+	gradingStandard, err = assessmentRepositories.GetGradingStandardByNumber(gradingStandardNumber)
+	if err != nil {
+		return assessmentArea, gradingStandard, errors.New("checking grading standard error: " + err.Error())
+	}
+
+	if gradingStandard.Number == "" {
+		return assessmentArea, gradingStandard, errors.New("invalid grading standard number")
+	}
+
+	return assessmentArea, gradingStandard, nil
 }
