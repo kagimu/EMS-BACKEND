@@ -11,5 +11,5 @@ type GradingStandardClassScale struct {
 	ClassNumber           string                 `json:"class_number" gorm:"size:36;not null;primaryKey"`
 	Class                 classModels.Class      `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	ScaleNumber           string                 `json:"scale_number" gorm:"size:36;not null"`
-	Scale                 Scale                  `gorm:"foreignKey:ScaleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	Scale                 models.Scale           `gorm:"foreignKey:ScaleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }

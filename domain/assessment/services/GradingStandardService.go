@@ -121,7 +121,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 
 	trn := config.DB.Begin()
 
-	scale, err = repositories.SaveScale(models2.Scale{
+	scale, err = repositories.SaveScale(models.Scale{
 		Number:       uuid.NewV4().String(),
 		Name:         aggregateScaleRequest.ScaleName,
 		SchoolNumber: aggregateScaleRequest.SchoolNumber,
@@ -301,7 +301,7 @@ func FetchAggregateScales(campusClassNumber, campusNumber, gradingStandardNumber
 	return response, nil
 }
 
-func createAggregateScaleResponse(aggregateScale models.AggregateScale, assessmentGrade models2.AssessmentGrade, scale models2.Scale) responses.AggregateScaleResponse {
+func createAggregateScaleResponse(aggregateScale models.AggregateScale, assessmentGrade models2.AssessmentGrade, scale models.Scale) responses.AggregateScaleResponse {
 	//baseURL + aggregateScale.Illustration
 	return responses.AggregateScaleResponse{
 		Code:         aggregateScale.Code,

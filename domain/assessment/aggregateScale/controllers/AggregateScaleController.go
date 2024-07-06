@@ -4,7 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"

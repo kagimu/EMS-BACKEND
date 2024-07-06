@@ -85,14 +85,14 @@ func FetchInterviewAssessmentMetricByStudent(studentNumber, interviewNumber stri
 		} else {
 			for _, aggregateScale := range aggregateScales {
 				if assessment.ActualScore >= aggregateScale.MinValue && assessment.ActualScore <= aggregateScale.MaxValue {
-					assessmentGrade, err := assessmentRepositories.GetAssessmentGradeByNumber(aggregateScale.AssessmentGradeNumber)
+					assessmentGrade, err := assessmentRepositories.GetAssessmentGradeByNumber(aggregateScale.GradeNumber)
 
 					if err != nil {
 						return studentInterviewResults, errors.New("error resolving assessment grade: " + err.Error())
 					}
 
 					if assessmentGrade.Number == "" {
-						return studentInterviewResults, errors.New("invalid assessment grade number: " + aggregateScale.AssessmentGradeNumber)
+						return studentInterviewResults, errors.New("invalid assessment grade number: " + aggregateScale.GradeNumber)
 					}
 
 					studentInterviewResults = append(studentInterviewResults, createInterviewResult(assessmentAreaName.Name, comment, assessmentGrade.Name, assessment.ActualScore))

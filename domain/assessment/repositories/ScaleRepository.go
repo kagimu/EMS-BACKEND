@@ -3,7 +3,7 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"gorm.io/gorm"
 )
 
