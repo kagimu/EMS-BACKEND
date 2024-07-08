@@ -7,3 +7,10 @@ type InterviewQuestionResponse struct {
 	CorrectAnswer   string
 	Score           int
 }
+
+type StudentInterviewResults struct {
+	Name    string
+	Score   float64
+	Grade   string
+	Comment string
+}

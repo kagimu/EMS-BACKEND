@@ -1,0 +1,31 @@
+package repositories
+
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"gorm.io/gorm"
+)
+
+func GetClassByCampusClassNumber(campusClassNumber string, trn ...*gorm.DB) (models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var class models.Class
+
+	if err := db.
+		Joins("JOIN curriculum_classes ON curriculum_classes.class_number = classes.number").
+		Joins("JOIN campus_classes ON campus_classes.curriculum_class_number = curriculum_classes.number").
+		Where("campus_classes.number = ?", campusClassNumber).First(&class).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return class, nil
+		}
+
+		return class, err
+	}
+
+	return class, nil
+}

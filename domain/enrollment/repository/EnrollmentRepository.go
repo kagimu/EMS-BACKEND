@@ -7,8 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindEnrollmentByStudentNumber(studentNumber string) (models.Enrollment, error) {
+func GetEnrollmentByStudentNumber(studentNumber string, txn ...*gorm.DB) (models.Enrollment, error) {
 	db := config.DB
+
+	if len(txn) > 0 {
+		db = txn[0]
+
+	}
 
 	var enrollment models.Enrollment
 

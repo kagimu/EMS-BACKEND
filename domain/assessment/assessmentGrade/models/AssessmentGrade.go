@@ -4,7 +4,6 @@ import (
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	campusClass "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
-
 	"gorm.io/gorm"
 )
 
