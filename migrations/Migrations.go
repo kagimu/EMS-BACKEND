@@ -138,7 +138,6 @@ func Init() error {
 		&permissionModels.UserRole{},
 		&assessmentScaleModels.Scale{},
 		&assessmentScaleModels.AggregateScale{},
-		//&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
 		&staffModel.JobTitle{},
 		&staffModel.SalaryScale{},

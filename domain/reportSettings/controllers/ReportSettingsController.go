@@ -539,35 +539,11 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 		return
 	}
 
-	var reportSummary models.ReportSetting
-	if err := config.DB.Where("number = ?", reportSettingNumber).First(&reportSummary).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch given  report setting"})
+	err = services3.CreateHeadTeacherComment(payload, reportSettingNumber, ctx.Request.Header["User-Number"][0])
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
-	}
-
-	var headTeacherComment models.HeadTeacherComment
-	if err := config.DB.Where("report_setting_number = ?", reportSettingNumber).First(&headTeacherComment).Error; err == nil {
-		headTeacherComment.Comment = payload.Comment
-		headTeacherComment.UserNumber = ctx.Request.Header["User-Number"][0]
-
-		if err := config.DB.Save(&headTeacherComment).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update head teacher comment"})
-			return
-		}
-
-	} else {
-		headTeacherComment = models.HeadTeacherComment{
-			MinAggregate:        payload.MinAggregate,
-			MaxAggregate:        payload.MaxAggregate,
-			ReportSettingNumber: reportSettingNumber,
-			Comment:             payload.Comment,
-			UserNumber:          ctx.Request.Header["User-Number"][0],
-		}
-
-		if err := config.DB.Create(&headTeacherComment).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create head teacher comment"})
-			return
-		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Head teacher comment created successfully"})
@@ -575,29 +551,12 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 }
 
 func FetchHeadTeacherComments(ctx *gin.Context) {
-	var headTeacherComment []models.HeadTeacherComment
-	if err := config.DB.Preload("ReportSetting").
-		Preload("ReportSetting.AcademicYear").
-		Preload("ReportSetting.StudyPeriod").
-		Preload("ReportSetting.CampusClass").
-		Find(&headTeacherComment).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch head teacher comment"})
+	comments, err := services3.FetchHeadTeacherComments()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
+
 	}
-
-	var comments = make([]responses.HeadTeacherCommentResponse, 0)
-
-	for _, comment := range headTeacherComment {
-		comments = append(comments, responses.HeadTeacherCommentResponse{
-			MinAggregate: comment.MinAggregate,
-			MaxAggregate: comment.MaxAggregate,
-			Comment:      comment.Comment,
-			AcademicYear: comment.ReportSetting.AcademicYear.AcademicYearName,
-			StudyPeriod:  comment.ReportSetting.StudyPeriod.StudyPeriodName,
-			Class:        comment.ReportSetting.CampusClass.ClassName,
-		})
-	}
-
 	ctx.JSON(http.StatusOK, comments)
 
 }
