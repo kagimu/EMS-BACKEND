@@ -228,7 +228,7 @@ func SaveCurrentEntity(context *gin.Context) {
 		return
 	}
 
-	entityNumber, _ := commons.GetUserEntityNumber(context)
+	entityNumber := context.Query("entity_number")
 	if entityNumber == "" {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number"))
 		return
