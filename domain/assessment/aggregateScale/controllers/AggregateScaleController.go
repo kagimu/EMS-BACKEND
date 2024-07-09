@@ -122,4 +122,12 @@ func FetchAllScales(context *gin.Context) {
 		return
 	}
 
+	scales, err := services.FindAllScales(schoolNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": scales})
+
 }
