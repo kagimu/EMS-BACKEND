@@ -3,13 +3,12 @@ package models
 import (
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
-	"time"
+	"gorm.io/gorm"
 )
 
 type Scale struct {
-	Number       string `json:"number" gorm:"size:36;not null;unique"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	gorm.Model
+	Number       string             `json:"number" gorm:"size:36;not null;unique"`
 	Name         string             `json:"name" gorm:"size:1000;not null"`
 	SchoolNumber string             `json:"school_number" gorm:"size:36;not null"`
 	School       schoolModel.School `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
