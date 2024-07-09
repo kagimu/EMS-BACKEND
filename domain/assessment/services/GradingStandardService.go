@@ -233,7 +233,7 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 		return errors.New("you have already used weight on this scale")
 	}
 
-	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndRemarks(scaleNumber, grade.Remark, trn)
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndDescription(scaleNumber, grade.Remark, trn)
 	if err != nil {
 		return errors.New("checking remark duplicate error: " + err.Error())
 	}
