@@ -114,3 +114,12 @@ func UpdateAggregateScale(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": scale})
 }
+
+func FetchAllScales(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school"})
+		return
+	}
+
+}

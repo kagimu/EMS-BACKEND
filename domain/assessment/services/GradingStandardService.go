@@ -110,7 +110,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 
 	grades := aggregateScaleRequest.Grades
 
-	if len(grades) != aggregateScaleRequest.Count {
+	if int64(len(grades)) != aggregateScaleRequest.Count {
 		return errors.New("you should define the grades up to set count")
 	}
 
@@ -337,5 +337,47 @@ func createGradingStandardResponse(gradingStandard models.GradingStandard) respo
 		Code:        gradingStandard.Code,
 		Description: gradingStandard.Description,
 		Type:        gradingStandard.Type,
+	}
+}
+
+func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
+
+	var scaleResponses = make([]responses.ScaleResponse, 0)
+
+	scales, err := repositories.FindAllScales(schoolNumber)
+	if err != nil {
+		return scaleResponses, errors.New("error fetching scales: " + err.Error())
+	}
+
+	for _, scale := range scales {
+
+		aggregateScale, err := repositories.FindAggregateScaleByScaleNumber(scale.Number)
+		if err != nil {
+			return scaleResponses, errors.New("error fetching aggregate scales : " + err.Error())
+		}
+
+		scaleResponses = append(scaleResponses, createScaleResponse(scale, aggregateScale))
+	}
+
+	return scaleResponses, nil
+}
+
+func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateScale) responses.ScaleResponse {
+
+	var grades = make([]responses.AggregateScaleResponse, 0)
+
+	for _, aggregateScale := range aggregateScales {
+		grades = append(grades, responses.AggregateScaleResponse{
+			MinValue:    aggregateScale.MinValue,
+			MaxValue:    aggregateScale.MaxValue,
+			Description: aggregateScale.Description,
+		})
+	}
+
+	return responses.ScaleResponse{
+		ScaleNumber: scale.Number,
+		ScaleName:   scale.Name,
+		Count:       scale.Count,
+		Grades:      grades,
 	}
 }

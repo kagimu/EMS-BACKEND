@@ -14,3 +14,10 @@ type AggregateScaleResponse struct {
 	GradingStandardName string  `json:"grading_standard_name"`
 	ScaleName           string  `json:"scale_name"`
 }
+
+type ScaleResponse struct {
+	ScaleNumber string                   `json:"scale_number"`
+	ScaleName   string                   `json:"scale_name"`
+	Count       int64                    `json:"count"`
+	Grades      []AggregateScaleResponse `json:"grades"`
+}

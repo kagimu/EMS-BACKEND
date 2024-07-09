@@ -5,7 +5,7 @@ import "errors"
 type AggregateScaleRequest struct {
 	Grades       []AggregateScaleItem `json:"grades"`
 	ScaleName    string               `json:"scale_name"`
-	Count        int                  `json:"count"`
+	Count        int64                `json:"count"`
 	SchoolNumber string               `json:"school_number"`
 }
 
