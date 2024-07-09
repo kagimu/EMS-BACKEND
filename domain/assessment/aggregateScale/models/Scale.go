@@ -7,7 +7,7 @@ import (
 )
 
 type Scale struct {
-	Number       string `gorm:"unique;size:36;not null"`
+	Number       string `gorm:"unique"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	Name         string             `json:"name" gorm:"size:1000;not null"`
