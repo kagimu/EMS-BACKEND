@@ -14,7 +14,7 @@ func SaveScale(scale models.Scale, trn ...*gorm.DB) (models.Scale, error) {
 		db = trn[0]
 	}
 
-	return scale, db.Save(scale).Error
+	return scale, db.Save(&scale).Error
 }
 
 func GetScaleByNumber(scaleNumber string, trn ...*gorm.DB) (models.Scale, error) {

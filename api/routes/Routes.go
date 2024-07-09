@@ -524,6 +524,7 @@ func SetupRoutes() *gin.Engine {
 			{
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
 				aggregateScale.GET("", aggregateScaleController.FetchAggregateScales)
+				aggregateScale.GET("all", aggregateScaleController.FetchAllScales)
 				aggregateScale.POST("update", aggregateScaleController.UpdateAggregateScale)
 				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScales)
 			}
