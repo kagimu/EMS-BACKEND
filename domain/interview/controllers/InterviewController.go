@@ -54,7 +54,7 @@ func CreateInterview(c *gin.Context) {
 	}
 
 	if err := repo.CreateInterview(&saveInterview); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create interview"})
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to create interview: " + err.Error()})
 		return
 	}
 
@@ -103,7 +103,7 @@ func EditInterview(c *gin.Context) {
 	interview.UserNumber = user.Number
 
 	if err := repo.UpdateInterview(interview); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update interview"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update interview: " + err.Error()})
 		return
 
 	}
@@ -129,7 +129,7 @@ func FetchAllInterviews(c *gin.Context) {
 
 	var interviews []models.Interview
 	if err := config.DB.Find(&interviews).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interviews"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interviews: " + err.Error()})
 		return
 	}
 
@@ -189,7 +189,7 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 			assmts, err := assessmentMetricRepositories.FindAssessmentByStudentNumberAndAssessmentMetricNumber(interviewStudent.StudentNumber, assessmentMetric.Number)
 			if err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessments " + err.Error()})
+					c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments " + err.Error()})
 					return
 				}
 			}
@@ -276,7 +276,7 @@ func AddStudentToInterview(c *gin.Context) {
 	}
 
 	if err := config.DB.Model(&application).Where("number = ?", applicationNumber).Updates(updateApplicationStatus).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application: " + err.Error()})
 		return
 	}
 
