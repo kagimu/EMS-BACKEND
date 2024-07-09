@@ -318,10 +318,10 @@ func createAggregateScaleResponse(aggregateScale models.AggregateScale, assessme
 	}
 }
 
-func FetchGradingStandards(campusNumber, campusClassNumber string) ([]responses.GradingStandardResponse, error) {
+func FetchGradingStandards(schoolNumber string) ([]responses.GradingStandardResponse, error) {
 	var gradingStandardResponses = make([]responses.GradingStandardResponse, 0)
 
-	gradingStandards, err := repositories.FindGradingStandardByCampusNumberAndCampusClassNumber(campusNumber, campusClassNumber)
+	gradingStandards, err := repositories.FindGradingStandardByCampusNumberAndCampusClassNumber(schoolNumber)
 	if err != nil {
 		return gradingStandardResponses, errors.New("getting grading standard error: " + err.Error())
 	}
