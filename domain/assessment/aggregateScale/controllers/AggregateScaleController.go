@@ -115,6 +115,23 @@ func UpdateAggregateScale(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": scale})
 }
 
+func FetchAllDetailedScales(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school to fetch scales"})
+		return
+	}
+
+	scales, err := services.FindAllDetailsScales(schoolNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": scales})
+
+}
+
 func FetchAllScales(context *gin.Context) {
 	schoolNumber := context.Query("school_number")
 	if schoolNumber == "" {
@@ -129,5 +146,4 @@ func FetchAllScales(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"data": scales})
-
 }

@@ -343,9 +343,9 @@ func createGradingStandardResponse(gradingStandard models.GradingStandard) respo
 	}
 }
 
-func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
+func FindAllDetailsScales(schoolNumber string) ([]responses.DetailedScaleResponse, error) {
 
-	var scaleResponses = make([]responses.ScaleResponse, 0)
+	var scaleResponses = make([]responses.DetailedScaleResponse, 0)
 
 	scales, err := repositories.FindAllScales(schoolNumber)
 	if err != nil {
@@ -370,13 +370,12 @@ func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
 	return scaleResponses, nil
 }
 
-func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateScale) (responses.ScaleResponse, error) {
+func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateScale) (responses.DetailedScaleResponse, error) {
 
-	response := responses.ScaleResponse{
-		ScaleNumber: scale.Number,
-		ScaleName:   scale.Name,
-		Count:       scale.Count,
-	}
+	minResponse := createMinResponse(scale)
+
+	response := responses.DetailedScaleResponse{}
+	response.ScaleResponse = minResponse
 
 	var grades = make([]responses.AggregateScaleResponse, 0)
 
@@ -402,4 +401,29 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 	response.Grades = grades
 
 	return response, nil
+}
+
+func createMinResponse(scale models.Scale) responses.ScaleResponse {
+	return responses.ScaleResponse{
+		ScaleNumber: scale.Number,
+		ScaleName:   scale.Name,
+		Count:       scale.Count,
+	}
+}
+
+func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
+
+	var scaleResponses = make([]responses.ScaleResponse, 0)
+
+	scales, err := repositories.FindAllScales(schoolNumber)
+	if err != nil {
+		return scaleResponses, errors.New("error fetching scales: " + err.Error())
+	}
+
+	for _, scale := range scales {
+		scaleResponses = append(scaleResponses, createMinResponse(scale))
+	}
+
+	return scaleResponses, nil
+
 }
