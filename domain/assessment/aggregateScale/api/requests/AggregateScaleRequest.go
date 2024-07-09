@@ -7,16 +7,16 @@ type AggregateScaleRequest struct {
 	ScaleName    string               `json:"scale_name"`
 	Count        int                  `json:"count"`
 	SchoolNumber string               `json:"school_number"`
-	Illustration string               `json:"illustration"`
 }
 
 type AggregateScaleItem struct {
-	Code        int64   `json:"code"`
-	GradeNumber string  `json:"grade_number"`
-	MinValue    float64 `json:"min_value"`
-	MaxValue    float64 `json:"max_value"`
-	Weight      float64 `json:"weight"`
-	Remark      string  `json:"remark"`
+	Code         int64   `json:"code"`
+	GradeNumber  string  `json:"grade_number"`
+	MinValue     float64 `json:"min_value"`
+	MaxValue     float64 `json:"max_value"`
+	Weight       float64 `json:"weight"`
+	Remark       string  `json:"remark"`
+	Illustration string  `json:"illustration"`
 }
 
 type EditAggregateScaleRequest struct {
