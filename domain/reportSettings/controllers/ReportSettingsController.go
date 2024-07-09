@@ -277,8 +277,6 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		return
 	}
 
-	// get curricullum class number from the campus class number
-
 	var campusClass classModel.CampusClass
 	if err := config.DB.Preload("CurriculumClass.CurriculumLevel").Preload("Campus").Preload("Campus.School").Where("number = ?", reportSummary.CampusClassNumber).First(&campusClass).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus class"})
