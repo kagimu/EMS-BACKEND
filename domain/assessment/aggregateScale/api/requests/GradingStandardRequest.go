@@ -3,16 +3,20 @@ package requests
 import "errors"
 
 type GradingStandardRequest struct {
-	Code        int64                    `json:"code"`
-	Name        string                   `json:"name"`
-	Description string                   `json:"description"`
-	Type        string                   `json:"type"`
-	Classes     []GradingStandardClasses `json:"classes"`
+	Code         int64                    `json:"code"`
+	Name         string                   `json:"name"`
+	Description  string                   `json:"description"`
+	Type         string                   `json:"type"`
+	SchoolNumber string                   `json:"school_number"`
+	Classes      []GradingStandardClasses `json:"classes"`
 }
 
 func (a *GradingStandardRequest) Validate() error {
 	if a.Name == "" {
 		return errors.New("name is required")
+	}
+	if a.SchoolNumber == "" {
+		return errors.New("school number is required")
 	}
 	if a.Type == "" {
 		return errors.New("type is required")
