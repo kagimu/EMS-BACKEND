@@ -43,9 +43,18 @@ func FindGradeByNameAndShortName(name, shortName, schoolNumber string) (models.G
 }
 
 func UpdateGrade(grade models.Grade) error {
-	if err := config.DB.Save(grade).Error; err != nil {
+	if err := config.DB.Save(&grade).Error; err != nil {
 		return err
 	}
+	return nil
+}
+
+func SaveGrade(grade models.Grade) error {
+
+	if err := config.DB.Save(&grade).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 
