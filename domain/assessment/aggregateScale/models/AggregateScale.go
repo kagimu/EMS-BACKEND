@@ -2,9 +2,11 @@ package models
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
+	"gorm.io/gorm"
 )
 
 type AggregateScale struct {
+	gorm.Model
 	Code         int64        `json:"code" gorm:"size:36;not null"`
 	Number       string       `json:"number" gorm:"size:36;unique;not null"`
 	MinValue     float64      `json:"min_value" gorm:"not null"`
