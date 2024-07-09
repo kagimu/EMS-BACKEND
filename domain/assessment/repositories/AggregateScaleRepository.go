@@ -93,7 +93,7 @@ func GetAggregateScaleByScaleNumberAndWeight(scaleNumber string, weight float64,
 	return aggregateScales, nil
 }
 
-func GetAggregateScaleByScaleNumberAndRemarks(scaleNumber, remarks string, trn ...*gorm.DB) (models.AggregateScale, error) {
+func GetAggregateScaleByScaleNumberAndDescription(scaleNumber, description string, trn ...*gorm.DB) (models.AggregateScale, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -102,7 +102,7 @@ func GetAggregateScaleByScaleNumberAndRemarks(scaleNumber, remarks string, trn .
 
 	var aggregateScales models.AggregateScale
 
-	if err := db.Where("scale_number = ? AND remarks = ?", scaleNumber, remarks).Find(&aggregateScales).Error; err != nil {
+	if err := db.Where("scale_number = ? AND description = ?", scaleNumber, description).Find(&aggregateScales).Error; err != nil {
 
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			return aggregateScales, nil
