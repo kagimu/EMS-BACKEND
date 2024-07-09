@@ -3,12 +3,11 @@ package requests
 import "errors"
 
 type GradingStandardRequest struct {
-	Code              int64  `json:"code"`
-	Name              string `json:"name"`
-	Description       string `json:"description"`
-	Type              string `json:"type"`
-	CampusClassNumber string `json:"campus_class_number"`
-	CampusNumber      string `json:"campus_number"`
+	Code        int64                    `json:"code"`
+	Name        string                   `json:"name"`
+	Description string                   `json:"description"`
+	Type        string                   `json:"type"`
+	Classes     []GradingStandardClasses `json:"classes"`
 }
 
 func (a *GradingStandardRequest) Validate() error {
@@ -18,13 +17,14 @@ func (a *GradingStandardRequest) Validate() error {
 	if a.Type == "" {
 		return errors.New("type is required")
 	}
-	if a.CampusClassNumber == "" {
-		return errors.New("campus class number is required")
-	}
 
-	if a.CampusNumber == "" {
-		return errors.New("campus number is required")
-
+	for _, class := range a.Classes {
+		if class.CampusClassNumber == "" {
+			return errors.New("campus class number is required")
+		}
+		if class.ScaleNumber == "" {
+			return errors.New("choose scale for the selected class")
+		}
 	}
 
 	return nil
@@ -33,6 +33,11 @@ func (a *GradingStandardRequest) Validate() error {
 type UpdateGradingStandardRequest struct {
 	GradingStandardRequest
 	GradingStandardNumber string `json:"grading_standard_number"`
+}
+
+type GradingStandardClasses struct {
+	CampusClassNumber string `json:"campus_class_number"`
+	ScaleNumber       string `json:"scale_number"`
 }
 
 func (a *UpdateGradingStandardRequest) Validate() error {
