@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
@@ -38,9 +37,10 @@ func CreateGrade(userNumber string, request requests.GradeDataRequest) error {
 		SchoolNumber: request.SchoolNumber,
 	}
 
-	if err := config.DB.Create(&grade).Error; err != nil {
+	if err := repository.SaveGrade(grade); err != nil {
 		return errors.New("creating grade error: " + err.Error())
 	}
+
 	return nil
 }
 
