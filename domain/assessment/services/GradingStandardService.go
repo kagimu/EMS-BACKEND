@@ -250,6 +250,7 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 		Number:      uuid.NewV4().String(),
 		MinValue:    grade.MinValue,
 		MaxValue:    grade.MaxValue,
+		Description: grade.Remark,
 	}
 
 	err = repositories.SaveAggregateScale(newAggregateScale, trn)
