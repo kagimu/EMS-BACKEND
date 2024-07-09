@@ -37,7 +37,7 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 
 	trn := config.DB.Begin()
 
-	gs := models.GradingStandard{
+	gradingStandard := models.GradingStandard{
 		Code:         gradingStandardRequest.Code,
 		Number:       uuid.NewV4().String(),
 		Name:         gradingStandardRequest.Name,
@@ -47,7 +47,7 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 		SchoolNumber: gradingStandardRequest.SchoolNumber,
 	}
 
-	err := repositories.SaveGradingStandard(gs, trn)
+	err := repositories.SaveGradingStandard(gradingStandard, trn)
 	if err != nil {
 		trn.Rollback()
 		return errors.New("Saving grading standard error: " + err.Error())
@@ -66,8 +66,9 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 		}
 
 		err = repositories.SaveGradingStandardClassScale(models2.GradingStandardClassScale{
-			ClassNumber: class.Number,
-			ScaleNumber: classNumber.ScaleNumber,
+			ClassNumber:           class.Number,
+			ScaleNumber:           classNumber.ScaleNumber,
+			GradingStandardNumber: gradingStandard.Number,
 		}, trn)
 
 		if err != nil {
