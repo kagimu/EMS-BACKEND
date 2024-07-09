@@ -10,7 +10,6 @@ type AggregateScale struct {
 	MinValue     float64      `json:"min_value" gorm:"not null"`
 	MaxValue     float64      `json:"max_value" gorm:"not null"`
 	Description  string       `json:"description" gorm:"size:1000;not null"`
-	Remarks      string       `json:"remarks" gorm:"size:1000;not null"`
 	ScaleNumber  string       `json:"scale_number" gorm:"size:36;not null"`
 	Scale        Scale        `gorm:"foreignKey:ScaleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	Weight       float64      `json:"weight"`
