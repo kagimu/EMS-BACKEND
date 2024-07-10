@@ -92,6 +92,12 @@ func CreateInterview(c *gin.Context) {
 			return
 		}
 	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
+		return
+
+	}
 	//sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "Wholesome: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
 	//if err := sendEmail.SendEmail(); err != nil {
 	//	c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})
