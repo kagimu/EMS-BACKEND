@@ -220,6 +220,8 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 	var studentList = make([]singleStudent, 0)
 
+	var assesssment_metric_number = c.Query("assessment_metric_number")
+
 	for _, interviewStudent := range interviewStudents {
 		student := interviewStudent.Student
 		var assessments []assessmentModel.Assessment
@@ -238,12 +240,25 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 		}
 
+		var assessment assessmentModel.Assessment
+		if assesssment_metric_number != "" {
+			assessment, err = assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assesssment_metric_number)
+			if err != nil {
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments " + err.Error()})
+					return
+				}
+			}
+		}
 		studentList = append(studentList, singleStudent{
 			EnrolledStudent: enrollmentResponse.EnrolledStudent{
 				Number:            student.Number,
 				StudentOtherName:  student.OtherName,
 				StudentSurname:    student.Surname,
 				StudentSecondName: student.SecondName,
+				Score:             assessment.Score,
+				ActualScore:       assessment.ActualScore,
+				Comment:           assessment.Comment,
 			},
 			Assessments: assessments,
 		})
