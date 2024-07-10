@@ -19,12 +19,21 @@ func CreateGrade(userNumber string, request requests.GradeDataRequest) error {
 		return errors.New("grade code already used")
 	}
 
-	checkName, err := repository.FindGradeByNameAndShortName(request.Name, request.ShortName, request.SchoolNumber)
+	checkName, err := repository.FindGradeByName(request.Name)
 	if err != nil {
 		return errors.New("error checking grade name: " + err.Error())
 	}
 
 	if checkName.Number != "" {
+		return errors.New("grade name already used")
+	}
+
+	checkNameAndShortName, err := repository.FindGradeByNameAndShortName(request.Name, request.ShortName, request.SchoolNumber)
+	if err != nil {
+		return errors.New("error checking grade name: " + err.Error())
+	}
+
+	if checkNameAndShortName.Number != "" {
 		return errors.New("grade name with short name already used")
 	}
 
