@@ -41,10 +41,12 @@ func CreateInterview(c *gin.Context) {
 		return
 	}
 
-	var repo = repository.NewInterviewRepoImpl(config.DB)
+	tx := config.DB.Begin()
+	var repo = repository.NewInterviewRepoImpl(tx)
 
+	interviewNumber := uuid.NewV4().String()
 	saveInterview := models.Interview{
-		Number:            uuid.NewV4().String(),
+		Number:            interviewNumber,
 		Message:           payload.Message,
 		Venue:             payload.Venue,
 		Name:              payload.Name,
@@ -54,10 +56,42 @@ func CreateInterview(c *gin.Context) {
 	}
 
 	if err := repo.CreateInterview(&saveInterview); err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to create interview: " + err.Error()})
 		return
 	}
 
+	var interview models.Interview
+	if err := tx.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview schedule not found"})
+		return
+	}
+
+	for _, assessmentMetricNumber := range payload.AssessmentMetrics {
+
+		var assessmentMetric assessmentModel.AssessmentMetric
+		if err := tx.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+			continue
+		}
+
+		var interviewAssessmentMetric models.InterviewAssessmentMetric
+		if err := tx.Where("interview_number = ? AND assessment_metric_number = ?", interviewNumber, assessmentMetricNumber).First(&interviewAssessmentMetric).Error; err == nil {
+			continue
+		}
+
+		interviewAssessmentMetric = models.InterviewAssessmentMetric{
+			Number:                 uuid.NewV4().String(),
+			InterviewNumber:        interviewNumber,
+			AssessmentMetricNumber: assessmentMetricNumber,
+			UserNumber:             user.Number,
+		}
+
+		if err := tx.Create(&interviewAssessmentMetric).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create interview assessment metric"})
+			return
+		}
+	}
 	//sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "Wholesome: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
 	//if err := sendEmail.SendEmail(); err != nil {
 	//	c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})

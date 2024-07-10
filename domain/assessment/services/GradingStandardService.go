@@ -37,7 +37,7 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 
 	trn := config.DB.Begin()
 
-	gs := models.GradingStandard{
+	gradingStandard := models.GradingStandard{
 		Code:         gradingStandardRequest.Code,
 		Number:       uuid.NewV4().String(),
 		Name:         gradingStandardRequest.Name,
@@ -47,7 +47,7 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 		SchoolNumber: gradingStandardRequest.SchoolNumber,
 	}
 
-	err := repositories.SaveGradingStandard(gs, trn)
+	err := repositories.SaveGradingStandard(gradingStandard, trn)
 	if err != nil {
 		trn.Rollback()
 		return errors.New("Saving grading standard error: " + err.Error())
@@ -65,9 +65,22 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 			return errors.New("campus class number has no class")
 		}
 
+		classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandard.Number)
+		if err != nil {
+			return errors.New("checking class duplicate error: " + err.Error())
+		}
+
+		if classGrade.ID > 0 {
+			err = repositories.RemoveGradingStandardClassScale(classGrade, trn)
+			if err != nil {
+				return errors.New("clearing class duplicate error: " + err.Error())
+			}
+		}
+
 		err = repositories.SaveGradingStandardClassScale(models2.GradingStandardClassScale{
-			ClassNumber: class.Number,
-			ScaleNumber: classNumber.ScaleNumber,
+			ClassNumber:           class.Number,
+			ScaleNumber:           classNumber.ScaleNumber,
+			GradingStandardNumber: gradingStandard.Number,
 		}, trn)
 
 		if err != nil {
@@ -318,10 +331,10 @@ func createAggregateScaleResponse(aggregateScale models.AggregateScale, assessme
 	}
 }
 
-func FetchGradingStandards(campusNumber, campusClassNumber string) ([]responses.GradingStandardResponse, error) {
+func FetchGradingStandards(schoolNumber string) ([]responses.GradingStandardResponse, error) {
 	var gradingStandardResponses = make([]responses.GradingStandardResponse, 0)
 
-	gradingStandards, err := repositories.FindGradingStandardByCampusNumberAndCampusClassNumber(campusNumber, campusClassNumber)
+	gradingStandards, err := repositories.FindGradingStandardByCampusNumberAndCampusClassNumber(schoolNumber)
 	if err != nil {
 		return gradingStandardResponses, errors.New("getting grading standard error: " + err.Error())
 	}
@@ -343,9 +356,9 @@ func createGradingStandardResponse(gradingStandard models.GradingStandard) respo
 	}
 }
 
-func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
+func FindAllDetailsScales(schoolNumber string) ([]responses.DetailedScaleResponse, error) {
 
-	var scaleResponses = make([]responses.ScaleResponse, 0)
+	var scaleResponses = make([]responses.DetailedScaleResponse, 0)
 
 	scales, err := repositories.FindAllScales(schoolNumber)
 	if err != nil {
@@ -370,13 +383,12 @@ func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
 	return scaleResponses, nil
 }
 
-func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateScale) (responses.ScaleResponse, error) {
+func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateScale) (responses.DetailedScaleResponse, error) {
 
-	response := responses.ScaleResponse{
-		ScaleNumber: scale.Number,
-		ScaleName:   scale.Name,
-		Count:       scale.Count,
-	}
+	minResponse := createMinResponse(scale)
+
+	response := responses.DetailedScaleResponse{}
+	response.ScaleResponse = minResponse
 
 	var grades = make([]responses.AggregateScaleResponse, 0)
 
@@ -396,10 +408,38 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 			MaxValue:     aggregateScale.MaxValue,
 			Description:  aggregateScale.Description,
 			Illustration: "",
+			Weight:       aggregateScale.Weight,
+			Name:         grade.Name,
+			ShortName:    grade.ShortName,
 		})
 	}
 
 	response.Grades = grades
 
 	return response, nil
+}
+
+func createMinResponse(scale models.Scale) responses.ScaleResponse {
+	return responses.ScaleResponse{
+		ScaleNumber: scale.Number,
+		ScaleName:   scale.Name,
+		Count:       scale.Count,
+	}
+}
+
+func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
+
+	var scaleResponses = make([]responses.ScaleResponse, 0)
+
+	scales, err := repositories.FindAllScales(schoolNumber)
+	if err != nil {
+		return scaleResponses, errors.New("error fetching scales: " + err.Error())
+	}
+
+	for _, scale := range scales {
+		scaleResponses = append(scaleResponses, createMinResponse(scale))
+	}
+
+	return scaleResponses, nil
+
 }
