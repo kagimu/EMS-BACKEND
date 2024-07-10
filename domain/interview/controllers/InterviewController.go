@@ -41,10 +41,12 @@ func CreateInterview(c *gin.Context) {
 		return
 	}
 
-	var repo = repository.NewInterviewRepoImpl(config.DB)
+	tx := config.DB.Begin()
+	var repo = repository.NewInterviewRepoImpl(tx)
 
+	interviewNumber := uuid.NewV4().String()
 	saveInterview := models.Interview{
-		Number:            uuid.NewV4().String(),
+		Number:            interviewNumber,
 		Message:           payload.Message,
 		Venue:             payload.Venue,
 		Name:              payload.Name,
@@ -54,10 +56,48 @@ func CreateInterview(c *gin.Context) {
 	}
 
 	if err := repo.CreateInterview(&saveInterview); err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to create interview: " + err.Error()})
 		return
 	}
 
+	var interview models.Interview
+	if err := tx.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview schedule not found"})
+		return
+	}
+
+	for _, assessmentMetricNumber := range payload.AssessmentMetrics {
+
+		var assessmentMetric assessmentModel.AssessmentMetric
+		if err := tx.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+			continue
+		}
+
+		var interviewAssessmentMetric models.InterviewAssessmentMetric
+		if err := tx.Where("interview_number = ? AND assessment_metric_number = ?", interviewNumber, assessmentMetricNumber).First(&interviewAssessmentMetric).Error; err == nil {
+			continue
+		}
+
+		interviewAssessmentMetric = models.InterviewAssessmentMetric{
+			Number:                 uuid.NewV4().String(),
+			InterviewNumber:        interviewNumber,
+			AssessmentMetricNumber: assessmentMetricNumber,
+			UserNumber:             user.Number,
+		}
+
+		if err := tx.Create(&interviewAssessmentMetric).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create interview assessment metric"})
+			return
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
+		return
+
+	}
 	//sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "Wholesome: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
 	//if err := sendEmail.SendEmail(); err != nil {
 	//	c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})
@@ -180,6 +220,8 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 	var studentList = make([]singleStudent, 0)
 
+	var assesssment_metric_number = c.Query("assessment_metric_number")
+
 	for _, interviewStudent := range interviewStudents {
 		student := interviewStudent.Student
 		var assessments []assessmentModel.Assessment
@@ -198,12 +240,25 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 		}
 
+		var assessment assessmentModel.Assessment
+		if assesssment_metric_number != "" {
+			assessment, err = assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assesssment_metric_number)
+			if err != nil {
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments " + err.Error()})
+					return
+				}
+			}
+		}
 		studentList = append(studentList, singleStudent{
 			EnrolledStudent: enrollmentResponse.EnrolledStudent{
 				Number:            student.Number,
 				StudentOtherName:  student.OtherName,
 				StudentSurname:    student.Surname,
 				StudentSecondName: student.SecondName,
+				Score:             assessment.Score,
+				ActualScore:       assessment.ActualScore,
+				Comment:           assessment.Comment,
 			},
 			Assessments: assessments,
 		})

@@ -42,6 +42,19 @@ func FindGradeByNameAndShortName(name, shortName, schoolNumber string) (models.G
 	return grade, nil
 }
 
+func FindGradeByName(name string) (models.Grade, error) {
+	var grade models.Grade
+	if err := config.DB.Where("name = ?", name).First(&grade).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return grade, nil
+		}
+
+		return grade, err
+	}
+	return grade, nil
+}
+
 func UpdateGrade(grade models.Grade) error {
 	if err := config.DB.Save(&grade).Error; err != nil {
 		return err

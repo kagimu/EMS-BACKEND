@@ -7,11 +7,12 @@ import (
 )
 
 type InterviewRequest struct {
-	Message           string `json:"message"`
-	Venue             string `json:"venue"`
-	InterviewDate     string `json:"interview_date"`
-	Name              string `json:"name"`
-	CampusClassNumber string `json:"campus_class_number"`
+	Message           string   `json:"message"`
+	Venue             string   `json:"venue"`
+	InterviewDate     string   `json:"interview_date"`
+	Name              string   `json:"name"`
+	CampusClassNumber string   `json:"campus_class_number"`
+	AssessmentMetrics []string `json:"assessment_metrics"`
 }
 
 func (i *InterviewRequest) Validate() error {
