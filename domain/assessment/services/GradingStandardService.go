@@ -65,6 +65,18 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 			return errors.New("campus class number has no class")
 		}
 
+		classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandard.Number)
+		if err != nil {
+			return errors.New("checking class duplicate error: " + err.Error())
+		}
+
+		if classGrade.ID > 0 {
+			err = repositories.RemoveGradingStandardClassScale(classGrade, trn)
+			if err != nil {
+				return errors.New("clearing class duplicate error: " + err.Error())
+			}
+		}
+
 		err = repositories.SaveGradingStandardClassScale(models2.GradingStandardClassScale{
 			ClassNumber:           class.Number,
 			ScaleNumber:           classNumber.ScaleNumber,
