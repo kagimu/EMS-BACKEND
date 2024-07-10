@@ -396,6 +396,9 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 			MaxValue:     aggregateScale.MaxValue,
 			Description:  aggregateScale.Description,
 			Illustration: "",
+			Weight:       aggregateScale.Weight,
+			Name:         grade.Name,
+			ShortName:    grade.ShortName,
 		})
 	}
 
