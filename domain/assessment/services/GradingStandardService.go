@@ -89,6 +89,10 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 		}
 	}
 
+	if err := trn.Commit().Error; err != nil {
+		return errors.New("commiting all changes error: " + err.Error())
+	}
+
 	return nil
 }
 
