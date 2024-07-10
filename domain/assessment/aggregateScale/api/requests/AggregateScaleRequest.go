@@ -40,6 +40,8 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 
 	}
 
+	var runsToEnd, startsAtZero bool
+
 	for _, grade := range aggregateScale.Grades {
 
 		if grade.Weight <= 0 {
@@ -78,6 +80,18 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 			return errors.New("maximum value must be greater than minimum value")
 		}
 
+		if grade.MaxValue >= 100 {
+			runsToEnd = true
+		}
+
+		if grade.MinValue <= 0 {
+			startsAtZero = true
+		}
+
+	}
+
+	if !startsAtZero || !runsToEnd {
+		return errors.New("the scale must start from 0 to 100")
 	}
 
 	return nil
