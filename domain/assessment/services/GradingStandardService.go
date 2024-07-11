@@ -17,24 +17,6 @@ import (
 
 func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest, currentUser string) error {
 
-	/*byCode, err := repositories.FindGradingStandardByCodeAndClassNumber(gradingStandardRequest.Code, gradingStandardRequest.CampusClassNumber)
-	if err != nil {
-		return errors.New("Checking code error: " + err.Error())
-	}
-
-	if byCode.Number != "" {
-		return errors.New("code already used: " + byCode.Number)
-	}
-
-	byName, err := repositories.FindGradingStandardByNameAndClassNumber(gradingStandardRequest.Name, gradingStandardRequest.CampusClassNumber)
-	if err != nil {
-		return errors.New("Checking by name error: " + err.Error())
-	}
-
-	if byName.Number != "" {
-		return errors.New("name already used: " + byName.Name)
-	}*/
-
 	trn := config.DB.Begin()
 
 	gradingStandard := models.GradingStandard{
