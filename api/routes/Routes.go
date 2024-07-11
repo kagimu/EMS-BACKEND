@@ -526,6 +526,7 @@ func SetupRoutes() *gin.Engine {
 				aggregateScale.GET("", aggregateScaleController.FetchAllScales)
 				aggregateScale.GET("all", aggregateScaleController.FetchAllDetailedScales)
 				aggregateScale.POST("update", aggregateScaleController.UpdateAggregateScale)
+				aggregateScale.POST("remove/:scale_number", aggregateScaleController.RemoveAggregateScale)
 			}
 
 			assessmentGrade := assessment.Group("/assessment-grades")
