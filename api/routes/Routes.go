@@ -542,6 +542,7 @@ func SetupRoutes() *gin.Engine {
 				grades.POST("", gradesController.CreateGrade)
 				grades.GET("", gradesController.FetchGrades)
 				grades.POST("update", gradesController.UpdateGrade)
+				grades.POST("remove/:grade_number", gradesController.RemoveGrade)
 			}
 		}
 

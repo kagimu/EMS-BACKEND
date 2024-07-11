@@ -46,3 +46,24 @@ func RemoveGradingStandardClassScale(grades models.GradingStandardClassScale, tr
 
 	return db.Delete(&grades).Error
 }
+
+func FindGradingStandardClassScaleByGradingStandardNumber(gradingStandardNumber string, trn ...*gorm.DB) ([]models.GradingStandardClassScale, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var grades []models.GradingStandardClassScale
+
+	if err := db.Where("grading_standard_number = ?", gradingStandardNumber).Find(&grades).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return grades, nil
+		}
+
+		return grades, err
+	}
+
+	return grades, nil
+}

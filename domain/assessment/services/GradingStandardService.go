@@ -24,7 +24,6 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 		Number:       uuid.NewV4().String(),
 		Name:         gradingStandardRequest.Name,
 		Description:  gradingStandardRequest.Description,
-		Type:         gradingStandardRequest.Type,
 		UserNumber:   currentUser,
 		SchoolNumber: gradingStandardRequest.SchoolNumber,
 	}
@@ -36,43 +35,52 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 	}
 
 	for _, classNumber := range gradingStandardRequest.Classes {
-
-		class, err := repositories2.GetClassByCampusClassNumber(classNumber.CampusClassNumber)
+		err = processGradingStandardClass(classNumber, gradingStandard.Number, trn)
 		if err != nil {
 			trn.Rollback()
-			return errors.New("getting class from campus class number error: " + err.Error())
-		}
-
-		if class.Number == "" {
-			return errors.New("campus class number has no class")
-		}
-
-		classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandard.Number)
-		if err != nil {
-			return errors.New("checking class duplicate error: " + err.Error())
-		}
-
-		if classGrade.ID > 0 {
-			err = repositories.RemoveGradingStandardClassScale(classGrade, trn)
-			if err != nil {
-				return errors.New("clearing class duplicate error: " + err.Error())
-			}
-		}
-
-		err = repositories.SaveGradingStandardClassScale(models2.GradingStandardClassScale{
-			ClassNumber:           class.Number,
-			ScaleNumber:           classNumber.ScaleNumber,
-			GradingStandardNumber: gradingStandard.Number,
-		}, trn)
-
-		if err != nil {
-			trn.Rollback()
-			return errors.New("Saving grading standard classes error: " + err.Error())
+			return err
 		}
 	}
 
 	if err := trn.Commit().Error; err != nil {
 		return errors.New("commiting all changes error: " + err.Error())
+	}
+
+	return nil
+}
+
+func processGradingStandardClass(gradingStandardClass requests.GradingStandardClasses, gradingStandardNumber string, trn *gorm.DB) error {
+	class, err := repositories2.GetClassByCampusClassNumber(gradingStandardClass.CampusClassNumber)
+	if err != nil {
+		trn.Rollback()
+		return errors.New("getting class from campus class number error: " + err.Error())
+	}
+
+	if class.Number == "" {
+		return errors.New("campus class number has no class")
+	}
+
+	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber)
+	if err != nil {
+		return errors.New("checking class duplicate error: " + err.Error())
+	}
+
+	if classGrade.ID > 0 {
+		err = repositories.RemoveGradingStandardClassScale(classGrade, trn)
+		if err != nil {
+			return errors.New("clearing class duplicate error: " + err.Error())
+		}
+	}
+
+	err = repositories.SaveGradingStandardClassScale(models2.GradingStandardClassScale{
+		ClassNumber:           class.Number,
+		ScaleNumber:           gradingStandardClass.ScaleNumber,
+		GradingStandardNumber: gradingStandardNumber,
+	}, trn)
+
+	if err != nil {
+		trn.Rollback()
+		return errors.New("Saving grading standard classes error: " + err.Error())
 	}
 
 	return nil
@@ -85,15 +93,35 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 		return errors.New("Checking grading standard error: " + err.Error())
 	}
 
+	oldMappings, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number)
+	if err != nil {
+		return errors.New("Checking grading standard old mapping error: " + err.Error())
+	}
+
 	gradingStandard.Code = gradingStandardRequest.Code
 	gradingStandard.Name = gradingStandardRequest.Name
 	gradingStandard.Description = gradingStandardRequest.Description
-	gradingStandard.Type = gradingStandardRequest.Type
 	gradingStandard.UserNumber = currentUser
 
-	err = repositories.SaveGradingStandard(gradingStandard)
+	trn := config.DB.Begin()
+
+	for _, oldMapping := range oldMappings {
+		err = repositories.RemoveGradingStandardClassScale(oldMapping)
+		if err != nil {
+			return errors.New("clearing old mapping error: " + err.Error())
+		}
+	}
+
+	err = repositories.SaveGradingStandard(gradingStandard, trn)
 	if err != nil {
 		return errors.New("Saving grading standard error: " + err.Error())
+	}
+
+	for _, class := range gradingStandardRequest.Classes {
+		err = processGradingStandardClass(class, gradingStandard.Number, trn)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -338,7 +366,6 @@ func createGradingStandardResponse(gradingStandard models.GradingStandard) respo
 		Name:        gradingStandard.Name,
 		Code:        gradingStandard.Code,
 		Description: gradingStandard.Description,
-		Type:        gradingStandard.Type,
 	}
 }
 
@@ -397,6 +424,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 			Weight:       aggregateScale.Weight,
 			Name:         grade.Name,
 			ShortName:    grade.ShortName,
+			Status:       grade.Status,
 		})
 	}
 

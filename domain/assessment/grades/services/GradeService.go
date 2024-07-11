@@ -2,9 +2,11 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -62,8 +64,8 @@ func FetchGrades(schoolNumber string) ([]models.Grade, error) {
 	return grades, nil
 }
 
-func UpdateGrade(userNumber string, request requests.EditGradeDataRequest) error {
-	grade, err := repository.FindGradeByNumber(request.GradeNumber)
+func UpdateGrade(userNumber string, editGradeDataRequest requests.EditGradeDataRequest) error {
+	grade, err := repository.FindGradeByNumber(editGradeDataRequest.GradeNumber)
 	if err != nil {
 		return errors.New("error checking grade code: " + err.Error())
 	}
@@ -72,7 +74,7 @@ func UpdateGrade(userNumber string, request requests.EditGradeDataRequest) error
 		return errors.New("invalid grade number")
 	}
 
-	checkGrade, err := repository.FindGradeByCode(request.Code, request.SchoolNumber)
+	checkGrade, err := repository.FindGradeByCode(editGradeDataRequest.Code, editGradeDataRequest.SchoolNumber)
 	if err != nil {
 		return errors.New("error checking grade code: " + err.Error())
 	}
@@ -81,7 +83,7 @@ func UpdateGrade(userNumber string, request requests.EditGradeDataRequest) error
 		return errors.New("grade code already used")
 	}
 
-	checkName, err := repository.FindGradeByNameAndShortName(request.Name, request.ShortName, request.SchoolNumber)
+	checkName, err := repository.FindGradeByNameAndShortName(editGradeDataRequest.Name, editGradeDataRequest.ShortName, editGradeDataRequest.SchoolNumber)
 	if err != nil {
 		return errors.New("error checking grade name: " + err.Error())
 	}
@@ -90,10 +92,10 @@ func UpdateGrade(userNumber string, request requests.EditGradeDataRequest) error
 		return errors.New("grade name with short name already used")
 	}
 
-	grade.Name = request.Name
-	grade.SchoolNumber = request.SchoolNumber
-	grade.Code = request.Code
-	grade.ShortName = request.ShortName
+	grade.Name = editGradeDataRequest.Name
+	grade.SchoolNumber = editGradeDataRequest.SchoolNumber
+	grade.Code = editGradeDataRequest.Code
+	grade.ShortName = editGradeDataRequest.ShortName
 	grade.UserNumber = userNumber
 
 	if err := repository.UpdateGrade(grade); err != nil {
@@ -101,4 +103,33 @@ func UpdateGrade(userNumber string, request requests.EditGradeDataRequest) error
 	}
 
 	return nil
+}
+
+func RemoveGrade(gradeNumber string) error {
+	grade, err := repository.FindGradeByNumber(gradeNumber)
+	if err != nil {
+		return errors.New("checking grade number error: " + err.Error())
+	}
+
+	if grade.Number == "" {
+		return errors.New("invalid grade number")
+	}
+
+	err = repository.RemoveGrade(grade)
+	if err != nil {
+		fmt.Println("removing grade error: " + err.Error())
+
+		if grade.Status == constants.StatusActive {
+
+			grade.Status = constants.StatusInactive
+			err = repository.UpdateGrade(grade)
+			if err != nil {
+				return errors.New("grade could not be deleted or updated to: " + grade.Status)
+			}
+
+		}
+
+	}
+
+	return err
 }
