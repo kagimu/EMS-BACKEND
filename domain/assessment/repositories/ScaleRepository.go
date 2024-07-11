@@ -80,3 +80,13 @@ func FindAllScales(schoolNumber string, trn ...*gorm.DB) ([]models.Scale, error)
 
 	return scales, nil
 }
+
+func RemoveScale(scale models.Scale, trn ...*gorm.DB) error {
+	db := config.DB
+
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	return db.Delete(&scale).Error
+}
