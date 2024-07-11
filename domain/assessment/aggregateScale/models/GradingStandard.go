@@ -13,6 +13,7 @@ type GradingStandard struct {
 	Name         string              `json:"name" gorm:"size:255;not null"`
 	Description  string              `json:"description" gorm:"type:text;"`
 	SchoolNumber string              `json:"school_number" gorm:"size:36;not null"`
+	Status       string              `json:"status" gorm:"size:36;not null;default:ACTIVE"`
 	School       schoolModels.School `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber   string              `json:"user_number" gorm:"size:36;not null"`
 	User         userModel.User      `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

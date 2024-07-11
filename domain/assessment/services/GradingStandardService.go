@@ -11,6 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -26,6 +27,10 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 		Description:  gradingStandardRequest.Description,
 		UserNumber:   currentUser,
 		SchoolNumber: gradingStandardRequest.SchoolNumber,
+	}
+
+	if gradingStandardRequest.Status != "" {
+		gradingStandard.Status = gradingStandardRequest.Status
 	}
 
 	err := repositories.SaveGradingStandard(gradingStandard, trn)
@@ -102,6 +107,10 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 	gradingStandard.Name = gradingStandardRequest.Name
 	gradingStandard.Description = gradingStandardRequest.Description
 	gradingStandard.UserNumber = currentUser
+
+	if gradingStandardRequest.Status != "" {
+		gradingStandard.Status = gradingStandardRequest.Status
+	}
 
 	trn := config.DB.Begin()
 
@@ -311,6 +320,7 @@ func createGradingStandardResponse(gradingStandard models.GradingStandard) respo
 		Name:        gradingStandard.Name,
 		Code:        gradingStandard.Code,
 		Description: gradingStandard.Description,
+		Status:      gradingStandard.Status,
 	}
 }
 
@@ -371,6 +381,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 			ShortName:    grade.ShortName,
 			Status:       grade.Status,
 			GradeNumber:  grade.Number,
+			Code:         aggregateScale.Code,
 		})
 	}
 
@@ -464,4 +475,40 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 
 	return nil
 
+}
+
+func RemoveGradingStandard(gradingStandardNumber string) error {
+
+	gradingStandard, err := repositories.GetGradingStandardByNumber(gradingStandardNumber)
+	if err != nil {
+		return errors.New("checking grading standard number err: " + err.Error())
+	}
+
+	if gradingStandard.Number == "" {
+		return errors.New("invalid grading standard number")
+	}
+
+	classes, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number)
+
+	trn := config.DB.Begin()
+
+	for _, class := range classes {
+		err = repositories.RemoveGradingStandardClassScale(class, trn)
+		if err != nil {
+			trn.Rollback()
+			return errors.New("remove class mapping error: " + err.Error())
+		}
+	}
+
+	err = repositories.RemoveGradingStandard(gradingStandard, trn)
+	if err != nil {
+		trn.Rollback()
+		return errors.New("this standard can not be removed, try updating its status to " + constants.StatusInactive)
+	}
+
+	if err = trn.Commit().Error; err != nil {
+		return errors.New("remove finalization failed, try again")
+	}
+
+	return nil
 }
