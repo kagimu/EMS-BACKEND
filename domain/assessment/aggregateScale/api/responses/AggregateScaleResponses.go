@@ -11,6 +11,7 @@ type AggregateScaleResponse struct {
 	Description  string  `json:"description"`
 	ShortName    string  `json:"short_name"`
 	ScaleName    string  `json:"scale_name"`
+	GradeNumber  string  `json:"grade_number"`
 	Status       string  `json:"status"`
 }
 

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -35,35 +34,6 @@ func CreateAggregateScale(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Aggregate scale created successfully"})
-}
-
-func FetchAggregateScales(c *gin.Context) {
-	campusNumber := c.Query("campus_number")
-	if campusNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus number is required"})
-		return
-	}
-
-	campusClassNumber := c.Query("campus_class_number")
-
-	if campusClassNumber == "" {
-		c.JSON(http.StatusOK, gin.H{"data": make([]responses.AggregateScaleResponse, 0)})
-		return
-	}
-
-	//baseURL := os.Getenv("BASE_URL")
-
-	gradingStandardNumber := c.Query("grading_standard_number")
-
-	assessmentAreaNumber := c.Query("assessment_area_number")
-
-	response, err := services.FetchAggregateScales(campusClassNumber, campusNumber, gradingStandardNumber, assessmentAreaNumber)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
 func UpdateAggregateScale(c *gin.Context) {

@@ -290,61 +290,6 @@ func createAggregateScales(trn *gorm.DB, grade requests.AggregateScaleItem, scal
 	return nil
 }
 
-func FetchAggregateScales(campusClassNumber, campusNumber, gradingStandardNumber, assessmentAreaNumber string) ([]responses.AggregateScaleResponse, error) {
-
-	var response []responses.AggregateScaleResponse
-
-	classNumber := campusClassNumber
-
-	if campusClassNumber != "" {
-		class, err := repositories2.GetClassByCampusClassNumber(campusClassNumber)
-		if err != nil {
-			return response, errors.New("checking class error: " + err.Error())
-		}
-
-		if class.Number == "" {
-			return response, errors.New("invalid class campus number")
-		}
-
-		classNumber = class.Number
-	}
-
-	aggregateScales, err := repositories.FindAggregateScaleByClassNumberAndGradingStandardNumber(classNumber, gradingStandardNumber)
-	if err != nil {
-		return response, errors.New("getting aggregate scale error: " + err.Error())
-	}
-
-	for _, aggregateScale := range aggregateScales {
-		assessmentGrade, err := repositories.GetAssessmentGradeByNumber(aggregateScale.GradeNumber)
-		if err != nil {
-			return response, errors.New("getting assessment grade error: " + err.Error())
-		}
-
-		scale, err := repositories.GetScaleByNumber(aggregateScale.ScaleNumber)
-		if err != nil {
-			return response, errors.New("getting scale error: " + err.Error())
-		}
-
-		response = append(response, createAggregateScaleResponse(aggregateScale, assessmentGrade, scale))
-	}
-
-	return response, nil
-}
-
-func createAggregateScaleResponse(aggregateScale models.AggregateScale, assessmentGrade models2.AssessmentGrade, scale models.Scale) responses.AggregateScaleResponse {
-	//baseURL + aggregateScale.Illustration
-	return responses.AggregateScaleResponse{
-		Code:         aggregateScale.Code,
-		Number:       aggregateScale.Number,
-		MinValue:     aggregateScale.MinValue,
-		MaxValue:     aggregateScale.MaxValue,
-		Weight:       aggregateScale.Weight,
-		Illustration: "",
-		Name:         assessmentGrade.Name,
-		ScaleName:    scale.Name,
-	}
-}
-
 func FetchGradingStandards(schoolNumber string) ([]responses.GradingStandardResponse, error) {
 	var gradingStandardResponses = make([]responses.GradingStandardResponse, 0)
 
@@ -425,6 +370,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 			Name:         grade.Name,
 			ShortName:    grade.ShortName,
 			Status:       grade.Status,
+			GradeNumber:  grade.Number,
 		})
 	}
 
