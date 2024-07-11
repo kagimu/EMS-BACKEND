@@ -29,6 +29,11 @@ func (g *GradeDataRequest) Validate() error {
 }
 
 func (g *EditGradeDataRequest) Validate() error {
+
+	if err := g.GradeDataRequest.Validate(); err != nil {
+		return err
+	}
+
 	if g.GradeNumber == "" {
 		return errors.New("number is required")
 	}
