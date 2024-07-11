@@ -116,3 +116,19 @@ func FetchAssessmentAreasByGradingStandard(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 
 }
+
+func RemoveGradingStandard(context *gin.Context) {
+	gradingStandardNumber := context.Param("grading_standard_number")
+	if gradingStandardNumber != "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide grading standard number"})
+		return
+	}
+
+	err := services.RemoveGradingStandard(gradingStandardNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Removed grading standard"))
+}

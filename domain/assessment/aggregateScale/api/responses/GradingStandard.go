@@ -5,5 +5,5 @@ type GradingStandardResponse struct {
 	Number      string `json:"number" `
 	Name        string `json:"name"`
 	Description string `json:"description" `
-	Type        string `json:"type"`
+	Status      string `json:"status"`
 }

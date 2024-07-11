@@ -1,12 +1,16 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+)
 
 type GradingStandardRequest struct {
 	Code         int64                    `json:"code"`
 	Name         string                   `json:"name"`
 	Description  string                   `json:"description"`
 	SchoolNumber string                   `json:"school_number"`
+	Status       string                   `json:"status"`
 	Classes      []GradingStandardClasses `json:"classes"`
 }
 
@@ -16,6 +20,10 @@ func (a *GradingStandardRequest) Validate() error {
 	}
 	if a.SchoolNumber == "" {
 		return errors.New("school number is required")
+	}
+
+	if a.Status != "" && a.Status != constants.StatusInactive && a.Status != constants.StatusActive {
+		return errors.New("unknown status " + a.Status)
 	}
 
 	for _, class := range a.Classes {
