@@ -164,7 +164,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 
 	for _, grade := range grades {
 
-		err = createGrade(trn, grade, scale.Number)
+		err = createAggregateScales(trn, grade, scale.Number)
 		if err != nil {
 			trn.Rollback()
 			return err
@@ -233,7 +233,7 @@ func CheckOverlaps(aggregateScaleItems []requests.AggregateScaleItem) error {
 	return nil
 }
 
-func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber string) error {
+func createAggregateScales(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber string) error {
 
 	checkDuplicate, err := repositories.GetAggregateScaleByScaleNumberAndCode(scaleNumber, grade.Code, trn)
 	if err != nil {
@@ -455,5 +455,67 @@ func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
 	}
 
 	return scaleResponses, nil
+
+}
+
+func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleRequest, currentUser string) error {
+
+	scale, err := repositories.GetScaleByNumber(aggregateScaleRequest.ScaleNumber)
+	if err != nil {
+		return errors.New("checking scale number error: " + err.Error())
+	}
+
+	if scale.Number == "" {
+		return errors.New("invalid scale number")
+	}
+
+	grades := aggregateScaleRequest.Grades
+
+	if int64(len(grades)) != aggregateScaleRequest.Count {
+		return errors.New("you should define the grades up to set count")
+	}
+
+	err = checkDuplicates(grades)
+	if err != nil {
+		return err
+	}
+
+	aggregateScales, err := repositories.FindAggregateScaleByScaleNumber(scale.Number)
+	if err != nil {
+		return errors.New("getting old aggregate scales error: " + err.Error())
+	}
+
+	trn := config.DB.Begin()
+
+	for _, aggregateScale := range aggregateScales {
+		err = repositories.RemoveAggregateScale(aggregateScale, trn)
+		if err != nil {
+			return errors.New("clearing old scale error: " + err.Error())
+		}
+	}
+
+	scale.Name = aggregateScaleRequest.ScaleName
+	scale.Count = aggregateScaleRequest.Count
+	scale.UserNumber = currentUser
+
+	_, err = repositories.SaveScale(scale, trn)
+	if err != nil {
+		return errors.New("updating base scale error: " + err.Error())
+	}
+
+	for _, grade := range grades {
+
+		err = createAggregateScales(trn, grade, scale.Number)
+		if err != nil {
+			trn.Rollback()
+			return err
+		}
+	}
+
+	if err := trn.Commit().Error; err != nil {
+		return errors.New("commit grading scales error: " + err.Error())
+	}
+
+	return nil
 
 }

@@ -1,10 +1,8 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -86,33 +84,13 @@ func UpdateAggregateScale(c *gin.Context) {
 		return
 	}
 
-	scaleNumber := payload.ScaleNumber
-	var scale models2.Scale
-	if err := config.DB.First(&scale, "number = ?", scaleNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No aggregate scale found with the specified number"})
+	err = services.UpdateAggregateScale(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	/*var fileName string
-	_, err = c.FormFile("illustration")
-	if err == nil {
-		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
-		fileName = file
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
-			return
-		}
-	}*/
-
-	scale.Name = payload.ScaleName
-	scale.UserNumber = user.Number
-
-	if err := config.DB.Model(&scale).Where("number  = ?", scale.Number).Updates(scale).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update aggregate scale"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": scale})
+	c.JSON(http.StatusOK, commons.Feedback("Aggregate scale updated successfully"))
 }
 
 func FetchAllDetailedScales(context *gin.Context) {
