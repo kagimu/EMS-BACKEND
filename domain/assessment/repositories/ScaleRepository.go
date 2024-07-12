@@ -88,5 +88,5 @@ func RemoveScale(scale models.Scale, trn ...*gorm.DB) error {
 		db = trn[0]
 	}
 
-	return db.Delete(&scale).Error
+	return db.Unscoped().Delete(&scale).Error
 }

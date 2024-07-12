@@ -94,7 +94,7 @@ func RemoveGradingStandard(gradingStandard models.GradingStandard, trn ...*gorm.
 		db = trn[0]
 	}
 
-	if err := db.Delete(&gradingStandard).Error; err != nil {
+	if err := db.Unscoped().Delete(&gradingStandard).Error; err != nil {
 		return err
 	}
 

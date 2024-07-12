@@ -69,7 +69,7 @@ func RemoveAggregateScale(aggregateScale models.AggregateScale, trn ...*gorm.DB)
 		db = trn[0]
 	}
 
-	return db.Delete(&aggregateScale).Error
+	return db.Unscoped().Delete(&aggregateScale).Error
 }
 
 func GetAggregateScaleByScaleNumberAndWeight(scaleNumber string, weight float64, trn ...*gorm.DB) (models.AggregateScale, error) {

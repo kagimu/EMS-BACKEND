@@ -44,7 +44,7 @@ func RemoveGradingStandardClassScale(grades models.GradingStandardClassScale, tr
 		db = trn[0]
 	}
 
-	return db.Delete(&grades).Error
+	return db.Unscoped().Delete(&grades).Error
 }
 
 func FindGradingStandardClassScaleByGradingStandardNumber(gradingStandardNumber string, trn ...*gorm.DB) ([]models.GradingStandardClassScale, error) {
