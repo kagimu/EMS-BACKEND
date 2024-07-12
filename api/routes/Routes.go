@@ -602,6 +602,7 @@ func SetupRoutes() *gin.Engine {
 			gradingStandard.POST("remove/:grading_standard_number", aggregateScaleController.RemoveGradingStandard)
 			gradingStandard.POST("attach-assessment-area", aggregateScaleController.AttachAssessmentAreas)
 			gradingStandard.GET("assessment-areas", aggregateScaleController.FetchAssessmentAreasByGradingStandard)
+			gradingStandard.GET("details", aggregateScaleController.DetailsGradingStandard)
 		}
 
 		enrollment := main.Group("enrollment")

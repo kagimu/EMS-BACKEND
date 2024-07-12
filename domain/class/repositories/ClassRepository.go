@@ -29,3 +29,23 @@ func GetClassByCampusClassNumber(campusClassNumber string, trn ...*gorm.DB) (mod
 
 	return class, nil
 }
+
+func GetClassByNumber(classNumber string, trn ...*gorm.DB) (models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[1]
+	}
+
+	var class models.Class
+
+	if err := db.Where("number = ?", classNumber).First(&class).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return class, nil
+		}
+
+		return class, err
+	}
+
+	return class, nil
+}

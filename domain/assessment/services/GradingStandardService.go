@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
@@ -569,4 +570,80 @@ func RemoveScale(scaleNumber string) error {
 	}
 
 	return nil
+}
+
+func GetGradingStandardDetails(gradingStandardNumber string) (responses.DetailedGradingStandardResponse, error) {
+
+	var gradingStandardResponse responses.DetailedGradingStandardResponse
+
+	gradingStandard, err := repositories.GetGradingStandardByNumber(gradingStandardNumber)
+	if err != nil {
+		return gradingStandardResponse, errors.New("checking grading standard number err: " + err.Error())
+	}
+
+	if gradingStandard.Number == "" {
+		return gradingStandardResponse, errors.New("invalid grading standard number")
+	}
+
+	gradingStandardResponse.GradingStandardResponse = createGradingStandardResponse(gradingStandard)
+
+	classes, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number)
+
+	var gradingStandardClassesResponses = make([]responses.GradingStandardClassesResponse, 0)
+
+	for _, class := range classes {
+
+		gradingClassResponse, err := createGradingStandardClassesResponse(class)
+		if err != nil {
+			return gradingStandardResponse, err
+		}
+
+		gradingStandardClassesResponses = append(gradingStandardClassesResponses, gradingClassResponse)
+	}
+
+	gradingStandardResponse.StandardClasses = gradingStandardClassesResponses
+
+	return gradingStandardResponse, nil
+}
+
+func createGradingStandardClassesResponse(gradingScaleClass models2.GradingStandardClassScale) (responses.GradingStandardClassesResponse, error) {
+
+	var gradingStandardClassesResponse responses.GradingStandardClassesResponse
+
+	scale, err := repositories.GetScaleByNumber(gradingScaleClass.ScaleNumber)
+	if err != nil {
+		return gradingStandardClassesResponse, errors.New("getting scale details error: " + err.Error())
+	}
+
+	if scale.Number == "" {
+		return gradingStandardClassesResponse, errors.New("scale not determined")
+	}
+
+	aggregateScales, err := repositories.FindAggregateScaleByScaleNumber(scale.Number)
+	if err != nil {
+		return gradingStandardClassesResponse, errors.New("getting aggregate scales error: " + err.Error())
+	}
+
+	detailedScale, err := createScaleResponse(scale, aggregateScales)
+	if err != nil {
+		return gradingStandardClassesResponse, err
+	}
+
+	class, err := repositories2.GetClassByNumber(gradingScaleClass.ClassNumber)
+	if err != nil {
+		return gradingStandardClassesResponse, errors.New("getting classes error: " + err.Error())
+	}
+
+	if class.Number == "" {
+		return gradingStandardClassesResponse, errors.New("could not determine class by number")
+	}
+
+	gradingStandardClassesResponse.Scale = detailedScale
+
+	gradingStandardClassesResponse.Class = responses2.ClassResponse{
+		Number: class.Number,
+		Name:   class.Name,
+	}
+
+	return gradingStandardClassesResponse, nil
 }
