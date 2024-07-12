@@ -88,7 +88,7 @@ func FindGradeByNumber(gradeNumber string) (models.Grade, error) {
 
 func RemoveGrade(grade models.Grade) error {
 
-	if err := config.DB.Delete(&grade).Error; err != nil {
+	if err := config.DB.Unscoped().Delete(&grade).Error; err != nil {
 		return err
 	}
 
