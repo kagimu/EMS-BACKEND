@@ -11,29 +11,13 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"strconv"
 )
 
 func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest, currentUser string) error {
-
-	/*byCode, err := repositories.FindGradingStandardByCodeAndClassNumber(gradingStandardRequest.Code, gradingStandardRequest.CampusClassNumber)
-	if err != nil {
-		return errors.New("Checking code error: " + err.Error())
-	}
-
-	if byCode.Number != "" {
-		return errors.New("code already used: " + byCode.Number)
-	}
-
-	byName, err := repositories.FindGradingStandardByNameAndClassNumber(gradingStandardRequest.Name, gradingStandardRequest.CampusClassNumber)
-	if err != nil {
-		return errors.New("Checking by name error: " + err.Error())
-	}
-
-	if byName.Number != "" {
-		return errors.New("name already used: " + byName.Name)
-	}*/
 
 	trn := config.DB.Begin()
 
@@ -42,9 +26,12 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 		Number:       uuid.NewV4().String(),
 		Name:         gradingStandardRequest.Name,
 		Description:  gradingStandardRequest.Description,
-		Type:         gradingStandardRequest.Type,
 		UserNumber:   currentUser,
 		SchoolNumber: gradingStandardRequest.SchoolNumber,
+	}
+
+	if gradingStandardRequest.Status != "" {
+		gradingStandard.Status = gradingStandardRequest.Status
 	}
 
 	err := repositories.SaveGradingStandard(gradingStandard, trn)
@@ -54,39 +41,61 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 	}
 
 	for _, classNumber := range gradingStandardRequest.Classes {
-
-		class, err := repositories2.GetClassByCampusClassNumber(classNumber.CampusClassNumber)
+		err = processGradingStandardClass(classNumber, gradingStandard.Number, trn)
 		if err != nil {
 			trn.Rollback()
-			return errors.New("getting class from campus class number error: " + err.Error())
+			return err
 		}
+	}
 
-		if class.Number == "" {
-			return errors.New("campus class number has no class")
-		}
+	if err := trn.Commit().Error; err != nil {
+		return errors.New("commiting all changes error: " + err.Error())
+	}
 
-		classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandard.Number)
+	return nil
+}
+
+func processGradingStandardClass(gradingStandardClass requests.GradingStandardClasses, gradingStandardNumber string, trn *gorm.DB) error {
+	class, err := repositories2.GetClassByCampusClassNumber(gradingStandardClass.CampusClassNumber)
+	if err != nil {
+		trn.Rollback()
+		return errors.New("getting class from campus class number error: " + err.Error())
+	}
+
+	if class.Number == "" {
+		return errors.New("campus class number has no class")
+	}
+
+	duplicateClass, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
+	if err != nil {
+		return errors.New("checking class duplicate error: " + err.Error())
+	}
+
+	if duplicateClass.ClassNumber != "" {
+		return errors.New("you already selected class: " + class.Name)
+	}
+
+	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber)
+	if err != nil {
+		return errors.New("checking class duplicate error: " + err.Error())
+	}
+
+	if classGrade.ID > 0 {
+		err = repositories.RemoveGradingStandardClassScale(classGrade, trn)
 		if err != nil {
-			return errors.New("checking class duplicate error: " + err.Error())
+			return errors.New("clearing class duplicate error: " + err.Error())
 		}
+	}
 
-		if classGrade.ID > 0 {
-			err = repositories.RemoveGradingStandardClassScale(classGrade, trn)
-			if err != nil {
-				return errors.New("clearing class duplicate error: " + err.Error())
-			}
-		}
+	err = repositories.SaveGradingStandardClassScale(models2.GradingStandardClassScale{
+		ClassNumber:           class.Number,
+		ScaleNumber:           gradingStandardClass.ScaleNumber,
+		GradingStandardNumber: gradingStandardNumber,
+	}, trn)
 
-		err = repositories.SaveGradingStandardClassScale(models2.GradingStandardClassScale{
-			ClassNumber:           class.Number,
-			ScaleNumber:           classNumber.ScaleNumber,
-			GradingStandardNumber: gradingStandard.Number,
-		}, trn)
-
-		if err != nil {
-			trn.Rollback()
-			return errors.New("Saving grading standard classes error: " + err.Error())
-		}
+	if err != nil {
+		trn.Rollback()
+		return errors.New("Saving grading standard classes error: " + err.Error())
 	}
 
 	return nil
@@ -99,15 +108,39 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 		return errors.New("Checking grading standard error: " + err.Error())
 	}
 
+	oldMappings, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number)
+	if err != nil {
+		return errors.New("Checking grading standard old mapping error: " + err.Error())
+	}
+
 	gradingStandard.Code = gradingStandardRequest.Code
 	gradingStandard.Name = gradingStandardRequest.Name
 	gradingStandard.Description = gradingStandardRequest.Description
-	gradingStandard.Type = gradingStandardRequest.Type
 	gradingStandard.UserNumber = currentUser
 
-	err = repositories.SaveGradingStandard(gradingStandard)
+	if gradingStandardRequest.Status != "" {
+		gradingStandard.Status = gradingStandardRequest.Status
+	}
+
+	trn := config.DB.Begin()
+
+	for _, oldMapping := range oldMappings {
+		err = repositories.RemoveGradingStandardClassScale(oldMapping)
+		if err != nil {
+			return errors.New("clearing old mapping error: " + err.Error())
+		}
+	}
+
+	err = repositories.SaveGradingStandard(gradingStandard, trn)
 	if err != nil {
 		return errors.New("Saving grading standard error: " + err.Error())
+	}
+
+	for _, class := range gradingStandardRequest.Classes {
+		err = processGradingStandardClass(class, gradingStandard.Number, trn)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -150,7 +183,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 
 	for _, grade := range grades {
 
-		err = createGrade(trn, grade, scale.Number)
+		err = createAggregateScales(trn, grade, scale.Number)
 		if err != nil {
 			trn.Rollback()
 			return err
@@ -219,9 +252,9 @@ func CheckOverlaps(aggregateScaleItems []requests.AggregateScaleItem) error {
 	return nil
 }
 
-func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber string) error {
+func createAggregateScales(trn *gorm.DB, aggregateScaleItem requests.AggregateScaleItem, scaleNumber string) error {
 
-	checkDuplicate, err := repositories.GetAggregateScaleByScaleNumberAndCode(scaleNumber, grade.Code, trn)
+	checkDuplicate, err := repositories.GetAggregateScaleByScaleNumberAndCode(scaleNumber, aggregateScaleItem.Code, trn)
 	if err != nil {
 		return errors.New("checking code duplicate error: " + err.Error())
 	}
@@ -230,7 +263,7 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 		return errors.New("you have already used this code")
 	}
 
-	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberGradeNumber(scaleNumber, grade.GradeNumber, trn)
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberGradeNumber(scaleNumber, aggregateScaleItem.GradeNumber, trn)
 	if err != nil {
 		return errors.New("checking grade duplicate error: " + err.Error())
 	}
@@ -239,7 +272,7 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 		return errors.New("you have already used grade in your scale")
 	}
 
-	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndWeight(scaleNumber, grade.Weight, trn)
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndWeight(scaleNumber, aggregateScaleItem.Weight, trn)
 	if err != nil {
 		return errors.New("checking weight duplicate error: " + err.Error())
 	}
@@ -248,7 +281,7 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 		return errors.New("you have already used weight on this scale")
 	}
 
-	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndDescription(scaleNumber, grade.Remark, trn)
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndDescription(scaleNumber, aggregateScaleItem.Remark, trn)
 	if err != nil {
 		return errors.New("checking remark duplicate error: " + err.Error())
 	}
@@ -258,14 +291,14 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 	}
 
 	newAggregateScale := models.AggregateScale{
-		Weight:      grade.Weight,
-		GradeNumber: grade.GradeNumber,
+		Weight:      aggregateScaleItem.Weight,
+		GradeNumber: aggregateScaleItem.GradeNumber,
 		ScaleNumber: scaleNumber,
-		Code:        grade.Code,
+		Code:        aggregateScaleItem.Code,
 		Number:      uuid.NewV4().String(),
-		MinValue:    grade.MinValue,
-		MaxValue:    grade.MaxValue,
-		Description: grade.Remark,
+		MinValue:    aggregateScaleItem.MinValue,
+		MaxValue:    aggregateScaleItem.MaxValue,
+		Description: aggregateScaleItem.Remark,
 	}
 
 	err = repositories.SaveAggregateScale(newAggregateScale, trn)
@@ -274,61 +307,6 @@ func createGrade(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber st
 	}
 
 	return nil
-}
-
-func FetchAggregateScales(campusClassNumber, campusNumber, gradingStandardNumber, assessmentAreaNumber string) ([]responses.AggregateScaleResponse, error) {
-
-	var response []responses.AggregateScaleResponse
-
-	classNumber := campusClassNumber
-
-	if campusClassNumber != "" {
-		class, err := repositories2.GetClassByCampusClassNumber(campusClassNumber)
-		if err != nil {
-			return response, errors.New("checking class error: " + err.Error())
-		}
-
-		if class.Number == "" {
-			return response, errors.New("invalid class campus number")
-		}
-
-		classNumber = class.Number
-	}
-
-	aggregateScales, err := repositories.FindAggregateScaleByClassNumberAndGradingStandardNumber(classNumber, gradingStandardNumber)
-	if err != nil {
-		return response, errors.New("getting aggregate scale error: " + err.Error())
-	}
-
-	for _, aggregateScale := range aggregateScales {
-		assessmentGrade, err := repositories.GetAssessmentGradeByNumber(aggregateScale.GradeNumber)
-		if err != nil {
-			return response, errors.New("getting assessment grade error: " + err.Error())
-		}
-
-		scale, err := repositories.GetScaleByNumber(aggregateScale.ScaleNumber)
-		if err != nil {
-			return response, errors.New("getting scale error: " + err.Error())
-		}
-
-		response = append(response, createAggregateScaleResponse(aggregateScale, assessmentGrade, scale))
-	}
-
-	return response, nil
-}
-
-func createAggregateScaleResponse(aggregateScale models.AggregateScale, assessmentGrade models2.AssessmentGrade, scale models.Scale) responses.AggregateScaleResponse {
-	//baseURL + aggregateScale.Illustration
-	return responses.AggregateScaleResponse{
-		Code:         aggregateScale.Code,
-		Number:       aggregateScale.Number,
-		MinValue:     aggregateScale.MinValue,
-		MaxValue:     aggregateScale.MaxValue,
-		Weight:       aggregateScale.Weight,
-		Illustration: "",
-		Name:         assessmentGrade.Name,
-		ScaleName:    scale.Name,
-	}
 }
 
 func FetchGradingStandards(schoolNumber string) ([]responses.GradingStandardResponse, error) {
@@ -352,7 +330,7 @@ func createGradingStandardResponse(gradingStandard models.GradingStandard) respo
 		Name:        gradingStandard.Name,
 		Code:        gradingStandard.Code,
 		Description: gradingStandard.Description,
-		Type:        gradingStandard.Type,
+		Status:      gradingStandard.Status,
 	}
 }
 
@@ -400,7 +378,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 		}
 
 		if grade.Number == "" {
-			return response, errors.New("could not get grade by number")
+			return response, errors.New("could not get grade by number: " + aggregateScale.GradeNumber)
 		}
 
 		grades = append(grades, responses.AggregateScaleResponse{
@@ -411,6 +389,9 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 			Weight:       aggregateScale.Weight,
 			Name:         grade.Name,
 			ShortName:    grade.ShortName,
+			Status:       grade.Status,
+			GradeNumber:  grade.Number,
+			Code:         aggregateScale.Code,
 		})
 	}
 
@@ -442,4 +423,150 @@ func FindAllScales(schoolNumber string) ([]responses.ScaleResponse, error) {
 
 	return scaleResponses, nil
 
+}
+
+func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleRequest, currentUser string) error {
+
+	scale, err := repositories.GetScaleByNumber(aggregateScaleRequest.ScaleNumber)
+	if err != nil {
+		return errors.New("checking scale number error: " + err.Error())
+	}
+
+	if scale.Number == "" {
+		return errors.New("invalid scale number")
+	}
+
+	grades := aggregateScaleRequest.Grades
+
+	if int64(len(grades)) != aggregateScaleRequest.Count {
+		return errors.New("you should define the grades up to set count")
+	}
+
+	err = checkDuplicates(grades)
+	if err != nil {
+		return err
+	}
+
+	aggregateScales, err := repositories.FindAggregateScaleByScaleNumber(scale.Number)
+	if err != nil {
+		return errors.New("getting old aggregate scales error: " + err.Error())
+	}
+
+	trn := config.DB.Begin()
+
+	for _, aggregateScale := range aggregateScales {
+		err = repositories.RemoveAggregateScale(aggregateScale, trn)
+		if err != nil {
+			return errors.New("clearing old scale error: " + err.Error())
+		}
+	}
+
+	scale.Name = aggregateScaleRequest.ScaleName
+	scale.Count = aggregateScaleRequest.Count
+	scale.UserNumber = currentUser
+
+	_, err = repositories.SaveScale(scale, trn)
+	if err != nil {
+		return errors.New("updating base scale error: " + err.Error())
+	}
+
+	for _, grade := range grades {
+
+		err = createAggregateScales(trn, grade, scale.Number)
+		if err != nil {
+			trn.Rollback()
+			return err
+		}
+	}
+
+	if err := trn.Commit().Error; err != nil {
+		return errors.New("commit grading scales error: " + err.Error())
+	}
+
+	return nil
+
+}
+
+func RemoveGradingStandard(gradingStandardNumber string) error {
+
+	gradingStandard, err := repositories.GetGradingStandardByNumber(gradingStandardNumber)
+	if err != nil {
+		return errors.New("checking grading standard number err: " + err.Error())
+	}
+
+	if gradingStandard.Number == "" {
+		return errors.New("invalid grading standard number")
+	}
+
+	classes, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number)
+
+	trn := config.DB.Begin()
+
+	for _, class := range classes {
+		err = repositories.RemoveGradingStandardClassScale(class, trn)
+		if err != nil {
+			trn.Rollback()
+			return errors.New("remove class mapping error: " + err.Error())
+		}
+	}
+
+	err = repositories.RemoveGradingStandard(gradingStandard, trn)
+	if err != nil {
+		trn.Rollback()
+		return errors.New("this standard can not be removed, try updating its status to " + constants.StatusInactive)
+	}
+
+	if err = trn.Commit().Error; err != nil {
+		return errors.New("remove finalization failed, try again")
+	}
+
+	return nil
+}
+
+func RemoveScale(scaleNumber string) error {
+	scale, err := repositories.GetScaleByNumber(scaleNumber)
+	if err != nil {
+		return errors.New("checking scale number failed: " + err.Error())
+	}
+
+	if scale.Number == "" {
+		return errors.New("invalid scale number")
+	}
+
+	aggregateScales, err := repositories.FindAggregateScaleByScaleNumber(scale.Number)
+	if err != nil {
+		return errors.New("getting scales error: " + err.Error())
+	}
+
+	scaleClasses, err := repositories.FindGradingStandardClassScaleByScaleNumber(scale.Number)
+	if err != nil {
+		return errors.New("checking classes attached error: " + err.Error())
+	}
+
+	classCount := len(scaleClasses)
+	if classCount > 0 {
+		return errors.New("this scale is being used on " + strconv.Itoa(classCount) + " classes")
+	}
+
+	trn := config.DB.Begin()
+
+	for _, aggregateScale := range aggregateScales {
+		err = repositories.RemoveAggregateScale(aggregateScale, trn)
+		if err != nil {
+			trn.Rollback()
+			return errors.New("clearing scales error: " + err.Error())
+		}
+	}
+
+	err = repositories.RemoveScale(scale, trn)
+	if err != nil {
+		trn.Rollback()
+		return errors.New("removing scale failed: " + err.Error())
+	}
+
+	if err = trn.Commit().Error; err != nil {
+		return errors.New("finalization failed, try again: " + err.Error())
+	}
+
+	return nil
 }

@@ -86,3 +86,18 @@ func FindGradingStandardByCampusNumberAndCampusClassNumber(schoolNumber string, 
 	}
 	return gradingStandards, nil
 }
+
+func RemoveGradingStandard(gradingStandard models.GradingStandard, trn ...*gorm.DB) error {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Delete(&gradingStandard).Error; err != nil {
+		return err
+	}
+
+	return nil
+
+}

@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func CreateGrade(ctx *gin.Context) {
@@ -67,4 +68,20 @@ func UpdateGrade(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, commons.Feedback("Grade updated successfully"))
+}
+
+func RemoveGrade(context *gin.Context) {
+	gradeNumber := context.Param("grade_number")
+	if gradeNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide grade number to delete"})
+		return
+	}
+
+	err := services.RemoveGrade(gradeNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Grade removed successfully"})
 }

@@ -9,11 +9,12 @@ import (
 type Grade struct {
 	gorm.Model
 	Number       string             `json:"number" gorm:"size:36;not null;unique"`
-	Name         string             `json:"name" gorm:"size:36;not null; primaryKey"`
-	ShortName    string             `json:"short_name" gorm:"primaryKey"`
+	Name         string             `json:"name" gorm:"size:36;not null"`
+	ShortName    string             `json:"short_name" gorm:"size:36;not null"`
 	SchoolNumber string             `json:"school_number" gorm:"size:36;not null"`
 	Code         int64              `json:"code" gorm:"size:36;not null"`
 	UserNumber   string             `json:"user_number" gorm:"size:36;not null"`
-	User         authModel.User     `gorm:"foreignKey:UserNumber;references:Number"`
-	School       schoolModel.School `gorm:"foreignKey:SchoolNumber;references:Number"`
+	Status       string             `json:"status" gorm:"size:36;not null;default:ACTIVE"`
+	User         authModel.User     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	School       schoolModel.School `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

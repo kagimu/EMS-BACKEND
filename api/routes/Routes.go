@@ -513,6 +513,7 @@ func SetupRoutes() *gin.Engine {
 			assessment.GET("", assessmentController.FetchAssessmentByStudent)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
+			assessment.PUT("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
 
 			assessment.POST("metrics", assessmentController.CreateMetric)
@@ -526,7 +527,7 @@ func SetupRoutes() *gin.Engine {
 				aggregateScale.GET("", aggregateScaleController.FetchAllScales)
 				aggregateScale.GET("all", aggregateScaleController.FetchAllDetailedScales)
 				aggregateScale.POST("update", aggregateScaleController.UpdateAggregateScale)
-				aggregateScale.GET("school", aggregateScaleController.FetchAggregateScales)
+				aggregateScale.POST("remove/:scale_number", aggregateScaleController.RemoveAggregateScale)
 			}
 
 			assessmentGrade := assessment.Group("/assessment-grades")
@@ -542,6 +543,7 @@ func SetupRoutes() *gin.Engine {
 				grades.POST("", gradesController.CreateGrade)
 				grades.GET("", gradesController.FetchGrades)
 				grades.POST("update", gradesController.UpdateGrade)
+				grades.POST("remove/:grade_number", gradesController.RemoveGrade)
 			}
 		}
 
@@ -597,6 +599,7 @@ func SetupRoutes() *gin.Engine {
 			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
 			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
 			gradingStandard.POST("update", aggregateScaleController.UpdateGradingStandard)
+			gradingStandard.POST("remove/:grading_standard_number", aggregateScaleController.RemoveGradingStandard)
 			gradingStandard.POST("attach-assessment-area", aggregateScaleController.AttachAssessmentAreas)
 			gradingStandard.GET("assessment-areas", aggregateScaleController.FetchAssessmentAreasByGradingStandard)
 		}
