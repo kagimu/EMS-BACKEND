@@ -132,3 +132,21 @@ func RemoveGradingStandard(context *gin.Context) {
 
 	context.JSON(http.StatusOK, commons.Feedback("Removed grading standard"))
 }
+
+func DetailsGradingStandard(context *gin.Context) {
+
+	gradingStandardNumber := context.Query("grading_standard_number")
+	if gradingStandardNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide grading standard number"})
+		return
+	}
+
+	detailedResponse, err := services.GetGradingStandardDetails(gradingStandardNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": detailedResponse})
+
+}

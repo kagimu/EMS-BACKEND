@@ -7,7 +7,7 @@ type Subjects struct {
 	Name   string `json:"name"`
 }
 
-type Classes struct {
+type ClassResponse struct {
 	Number string `json:"number"`
 	Name   string `json:"name"`
 }
