@@ -95,3 +95,19 @@ func FetchAllScales(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": scales})
 }
+
+func RemoveAggregateScale(context *gin.Context) {
+	scaleNumber := context.Query("scale_number")
+	if scaleNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a scale to delete"})
+		return
+	}
+
+	err := services.RemoveScale(scaleNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Scale removed successfully"))
+}

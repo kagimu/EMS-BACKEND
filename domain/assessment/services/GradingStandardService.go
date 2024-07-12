@@ -14,6 +14,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"strconv"
 )
 
 func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest, currentUser string) error {
@@ -63,6 +64,15 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 
 	if class.Number == "" {
 		return errors.New("campus class number has no class")
+	}
+
+	duplicateClass, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
+	if err != nil {
+		return errors.New("checking class duplicate error: " + err.Error())
+	}
+
+	if duplicateClass.ClassNumber != "" {
+		return errors.New("you already selected class: " + class.Name)
 	}
 
 	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber)
@@ -508,6 +518,54 @@ func RemoveGradingStandard(gradingStandardNumber string) error {
 
 	if err = trn.Commit().Error; err != nil {
 		return errors.New("remove finalization failed, try again")
+	}
+
+	return nil
+}
+
+func RemoveScale(scaleNumber string) error {
+	scale, err := repositories.GetScaleByNumber(scaleNumber)
+	if err != nil {
+		return errors.New("checking scale number failed: " + err.Error())
+	}
+
+	if scale.Number == "" {
+		return errors.New("invalid scale number")
+	}
+
+	aggregateScales, err := repositories.FindAggregateScaleByScaleNumber(scale.Number)
+	if err != nil {
+		return errors.New("getting scales error: " + err.Error())
+	}
+
+	scaleClasses, err := repositories.FindGradingStandardClassScaleByScaleNumber(scale.Number)
+	if err != nil {
+		return errors.New("checking classes attached error: " + err.Error())
+	}
+
+	classCount := len(scaleClasses)
+	if classCount > 0 {
+		return errors.New("this scale is being used on " + strconv.Itoa(classCount) + " classes")
+	}
+
+	trn := config.DB.Begin()
+
+	for _, aggregateScale := range aggregateScales {
+		err = repositories.RemoveAggregateScale(aggregateScale, trn)
+		if err != nil {
+			trn.Rollback()
+			return errors.New("clearing scales error: " + err.Error())
+		}
+	}
+
+	err = repositories.RemoveScale(scale, trn)
+	if err != nil {
+		trn.Rollback()
+		return errors.New("removing scale failed: " + err.Error())
+	}
+
+	if err = trn.Commit().Error; err != nil {
+		return errors.New("finalization failed, try again: " + err.Error())
 	}
 
 	return nil
