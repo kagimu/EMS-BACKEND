@@ -252,9 +252,9 @@ func CheckOverlaps(aggregateScaleItems []requests.AggregateScaleItem) error {
 	return nil
 }
 
-func createAggregateScales(trn *gorm.DB, grade requests.AggregateScaleItem, scaleNumber string) error {
+func createAggregateScales(trn *gorm.DB, aggregateScaleItem requests.AggregateScaleItem, scaleNumber string) error {
 
-	checkDuplicate, err := repositories.GetAggregateScaleByScaleNumberAndCode(scaleNumber, grade.Code, trn)
+	checkDuplicate, err := repositories.GetAggregateScaleByScaleNumberAndCode(scaleNumber, aggregateScaleItem.Code, trn)
 	if err != nil {
 		return errors.New("checking code duplicate error: " + err.Error())
 	}
@@ -263,7 +263,7 @@ func createAggregateScales(trn *gorm.DB, grade requests.AggregateScaleItem, scal
 		return errors.New("you have already used this code")
 	}
 
-	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberGradeNumber(scaleNumber, grade.GradeNumber, trn)
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberGradeNumber(scaleNumber, aggregateScaleItem.GradeNumber, trn)
 	if err != nil {
 		return errors.New("checking grade duplicate error: " + err.Error())
 	}
@@ -272,7 +272,7 @@ func createAggregateScales(trn *gorm.DB, grade requests.AggregateScaleItem, scal
 		return errors.New("you have already used grade in your scale")
 	}
 
-	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndWeight(scaleNumber, grade.Weight, trn)
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndWeight(scaleNumber, aggregateScaleItem.Weight, trn)
 	if err != nil {
 		return errors.New("checking weight duplicate error: " + err.Error())
 	}
@@ -281,7 +281,7 @@ func createAggregateScales(trn *gorm.DB, grade requests.AggregateScaleItem, scal
 		return errors.New("you have already used weight on this scale")
 	}
 
-	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndDescription(scaleNumber, grade.Remark, trn)
+	checkDuplicate, err = repositories.GetAggregateScaleByScaleNumberAndDescription(scaleNumber, aggregateScaleItem.Remark, trn)
 	if err != nil {
 		return errors.New("checking remark duplicate error: " + err.Error())
 	}
@@ -291,14 +291,14 @@ func createAggregateScales(trn *gorm.DB, grade requests.AggregateScaleItem, scal
 	}
 
 	newAggregateScale := models.AggregateScale{
-		Weight:      grade.Weight,
-		GradeNumber: grade.GradeNumber,
+		Weight:      aggregateScaleItem.Weight,
+		GradeNumber: aggregateScaleItem.GradeNumber,
 		ScaleNumber: scaleNumber,
-		Code:        grade.Code,
+		Code:        aggregateScaleItem.Code,
 		Number:      uuid.NewV4().String(),
-		MinValue:    grade.MinValue,
-		MaxValue:    grade.MaxValue,
-		Description: grade.Remark,
+		MinValue:    aggregateScaleItem.MinValue,
+		MaxValue:    aggregateScaleItem.MaxValue,
+		Description: aggregateScaleItem.Remark,
 	}
 
 	err = repositories.SaveAggregateScale(newAggregateScale, trn)
@@ -378,7 +378,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 		}
 
 		if grade.Number == "" {
-			return response, errors.New("could not get grade by number")
+			return response, errors.New("could not get grade by number: " + aggregateScale.GradeNumber)
 		}
 
 		grades = append(grades, responses.AggregateScaleResponse{
