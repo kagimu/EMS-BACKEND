@@ -378,7 +378,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 		}
 
 		if grade.Number == "" {
-			return response, errors.New("could not get grade by number")
+			return response, errors.New("could not get grade by number: " + aggregateScale.GradeNumber)
 		}
 
 		grades = append(grades, responses.AggregateScaleResponse{
