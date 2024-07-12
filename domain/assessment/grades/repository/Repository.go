@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
@@ -76,6 +77,7 @@ func FindGradeByNumber(gradeNumber string) (models.Grade, error) {
 	if err := config.DB.Where("number = ?", gradeNumber).First(&grade).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			fmt.Println("Grade number " + gradeNumber)
 			return grade, nil
 		}
 
