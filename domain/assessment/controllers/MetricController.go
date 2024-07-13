@@ -33,8 +33,8 @@ func CreateMetric(c *gin.Context) {
 		Number:           uuid.NewV4().String(),
 		Name:             payload.Name,
 		CurriculumNumber: payload.CurriculumNumber,
-		ExamType:         payload.ExamType,
-		UserNumber:       user.Number,
+		//ExamType:         payload.ExamType,
+		UserNumber: user.Number,
 	}
 
 	var duplicateMetric models.Metric
@@ -102,7 +102,7 @@ func EditMetric(c *gin.Context) {
 	updateMetric := models.Metric{
 		Name:             payload.Name,
 		CurriculumNumber: payload.CurriculumNumber,
-		ExamType:         payload.ExamType,
+		//ExamType:         payload.ExamType,
 	}
 
 	if err := config.DB.Model(&metric).Where("number = ?", metricNumber).Updates(updateMetric).Error; err != nil {
@@ -122,7 +122,7 @@ func DeleteMetric(c *gin.Context) {
 	metricNumber := c.Param("metric_number")
 	var metric models.Metric
 
-	err := config.DB.First(&metric, metricNumber).Error
+	err := config.DB.Where("number = ?", metricNumber).First(&metric).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Metric not found"})
 		return
