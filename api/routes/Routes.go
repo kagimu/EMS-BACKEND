@@ -169,10 +169,10 @@ func SetupRoutes() *gin.Engine {
 			class.GET("/info", classController.ClassInfo)
 			class.GET("/curriculum-class", classController.FetchClassesToAdd)
 			class.GET("/campus-class-by-level", classController.FetchCampusClassesByLevel)
-			class.GET("by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
-			class.GET("school", classController.FetchClassesBySchoolNumber)
+			class.GET("/by-campus-number/:campus_number", classController.FetchClassesByCampusNumber)
 			class.POST("/edit", classController.EditClass)
 			class.POST("/delete", classController.DeleteClass)
+			class.GET("/school", classController.FetchClassesBySchoolNumber)
 		}
 		//main.GET("classes-to-add", classController.FetchClassesToAdd)
 		main.POST("new-class", classController.NewClass)
