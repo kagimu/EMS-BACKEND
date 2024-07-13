@@ -8,8 +8,9 @@ type Subjects struct {
 }
 
 type ClassResponse struct {
-	Number string `json:"number"`
-	Name   string `json:"name"`
+	Number       string `json:"number"`
+	Name         string `json:"name"`
+	Abbreviation string `json:"abbreviation"`
 }
 
 type StudyTimetables struct {
