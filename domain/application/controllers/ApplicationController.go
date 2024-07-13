@@ -33,10 +33,10 @@ func FetchApplication(c *gin.Context) {
 
 	}
 
-	var student = studentModel.Student{}
+	var student studentModel.Student
 	var previousSchools []previousSchoolModel.PreviousSchool
 
-	if err := config.DB.Preload("PreferredCampus").Where("application_number = ?", applicationNumber).First(&student).Error; err == nil {
+	if err := config.DB.Preload("PreferredCampus").Preload("CampusClass").Where("application_number = ?", applicationNumber).First(&student).Error; err == nil {
 		application.Student = student
 	}
 
