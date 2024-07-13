@@ -122,7 +122,7 @@ func DeleteMetric(c *gin.Context) {
 	metricNumber := c.Param("metric_number")
 	var metric models.Metric
 
-	err := config.DB.First(&metric, metricNumber).Error
+	err := config.DB.Where("number = ?", metricNumber).First(&metric).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Metric not found"})
 		return
