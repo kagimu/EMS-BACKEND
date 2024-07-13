@@ -67,14 +67,14 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("campus class number has no class")
 	}
 
-	duplicateClass, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
-	if err != nil {
-		return errors.New("checking class duplicate error: " + err.Error())
-	}
-
-	if duplicateClass.ClassNumber != "" {
-		return errors.New("you already selected class: " + class.Name)
-	}
+	//duplicateClass, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
+	//if err != nil {
+	//	return errors.New("checking class duplicate error: " + err.Error())
+	//}
+	//
+	//if duplicateClass.ClassNumber != "" {
+	//	return errors.New("you already selected class: " + class.Name)
+	//}
 
 	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber)
 	if err != nil {
