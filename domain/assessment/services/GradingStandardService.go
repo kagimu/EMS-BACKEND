@@ -59,7 +59,7 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 func processGradingStandardClass(gradingStandardClass requests.GradingStandardClasses, gradingStandardNumber string, trn *gorm.DB) error {
 	class, err := repositories2.GetClassByCampusClassNumber(gradingStandardClass.CampusClassNumber)
 	if err != nil {
-		trn.Rollback()
+		//trn.Rollback()
 		return errors.New("getting class from campus class number error: " + err.Error())
 	}
 
@@ -95,7 +95,7 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 	}, trn)
 
 	if err != nil {
-		trn.Rollback()
+		//trn.Rollback()
 		return errors.New("Saving grading standard classes error: " + err.Error())
 	}
 
@@ -140,8 +140,13 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 	for _, class := range gradingStandardRequest.Classes {
 		err = processGradingStandardClass(class, gradingStandard.Number, trn)
 		if err != nil {
+			trn.Rollback()
 			return err
 		}
+	}
+
+	if err := trn.Commit().Error; err != nil {
+		return errors.New("commiting all changes error: " + err.Error())
 	}
 
 	return nil
