@@ -59,7 +59,7 @@ func FindClassesBySchoolNumber(schoolNumber, levelNumber string, trn ...*gorm.DB
 
 	var classes []models.Class
 
-	if err := db.Where(filters.BySchoolNumber(schoolNumber), filters.ByLevelNumber(levelNumber)).Find(&classes).Error; err != nil {
+	if err := db.Scopes(filters.BySchoolNumber(schoolNumber), filters.ByLevelNumber(levelNumber)).Find(&classes).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return classes, nil
