@@ -33,8 +33,8 @@ func CreateMetric(c *gin.Context) {
 		Number:           uuid.NewV4().String(),
 		Name:             payload.Name,
 		CurriculumNumber: payload.CurriculumNumber,
-		ExamType:         payload.ExamType,
-		UserNumber:       user.Number,
+		//ExamType:         payload.ExamType,
+		UserNumber: user.Number,
 	}
 
 	var duplicateMetric models.Metric
@@ -102,7 +102,7 @@ func EditMetric(c *gin.Context) {
 	updateMetric := models.Metric{
 		Name:             payload.Name,
 		CurriculumNumber: payload.CurriculumNumber,
-		ExamType:         payload.ExamType,
+		//ExamType:         payload.ExamType,
 	}
 
 	if err := config.DB.Model(&metric).Where("number = ?", metricNumber).Updates(updateMetric).Error; err != nil {
