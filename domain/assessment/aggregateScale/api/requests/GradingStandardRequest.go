@@ -27,8 +27,8 @@ func (a *GradingStandardRequest) Validate() error {
 	}
 
 	for _, class := range a.Classes {
-		if class.CampusClassNumber == "" {
-			return errors.New("campus class number is required")
+		if class.ClassNumber == "" {
+			return errors.New("choose a class")
 		}
 		if class.ScaleNumber == "" {
 			return errors.New("choose scale for the selected class")
@@ -44,8 +44,8 @@ type UpdateGradingStandardRequest struct {
 }
 
 type GradingStandardClasses struct {
-	CampusClassNumber string `json:"campus_class_number"`
-	ScaleNumber       string `json:"scale_number"`
+	ClassNumber string `json:"class_number"`
+	ScaleNumber string `json:"scale_number"`
 }
 
 func (a *UpdateGradingStandardRequest) Validate() error {

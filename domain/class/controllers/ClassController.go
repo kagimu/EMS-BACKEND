@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"strconv"
@@ -1035,4 +1036,17 @@ func ClassInfo(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": class_})
+}
+
+func FetchClassesBySchoolNumber(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	levelNumber := context.Query("level_number")
+
+	classes, err := services.FindSchoolClasses(schoolNumber, levelNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
 }

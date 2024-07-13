@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
@@ -48,4 +49,24 @@ func GetClassByNumber(classNumber string, trn ...*gorm.DB) (models.Class, error)
 	}
 
 	return class, nil
+}
+
+func FindClassesBySchoolNumber(schoolNumber, levelNumber string, trn ...*gorm.DB) ([]models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[1]
+	}
+
+	var classes []models.Class
+
+	if err := db.Where(filters.BySchoolNumber(schoolNumber), filters.ByLevelNumber(levelNumber)).Find(&classes).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return classes, nil
+		}
+
+		return classes, err
+	}
+
+	return classes, nil
 }
