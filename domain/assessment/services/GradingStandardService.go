@@ -57,7 +57,7 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 }
 
 func processGradingStandardClass(gradingStandardClass requests.GradingStandardClasses, gradingStandardNumber string, trn *gorm.DB) error {
-	class, err := repositories2.GetClassByCampusClassNumber(gradingStandardClass.CampusClassNumber)
+	class, err := repositories2.GetClassByNumber(gradingStandardClass.ClassNumber)
 	if err != nil {
 		trn.Rollback()
 		return errors.New("getting class from campus class number error: " + err.Error())
