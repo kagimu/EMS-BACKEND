@@ -40,8 +40,9 @@ func CreateAssessmentGrade(c *gin.Context) {
 func FetchAssessmentGrades(c *gin.Context) {
 
 	classNumber := c.Query("class_number")
+	status := c.Query("status")
 
-	assessmentGradeResponse, err := services.GetAssessmentGrades(classNumber)
+	assessmentGradeResponse, err := services.GetAssessmentGrades(classNumber, status)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

@@ -751,11 +751,11 @@ func processAssessmentGradeScaleItem(assessmentGradeScaleItem requests2.Assessme
 	return nil
 }
 
-func GetAssessmentGrades(classNumber string) ([]responses3.AssessmentGradeResponse, error) {
+func GetAssessmentGrades(classNumber, status string) ([]responses3.AssessmentGradeResponse, error) {
 
 	var assessmentGradeResponses = make([]responses3.AssessmentGradeResponse, 0)
 
-	assessmentGrades, err := repositories.FindAssessmentGradeByClassNumber(classNumber)
+	assessmentGrades, err := repositories.FindAssessmentGradeByClassNumber(classNumber, status)
 	if err != nil {
 		return assessmentGradeResponses, errors.New("checking assessment grades by scale error: " + err.Error())
 	}

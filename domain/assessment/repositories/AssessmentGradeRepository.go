@@ -38,7 +38,7 @@ func SaveAssessmentGrade(assessmentGrade models.AssessmentGrade, trn ...*gorm.DB
 	return db.Save(&assessmentGrade).Error
 }
 
-func FindAssessmentGradeByClassNumber(classNumber string, trn ...*gorm.DB) ([]models.AssessmentGrade, error) {
+func FindAssessmentGradeByClassNumber(classNumber, status string, trn ...*gorm.DB) ([]models.AssessmentGrade, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -47,7 +47,10 @@ func FindAssessmentGradeByClassNumber(classNumber string, trn ...*gorm.DB) ([]mo
 
 	var assessmentGrades []models.AssessmentGrade
 
-	if err := db.Scopes(filters.ByAnyField("class_number", classNumber)).Find(&assessmentGrades).Error; err != nil {
+	if err := db.
+		Joins("join assessment_grade_classes on assessment_grade_classes.assessment_grade_number = assessment_grades.number").
+		Scopes(filters.ByAnyField("class_number", classNumber), filters.ByStatus(status)).
+		Find(&assessmentGrades).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return assessmentGrades, nil
@@ -57,4 +60,28 @@ func FindAssessmentGradeByClassNumber(classNumber string, trn ...*gorm.DB) ([]mo
 	}
 
 	return assessmentGrades, nil
+}
+
+func GetAssessmentGradeByClassNumberAndStatus(classNumber, status string, trn ...*gorm.DB) (models.AssessmentGrade, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentGrade models.AssessmentGrade
+
+	if err := db.
+		Joins("join assessment_grade_classes on assessment_grade_classes.assessment_grade_number = assessment_grades.number").
+		Scopes(filters.ByAnyField("assessment_grade_classes.class_number", classNumber), filters.ByAnyField("assessment_grades.status", status)).
+		First(&assessmentGrade).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentGrade, nil
+		}
+
+		return assessmentGrade, err
+	}
+
+	return assessmentGrade, nil
 }
