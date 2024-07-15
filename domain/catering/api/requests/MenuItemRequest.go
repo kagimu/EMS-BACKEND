@@ -14,12 +14,14 @@ type UpdateMenuItemRequest struct {
 }
 
 type BasicMenuItemRequest struct {
-	Name                string  `json:"name"`
-	Code                int64   `json:"code"`
-	UnitOfMeasureNumber string  `json:"unit_of_measure_number"`
-	SchoolNumber        string  `json:"school_number"`
-	BasePrice           float64 `json:"base_price"`
-	Status              string  `json:"status"`
+	Name                        string  `json:"name"`
+	Code                        int64   `json:"code"`
+	UnitOfMeasureNumber         string  `json:"unit_of_measure_number"`
+	ConversionToPurchaseUnit    float64 `json:"conversion_to_purchase_unit"`
+	PurchaseUnitOfMeasureNumber string  `json:"purchase_unit_of_measure_number"`
+	SchoolNumber                string  `json:"school_number"`
+	BasePrice                   float64 `json:"base_price"`
+	Status                      string  `json:"status"`
 }
 
 func (r *MenuItemRequest) Validate() error {
@@ -38,6 +40,10 @@ func (r *MenuItemRequest) Validate() error {
 
 	if r.BasePrice <= 0 {
 		return errors.New("provide base item unit price")
+	}
+
+	if r.PurchaseUnitOfMeasureNumber == "" && r.ConversionToPurchaseUnit > 0 {
+		return errors.New("set purchase unit of measure")
 	}
 
 	return nil

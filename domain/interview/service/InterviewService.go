@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assessmentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	assessmentAreaRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
@@ -84,18 +85,20 @@ func FetchInterviewAssessmentMetricByStudent(studentNumber, interviewNumber stri
 
 		} else {
 			for _, aggregateScale := range aggregateScales {
+
 				if assessment.ActualScore >= aggregateScale.MinValue && assessment.ActualScore <= aggregateScale.MaxValue {
-					assessmentGrade, err := assessmentRepositories.GetAssessmentGradeByNumber(aggregateScale.GradeNumber)
+
+					grade, err := repository.FindGradeByNumber(aggregateScale.GradeNumber)
 
 					if err != nil {
 						return studentInterviewResults, errors.New("error resolving assessment grade: " + err.Error())
 					}
 
-					if assessmentGrade.Number == "" {
+					if grade.Number == "" {
 						return studentInterviewResults, errors.New("invalid assessment grade number: " + aggregateScale.GradeNumber)
 					}
 
-					studentInterviewResults = append(studentInterviewResults, createInterviewResult(assessmentAreaName.Name, comment, assessmentGrade.Name, assessment.ActualScore))
+					studentInterviewResults = append(studentInterviewResults, createInterviewResult(assessmentAreaName.Name, comment, grade.Name, assessment.ActualScore))
 				}
 			}
 		}

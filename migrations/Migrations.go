@@ -193,8 +193,10 @@ func Init() error {
 		&reportingActivityModels.Indicator{},
 		&eosModels.ActiveUserEntity{},
 		&gradesModels.Grade{},
-		&cateringModels.CalendarEventFeedingGroup{}, //GradingStandardClassScale
+		&cateringModels.CalendarEventFeedingGroup{},
 		&assessmentGradeModels.GradingStandardClassScale{},
+		&assessmentModel.AssessmentGradeClass{},
+		&assessmentGradeModels.AssessmentGradeScale{},
 	)
 
 	if err != nil {
