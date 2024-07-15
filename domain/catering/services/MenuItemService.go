@@ -609,6 +609,8 @@ func UpdateMenuItem(payload requests.UpdateMenuItemRequest, currentUserNumber st
 	menuItem.UnitOfMeasureNumber = payload.UnitOfMeasureNumber
 	menuItem.UserNumber = currentUserNumber
 	menuItem.BaseUnitCost = payload.BasePrice
+	menuItem.PurchaseUnitOfMeasureNumber = payload.PurchaseUnitOfMeasureNumber
+	menuItem.ConversionToPurchaseUnit = payload.ConversionToPurchaseUnit
 
 	err = repositories.SaveMenuItem(menuItem)
 	if err != nil {

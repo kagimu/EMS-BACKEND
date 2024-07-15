@@ -6,6 +6,7 @@ import (
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -345,21 +346,44 @@ func GetProperAggregateScale(score float64, assessmentAreaNumber string) (aggreg
 	return scale, errors.New("no scale found")
 }
 
-func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGrade, error) {
-	var assessmentGrade assesmentGradeModel.AssessmentGrade
-	var assessmentGrades []assesmentGradeModel.AssessmentGrade
+func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGradeScale, error) {
+	var matchedAssessmentGradeScale assesmentGradeModel.AssessmentGradeScale
 
-	if err := config.DB.Where("campus_class_number = ?", campusClassNumber).Find(&assessmentGrades).Error; err != nil {
+	class, err := repositories.GetClassByCampusClassNumber(campusClassNumber)
+	if err != nil {
+		return matchedAssessmentGradeScale, errors.New("getting class from campus class number error: " + err.Error())
+	}
+
+	if class.Number == "" {
+		return matchedAssessmentGradeScale, errors.New("no class from campus class number")
+	}
+
+	classAssessmentGrade, err := repositories2.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
+	if err != nil {
+		return matchedAssessmentGradeScale, errors.New("getting class assessment grade error: " + err.Error())
+	}
+
+	if classAssessmentGrade.Number == "" {
+		return matchedAssessmentGradeScale, errors.New(class.Name + " does not have assessment grade set")
+	}
+
+	assessmentGrades, err := repositories2.FindAssessmentGradeScaleByGradeNumber(classAssessmentGrade.Number)
+	if err != nil {
+		return matchedAssessmentGradeScale, errors.New("getting assessments grade scale error: " + err.Error())
+	}
+
+	if len(assessmentGrades) == 0 {
+		return matchedAssessmentGradeScale, errors.New("assessment grade scale not set up for " + class.Name)
 	}
 
 	for _, val := range assessmentGrades {
-		if points >= float64(val.MinimumPoints) && points <= float64(val.MaximumPoints) {
-			assessmentGrade = val
+		if points >= val.MinimumPoints && points <= val.MaximumPoints {
+			matchedAssessmentGradeScale = val
 
-			return assessmentGrade, nil
+			return matchedAssessmentGradeScale, nil
 		}
 	}
 
-	return assessmentGrade, errors.New("no grade found")
+	return matchedAssessmentGradeScale, errors.New("no matching points")
 
 }
