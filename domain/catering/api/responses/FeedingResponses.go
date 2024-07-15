@@ -45,17 +45,19 @@ type ItemAssemblyResponse struct {
 }
 
 type MenuItemResponse struct {
-	Number              string  `json:"number"`
-	Name                string  `json:"name"`
-	Code                int64   `json:"code"`
-	Type                string  `json:"type"`
-	SchoolName          string  `json:"school_name"`
-	SchoolNumber        string  `json:"school_number"`
-	UnitOfMeasureNumber string  `json:"unit_of_measure_number"`
-	UnitOfMeasureName   string  `json:"unit_of_measure_name"`
-	Parts               []Part  `json:"parts"`
-	CurrentQuantity     float64 `json:"current_quantity"`
-	UnitCost            float64 `json:"unit_cost"`
+	Number                      string  `json:"number"`
+	Name                        string  `json:"name"`
+	Code                        int64   `json:"code"`
+	Type                        string  `json:"type"`
+	SchoolName                  string  `json:"school_name"`
+	SchoolNumber                string  `json:"school_number"`
+	UnitOfMeasureNumber         string  `json:"unit_of_measure_number"`
+	UnitOfMeasureName           string  `json:"unit_of_measure_name"`
+	PurchaseUnitOfMeasureNumber string  `json:"purchase_unit_of_measure_number"`
+	PurchaseUnitOfMeasureName   string  `json:"purchase_unit_of_measure_name"`
+	Parts                       []Part  `json:"parts"`
+	CurrentQuantity             float64 `json:"current_quantity"`
+	UnitCost                    float64 `json:"unit_cost"`
 }
 
 type Part struct {
