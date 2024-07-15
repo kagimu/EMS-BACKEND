@@ -11,6 +11,7 @@ import (
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
+	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -657,26 +658,54 @@ func createGradingStandardClassesResponse(gradingScaleClass models2.GradingStand
 
 func SaveAssessmentGrade(assessmentGradeRequest requests2.AssessmentGradeRequest, currentUserNumber string) error {
 
-	/*scale, err := repositories.GetScaleByNumber(assessmentGradeRequest.ScaleNumber)
-	if err != nil {
-		return errors.New("error checking scale number: " + err.Error())
-	}
-
-	if scale.Number == "" {
-		return errors.New("invalid scale number")
-	}*/
-
 	saveAssessmentGrade := models2.AssessmentGrade{
-		Status:     constants.StatusActive,
-		Number:     uuid.NewV4().String(),
-		UserNumber: currentUserNumber,
+		Status:              constants.StatusActive,
+		Number:              uuid.NewV4().String(),
+		UserNumber:          currentUserNumber,
+		AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
 	}
 
 	trn := config.DB.Begin()
 
 	err := repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
 	if err != nil {
+		trn.Rollback()
 		return errors.New("saving assessment grade error: " + err.Error())
+	}
+
+	for _, classNumber := range assessmentGradeRequest.Classes {
+		class, err := repositories2.GetClassByNumber(classNumber, trn)
+		if err != nil {
+			trn.Rollback()
+			return errors.New("checking class error: " + err.Error())
+		}
+
+		if class.Number == "" {
+			trn.Rollback()
+			return errors.New("invalid class number selected")
+		}
+
+		checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number, trn)
+		if err != nil {
+			trn.Rollback()
+			return errors.New("checking class double entry error: " + err.Error())
+		}
+
+		if checkClassDuplicate.ClassNumber != "" {
+			trn.Rollback()
+			return errors.New("Class '" + class.Name + "' already selected")
+		}
+
+		err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
+			AssessmentGradeNumber: saveAssessmentGrade.Number,
+			ClassNumber:           class.Number,
+		}, trn)
+
+		if err != nil {
+			trn.Rollback()
+			return errors.New("attaching class error: " + err.Error())
+		}
+
 	}
 
 	for _, assessmentGradeScaleItem := range assessmentGradeRequest.AssessmentGradeItems {
