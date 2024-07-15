@@ -445,15 +445,17 @@ func SaveMenuItem(itemType string, payload requests.MenuItemRequest, currentUser
 	}
 
 	saveMenuItem := models.MenuItem{
-		Number:              uuid.NewV4().String(),
-		Name:                payload.Name,
-		Code:                payload.Code,
-		Type:                itemType,
-		SchoolNumber:        school.Number,
-		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
-		UserNumber:          currentUserNumber,
-		BaseUnitCost:        payload.BasePrice,
-		Status:              constants.StatusActive,
+		Number:                      uuid.NewV4().String(),
+		Name:                        payload.Name,
+		Code:                        payload.Code,
+		Type:                        itemType,
+		SchoolNumber:                school.Number,
+		UnitOfMeasureNumber:         payload.UnitOfMeasureNumber,
+		UserNumber:                  currentUserNumber,
+		BaseUnitCost:                payload.BasePrice,
+		Status:                      constants.StatusActive,
+		PurchaseUnitOfMeasureNumber: payload.PurchaseUnitOfMeasureNumber,
+		ConversionToPurchaseUnit:    payload.ConversionToPurchaseUnit,
 	}
 
 	err = repositories.SaveMenuItem(saveMenuItem)
@@ -538,18 +540,28 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		return responses.MenuItemResponse{}, errors.New("getting parts error: " + err.Error())
 	}
 
+	purchaseUnitOfMeasure := models.UnitOfMeasure{}
+	if menuItem.PurchaseUnitOfMeasureNumber != "" {
+		purchaseUnitOfMeasure, err = repositories.GetUnitOfMeasureByNumber(menuItem.PurchaseUnitOfMeasureNumber)
+		if err != nil {
+			return responses.MenuItemResponse{}, errors.New("getting purchase unit of measure error: " + err.Error())
+		}
+	}
+
 	return responses.MenuItemResponse{
-		Number:              menuItem.Number,
-		Name:                menuItem.Name,
-		Code:                menuItem.Code,
-		Type:                menuItem.Type,
-		SchoolName:          menuItem.School.Name,
-		SchoolNumber:        menuItem.SchoolNumber,
-		UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
-		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
-		CurrentQuantity:     currentQuantity,
-		Parts:               parts,
-		UnitCost:            determineUnitCost(menuItem),
+		Number:                      menuItem.Number,
+		Name:                        menuItem.Name,
+		Code:                        menuItem.Code,
+		Type:                        menuItem.Type,
+		SchoolName:                  menuItem.School.Name,
+		SchoolNumber:                menuItem.SchoolNumber,
+		UnitOfMeasureNumber:         menuItem.UnitOfMeasureNumber,
+		UnitOfMeasureName:           menuItem.UnitOfMeasure.Name,
+		CurrentQuantity:             currentQuantity,
+		PurchaseUnitOfMeasureNumber: purchaseUnitOfMeasure.Number,
+		PurchaseUnitOfMeasureName:   purchaseUnitOfMeasure.Name,
+		Parts:                       parts,
+		UnitCost:                    determineUnitCost(menuItem),
 	}, nil
 }
 
