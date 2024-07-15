@@ -31,8 +31,8 @@ func (r *ItemAssembly) Validate() error {
 		return errors.New("sorting code is required")
 	}
 
-	if len(r.SecondaryItemQuantity) < 2 {
-		return errors.New("provide at least two secondary items")
+	if len(r.SecondaryItemQuantity) < 1 {
+		return errors.New("provide at least one secondary item")
 	}
 
 	for _, secItem := range r.SecondaryItemQuantity {
