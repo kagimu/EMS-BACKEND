@@ -10,18 +10,18 @@ import (
 func SaveAssessmentGradeScale(assessmentGradeScale models.AssessmentGradeScale, trn ...*gorm.DB) error {
 
 	db := config.DB
-	if trn != nil && len(trn) > 0 {
+	/*if trn != nil && len(trn) > 0 {
 		db = trn[0]
-	}
+	}*/
 
 	return db.Save(&assessmentGradeScale).Error
 }
 
 func GetAssessmentGradeScaleByCodeAndGradeNumber(code int64, assessmentGradeNumber string, trn ...*gorm.DB) (models.AssessmentGradeScale, error) {
 	db := config.DB
-	if trn != nil && len(trn) > 0 {
+	/*if trn != nil && len(trn) > 0 {
 		db = trn[0]
-	}
+	}*/
 
 	var assessmentGrade models.AssessmentGradeScale
 
@@ -39,9 +39,9 @@ func GetAssessmentGradeScaleByCodeAndGradeNumber(code int64, assessmentGradeNumb
 
 func FindAssessmentGradeScaleByGradeNumber(assessmentGradeNumber string, trn ...*gorm.DB) ([]models.AssessmentGradeScale, error) {
 	db := config.DB
-	if len(trn) > 0 {
+	/*if len(trn) > 0 {
 		db = trn[0]
-	}
+	}*/
 
 	var assessmentGrades []models.AssessmentGradeScale
 
@@ -60,19 +60,19 @@ func FindAssessmentGradeScaleByGradeNumber(assessmentGradeNumber string, trn ...
 func RemoveAssessmentGradeScale(assessmentGradeScale models.AssessmentGradeScale, trn ...*gorm.DB) error {
 
 	db := config.DB
-	if len(trn) > 0 {
+	/*if len(trn) > 0 {
 		db = trn[0]
-	}
+	}*/
 
 	return db.Delete(&assessmentGradeScale).Error
 }
 
 func GetAssessmentGradeScaleByNameAndGradeNumber(name, assessmentGradeNumber string, trn ...*gorm.DB) (models.AssessmentGradeScale, error) {
 	db := config.DB
-	if trn != nil && len(trn) > 0 {
+	/*if trn != nil && len(trn) > 0 {
 		db = trn[0]
 	}
-
+	*/
 	var assessmentGrade models.AssessmentGradeScale
 
 	if err := db.Where("name = ? AND assessment_grade_number = ?", name, assessmentGradeNumber).First(&assessmentGrade).Error; err != nil {
