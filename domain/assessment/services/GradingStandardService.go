@@ -707,60 +707,60 @@ func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.Assessme
 		return errors.New(err.Error())
 	}
 
-	trn := config.DB.Begin()
+	//trn := config.DB.Begin()
 
-	err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
+	err = repositories.SaveAssessmentGrade(saveAssessmentGrade)
 	if err != nil {
-		trn.Rollback()
+		//trn.Rollback()
 		return errors.New("saving assessment grade error: " + err.Error())
 	}
 
 	for _, classNumber := range assessmentGradeRequest.Classes {
-		class, err := classRepositories.GetClassByNumber(classNumber, trn)
+		class, err := classRepositories.GetClassByNumber(classNumber)
 		if err != nil {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("checking class error: " + err.Error())
 		}
 
 		if class.Number == "" {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("invalid class number selected")
 		}
 
-		checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number, trn)
+		checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number)
 		if err != nil {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("checking class double entry error: " + err.Error())
 		}
 
 		if checkClassDuplicate.ClassNumber != "" {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("Class '" + class.Name + "' already selected")
 		}
 
 		err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
 			AssessmentGradeNumber: saveAssessmentGrade.Number,
 			ClassNumber:           class.Number,
-		}, trn)
+		})
 
 		if err != nil {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("attaching class error: " + err.Error())
 		}
 
 	}
 
 	for _, assessmentGradeScaleItem := range assessmentGradeRequest.AssessmentGradeItems {
-		err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, trn)
+		err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, nil)
 		if err != nil {
-			trn.Rollback()
+			//trn.Rollback()
 			return err
 		}
 	}
 
-	if err = trn.Commit().Error; err != nil {
+	/*if err = trn.Commit().Error; err != nil {
 		return errors.New("failed finalizing assessment grade, error: " + err.Error())
-	}
+	}*/
 
 	return nil
 }
