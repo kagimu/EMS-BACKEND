@@ -733,7 +733,7 @@ func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.Assessme
 		}
 	}
 
-	if err := trn.Commit().Error; err != nil {
+	if err = trn.Commit().Error; err != nil {
 		return errors.New("failed finalizing assessment grade, error: " + err.Error())
 	}
 
