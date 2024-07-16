@@ -31,7 +31,7 @@ func GetAssessmentGradeByNumber(assessmentGradeNumber string, trn ...*gorm.DB) (
 
 func SaveAssessmentGrade(assessmentGrade models.AssessmentGrade, trn ...*gorm.DB) error {
 	db := config.DB
-	if len(trn) > 0 {
+	if trn != nil && len(trn) > 0 {
 		db = trn[0]
 	}
 
