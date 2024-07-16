@@ -768,7 +768,7 @@ func processAssessmentGradeScaleItem(assessmentGradeScaleItem assessmentGradeReq
 		Name:                  assessmentGradeScaleItem.Name,
 		Remark:                assessmentGradeScaleItem.Remarks,
 		Abbreviation:          assessmentGradeScaleItem.Abbreviation,
-	})
+	}, trn)
 
 	if err != nil {
 		return errors.New("failed saving assessment grade scale item: " + err.Error())
@@ -779,23 +779,23 @@ func processAssessmentGradeScaleItem(assessmentGradeScaleItem assessmentGradeReq
 
 func GetAssessmentGrades(classNumber, status string) ([]assessmentGradeResponses.AssessmentGradeResponse, error) {
 
-	var assessmentGradeResponses = make([]assessmentGradeResponses.AssessmentGradeResponse, 0)
+	var assessmentGradeResponse = make([]assessmentGradeResponses.AssessmentGradeResponse, 0)
 
 	assessmentGrades, err := repositories.FindAssessmentGradeByClassNumber(classNumber, status)
 	if err != nil {
-		return assessmentGradeResponses, errors.New("checking assessment grades by scale error: " + err.Error())
+		return assessmentGradeResponse, errors.New("checking assessment grades by scale error: " + err.Error())
 	}
 
 	for _, assessmentGrade := range assessmentGrades {
 		gradeScale, err := repositories.FindAssessmentGradeScaleByGradeNumber(assessmentGrade.Number)
 		if err != nil {
-			return assessmentGradeResponses, errors.New("checking assessment scale error: " + err.Error())
+			return assessmentGradeResponse, errors.New("checking assessment scale error: " + err.Error())
 		}
 
-		assessmentGradeResponses = append(assessmentGradeResponses, createAssessmentGradeResponse(assessmentGrade, gradeScale))
+		assessmentGradeResponse = append(assessmentGradeResponse, createAssessmentGradeResponse(assessmentGrade, gradeScale))
 	}
 
-	return assessmentGradeResponses, nil
+	return assessmentGradeResponse, nil
 }
 
 func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.AssessmentGrade, assessmentGradeScales []assessmentGradeModels.AssessmentGradeScale) assessmentGradeResponses.AssessmentGradeResponse {
