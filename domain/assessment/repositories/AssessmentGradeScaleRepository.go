@@ -10,7 +10,7 @@ import (
 func SaveAssessmentGradeScale(assessmentGradeScale models.AssessmentGradeScale, trn ...*gorm.DB) error {
 
 	db := config.DB
-	if len(trn) > 0 {
+	if trn != nil && len(trn) > 0 {
 		db = trn[0]
 	}
 
@@ -19,7 +19,7 @@ func SaveAssessmentGradeScale(assessmentGradeScale models.AssessmentGradeScale, 
 
 func GetAssessmentGradeScaleByCodeAndGradeNumber(code int64, assessmentGradeNumber string, trn ...*gorm.DB) (models.AssessmentGradeScale, error) {
 	db := config.DB
-	if len(trn) > 0 {
+	if trn != nil && len(trn) > 0 {
 		db = trn[0]
 	}
 
@@ -69,7 +69,7 @@ func RemoveAssessmentGradeScale(assessmentGradeScale models.AssessmentGradeScale
 
 func GetAssessmentGradeScaleByNameAndGradeNumber(name, assessmentGradeNumber string, trn ...*gorm.DB) (models.AssessmentGradeScale, error) {
 	db := config.DB
-	if len(trn) > 0 {
+	if trn != nil && len(trn) > 0 {
 		db = trn[0]
 	}
 
