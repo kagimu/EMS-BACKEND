@@ -7,15 +7,15 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
-	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
-	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	assessmentGradeRequests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
+	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
+	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
-	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
+	classResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
@@ -60,24 +60,14 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 }
 
 func processGradingStandardClass(gradingStandardClass requests.GradingStandardClasses, gradingStandardNumber string, trn *gorm.DB) error {
-	class, err := repositories2.GetClassByNumber(gradingStandardClass.ClassNumber)
+	class, err := classRepositories.GetClassByNumber(gradingStandardClass.ClassNumber)
 	if err != nil {
-		//trn.Rollback()
 		return errors.New("getting class from campus class number error: " + err.Error())
 	}
 
 	if class.Number == "" {
 		return errors.New("campus class number has no class")
 	}
-
-	//duplicateClass, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
-	//if err != nil {
-	//	return errors.New("checking class duplicate error: " + err.Error())
-	//}
-	//
-	//if duplicateClass.ClassNumber != "" {
-	//	return errors.New("you already selected class: " + class.Name)
-	//}
 
 	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber)
 	if err != nil {
@@ -91,14 +81,13 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		}
 	}
 
-	err = repositories.SaveGradingStandardClassScale(models2.GradingStandardClassScale{
+	err = repositories.SaveGradingStandardClassScale(assessmentGradeModels.GradingStandardClassScale{
 		ClassNumber:           class.Number,
 		ScaleNumber:           gradingStandardClass.ScaleNumber,
 		GradingStandardNumber: gradingStandardNumber,
 	}, trn)
 
 	if err != nil {
-		//trn.Rollback()
 		return errors.New("Saving grading standard classes error: " + err.Error())
 	}
 
@@ -242,6 +231,10 @@ func Overlap(aggregateScaleItem1, aggregateScaleItem2 requests.AggregateScaleIte
 	return aggregateScaleItem1.MinValue <= aggregateScaleItem2.MaxValue && aggregateScaleItem2.MinValue <= aggregateScaleItem1.MaxValue
 }
 
+func OverlapInGrades(aggregateScaleItem1, aggregateScaleItem2 assessmentGradeRequests.AssessmentGradeItemRequest) bool {
+	return aggregateScaleItem1.MinimumPoints <= aggregateScaleItem2.MaximumPoints && aggregateScaleItem2.MinimumPoints <= aggregateScaleItem1.MaximumPoints
+}
+
 func CheckOverlaps(aggregateScaleItems []requests.AggregateScaleItem) error {
 
 	scaleLength := len(aggregateScaleItems)
@@ -252,6 +245,25 @@ func CheckOverlaps(aggregateScaleItems []requests.AggregateScaleItem) error {
 
 			if Overlap(aggregateScaleItems[i], aggregateScaleItems[j]) {
 				return errors.New("the scale has overlapping entries")
+			}
+
+		}
+
+	}
+
+	return nil
+}
+
+func CheckOverlapsInGrades(assessmentGradeItemRequests []assessmentGradeRequests.AssessmentGradeItemRequest) error {
+
+	scaleLength := len(assessmentGradeItemRequests)
+
+	for i := 0; i < scaleLength; i++ {
+
+		for j := i + 1; j < scaleLength; j++ {
+
+			if OverlapInGrades(assessmentGradeItemRequests[i], assessmentGradeItemRequests[j]) {
+				return errors.New("the scale has overlapping entry grades")
 			}
 
 		}
@@ -614,7 +626,7 @@ func GetGradingStandardDetails(gradingStandardNumber string) (responses.Detailed
 	return gradingStandardResponse, nil
 }
 
-func createGradingStandardClassesResponse(gradingScaleClass models2.GradingStandardClassScale) (responses.GradingStandardClassesResponse, error) {
+func createGradingStandardClassesResponse(gradingScaleClass assessmentGradeModels.GradingStandardClassScale) (responses.GradingStandardClassesResponse, error) {
 
 	var gradingStandardClassesResponse responses.GradingStandardClassesResponse
 
@@ -637,7 +649,7 @@ func createGradingStandardClassesResponse(gradingScaleClass models2.GradingStand
 		return gradingStandardClassesResponse, err
 	}
 
-	class, err := repositories2.GetClassByNumber(gradingScaleClass.ClassNumber)
+	class, err := classRepositories.GetClassByNumber(gradingScaleClass.ClassNumber)
 	if err != nil {
 		return gradingStandardClassesResponse, errors.New("getting classes error: " + err.Error())
 	}
@@ -648,7 +660,7 @@ func createGradingStandardClassesResponse(gradingScaleClass models2.GradingStand
 
 	gradingStandardClassesResponse.Scale = detailedScale
 
-	gradingStandardClassesResponse.Class = responses2.ClassResponse{
+	gradingStandardClassesResponse.Class = classResponses.ClassResponse{
 		Number: class.Number,
 		Name:   class.Name,
 	}
@@ -656,25 +668,30 @@ func createGradingStandardClassesResponse(gradingScaleClass models2.GradingStand
 	return gradingStandardClassesResponse, nil
 }
 
-func SaveAssessmentGrade(assessmentGradeRequest requests2.AssessmentGradeRequest, currentUserNumber string) error {
+func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.AssessmentGradeRequest, currentUserNumber string) error {
 
-	saveAssessmentGrade := models2.AssessmentGrade{
+	saveAssessmentGrade := assessmentGradeModels.AssessmentGrade{
 		Status:              constants.StatusActive,
 		Number:              uuid.NewV4().String(),
 		UserNumber:          currentUserNumber,
 		AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
 	}
 
+	err := CheckOverlapsInGrades(assessmentGradeRequest.AssessmentGradeItems)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+
 	trn := config.DB.Begin()
 
-	err := repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
+	err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
 	if err != nil {
 		trn.Rollback()
 		return errors.New("saving assessment grade error: " + err.Error())
 	}
 
 	for _, classNumber := range assessmentGradeRequest.Classes {
-		class, err := repositories2.GetClassByNumber(classNumber, trn)
+		class, err := classRepositories.GetClassByNumber(classNumber, trn)
 		if err != nil {
 			trn.Rollback()
 			return errors.New("checking class error: " + err.Error())
@@ -723,17 +740,26 @@ func SaveAssessmentGrade(assessmentGradeRequest requests2.AssessmentGradeRequest
 	return nil
 }
 
-func processAssessmentGradeScaleItem(assessmentGradeScaleItem requests2.AssessmentGradeItemRequest, assessmentGradeNumber string, trn *gorm.DB) error {
-	checkCode, err := repositories.GetAssessmentGradeScaleByCodeAndScaleNumber(assessmentGradeScaleItem.Code, assessmentGradeNumber, trn)
+func processAssessmentGradeScaleItem(assessmentGradeScaleItem assessmentGradeRequests.AssessmentGradeItemRequest, assessmentGradeNumber string, trn *gorm.DB) error {
+	checkDuplicateEntries, err := repositories.GetAssessmentGradeScaleByCodeAndGradeNumber(assessmentGradeScaleItem.Code, assessmentGradeNumber, trn)
 	if err != nil {
 		return errors.New("checking assessment grades error : " + err.Error())
 	}
 
-	if checkCode.Number != "" {
+	if checkDuplicateEntries.Number != "" {
 		return errors.New("code already used")
 	}
 
-	err = repositories.SaveAssessmentGradeScale(models2.AssessmentGradeScale{
+	checkDuplicateEntries, err = repositories.GetAssessmentGradeScaleByNameAndGradeNumber(assessmentGradeScaleItem.Name, assessmentGradeNumber, trn)
+	if err != nil {
+		return errors.New("checking assessment grades name error : " + err.Error())
+	}
+
+	if checkDuplicateEntries.Number != "" {
+		return errors.New("name " + assessmentGradeScaleItem.Name + " already used")
+	}
+
+	err = repositories.SaveAssessmentGradeScale(assessmentGradeModels.AssessmentGradeScale{
 		Code:                  assessmentGradeScaleItem.Code,
 		AssessmentGradeNumber: assessmentGradeNumber,
 		MaximumPoints:         assessmentGradeScaleItem.MaximumPoints,
@@ -751,9 +777,9 @@ func processAssessmentGradeScaleItem(assessmentGradeScaleItem requests2.Assessme
 	return nil
 }
 
-func GetAssessmentGrades(classNumber, status string) ([]responses3.AssessmentGradeResponse, error) {
+func GetAssessmentGrades(classNumber, status string) ([]assessmentGradeResponses.AssessmentGradeResponse, error) {
 
-	var assessmentGradeResponses = make([]responses3.AssessmentGradeResponse, 0)
+	var assessmentGradeResponses = make([]assessmentGradeResponses.AssessmentGradeResponse, 0)
 
 	assessmentGrades, err := repositories.FindAssessmentGradeByClassNumber(classNumber, status)
 	if err != nil {
@@ -772,17 +798,17 @@ func GetAssessmentGrades(classNumber, status string) ([]responses3.AssessmentGra
 	return assessmentGradeResponses, nil
 }
 
-func createAssessmentGradeResponse(assessmentGrade models2.AssessmentGrade, assessmentGradeScales []models2.AssessmentGradeScale) responses3.AssessmentGradeResponse {
+func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.AssessmentGrade, assessmentGradeScales []assessmentGradeModels.AssessmentGradeScale) assessmentGradeResponses.AssessmentGradeResponse {
 
-	assessmentGradeResponse := responses3.AssessmentGradeResponse{
+	assessmentGradeResponse := assessmentGradeResponses.AssessmentGradeResponse{
 		AssessmentAreaCount:   assessmentGrade.AssessmentAreaCount,
 		AssessmentGradeNumber: assessmentGrade.Number,
 	}
 
-	var assessmentGradeItemResponses = make([]responses3.AssessmentGradeItemResponse, 0)
+	var assessmentGradeItemResponses = make([]assessmentGradeResponses.AssessmentGradeItemResponse, 0)
 
 	for _, assessmentGradeItem := range assessmentGradeScales {
-		assessmentGradeItemResponses = append(assessmentGradeItemResponses, responses3.AssessmentGradeItemResponse{
+		assessmentGradeItemResponses = append(assessmentGradeItemResponses, assessmentGradeResponses.AssessmentGradeItemResponse{
 			Name:          assessmentGradeItem.Name,
 			Abbreviation:  assessmentGradeItem.Abbreviation,
 			MaximumPoints: assessmentGradeItem.MaximumPoints,
