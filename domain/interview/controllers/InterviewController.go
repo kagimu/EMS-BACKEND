@@ -6,6 +6,7 @@ import (
 	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/responses"
 	"gorm.io/gorm"
 	"net/http"
 
@@ -14,6 +15,7 @@ import (
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	assessmentRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/repository"
@@ -211,7 +213,7 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 	type singleStudent struct {
 		enrollmentResponse.EnrolledStudent
-		Assessments []assessmentModel.Assessment
+		Assessments []responses.Assessment
 	}
 	type Response struct {
 		Headers  []singleAssessment `json:"headers"`
@@ -224,11 +226,11 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 
 	for _, interviewStudent := range interviewStudents {
 		student := interviewStudent.Student
-		var assessments []assessmentModel.Assessment
+		var asts []responses.Assessment
 
 		for _, assessmentMetric := range assessmentMetrics {
 
-			assmts, err := assessmentMetricRepositories.FindAssessmentByStudentNumberAndAssessmentMetricNumber(interviewStudent.StudentNumber, assessmentMetric.Number)
+			assmt, err := assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(interviewStudent.StudentNumber, assessmentMetric.Number)
 			if err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
 					c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments " + err.Error()})
@@ -236,7 +238,20 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 				}
 			}
 
-			assessments = append(assessments, assmts...)
+			assessmentArea, err := assessmentRepo.GetAssessmentAreaByNumber(assessmentMetric.AssessmentAreaNumber)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment area " + err.Error()})
+				return
+			}
+
+			asts = append(asts, responses.Assessment{
+				Number:                 assmt.Number,
+				AssessmentAreaName:     assessmentArea.Name,
+				AssessmentMetricNumber: assessmentMetric.Number,
+				Score:                  assmt.Score,
+				ActualScore:            assmt.ActualScore,
+				Comment:                assmt.Comment,
+			})
 
 		}
 
@@ -259,8 +274,9 @@ func FetchStudentsByInterviewNumber(c *gin.Context) {
 				Score:             assessment.Score,
 				ActualScore:       assessment.ActualScore,
 				Comment:           assessment.Comment,
+				Status:            student.Status,
 			},
-			Assessments: assessments,
+			Assessments: asts,
 		})
 	}
 
