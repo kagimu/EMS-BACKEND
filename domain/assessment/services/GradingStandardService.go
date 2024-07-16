@@ -69,6 +69,22 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("campus class number has no class")
 	}
 
+	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, "")
+	if err != nil {
+		return errors.New("checking only class duplicate error: " + err.Error())
+	}
+
+	if checkClassAndScale.ClassNumber != "" {
+
+		classCurrentScale, _ := repositories.GetScaleByNumber(checkClassAndScale.ScaleNumber)
+		classNewScale, _ := repositories.GetScaleByNumber(gradingStandardClass.ScaleNumber)
+
+		if classCurrentScale.Count != classNewScale.Count {
+			return errors.New("this scale can not be added to class with another scale differ in points: " + class.Number)
+		}
+
+	}
+
 	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber)
 	if err != nil {
 		return errors.New("checking class duplicate error: " + err.Error())
@@ -79,6 +95,15 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		if err != nil {
 			return errors.New("clearing class duplicate error: " + err.Error())
 		}
+	}
+
+	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber)
+	if err != nil {
+		return errors.New("checking class duplicate error: " + err.Error())
+	}
+
+	if checkClassAndScale.ClassNumber == "" {
+		return errors.New("this scale was already added to class: " + class.Number)
 	}
 
 	err = repositories.SaveGradingStandardClassScale(assessmentGradeModels.GradingStandardClassScale{
@@ -682,60 +707,60 @@ func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.Assessme
 		return errors.New(err.Error())
 	}
 
-	trn := config.DB.Begin()
+	//trn := config.DB.Begin()
 
-	err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
+	err = repositories.SaveAssessmentGrade(saveAssessmentGrade)
 	if err != nil {
-		trn.Rollback()
+		//trn.Rollback()
 		return errors.New("saving assessment grade error: " + err.Error())
 	}
 
 	for _, classNumber := range assessmentGradeRequest.Classes {
-		class, err := classRepositories.GetClassByNumber(classNumber, trn)
+		class, err := classRepositories.GetClassByNumber(classNumber)
 		if err != nil {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("checking class error: " + err.Error())
 		}
 
 		if class.Number == "" {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("invalid class number selected")
 		}
 
-		checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number, trn)
+		checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number)
 		if err != nil {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("checking class double entry error: " + err.Error())
 		}
 
 		if checkClassDuplicate.ClassNumber != "" {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("Class '" + class.Name + "' already selected")
 		}
 
 		err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
 			AssessmentGradeNumber: saveAssessmentGrade.Number,
 			ClassNumber:           class.Number,
-		}, trn)
+		})
 
 		if err != nil {
-			trn.Rollback()
+			//trn.Rollback()
 			return errors.New("attaching class error: " + err.Error())
 		}
 
 	}
 
 	for _, assessmentGradeScaleItem := range assessmentGradeRequest.AssessmentGradeItems {
-		err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, trn)
+		err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, nil)
 		if err != nil {
-			trn.Rollback()
+			//trn.Rollback()
 			return err
 		}
 	}
 
-	if err = trn.Commit().Error; err != nil {
+	/*if err = trn.Commit().Error; err != nil {
 		return errors.New("failed finalizing assessment grade, error: " + err.Error())
-	}
+	}*/
 
 	return nil
 }

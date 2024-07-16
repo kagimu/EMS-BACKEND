@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
@@ -98,7 +99,7 @@ func GetGradingStandardClassScaleByClassNumberAndScaleNumber(classNumber, scaleN
 
 	var grades models.GradingStandardClassScale
 
-	if err := db.Where("class_number = ? AND scale_number = ?", classNumber, scaleNumber).Find(&grades).Error; err != nil {
+	if err := db.Scopes(filters.ByAnyField("class_number", classNumber), filters.ByAnyField("scale_number", scaleNumber)).First(&grades).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return grades, nil
