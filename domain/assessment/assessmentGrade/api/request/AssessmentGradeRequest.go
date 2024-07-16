@@ -55,11 +55,11 @@ func (assessmentRequest *AssessmentGradeRequest) Validate() error {
 			return errors.New("description is required")
 		}
 
-		if r.MinimumPoints == 0 {
+		if r.MinimumPoints <= 0 {
 			return errors.New("minimum points is required")
 		}
 
-		if r.MaximumPoints == 0 {
+		if r.MaximumPoints <= 0 {
 			return errors.New("maximum points is required")
 		}
 
@@ -67,7 +67,7 @@ func (assessmentRequest *AssessmentGradeRequest) Validate() error {
 			return errors.New("remarks is required")
 		}
 
-		if r.Code == 0 {
+		if r.Code <= 0 {
 			return errors.New("code is required")
 		}
 
