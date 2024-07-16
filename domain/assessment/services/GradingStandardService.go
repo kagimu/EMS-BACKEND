@@ -69,6 +69,22 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("campus class number has no class")
 	}
 
+	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, "")
+	if err != nil {
+		return errors.New("checking only class duplicate error: " + err.Error())
+	}
+
+	if checkClassAndScale.ClassNumber != "" {
+
+		classCurrentScale, _ := repositories.GetScaleByNumber(checkClassAndScale.ScaleNumber)
+		classNewScale, _ := repositories.GetScaleByNumber(gradingStandardClass.ScaleNumber)
+
+		if classCurrentScale.Count != classNewScale.Count {
+			return errors.New("this scale can not be added to class with another scale differ in points: " + class.Number)
+		}
+
+	}
+
 	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber)
 	if err != nil {
 		return errors.New("checking class duplicate error: " + err.Error())
@@ -79,6 +95,15 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		if err != nil {
 			return errors.New("clearing class duplicate error: " + err.Error())
 		}
+	}
+
+	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber)
+	if err != nil {
+		return errors.New("checking class duplicate error: " + err.Error())
+	}
+
+	if checkClassAndScale.ClassNumber == "" {
+		return errors.New("this scale was already added to class: " + class.Number)
 	}
 
 	err = repositories.SaveGradingStandardClassScale(assessmentGradeModels.GradingStandardClassScale{
