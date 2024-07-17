@@ -847,3 +847,24 @@ func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.Assessm
 	assessmentGradeResponse.AssessmentGradeItems = assessmentGradeItemResponses
 	return assessmentGradeResponse
 }
+
+func UpdateGradingStandardStatus(updateStatusRequest requests.UpdateGradingStatusStandardRequest, currentUserNumber string) error {
+
+	gradingStandard, err := repositories.GetGradingStandardByNumber(updateStatusRequest.GradingStandardNumber)
+	if err != nil {
+		return errors.New("failed getting grading standard by number: " + err.Error())
+	}
+
+	if gradingStandard.Number == "" {
+		return errors.New("invalid grading standard number")
+	}
+
+	gradingStandard.Status = updateStatusRequest.Status
+	gradingStandard.UserNumber = currentUserNumber
+	err = repositories.SaveGradingStandard(gradingStandard)
+	if err != nil {
+		return errors.New("failed updating grading standard: " + err.Error())
+	}
+
+	return nil
+}
