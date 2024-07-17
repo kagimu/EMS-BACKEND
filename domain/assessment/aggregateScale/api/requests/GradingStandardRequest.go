@@ -43,6 +43,24 @@ type UpdateGradingStandardRequest struct {
 	GradingStandardNumber string `json:"grading_standard_number"`
 }
 
+type UpdateGradingStatusStandardRequest struct {
+	Status                string `json:"status"`
+	GradingStandardNumber string `json:"grading_standard_number"`
+}
+
+func (a *UpdateGradingStatusStandardRequest) Validate() error {
+
+	if a.GradingStandardNumber == "" {
+		return errors.New("grading standard number is required")
+	}
+
+	if a.Status == "" {
+		return errors.New("grading standard number is required")
+	}
+
+	return nil
+}
+
 type GradingStandardClasses struct {
 	ClassNumber string `json:"class_number"`
 	ScaleNumber string `json:"scale_number"`
