@@ -69,6 +69,15 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("campus class number has no class")
 	}
 
+	classNewScale, err := repositories.GetScaleByNumber(gradingStandardClass.ScaleNumber)
+	if err != nil {
+		return errors.New("error checking scale: " + err.Error())
+	}
+
+	if classNewScale.Number == "" {
+		return errors.New("invalid scale number")
+	}
+
 	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, "")
 	if err != nil {
 		return errors.New("checking only class duplicate error: " + err.Error())
@@ -77,10 +86,9 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 	if checkClassAndScale.ClassNumber != "" {
 
 		classCurrentScale, _ := repositories.GetScaleByNumber(checkClassAndScale.ScaleNumber)
-		classNewScale, _ := repositories.GetScaleByNumber(gradingStandardClass.ScaleNumber)
 
 		if classCurrentScale.Count != classNewScale.Count {
-			return errors.New("this scale can not be added to class with another scale differ in points: " + class.Number)
+			return errors.New(classNewScale.Name + " can not be used on " + class.Name + ", they differ in size with " + classCurrentScale.Name)
 		}
 
 	}

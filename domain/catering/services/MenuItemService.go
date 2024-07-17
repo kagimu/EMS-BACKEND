@@ -350,11 +350,22 @@ func createProjectionMenuItem(menuItem models.MenuItem, totalQuantity float64) r
 
 	unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
 	if err != nil {
-		fmt.Println("Error getting unit of measure for assembled split error: " + err.Error())
+		fmt.Println("Error getting unit of measure: " + err.Error())
 		return projectionMenuItem
 	}
 
 	projectionMenuItem.UnitOfMeasure = unitOfMeasure.Abbreviation
+
+	if menuItem.PurchaseUnitOfMeasureNumber != "" {
+		unitOfMeasure, err = repositories.GetUnitOfMeasureByNumber(menuItem.PurchaseUnitOfMeasureNumber)
+		if err != nil {
+			fmt.Println("Error getting purchase unit of measure: " + err.Error())
+			return projectionMenuItem
+		}
+
+		projectionMenuItem.PurchaseUnitOfMeasure = unitOfMeasure.Abbreviation
+		projectionMenuItem.RateToPurchaseUnit = menuItem.ConversionToPurchaseUnit
+	}
 
 	return projectionMenuItem
 }
