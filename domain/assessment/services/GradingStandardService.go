@@ -111,7 +111,7 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 	}
 
 	if checkClassAndScale.ClassNumber == "" {
-		return errors.New("this scale was already added to class: " + class.Number)
+		return errors.New("'" + classNewScale.Name + "' is already added to class: " + class.Name)
 	}
 
 	err = repositories.SaveGradingStandardClassScale(assessmentGradeModels.GradingStandardClassScale{
