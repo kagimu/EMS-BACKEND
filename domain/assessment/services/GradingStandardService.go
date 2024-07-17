@@ -23,36 +23,39 @@ import (
 
 func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest, currentUser string) error {
 
-	trn := config.DB.Begin()
+	err := config.DB.Transaction(func(trn *gorm.DB) error {
 
-	gradingStandard := models.GradingStandard{
-		Code:         gradingStandardRequest.Code,
-		Number:       uuid.NewV4().String(),
-		Name:         gradingStandardRequest.Name,
-		Description:  gradingStandardRequest.Description,
-		UserNumber:   currentUser,
-		SchoolNumber: gradingStandardRequest.SchoolNumber,
-	}
+		gradingStandard := models.GradingStandard{
+			Code:         gradingStandardRequest.Code,
+			Number:       uuid.NewV4().String(),
+			Name:         gradingStandardRequest.Name,
+			Description:  gradingStandardRequest.Description,
+			UserNumber:   currentUser,
+			SchoolNumber: gradingStandardRequest.SchoolNumber,
+		}
 
-	if gradingStandardRequest.Status != "" {
-		gradingStandard.Status = gradingStandardRequest.Status
-	}
+		if gradingStandardRequest.Status != "" {
+			gradingStandard.Status = gradingStandardRequest.Status
+		}
 
-	err := repositories.SaveGradingStandard(gradingStandard, trn)
-	if err != nil {
-		trn.Rollback()
-		return errors.New("Saving grading standard error: " + err.Error())
-	}
-
-	for _, classNumber := range gradingStandardRequest.Classes {
-		err = processGradingStandardClass(classNumber, gradingStandard.Number, trn)
+		err := repositories.SaveGradingStandard(gradingStandard, trn)
 		if err != nil {
 			trn.Rollback()
-			return err
+			return errors.New("Saving grading standard error: " + err.Error())
 		}
-	}
 
-	if err := trn.Commit().Error; err != nil {
+		for _, classNumber := range gradingStandardRequest.Classes {
+			err = processGradingStandardClass(classNumber, gradingStandard.Number, trn)
+			if err != nil {
+				trn.Rollback()
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return errors.New("commiting all changes error: " + err.Error())
 	}
 
