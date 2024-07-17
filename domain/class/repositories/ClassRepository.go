@@ -70,3 +70,26 @@ func FindClassesBySchoolNumber(schoolNumber, levelNumber string, trn ...*gorm.DB
 
 	return classes, nil
 }
+
+func FindClassesByAssessmentGradeNumber(assessmentGradeNumber string, trn ...*gorm.DB) ([]models.Class, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var classes []models.Class
+
+	if err := db.
+		Joins("join assessment_grade_classes on assessment_grade_classes.class_number = classes.number").
+		Where("assessment_grade_number = ?", assessmentGradeNumber).Find(&classes).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return classes, nil
+		}
+
+		return classes, err
+	}
+
+	return classes, nil
+}
