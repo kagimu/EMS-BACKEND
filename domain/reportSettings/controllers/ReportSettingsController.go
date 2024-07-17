@@ -13,7 +13,6 @@ import (
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -120,7 +119,7 @@ func CreatReportColumn(ctx *gin.Context) {
 		return
 	}
 
-	err = reportSettings.SaveReportColumn(payload, currentUser.Number)
+	err = services3.SaveReportColumn(payload, currentUser.Number)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -138,7 +137,7 @@ func FetchReportColumns(ctx *gin.Context) {
 		return
 	}
 
-	response, err := reportSettings.GetReportColumns(reportSettingsNumber)
+	response, err := services3.GetReportColumns(reportSettingsNumber)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -168,7 +167,7 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 		return
 	}
 
-	err = reportSettings.SaveAssessmentToReportColumn(payload, currentUser.Number)
+	err = services3.SaveAssessmentToReportColumn(payload, currentUser.Number)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
