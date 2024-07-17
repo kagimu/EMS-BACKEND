@@ -98,11 +98,8 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("checking class duplicate error: " + err.Error())
 	}
 
-	if classGrade.ID > 0 {
-		err = repositories.RemoveGradingStandardClassScale(classGrade, trn)
-		if err != nil {
-			return errors.New("clearing class duplicate error: " + err.Error())
-		}
+	if classGrade.GradingStandardNumber != "" {
+		return errors.New(class.Name + " is selected multiple times")
 	}
 
 	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber)
