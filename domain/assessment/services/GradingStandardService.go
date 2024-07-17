@@ -60,7 +60,7 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 }
 
 func processGradingStandardClass(gradingStandardClass requests.GradingStandardClasses, gradingStandardNumber string, trn *gorm.DB) error {
-	class, err := classRepositories.GetClassByNumber(gradingStandardClass.ClassNumber)
+	class, err := classRepositories.GetClassByNumber(gradingStandardClass.ClassNumber, trn)
 	if err != nil {
 		return errors.New("getting class from campus class number error: " + err.Error())
 	}
@@ -69,7 +69,7 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("campus class number has no class")
 	}
 
-	classNewScale, err := repositories.GetScaleByNumber(gradingStandardClass.ScaleNumber)
+	classNewScale, err := repositories.GetScaleByNumber(gradingStandardClass.ScaleNumber, trn)
 	if err != nil {
 		return errors.New("error checking scale: " + err.Error())
 	}
@@ -78,14 +78,14 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("invalid scale number")
 	}
 
-	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, "")
+	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, "", trn)
 	if err != nil {
 		return errors.New("checking only class duplicate error: " + err.Error())
 	}
 
 	if checkClassAndScale.ClassNumber != "" {
 
-		classCurrentScale, _ := repositories.GetScaleByNumber(checkClassAndScale.ScaleNumber)
+		classCurrentScale, _ := repositories.GetScaleByNumber(checkClassAndScale.ScaleNumber, trn)
 
 		if classCurrentScale.Count != classNewScale.Count {
 			return errors.New(classNewScale.Name + " can not be used on " + class.Name + ", they differ in size with " + classCurrentScale.Name)
@@ -93,7 +93,7 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 
 	}
 
-	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber)
+	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber, trn)
 	if err != nil {
 		return errors.New("checking class duplicate error: " + err.Error())
 	}
@@ -102,7 +102,7 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New(class.Name + " is selected multiple times")
 	}
 
-	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber)
+	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
 	if err != nil {
 		return errors.New("checking class duplicate error: " + err.Error())
 	}
