@@ -65,8 +65,10 @@ func UpdateGradingStandard(ctx *gin.Context) {
 
 func FetchGradingStandards(ctx *gin.Context) {
 	schoolNumber := ctx.Query("school_number")
+	classNumber := ctx.Query("class_number")
+	scaleNumber := ctx.Query("scale_number")
 
-	response, err := services.FetchGradingStandards(schoolNumber)
+	response, err := services.FetchGradingStandards(schoolNumber, classNumber, scaleNumber)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
