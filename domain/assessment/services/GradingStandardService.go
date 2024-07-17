@@ -81,7 +81,16 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("invalid scale number")
 	}
 
-	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, "", trn)
+	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
+	if err != nil {
+		return errors.New("checking class and scale duplicate error: " + err.Error())
+	}
+
+	if checkClassAndScale.ClassNumber != "" {
+		return errors.New(classNewScale.Name + " is already set to " + class.Name)
+	}
+
+	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, "", trn)
 	if err != nil {
 		return errors.New("checking only class duplicate error: " + err.Error())
 	}
