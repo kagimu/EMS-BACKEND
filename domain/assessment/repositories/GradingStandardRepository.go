@@ -55,8 +55,13 @@ func FindGradingStandardByCodeAndClassNumber(code int64, campusClassNumber strin
 	return gradingStandard, nil
 }
 
-func GetGradingStandardByNumber(gradingStandardNumber string) (models.GradingStandard, error) {
+func GetGradingStandardByNumber(gradingStandardNumber string, trn ...*gorm.DB) (models.GradingStandard, error) {
 	db := config.DB
+
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
 	var gradingStandard models.GradingStandard
 	if err := db.Where("number = ?", gradingStandardNumber).First(&gradingStandard).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
