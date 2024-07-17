@@ -148,7 +148,7 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 	trn := config.DB.Begin()
 
 	for _, oldMapping := range oldMappings {
-		err = repositories.RemoveGradingStandardClassScale(oldMapping)
+		err = repositories.RemoveGradingStandardClassScale(oldMapping, trn)
 		if err != nil {
 			return errors.New("clearing old mapping error: " + err.Error())
 		}
