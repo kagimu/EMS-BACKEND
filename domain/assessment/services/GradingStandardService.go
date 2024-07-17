@@ -126,12 +126,14 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 
 func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandardRequest, currentUser string) error {
 
-	gradingStandard, err := repositories.GetGradingStandardByNumber(gradingStandardRequest.GradingStandardNumber)
+	trn := config.DB.Begin()
+
+	gradingStandard, err := repositories.GetGradingStandardByNumber(gradingStandardRequest.GradingStandardNumber, trn)
 	if err != nil {
 		return errors.New("Checking grading standard error: " + err.Error())
 	}
 
-	oldMappings, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number)
+	oldMappings, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number, trn)
 	if err != nil {
 		return errors.New("Checking grading standard old mapping error: " + err.Error())
 	}
@@ -145,8 +147,6 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 		gradingStandard.Status = gradingStandardRequest.Status
 	}
 
-	trn := config.DB.Begin()
-
 	for _, oldMapping := range oldMappings {
 		err = repositories.RemoveGradingStandardClassScale(oldMapping, trn)
 		if err != nil {
@@ -156,7 +156,7 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 
 	err = repositories.SaveGradingStandard(gradingStandard, trn)
 	if err != nil {
-		return errors.New("Saving grading standard error: " + err.Error())
+		return errors.New("Updating grading standard error: " + err.Error())
 	}
 
 	for _, class := range gradingStandardRequest.Classes {

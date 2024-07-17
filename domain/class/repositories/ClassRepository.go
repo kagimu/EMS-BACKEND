@@ -34,7 +34,7 @@ func GetClassByCampusClassNumber(campusClassNumber string, trn ...*gorm.DB) (mod
 func GetClassByNumber(classNumber string, trn ...*gorm.DB) (models.Class, error) {
 	db := config.DB
 	if len(trn) > 0 {
-		db = trn[1]
+		db = trn[0]
 	}
 
 	var class models.Class
