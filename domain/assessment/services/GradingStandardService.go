@@ -165,6 +165,24 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 		return errors.New("Checking grading standard error: " + err.Error())
 	}
 
+	checkName, err := repositories.FindGradingStandardByNameAndSchoolNumber(gradingStandardRequest.Name, gradingStandardRequest.SchoolNumber, trn)
+	if err != nil {
+		return errors.New("Checking grading standard by name error: " + err.Error())
+	}
+
+	if checkName.Number != "" && checkName.Number != gradingStandard.Number {
+		return errors.New("name already used on another standard")
+	}
+
+	checkName, err = repositories.FindGradingStandardByCodeAndSchoolNumber(gradingStandardRequest.Code, gradingStandardRequest.SchoolNumber, trn)
+	if err != nil {
+		return errors.New("Checking grading standard by code error: " + err.Error())
+	}
+
+	if checkName.Number != "" && checkName.Number != gradingStandard.Number {
+		return errors.New("code already used on another standard")
+	}
+
 	oldMappings, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number, trn)
 	if err != nil {
 		return errors.New("Checking grading standard old mapping error: " + err.Error())
