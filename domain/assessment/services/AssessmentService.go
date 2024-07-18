@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
@@ -55,17 +56,22 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	}
 
 	//check if there is existing enrollment for the student
-	//enrollment, err := repository.FindEnrollmentByStudentNumber(student.Number)
-	//if err != nil {
-	//	return errors.New("checking student enrollment error: " + err.Error())
-	//}
-	//
-	//if enrollment.Number == "" {
-	//	return errors.New("student is not enrolled yet")
-	//}
+	enrollment, err := repository2.GetEnrollmentByStudentNumber(student.Number)
+	if err != nil {
+		return errors.New("checking student enrollment error: " + err.Error())
+	}
 
-	if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
-		return errors.New("You can not add results on thithis assessment is not for this student")
+	if enrollment.Number == "" {
+
+		if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
+			return errors.New("You can not add results on this schedule because this assessment is not meant  for this student")
+		}
+		//return errors.New("student is not enrolled yet")
+	} else {
+		if enrollment.CampusClassNumber != assessmentMetric.CampusClassNumber {
+			return errors.New("You can not add results on this schedule because this assessment is not meant  for this student on the current enrollment")
+		}
+
 	}
 
 	//find if assessment with student number and assessment metric  already exists
