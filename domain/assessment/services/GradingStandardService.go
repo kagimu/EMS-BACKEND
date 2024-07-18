@@ -225,6 +225,7 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 }
 
 func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, currentUser string) error {
+
 	scale, err := repositories.GetScaleByNameAndSchoolNumber(aggregateScaleRequest.ScaleName, aggregateScaleRequest.SchoolNumber)
 	if err != nil {
 		return errors.New("Checking scale name error: " + err.Error())
@@ -245,30 +246,32 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 		return err
 	}
 
-	trn := config.DB.Begin()
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
 
-	scale, err = repositories.SaveScale(models.Scale{
-		Number:       uuid.NewV4().String(),
-		Name:         aggregateScaleRequest.ScaleName,
-		SchoolNumber: aggregateScaleRequest.SchoolNumber,
-		Count:        aggregateScaleRequest.Count,
-		UserNumber:   currentUser,
-	}, trn)
+		scale, err = repositories.SaveScale(models.Scale{
+			Number:       uuid.NewV4().String(),
+			Name:         aggregateScaleRequest.ScaleName,
+			SchoolNumber: aggregateScaleRequest.SchoolNumber,
+			Count:        aggregateScaleRequest.Count,
+			UserNumber:   currentUser,
+		}, trn)
+
+		if err != nil {
+			return errors.New("creating base scale error: " + err.Error())
+		}
+
+		for _, grade := range grades {
+
+			err = createAggregateScales(trn, grade, scale.Number)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 
 	if err != nil {
-		return errors.New("creating base scale error: " + err.Error())
-	}
-
-	for _, grade := range grades {
-
-		err = createAggregateScales(trn, grade, scale.Number)
-		if err != nil {
-			trn.Rollback()
-			return err
-		}
-	}
-
-	if err := trn.Commit().Error; err != nil {
 		return errors.New("commit grading scales error: " + err.Error())
 	}
 
@@ -747,73 +750,69 @@ func createGradingStandardClassesResponse(gradingScaleClass assessmentGradeModel
 
 func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.AssessmentGradeRequest, currentUserNumber string) error {
 
-	saveAssessmentGrade := assessmentGradeModels.AssessmentGrade{
-		Status:              constants.StatusActive,
-		Number:              uuid.NewV4().String(),
-		UserNumber:          currentUserNumber,
-		AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
-		SchoolNumber:        assessmentGradeRequest.SchoolNumber,
-	}
+	err := config.DB.Transaction(func(trn *gorm.DB) error {
 
-	err := CheckOverlapsInGrades(assessmentGradeRequest.AssessmentGradeItems)
+		saveAssessmentGrade := assessmentGradeModels.AssessmentGrade{
+			Status:              constants.StatusActive,
+			Number:              uuid.NewV4().String(),
+			UserNumber:          currentUserNumber,
+			AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
+			SchoolNumber:        assessmentGradeRequest.SchoolNumber,
+		}
+
+		err := CheckOverlapsInGrades(assessmentGradeRequest.AssessmentGradeItems)
+		if err != nil {
+			return errors.New(err.Error())
+		}
+
+		err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
+		if err != nil {
+			return errors.New("saving assessment grade error: " + err.Error())
+		}
+
+		for _, classNumber := range assessmentGradeRequest.Classes {
+			class, err := classRepositories.GetClassByNumber(classNumber, trn)
+			if err != nil {
+				return errors.New("checking class error: " + err.Error())
+			}
+
+			if class.Number == "" {
+				return errors.New("invalid class number selected")
+			}
+
+			checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number, trn)
+			if err != nil {
+				return errors.New("checking class double entry error: " + err.Error())
+			}
+
+			if checkClassDuplicate.ClassNumber != "" {
+				return errors.New("Class '" + class.Name + "' already selected")
+			}
+
+			err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
+				AssessmentGradeNumber: saveAssessmentGrade.Number,
+				ClassNumber:           class.Number,
+			}, trn)
+
+			if err != nil {
+				return errors.New("attaching class error: " + err.Error())
+			}
+
+		}
+
+		for _, assessmentGradeScaleItem := range assessmentGradeRequest.AssessmentGradeItems {
+			err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, trn)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return errors.New(err.Error())
-	}
-
-	//trn := config.DB.Begin()
-
-	err = repositories.SaveAssessmentGrade(saveAssessmentGrade)
-	if err != nil {
-		//trn.Rollback()
-		return errors.New("saving assessment grade error: " + err.Error())
-	}
-
-	for _, classNumber := range assessmentGradeRequest.Classes {
-		class, err := classRepositories.GetClassByNumber(classNumber)
-		if err != nil {
-			//trn.Rollback()
-			return errors.New("checking class error: " + err.Error())
-		}
-
-		if class.Number == "" {
-			//trn.Rollback()
-			return errors.New("invalid class number selected")
-		}
-
-		checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number)
-		if err != nil {
-			//trn.Rollback()
-			return errors.New("checking class double entry error: " + err.Error())
-		}
-
-		if checkClassDuplicate.ClassNumber != "" {
-			//trn.Rollback()
-			return errors.New("Class '" + class.Name + "' already selected")
-		}
-
-		err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
-			AssessmentGradeNumber: saveAssessmentGrade.Number,
-			ClassNumber:           class.Number,
-		})
-
-		if err != nil {
-			//trn.Rollback()
-			return errors.New("attaching class error: " + err.Error())
-		}
-
-	}
-
-	for _, assessmentGradeScaleItem := range assessmentGradeRequest.AssessmentGradeItems {
-		err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, nil)
-		if err != nil {
-			//trn.Rollback()
-			return err
-		}
-	}
-
-	/*if err = trn.Commit().Error; err != nil {
 		return errors.New("failed finalizing assessment grade, error: " + err.Error())
-	}*/
+	}
 
 	return nil
 }
