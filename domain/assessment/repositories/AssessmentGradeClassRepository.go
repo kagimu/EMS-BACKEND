@@ -36,3 +36,33 @@ func SaveAssessmentGradeClass(assessmentGradeClass models.AssessmentGradeClass, 
 
 	return db.Save(&assessmentGradeClass).Error
 }
+
+func FindAssessmentGradeClassByGradeNumber(assessmentGradeNumber string, trn ...*gorm.DB) ([]models.AssessmentGradeClass, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentGradeClasses []models.AssessmentGradeClass
+
+	if err := db.Where("assessment_grade_number = ?", assessmentGradeNumber).Find(&assessmentGradeClasses).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentGradeClasses, nil
+		}
+
+		return assessmentGradeClasses, err
+	}
+
+	return assessmentGradeClasses, nil
+}
+
+func RemoveAssessmentGradeClass(assessmentGradeClass models.AssessmentGradeClass, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	return db.Delete(&assessmentGradeClass).Error
+}
