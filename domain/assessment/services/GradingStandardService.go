@@ -845,6 +845,7 @@ func processAssessmentGradeScaleItem(assessmentGradeScaleItem assessmentGradeReq
 		Name:                  assessmentGradeScaleItem.Name,
 		Remark:                assessmentGradeScaleItem.Remarks,
 		Abbreviation:          assessmentGradeScaleItem.Abbreviation,
+		Number:                uuid.NewV4().String(),
 	}, trn)
 
 	if err != nil {
