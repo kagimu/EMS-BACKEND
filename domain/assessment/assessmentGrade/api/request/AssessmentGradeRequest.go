@@ -6,6 +6,7 @@ type AssessmentGradeRequest struct {
 	Classes              []string                     `json:"classes"`
 	AssessmentAreaCount  int                          `json:"assessment_area_count"`
 	AssessmentGradeItems []AssessmentGradeItemRequest `json:"assessment_grade_items"`
+	SchoolNumber         string                       `json:"school_number"`
 }
 
 type EditAssessmentGradeRequest struct {
@@ -33,12 +34,20 @@ type AssessmentGradeItemRequest struct {
 
 func (assessmentRequest *AssessmentGradeRequest) Validate() error {
 
-	if len(assessmentRequest.Classes) <= 0 {
-		return errors.New("choose classes")
-	}
-
 	if assessmentRequest.AssessmentAreaCount <= 0 {
 		return errors.New("set the number of assessment areas to consider I.E best 8")
+	}
+
+	if assessmentRequest.SchoolNumber == "" {
+		return errors.New("choose a school")
+	}
+
+	if assessmentRequest.AssessmentAreaCount != len(assessmentRequest.AssessmentGradeItems) {
+		return errors.New("the scale must be equal to the count")
+	}
+
+	if len(assessmentRequest.Classes) <= 0 {
+		return errors.New("choose classes")
 	}
 
 	for _, r := range assessmentRequest.AssessmentGradeItems {

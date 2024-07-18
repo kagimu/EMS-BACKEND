@@ -2,6 +2,7 @@ package models
 
 import (
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"time"
 )
 
@@ -9,10 +10,12 @@ type AssessmentGrade struct {
 	Number              string `gorm:"primarykey;size:36;not null"`
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
-	Status              string         `json:"status"`
-	AssessmentAreaCount int            `json:"assessment_area_count"`
-	UserNumber          string         `json:"user_number" gorm:"size:36;index;not null"`
-	User                authModel.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Status              string              `json:"status"`
+	AssessmentAreaCount int                 `json:"assessment_area_count"`
+	UserNumber          string              `json:"user_number" gorm:"size:36;index;not null"`
+	User                authModel.User      `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	SchoolNumber        string              `json:"school_number" gorm:"size:36;index;not null"`
+	School              schoolModels.School `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 type AssessmentGradeScale struct {

@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetAssessmentGradeByNumber(assessmentGradeNumber string, trn ...*gorm.DB) (models.AssessmentGrade, error) {
+func GetAssessmentGradeByCodeAndSchoolNumber(code int64, schoolNumber string, trn ...*gorm.DB) (models.AssessmentGrade, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -17,7 +17,7 @@ func GetAssessmentGradeByNumber(assessmentGradeNumber string, trn ...*gorm.DB) (
 
 	var assessmentGrade models.AssessmentGrade
 
-	if err := db.Where("number = ?", assessmentGradeNumber).First(&assessmentGrade).Error; err != nil {
+	if err := db.Where("school_number = ? AND code = ?", schoolNumber, code).First(&assessmentGrade).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return assessmentGrade, nil
