@@ -10,16 +10,9 @@ type AssessmentGradeRequest struct {
 }
 
 type EditAssessmentGradeRequest struct {
-	Code              int64   `json:"code"`
-	Grade             string  `json:"grade"`
-	Description       string  `json:"description"`
-	MinimumPoints     float64 `json:"minimum_points"`
-	MaximumPoints     float64 `json:"maximum_points"`
-	Name              string  `json:"name"`
-	Abbreviation      string  `json:"abbreviation"`
-	Remarks           string  `json:"remarks"`
-	CampusClassNumber string  `json:"campus_class_number"`
-	CampusNumber      string  `json:"campus_number"`
+	AssessmentGradeRequest
+	Status                string `json:"status"`
+	AssessmentGradeNumber string `json:"assessment_grade_number"`
 }
 
 type AssessmentGradeItemRequest struct {
@@ -80,6 +73,19 @@ func (assessmentRequest *AssessmentGradeRequest) Validate() error {
 			return errors.New("code is required")
 		}
 
+	}
+
+	return nil
+}
+
+func (assessmentRequest *EditAssessmentGradeRequest) Validate() error {
+
+	if assessmentRequest.AssessmentGradeNumber == "" {
+		return errors.New("set assessment grade number")
+	}
+
+	if err := assessmentRequest.AssessmentGradeRequest.Validate(); err != nil {
+		return err
 	}
 
 	return nil
