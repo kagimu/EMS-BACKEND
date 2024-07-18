@@ -1012,13 +1012,13 @@ func EditAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.EditAsse
 		return errors.New("checking assessment grade classes error: " + err.Error())
 	}
 
+	assessmentGrade.Status = assessmentGradeRequest.Status
+	assessmentGrade.UserNumber = currentUser
+	assessmentGrade.AssessmentAreaCount = assessmentGradeRequest.AssessmentAreaCount
+
 	err = config.DB.Transaction(func(trn *gorm.DB) error {
 
-		err = repositories.SaveAssessmentGrade(assessmentGradeModels.AssessmentGrade{
-			Status:              assessmentGradeRequest.Status,
-			AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
-			UserNumber:          currentUser,
-		}, trn)
+		err = repositories.SaveAssessmentGrade(assessmentGrade, trn)
 
 		if err != nil {
 			return errors.New("updating assessment grade meta error: " + err.Error())

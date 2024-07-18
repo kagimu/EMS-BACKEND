@@ -1,14 +1,12 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"net/http"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 func CreateUnitOfMeasure(c *gin.Context) {
@@ -24,37 +22,10 @@ func CreateUnitOfMeasure(c *gin.Context) {
 		return
 	}
 
-	if err := payload.Validate(); err != nil {
+	unitOfMeasureService := services.NewUnitOfMeasureService(user)
+	err = unitOfMeasureService.NewUnitOfMeasure(payload)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	saveUnitOfMeaure := models.UnitOfMeasure{
-		Number:       uuid.NewV4().String(),
-		Name:         payload.Name,
-		Code:         payload.Code,
-		Abbreviation: payload.Abbreviation,
-		UserNumber:   user.Number,
-	}
-
-	var duplicate models.UnitOfMeasure
-	if err := config.DB.Where("name = ?", payload.Name).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Unit of measure with this name already exists"})
-		return
-	}
-
-	if err := config.DB.Where("code = ?", payload.Code).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Unit of measure with this code already exists"})
-		return
-	}
-
-	if err := config.DB.Where("abbreviation = ?", payload.Abbreviation).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Unit of measure with this abbreviation already exists"})
-		return
-	}
-
-	if err := config.DB.Create(&saveUnitOfMeaure).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create unit of measure"})
 		return
 	}
 
@@ -62,56 +33,67 @@ func CreateUnitOfMeasure(c *gin.Context) {
 }
 
 func FetchUnitsOfMeasure(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var unitsOfMeasure []models.UnitOfMeasure
-	if err := config.DB.Find(&unitsOfMeasure).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch units of measure"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Units of measure fetched successfully", "data": unitsOfMeasure})
-}
-
-func EditUnitOfMeasure(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	var payload requests.UnitOfMeasureRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
+	schoolNumber := c.Query("school_number")
+	if schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose the school"})
 		return
 	}
 
-	if err := payload.Validate(); err != nil {
+	unitOfMeasureService := services.NewUnitOfMeasureService(user)
+	list, err := unitOfMeasureService.FindUnitOfMeasures(schoolNumber)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	unitOfMeasureNumber := c.Param("number")
+	c.JSON(http.StatusOK, gin.H{"message": "Units of measure fetched successfully", "data": list})
+}
 
-	var unitOfMeasure models.UnitOfMeasure
-	if err := config.DB.Where("number = ?", unitOfMeasureNumber).First(&unitOfMeasure).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Unit of measure not found"})
+func EditUnitOfMeasure(c *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	editUnitOfMeasure := models.UnitOfMeasure{
-		Name:         payload.Name,
-		Code:         payload.Code,
-		Abbreviation: payload.Abbreviation,
+	var payload requests.EditUnitOfMeasureRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Payload error: " + err.Error()})
+		return
 	}
 
-	if err := config.DB.Model(&unitOfMeasure).Where("number = ?", unitOfMeasureNumber).Updates(editUnitOfMeasure).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update unit of measure"})
+	unitOfMeasureService := services.NewUnitOfMeasureService(user)
+	err = unitOfMeasureService.UpdateUnitOfMeasure(payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Unit of measure updated successfully"})
+
+}
+
+func RemoveUnitOfMeasure(c *gin.Context) {
+
+	unitOfMeasureNumber := c.Param("unit_of_measure_number")
+	if unitOfMeasureNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose unit of measure to remove"})
+		return
+	}
+
+	unitOfMeasureService := services.NewUnitOfMeasureService(nil)
+	err := unitOfMeasureService.RemoveUnitOfMeasures(unitOfMeasureNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Unit of measure removed successfully"})
 }
