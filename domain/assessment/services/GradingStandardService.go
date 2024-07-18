@@ -789,6 +789,15 @@ func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.Assessme
 				return errors.New("Class '" + class.Name + "' already selected")
 			}
 
+			checkClassStatus, err := repositories.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
+			if err != nil {
+				return errors.New("checking class with active assessment grade error: " + err.Error())
+			}
+
+			if checkClassStatus.Number != "" {
+				return errors.New("Class '" + class.Name + "' already has an active assessment grade")
+			}
+
 			err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
 				AssessmentGradeNumber: saveAssessmentGrade.Number,
 				ClassNumber:           class.Number,
@@ -929,6 +938,45 @@ func UpdateGradingStandardStatus(updateStatusRequest requests.UpdateGradingStatu
 	err = repositories.SaveGradingStandard(gradingStandard)
 	if err != nil {
 		return errors.New("failed updating grading standard: " + err.Error())
+	}
+
+	return nil
+}
+
+func RemoveAssessmentGrade(assessmentGradeNumber string) error {
+	assessmentGrade, err := repositories.FindAssessmentGradeByNumber(assessmentGradeNumber)
+	if err != nil {
+		return errors.New("checking assessment grade error: " + err.Error())
+	}
+
+	if assessmentGrade.Number == "" {
+		return errors.New("invalid assessment grade number")
+	}
+
+	scales, err := repositories.FindAssessmentGradeScaleByGradeNumber(assessmentGrade.Number)
+	if err != nil {
+		return errors.New("checking assessment grade scale error: " + err.Error())
+	}
+
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
+
+		for _, scale := range scales {
+			err = repositories.RemoveAssessmentGradeScale(scale, trn)
+			if err != nil {
+				return errors.New("clearing assessment grade scale error: " + err.Error())
+			}
+		}
+
+		err = repositories.RemoveAssessmentGrade(assessmentGrade, trn)
+		if err != nil {
+			return errors.New("clearing assessment grade error: " + err.Error())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.New("removing assessment grade error: " + err.Error())
 	}
 
 	return nil

@@ -1,9 +1,7 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -62,22 +60,16 @@ func EditAssessmentGrade(c *gin.Context) {
 }
 
 func DeleteAssessmentGrade(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+
+	assessmentGradeNumber := c.Param("assessment_grade_number")
+	if assessmentGradeNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "provide assessment grade number"})
+		return
+	}
+
+	err := services.RemoveAssessmentGrade(assessmentGradeNumber)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	assessmentGradeNumber := c.Query("assessment_grade_number")
-	var assessmentGrade models.AssessmentGrade
-
-	if err := config.DB.First(&assessmentGrade, assessmentGradeNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Assessment grade not found"})
-		return
-	}
-
-	if err := config.DB.Delete(&assessmentGrade).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete student"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
