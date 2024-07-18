@@ -101,7 +101,11 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 
 	reportSummary, err := reporsitory.GetReportSummaryByStudentNumberAndStudyPeriodNumberAndCampusClassNumber(payload.StudentNumber, payload.StudyPeriodNumber, payload.CampusClassNumber)
-	if err == nil {
+	if err != nil {
+		return err
+	}
+	if reportSummary.Number != "" {
+
 		// update the existing report summary with data from the payload
 		reportSummary.ReportSettingNumber = reportSettings.Number
 		reportSummary.Grade = ""
@@ -111,13 +115,16 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		reportSummary.StreamNumber = enrollment.StreamNumber
 		reportSummary.ReportTemplateName = reportTemplate.Name
 		reportSummary.HeadTeacherComment = headTeacherComment.Comment
+		//reportSummary.StudyPeriodNumber = payload.StudyPeriodNumber
+		//reportSummary.CampusClassNumber = payload.CampusClassNumber
+		//reportSummary.StudentNumber = payload.StudentNumber
+		//repo
 
 		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 			tx.Rollback()
-			return errors.New("failed to update report summary")
+			return errors.New("failed to update report summary" + err.Error())
 
 		}
-
 	} else {
 
 		reportSummary = models.ReportSummary{
@@ -315,7 +322,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 		tx.Rollback()
-		return errors.New("failed to update report summary")
+		return errors.New("failed to update edit summary" + err.Error())
 	}
 
 	if err := tx.Commit().Error; err != nil {
