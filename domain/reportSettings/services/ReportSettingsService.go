@@ -306,13 +306,14 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
 
-	fmt.Println("assessmentGrade", assessmentGrade)
 	if err != nil {
+		fmt.Println("assessmentGrade", err.Error())
 		//tx.Rollback()
 		//ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get assessment grade"})
 		//return
 		reportSummary.Grade = "N/A"
 	} else {
+		fmt.Println("assessmentGrade", assessmentGrade.Name)
 		reportSummary.Grade = assessmentGrade.Name
 	}
 
