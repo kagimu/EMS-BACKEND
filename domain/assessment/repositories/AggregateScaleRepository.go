@@ -146,8 +146,8 @@ func FindAggregateScaleByClassNumberAndGradingStandardNumber(classNumber, gradin
 
 	if err := db.
 		Joins("join scales on scales.number = aggregate_scales.scale_number").
-		Joins("join grading_standard_class_scale on grading_standard_class_scale.scale_number = scales.number").
-		Scopes(filters.ByAnyField("grading_standard_class_scale.class_number", classNumber), filters.ByAnyField("grading_standard_class_scale.grading_standard_number", gradingStandardNumber)).
+		Joins("join grading_standard_class_scale on grading_standard_class_scales.scale_number = scales.number").
+		Scopes(filters.ByAnyField("grading_standard_class_scales.class_number", classNumber), filters.ByAnyField("grading_standard_class_scales.grading_standard_number", gradingStandardNumber)).
 		Find(&aggregateScales).Error; err != nil {
 
 		if errors.Is(gorm.ErrRecordNotFound, err) {

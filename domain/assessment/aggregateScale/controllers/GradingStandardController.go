@@ -65,8 +65,10 @@ func UpdateGradingStandard(ctx *gin.Context) {
 
 func FetchGradingStandards(ctx *gin.Context) {
 	schoolNumber := ctx.Query("school_number")
+	classNumber := ctx.Query("class_number")
+	scaleNumber := ctx.Query("scale_number")
 
-	response, err := services.FetchGradingStandards(schoolNumber)
+	response, err := services.FetchGradingStandards(schoolNumber, classNumber, scaleNumber)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -149,4 +151,32 @@ func DetailsGradingStandard(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": detailedResponse})
 
+}
+
+func UpdateStatusGradingStandard(ctx *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get user from header"})
+		return
+	}
+
+	var payload requests.UpdateGradingStatusStandardRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.UpdateGradingStandardStatus(payload, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(201, gin.H{"message": "Status updated successfully"})
 }

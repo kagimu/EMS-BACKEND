@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 )
@@ -16,12 +17,16 @@ func FindSchoolClasses(schoolNumber, levelNumber string) ([]responses.ClassRespo
 	}
 
 	for _, class := range classes {
-		classesResponse = append(classesResponse, responses.ClassResponse{
-			Number:       class.Number,
-			Name:         class.Name,
-			Abbreviation: class.Abbreviation,
-		})
+		classesResponse = append(classesResponse, CreateClassResponse(class))
 	}
 
 	return classesResponse, nil
+}
+
+func CreateClassResponse(class classModels.Class) responses.ClassResponse {
+	return responses.ClassResponse{
+		Number:       class.Number,
+		Name:         class.Name,
+		Abbreviation: class.Abbreviation,
+	}
 }

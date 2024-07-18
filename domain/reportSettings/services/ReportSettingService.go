@@ -1,4 +1,4 @@
-package reportSettings
+package services
 
 import (
 	"errors"
