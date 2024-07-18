@@ -40,7 +40,25 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 			gradingStandard.Status = gradingStandardRequest.Status
 		}
 
-		err := repositories.SaveGradingStandard(gradingStandard, trn)
+		checkName, err := repositories.FindGradingStandardByNameAndSchoolNumber(gradingStandardRequest.Name, gradingStandardRequest.SchoolNumber, trn)
+		if err != nil {
+			return errors.New("Checking grading standard by name error: " + err.Error())
+		}
+
+		if checkName.Number != "" {
+			return errors.New("name already used")
+		}
+
+		checkName, err = repositories.FindGradingStandardByCodeAndSchoolNumber(gradingStandardRequest.Code, gradingStandardRequest.SchoolNumber, trn)
+		if err != nil {
+			return errors.New("Checking grading standard by code error: " + err.Error())
+		}
+
+		if checkName.Number != "" {
+			return errors.New("code already used")
+		}
+
+		err = repositories.SaveGradingStandard(gradingStandard, trn)
 		if err != nil {
 			trn.Rollback()
 			return errors.New("Saving grading standard error: " + err.Error())
@@ -145,6 +163,24 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 	gradingStandard, err := repositories.GetGradingStandardByNumber(gradingStandardRequest.GradingStandardNumber, trn)
 	if err != nil {
 		return errors.New("Checking grading standard error: " + err.Error())
+	}
+
+	checkName, err := repositories.FindGradingStandardByNameAndSchoolNumber(gradingStandardRequest.Name, gradingStandardRequest.SchoolNumber, trn)
+	if err != nil {
+		return errors.New("Checking grading standard by name error: " + err.Error())
+	}
+
+	if checkName.Number != "" && checkName.Number != gradingStandard.Number {
+		return errors.New("name already used on another standard")
+	}
+
+	checkName, err = repositories.FindGradingStandardByCodeAndSchoolNumber(gradingStandardRequest.Code, gradingStandardRequest.SchoolNumber, trn)
+	if err != nil {
+		return errors.New("Checking grading standard by code error: " + err.Error())
+	}
+
+	if checkName.Number != "" && checkName.Number != gradingStandard.Number {
+		return errors.New("code already used on another standard")
 	}
 
 	oldMappings, err := repositories.FindGradingStandardClassScaleByGradingStandardNumber(gradingStandard.Number, trn)

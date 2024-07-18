@@ -23,11 +23,16 @@ func SaveGradingStandard(gradingStandard models.GradingStandard, trn ...*gorm.DB
 
 }
 
-func FindGradingStandardByNameAndClassNumber(name string, campusClassNumber string) (models.GradingStandard, error) {
+func FindGradingStandardByNameAndSchoolNumber(name, schoolNumber string, trn ...*gorm.DB) (models.GradingStandard, error) {
+
 	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
 	var gradingStandard models.GradingStandard
 
-	if err := db.Where("name = ? AND campus_class_number = ?", name, campusClassNumber).First(&gradingStandard).Error; err != nil {
+	if err := db.Where("name = ? AND school_number = ?", name, schoolNumber).First(&gradingStandard).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return gradingStandard, nil
@@ -39,11 +44,15 @@ func FindGradingStandardByNameAndClassNumber(name string, campusClassNumber stri
 	return gradingStandard, nil
 }
 
-func FindGradingStandardByCodeAndClassNumber(code int64, campusClassNumber string) (models.GradingStandard, error) {
+func FindGradingStandardByCodeAndSchoolNumber(code int64, schoolNumber string, trn ...*gorm.DB) (models.GradingStandard, error) {
 	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
 	var gradingStandard models.GradingStandard
 
-	if err := db.Where("code = ? AND campus_class_number = ?", code, campusClassNumber).First(&gradingStandard).Error; err != nil {
+	if err := db.Where("code = ? AND school_number = ?", code, schoolNumber).First(&gradingStandard).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return gradingStandard, nil
@@ -82,7 +91,7 @@ func FindGradingStandardByCampusNumberAndCampusClassNumber(schoolNumber, classNu
 	var gradingStandards []models.GradingStandard
 
 	if err := db.
-		Joins("join grading_standard_class_scale on grading_standard_class_scales.grading_standard_number = grading_standards.number").
+		Joins("join grading_standard_class_scales on grading_standard_class_scales.grading_standard_number = grading_standards.number").
 		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByAnyField("grading_standard_class_scales.class_number", classNumber), filters.ByAnyField("grading_standard_class_scales.scale_number", scaleNumber)).
 		Find(&gradingStandards).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
