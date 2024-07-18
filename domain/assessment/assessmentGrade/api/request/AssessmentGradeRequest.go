@@ -42,6 +42,10 @@ func (assessmentRequest *AssessmentGradeRequest) Validate() error {
 		return errors.New("choose a school")
 	}
 
+	if assessmentRequest.AssessmentAreaCount != len(assessmentRequest.AssessmentGradeItems) {
+		return errors.New("the scale must be equal to the count")
+	}
+
 	if len(assessmentRequest.Classes) <= 0 {
 		return errors.New("choose classes")
 	}
