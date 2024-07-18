@@ -115,10 +115,6 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		reportSummary.StreamNumber = enrollment.StreamNumber
 		reportSummary.ReportTemplateName = reportTemplate.Name
 		reportSummary.HeadTeacherComment = headTeacherComment.Comment
-		//reportSummary.StudyPeriodNumber = payload.StudyPeriodNumber
-		//reportSummary.CampusClassNumber = payload.CampusClassNumber
-		//reportSummary.StudentNumber = payload.StudentNumber
-		//repo
 
 		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 			tx.Rollback()
@@ -143,11 +139,11 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			HeadTeacherComment:  headTeacherComment.Comment,
 		}
 
-		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
-			tx.Rollback()
-			return errors.New("failed to create report summary")
-
-		}
+		//if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
+		//	tx.Rollback()
+		//	return errors.New("failed to create report summary")
+		//
+		//}
 	}
 
 	campusClass, err := repositories.GetCampusClassByNumber(payload.CampusClassNumber)
