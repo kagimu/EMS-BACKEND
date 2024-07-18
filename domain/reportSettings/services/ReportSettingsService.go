@@ -111,6 +111,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		reportSummary.StreamNumber = enrollment.StreamNumber
 		reportSummary.ReportTemplateName = reportTemplate.Name
 		reportSummary.HeadTeacherComment = headTeacherComment.Comment
+		reportSummary.StudyPeriodNumber = payload.StudyPeriodNumber
 
 		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 			tx.Rollback()
