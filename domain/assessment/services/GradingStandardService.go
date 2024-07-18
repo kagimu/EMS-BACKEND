@@ -716,6 +716,7 @@ func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.Assessme
 		Number:              uuid.NewV4().String(),
 		UserNumber:          currentUserNumber,
 		AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
+		SchoolNumber:        assessmentGradeRequest.SchoolNumber,
 	}
 
 	err := CheckOverlapsInGrades(assessmentGradeRequest.AssessmentGradeItems)
