@@ -114,7 +114,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 			tx.Rollback()
-			return errors.New("failed to update report summary")
+			return errors.New("failed to update report summary" + err.Error())
 
 		}
 
@@ -315,7 +315,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 		tx.Rollback()
-		return errors.New("failed to update report summary")
+		return errors.New("failed to update edit summary" + err.Error())
 	}
 
 	if err := tx.Commit().Error; err != nil {
