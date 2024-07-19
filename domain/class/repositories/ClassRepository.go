@@ -60,9 +60,9 @@ func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber string, trn ...*g
 	var classes []models.Class
 
 	if err := db.
-		Joins("join campuses on campuses.number = campus_classes.campus_number").
-		Joins("join campus_classes on campus_classes.curriculum_class_number = curriculum_classes.number").
 		Joins("join curriculum_classes on curriculum_classes.class_number = classes.number").
+		Joins("join campus_classes on campus_classes.curriculum_class_number = curriculum_classes.number").
+		Joins("join campuses on campuses.number = campus_classes.campus_number").
 		Scopes(filters.ByAnyField("campuses.school_number", schoolNumber), filters.ByAnyField("campus_level_number", campusLevelNumber)).Find(&classes).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
