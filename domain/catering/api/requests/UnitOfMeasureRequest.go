@@ -18,6 +18,9 @@ type EditUnitOfMeasureRequest struct {
 }
 
 func (u *UnitOfMeasureRequest) Validate() error {
+	if u.SchoolNumber == "" {
+		return errors.New("choose the school")
+	}
 	if u.Name == "" {
 		return errors.New("name is required")
 	}

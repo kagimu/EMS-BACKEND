@@ -65,6 +65,7 @@ func createUnitOfMeasureResponse(unitOfMeasure models.UnitOfMeasure) responses.U
 		Code:                unitOfMeasure.Code,
 		Abbreviation:        unitOfMeasure.Abbreviation,
 		Status:              unitOfMeasure.Status,
+		SchoolNumber:        unitOfMeasure.SchoolNumber,
 	}
 }
 

@@ -6,4 +6,5 @@ type UnitOfMeasureResponse struct {
 	Abbreviation        string `json:"abbreviation"`
 	Code                uint64 `json:"code"`
 	Status              string `json:"status"`
+	SchoolNumber        string `json:"school_number"`
 }
