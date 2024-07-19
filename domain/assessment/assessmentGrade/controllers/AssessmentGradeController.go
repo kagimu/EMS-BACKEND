@@ -50,9 +50,26 @@ func FetchAssessmentGrades(c *gin.Context) {
 }
 
 func EditAssessmentGrade(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.EditAssessmentGradeRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input: " + err.Error()})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.EditAssessmentGrade(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 

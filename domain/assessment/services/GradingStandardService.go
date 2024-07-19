@@ -771,42 +771,10 @@ func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.Assessme
 		}
 
 		for _, classNumber := range assessmentGradeRequest.Classes {
-			class, err := classRepositories.GetClassByNumber(classNumber, trn)
+			err = processAssessmentGradeClasses(classNumber, saveAssessmentGrade, trn)
 			if err != nil {
-				return errors.New("checking class error: " + err.Error())
+				return err
 			}
-
-			if class.Number == "" {
-				return errors.New("invalid class number selected")
-			}
-
-			checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number, trn)
-			if err != nil {
-				return errors.New("checking class double entry error: " + err.Error())
-			}
-
-			if checkClassDuplicate.ClassNumber != "" {
-				return errors.New("Class '" + class.Name + "' already selected")
-			}
-
-			checkClassStatus, err := repositories.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
-			if err != nil {
-				return errors.New("checking class with active assessment grade error: " + err.Error())
-			}
-
-			if checkClassStatus.Number != "" {
-				return errors.New("Class '" + class.Name + "' already has an active assessment grade")
-			}
-
-			err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
-				AssessmentGradeNumber: saveAssessmentGrade.Number,
-				ClassNumber:           class.Number,
-			}, trn)
-
-			if err != nil {
-				return errors.New("attaching class error: " + err.Error())
-			}
-
 		}
 
 		for _, assessmentGradeScaleItem := range assessmentGradeRequest.AssessmentGradeItems {
@@ -821,6 +789,47 @@ func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.Assessme
 
 	if err != nil {
 		return errors.New("failed finalizing assessment grade, error: " + err.Error())
+	}
+
+	return nil
+}
+
+func processAssessmentGradeClasses(classNumber string, saveAssessmentGrade assessmentGradeModels.AssessmentGrade, trn *gorm.DB) error {
+
+	class, err := classRepositories.GetClassByNumber(classNumber, trn)
+	if err != nil {
+		return errors.New("checking class error: " + err.Error())
+	}
+
+	if class.Number == "" {
+		return errors.New("invalid class number selected")
+	}
+
+	checkClassDuplicate, err := repositories.GetAssessmentGradeClassByGradeNumberAndClassNumber(saveAssessmentGrade.Number, class.Number, trn)
+	if err != nil {
+		return errors.New("checking class double entry error: " + err.Error())
+	}
+
+	if checkClassDuplicate.ClassNumber != "" {
+		return errors.New("Class '" + class.Name + "' already selected")
+	}
+
+	checkClassStatus, err := repositories.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
+	if err != nil {
+		return errors.New("checking class with active assessment grade error: " + err.Error())
+	}
+
+	if checkClassStatus.Number != "" {
+		return errors.New("Class '" + class.Name + "' already has an active assessment grade")
+	}
+
+	err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
+		AssessmentGradeNumber: saveAssessmentGrade.Number,
+		ClassNumber:           class.Number,
+	}, trn)
+
+	if err != nil {
+		return errors.New("attaching class error: " + err.Error())
 	}
 
 	return nil
@@ -977,6 +986,77 @@ func RemoveAssessmentGrade(assessmentGradeNumber string) error {
 
 	if err != nil {
 		return errors.New("removing assessment grade error: " + err.Error())
+	}
+
+	return nil
+}
+
+func EditAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.EditAssessmentGradeRequest, currentUser string) error {
+
+	assessmentGrade, err := repositories.FindAssessmentGradeByNumber(assessmentGradeRequest.AssessmentGradeNumber)
+	if err != nil {
+		return errors.New("checking assessment grade error: " + err.Error())
+	}
+
+	if assessmentGrade.Number == "" {
+		return errors.New("invalid assessment grade number")
+	}
+
+	scales, err := repositories.FindAssessmentGradeScaleByGradeNumber(assessmentGrade.Number)
+	if err != nil {
+		return errors.New("checking assessment grade scale error: " + err.Error())
+	}
+
+	classes, err := repositories.FindAssessmentGradeClassByGradeNumber(assessmentGrade.Number)
+	if err != nil {
+		return errors.New("checking assessment grade classes error: " + err.Error())
+	}
+
+	assessmentGrade.Status = assessmentGradeRequest.Status
+	assessmentGrade.UserNumber = currentUser
+	assessmentGrade.AssessmentAreaCount = assessmentGradeRequest.AssessmentAreaCount
+
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
+
+		err = repositories.SaveAssessmentGrade(assessmentGrade, trn)
+
+		if err != nil {
+			return errors.New("updating assessment grade meta error: " + err.Error())
+		}
+
+		for _, class := range classes {
+			err = repositories.RemoveAssessmentGradeClass(class, trn)
+			if err != nil {
+				return errors.New("clearing previous class error: " + err.Error())
+			}
+		}
+
+		for _, scale := range scales {
+			err = repositories.RemoveAssessmentGradeScale(scale, trn)
+			if err != nil {
+				return errors.New("clearing previous scale error: " + err.Error())
+			}
+		}
+
+		for _, newClass := range assessmentGradeRequest.Classes {
+			err = processAssessmentGradeClasses(newClass, assessmentGrade, trn)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, newScale := range assessmentGradeRequest.AssessmentGradeItems {
+			err = processAssessmentGradeScaleItem(newScale, assessmentGrade.Number, trn)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.New("updating assessment grade error: " + err.Error())
 	}
 
 	return nil
