@@ -6,6 +6,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
+	gradesModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
+	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -165,6 +167,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	var totalAggregates float64
 	for _, assessmentArea := range assessmentAreas {
 		var scale aggregateSaceltModel.AggregateScale
+		var grade gradesModels.Grade
 
 		for _, reportColum := range reportColumns {
 
@@ -200,6 +203,15 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			if length > 0 && score > 0 {
 				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
 				scale, err = GetProperAggregateScale(scoreAverage, assessmentArea.Number)
+				if err != nil {
+					tx.Rollback()
+					return err
+				}
+				grade, err = repository2.FindGradeByNumber(scale.GradeNumber)
+				if err != nil {
+					tx.Rollback()
+					return errors.New("failed to fetch grade for this scale")
+				}
 			}
 
 			//check if the report score already exists with the same report summary number, assessment area number and report column number
@@ -209,7 +221,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				reportScore.Score = commons.RoundFloat(percentageScore, 2)
 				reportScore.AverageScore = commons.RoundFloat(scoreAverage, 2)
 				reportScore.Aggregate = scale.Weight
-				//TODO reportScore.Grade = scale.Name
+				reportScore.Grade = grade.Name
 				reportScore.UserNumber = userNumber
 
 				//kkk
@@ -233,9 +245,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 					Score:                commons.RoundFloat(percentageScore, 2),
 					AverageScore:         commons.RoundFloat(scoreAverage, 2),
 					Aggregate:            scale.Weight,
-					//TODO
-					//Grade:                scale.Name,
-					UserNumber: userNumber,
+					Grade:                grade.Name,
+					UserNumber:           userNumber,
 				}
 
 				if score > 0 {
@@ -265,16 +276,26 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		}
 
 		scale, err = GetProperAggregateScale(summation, assessmentArea.Number)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 
 		totalAggregates += scale.Weight
+
+		grade, err := repository2.FindGradeByNumber(scale.GradeNumber)
+
+		if err != nil {
+			tx.Rollback()
+			return errors.New("failed to fetch grade for this scale")
+		}
 
 		//check if the report score summary already exists with the same report summary number and assessment area number
 		var reportScoreSummary models.ReportScoreSummary
 		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).First(&reportScoreSummary).Error; err == nil {
 			//update the report score summary
 			reportScoreSummary.Aggregate = scale.Weight
-			//TODO: //reportScoreSummary.Grade = scale.Name
-			//reportScoreSummary.Grade = scale.Name
+			reportSummary.Grade = grade.Name
 			reportScoreSummary.Summation = summation
 			reportScoreSummary.UserNumber = userNumber
 
@@ -290,10 +311,9 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				ReportSummaryNumber:  reportSummary.Number,
 				AssessmentAreaNumber: assessmentArea.Number,
 				Aggregate:            scale.Weight,
-				// TODO Grade:                scale.Name,
-				Summation:  summation,
-				Comment:    "Subject teacher comment goes here",
-				UserNumber: userNumber,
+				Grade:                grade.Name,
+				Summation:            summation,
+				UserNumber:           userNumber,
 			}
 
 			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {
