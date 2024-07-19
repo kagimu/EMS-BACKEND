@@ -7,11 +7,11 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 )
 
-func FindSchoolClasses(schoolNumber, levelNumber string) ([]responses.ClassResponse, error) {
+func FindSchoolClasses(schoolNumber, campusLevelNumber string) ([]responses.ClassResponse, error) {
 
 	var classesResponse = make([]responses.ClassResponse, 0)
 
-	classes, err := repositories.FindClassesBySchoolNumber(schoolNumber, levelNumber)
+	classes, err := repositories.FindClassesBySchoolNumber(schoolNumber, campusLevelNumber)
 	if err != nil {
 		return classesResponse, errors.New("getting classes error: " + err.Error())
 	}

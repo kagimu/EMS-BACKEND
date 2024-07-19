@@ -1040,9 +1040,9 @@ func ClassInfo(context *gin.Context) {
 
 func FetchClassesBySchoolNumber(context *gin.Context) {
 	schoolNumber := context.Query("school_number")
-	levelNumber := context.Query("level_number")
+	campusLevelNumber := context.Query("campus_level_number")
 
-	classes, err := services.FindSchoolClasses(schoolNumber, levelNumber)
+	classes, err := services.FindSchoolClasses(schoolNumber, campusLevelNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
 		return
