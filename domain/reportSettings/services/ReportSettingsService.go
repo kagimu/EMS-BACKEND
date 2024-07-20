@@ -13,7 +13,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
@@ -353,13 +352,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 func GetProperAggregateScale(score float64, assessmentAreaNumber string) (aggregateSaceltModel.AggregateScale, error) {
 	var scale aggregateSaceltModel.AggregateScale
 	var aggregateScales []aggregateSaceltModel.AggregateScale
-	var aags assessmentAreaModel.AssessmentAreaGradingStandard
 
-	if err := config.DB.Where("assessment_area_number = ?", assessmentAreaNumber).First(&aags).Error; err != nil {
-	}
-	if err := config.DB.Where("grading_standard_number = ?", aags.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
-	}
-
+	//TODO get proper aggregate scale via  grading standard and class scales then scale then .. var aags assessmentAreaModel.AssessmentAreaGradingStandard
 	for _, val := range aggregateScales {
 		if score >= val.MinValue && score <= val.MaxValue {
 			scale = val
