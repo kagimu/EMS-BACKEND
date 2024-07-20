@@ -86,6 +86,11 @@ func SetupRoutes() *gin.Engine {
 	router.NoRoute(commons.RouteNotFound)
 	router.GET("ping", commons.APIHealth)
 
+	landingPage := router.Group("/landing-page")
+	{
+		landingPage.GET("", controllers2.GetLandingPage)
+	}
+
 	auth := router.Group("/auth")
 	{
 		auth.POST("login", authController.Login)
@@ -833,6 +838,7 @@ func SetupRoutes() *gin.Engine {
 			landingPage.POST("new", controllers2.CreateLandingPage)
 			landingPage.GET("all", controllers2.GetLandingPage)
 		}
+
 	}
 
 	return router
