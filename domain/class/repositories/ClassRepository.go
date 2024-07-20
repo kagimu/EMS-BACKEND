@@ -51,7 +51,7 @@ func GetClassByNumber(classNumber string, trn ...*gorm.DB) (models.Class, error)
 	return class, nil
 }
 
-func FindClassesBySchoolNumber(schoolNumber, levelNumber string, trn ...*gorm.DB) ([]models.Class, error) {
+func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber string, trn ...*gorm.DB) ([]models.Class, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[1]
@@ -59,7 +59,11 @@ func FindClassesBySchoolNumber(schoolNumber, levelNumber string, trn ...*gorm.DB
 
 	var classes []models.Class
 
-	if err := db.Scopes(filters.BySchoolNumber(schoolNumber), filters.ByLevelNumber(levelNumber)).Find(&classes).Error; err != nil {
+	if err := db.
+		Joins("join curriculum_classes on curriculum_classes.class_number = classes.number").
+		Joins("join campus_classes on campus_classes.curriculum_class_number = curriculum_classes.number").
+		Joins("join campuses on campuses.number = campus_classes.campus_number").
+		Scopes(filters.ByAnyField("campuses.school_number", schoolNumber), filters.ByAnyField("campus_level_number", campusLevelNumber)).Find(&classes).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return classes, nil
