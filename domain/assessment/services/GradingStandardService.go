@@ -296,7 +296,12 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 		for _, cleanGrade := range cleanGrades {
 
 			if cleanGrade.GradeNumber == grade.GradeNumber {
-				shouldReject = fmt.Sprintf("grade %s already exists", grade.GradeNumber)
+				gr, err := repository.FindGradeByNumber(grade.GradeNumber)
+				if err != nil {
+					return errors.New("error fetching grade: " + err.Error())
+				}
+				shouldReject = fmt.Sprintf("grade %s already exists", gr.Name)
+
 			}
 
 		}
