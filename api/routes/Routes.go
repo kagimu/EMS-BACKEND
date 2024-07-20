@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	controllers2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/landingPage/controllers"
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
@@ -825,6 +826,12 @@ func SetupRoutes() *gin.Engine {
 				indicators.POST("", activityReportingControllers.SaveIndicator)
 				indicators.GET("", activityReportingControllers.GetIndicators)
 			}
+		}
+
+		landingPage := main.Group("landing-page")
+		{
+			landingPage.POST("new", controllers2.CreateLandingPage)
+			landingPage.GET("all", controllers2.GetLandingPage)
 		}
 	}
 

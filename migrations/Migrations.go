@@ -29,6 +29,7 @@ import (
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
 	serviceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/landingPage/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
@@ -197,6 +198,7 @@ func Init() error {
 		&assessmentGradeModels.GradingStandardClassScale{},
 		&assessmentModel.AssessmentGradeClass{},
 		&assessmentGradeModels.AssessmentGradeScale{},
+		&models2.LandingPage{},
 	)
 
 	if err != nil {
