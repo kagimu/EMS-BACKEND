@@ -34,6 +34,8 @@ func CreateLandingPage(c *gin.Context) {
 
 	}
 
+	page.Title = pageRequest.Title
+
 	err := landingPageService.CreateLandingPage(&page)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
