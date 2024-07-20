@@ -289,7 +289,7 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 	var totalRanges float64
 
 	for i, grade := range grades {
-		totalRanges += grade.MaxValue - grade.MinValue
+		totalRanges += (grade.MaxValue - grade.MinValue) + 1
 
 		shouldReject := ""
 
@@ -309,8 +309,8 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 
 	}
 
-	if totalRanges != 100 {
-		return errors.New("the total range should be 100")
+	if (totalRanges - 1) != 100 {
+		return errors.New("please ensure there are no ranges skipped ,the total range should add up to 100")
 	}
 
 	return nil
