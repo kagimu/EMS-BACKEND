@@ -17,7 +17,7 @@ type LandingPageRepoImpl struct {
 
 func (l LandingPageRepoImpl) GetLandingPage() (models.LandingPage, error) {
 	var page models.LandingPage
-	err := l.DB.First(&page).Error
+	err := l.DB.Order("created_at desc").First(&page).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return page, nil
