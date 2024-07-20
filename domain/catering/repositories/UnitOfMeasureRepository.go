@@ -125,7 +125,11 @@ func (u *unitOfMeasureRepo) UpdateUnitOfMeasure(unitOfMeasure models.UnitOfMeasu
 		db = trn[0]
 	}
 
-	return db.Save(&unitOfMeasure).Error
+	return db.Model(&unitOfMeasure).
+		Select("Name", "Code", "Abbreviation").
+		Where("number = ? ", unitOfMeasure.Number).
+		Updates(models.UnitOfMeasure{Name: unitOfMeasure.Name, Code: unitOfMeasure.Code, Abbreviation: unitOfMeasure.Abbreviation}).
+		Error
 }
 
 func (u *unitOfMeasureRepo) GetUnitOfMeasureByNumber(unitOfMeasureNumber string, trn ...*gorm.DB) (models.UnitOfMeasure, error) {
