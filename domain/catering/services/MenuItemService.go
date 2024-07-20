@@ -165,7 +165,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 			NewStockingNumber:  newStock.Number,
 		}
 
-		err = repositories.SaveAssembledPart(assembledItem)
+		err = repositories.SaveAssembledPart(assembledItem, transaction)
 		if err != nil {
 			return err
 		}
