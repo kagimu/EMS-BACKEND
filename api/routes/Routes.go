@@ -545,6 +545,14 @@ func SetupRoutes() *gin.Engine {
 				assessmentGrade.DELETE("/delete/:assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
 			}
 
+			gradeGroup := assessment.Group("/grade-groups")
+			{
+				gradeGroup.POST("", gradesController.CreateGradeGroup)
+				gradeGroup.GET("", gradesController.FetchGradeGroups)
+				gradeGroup.POST("update", gradesController.UpdateGradeGroup)
+				gradeGroup.POST("remove/:number", gradesController.DeleteGradeGroup)
+			}
+
 			grades := assessment.Group("/grades")
 			{
 				grades.POST("", gradesController.CreateGrade)
@@ -552,6 +560,7 @@ func SetupRoutes() *gin.Engine {
 				grades.POST("update", gradesController.UpdateGrade)
 				grades.POST("remove/:grade_number", gradesController.RemoveGrade)
 			}
+
 		}
 
 		attendance := main.Group("/attendances")

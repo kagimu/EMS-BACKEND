@@ -193,6 +193,7 @@ func Init() error {
 		&reportSettings.HeadTeacherComment{},
 		&reportingActivityModels.Indicator{},
 		&eosModels.ActiveUserEntity{},
+		&gradesModels.GradeGroup{},
 		&gradesModels.Grade{},
 		&cateringModels.CalendarEventFeedingGroup{},
 		&assessmentGradeModels.GradingStandardClassScale{},
