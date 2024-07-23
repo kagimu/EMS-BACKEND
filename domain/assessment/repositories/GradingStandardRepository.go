@@ -93,6 +93,7 @@ func FindGradingStandardByCampusNumberAndCampusClassNumber(schoolNumber, classNu
 	if err := db.
 		Joins("join grading_standard_class_scales on grading_standard_class_scales.grading_standard_number = grading_standards.number").
 		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByAnyField("grading_standard_class_scales.class_number", classNumber), filters.ByAnyField("grading_standard_class_scales.scale_number", scaleNumber)).
+		Distinct("grading_standards.number").
 		Find(&gradingStandards).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return gradingStandards, nil
