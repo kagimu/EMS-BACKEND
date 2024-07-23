@@ -225,6 +225,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				reportScore.Aggregate = scale.Weight
 				reportScore.Grade = grade.Name
 				reportScore.UserNumber = userNumber
+				reportScore.Remark = scale.Description
 
 				//kkk
 
@@ -249,6 +250,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 					Aggregate:            scale.Weight,
 					Grade:                grade.Name,
 					UserNumber:           userNumber,
+					Remark:               scale.Description,
 				}
 
 				if score > 0 {
@@ -339,6 +341,14 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 
 	reportSummary.Aggregate = totalAggregates
+
+	headTeacherComment, err = GetProperHeadTeacherCommentByReportSettingNumberAndPoints(reportSettings.Number, totalAggregates)
+	if err != nil {
+		tx.Rollback()
+		return err
+
+	}
+	reportSummary.HeadTeacherComment = headTeacherComment.Comment
 
 	if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 		tx.Rollback()
@@ -431,4 +441,24 @@ func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentG
 
 	return matchedAssessmentGradeScale, errors.New(fmt.Sprintf("%s points dont macth any grading catery for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
 
+}
+
+func GetProperHeadTeacherCommentByReportSettingNumberAndPoints(reportSettingNumber string, points float64) (models.HeadTeacherComment, error) {
+	var headTeacherComment models.HeadTeacherComment
+	var headTeacherComments []models.HeadTeacherComment
+
+	headTeacherComments, err := reporsitory.FindHeadTeacherCommentsByReportSettingNumber(reportSettingNumber)
+	if err != nil {
+		return headTeacherComment, errors.New("failed to fetch head teacher comments")
+	}
+
+	for _, val := range headTeacherComments {
+		if points >= val.MinAggregate && points <= val.MaxAggregate {
+			headTeacherComment = val
+
+			return headTeacherComment, nil
+		}
+	}
+
+	return headTeacherComment, errors.New("no matching head teacher comment found")
 }
