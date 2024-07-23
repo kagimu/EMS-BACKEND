@@ -530,7 +530,7 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
 	}
 
-	err = cateringRepositories.SaveMeal(tx, newMeal)
+	err = cateringRepositories.SaveMeal(newMeal, tx)
 	if err != nil {
 		return errors.New("error creating meal: " + err.Error())
 	}

@@ -8,7 +8,12 @@ import (
 	"time"
 )
 
-func SaveMeal(db *gorm.DB, meal models.Meal) error {
+func SaveMeal(meal models.Meal, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Save(&meal).Error; err != nil {
 
@@ -22,8 +27,11 @@ func SaveMeal(db *gorm.DB, meal models.Meal) error {
 	return nil
 }
 
-func GetMealByMealNumberAndDateAndUserNumber(mealCourseNumber string, date time.Time, userNumber string) (models.Meal, error) {
+func GetMealByMealNumberAndDateAndUserNumber(mealCourseNumber string, date time.Time, userNumber string, tx ...*gorm.DB) (models.Meal, error) {
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var meal models.Meal
 

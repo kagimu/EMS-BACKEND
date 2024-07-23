@@ -321,6 +321,29 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 	return nil
 }
 
+func checkDuplicatesInClasses(selectedClasses []string) error {
+
+	cleanClassNumbers := make([]string, len(selectedClasses))
+
+	for _, selectedClass := range selectedClasses {
+
+		for _, cleanClassNumber := range cleanClassNumbers {
+
+			if cleanClassNumber == selectedClass {
+				class, err := classRepositories.GetClassByNumber(selectedClass)
+				if err != nil {
+					return errors.New("error fetching grade: " + err.Error())
+				}
+				return errors.New(fmt.Sprintf("%s is selected multiple times", class.Name))
+			}
+
+		}
+
+	}
+
+	return nil
+}
+
 func Overlap(aggregateScaleItem1, aggregateScaleItem2 requests.AggregateScaleItem) bool {
 	return aggregateScaleItem1.MinValue <= aggregateScaleItem2.MaxValue && aggregateScaleItem2.MinValue <= aggregateScaleItem1.MaxValue
 }
@@ -761,7 +784,17 @@ func createGradingStandardClassesResponse(gradingScaleClass assessmentGradeModel
 
 func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.AssessmentGradeRequest, currentUserNumber string) error {
 
-	err := config.DB.Transaction(func(trn *gorm.DB) error {
+	err := checkDuplicatesInClasses(assessmentGradeRequest.Classes)
+	if err != nil {
+		return err
+	}
+
+	err = CheckOverlapsInGrades(assessmentGradeRequest.AssessmentGradeItems)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
 
 		saveAssessmentGrade := assessmentGradeModels.AssessmentGrade{
 			Status:              constants.StatusActive,
@@ -769,11 +802,6 @@ func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.Assessme
 			UserNumber:          currentUserNumber,
 			AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
 			SchoolNumber:        assessmentGradeRequest.SchoolNumber,
-		}
-
-		err := CheckOverlapsInGrades(assessmentGradeRequest.AssessmentGradeItems)
-		if err != nil {
-			return errors.New(err.Error())
 		}
 
 		err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
@@ -825,14 +853,14 @@ func processAssessmentGradeClasses(classNumber string, saveAssessmentGrade asses
 		return errors.New("Class '" + class.Name + "' already selected")
 	}
 
-	/*checkClassStatus, err := repositories.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
+	checkWithClass, err := repositories.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
 	if err != nil {
 		return errors.New("checking class with active assessment grade error: " + err.Error())
 	}
 
-	if checkClassStatus.Number != "" {
+	if checkWithClass.Number != "" && checkWithClass.Number != saveAssessmentGrade.Number {
 		return errors.New("Class '" + class.Name + "' already has an active assessment grade")
-	}*/
+	}
 
 	err = repositories.SaveAssessmentGradeClass(assessmentModel.AssessmentGradeClass{
 		AssessmentGradeNumber: saveAssessmentGrade.Number,
@@ -1013,6 +1041,11 @@ func EditAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.EditAsse
 		return errors.New("invalid assessment grade number")
 	}
 
+	checkClassesError := checkDuplicatesInClasses(assessmentGradeRequest.Classes)
+	if checkClassesError != nil {
+		return checkClassesError
+	}
+
 	scales, err := repositories.FindAssessmentGradeScaleByGradeNumber(assessmentGrade.Number)
 	if err != nil {
 		return errors.New("checking assessment grade scale error: " + err.Error())
@@ -1023,7 +1056,15 @@ func EditAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.EditAsse
 		return errors.New("checking assessment grade classes error: " + err.Error())
 	}
 
-	assessmentGrade.Status = assessmentGradeRequest.Status
+	if assessmentGradeRequest.Status != "" {
+
+		if assessmentGradeRequest.Status != constants.StatusActive && assessmentGradeRequest.Status != constants.StatusInactive {
+			return errors.New("the status should be ACTIVE or INACTIVE")
+		}
+
+		assessmentGrade.Status = assessmentGradeRequest.Status
+	}
+
 	assessmentGrade.UserNumber = currentUser
 	assessmentGrade.AssessmentAreaCount = assessmentGradeRequest.AssessmentAreaCount
 
