@@ -1,6 +1,9 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+)
 
 type AssessmentGradeRequest struct {
 	Classes              []string                     `json:"classes"`
@@ -82,6 +85,10 @@ func (assessmentRequest *EditAssessmentGradeRequest) Validate() error {
 
 	if assessmentRequest.AssessmentGradeNumber == "" {
 		return errors.New("set assessment grade number")
+	}
+
+	if assessmentRequest.Status != constants.StatusActive && assessmentRequest.Status != constants.StatusInactive {
+		return errors.New("choose the status I.E ACTIVE or INACTIVE")
 	}
 
 	if err := assessmentRequest.AssessmentGradeRequest.Validate(); err != nil {
