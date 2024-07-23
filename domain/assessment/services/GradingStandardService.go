@@ -25,7 +25,14 @@ import (
 
 func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest, currentUser string) error {
 
-	err := config.DB.Transaction(func(trn *gorm.DB) error {
+	selectedClasses := gradingStandardRequest.Classes
+
+	err := checkDuplicatesInGradingStandardClassesRequest(selectedClasses)
+	if err != nil {
+		return err
+	}
+
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
 
 		gradingStandard := models.GradingStandard{
 			Code:         gradingStandardRequest.Code,
@@ -64,8 +71,8 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 			return errors.New("Saving grading standard error: " + err.Error())
 		}
 
-		for _, classNumber := range gradingStandardRequest.Classes {
-			err = processGradingStandardClass(classNumber, gradingStandard.Number, trn)
+		for _, gradingStandardClassRequest := range selectedClasses {
+			err = processGradingStandardClass(gradingStandardClassRequest, gradingStandard.Number, trn)
 			if err != nil {
 				trn.Rollback()
 				return err
@@ -82,8 +89,8 @@ func SaveGradingStandard(gradingStandardRequest requests.GradingStandardRequest,
 	return nil
 }
 
-func processGradingStandardClass(gradingStandardClass requests.GradingStandardClasses, gradingStandardNumber string, trn *gorm.DB) error {
-	class, err := classRepositories.GetClassByNumber(gradingStandardClass.ClassNumber, trn)
+func processGradingStandardClass(gradingStandardClassRequest requests.GradingStandardClasses, gradingStandardNumber string, trn *gorm.DB) error {
+	class, err := classRepositories.GetClassByNumber(gradingStandardClassRequest.ClassNumber, trn)
 	if err != nil {
 		return errors.New("getting class from campus class number error: " + err.Error())
 	}
@@ -92,7 +99,7 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("campus class number has no class")
 	}
 
-	classNewScale, err := repositories.GetScaleByNumber(gradingStandardClass.ScaleNumber, trn)
+	classNewScale, err := repositories.GetScaleByNumber(gradingStandardClassRequest.ScaleNumber, trn)
 	if err != nil {
 		return errors.New("error checking scale: " + err.Error())
 	}
@@ -101,12 +108,12 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 		return errors.New("invalid scale number")
 	}
 
-	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
+	checkClassAndScale, err := repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClassRequest.ScaleNumber, trn)
 	if err != nil {
 		return errors.New("checking class and scale duplicate error: " + err.Error())
 	}
 
-	if checkClassAndScale.ClassNumber != "" {
+	if checkClassAndScale.ClassNumber != "" && checkClassAndScale.GradingStandardNumber != gradingStandardNumber {
 		return errors.New(classNewScale.Name + " is already set to " + class.Name)
 	}
 
@@ -125,16 +132,7 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 
 	}
 
-	classGrade, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(class.Number, gradingStandardNumber, trn)
-	if err != nil {
-		return errors.New("checking class duplicate error: " + err.Error())
-	}
-
-	if classGrade.GradingStandardNumber != "" {
-		return errors.New(class.Name + " is selected multiple times")
-	}
-
-	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClass.ScaleNumber, trn)
+	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClassRequest.ScaleNumber, trn)
 	if err != nil {
 		return errors.New("checking class duplicate error: " + err.Error())
 	}
@@ -145,7 +143,7 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 
 	err = repositories.SaveGradingStandardClassScale(assessmentGradeModels.GradingStandardClassScale{
 		ClassNumber:           class.Number,
-		ScaleNumber:           gradingStandardClass.ScaleNumber,
+		ScaleNumber:           gradingStandardClassRequest.ScaleNumber,
 		GradingStandardNumber: gradingStandardNumber,
 	}, trn)
 
@@ -157,6 +155,13 @@ func processGradingStandardClass(gradingStandardClass requests.GradingStandardCl
 }
 
 func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandardRequest, currentUser string) error {
+
+	selectedClasses := gradingStandardRequest.Classes
+
+	err := checkDuplicatesInGradingStandardClassesRequest(selectedClasses)
+	if err != nil {
+		return err
+	}
 
 	trn := config.DB.Begin()
 
@@ -209,8 +214,8 @@ func UpdateGradingStandard(gradingStandardRequest requests.UpdateGradingStandard
 		return errors.New("Updating grading standard error: " + err.Error())
 	}
 
-	for _, class := range gradingStandardRequest.Classes {
-		err = processGradingStandardClass(class, gradingStandard.Number, trn)
+	for _, gradingStandardClassRequest := range selectedClasses {
+		err = processGradingStandardClass(gradingStandardClassRequest, gradingStandard.Number, trn)
 		if err != nil {
 			trn.Rollback()
 			return err
@@ -321,6 +326,31 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 	return nil
 }
 
+func checkDuplicatesInGradingStandardClassesRequest(selectedClasses []requests.GradingStandardClasses) error {
+
+	cleanClassNumbers := make([]requests.GradingStandardClasses, len(selectedClasses))
+
+	for _, selectedClass := range selectedClasses {
+
+		for _, cleanClassNumber := range cleanClassNumbers {
+
+			if cleanClassNumber.ClassNumber == selectedClass.ClassNumber {
+				class, err := classRepositories.GetClassByNumber(selectedClass.ClassNumber)
+				if err != nil {
+					return errors.New("error fetching grade: " + err.Error())
+				}
+				return errors.New(fmt.Sprintf("%s is selected multiple times", class.Name))
+			}
+
+		}
+
+		cleanClassNumbers = append(cleanClassNumbers, selectedClass)
+
+	}
+
+	return nil
+}
+
 func checkDuplicatesInClasses(selectedClasses []string) error {
 
 	cleanClassNumbers := make([]string, len(selectedClasses))
@@ -338,6 +368,8 @@ func checkDuplicatesInClasses(selectedClasses []string) error {
 			}
 
 		}
+
+		cleanClassNumbers = append(cleanClassNumbers, selectedClass)
 
 	}
 
