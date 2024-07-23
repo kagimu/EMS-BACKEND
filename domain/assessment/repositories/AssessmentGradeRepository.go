@@ -29,7 +29,7 @@ func FindAssessmentGradeByClassNumber(classNumber, status string, trn ...*gorm.D
 	if err := db.
 		Joins("join assessment_grade_classes on assessment_grade_classes.assessment_grade_number = assessment_grades.number").
 		Scopes(filters.ByAnyField("class_number", classNumber), filters.ByStatus(status)).
-		Distinct("assessment_grades.number").
+		Distinct("assessment_grades.number", "assessment_grades.status", "assessment_grades.assessment_area_count", "assessment_grades.user_number", "assessment_grades.school_number", "assessment_grades.created_at", "assessment_grades.updated_at").
 		Find(&assessmentGrades).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
