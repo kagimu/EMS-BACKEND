@@ -4,6 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 
@@ -38,7 +39,7 @@ func CreateGradeGroup(ctx *gin.Context) {
 	err = services.CreateGradeGroup(&gradeGroup)
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create grade group"})
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 
 	}
