@@ -286,15 +286,22 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 	}
 
 	cleanGrades := make([]requests.AggregateScaleItem, len(grades))
+	var totalRanges float64
 
 	for i, grade := range grades {
+		totalRanges += (grade.MaxValue - grade.MinValue) + 1
 
 		shouldReject := ""
 
 		for _, cleanGrade := range cleanGrades {
 
 			if cleanGrade.GradeNumber == grade.GradeNumber {
-				shouldReject = fmt.Sprintf("grade %s already exists", grade.GradeNumber)
+				gr, err := repository.FindGradeByNumber(grade.GradeNumber)
+				if err != nil {
+					return errors.New("error fetching grade: " + err.Error())
+				}
+				shouldReject = fmt.Sprintf("grade %s already exists", gr.Name)
+
 			}
 
 		}
@@ -305,6 +312,10 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 			return errors.New(shouldReject)
 		}
 
+	}
+
+	if (totalRanges - 1) != 100 {
+		return errors.New("please ensure there are no ranges skipped ,the total range should add up to 100")
 	}
 
 	return nil

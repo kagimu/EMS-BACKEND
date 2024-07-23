@@ -9,6 +9,17 @@ type GradeDataRequest struct {
 	SchoolNumber string `json:"school_number"`
 }
 
+type CreateGradeGroupRequest struct {
+	Code         int64  `json:"code"`
+	Name         string `json:"name"`
+	SchoolNumber string `json:"school_number"`
+}
+
+type UpdateGradeGroupRequest struct {
+	Number string `json:"number"`
+	CreateGradeGroupRequest
+}
+
 type EditGradeDataRequest struct {
 	GradeNumber string `json:"number"`
 	GradeDataRequest
@@ -38,4 +49,25 @@ func (g *EditGradeDataRequest) Validate() error {
 		return errors.New("number is required")
 	}
 	return g.GradeDataRequest.Validate()
+}
+
+func (c *CreateGradeGroupRequest) Validate() error {
+	if c.Name == "" {
+		return errors.New("name is required")
+	}
+	if c.SchoolNumber == "" {
+		return errors.New("school number is required")
+	}
+
+	return nil
+}
+
+func (u *UpdateGradeGroupRequest) Validate() error {
+	if u.Number == "" {
+		return errors.New("number is required")
+	}
+	if err := u.CreateGradeGroupRequest.Validate(); err != nil {
+		return err
+	}
+	return nil
 }

@@ -130,14 +130,14 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 			return errors.New("Not enough available quantity for: " + secondaryItem.Name + " " + strconv.FormatFloat(requiredQty, 'f', 2, 64) + " is required but we have " + strconv.FormatFloat(availableQty, 'f', 2, 64))
 		}
 
-		recentStock, err := repositories.GetRecentItemStock(stock.MenuItemNumber)
+		recentStock, err := repositories.GetRecentItemStock(itemAssemble.SecondaryItemNumber)
 
 		if err != nil {
 			return err
 		}
 
 		if recentStock.Number == "" {
-			return errors.New("no recent stock for " + stock.MenuItemNumber)
+			return errors.New("no recent stock for " + itemAssemble.SecondaryItemName)
 		}
 
 		unitCost = recentStock.UnitCost + unitCost
@@ -165,7 +165,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 			NewStockingNumber:  newStock.Number,
 		}
 
-		err = repositories.SaveAssembledPart(assembledItem)
+		err = repositories.SaveAssembledPart(assembledItem, transaction)
 		if err != nil {
 			return err
 		}

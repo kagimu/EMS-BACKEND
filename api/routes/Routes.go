@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	controllers2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/landingPage/controllers"
 	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
@@ -84,6 +85,11 @@ func SetupRoutes() *gin.Engine {
 
 	router.NoRoute(commons.RouteNotFound)
 	router.GET("ping", commons.APIHealth)
+
+	landingPage := router.Group("/landing-page")
+	{
+		landingPage.GET("", controllers2.GetLandingPage)
+	}
 
 	auth := router.Group("/auth")
 	{
@@ -539,6 +545,14 @@ func SetupRoutes() *gin.Engine {
 				assessmentGrade.DELETE("/delete/:assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
 			}
 
+			gradeGroup := assessment.Group("/grade-groups")
+			{
+				gradeGroup.POST("", gradesController.CreateGradeGroup)
+				gradeGroup.GET("", gradesController.FetchGradeGroups)
+				gradeGroup.POST("update", gradesController.UpdateGradeGroup)
+				gradeGroup.POST("remove/:number", gradesController.DeleteGradeGroup)
+			}
+
 			grades := assessment.Group("/grades")
 			{
 				grades.POST("", gradesController.CreateGrade)
@@ -546,6 +560,7 @@ func SetupRoutes() *gin.Engine {
 				grades.POST("update", gradesController.UpdateGrade)
 				grades.POST("remove/:grade_number", gradesController.RemoveGrade)
 			}
+
 		}
 
 		attendance := main.Group("/attendances")
@@ -826,6 +841,13 @@ func SetupRoutes() *gin.Engine {
 				indicators.GET("", activityReportingControllers.GetIndicators)
 			}
 		}
+
+		landingPage := main.Group("landing-page")
+		{
+			landingPage.POST("new", controllers2.CreateLandingPage)
+			landingPage.GET("all", controllers2.GetLandingPage)
+		}
+
 	}
 
 	return router

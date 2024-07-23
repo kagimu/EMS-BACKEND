@@ -142,6 +142,7 @@ func (u *unitOfMeasureService) UpdateUnitOfMeasure(editUnitOfMeasureRequest requ
 	unitOfMeasure.Abbreviation = editUnitOfMeasureRequest.Abbreviation
 	unitOfMeasure.UserNumber = u.User.Number
 	unitOfMeasure.Status = editUnitOfMeasureRequest.Status
+	unitOfMeasure.Number = editUnitOfMeasureRequest.UnitOfMeasureNumber
 
 	err = unitOfMeasureRepo.UpdateUnitOfMeasure(unitOfMeasure)
 	if err != nil {
