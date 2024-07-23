@@ -23,6 +23,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"strconv"
 )
 
 func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, currentUserNumber string) error {
@@ -428,6 +429,6 @@ func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentG
 		}
 	}
 
-	return matchedAssessmentGradeScale, errors.New("no matching points")
+	return matchedAssessmentGradeScale, errors.New(fmt.Sprintf("%s points dont macth any grading catery for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
 
 }
