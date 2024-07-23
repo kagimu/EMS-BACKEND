@@ -690,9 +690,10 @@ func GetFeedingSession(schoolNumber string) ([]responses.FeedingSessionResponse,
 func BuildFeedingSessionResponse(session models.FeedingSession) responses.FeedingSessionResponse {
 
 	response := responses.FeedingSessionResponse{
-		Name:   session.Name,
-		Code:   session.Code,
-		Number: session.Number,
+		Name:         session.Name,
+		Code:         session.Code,
+		Number:       session.Number,
+		SchoolNumber: session.SchoolNumber,
 	}
 
 	user, err := repository.GetUserByNumber(session.UserNumber)
