@@ -32,6 +32,7 @@ func CreateGradeGroup(ctx *gin.Context) {
 	gradeGroup.Code = req.Code
 	gradeGroup.Number = uuid.NewV4().String()
 	gradeGroup.UserNumber = ctx.Request.Header["User-Number"][0]
+	gradeGroup.SchoolNumber = req.SchoolNumber
 
 	// Call the service to create a new grade group
 	err = services.CreateGradeGroup(&gradeGroup)
