@@ -299,9 +299,10 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).First(&reportScoreSummary).Error; err == nil {
 			//update the report score summary
 			reportScoreSummary.Aggregate = scale.Weight
-			reportSummary.Grade = grade.Name
+			reportSummary.Grade = grade.ShortName
 			reportScoreSummary.Summation = summation
 			reportScoreSummary.UserNumber = userNumber
+			reportScoreSummary.Comment = scale.Description
 
 			if err := reporsitory.SaveReportScoreSummary(reportScoreSummary, tx); err != nil {
 				tx.Rollback()
@@ -315,9 +316,10 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				ReportSummaryNumber:  reportSummary.Number,
 				AssessmentAreaNumber: assessmentArea.Number,
 				Aggregate:            scale.Weight,
-				Grade:                grade.Name,
+				Grade:                grade.ShortName,
 				Summation:            summation,
 				UserNumber:           userNumber,
+				Comment:              scale.Description,
 			}
 
 			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {
