@@ -299,8 +299,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).First(&reportScoreSummary).Error; err == nil {
 			//update the report score summary
 			reportScoreSummary.Aggregate = scale.Weight
-			reportSummary.Grade = grade.ShortName
-			reportScoreSummary.Summation = summation
+			reportScoreSummary.Grade = grade.ShortName
+			reportScoreSummary.Summation = commons.RoundFloat(summation, 0)
 			reportScoreSummary.UserNumber = userNumber
 			reportScoreSummary.Comment = scale.Description
 
@@ -317,7 +317,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				AssessmentAreaNumber: assessmentArea.Number,
 				Aggregate:            scale.Weight,
 				Grade:                grade.ShortName,
-				Summation:            summation,
+				Summation:            commons.RoundFloat(summation, 0),
 				UserNumber:           userNumber,
 				Comment:              scale.Description,
 			}
@@ -367,6 +367,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 func GetProperAggregateScale(score float64, assessmentArea assessmentAreaModels.AssessmentArea, campusClassNumber string) (aggregateSaceltModel.AggregateScale, error) {
 	var scale aggregateSaceltModel.AggregateScale
 	var aggregateScales []aggregateSaceltModel.AggregateScale
+
+	score = commons.RoundFloat(score, 0)
 
 	class, err := repositories.GetClassByCampusClassNumber(campusClassNumber)
 	gradingStandard, err := reporsitory.GetGradingStandardNumberByAssessmentAreaNumber(assessmentArea.Number)
