@@ -13,6 +13,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
@@ -202,7 +203,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			if length > 0 && score > 0 {
 				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
 
-				scale, err = GetProperAggregateScale(scoreAverage, assessmentArea.Number, campusClass.Number)
+				scale, err = GetProperAggregateScale(scoreAverage, assessmentArea, campusClass.Number)
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -275,7 +276,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			summation += r.Score
 		}
 
-		scale, err = GetProperAggregateScale(summation, assessmentArea.Number, campusClass.Number)
+		scale, err = GetProperAggregateScale(summation, assessmentArea, campusClass.Number)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -350,14 +351,19 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 }
 
-func GetProperAggregateScale(score float64, assessmentAreaNumber, campusClassNumber string) (aggregateSaceltModel.AggregateScale, error) {
+func GetProperAggregateScale(score float64, assessmentArea assessmentAreaModels.AssessmentArea, campusClassNumber string) (aggregateSaceltModel.AggregateScale, error) {
 	var scale aggregateSaceltModel.AggregateScale
 	var aggregateScales []aggregateSaceltModel.AggregateScale
 
 	class, err := repositories.GetClassByCampusClassNumber(campusClassNumber)
-	gradingStandard, err := reporsitory.GetGradingStandardNumberByAssessmentAreaNumber(assessmentAreaNumber)
+	gradingStandard, err := reporsitory.GetGradingStandardNumberByAssessmentAreaNumber(assessmentArea.Number)
 	if err != nil {
 		return scale, errors.New("failed to fetch grading standard by assessment area number")
+
+	}
+
+	if gradingStandard.Number == "" {
+		return scale, errors.New(fmt.Sprintf("no grading standard for this assessment area (%s)", assessmentArea.Name))
 
 	}
 
