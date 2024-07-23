@@ -11,10 +11,19 @@ type GradeGroupRepository interface {
 	Delete(gradeGroup *models.GradeGroup) error
 	FindAllBySchoolNumber(schoolNumber string) ([]models.GradeGroup, error)
 	FindGradeGroupByNumber(gradeGroupNumber string) (models.GradeGroup, error)
+	FindGradeGroupByName(gradeGroupName, schoolNumber string) (models.GradeGroup, error)
 }
 
 type GradeGroupRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (g GradeGroupRepositoryImpl) FindGradeGroupByName(gradeGroupName, schoolNumber string) (models.GradeGroup, error) {
+	var gradeGroup models.GradeGroup
+	if err := g.DB.Where("name = ? AND school_number = ?", gradeGroupName, schoolNumber).First(&gradeGroup).Error; err != nil {
+		return gradeGroup, err
+	}
+	return gradeGroup, nil
 }
 
 func (g GradeGroupRepositoryImpl) FindGradeGroupByNumber(gradeGroupNumber string) (models.GradeGroup, error) {

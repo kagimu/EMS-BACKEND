@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
@@ -11,7 +12,20 @@ func CreateGradeGroup(gradeGroup *models.GradeGroup) error {
 
 	repo := repository.NewGradeGroupRepositoryImpl(config.DB)
 
-	err := repo.Create(gradeGroup)
+	// find grade group by name
+
+	gradeGroupByName, err := repo.FindGradeGroupByName(gradeGroup.Name, gradeGroup.SchoolNumber)
+	if err != nil {
+		return err
+
+	}
+
+	if gradeGroupByName.Name != "" {
+		return errors.New("grade group with name already exists")
+
+	}
+
+	err = repo.Create(gradeGroup)
 	if err != nil {
 		return err
 	}

@@ -43,6 +43,8 @@ func CreateGradeGroup(ctx *gin.Context) {
 
 	}
 
+	ctx.JSON(http.StatusOK, gin.H{"message": "Grade group created successfully"})
+
 }
 
 func FetchGradeGroups(ctx *gin.Context) {
