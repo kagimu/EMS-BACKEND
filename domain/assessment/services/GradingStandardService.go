@@ -132,15 +132,6 @@ func processGradingStandardClass(gradingStandardClassRequest requests.GradingSta
 
 	}
 
-	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, gradingStandardClassRequest.ScaleNumber, trn)
-	if err != nil {
-		return errors.New("checking class duplicate error: " + err.Error())
-	}
-
-	if checkClassAndScale.ClassNumber == "" {
-		return errors.New("'" + classNewScale.Name + "' is already added to class: " + class.Name)
-	}
-
 	err = repositories.SaveGradingStandardClassScale(assessmentGradeModels.GradingStandardClassScale{
 		ClassNumber:           class.Number,
 		ScaleNumber:           gradingStandardClassRequest.ScaleNumber,
