@@ -10,9 +10,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetMenuItemByNumber(menuItemNumber string) (models.MenuItem, error) {
+func GetMenuItemByNumber(menuItemNumber string, tx ...*gorm.DB) (models.MenuItem, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var menuItem models.MenuItem
 
