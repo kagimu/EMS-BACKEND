@@ -40,12 +40,13 @@ func CreateGrade(userNumber string, request requests.GradeDataRequest) error {
 	}
 
 	var grade = models.Grade{
-		Number:       uuid.NewV4().String(),
-		Name:         request.Name,
-		Code:         request.Code,
-		UserNumber:   userNumber,
-		ShortName:    request.ShortName,
-		SchoolNumber: request.SchoolNumber,
+		Number:           uuid.NewV4().String(),
+		Name:             request.Name,
+		Code:             request.Code,
+		UserNumber:       userNumber,
+		ShortName:        request.ShortName,
+		SchoolNumber:     request.SchoolNumber,
+		GradeGroupNumber: request.GradeGroupNumber,
 	}
 
 	if err := repository.SaveGrade(grade); err != nil {
@@ -97,6 +98,7 @@ func UpdateGrade(userNumber string, editGradeDataRequest requests.EditGradeDataR
 	grade.Code = editGradeDataRequest.Code
 	grade.ShortName = editGradeDataRequest.ShortName
 	grade.UserNumber = userNumber
+	grade.GradeGroupNumber = editGradeDataRequest.GradeGroupNumber
 
 	if err := repository.UpdateGrade(grade); err != nil {
 		return errors.New("error updating grade: " + err.Error())
