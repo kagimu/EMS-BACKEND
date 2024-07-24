@@ -280,6 +280,7 @@ func updateItemOrAppend(items []responses.ProjectionMenuItem, newItem responses.
 		if item.MenuItemNumber == newItem.MenuItemNumber {
 			items[index].Quantity += newItem.Quantity
 			items[index].TotalCost += newItem.TotalCost
+			items[index].PurchaseQuantity += newItem.RateToPurchaseUnit * newItem.Quantity
 			return items
 		}
 
@@ -342,10 +343,12 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 func createProjectionMenuItem(menuItem models.MenuItem, totalQuantity float64) responses.ProjectionMenuItem {
 
 	projectionMenuItem := responses.ProjectionMenuItem{
-		Name:           menuItem.Name,
-		Quantity:       totalQuantity,
-		MenuItemNumber: menuItem.Number,
-		TotalCost:      totalQuantity * determineUnitCost(menuItem),
+		Name:               menuItem.Name,
+		Quantity:           totalQuantity,
+		RateToPurchaseUnit: menuItem.ConversionToPurchaseUnit,
+		PurchaseQuantity:   totalQuantity * menuItem.ConversionToPurchaseUnit,
+		MenuItemNumber:     menuItem.Number,
+		TotalCost:          totalQuantity * determineUnitCost(menuItem),
 	}
 
 	unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
