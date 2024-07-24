@@ -63,9 +63,18 @@ func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber
 
 	db := config.DB
 
-	if err := db.Transaction(func(transaction *gorm.DB) error {
-		return doRunOnTransaction(transaction, stockingRequest, currentUserNumber)
-	}); err != nil {
+	err := db.Transaction(func(transaction *gorm.DB) error {
+
+		err := doRunOnTransaction(transaction, stockingRequest, currentUserNumber)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return err
 	}
 
@@ -76,10 +85,10 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 
 	for _, stock := range stockingRequest.ItemPriceAndQuantity {
 
-		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber)
+		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber, transaction)
 
 		if err != nil {
-			return err
+			return errors.New("getting menu item by number error: " + err.Error())
 		}
 
 		if menuItem.Name == "" {
@@ -101,9 +110,9 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 
 func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests.ItemPriceAndQuantity, campusNumber string) error {
 
-	itemAssembles, err := repositories.GetAssembledItemParts(stock.MenuItemNumber)
+	itemAssembles, err := repositories.GetAssembledItemParts(stock.MenuItemNumber, transaction)
 	if err != nil {
-		return err
+		return errors.New("getting assembled parts error: " + err.Error())
 	}
 
 	if len(itemAssembles) == 0 {
@@ -120,20 +129,20 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 		secondaryItem := itemAssemble.SecondaryItem
 
 		requiredQty := itemAssemble.Quantity * stock.Quantity
-		availableQty, err := repositories.GetMenuItemCurrentStock(secondaryItem.Number)
+		availableQty, err := repositories.GetMenuItemCurrentStock(secondaryItem.Number, transaction)
 
 		if err != nil {
-			return err
+			return errors.New("getting item current stock error: " + err.Error())
 		}
 
 		if availableQty < requiredQty {
 			return errors.New("Not enough available quantity for: " + secondaryItem.Name + " " + strconv.FormatFloat(requiredQty, 'f', 2, 64) + " is required but we have " + strconv.FormatFloat(availableQty, 'f', 2, 64))
 		}
 
-		recentStock, err := repositories.GetRecentItemStock(itemAssemble.SecondaryItemNumber)
+		recentStock, err := repositories.GetRecentItemStock(itemAssemble.SecondaryItemNumber, transaction)
 
 		if err != nil {
-			return err
+			return errors.New("getting recent stock for " + secondaryItem.Name + " error: " + err.Error())
 		}
 
 		if recentStock.Number == "" {
@@ -144,7 +153,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 
 		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
 		if err != nil {
-			return err
+			return errors.New("first save of none assembled item error: " + err.Error())
 		}
 
 		stockReducingParts = append(stockReducingParts, negativeStock)
@@ -154,7 +163,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
 
 	if err != nil {
-		return err
+		return errors.New("saving none assembled item error: " + err.Error())
 	}
 
 	//Create stocking entries that reduced the stock to create new stock
@@ -186,7 +195,7 @@ func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float6
 		UserNumber:     currentUserNumber,
 	}
 
-	if _, err := repositories.CreateStockingEntry(transaction, saveStock); err != nil {
+	if _, err := repositories.CreateStockingEntry(saveStock, transaction); err != nil {
 		return saveStock, err
 	}
 
@@ -280,6 +289,7 @@ func updateItemOrAppend(items []responses.ProjectionMenuItem, newItem responses.
 		if item.MenuItemNumber == newItem.MenuItemNumber {
 			items[index].Quantity += newItem.Quantity
 			items[index].TotalCost += newItem.TotalCost
+			items[index].PurchaseQuantity += newItem.RateToPurchaseUnit * newItem.Quantity
 			return items
 		}
 
@@ -342,10 +352,12 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 func createProjectionMenuItem(menuItem models.MenuItem, totalQuantity float64) responses.ProjectionMenuItem {
 
 	projectionMenuItem := responses.ProjectionMenuItem{
-		Name:           menuItem.Name,
-		Quantity:       totalQuantity,
-		MenuItemNumber: menuItem.Number,
-		TotalCost:      totalQuantity * determineUnitCost(menuItem),
+		Name:               menuItem.Name,
+		Quantity:           totalQuantity,
+		RateToPurchaseUnit: menuItem.ConversionToPurchaseUnit,
+		PurchaseQuantity:   totalQuantity * menuItem.ConversionToPurchaseUnit,
+		MenuItemNumber:     menuItem.Number,
+		TotalCost:          totalQuantity * determineUnitCost(menuItem),
 	}
 
 	unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
