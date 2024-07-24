@@ -7,9 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetMenuItemCurrentStock(menuItemNumber string) (float64, error) {
+func GetMenuItemCurrentStock(menuItemNumber string, tx ...*gorm.DB) (float64, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var totalQuantity float64
 
@@ -25,17 +28,27 @@ func GetMenuItemCurrentStock(menuItemNumber string) (float64, error) {
 	return totalQuantity, nil
 }
 
-func CreateStockingEntry(transaction *gorm.DB, stocking cateringModels.Stocking) (cateringModels.Stocking, error) {
+func CreateStockingEntry(stocking cateringModels.Stocking, tx ...*gorm.DB) (cateringModels.Stocking, error) {
 
-	if err := transaction.Create(&stocking).Error; err != nil {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Create(&stocking).Error; err != nil {
 		return stocking, err
 	}
 
 	return stocking, nil
 }
 
-func GetRecentItemStock(menuItemNumber string) (cateringModels.Stocking, error) {
+func GetRecentItemStock(menuItemNumber string, tx ...*gorm.DB) (cateringModels.Stocking, error) {
+
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var stocking cateringModels.Stocking
 
 	if err := db.Where("menu_item_number = ?", menuItemNumber).First(&stocking).Error; err != nil {
