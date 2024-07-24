@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
+	"gorm.io/gorm"
 )
 
 func CreateGradeGroup(gradeGroup *models.GradeGroup) error {
@@ -16,6 +17,11 @@ func CreateGradeGroup(gradeGroup *models.GradeGroup) error {
 
 	gradeGroupByName, err := repo.FindGradeGroupByName(gradeGroup.Name, gradeGroup.SchoolNumber)
 	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+
 		return err
 
 	}
