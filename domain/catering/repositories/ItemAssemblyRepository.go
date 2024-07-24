@@ -7,9 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetAssembledItemParts(menuItemNumber string) ([]models.ItemAssembly, error) {
+func GetAssembledItemParts(menuItemNumber string, tx ...*gorm.DB) ([]models.ItemAssembly, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var items []models.ItemAssembly
 
 	if err := db.Preload("SecondaryItem").Where("primary_item_number = ? ", menuItemNumber).Find(&items).Error; err != nil {
