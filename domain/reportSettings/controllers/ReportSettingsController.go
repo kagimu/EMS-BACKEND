@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -366,6 +367,18 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	}
 
+	var ags aggregateSaceltModel.AggregateScale
+	if err := config.DB.Where("number = ?", reportSummary.AggregateScaleUsed).First(&ags).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch aggregate scale"})
+		return
+	}
+
+	scales := make([]aggregateSaceltModel.AggregateScale, 0)
+	if err := config.DB.Where("scale_number = ?", ags.ScaleNumber).First(&ags).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch aggregate scale"})
+		return
+	}
+
 	response := responses.FullReportSummary{
 		Student: responses.LeanStudent{
 			Number:     reportSummary.Student.Number,
@@ -386,6 +399,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		ReportTemplateName:  reportSummary.ReportTemplateName,
 		TeacherComment:      reportSummary.TeacherComment,
 		HeadTeachersComment: reportSummary.HeadTeacherComment,
+		AggregateScale:      scales,
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 

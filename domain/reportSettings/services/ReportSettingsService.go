@@ -164,7 +164,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		return errors.New("failed to fetch assessment areas")
 
 	}
-
+	var finalAggregateScale aggregateSaceltModel.AggregateScale
 	var totalAggregates float64
 	for _, assessmentArea := range assessmentAreas {
 		var scale aggregateSaceltModel.AggregateScale
@@ -261,6 +261,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 				}
 
+				finalAggregateScale = scale
+
 			}
 
 		}
@@ -329,6 +331,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 		}
 
+		finalAggregateScale = scale
+
 	}
 	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
 
@@ -351,6 +355,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	}
 	reportSummary.HeadTeacherComment = headTeacherComment.Comment
+	reportSummary.AggregateScaleUsed = finalAggregateScale.Number
 
 	if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 		tx.Rollback()
