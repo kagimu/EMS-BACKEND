@@ -89,6 +89,15 @@ func (u *unitOfMeasureService) NewUnitOfMeasure(unitOfMeasureRequest requests.Un
 		return errors.New("unit of measure with same name already exists")
 	}
 
+	unitOfMeasure, err = unitOfMeasureRepo.FindUnitOfMeasureByCodeAndSchoolNumber(unitOfMeasureRequest.Code, unitOfMeasureRequest.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if unitOfMeasure.Number != "" {
+		return errors.New("unit of measure with same code already exists")
+	}
+
 	unitOfMeasure = models.UnitOfMeasure{
 		Number:       uuid.NewV4().String(),
 		Name:         unitOfMeasureRequest.Name,
@@ -136,15 +145,15 @@ func (u *unitOfMeasureService) UpdateUnitOfMeasure(editUnitOfMeasureRequest requ
 		return errors.New("unit of measure with same name already exists")
 	}
 
-	unitOfMeasure.Name = editUnitOfMeasureRequest.Name
-	unitOfMeasure.SchoolNumber = editUnitOfMeasureRequest.SchoolNumber
-	unitOfMeasure.Code = editUnitOfMeasureRequest.Code
-	unitOfMeasure.Abbreviation = editUnitOfMeasureRequest.Abbreviation
-	unitOfMeasure.UserNumber = u.User.Number
-	unitOfMeasure.Status = editUnitOfMeasureRequest.Status
-	unitOfMeasure.Number = editUnitOfMeasureRequest.UnitOfMeasureNumber
+	baseUnitOfMeasure.Name = editUnitOfMeasureRequest.Name
+	baseUnitOfMeasure.SchoolNumber = editUnitOfMeasureRequest.SchoolNumber
+	baseUnitOfMeasure.Code = editUnitOfMeasureRequest.Code
+	baseUnitOfMeasure.Abbreviation = editUnitOfMeasureRequest.Abbreviation
+	baseUnitOfMeasure.UserNumber = u.User.Number
+	baseUnitOfMeasure.Status = editUnitOfMeasureRequest.Status
+	baseUnitOfMeasure.Number = editUnitOfMeasureRequest.UnitOfMeasureNumber
 
-	err = unitOfMeasureRepo.UpdateUnitOfMeasure(unitOfMeasure)
+	err = unitOfMeasureRepo.UpdateUnitOfMeasure(baseUnitOfMeasure)
 	if err != nil {
 		return errors.New("save unit of measure fail: " + err.Error())
 	}
