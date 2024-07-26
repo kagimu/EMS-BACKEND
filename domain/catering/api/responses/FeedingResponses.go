@@ -77,6 +77,7 @@ type StockingResponse struct {
 	CampusNumber   string  `json:"campus_number"`
 	CampusName     string  `json:"campus_name"`
 	MenuItemType   string  `json:"menu_item_type"`
+	DateTime       string  `json:"date_time"`
 }
 
 type FeedingGroupSessionResponse struct {
