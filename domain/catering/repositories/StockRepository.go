@@ -29,14 +29,14 @@ func GetMenuItemCurrentStock(menuItemNumber string, tx ...*gorm.DB) (float64, er
 	return totalQuantity, nil
 }
 
-func CreateStockingEntry(stocking cateringModels.Stocking, tx ...*gorm.DB) (cateringModels.Stocking, error) {
+func SaveStockingEntry(stocking cateringModels.Stocking, tx ...*gorm.DB) (cateringModels.Stocking, error) {
 
 	db := config.DB
 	if len(tx) > 0 {
 		db = tx[0]
 	}
 
-	if err := db.Create(&stocking).Error; err != nil {
+	if err := db.Save(&stocking).Error; err != nil {
 		return stocking, err
 	}
 
@@ -65,7 +65,7 @@ func GetRecentItemStock(menuItemNumber string, tx ...*gorm.DB) (cateringModels.S
 	return stocking, nil
 }
 
-func AllStocking(campusNumber, menuItemNumber string, tx ...*gorm.DB) ([]cateringModels.Stocking, error) {
+func AllStocking(schoolNumber, campusNumber, menuItemNumber string, tx ...*gorm.DB) ([]cateringModels.Stocking, error) {
 
 	db := config.DB
 	if len(tx) > 0 {
@@ -74,8 +74,10 @@ func AllStocking(campusNumber, menuItemNumber string, tx ...*gorm.DB) ([]caterin
 
 	var stockings []cateringModels.Stocking
 
-	if err := db.Scopes(filters.ByAnyField("menu_item_number", menuItemNumber), filters.ByCampusNumber(campusNumber)).
-		Order("created_at desc").
+	if err := db.
+		Joins("join menu_items on menu_items.number = stockings.menu_item_number").
+		Scopes(filters.ByAnyField("menu_item_number", menuItemNumber), filters.BySchoolNumber(schoolNumber), filters.ByCampusNumber(campusNumber)).
+		Order("stockings.created_at desc").
 		Find(&stockings).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return stockings, nil
