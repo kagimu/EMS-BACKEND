@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	cateringModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
@@ -51,7 +52,52 @@ func GetRecentItemStock(menuItemNumber string, tx ...*gorm.DB) (cateringModels.S
 
 	var stocking cateringModels.Stocking
 
-	if err := db.Where("menu_item_number = ?", menuItemNumber).First(&stocking).Error; err != nil {
+	if err := db.Where("menu_item_number = ?", menuItemNumber).
+		Order("created_at desc").
+		First(&stocking).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return stocking, nil
+		}
+
+		return stocking, err
+	}
+
+	return stocking, nil
+}
+
+func AllStocking(campusNumber, menuItemNumber string, tx ...*gorm.DB) ([]cateringModels.Stocking, error) {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var stockings []cateringModels.Stocking
+
+	if err := db.Scopes(filters.ByAnyField("menu_item_number", menuItemNumber), filters.ByCampusNumber(campusNumber)).
+		Order("created_at desc").
+		Find(&stockings).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return stockings, nil
+		}
+
+		return stockings, err
+	}
+
+	return stockings, nil
+}
+
+func GetStockItemByNumber(stockItemNumber string, tx ...*gorm.DB) (cateringModels.Stocking, error) {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var stocking cateringModels.Stocking
+
+	if err := db.Where("number = ?", stockItemNumber).
+		First(&stocking).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return stocking, nil
 		}

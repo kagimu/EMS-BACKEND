@@ -781,3 +781,50 @@ func UpdateItemAssembly(currentUser string, payload requests.UpdateItemAssembly)
 
 	return nil
 }
+
+func AllStocks(campusNumber, menuItemNumber string) ([]responses.StockingResponse, error) {
+
+	var stockResponses = make([]responses.StockingResponse, 0)
+
+	allStocks, err := repositories.AllStocking(campusNumber, menuItemNumber)
+	if err != nil {
+		return stockResponses, errors.New("getting all stock error: " + err.Error())
+	}
+
+	for _, stock := range allStocks {
+		stockResponses = append(stockResponses, createStockResponse(stock))
+	}
+
+	return stockResponses, nil
+}
+
+func createStockResponse(stocking models.Stocking) responses.StockingResponse {
+
+	campus, _ := repositories2.GetCampusByNumber(stocking.CampusNumber)
+
+	menuItem, _ := repositories.GetMenuItemByNumber(stocking.MenuItemNumber)
+
+	return responses.StockingResponse{
+		Number:         stocking.Number,
+		Quantity:       stocking.Quantity,
+		UnitCost:       stocking.UnitCost,
+		MenuItemNumber: stocking.MenuItemNumber,
+		CampusNumber:   stocking.CampusNumber,
+		CampusName:     campus.Name,
+		MenuItemName:   menuItem.Name,
+		MenuItemType:   menuItem.Type,
+		DateTime:       stocking.CreatedAt.Format(time.DateTime),
+	}
+}
+
+func GetStockItem(stockNumber string) (responses.StockingResponse, error) {
+
+	var stockingResponse responses.StockingResponse
+
+	stock, err := repositories.GetStockItemByNumber(stockNumber)
+	if err != nil {
+		return stockingResponse, errors.New("getting stock item error: " + err.Error())
+	}
+
+	return createStockResponse(stock), nil
+}
