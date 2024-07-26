@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
@@ -373,12 +374,13 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		return
 	}
 
+	fmt.Println("Scale used is ", ags.ScaleNumber)
 	scales := make([]aggregateSaceltModel.AggregateScale, 0)
-	if err := config.DB.Where("scale_number = ?", ags.ScaleNumber).First(&ags).Error; err != nil {
+	if err := config.DB.Where("scale_number = ?", ags.ScaleNumber).Find(&ags).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch aggregate scale"})
 		return
 	}
-
+	fmt.Println(fmt.Sprintf("There are %d scales used", len(scales)))
 	response := responses.FullReportSummary{
 		Student: responses.LeanStudent{
 			Number:     reportSummary.Student.Number,
