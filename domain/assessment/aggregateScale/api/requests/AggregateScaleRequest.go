@@ -1,12 +1,16 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
+)
 
 type AggregateScaleRequest struct {
-	Grades       []AggregateScaleItem `json:"grades"`
-	ScaleName    string               `json:"scale_name"`
-	Count        int64                `json:"count"`
-	SchoolNumber string               `json:"school_number"`
+	AggregateScales      []AggregateScaleItem                  `json:"aggregate_scales"`
+	ScaleName            string                                `json:"scale_name"`
+	Count                int64                                 `json:"count"`
+	SchoolNumber         string                                `json:"school_number"`
+	AssessmentGradeItems []requests.AssessmentGradeItemRequest `json:"assessment_grade_items"`
 }
 
 type AggregateScaleItem struct {
@@ -26,7 +30,7 @@ type EditAggregateScaleRequest struct {
 
 func (aggregateScale *AggregateScaleRequest) Validate() error {
 
-	if aggregateScale.Grades == nil || len(aggregateScale.Grades) == 0 {
+	if aggregateScale.AggregateScales == nil || len(aggregateScale.AggregateScales) == 0 {
 		return errors.New("please select the grades")
 	}
 
@@ -42,7 +46,7 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 
 	var runsToEnd, startsAtZero bool
 
-	for _, grade := range aggregateScale.Grades {
+	for _, grade := range aggregateScale.AggregateScales {
 
 		if grade.Weight <= 0 {
 			return errors.New("set the weight for this score")
@@ -92,6 +96,38 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 
 	if !startsAtZero || !runsToEnd {
 		return errors.New("the scale must start from 0 to 100")
+	}
+
+	for _, r := range aggregateScale.AssessmentGradeItems {
+
+		if r.Abbreviation == "" {
+			return errors.New("abbreviation is required")
+		}
+
+		if r.Name == "" {
+			return errors.New("name is required")
+		}
+
+		if r.Description == "" {
+			return errors.New("description is required")
+		}
+
+		if r.MinimumPoints <= 0 {
+			return errors.New("minimum points is required")
+		}
+
+		if r.MaximumPoints <= 0 {
+			return errors.New("maximum points is required")
+		}
+
+		if r.Remarks == "" {
+			return errors.New("remarks is required")
+		}
+
+		if r.Code <= 0 {
+			return errors.New("code is required")
+		}
+
 	}
 
 	return nil
