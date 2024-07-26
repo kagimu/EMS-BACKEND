@@ -315,14 +315,12 @@ func SetupRoutes() *gin.Engine {
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
 		}
 
-		// Student details
 		studentDetails := main.Group("/student-details")
 		{
 			studentDetails.POST("/:student_number", studentDetailsController.CreateStudentDetails)
 			studentDetails.PUT("/:student_number", studentDetailsController.EditStudentDetails)
 		}
 
-		//timetable routes
 		timetable := main.Group("/timetable")
 		{
 			timetable.GET("all-study-timetables", timetableController.FetchStudyTimetables)
