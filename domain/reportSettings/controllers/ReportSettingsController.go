@@ -3,7 +3,6 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -17,6 +16,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
@@ -366,19 +366,13 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 	if err := config.DB.Where("number = ?", campusClass.Campus.SchoolNumber).First(&school).Error; err != nil {
 
 	}
-
-	var ags aggregateSaceltModel.AggregateScale
-	if err := config.DB.Where("number = ?", reportSummary.AggregateScaleUsed).First(&ags).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch aggregate scale"})
+	scalesUsed, err := reporsitory.GetAppliedScaleByScaleNumber(reportSummary.AggregateScaleUsed)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch scales used"})
 		return
-	}
 
-	scales := make([]aggregateSaceltModel.AggregateScale, 0)
-	if err := config.DB.Where("scale_number = ?", ags.ScaleNumber).Order("code asc").Find(&scales).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch aggregate scale"})
-		return
 	}
-
+	scales := reporsitory.BuildAppliedScaleResponse(scalesUsed)
 	response := responses.FullReportSummary{
 		Student: responses.LeanStudent{
 			Number:     reportSummary.Student.Number,

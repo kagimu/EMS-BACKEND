@@ -6,6 +6,7 @@ import (
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"gorm.io/gorm"
 )
@@ -101,4 +102,33 @@ func GetScaleNumberByGradingStandardNumberAndClassNumber(gradingStandardNumber, 
 	}
 
 	return gradingStandardScale.ScaleNumber, nil
+}
+
+func GetAppliedScaleByScaleNumber(scaleNumber string) ([]models4.AggregateScale, error) {
+	var ags models4.AggregateScale
+	if err := config.DB.Where("number = ?", scaleNumber).First(&ags).Error; err != nil {
+		return nil, err
+	}
+
+	scales := make([]models4.AggregateScale, 0)
+	if err := config.DB.Preload("Grade").Where("scale_number = ?", ags.ScaleNumber).Order("code asc").Find(&scales).Error; err != nil {
+		return nil, err
+	}
+
+	return scales, nil
+
+}
+
+func BuildAppliedScaleResponse(scales []models4.AggregateScale) []responses.AppliedScale {
+
+	response := make([]responses.AppliedScale, 0)
+	for _, scale := range scales {
+		response = append(response, responses.AppliedScale{
+			Name: scale.Grade.Name,
+			Min:  scale.MinValue,
+			Max:  scale.MaxValue,
+		})
+	}
+
+	return response
 }
