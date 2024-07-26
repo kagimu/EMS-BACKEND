@@ -45,14 +45,15 @@ func FetchStockings(c *gin.Context) {
 	}
 
 	campusNumber := c.Param("campus_number")
+	schoolNumber := c.Param("campus_number")
 	itemNumber := c.Param("item_number")
 
-	if campusNumber == "" && itemNumber == "" {
-		c.JSON(http.StatusBadRequest, commons.Feedback("Choose campus or menu item"))
+	if campusNumber == "" && itemNumber == "" && schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Choose school, campus or menu item"))
 		return
 	}
 
-	stock, err := services.AllStocks(campusNumber, itemNumber)
+	stock, err := services.AllStocks(schoolNumber, campusNumber, itemNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
