@@ -105,7 +105,7 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 		if menuItem.Type == constants.TypeAssembled {
 			err = assembleItem(transaction, currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
-			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber)
+			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber, menuItem.UnitOfMeasureNumber)
 		}
 
 		return err
@@ -158,7 +158,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 
 		unitCost = recentStock.UnitCost + unitCost
 
-		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
+		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber, secondaryItem.PurchaseUnitOfMeasureNumber)
 		if err != nil {
 			return errors.New("first save of none assembled item error: " + err.Error())
 		}
@@ -167,7 +167,9 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 
 	}
 
-	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
+	menuItem, _ := repositories.GetMenuItemByNumber(stock.MenuItemNumber)
+
+	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber, menuItem.PurchaseUnitOfMeasureNumber)
 
 	if err != nil {
 		return errors.New("saving none assembled item error: " + err.Error())
@@ -191,18 +193,19 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 	return nil
 }
 
-func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItemNumber string, quantity float64, currentUserNumber string) (models.Stocking, error) {
+func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItemNumber string, quantity float64, currentUserNumber, unitOfMeasureNumber string) (models.Stocking, error) {
 
 	saveStock := models.Stocking{
-		Number:         uuid.NewV4().String(),
-		CampusNumber:   campusNumber,
-		UnitCost:       unitCost,
-		MenuItemNumber: menuItemNumber,
-		Quantity:       quantity,
-		UserNumber:     currentUserNumber,
+		Number:              uuid.NewV4().String(),
+		CampusNumber:        campusNumber,
+		UnitCost:            unitCost,
+		MenuItemNumber:      menuItemNumber,
+		Quantity:            quantity,
+		UserNumber:          currentUserNumber,
+		UnitOfMeasureNumber: unitOfMeasureNumber,
 	}
 
-	if _, err := repositories.CreateStockingEntry(saveStock, transaction); err != nil {
+	if _, err := repositories.SaveStockingEntry(saveStock, transaction); err != nil {
 		return saveStock, err
 	}
 
@@ -780,4 +783,51 @@ func UpdateItemAssembly(currentUser string, payload requests.UpdateItemAssembly)
 	}
 
 	return nil
+}
+
+func AllStocks(schoolNumber, campusNumber, menuItemNumber string) ([]responses.StockingResponse, error) {
+
+	var stockResponses = make([]responses.StockingResponse, 0)
+
+	allStocks, err := repositories.AllStocking(schoolNumber, campusNumber, menuItemNumber)
+	if err != nil {
+		return stockResponses, errors.New("getting all stock error: " + err.Error())
+	}
+
+	for _, stock := range allStocks {
+		stockResponses = append(stockResponses, createStockResponse(stock))
+	}
+
+	return stockResponses, nil
+}
+
+func createStockResponse(stocking models.Stocking) responses.StockingResponse {
+
+	campus, _ := repositories2.GetCampusByNumber(stocking.CampusNumber)
+
+	menuItem, _ := repositories.GetMenuItemByNumber(stocking.MenuItemNumber)
+
+	return responses.StockingResponse{
+		Number:         stocking.Number,
+		Quantity:       stocking.Quantity,
+		UnitCost:       stocking.UnitCost,
+		MenuItemNumber: stocking.MenuItemNumber,
+		CampusNumber:   stocking.CampusNumber,
+		CampusName:     campus.Name,
+		MenuItemName:   menuItem.Name,
+		MenuItemType:   menuItem.Type,
+		DateTime:       stocking.CreatedAt.Format(time.DateTime),
+	}
+}
+
+func GetStockItem(stockNumber string) (responses.StockingResponse, error) {
+
+	var stockingResponse responses.StockingResponse
+
+	stock, err := repositories.GetStockItemByNumber(stockNumber)
+	if err != nil {
+		return stockingResponse, errors.New("getting stock item error: " + err.Error())
+	}
+
+	return createStockResponse(stock), nil
 }
