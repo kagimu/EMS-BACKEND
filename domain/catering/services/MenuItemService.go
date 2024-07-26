@@ -95,6 +95,13 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 			return errors.New("invalid menu item ID")
 		}
 
+		if menuItem.ConversionToPurchaseUnit > 0 {
+			totalCost := stock.Quantity * stock.UnitCost
+			usageQty := stock.Quantity / menuItem.ConversionToPurchaseUnit //Convert to usage quantity
+			stock.Quantity = usageQty
+			stock.UnitCost = totalCost / usageQty //Convert to usage unit cost
+		}
+
 		if menuItem.Type == constants.TypeAssembled {
 			err = assembleItem(transaction, currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
@@ -184,13 +191,13 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 	return nil
 }
 
-func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItem string, quantity float64, currentUserNumber string) (models.Stocking, error) {
+func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItemNumber string, quantity float64, currentUserNumber string) (models.Stocking, error) {
 
 	saveStock := models.Stocking{
 		Number:         uuid.NewV4().String(),
 		CampusNumber:   campusNumber,
 		UnitCost:       unitCost,
-		MenuItemNumber: menuItem,
+		MenuItemNumber: menuItemNumber,
 		Quantity:       quantity,
 		UserNumber:     currentUserNumber,
 	}
