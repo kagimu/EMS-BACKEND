@@ -73,9 +73,10 @@ type LearningArea struct {
 }
 
 type AppliedScale struct {
-	Name string  `json:"name"`
-	Min  float64 `json:"min"`
-	Max  float64 `json:"max"`
+	ShortName string  `json:"short_name"`
+	Name      string  `json:"name"`
+	Min       float64 `json:"min"`
+	Max       float64 `json:"max"`
 }
 type FullReportSummary struct {
 	Student             LeanStudent    `json:"student"`

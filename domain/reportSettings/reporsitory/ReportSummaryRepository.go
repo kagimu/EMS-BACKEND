@@ -124,9 +124,10 @@ func BuildAppliedScaleResponse(scales []models4.AggregateScale) []responses.Appl
 	response := make([]responses.AppliedScale, 0)
 	for _, scale := range scales {
 		response = append(response, responses.AppliedScale{
-			Name: scale.Grade.Name,
-			Min:  scale.MinValue,
-			Max:  scale.MaxValue,
+			Name:      scale.Grade.Name,
+			ShortName: scale.Grade.ShortName,
+			Min:       scale.MinValue,
+			Max:       scale.MaxValue,
 		})
 	}
 
