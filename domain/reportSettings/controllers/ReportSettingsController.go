@@ -374,7 +374,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 	}
 
 	scales := make([]aggregateSaceltModel.AggregateScale, 0)
-	if err := config.DB.Where("scale_number = ?", ags.ScaleNumber).Find(&scales).Error; err != nil {
+	if err := config.DB.Where("scale_number = ?", ags.ScaleNumber).Order("code asc").Find(&scales).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch aggregate scale"})
 		return
 	}
