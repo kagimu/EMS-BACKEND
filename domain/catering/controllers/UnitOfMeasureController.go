@@ -18,7 +18,13 @@ func CreateUnitOfMeasure(c *gin.Context) {
 
 	var payload requests.UnitOfMeasureRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload: " + err.Error()})
+		return
+	}
+
+	err = payload.Validate()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -66,6 +72,12 @@ func EditUnitOfMeasure(c *gin.Context) {
 	var payload requests.EditUnitOfMeasureRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Payload error: " + err.Error()})
+		return
+	}
+
+	err = payload.Validate()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
