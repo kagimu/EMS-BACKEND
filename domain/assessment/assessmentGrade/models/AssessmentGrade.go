@@ -13,8 +13,8 @@ type AssessmentGrade struct {
 	AssessmentAreaCount int            `json:"assessment_area_count"`
 	GradePoints         int            `json:"grade_points"`
 	UserNumber          string         `json:"user_number" gorm:"size:36;index;not null"`
-	User                authModel.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	ScaleNumber         string         `json:"scale_number" gorm:"size:36;index;not null"`
+	User                authModel.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	ScaleNumber         string         `json:"scale_number" gorm:"size:36;index;not null;unique"`
 	Scale               models.Scale   `gorm:"foreignKey:ScaleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
 

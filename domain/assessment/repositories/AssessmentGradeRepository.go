@@ -96,3 +96,24 @@ func RemoveAssessmentGrade(assessmentGrade models.AssessmentGrade, trn ...*gorm.
 
 	return db.Delete(&assessmentGrade).Error
 }
+
+func FindAssessmentGradeByScaleNumber(scaleNumber string, trn ...*gorm.DB) (models.AssessmentGrade, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentGrade models.AssessmentGrade
+
+	if err := db.Where("scale_number = ? ", scaleNumber).First(&assessmentGrade).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentGrade, nil
+		}
+
+		return assessmentGrade, err
+	}
+
+	return assessmentGrade, nil
+}

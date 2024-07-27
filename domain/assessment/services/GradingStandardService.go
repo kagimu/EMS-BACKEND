@@ -618,7 +618,16 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		return errors.New("getting old aggregate scales error: " + err.Error())
 	}
 
+	assessmentGrade, err := repositories.FindAssessmentGradeByScaleNumber(scale.Number)
+	if err != nil {
+		return errors.New("checking assessment grade error: " + err.Error())
+	}
+
 	trn := config.DB.Begin()
+
+	if assessmentGrade.Number != "" {
+		err = clearGradingCategory(assessmentGrade, trn)
+	}
 
 	for _, aggregateScale := range aggregateScales {
 		err = repositories.RemoveAggregateScale(aggregateScale, trn)
@@ -645,12 +654,39 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		}
 	}
 
+	err = saveGradingCategory(aggregateScaleRequest.AssessmentGradeItems, scale.Number, currentUser, trn)
+	if err != nil {
+		return err
+	}
+
 	if err := trn.Commit().Error; err != nil {
 		return errors.New("commit grading scales error: " + err.Error())
 	}
 
 	return nil
 
+}
+
+func clearGradingCategory(assessmentGrade assessmentGradeModels.AssessmentGrade, trn *gorm.DB) error {
+
+	gradingCategories, err := repositories.FindAssessmentGradeScaleByGradeNumber(assessmentGrade.Number, trn)
+	if err != nil {
+		return errors.New("getting grading categories error: " + err.Error())
+	}
+
+	for _, gradingCategory := range gradingCategories {
+		err = repositories.RemoveAssessmentGradeScale(gradingCategory, trn)
+		if err != nil {
+			return errors.New("removing old grading category scale error: " + err.Error())
+		}
+	}
+
+	err = repositories.RemoveAssessmentGrade(assessmentGrade, trn)
+	if err != nil {
+		return errors.New("removing old grading category error: " + err.Error())
+	}
+
+	return nil
 }
 
 func RemoveGradingStandard(gradingStandardNumber string) error {
@@ -714,24 +750,37 @@ func RemoveScale(scaleNumber string) error {
 		return errors.New("this scale is being used on " + strconv.Itoa(classCount) + " classes")
 	}
 
-	trn := config.DB.Begin()
-
-	for _, aggregateScale := range aggregateScales {
-		err = repositories.RemoveAggregateScale(aggregateScale, trn)
-		if err != nil {
-			trn.Rollback()
-			return errors.New("clearing scales error: " + err.Error())
-		}
-	}
-
-	err = repositories.RemoveScale(scale, trn)
+	gradingCategory, err := repositories.FindAssessmentGradeByScaleNumber(scale.Number)
 	if err != nil {
-		trn.Rollback()
-		return errors.New("removing scale failed: " + err.Error())
+		return errors.New("checking grading category error: " + err.Error())
 	}
 
-	if err = trn.Commit().Error; err != nil {
-		return errors.New("finalization failed, try again: " + err.Error())
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
+
+		for _, aggregateScale := range aggregateScales {
+			err = repositories.RemoveAggregateScale(aggregateScale, trn)
+			if err != nil {
+				return errors.New("clearing scales error: " + err.Error())
+			}
+		}
+
+		if gradingCategory.Number != "" {
+			err = clearGradingCategory(gradingCategory, trn)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = repositories.RemoveScale(scale, trn)
+		if err != nil {
+			return errors.New("removing scale failed: " + err.Error())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.New(err.Error())
 	}
 
 	return nil
