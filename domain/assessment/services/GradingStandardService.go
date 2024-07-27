@@ -231,7 +231,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 		return errors.New("Name already used: " + aggregateScaleRequest.ScaleName)
 	}
 
-	grades := aggregateScaleRequest.Grades
+	grades := aggregateScaleRequest.AggregateScales
 
 	if int64(len(grades)) != aggregateScaleRequest.Count {
 		return errors.New("you should define the grades up to set count")
@@ -262,6 +262,11 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 			if err != nil {
 				return err
 			}
+		}
+
+		err = saveGradingCategory(aggregateScaleRequest.AssessmentGradeItems, scale.Number, currentUser, trn)
+		if err != nil {
+			return err
 		}
 
 		return nil
@@ -597,7 +602,7 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		return errors.New("invalid scale number")
 	}
 
-	grades := aggregateScaleRequest.Grades
+	grades := aggregateScaleRequest.AggregateScales
 
 	if int64(len(grades)) != aggregateScaleRequest.Count {
 		return errors.New("you should define the grades up to set count")
@@ -805,52 +810,32 @@ func createGradingStandardClassesResponse(gradingScaleClass assessmentGradeModel
 	return gradingStandardClassesResponse, nil
 }
 
-func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.AssessmentGradeRequest, currentUserNumber string) error {
+func saveGradingCategory(gradingCategories []assessmentGradeRequests.AssessmentGradeItemRequest, scaleNumber, currentUserNumber string, trn *gorm.DB) error {
 
-	err := checkDuplicatesInClasses(assessmentGradeRequest.Classes)
-	if err != nil {
-		return err
-	}
-
-	err = CheckOverlapsInGrades(assessmentGradeRequest.AssessmentGradeItems)
+	err := CheckOverlapsInGrades(gradingCategories)
 	if err != nil {
 		return errors.New(err.Error())
 	}
 
-	err = config.DB.Transaction(func(trn *gorm.DB) error {
+	saveAssessmentGrade := assessmentGradeModels.AssessmentGrade{
+		Status:              constants.StatusActive,
+		Number:              uuid.NewV4().String(),
+		UserNumber:          currentUserNumber,
+		AssessmentAreaCount: 8,
+		GradePoints:         len(gradingCategories),
+		ScaleNumber:         scaleNumber,
+	}
 
-		saveAssessmentGrade := assessmentGradeModels.AssessmentGrade{
-			Status:              constants.StatusActive,
-			Number:              uuid.NewV4().String(),
-			UserNumber:          currentUserNumber,
-			AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
-			SchoolNumber:        assessmentGradeRequest.SchoolNumber,
-		}
-
-		err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
-		if err != nil {
-			return errors.New("saving assessment grade error: " + err.Error())
-		}
-
-		for _, classNumber := range assessmentGradeRequest.Classes {
-			err = processAssessmentGradeClasses(classNumber, saveAssessmentGrade, trn)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, assessmentGradeScaleItem := range assessmentGradeRequest.AssessmentGradeItems {
-			err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, trn)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-
+	err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
 	if err != nil {
-		return errors.New("failed finalizing assessment grade, error: " + err.Error())
+		return errors.New("saving grading category error: " + err.Error())
+	}
+
+	for _, assessmentGradeScaleItem := range gradingCategories {
+		err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, trn)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

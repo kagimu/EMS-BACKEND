@@ -537,7 +537,7 @@ func SetupRoutes() *gin.Engine {
 
 			assessmentGrade := assessment.Group("/assessment-grades")
 			{
-				assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
+				//assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
 				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
 				assessmentGrade.PUT("/update", assessmentGradeController.EditAssessmentGrade)
 				assessmentGrade.DELETE("/delete/:assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
