@@ -15,7 +15,7 @@ type AssessmentGrade struct {
 	UserNumber          string         `json:"user_number" gorm:"size:36;index;not null"`
 	User                authModel.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	ScaleNumber         string         `json:"scale_number" gorm:"size:36;index;not null"`
-	Scale               models.Scale   `gorm:"foreignKey:ScaleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Scale               models.Scale   `gorm:"foreignKey:ScaleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
 
 type AssessmentGradeScale struct {

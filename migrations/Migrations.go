@@ -197,7 +197,6 @@ func Init() error {
 		&gradesModels.Grade{},
 		&cateringModels.CalendarEventFeedingGroup{},
 		&assessmentGradeModels.GradingStandardClassScale{},
-		&assessmentModel.AssessmentGradeClass{},
 		&assessmentGradeModels.AssessmentGradeScale{},
 		&models2.LandingPage{},
 	)
