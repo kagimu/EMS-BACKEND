@@ -13,11 +13,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
-	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	classResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
@@ -561,7 +559,23 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 		})
 	}
 
-	response.Grades = grades
+	response.AggregateScaleItems = grades
+
+	assessmentGrade, err := repositories.FindAssessmentGradeByScaleNumber(scale.Number)
+	if err != nil {
+		return response, errors.New("getting grading category meta error: " + err.Error())
+	}
+
+	if assessmentGrade.Number == "" {
+		return response, errors.New("Scale: " + scale.Name + " has no grading categories")
+	}
+
+	assessmentGradeScales, err := repositories.FindAssessmentGradeScaleByGradeNumber(assessmentGrade.Number)
+	if err != nil {
+		return response, errors.New("getting grading categories error: " + err.Error())
+	}
+
+	response.AssessmentGrade = createAssessmentGradeResponse(assessmentGrade, assessmentGradeScales)
 
 	return response, nil
 }
@@ -984,22 +998,17 @@ func GetAssessmentGrades(classNumber, status string) ([]assessmentGradeResponses
 			return assessmentGradeResponse, errors.New("checking assessment scale error: " + err.Error())
 		}
 
-		classes, err := classRepositories.FindClassesByAssessmentGradeNumber(assessmentGrade.Number)
-		if err != nil {
-			return assessmentGradeResponse, errors.New("checking assessment grade classes error: " + err.Error())
-		}
-
-		assessmentGradeResponse = append(assessmentGradeResponse, createAssessmentGradeResponse(assessmentGrade, gradeScale, classes))
+		assessmentGradeResponse = append(assessmentGradeResponse, createAssessmentGradeResponse(assessmentGrade, gradeScale))
 	}
 
 	return assessmentGradeResponse, nil
 }
 
-func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.AssessmentGrade, assessmentGradeScales []assessmentGradeModels.AssessmentGradeScale, classes []classModels.Class) assessmentGradeResponses.AssessmentGradeResponse {
+func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.AssessmentGrade, assessmentGradeScales []assessmentGradeModels.AssessmentGradeScale) assessmentGradeResponses.AssessmentGradeResponse {
 
 	assessmentGradeResponse := assessmentGradeResponses.AssessmentGradeResponse{
-		AssessmentAreaCount:   assessmentGrade.AssessmentAreaCount,
-		AssessmentGradeNumber: assessmentGrade.Number,
+		AssessmentAreaCount: assessmentGrade.AssessmentAreaCount,
+		GradePoints:         assessmentGrade.GradePoints,
 	}
 
 	var assessmentGradeItemResponses = make([]assessmentGradeResponses.AssessmentGradeItemResponse, 0)
@@ -1016,13 +1025,6 @@ func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.Assessm
 		})
 	}
 
-	var classResponse = make([]classResponses.ClassResponse, 0)
-
-	for _, class := range classes {
-		classResponse = append(classResponse, services.CreateClassResponse(class))
-	}
-
-	assessmentGradeResponse.Classes = classResponse
 	assessmentGradeResponse.AssessmentGradeItems = assessmentGradeItemResponses
 	return assessmentGradeResponse
 }
