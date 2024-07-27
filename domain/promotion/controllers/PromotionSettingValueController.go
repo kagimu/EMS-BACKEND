@@ -35,7 +35,7 @@ func CreatePromotionSettingValue(c *gin.Context) {
 		Type:                   payload.Type,
 		Score:                  payload.Score,
 		PromotionSettingNumber: payload.PromotionSettingNumber,
-		AssessmentGradeNumber:  payload.AssessmentGradeNumber,
+		GradingStandardNumber:  payload.GradingStandardNumber,
 		UserNumber:             user.Number,
 	}
 
