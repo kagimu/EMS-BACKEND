@@ -7,11 +7,6 @@ type FeedingSessionItemRequest struct {
 	MenuItemQuantity     []MenuItemQuantity `json:"menu_item_quantity"`
 }
 
-type MenuItemQuantity struct {
-	MenuItemNumber string  `json:"menu_item_number"`
-	Quantity       float64 `json:"quantity"`
-}
-
 func (f *FeedingSessionItemRequest) Validate() error {
 	if len(f.MenuItemQuantity) == 0 {
 		return errors.New("menu item quantity is required")
