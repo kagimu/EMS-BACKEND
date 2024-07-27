@@ -1,12 +1,9 @@
 package responses
 
-import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
-
 type AssessmentGradeResponse struct {
-	AssessmentGradeNumber string                        `json:"assessment_grade_number"`
-	AssessmentAreaCount   int                           `json:"assessment_area_count"`
-	AssessmentGradeItems  []AssessmentGradeItemResponse `json:"assessment_grade_items"`
-	Classes               []responses.ClassResponse     `json:"classes"`
+	GradePoints          int                           `json:"grade_points"`
+	AssessmentAreaCount  int                           `json:"assessment_area_count"`
+	AssessmentGradeItems []AssessmentGradeItemResponse `json:"assessment_grade_items"`
 }
 
 type AssessmentGradeItemResponse struct {

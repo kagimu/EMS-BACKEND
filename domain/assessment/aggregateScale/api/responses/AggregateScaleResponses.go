@@ -1,5 +1,7 @@
 package responses
 
+import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
+
 type AggregateScaleResponse struct {
 	Code         int64   `json:"code"`
 	Number       string  `json:"number"`
@@ -23,5 +25,6 @@ type ScaleResponse struct {
 
 type DetailedScaleResponse struct {
 	ScaleResponse
-	Grades []AggregateScaleResponse `json:"grades"`
+	AggregateScaleItems []AggregateScaleResponse          `json:"aggregate_scales"`
+	AssessmentGrade     responses.AssessmentGradeResponse `json:"assessment_grade"`
 }
