@@ -8,11 +8,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetFeedingSessionByNumberAndSchoolNumber(feedingSession string, schoolNumber string) (models.FeedingSession, error) {
+func GetFeedingSessionByNumberAndSchoolNumber(feedingSession, schoolNumber string, tx ...*gorm.DB) (models.FeedingSession, error) {
 
 	var session models.FeedingSession
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Where("number = ?", feedingSession).Scopes(filters.BySchoolNumber(schoolNumber)).First(&session).Error; err != nil {
 
@@ -26,10 +29,13 @@ func GetFeedingSessionByNumberAndSchoolNumber(feedingSession string, schoolNumbe
 	return session, nil
 }
 
-func GetFeedingSessionByNameAndSchool(name string, schoolNumber string) (models.FeedingSession, error) {
+func GetFeedingSessionByNameAndSchool(name, schoolNumber string, tx ...*gorm.DB) (models.FeedingSession, error) {
 	var session models.FeedingSession
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.
 		Where("school_number = ?", schoolNumber).
@@ -46,39 +52,27 @@ func GetFeedingSessionByNameAndSchool(name string, schoolNumber string) (models.
 	return session, nil
 }
 
-func SaveFeedingSession(feedingSession models.FeedingSession) error {
+func SaveFeedingSession(feedingSession models.FeedingSession, tx ...*gorm.DB) error {
 
-	if err := config.DB.Save(&feedingSession).Error; err != nil {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Save(&feedingSession).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func GetFeedingSessionByCodeAndSchool(code uint64, schoolNumber string) (models.FeedingSession, error) {
-	var session models.FeedingSession
-
-	db := config.DB
-
-	if err := db.
-		Where("school_number = ?", schoolNumber).
-		Where("code = ?", code).
-		First(&session).Error; err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return session, nil
-		}
-
-		return session, err
-	}
-
-	return session, nil
-}
-
-func GetFeedingSessionsBySchoolNumber(schoolNumber string) ([]models.FeedingSession, error) {
+func GetFeedingSessionsBySchoolNumber(schoolNumber string, tx ...*gorm.DB) ([]models.FeedingSession, error) {
 	var sessions []models.FeedingSession
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Where("school_number = ?", schoolNumber).Find(&sessions).Error; err != nil {
 
@@ -92,9 +86,12 @@ func GetFeedingSessionsBySchoolNumber(schoolNumber string) ([]models.FeedingSess
 	return sessions, nil
 }
 
-func DeleteFeedingSession(feedingSession models.FeedingSession) error {
+func DeleteFeedingSession(feedingSession models.FeedingSession, tx ...*gorm.DB) error {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Delete(&feedingSession).Error; err != nil {
 		return err

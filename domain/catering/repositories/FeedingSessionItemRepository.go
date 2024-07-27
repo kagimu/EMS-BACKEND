@@ -7,9 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetFeedingSessionItems(feedingSessionNumber string) ([]models.FeedingSessionItem, error) {
+func GetFeedingSessionItems(feedingSessionNumber string, tx ...*gorm.DB) ([]models.FeedingSessionItem, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var feedingSessionItems []models.FeedingSessionItem
 
@@ -28,9 +31,12 @@ func GetFeedingSessionItems(feedingSessionNumber string) ([]models.FeedingSessio
 	return feedingSessionItems, nil
 }
 
-func GetFeedingSessionItemByFeedingSessionNumberAndMenuItemNumber(feedingSessionNumber string, menuItemNumber string) (models.FeedingSessionItem, error) {
+func GetFeedingSessionItemByFeedingSessionNumberAndMenuItemNumber(feedingSessionNumber, menuItemNumber string, tx ...*gorm.DB) (models.FeedingSessionItem, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var feedingItem models.FeedingSessionItem
 
@@ -47,4 +53,26 @@ func GetFeedingSessionItemByFeedingSessionNumberAndMenuItemNumber(feedingSession
 	}
 
 	return feedingItem, nil
+}
+
+func SaveFeedingSessionItem(feedingSessionItem models.FeedingSessionItem, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Save(&feedingSessionItem).Error
+
+}
+
+func RemoveFeedingSessionItem(feedingSessionItem models.FeedingSessionItem, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Unscoped().Delete(&feedingSessionItem).Error
+
 }
