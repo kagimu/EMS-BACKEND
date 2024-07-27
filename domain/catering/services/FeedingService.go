@@ -745,9 +745,9 @@ func GetFeedingSession(schoolNumber string) ([]responses.FeedingSessionResponse,
 func BuildFeedingSessionResponse(session models.FeedingSession) responses.FeedingSessionResponse {
 
 	response := responses.FeedingSessionResponse{
-		Name:         session.Name,
-		Number:       session.Number,
-		SchoolNumber: session.SchoolNumber,
+		Name:                 session.Name,
+		SchoolNumber:         session.SchoolNumber,
+		FeedingSessionNumber: session.Number,
 	}
 
 	user, err := repository.GetUserByNumber(session.UserNumber)
@@ -756,6 +756,28 @@ func BuildFeedingSessionResponse(session models.FeedingSession) responses.Feedin
 	} else if user.Number == "" {
 		response.AddedBy = user.FirstName
 	}
+
+	var packItems = make([]responses.PackItem, 0)
+
+	sessionItems, err := cateringRepositories.GetFeedingSessionItems(session.Number)
+	for _, sessionItem := range sessionItems {
+		menuItem, _ := cateringRepositories.GetMenuItemByNumber(sessionItem.MenuItemNumber)
+		unitOfUse, _ := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
+		packItems = append(packItems, responses.PackItem{
+			ItemNumber: menuItem.Number,
+			Name:       menuItem.Name,
+			Quantity:   sessionItem.Quantity,
+			Type:       menuItem.Type,
+			UnitOfConsumption: responses.UnitOfMeasureResponse{
+				UnitOfMeasureNumber: unitOfUse.Number,
+				Name:                unitOfUse.Name,
+				Abbreviation:        unitOfUse.Abbreviation,
+				Code:                unitOfUse.Code,
+			},
+		})
+	}
+
+	response.PackItems = packItems
 
 	return response
 }
