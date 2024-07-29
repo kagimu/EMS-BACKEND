@@ -10,7 +10,7 @@ type PromotionSettingValue struct {
 	Type                   string  `json:"type"`
 	Score                  float64 `json:"score"`
 	PromotionSettingNumber string  `json:"promotion_setting_number"`
-	AssessmentGradeNumber  string  `json:"assessment_grade_number"`
+	GradingStandardNumber  string  `json:"grading_standard_number"`
 }
 
 func (p *PromotionSettingValue) Prepare() {

@@ -9,10 +9,10 @@ type FeedingSessionItem struct {
 	gorm.Model
 	Number               string          `json:"number" gorm:"size:36;unique;not null"`
 	FeedingSessionNumber string          `json:"feeding_session_number" gorm:"size:36;"`
-	FeedingSession       FeedingSession  `gorm:"foreignKey:FeedingSessionNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	FeedingSession       FeedingSession  `gorm:"foreignKey:FeedingSessionNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	MenuItemNumber       string          `json:"menu_item_number" gorm:"size:36;"`
-	MenuItem             MenuItem        `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	MenuItem             MenuItem        `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	Quantity             float64         `json:"quantity"`
 	UserNumber           string          `json:"user_number" gorm:"size:36;index;not null"`
-	User                 authModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	User                 authModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }

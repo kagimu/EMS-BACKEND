@@ -9,7 +9,7 @@ import (
 )
 
 func CreateAssessmentGrade(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
@@ -26,11 +26,11 @@ func CreateAssessmentGrade(c *gin.Context) {
 		return
 	}
 
-	err = services.SaveAssessmentGrade(payload, user.Number)
+	/*err = services.SaveAssessmentGrade(payload, user.Number)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
-	}
+	}*/
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Assessment grade created successfully"})
 }

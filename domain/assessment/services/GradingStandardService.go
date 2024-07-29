@@ -13,11 +13,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
-	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	classResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
@@ -231,7 +229,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 		return errors.New("Name already used: " + aggregateScaleRequest.ScaleName)
 	}
 
-	grades := aggregateScaleRequest.Grades
+	grades := aggregateScaleRequest.AggregateScales
 
 	if int64(len(grades)) != aggregateScaleRequest.Count {
 		return errors.New("you should define the grades up to set count")
@@ -262,6 +260,11 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 			if err != nil {
 				return err
 			}
+		}
+
+		err = saveGradingCategory(aggregateScaleRequest.AssessmentGradeItems, scale.Number, currentUser, trn)
+		if err != nil {
+			return err
 		}
 
 		return nil
@@ -556,7 +559,23 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 		})
 	}
 
-	response.Grades = grades
+	response.AggregateScaleItems = grades
+
+	assessmentGrade, err := repositories.FindAssessmentGradeByScaleNumber(scale.Number)
+	if err != nil {
+		return response, errors.New("getting grading category meta error: " + err.Error())
+	}
+
+	if assessmentGrade.Number == "" {
+		return response, errors.New("Scale: " + scale.Name + " has no grading categories")
+	}
+
+	assessmentGradeScales, err := repositories.FindAssessmentGradeScaleByGradeNumber(assessmentGrade.Number)
+	if err != nil {
+		return response, errors.New("getting grading categories error: " + err.Error())
+	}
+
+	response.AssessmentGrade = createAssessmentGradeResponse(assessmentGrade, assessmentGradeScales)
 
 	return response, nil
 }
@@ -597,7 +616,7 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		return errors.New("invalid scale number")
 	}
 
-	grades := aggregateScaleRequest.Grades
+	grades := aggregateScaleRequest.AggregateScales
 
 	if int64(len(grades)) != aggregateScaleRequest.Count {
 		return errors.New("you should define the grades up to set count")
@@ -613,7 +632,16 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		return errors.New("getting old aggregate scales error: " + err.Error())
 	}
 
+	assessmentGrade, err := repositories.FindAssessmentGradeByScaleNumber(scale.Number)
+	if err != nil {
+		return errors.New("checking assessment grade error: " + err.Error())
+	}
+
 	trn := config.DB.Begin()
+
+	if assessmentGrade.Number != "" {
+		err = clearGradingCategory(assessmentGrade, trn)
+	}
 
 	for _, aggregateScale := range aggregateScales {
 		err = repositories.RemoveAggregateScale(aggregateScale, trn)
@@ -640,12 +668,39 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		}
 	}
 
+	err = saveGradingCategory(aggregateScaleRequest.AssessmentGradeItems, scale.Number, currentUser, trn)
+	if err != nil {
+		return err
+	}
+
 	if err := trn.Commit().Error; err != nil {
 		return errors.New("commit grading scales error: " + err.Error())
 	}
 
 	return nil
 
+}
+
+func clearGradingCategory(assessmentGrade assessmentGradeModels.AssessmentGrade, trn *gorm.DB) error {
+
+	gradingCategories, err := repositories.FindAssessmentGradeScaleByGradeNumber(assessmentGrade.Number, trn)
+	if err != nil {
+		return errors.New("getting grading categories error: " + err.Error())
+	}
+
+	for _, gradingCategory := range gradingCategories {
+		err = repositories.RemoveAssessmentGradeScale(gradingCategory, trn)
+		if err != nil {
+			return errors.New("removing old grading category scale error: " + err.Error())
+		}
+	}
+
+	err = repositories.RemoveAssessmentGrade(assessmentGrade, trn)
+	if err != nil {
+		return errors.New("removing old grading category error: " + err.Error())
+	}
+
+	return nil
 }
 
 func RemoveGradingStandard(gradingStandardNumber string) error {
@@ -709,24 +764,37 @@ func RemoveScale(scaleNumber string) error {
 		return errors.New("this scale is being used on " + strconv.Itoa(classCount) + " classes")
 	}
 
-	trn := config.DB.Begin()
-
-	for _, aggregateScale := range aggregateScales {
-		err = repositories.RemoveAggregateScale(aggregateScale, trn)
-		if err != nil {
-			trn.Rollback()
-			return errors.New("clearing scales error: " + err.Error())
-		}
-	}
-
-	err = repositories.RemoveScale(scale, trn)
+	gradingCategory, err := repositories.FindAssessmentGradeByScaleNumber(scale.Number)
 	if err != nil {
-		trn.Rollback()
-		return errors.New("removing scale failed: " + err.Error())
+		return errors.New("checking grading category error: " + err.Error())
 	}
 
-	if err = trn.Commit().Error; err != nil {
-		return errors.New("finalization failed, try again: " + err.Error())
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
+
+		for _, aggregateScale := range aggregateScales {
+			err = repositories.RemoveAggregateScale(aggregateScale, trn)
+			if err != nil {
+				return errors.New("clearing scales error: " + err.Error())
+			}
+		}
+
+		if gradingCategory.Number != "" {
+			err = clearGradingCategory(gradingCategory, trn)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = repositories.RemoveScale(scale, trn)
+		if err != nil {
+			return errors.New("removing scale failed: " + err.Error())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.New(err.Error())
 	}
 
 	return nil
@@ -805,52 +873,32 @@ func createGradingStandardClassesResponse(gradingScaleClass assessmentGradeModel
 	return gradingStandardClassesResponse, nil
 }
 
-func SaveAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.AssessmentGradeRequest, currentUserNumber string) error {
+func saveGradingCategory(gradingCategories []assessmentGradeRequests.AssessmentGradeItemRequest, scaleNumber, currentUserNumber string, trn *gorm.DB) error {
 
-	err := checkDuplicatesInClasses(assessmentGradeRequest.Classes)
-	if err != nil {
-		return err
-	}
-
-	err = CheckOverlapsInGrades(assessmentGradeRequest.AssessmentGradeItems)
+	err := CheckOverlapsInGrades(gradingCategories)
 	if err != nil {
 		return errors.New(err.Error())
 	}
 
-	err = config.DB.Transaction(func(trn *gorm.DB) error {
+	saveAssessmentGrade := assessmentGradeModels.AssessmentGrade{
+		Status:              constants.StatusActive,
+		Number:              uuid.NewV4().String(),
+		UserNumber:          currentUserNumber,
+		AssessmentAreaCount: 8,
+		GradePoints:         len(gradingCategories),
+		ScaleNumber:         scaleNumber,
+	}
 
-		saveAssessmentGrade := assessmentGradeModels.AssessmentGrade{
-			Status:              constants.StatusActive,
-			Number:              uuid.NewV4().String(),
-			UserNumber:          currentUserNumber,
-			AssessmentAreaCount: assessmentGradeRequest.AssessmentAreaCount,
-			SchoolNumber:        assessmentGradeRequest.SchoolNumber,
-		}
-
-		err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
-		if err != nil {
-			return errors.New("saving assessment grade error: " + err.Error())
-		}
-
-		for _, classNumber := range assessmentGradeRequest.Classes {
-			err = processAssessmentGradeClasses(classNumber, saveAssessmentGrade, trn)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, assessmentGradeScaleItem := range assessmentGradeRequest.AssessmentGradeItems {
-			err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, trn)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-
+	err = repositories.SaveAssessmentGrade(saveAssessmentGrade, trn)
 	if err != nil {
-		return errors.New("failed finalizing assessment grade, error: " + err.Error())
+		return errors.New("saving grading category error: " + err.Error())
+	}
+
+	for _, assessmentGradeScaleItem := range gradingCategories {
+		err = processAssessmentGradeScaleItem(assessmentGradeScaleItem, saveAssessmentGrade.Number, trn)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -950,22 +998,17 @@ func GetAssessmentGrades(classNumber, status string) ([]assessmentGradeResponses
 			return assessmentGradeResponse, errors.New("checking assessment scale error: " + err.Error())
 		}
 
-		classes, err := classRepositories.FindClassesByAssessmentGradeNumber(assessmentGrade.Number)
-		if err != nil {
-			return assessmentGradeResponse, errors.New("checking assessment grade classes error: " + err.Error())
-		}
-
-		assessmentGradeResponse = append(assessmentGradeResponse, createAssessmentGradeResponse(assessmentGrade, gradeScale, classes))
+		assessmentGradeResponse = append(assessmentGradeResponse, createAssessmentGradeResponse(assessmentGrade, gradeScale))
 	}
 
 	return assessmentGradeResponse, nil
 }
 
-func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.AssessmentGrade, assessmentGradeScales []assessmentGradeModels.AssessmentGradeScale, classes []classModels.Class) assessmentGradeResponses.AssessmentGradeResponse {
+func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.AssessmentGrade, assessmentGradeScales []assessmentGradeModels.AssessmentGradeScale) assessmentGradeResponses.AssessmentGradeResponse {
 
 	assessmentGradeResponse := assessmentGradeResponses.AssessmentGradeResponse{
-		AssessmentAreaCount:   assessmentGrade.AssessmentAreaCount,
-		AssessmentGradeNumber: assessmentGrade.Number,
+		AssessmentAreaCount: assessmentGrade.AssessmentAreaCount,
+		GradePoints:         assessmentGrade.GradePoints,
 	}
 
 	var assessmentGradeItemResponses = make([]assessmentGradeResponses.AssessmentGradeItemResponse, 0)
@@ -982,13 +1025,6 @@ func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.Assessm
 		})
 	}
 
-	var classResponse = make([]classResponses.ClassResponse, 0)
-
-	for _, class := range classes {
-		classResponse = append(classResponse, services.CreateClassResponse(class))
-	}
-
-	assessmentGradeResponse.Classes = classResponse
 	assessmentGradeResponse.AssessmentGradeItems = assessmentGradeItemResponses
 	return assessmentGradeResponse
 }
