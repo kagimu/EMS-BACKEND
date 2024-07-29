@@ -17,17 +17,13 @@ func CreateGradeGroup(gradeGroup *models.GradeGroup) error {
 
 	gradeGroupByName, err := repo.FindGradeGroupByName(gradeGroup.Name, gradeGroup.SchoolNumber)
 	if err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
 		}
-
-		return err
-
 	}
 
 	if gradeGroupByName.Name != "" {
-		return errors.New("grade group with name already exists")
+		return errors.New("grade group with this name already exists")
 
 	}
 
