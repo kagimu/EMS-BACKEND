@@ -520,7 +520,7 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status stri
 		schoolNumber = campus.SchoolNumber
 	}
 
-	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, status, itemType, paginatedResponse, context)
+	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, status, itemType, &paginatedResponse, context)
 
 	if err != nil {
 		return pagination.PaginatedResponse{}, errors.New("getting all menu items error: " + err.Error())

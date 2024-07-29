@@ -69,11 +69,13 @@ func FetchGrades(schoolNumber string, ctx *gin.Context) ([]responses.NameOfAggre
 	for _, grade := range grades {
 
 		gradeNames = append(gradeNames, responses.NameOfAggregates{
-			Name:       grade.Name,
-			Number:     grade.Number,
-			ShortName:  grade.ShortName,
-			Code:       grade.Code,
-			GradeGroup: grade.GradeGroup.Name,
+			Name:        grade.Name,
+			Number:      grade.Number,
+			ShortName:   grade.ShortName,
+			Code:        grade.Code,
+			GradeGroup:  grade.GradeGroup.Name,
+			Status:      grade.Status,
+			GroupNumber: grade.GradeGroup.Number,
 		})
 	}
 
