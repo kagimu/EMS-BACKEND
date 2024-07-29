@@ -24,11 +24,11 @@ func CreateGrade(ctx *gin.Context) {
 	userNumber := ctx.GetHeader("User-Number")
 
 	if err := services.CreateGrade(userNumber, request); err != nil {
-		ctx.JSON(500, gin.H{"message": "Failed to create grade" + err.Error()})
+		ctx.JSON(400, gin.H{"message": "Failed to create grade" + err.Error()})
 		return
 	}
 
-	ctx.JSON(201, commons.Feedback("Grade created successfully"))
+	ctx.JSON(201, commons.Feedback("Name of aggregate created successfully"))
 
 }
 
@@ -36,7 +36,7 @@ func FetchGrades(ctx *gin.Context) {
 
 	schoolNumber := ctx.Query("school_number")
 
-	grades, err := services.FetchGrades(schoolNumber)
+	grades, err := services.FetchGrades(schoolNumber, ctx)
 
 	if err != nil {
 		ctx.JSON(500, gin.H{"message": "Failed to fetch grades"})
