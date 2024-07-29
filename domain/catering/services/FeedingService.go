@@ -644,27 +644,82 @@ func SaveFeedingSession(payload requests.FeedingSessionRequest, currentUserNumbe
 		return errors.New("this name is already defined")
 	}
 
-	checkFeedingSession, err = cateringRepositories.GetFeedingSessionByCodeAndSchool(payload.Code, payload.SchoolNumber)
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
+
+		newFeedingSession := models.FeedingSession{
+			Number:       uuid.NewV4().String(),
+			Name:         payload.Name,
+			Status:       payload.Status,
+			SchoolNumber: payload.SchoolNumber,
+			UserNumber:   currentUserNumber,
+		}
+
+		err = cateringRepositories.SaveFeedingSession(newFeedingSession, trn)
+		if err != nil {
+			return err
+		}
+
+		err = processMenuItems(newFeedingSession, payload.MenuItems, currentUserNumber, trn)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return err
 	}
 
-	if checkFeedingSession.Number != "" {
-		return errors.New("the provided code is already used")
-	}
+	return nil
+}
 
-	newFeedingSession := models.FeedingSession{
-		Number:       uuid.NewV4().String(),
-		Name:         payload.Name,
-		Status:       payload.Status,
-		SchoolNumber: payload.SchoolNumber,
-		Code:         payload.Code,
-		UserNumber:   currentUserNumber,
-	}
-
-	err = cateringRepositories.SaveFeedingSession(newFeedingSession)
+func processMenuItems(menuPack models.FeedingSession, menuItemsAndQuantities []requests.MenuItemQuantity, currentUser string, tx *gorm.DB) error {
+	err := checkDuplicates(menuItemsAndQuantities)
 	if err != nil {
 		return err
+	}
+
+	for _, menuItemQuantity := range menuItemsAndQuantities {
+
+		saveItemAssembly := models.FeedingSessionItem{
+			Number:               uuid.NewV4().String(),
+			FeedingSessionNumber: menuPack.Number,
+			MenuItemNumber:       menuItemQuantity.MenuItemNumber,
+			Quantity:             menuItemQuantity.Quantity,
+			UserNumber:           currentUser,
+		}
+
+		err = cateringRepositories.SaveFeedingSessionItem(saveItemAssembly, tx)
+		if err != nil {
+			return errors.New("saving menu pack item error: " + err.Error())
+		}
+
+	}
+
+	return nil
+}
+
+func checkDuplicates(menuItemAndQuantities []requests.MenuItemQuantity) error {
+
+	cleanClassNumbers := make([]requests.MenuItemQuantity, len(menuItemAndQuantities))
+
+	for _, selectedMenuItem := range menuItemAndQuantities {
+
+		for _, cleanClassNumber := range cleanClassNumbers {
+
+			if cleanClassNumber.MenuItemNumber == selectedMenuItem.MenuItemNumber {
+				menuItem, err := cateringRepositories.GetMenuItemByNumber(selectedMenuItem.MenuItemNumber)
+				if err != nil {
+					return errors.New("error fetching item details: " + err.Error())
+				}
+				return errors.New(fmt.Sprintf("%s is selected multiple times", menuItem.Name))
+			}
+
+		}
+
+		cleanClassNumbers = append(cleanClassNumbers, selectedMenuItem)
+
 	}
 
 	return nil
@@ -690,10 +745,9 @@ func GetFeedingSession(schoolNumber string) ([]responses.FeedingSessionResponse,
 func BuildFeedingSessionResponse(session models.FeedingSession) responses.FeedingSessionResponse {
 
 	response := responses.FeedingSessionResponse{
-		Name:         session.Name,
-		Code:         session.Code,
-		Number:       session.Number,
-		SchoolNumber: session.SchoolNumber,
+		Name:                 session.Name,
+		SchoolNumber:         session.SchoolNumber,
+		FeedingSessionNumber: session.Number,
 	}
 
 	user, err := repository.GetUserByNumber(session.UserNumber)
@@ -702,6 +756,28 @@ func BuildFeedingSessionResponse(session models.FeedingSession) responses.Feedin
 	} else if user.Number == "" {
 		response.AddedBy = user.FirstName
 	}
+
+	var packItems = make([]responses.PackItem, 0)
+
+	sessionItems, err := cateringRepositories.GetFeedingSessionItems(session.Number)
+	for _, sessionItem := range sessionItems {
+		menuItem, _ := cateringRepositories.GetMenuItemByNumber(sessionItem.MenuItemNumber)
+		unitOfUse, _ := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
+		packItems = append(packItems, responses.PackItem{
+			ItemNumber: menuItem.Number,
+			Name:       menuItem.Name,
+			Quantity:   sessionItem.Quantity,
+			Type:       menuItem.Type,
+			UnitOfConsumption: responses.UnitOfMeasureResponse{
+				UnitOfMeasureNumber: unitOfUse.Number,
+				Name:                unitOfUse.Name,
+				Abbreviation:        unitOfUse.Abbreviation,
+				Code:                unitOfUse.Code,
+			},
+		})
+	}
+
+	response.PackItems = packItems
 
 	return response
 }
@@ -795,27 +871,43 @@ func UpdateFeedingSession(updateFeedingSessionRequest requests.UpdateFeedingSess
 		return errors.New("Checking feed session name error: " + err.Error())
 	}
 
-	if checkName.Number != "" && checkName.Number != updateFeedingSessionRequest.FeedingSessionNumber {
+	if checkName.Number != "" && checkName.Number != feedingSession.Number {
 		return errors.New("name already used, choose a unique one")
 	}
 
-	checkCode, err := cateringRepositories.GetFeedingSessionByCodeAndSchool(updateFeedingSessionRequest.Code, updateFeedingSessionRequest.SchoolNumber)
+	menuPackItems, err := cateringRepositories.GetFeedingSessionItems(feedingSession.Number)
 	if err != nil {
-		return errors.New("Checking feeding session code error: " + err.Error())
+		return errors.New("checking old items error: " + err.Error())
 	}
 
-	if checkCode.Number != "" && checkCode.Number != updateFeedingSessionRequest.FeedingSessionNumber {
-		return errors.New("feeding session code already used, choose a unique one")
-	}
-
-	feedingSession.Code = updateFeedingSessionRequest.Code
 	feedingSession.UserNumber = currentUserNumber
 	feedingSession.Name = updateFeedingSessionRequest.Name
 	feedingSession.Status = updateFeedingSessionRequest.Status
 
-	err = cateringRepositories.SaveFeedingSession(feedingSession)
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, menuPackItem := range menuPackItems {
+			err = cateringRepositories.RemoveFeedingSessionItem(menuPackItem, tx)
+			if err != nil {
+				return errors.New("clearing old item error: " + err.Error())
+			}
+		}
+
+		err = cateringRepositories.SaveFeedingSession(feedingSession, tx)
+		if err != nil {
+			return errors.New("updating feed session error: " + err.Error())
+		}
+
+		err = processMenuItems(feedingSession, updateFeedingSessionRequest.MenuItems, currentUserNumber, tx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return errors.New("updating feed session error: " + err.Error())
+		return err
 	}
 
 	return nil

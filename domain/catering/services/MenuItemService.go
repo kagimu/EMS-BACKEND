@@ -105,7 +105,7 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 		if menuItem.Type == constants.TypeAssembled {
 			err = assembleItem(transaction, currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
-			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber, menuItem.UnitOfMeasureNumber)
+			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, menuItem.ConversionToPurchaseUnit, currentUserNumber, menuItem.UnitOfMeasureNumber)
 		}
 
 		return err
@@ -158,7 +158,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 
 		unitCost = recentStock.UnitCost + unitCost
 
-		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber, secondaryItem.PurchaseUnitOfMeasureNumber)
+		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, secondaryItem.ConversionToPurchaseUnit, currentUserNumber, secondaryItem.PurchaseUnitOfMeasureNumber)
 		if err != nil {
 			return errors.New("first save of none assembled item error: " + err.Error())
 		}
@@ -169,7 +169,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 
 	menuItem, _ := repositories.GetMenuItemByNumber(stock.MenuItemNumber)
 
-	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber, menuItem.PurchaseUnitOfMeasureNumber)
+	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, menuItem.ConversionToPurchaseUnit, currentUserNumber, menuItem.PurchaseUnitOfMeasureNumber)
 
 	if err != nil {
 		return errors.New("saving none assembled item error: " + err.Error())
@@ -193,16 +193,17 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 	return nil
 }
 
-func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItemNumber string, quantity float64, currentUserNumber, unitOfMeasureNumber string) (models.Stocking, error) {
+func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItemNumber string, quantity, conversionToPurchaseUnitRate float64, currentUserNumber, unitOfMeasureNumber string) (models.Stocking, error) {
 
 	saveStock := models.Stocking{
-		Number:              uuid.NewV4().String(),
-		CampusNumber:        campusNumber,
-		UnitCost:            unitCost,
-		MenuItemNumber:      menuItemNumber,
-		Quantity:            quantity,
-		UserNumber:          currentUserNumber,
-		UnitOfMeasureNumber: unitOfMeasureNumber,
+		Number:                      uuid.NewV4().String(),
+		CampusNumber:                campusNumber,
+		UnitCost:                    unitCost,
+		MenuItemNumber:              menuItemNumber,
+		Quantity:                    quantity,
+		UserNumber:                  currentUserNumber,
+		PurchaseUnitOfMeasureNumber: unitOfMeasureNumber,
+		ConversionToPurchase:        conversionToPurchaseUnitRate,
 	}
 
 	if _, err := repositories.SaveStockingEntry(saveStock, transaction); err != nil {
