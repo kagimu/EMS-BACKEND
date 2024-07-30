@@ -214,6 +214,12 @@ func CreateUser(c *gin.Context) {
 
 		userRole.UserNumber = userObject.Number
 		userRole.RoleNumber = role.RoleNumber
+		if role.ExpiryDate == "" {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Expiry date is required"})
+			return
+
+		}
 		date, err := commons.ConvertStringToDate(role.ExpiryDate)
 		if err != nil {
 			tx.Rollback()
