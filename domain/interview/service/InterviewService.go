@@ -3,17 +3,27 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
+	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	assessmentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	assessmentAreaRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	interviewResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	interviewRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/repositories"
+	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/repository"
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+	"net/http"
 	"strconv"
 )
 
 var assessmentMetricRepository = assessmentRepositories.NewAssessmentMetricRepository()
+
+var interviewRepository = repository2.NewInterviewRepoImpl(config.DB)
 
 func FetchInterviewAssessmentMetricByStudent(studentNumber, interviewNumber string) ([]interviewResponses.StudentInterviewResults, error) {
 
@@ -129,6 +139,68 @@ func createInterviewResult(name, comment, grade string, score float64) interview
 		Score:   score,
 		Grade:   grade,
 	}
+}
+
+func CreateInterview(payload requests.InterviewRequest, currentUser string) error {
+
+	tx := config.DB.Begin()
+
+	var repo = repository2.NewInterviewRepoImpl(tx)
+
+	interviewNumber := uuid.NewV4().String()
+	saveInterview := models.Interview{
+		Number:            interviewNumber,
+		Message:           payload.Message,
+		Venue:             payload.Venue,
+		Name:              payload.Name,
+		InterviewDate:     payload.InterviewDate,
+		UserNumber:        currentUser,
+		CampusClassNumber: payload.CampusClassNumber,
+	}
+
+	if err := repo.CreateInterview(&saveInterview); err != nil {
+		tx.Rollback()
+		return errors.New("creating interview error: " + err.Error())
+	}
+
+	var interview models.Interview
+	if err := tx.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview schedule not found"})
+		return
+	}
+
+	for _, assessmentMetricNumber := range payload.AssessmentMetrics {
+
+		var assessmentMetric assessmentModel.AssessmentMetric
+		if err := tx.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+			continue
+		}
+
+		var interviewAssessmentMetric models.InterviewAssessmentMetric
+		if err := tx.Where("interview_number = ? AND assessment_metric_number = ?", interviewNumber, assessmentMetricNumber).First(&interviewAssessmentMetric).Error; err == nil {
+			continue
+		}
+
+		interviewAssessmentMetric = models.InterviewAssessmentMetric{
+			Number:                 uuid.NewV4().String(),
+			InterviewNumber:        interviewNumber,
+			AssessmentMetricNumber: assessmentMetricNumber,
+			UserNumber:             user.Number,
+		}
+
+		if err := tx.Create(&interviewAssessmentMetric).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create interview assessment metric"})
+			return
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
+		return
+
+	}
+
 }
 
 func FindInterviewStudentsByInterViewNumber(interviewNumber string) error {

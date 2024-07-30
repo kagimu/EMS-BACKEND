@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/service"
 	"gorm.io/gorm"
 	"net/http"
 
@@ -43,69 +44,18 @@ func CreateInterview(c *gin.Context) {
 		return
 	}
 
-	tx := config.DB.Begin()
-	var repo = repository.NewInterviewRepoImpl(tx)
-
-	interviewNumber := uuid.NewV4().String()
-	saveInterview := models.Interview{
-		Number:            interviewNumber,
-		Message:           payload.Message,
-		Venue:             payload.Venue,
-		Name:              payload.Name,
-		InterviewDate:     payload.InterviewDate,
-		UserNumber:        user.Number,
-		CampusClassNumber: payload.CampusClassNumber,
-	}
-
-	if err := repo.CreateInterview(&saveInterview); err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to create interview: " + err.Error()})
+	err = service.CreateInterview(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
-	var interview models.Interview
-	if err := tx.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview schedule not found"})
-		return
-	}
-
-	for _, assessmentMetricNumber := range payload.AssessmentMetrics {
-
-		var assessmentMetric assessmentModel.AssessmentMetric
-		if err := tx.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
-			continue
-		}
-
-		var interviewAssessmentMetric models.InterviewAssessmentMetric
-		if err := tx.Where("interview_number = ? AND assessment_metric_number = ?", interviewNumber, assessmentMetricNumber).First(&interviewAssessmentMetric).Error; err == nil {
-			continue
-		}
-
-		interviewAssessmentMetric = models.InterviewAssessmentMetric{
-			Number:                 uuid.NewV4().String(),
-			InterviewNumber:        interviewNumber,
-			AssessmentMetricNumber: assessmentMetricNumber,
-			UserNumber:             user.Number,
-		}
-
-		if err := tx.Create(&interviewAssessmentMetric).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create interview assessment metric"})
-			return
-		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
-		return
-
-	}
 	//sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "Wholesome: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
 	//if err := sendEmail.SendEmail(); err != nil {
 	//	c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})
 	//}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Interview created successfully", "data": saveInterview})
+	c.JSON(http.StatusOK, commons.Feedback("Interview created successfully"))
 }
 
 func EditInterview(c *gin.Context) {
