@@ -10,7 +10,7 @@ import (
 	assessmentGradeRequests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
 	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
 	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
+	gradeRepository "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -295,7 +295,7 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 		for _, cleanGrade := range cleanGrades {
 
 			if cleanGrade.GradeNumber == grade.GradeNumber {
-				gr, err := repository.FindGradeByNumber(grade.GradeNumber)
+				gr, err := gradeRepository.FindGradeByNumber(grade.GradeNumber)
 				if err != nil {
 					return errors.New("error fetching grade: " + err.Error())
 				}
@@ -536,7 +536,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 
 	for _, aggregateScale := range aggregateScales {
 
-		grade, err := repository.FindGradeByNumber(aggregateScale.GradeNumber)
+		grade, err := gradeRepository.FindGradeByNumber(aggregateScale.GradeNumber)
 		if err != nil {
 			return response, errors.New("error fetching aggregate scales : " + err.Error())
 		}

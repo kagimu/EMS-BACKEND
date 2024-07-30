@@ -13,6 +13,8 @@ import (
 	"strconv"
 )
 
+var assessmentMetricRepository = assessmentRepositories.NewAssessmentMetricRepository()
+
 func FetchInterviewAssessmentMetricByStudent(studentNumber, interviewNumber string) ([]interviewResponses.StudentInterviewResults, error) {
 
 	var studentInterviewResults []interviewResponses.StudentInterviewResults
@@ -40,7 +42,7 @@ func FetchInterviewAssessmentMetricByStudent(studentNumber, interviewNumber stri
 
 	for _, interviewAssessmentMetric := range interviewAssessmentMetrics {
 
-		assessmentMetric, err := assessmentRepositories.FindAssessmentMetricByNumber(interviewAssessmentMetric.AssessmentMetricNumber)
+		assessmentMetric, err := assessmentMetricRepository.FindAssessmentMetricByNumber(interviewAssessmentMetric.AssessmentMetricNumber)
 		if err != nil {
 			return studentInterviewResults, errors.New("getting assessment metric error: " + err.Error())
 		}
@@ -68,7 +70,20 @@ func FetchInterviewAssessmentMetricByStudent(studentNumber, interviewNumber stri
 			return studentInterviewResults, errors.New("error getting learner scores: " + err.Error())
 		}
 
-		aggregateScales, err := assessmentRepositories.FindAggregateScaleByClassNumberAndGradingStandardNumber(class.Number, assessmentMetric.GradingStandardNumber)
+		gradingStandards, err := assessmentRepositories.FindGradingStandardByCampusNumberAndCampusClassNumber("", class.Number, "")
+		if err != nil {
+			return studentInterviewResults, errors.New("error getting " + class.Name + "'s grading standard: " + err.Error())
+		}
+
+		if len(gradingStandards) == 0 {
+			return studentInterviewResults, errors.New("no grading standard set for: " + class.Name)
+		}
+
+		if len(gradingStandards) > 1 {
+			return studentInterviewResults, errors.New("Class " + class.Name + " has more than one standard set, choose the default standard to use.")
+		}
+
+		aggregateScales, err := assessmentRepositories.FindAggregateScaleByClassNumberAndGradingStandardNumber(class.Number, gradingStandards[0].Number)
 		if err != nil {
 			return studentInterviewResults, errors.New("error getting aggregate scale: " + err.Error())
 		}
@@ -114,4 +129,8 @@ func createInterviewResult(name, comment, grade string, score float64) interview
 		Score:   score,
 		Grade:   grade,
 	}
+}
+
+func FindInterviewStudentsByInterViewNumber(interviewNumber string) error {
+
 }

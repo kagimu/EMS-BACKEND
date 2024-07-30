@@ -9,9 +9,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	userModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
@@ -19,6 +20,8 @@ import (
 	"strconv"
 	"time"
 )
+
+var assessmentMetricRepository = assessmentMetricRepositories.NewAssessmentMetricRepository()
 
 func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNumber string) error {
 
@@ -31,7 +34,7 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 		return errors.New("student not found")
 	}
 
-	assessmentMetric, err := assessmentMetricRepositories.FindAssessmentMetricByNumber(assessmentRequest.AssessmentMetricNumber)
+	assessmentMetric, err := assessmentMetricRepository.FindAssessmentMetricByNumber(assessmentRequest.AssessmentMetricNumber)
 	if err != nil {
 		return errors.New("checking assessment metric error: " + err.Error())
 	}
@@ -141,13 +144,13 @@ func FetchLearnerNarrative(studentNumber string) ([]responses.NarrativeResponse,
 
 func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeResponse {
 
-	user, err := repository.GetUserByNumber(assessment.UserNumber)
+	user, err := repository3.GetUserByNumber(assessment.UserNumber)
 	if err != nil {
 		fmt.Println("user not found")
 		user = userModels.User{}
 	}
 
-	assessmentMetric, err := assessmentMetricRepositories.FindAssessmentMetricByNumber(assessment.AssessmentMetricNumber)
+	assessmentMetric, err := assessmentMetricRepository.FindAssessmentMetricByNumber(assessment.AssessmentMetricNumber)
 	if err != nil {
 		fmt.Println("assessment metric not found")
 		return responses.NarrativeResponse{}
@@ -156,6 +159,8 @@ func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeRes
 	if assessmentMetric.Number == "" {
 		return responses.NarrativeResponse{}
 	}
+
+	assessmentArea, err := repositories4.GetAssessmentAreaByNumber(assessmentMetric.AssessmentAreaNumber)
 
 	class, err := repositories.GetCampusClassByNumber(assessmentMetric.CampusClassNumber)
 	if err != nil {
@@ -177,7 +182,7 @@ func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeRes
 		Number:         assessment.Number,
 		Narration:      assessment.Comment,
 		Teacher:        user.FirstName + " " + user.LastName,
-		AssessmentArea: assessmentMetric.AssessmentAreaName,
+		AssessmentArea: assessmentArea.Name,
 		Class:          class.ClassName,
 		StudyPeriod:    studyPeriod.StudyPeriodName,
 		AcademicYear:   academicYear.AcademicYearName,
