@@ -58,6 +58,7 @@ type MenuItemResponse struct {
 	Parts                       []Part  `json:"parts"`
 	CurrentQuantity             float64 `json:"current_quantity"`
 	UnitCost                    float64 `json:"unit_cost"`
+	ConversionToPurchaseUnit    float64 `json:"conversion_to_purchase_unit"`
 }
 
 type Part struct {

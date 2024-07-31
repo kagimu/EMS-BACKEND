@@ -596,6 +596,7 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		PurchaseUnitOfMeasureName:   purchaseUnitOfMeasure.Name,
 		Parts:                       parts,
 		UnitCost:                    determineUnitCost(menuItem),
+		ConversionToPurchaseUnit:    menuItem.ConversionToPurchaseUnit,
 	}, nil
 }
 
