@@ -59,7 +59,7 @@ func AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClas
 
 	for _, assessment := range assessments {
 
-		response, _ := createAssessmentsResponse(assessment)
+		response, _ := CreateAssessmentsResponse(assessment)
 
 		assessmentsResponse = append(assessmentsResponse, response)
 	}
@@ -80,7 +80,7 @@ func AllAssessments(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, 
 
 	for _, assessment := range assessments {
 
-		response, _ := createAssessmentsResponse(assessment)
+		response, _ := CreateAssessmentsResponse(assessment)
 
 		assessmentsResponse = append(assessmentsResponse, response)
 	}
@@ -88,7 +88,7 @@ func AllAssessments(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, 
 	return assessmentsResponse, nil
 }
 
-func createAssessmentsResponse(assessment models.AssessmentMetric) (responses.AssessmentMetricResponse, error) {
+func CreateAssessmentsResponse(assessment models.AssessmentMetric) (responses.AssessmentMetricResponse, error) {
 
 	var assessmentMetricResponse responses.AssessmentMetricResponse
 

@@ -1,5 +1,7 @@
 package responses
 
+import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
+
 type InterviewQuestionResponse struct {
 	InterviewNumber string
 	Question        string
@@ -15,11 +17,17 @@ type StudentInterviewResults struct {
 	Comment string
 }
 
-type Assessment struct {
-	AssessmentAreaName     string  `json:"assessment_area_name"`
-	Number                 string  `json:"number"`
-	AssessmentMetricNumber string  `json:"assessment_metric_number"`
-	Comment                string  `json:"comment"`
-	ActualScore            float64 `json:"actual_score"`
-	Score                  float64 `json:"score"`
+type InterviewResponse struct {
+	InterviewNumber   string `json:"interview_number"`
+	Message           string `json:"message"`
+	Venue             string `json:"venue"`
+	Name              string `json:"name"`
+	InterviewDate     string `json:"interview_date"`
+	CampusClassNumber string `json:"campus_class_number"`
+	Class             string `json:"class"`
+}
+
+type InterviewResponseDetails struct {
+	InterviewResponse
+	AssessmentSchedules []responses.AssessmentMetricResponse `json:"assessment_schedules"`
 }

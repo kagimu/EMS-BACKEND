@@ -15,7 +15,7 @@ import (
 )
 
 func CreateInterviewAssessmentMetric(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -54,7 +54,6 @@ func CreateInterviewAssessmentMetric(c *gin.Context) {
 		Number:                 uuid.NewV4().String(),
 		InterviewNumber:        payload.InterviewNumber,
 		AssessmentMetricNumber: payload.AssessmentMetricNumber,
-		UserNumber:             user.Number,
 	}
 
 	if err := config.DB.Create(&interviewAssessmentMetric).Error; err != nil {
