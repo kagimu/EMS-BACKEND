@@ -56,7 +56,7 @@ func (u *unitOfMeasureRepo) FindUnitOfMeasuresBySchoolNumber(schoolNumber string
 
 	var unitOfMeasure []models.UnitOfMeasure
 
-	if err := db.Where("school_number = ?", schoolNumber).Find(&unitOfMeasure).Error; err != nil {
+	if err := db.Where("school_number = ?", schoolNumber).Order("code asc").Find(&unitOfMeasure).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return unitOfMeasure, nil

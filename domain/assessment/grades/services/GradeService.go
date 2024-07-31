@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -27,7 +29,7 @@ func CreateGrade(userNumber string, request requests.GradeDataRequest) error {
 	}
 
 	if checkName.Number != "" {
-		return errors.New("grade name already used")
+		return errors.New("name already used")
 	}
 
 	checkNameAndShortName, err := repository.FindGradeByNameAndShortName(request.Name, request.ShortName, request.SchoolNumber)
@@ -56,13 +58,28 @@ func CreateGrade(userNumber string, request requests.GradeDataRequest) error {
 	return nil
 }
 
-func FetchGrades(schoolNumber string) ([]models.Grade, error) {
+func FetchGrades(schoolNumber string, ctx *gin.Context) ([]responses.NameOfAggregates, error) {
 	var grades []models.Grade
-	grades, err := repository.FindAllGrades(schoolNumber)
+	grades, err := repository.FindAllGrades(schoolNumber, ctx.Query("grade_group_number"))
 	if err != nil {
 		return nil, err
 	}
-	return grades, nil
+
+	var gradeNames []responses.NameOfAggregates
+	for _, grade := range grades {
+
+		gradeNames = append(gradeNames, responses.NameOfAggregates{
+			Name:        grade.Name,
+			Number:      grade.Number,
+			ShortName:   grade.ShortName,
+			Code:        grade.Code,
+			GradeGroup:  grade.GradeGroup.Name,
+			Status:      grade.Status,
+			GroupNumber: grade.GradeGroup.Number,
+		})
+	}
+
+	return gradeNames, nil
 }
 
 func UpdateGrade(userNumber string, editGradeDataRequest requests.EditGradeDataRequest) error {

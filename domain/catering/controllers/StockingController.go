@@ -44,9 +44,9 @@ func FetchStockings(c *gin.Context) {
 		return
 	}
 
-	campusNumber := c.Param("campus_number")
-	schoolNumber := c.Param("campus_number")
-	itemNumber := c.Param("item_number")
+	campusNumber := c.Query("campus_number")
+	schoolNumber := c.Query("school_number")
+	itemNumber := c.Query("item_number")
 
 	if campusNumber == "" && itemNumber == "" && schoolNumber == "" {
 		c.JSON(http.StatusBadRequest, commons.Feedback("Choose school, campus or menu item"))

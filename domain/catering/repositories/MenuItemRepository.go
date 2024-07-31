@@ -84,13 +84,14 @@ func SaveMenuItem(menuItem models.MenuItem) error {
 
 }
 
-func GetPaginatedMenuItems(schoolNumber string, status string, itemType string, paginatedResponse pagination.PaginatedResponse, c *gin.Context) ([]models.MenuItem, error) {
+func GetPaginatedMenuItems(schoolNumber string, status string, itemType string, paginatedResponse *pagination.PaginatedResponse, c *gin.Context) ([]models.MenuItem, error) {
 
 	var menuItems []models.MenuItem
 
 	if err := config.DB.
 		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByStatus(status), filters.ByType(itemType), pagination.
-			Paginate(c, &paginatedResponse)).Preload("School").Preload("UnitOfMeasure").
+			Paginate(c, paginatedResponse)).Preload("School").Preload("UnitOfMeasure").
+		Order("code asc").
 		Find(&menuItems).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
