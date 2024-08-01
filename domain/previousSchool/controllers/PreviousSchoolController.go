@@ -12,8 +12,8 @@ import (
 )
 
 type Class struct {
-	Name string `json:"name"`
-	Year string `json:"year"`
+	Class string `json:"class"`
+	Year  string `json:"year"`
 }
 type PreviousSchoolInfo struct {
 	Name    string  `json:"name"`
@@ -43,6 +43,23 @@ func CreatePreviousSchools(c *gin.Context) {
 
 	tx := config.DB.Begin()
 
+	// delete previous classes
+	var previousSchoolClasses models.PreviousSchoolClass
+	if err := tx.Where("previous_school_number = ?", applicationNumber).Delete(&previousSchoolClasses).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to update previous school classes"})
+		return
+	}
+
+	// delete previous schools
+	var previousSchool models.PreviousSchool
+	if err := tx.Where("application_number = ?", applicationNumber).Delete(&previousSchool).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to update previous schools"})
+		return
+
+	}
+
 	for _, item := range previousSchoolInfo {
 		savePreviousSchool := models.PreviousSchool{
 			Number:            uuid.NewV4().String(),
@@ -61,7 +78,7 @@ func CreatePreviousSchools(c *gin.Context) {
 			savePreviousSchoolClass := models.PreviousSchoolClass{
 				Number:               uuid.NewV4().String(),
 				PreviousSchoolNumber: savePreviousSchool.Number,
-				Class:                class.Name,
+				Class:                class.Class,
 				Year:                 class.Year,
 			}
 
@@ -148,7 +165,7 @@ func UpdatePreviousSchool(ctx *gin.Context) {
 		for _, class := range item.Classes {
 			savePreviousSchoolClass := models.PreviousSchoolClass{
 				PreviousSchoolNumber: savePreviousSchool.Number,
-				Class:                class.Name,
+				Class:                class.Class,
 				Year:                 class.Year,
 			}
 
