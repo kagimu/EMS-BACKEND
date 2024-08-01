@@ -52,8 +52,8 @@ func GetAssessmentGradeByClassNumberAndStatus(classNumber, status string, trn ..
 	var assessmentGrade models.AssessmentGrade
 
 	if err := db.
-		Joins("join assessment_grade_classes on assessment_grade_classes.assessment_grade_number = assessment_grades.number").
-		Scopes(filters.ByAnyField("assessment_grade_classes.class_number", classNumber), filters.ByAnyField("assessment_grades.status", status)).
+		Joins("join grading_standard_classes on grading_standard_classes.scale_number = assessment_grades.scale_number AND grading_standard_classes.class_number = ?", classNumber).
+		Scopes(filters.ByAnyField("assessment_grades.status", status)).
 		Distinct("assessment_grades.number", "assessment_grades.status", "assessment_grades.assessment_area_count", "assessment_grades.user_number", "assessment_grades.school_number", "assessment_grades.created_at", "assessment_grades.updated_at").
 		First(&assessmentGrade).Error; err != nil {
 
