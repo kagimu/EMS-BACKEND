@@ -271,7 +271,9 @@ func CreateUser(c *gin.Context) {
 
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, commons.Feedback("Failed :"+err.Error()))
+	}
 
 	c.JSON(http.StatusCreated, commons.Feedback("User created successfully"))
 }

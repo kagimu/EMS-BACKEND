@@ -43,8 +43,8 @@ func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentU
 
 	}
 
-	if err := trn.Commit(); err != nil {
-		return errors.New("failed to commit report columns transaction: " + err.Error.Error())
+	if err := trn.Commit().Error; err != nil {
+		return errors.New("failed to commit report columns transaction: " + err.Error())
 	}
 
 	return nil
@@ -136,8 +136,8 @@ func SaveAssessmentToReportColumn(reportColumnAssessmentRequest requests.ReportC
 		}
 	}
 
-	if err := trn.Commit(); err != nil {
-		return errors.New("Failed to finalize processing: " + err.Error.Error())
+	if err := trn.Commit().Error; err != nil {
+		return errors.New("Failed to finalize processing: " + err.Error())
 	}
 
 	return nil
