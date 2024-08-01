@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+var assessmentRepository = repositories2.NewAssessmentMetricRepository()
+
 func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentUser string) error {
 
 	reportSetting, err := reporsitory.GetReportSettingByNumber(reportColumnRequest.ReportSettingNumber)
@@ -213,7 +215,7 @@ func GetReportColumns(reportSettingNumber string) ([]responses.ReportColumnRespo
 				return nil, errors.New("invalid report column assessment area number")
 			}
 
-			assessmentSchedule, err := repositories2.FindAssessmentMetricByNumber(reportColumnAssessment.AssessmentMetricNumber)
+			assessmentSchedule, err := assessmentRepository.FindAssessmentMetricByNumber(reportColumnAssessment.AssessmentMetricNumber)
 			if err != nil {
 				return nil, errors.New("Error getting report column assessment metric number: " + err.Error())
 			}
@@ -222,10 +224,15 @@ func GetReportColumns(reportSettingNumber string) ([]responses.ReportColumnRespo
 				return nil, errors.New("invalid report column assessment metric number")
 			}
 
+			metric, err := repositories2.GetMetricByNumber(assessmentSchedule.MetricNumber)
+			if err != nil {
+				return nil, errors.New("getting metric by number error: " + err.Error())
+			}
+
 			reportColumnAssessmentResponse = append(reportColumnAssessmentResponse, responses.ReportColumnAssessmentResponse{
 				Number:           reportColumnAssessment.Number,
 				AssessmentArea:   assessmentArea.Name,
-				AssessmentMetric: assessmentSchedule.Name,
+				AssessmentMetric: metric.Name,
 				ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateOnly),
 			})
 		}

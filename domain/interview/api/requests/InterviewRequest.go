@@ -2,8 +2,6 @@ package requests
 
 import (
 	"errors"
-	"html"
-	"strings"
 )
 
 type InterviewRequest struct {
@@ -13,6 +11,11 @@ type InterviewRequest struct {
 	Name              string   `json:"name"`
 	CampusClassNumber string   `json:"campus_class_number"`
 	AssessmentMetrics []string `json:"assessment_metrics"`
+}
+
+type EditInterviewRequest struct {
+	InterviewRequest
+	InterviewNumber string `json:"interview_number"`
 }
 
 func (i *InterviewRequest) Validate() error {
@@ -32,7 +35,15 @@ func (i *InterviewRequest) Validate() error {
 	return nil
 }
 
-func (i *InterviewRequest) Prepare() {
-	i.Message = html.EscapeString(strings.TrimSpace((i.Message)))
-	i.Venue = html.EscapeString(strings.TrimSpace((i.Venue)))
+func (i *EditInterviewRequest) Validate() error {
+
+	if i.InterviewNumber == "" {
+		return errors.New("choose interview being edited")
+	}
+
+	if err := i.InterviewRequest.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }
