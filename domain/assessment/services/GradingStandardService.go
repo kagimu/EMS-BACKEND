@@ -582,9 +582,9 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 
 func createMinResponse(scale models.Scale) responses.ScaleResponse {
 	return responses.ScaleResponse{
-		ScaleNumber: scale.Number,
-		ScaleName:   scale.Name,
-		Count:       scale.Count,
+		ScaleNumber:         scale.Number,
+		ScaleName:           scale.Name,
+		AggregateScaleCount: scale.Count,
 	}
 }
 
@@ -1007,8 +1007,8 @@ func GetAssessmentGrades(classNumber, status string) ([]assessmentGradeResponses
 func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.AssessmentGrade, assessmentGradeScales []assessmentGradeModels.AssessmentGradeScale) assessmentGradeResponses.AssessmentGradeResponse {
 
 	assessmentGradeResponse := assessmentGradeResponses.AssessmentGradeResponse{
-		AssessmentAreaCount: assessmentGrade.AssessmentAreaCount,
-		GradePoints:         assessmentGrade.GradePoints,
+		AssessmentAreaCount:  assessmentGrade.AssessmentAreaCount,
+		AssessmentGradeCount: assessmentGrade.GradePoints,
 	}
 
 	var assessmentGradeItemResponses = make([]assessmentGradeResponses.AssessmentGradeItemResponse, 0)
@@ -1025,7 +1025,7 @@ func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.Assessm
 		})
 	}
 
-	assessmentGradeResponse.AssessmentGradeItems = assessmentGradeItemResponses
+	assessmentGradeResponse.AssessmentGrades = assessmentGradeItemResponses
 	return assessmentGradeResponse
 }
 

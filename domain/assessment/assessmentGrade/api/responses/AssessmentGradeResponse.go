@@ -1,9 +1,9 @@
 package responses
 
 type AssessmentGradeResponse struct {
-	GradePoints          int                           `json:"grade_points"`
+	AssessmentGradeCount int                           `json:"assessment_grade_count"`
 	AssessmentAreaCount  int                           `json:"assessment_area_count"`
-	AssessmentGradeItems []AssessmentGradeItemResponse `json:"assessment_grade_items"`
+	AssessmentGrades     []AssessmentGradeItemResponse `json:"assessment_grades"`
 }
 
 type AssessmentGradeItemResponse struct {
