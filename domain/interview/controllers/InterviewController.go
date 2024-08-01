@@ -1,24 +1,18 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
-	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/responses"
-	"gorm.io/gorm"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/service"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
-	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	assessmentRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/repository"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -37,252 +31,100 @@ func CreateInterview(c *gin.Context) {
 		return
 	}
 
-	payload.Prepare()
 	if err := payload.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
 		return
 	}
 
-	tx := config.DB.Begin()
-	var repo = repository.NewInterviewRepoImpl(tx)
-
-	interviewNumber := uuid.NewV4().String()
-	saveInterview := models.Interview{
-		Number:            interviewNumber,
-		Message:           payload.Message,
-		Venue:             payload.Venue,
-		Name:              payload.Name,
-		InterviewDate:     payload.InterviewDate,
-		UserNumber:        user.Number,
-		CampusClassNumber: payload.CampusClassNumber,
-	}
-
-	if err := repo.CreateInterview(&saveInterview); err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to create interview: " + err.Error()})
+	err = service.CreateInterview(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
-	var interview models.Interview
-	if err := tx.Where("number = ?", interviewNumber).First(&interview).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview schedule not found"})
-		return
-	}
-
-	for _, assessmentMetricNumber := range payload.AssessmentMetrics {
-
-		var assessmentMetric assessmentModel.AssessmentMetric
-		if err := tx.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
-			continue
-		}
-
-		var interviewAssessmentMetric models.InterviewAssessmentMetric
-		if err := tx.Where("interview_number = ? AND assessment_metric_number = ?", interviewNumber, assessmentMetricNumber).First(&interviewAssessmentMetric).Error; err == nil {
-			continue
-		}
-
-		interviewAssessmentMetric = models.InterviewAssessmentMetric{
-			Number:                 uuid.NewV4().String(),
-			InterviewNumber:        interviewNumber,
-			AssessmentMetricNumber: assessmentMetricNumber,
-			UserNumber:             user.Number,
-		}
-
-		if err := tx.Create(&interviewAssessmentMetric).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create interview assessment metric"})
-			return
-		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
-		return
-
-	}
-	//sendEmail := emailSender.Info{Email: application.Parent.Email, Token: "", MailType: "Wholesome: Scheduled Interview", UserName: application.Parent.SecondName, CurrentYear: time.Now().Year(), Type: "scheduled-interview", Data: saveInterview.InterviewDate}
-	//if err := sendEmail.SendEmail(); err != nil {
-	//	c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email to the parent"})
-	//}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Interview created successfully", "data": saveInterview})
+	c.JSON(http.StatusOK, commons.Feedback("Interview created successfully"))
 }
 
 func EditInterview(c *gin.Context) {
+
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
 		return
 	}
 
-	var repo = repository.NewInterviewRepoImpl(config.DB)
-
-	type InterviewPayload struct {
-		Message           string `json:"message"`
-		Venue             string `json:"venue"`
-		InterviewDate     string `json:"interview_date"`
-		CampusClassNumber string `json:"campus_class_number"`
-	}
-
-	var payload InterviewPayload
+	var payload requests.EditInterviewRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
 		return
 	}
 
-	interviewNumber := c.Param("interview_number")
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
+		return
+	}
 
-	interview, err := repo.FindInterviewByNumber(interviewNumber)
+	err = service.UpdateInterview(payload, user.Number)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview not found"})
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
-	interview.Message = payload.Message
-	interview.Venue = payload.Venue
-	interview.CampusClassNumber = payload.CampusClassNumber
-	interview.InterviewDate = payload.InterviewDate
-	interview.UserNumber = user.Number
-
-	if err := repo.UpdateInterview(interview); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update interview: " + err.Error()})
-		return
-
-	}
 	c.JSON(http.StatusOK, commons.Feedback("Interview updated successfully"))
 }
 
 func FetchAnInterview(c *gin.Context) {
-	var repo = repository.NewInterviewRepoImpl(config.DB)
-	interviewNumber := c.Param("interview_number")
 
-	interview, err := repo.FindInterviewByNumber(interviewNumber)
+	interviewNumber := c.Query("interview_number")
+	if interviewNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide interview number"})
+		return
+	}
+
+	interviewDetails, err := service.GetInterviewDetails(interviewNumber)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview not found"})
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": interview,
+		"data": interviewDetails,
 	})
 }
 
 func FetchAllInterviews(c *gin.Context) {
 
-	var interviews []models.Interview
-	if err := config.DB.Find(&interviews).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interviews: " + err.Error()})
+	campusClassNumber := c.Query("campus_class_number")
+	if campusClassNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose campus class number"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": interviews})
+	allInterviews, err := service.AllInterviews(campusClassNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": allInterviews,
+	})
 }
 
 func FetchStudentsByInterviewNumber(c *gin.Context) {
-	var repo = repository.NewInterviewRepoImpl(config.DB)
-	interviewNumber := c.Param("interview_number")
+	interviewNumber := c.Query("interview_number")
+	assessmentMetricNumber := c.Query("assessment_metric_number")
 
-	_, err := repo.FindInterviewByNumber(interviewNumber)
+	students, err := service.InterviewStudents(assessmentMetricNumber, interviewNumber)
+
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "Interview not found",
-		})
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
-	// invoke the repository to findInterview by number
-
-	interviewStudents, err := assessmentMetricRepositories.FindInterviewStudentsByInterViewNumber(interviewNumber)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Failed to fetch students",
-		})
-		return
-	}
-
-	assessmentMetrics, err := assessmentMetricRepositories.FindAssessmentMetricsByInterviewNumber(interviewNumber)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, commons.Feedback("assessment metric not found"+err.Error()))
-		return
-	}
-
-	type singleAssessment struct {
-		AssessmentScheduleNumber string `json:"assessment_schedule_number"`
-		AssessmentScheduleName   string `json:"assessment_schedule_name"`
-	}
-
-	type singleStudent struct {
-		enrollmentResponse.EnrolledStudent
-		Assessments []responses.Assessment
-	}
-	type Response struct {
-		Headers  []singleAssessment `json:"headers"`
-		Students []singleStudent    `json:"students"`
-	}
-
-	var studentList = make([]singleStudent, 0)
-
-	var assesssment_metric_number = c.Query("assessment_metric_number")
-
-	for _, interviewStudent := range interviewStudents {
-		student := interviewStudent.Student
-		var asts []responses.Assessment
-
-		for _, assessmentMetric := range assessmentMetrics {
-
-			assmt, err := assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(interviewStudent.StudentNumber, assessmentMetric.Number)
-			if err != nil {
-				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments " + err.Error()})
-					return
-				}
-			}
-
-			assessmentArea, err := assessmentRepo.GetAssessmentAreaByNumber(assessmentMetric.AssessmentAreaNumber)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment area " + err.Error()})
-				return
-			}
-
-			asts = append(asts, responses.Assessment{
-				Number:                 assmt.Number,
-				AssessmentAreaName:     assessmentArea.Name,
-				AssessmentMetricNumber: assessmentMetric.Number,
-				Score:                  assmt.Score,
-				ActualScore:            assmt.ActualScore,
-				Comment:                assmt.Comment,
-			})
-
-		}
-
-		var assessment assessmentModel.Assessment
-		if assesssment_metric_number != "" {
-			assessment, err = assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assesssment_metric_number)
-			if err != nil {
-				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessments " + err.Error()})
-					return
-				}
-			}
-		}
-		studentList = append(studentList, singleStudent{
-			EnrolledStudent: enrollmentResponse.EnrolledStudent{
-				Number:            student.Number,
-				StudentOtherName:  student.OtherName,
-				StudentSurname:    student.Surname,
-				StudentSecondName: student.SecondName,
-				Score:             assessment.Score,
-				ActualScore:       assessment.ActualScore,
-				Comment:           assessment.Comment,
-				Status:            student.Status,
-			},
-			Assessments: asts,
-		})
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": Response{
-		Headers:  []singleAssessment{},
-		Students: studentList,
+	c.JSON(http.StatusOK, gin.H{"data": responses.AssessmentAndStudentResponse{
+		Headers:  []responses.SingleAssessment{},
+		Students: students,
 	}})
 
 }
@@ -353,6 +195,7 @@ func AddStudentToInterview(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Student added to the interview"})
 }
+
 func RemoveStudentFromInterview(c *gin.Context) {
 	if _, err := commons.GetUserFromHeader(c); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})

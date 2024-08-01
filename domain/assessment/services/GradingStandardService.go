@@ -10,7 +10,7 @@ import (
 	assessmentGradeRequests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
 	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
 	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
+	gradeRepository "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -231,7 +231,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 
 	grades := aggregateScaleRequest.AggregateScales
 
-	if int64(len(grades)) != aggregateScaleRequest.Count {
+	if len(grades) != aggregateScaleRequest.AggregateScaleCount {
 		return errors.New("you should define the grades up to set count")
 	}
 
@@ -246,7 +246,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 			Number:       uuid.NewV4().String(),
 			Name:         aggregateScaleRequest.ScaleName,
 			SchoolNumber: aggregateScaleRequest.SchoolNumber,
-			Count:        aggregateScaleRequest.Count,
+			Count:        aggregateScaleRequest.AggregateScaleCount,
 			UserNumber:   currentUser,
 		}, trn)
 
@@ -262,7 +262,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 			}
 		}
 
-		err = saveGradingCategory(aggregateScaleRequest.AssessmentGradeItems, scale.Number, currentUser, trn)
+		err = saveGradingCategory(aggregateScaleRequest.AssessmentGrades, scale.Number, currentUser, trn)
 		if err != nil {
 			return err
 		}
@@ -295,7 +295,7 @@ func checkDuplicates(grades []requests.AggregateScaleItem) error {
 		for _, cleanGrade := range cleanGrades {
 
 			if cleanGrade.GradeNumber == grade.GradeNumber {
-				gr, err := repository.FindGradeByNumber(grade.GradeNumber)
+				gr, err := gradeRepository.FindGradeByNumber(grade.GradeNumber)
 				if err != nil {
 					return errors.New("error fetching grade: " + err.Error())
 				}
@@ -536,7 +536,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 
 	for _, aggregateScale := range aggregateScales {
 
-		grade, err := repository.FindGradeByNumber(aggregateScale.GradeNumber)
+		grade, err := gradeRepository.FindGradeByNumber(aggregateScale.GradeNumber)
 		if err != nil {
 			return response, errors.New("error fetching aggregate scales : " + err.Error())
 		}
@@ -582,9 +582,9 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 
 func createMinResponse(scale models.Scale) responses.ScaleResponse {
 	return responses.ScaleResponse{
-		ScaleNumber: scale.Number,
-		ScaleName:   scale.Name,
-		Count:       scale.Count,
+		ScaleNumber:         scale.Number,
+		ScaleName:           scale.Name,
+		AggregateScaleCount: scale.Count,
 	}
 }
 
@@ -618,7 +618,7 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 
 	grades := aggregateScaleRequest.AggregateScales
 
-	if int64(len(grades)) != aggregateScaleRequest.Count {
+	if len(grades) != aggregateScaleRequest.AggregateScaleCount {
 		return errors.New("you should define the grades up to set count")
 	}
 
@@ -651,7 +651,7 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 	}
 
 	scale.Name = aggregateScaleRequest.ScaleName
-	scale.Count = aggregateScaleRequest.Count
+	scale.Count = aggregateScaleRequest.AggregateScaleCount
 	scale.UserNumber = currentUser
 
 	_, err = repositories.SaveScale(scale, trn)
@@ -668,7 +668,7 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		}
 	}
 
-	err = saveGradingCategory(aggregateScaleRequest.AssessmentGradeItems, scale.Number, currentUser, trn)
+	err = saveGradingCategory(aggregateScaleRequest.AssessmentGrades, scale.Number, currentUser, trn)
 	if err != nil {
 		return err
 	}
@@ -1007,8 +1007,8 @@ func GetAssessmentGrades(classNumber, status string) ([]assessmentGradeResponses
 func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.AssessmentGrade, assessmentGradeScales []assessmentGradeModels.AssessmentGradeScale) assessmentGradeResponses.AssessmentGradeResponse {
 
 	assessmentGradeResponse := assessmentGradeResponses.AssessmentGradeResponse{
-		AssessmentAreaCount: assessmentGrade.AssessmentAreaCount,
-		GradePoints:         assessmentGrade.GradePoints,
+		AssessmentAreaCount:  assessmentGrade.AssessmentAreaCount,
+		AssessmentGradeCount: assessmentGrade.GradePoints,
 	}
 
 	var assessmentGradeItemResponses = make([]assessmentGradeResponses.AssessmentGradeItemResponse, 0)
@@ -1025,7 +1025,7 @@ func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.Assessm
 		})
 	}
 
-	assessmentGradeResponse.AssessmentGradeItems = assessmentGradeItemResponses
+	assessmentGradeResponse.AssessmentGrades = assessmentGradeItemResponses
 	return assessmentGradeResponse
 }
 

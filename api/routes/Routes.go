@@ -426,9 +426,9 @@ func SetupRoutes() *gin.Engine {
 		{
 			interview.POST("", interviewController.CreateInterview)
 			interview.GET("/all", interviewController.FetchAllInterviews)
-			interview.GET("/:interview_number", interviewController.FetchAnInterview)
-			interview.PUT("/:interview_number", interviewController.EditInterview)
-			interview.GET("/:interview_number/students", interviewController.FetchStudentsByInterviewNumber)
+			interview.GET("details", interviewController.FetchAnInterview)
+			interview.PUT("", interviewController.EditInterview)
+			interview.GET("/students-by-interview", interviewController.FetchStudentsByInterviewNumber)
 			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
 			interview.GET("/:interview_number/questions", interviewController.FetchQuestionsByInterviewNumber)
 			interview.POST("/add-interview-assessment-metric", interviewController.CreateInterviewAssessmentMetric)
@@ -539,8 +539,8 @@ func SetupRoutes() *gin.Engine {
 			{
 				//assessmentGrade.POST("", assessmentGradeController.CreateAssessmentGrade)
 				assessmentGrade.GET("", assessmentGradeController.FetchAssessmentGrades)
-				assessmentGrade.PUT("/update", assessmentGradeController.EditAssessmentGrade)
-				assessmentGrade.DELETE("/delete/:assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
+				//assessmentGrade.PUT("/update", assessmentGradeController.EditAssessmentGrade)
+				//assessmentGrade.DELETE("/delete/:assessment_grade_number", assessmentGradeController.DeleteAssessmentGrade)
 			}
 
 			gradeGroup := assessment.Group("/grade-groups")

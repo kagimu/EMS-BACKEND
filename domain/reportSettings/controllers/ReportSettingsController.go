@@ -220,7 +220,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 		response := responses.ReportColumnAssessmentResponse{
 			Number:           reportColumnAssessment.Number,
 			AssessmentArea:   assessmentArea.Name,
-			AssessmentMetric: assessmentMetric.Name,
+			AssessmentMetric: "Assessment Metric Name",
 			ReportColumn:     reportColumn.Name,
 		}
 		rca = append(rca, response)

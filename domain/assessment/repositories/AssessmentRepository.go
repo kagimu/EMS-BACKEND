@@ -76,7 +76,3 @@ func GetAssessmentByNumber(assessmentNumber string, trn ...*gorm.DB) (assessment
 
 	return assessment, nil
 }
-
-func GetAssessmentAreaByNumber() {
-
-}
