@@ -8,9 +8,10 @@ import (
 type AggregateScaleRequest struct {
 	AggregateScales      []AggregateScaleItem                  `json:"aggregate_scales"`
 	ScaleName            string                                `json:"scale_name"`
-	Count                int64                                 `json:"count"`
+	AggregateScaleCount  int                                   `json:"aggregate_scale_count"`
 	SchoolNumber         string                                `json:"school_number"`
-	AssessmentGradeItems []requests.AssessmentGradeItemRequest `json:"assessment_grade_items"`
+	AssessmentGrades     []requests.AssessmentGradeItemRequest `json:"assessment_grades"`
+	AssessmentGradeCount int                                   `json:"assessment_grade_count"`
 }
 
 type AggregateScaleItem struct {
@@ -31,7 +32,11 @@ type EditAggregateScaleRequest struct {
 func (aggregateScale *AggregateScaleRequest) Validate() error {
 
 	if aggregateScale.AggregateScales == nil || len(aggregateScale.AggregateScales) == 0 {
-		return errors.New("please select the grades")
+		return errors.New("please set the aggregate scale")
+	}
+
+	if len(aggregateScale.AggregateScales) != aggregateScale.AggregateScaleCount {
+		return errors.New("aggregate scales should be equal to the defined count")
 	}
 
 	if aggregateScale.SchoolNumber == "" {
@@ -98,7 +103,15 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 		return errors.New("the scale must start from 0 to 100")
 	}
 
-	for _, r := range aggregateScale.AssessmentGradeItems {
+	if aggregateScale.AssessmentGrades == nil || len(aggregateScale.AssessmentGrades) == 0 {
+		return errors.New("set grading category for this scale")
+	}
+
+	if len(aggregateScale.AssessmentGrades) != aggregateScale.AssessmentGradeCount {
+		return errors.New("grade categories should be equal to the defined count")
+	}
+
+	for _, r := range aggregateScale.AssessmentGrades {
 
 		if r.Abbreviation == "" {
 			return errors.New("abbreviation is required")
