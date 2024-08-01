@@ -231,7 +231,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 
 	grades := aggregateScaleRequest.AggregateScales
 
-	if int64(len(grades)) != aggregateScaleRequest.Count {
+	if len(grades) != aggregateScaleRequest.AggregateScaleCount {
 		return errors.New("you should define the grades up to set count")
 	}
 
@@ -246,7 +246,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 			Number:       uuid.NewV4().String(),
 			Name:         aggregateScaleRequest.ScaleName,
 			SchoolNumber: aggregateScaleRequest.SchoolNumber,
-			Count:        aggregateScaleRequest.Count,
+			Count:        aggregateScaleRequest.AggregateScaleCount,
 			UserNumber:   currentUser,
 		}, trn)
 
@@ -262,7 +262,7 @@ func SaveAggregateScale(aggregateScaleRequest requests.AggregateScaleRequest, cu
 			}
 		}
 
-		err = saveGradingCategory(aggregateScaleRequest.AssessmentGradeItems, scale.Number, currentUser, trn)
+		err = saveGradingCategory(aggregateScaleRequest.AssessmentGrades, scale.Number, currentUser, trn)
 		if err != nil {
 			return err
 		}
@@ -618,7 +618,7 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 
 	grades := aggregateScaleRequest.AggregateScales
 
-	if int64(len(grades)) != aggregateScaleRequest.Count {
+	if len(grades) != aggregateScaleRequest.AggregateScaleCount {
 		return errors.New("you should define the grades up to set count")
 	}
 
@@ -651,7 +651,7 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 	}
 
 	scale.Name = aggregateScaleRequest.ScaleName
-	scale.Count = aggregateScaleRequest.Count
+	scale.Count = aggregateScaleRequest.AggregateScaleCount
 	scale.UserNumber = currentUser
 
 	_, err = repositories.SaveScale(scale, trn)
@@ -668,7 +668,7 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		}
 	}
 
-	err = saveGradingCategory(aggregateScaleRequest.AssessmentGradeItems, scale.Number, currentUser, trn)
+	err = saveGradingCategory(aggregateScaleRequest.AssessmentGrades, scale.Number, currentUser, trn)
 	if err != nil {
 		return err
 	}
