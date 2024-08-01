@@ -9,6 +9,7 @@ import (
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"time"
@@ -107,6 +108,16 @@ func CreateAssessmentsResponse(assessment models.AssessmentMetric) (responses.As
 		return assessmentMetricResponse, errors.New("getting class error: " + err.Error())
 	}
 
+	campusClass, err := repositories3.GetCampusClassByNumber(assessment.CampusClassNumber)
+	if err != nil {
+		return assessmentMetricResponse, errors.New("failed to find campus class")
+	}
+
+	studyPeriod, err := repositories4.GetStudyPeriodByNumber(assessment.StudyPeriodNumber)
+	if err != nil {
+		return assessmentMetricResponse, errors.New("failed to find academic year")
+	}
+
 	assessmentMetricResponse.AssessmentArea = assessmentArea.Name
 	assessmentMetricResponse.AssessmentAreaNumber = assessmentArea.Number
 	assessmentMetricResponse.MetricName = metric.Name
@@ -117,6 +128,8 @@ func CreateAssessmentsResponse(assessment models.AssessmentMetric) (responses.As
 	assessmentMetricResponse.RequireComment = assessment.RequireComment
 	assessmentMetricResponse.MaxScore = assessment.MaxScore
 	assessmentMetricResponse.Class = class.Name
+	assessmentMetricResponse.CampusLevelNumber = campusClass.CampusLevelNumber
+	assessmentMetricResponse.AcademicYearNumber = studyPeriod.AcademicYearNumber
 	assessmentMetricResponse.CampusClassNumber = assessment.CampusClassNumber
 	assessmentMetricResponse.ScheduledOn = assessment.ScheduledOn.Format(time.DateOnly)
 
