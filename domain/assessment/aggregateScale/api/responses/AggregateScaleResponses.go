@@ -18,9 +18,9 @@ type AggregateScaleResponse struct {
 }
 
 type ScaleResponse struct {
-	ScaleNumber string `json:"scale_number"`
-	ScaleName   string `json:"scale_name"`
-	Count       int    `json:"count"`
+	ScaleNumber         string `json:"scale_number"`
+	ScaleName           string `json:"scale_name"`
+	AggregateScaleCount int    `json:"aggregate_scale_count"`
 }
 
 type DetailedScaleResponse struct {
