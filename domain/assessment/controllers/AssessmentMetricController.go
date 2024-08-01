@@ -1,21 +1,15 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
-	"net/http"
-	"time"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
+	"net/http"
 )
 
 func CreateAssessmentMetric(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
@@ -32,31 +26,13 @@ func CreateAssessmentMetric(c *gin.Context) {
 		return
 	}
 
-	formatDate, err := time.Parse("2006-01-02", payload.ScheduledOn)
+	err = services.SaveAssessmentMetric(payload, user.Number)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to parse time"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	saveAssessmentMetric := models.AssessmentMetric{
-		Number:                uuid.NewV4().String(),
-		GradingStandardNumber: payload.GradingStandardNumber,
-		StudyPeriodNumber:     payload.StudyPeriodNumber,
-		ScheduledOn:           formatDate,
-		CampusClassNumber:     payload.CampusClassNumber,
-		MetricNumber:          payload.MetricNumber,
-		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
-		Description:           payload.Description,
-		MaxScore:              payload.MaxScore,
-		RequireComment:        payload.RequireComment,
-	}
-
-	if err := config.DB.Create(&saveAssessmentMetric).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create assessment metric"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": saveAssessmentMetric})
+	c.JSON(http.StatusOK, commons.Feedback("Schedule created successfully"))
 }
 
 func FetchAssessmentMetrics(c *gin.Context) {
@@ -72,6 +48,7 @@ func FetchAssessmentMetrics(c *gin.Context) {
 	metricNumber := c.Query("metric_number")
 
 	var paginated = c.DefaultQuery("paginated", "no")
+
 	if campusClassNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class number is required"})
 		return
@@ -80,34 +57,19 @@ func FetchAssessmentMetrics(c *gin.Context) {
 
 	if paginated == "yes" {
 
-		var paginatedResponse = pagination.PaginatedResponse{}
-
-		var assessmentMetrics []models.AssessmentMetric
-		if err := config.DB.Model(models.AssessmentMetric{}).Scopes(
-			filters.ByStudyPeriodNumber(studyPeriodNumber),
-			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
-			filters.ByCampusClassNumber(c.Query("campus_class_number")),
-			filters.ByMetricNumber(metricNumber),
-			pagination.Paginate(c, &paginatedResponse),
-		).Preload("AssessmentArea").Preload("Metric").Preload("CampusClass").Find(&assessmentMetrics).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics " + err.Error()})
+		allAssessments, err := services.AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, c)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 			return
 		}
 
-		paginatedResponse.Content = assessmentMetrics
-
-		c.JSON(http.StatusOK, paginatedResponse)
+		c.JSON(http.StatusOK, allAssessments)
 
 	} else {
 
-		var assessmentMetrics []models.AssessmentMetric
-		if err := config.DB.Model(models.AssessmentMetric{}).Scopes(
-			filters.ByStudyPeriodNumber(studyPeriodNumber),
-			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
-			filters.ByCampusClassNumber(c.Query("campus_class_number")),
-			filters.ByMetricNumber(metricNumber),
-		).Preload("AssessmentArea").Preload("Metric").Preload("CampusClass").Find(&assessmentMetrics).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment  metrics " + err.Error()})
+		assessmentMetrics, err := services.AllAssessments(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 			return
 		}
 

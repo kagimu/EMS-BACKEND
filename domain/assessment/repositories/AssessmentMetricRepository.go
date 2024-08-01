@@ -4,13 +4,76 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assessmenModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
 
-func FindAssessmentMetricByNumber(assessmentMetricNumber string) (assessmenModels.AssessmentMetric, error) {
+type AssessmentMetricRepository interface {
+	FindAssessmentMetricByNumber(assessmentMetricNumber string, tx ...*gorm.DB) (assessmenModels.AssessmentMetric, error)
+	FindAssessmentMetricsByInterviewNumber(interviewNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
+	AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, paginated func(db *gorm.DB) *gorm.DB) ([]assessmenModels.AssessmentMetric, error)
+	AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
+	SaveAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error
+}
+
+type repository struct {
+}
+
+func (a *repository) AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, paginated func(db *gorm.DB) *gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
+	db := config.DB
+
+	var assessmentMetrics []assessmenModels.AssessmentMetric
+
+	if err := db.Scopes(
+		filters.ByStudyPeriodNumber(studyPeriodNumber),
+		filters.ByAssessmentAreaNumber(assessmentAreaNumber),
+		filters.ByCampusClassNumber(campusClassNumber),
+		filters.ByMetricNumber(metricNumber),
+		paginated,
+	).Find(&assessmentMetrics).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentMetrics, nil
+		}
+
+		return assessmentMetrics, err
+
+	}
+
+	return assessmentMetrics, nil
+}
+func (a *repository) AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var assessmentMetrics []assessmenModels.AssessmentMetric
+
+	if err := db.Scopes(
+		filters.ByStudyPeriodNumber(studyPeriodNumber),
+		filters.ByAssessmentAreaNumber(assessmentAreaNumber),
+		filters.ByCampusClassNumber(campusClassNumber),
+		filters.ByMetricNumber(metricNumber),
+	).Find(&assessmentMetrics).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentMetrics, nil
+		}
+
+		return assessmentMetrics, err
+
+	}
+
+	return assessmentMetrics, nil
+}
+
+func (a *repository) FindAssessmentMetricByNumber(assessmentMetricNumber string, tx ...*gorm.DB) (assessmenModels.AssessmentMetric, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var assessmentMetric assessmenModels.AssessmentMetric
 
@@ -26,22 +89,11 @@ func FindAssessmentMetricByNumber(assessmentMetricNumber string) (assessmenModel
 	return assessmentMetric, nil
 }
 
-func FetchAllAssessmentMetrics() ([]assessmenModels.AssessmentMetric, error) {
-
+func (a *repository) FindAssessmentMetricsByInterviewNumber(interviewNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
 	db := config.DB
-
-	var assessmentMetrics []assessmenModels.AssessmentMetric
-
-	if err := db.Find(&assessmentMetrics).Error; err != nil {
-		return assessmentMetrics, err
+	if len(tx) > 0 {
+		db = tx[0]
 	}
-
-	return assessmentMetrics, nil
-}
-
-func FindAssessmentMetricsByInterviewNumber(interviewNumber string) ([]assessmenModels.AssessmentMetric, error) {
-
-	db := config.DB
 
 	var assessmentMetrics = make([]assessmenModels.AssessmentMetric, 0)
 
@@ -49,10 +101,15 @@ func FindAssessmentMetricsByInterviewNumber(interviewNumber string) ([]assessmen
 	return assessmentMetrics, err
 }
 
-func FindInterviewStudentsByInterViewNumber(interviewNumber string) ([]models.InterviewStudent, error) {
+func (a *repository) SaveAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
-	var interviewStudents = make([]models.InterviewStudent, 0)
-	err := config.DB.Preload("Student").Preload("Interview").Where("interview_number = ?", interviewNumber).Find(&interviewStudents).Error
-	return interviewStudents, err
+	return db.Save(&assessmentMetric).Error
+}
 
+func NewAssessmentMetricRepository() AssessmentMetricRepository {
+	return &repository{}
 }
