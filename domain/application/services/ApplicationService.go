@@ -7,6 +7,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	parentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/repositories"
 	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 )
@@ -39,14 +41,18 @@ func GetApplicationById(id string) (responses.ApplicationResponse, error) {
 
 func BuildSingleApplicationResponse(application *models.Application, student *studentModel.Student, previousSchools []previousSchoolModel.PreviousSchool) responses.ApplicationResponse {
 	var studentResponse responses.StudentApplicant
-	var parentResponse responses.ParentResponse
 	var previousSchoolsResponse []responses.PreviousSchoolResponse
-	Classs, err := repositories.GetClassByCampusClassNumber(student.CampusClassNumber)
+	Classes, err := repositories.GetClassByCampusClassNumber(student.CampusClassNumber)
 	if err != nil {
 		return responses.ApplicationResponse{}
 	}
 
-	prefferedCampus, err := repositories2.GetCampusByNumber(student.PreferedCampusNumber)
+	preferredCampus, err := repositories2.GetCampusByNumber(student.PreferedCampusNumber)
+	if err != nil {
+		return responses.ApplicationResponse{}
+	}
+
+	parent, err := repositories3.GetParentByApplicationNumber(application.Number)
 	if err != nil {
 		return responses.ApplicationResponse{}
 	}
@@ -68,8 +74,8 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		AttentionNeeded:           student.AttentionNeeded,
 		DateOfBirth:               student.DateOfBirth,
 		PreferredTypeOfEnrollment: student.PreferredTypeOfEnrollment,
-		CampusClass:               Classs.Name,
-		PreferredCampus:           prefferedCampus.Name,
+		CampusClass:               Classes.Name,
+		PreferredCampus:           preferredCampus.Name,
 	}
 
 	for _, previousSchool := range previousSchools {
@@ -89,7 +95,7 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 
 	return responses.ApplicationResponse{
 		Student:                   studentResponse,
-		Parent:                    parentResponse,
+		Parent:                    createParentResponse(parent),
 		PreviousSchools:           previousSchoolsResponse,
 		ApplicationFeePayment:     application.ApplicationFeePayment,
 		ApplicationFeeInvalidDate: application.ApplicationFeeInvalidDate,
@@ -97,5 +103,17 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		Number:                    application.Number,
 		Status:                    application.Status,
 		UserNumber:                application.UserNumber,
+	}
+}
+
+func createParentResponse(parent parentModel.Parent) responses.ParentResponse {
+	return responses.ParentResponse{
+		Surname:           parent.Surname,
+		SecondName:        parent.SecondName,
+		AlternativeNumber: parent.AlternativeTelephoneNumber,
+		TelephoneNumber:   parent.MainTelephoneNumber,
+		Email:             parent.Email,
+		AlternativeEmail:  parent.AlternativeEmail,
+		OtherNames:        parent.OtherName,
 	}
 }

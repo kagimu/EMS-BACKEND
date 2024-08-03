@@ -48,4 +48,11 @@ type ClassResponse struct {
 }
 
 type ParentResponse struct {
+	Surname           string `json:"surname"`
+	SecondName        string `json:"second_name"`
+	OtherNames        string `json:"other_names"`
+	TelephoneNumber   string `json:"telephone_number"`
+	AlternativeNumber string `json:"alternative_number"`
+	Email             string `json:"email"`
+	AlternativeEmail  string `json:"alternative_email"`
 }
