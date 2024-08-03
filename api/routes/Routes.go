@@ -352,7 +352,7 @@ func SetupRoutes() *gin.Engine {
 			entity := eos.Group("/entity")
 			{
 				entity.POST("add", eosController.AddEntity)
-				entity.POST("update", eosController.UpdateEntity, middleware.ValidatePermission(constants.CanUpdateEntity))
+				entity.POST("update", middleware.ValidatePermission(constants.CanUpdateEntity), eosController.UpdateEntity)
 				entity.POST("delete", eosController.DeleteEntity, middleware.ValidatePermission(constants.CanDeleteEntity))
 				entity.POST("current", eosController.SaveCurrentEntity)
 				entity.GET("current", eosController.GetCurrentEntity)
