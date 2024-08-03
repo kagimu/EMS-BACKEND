@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
@@ -9,8 +10,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
-	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,26 +22,9 @@ func FetchApplication(c *gin.Context) {
 		return
 	}
 
-	var application = models.Application{}
-	var applicationNumber = c.Param("application_number")
-
-	if err := config.DB.Model(&models.Application{}).
-		Preload("Parent").Where("number = ?", applicationNumber).First(&application).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
-		return
-
-	}
-
-	var student studentModel.Student
-	var previousSchools []previousSchoolModel.PreviousSchool
-
-	if err := config.DB.Preload("PreferredCampus").Preload("CampusClass").Where("application_number = ?", applicationNumber).First(&student).Error; err == nil {
-		application.Student = student
-	}
-
-	if err := config.DB.Preload("Classes").Where("application_number = ?", applicationNumber).Find(&previousSchools).Error; err == nil {
-		application.PreviousSchools = previousSchools
-
+	application, err := services.GetApplicationById(c.Param("application_number"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Application not found"))
 	}
 
 	c.JSON(http.StatusOK, application)

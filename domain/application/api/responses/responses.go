@@ -45,6 +45,14 @@ type StudentApplicant struct {
 	Status                    string                   `json:"status"`
 }
 type PreviousSchoolResponse struct {
+	Name    string          `json:"name"`
+	Classes []ClassResponse `json:"classes"`
+}
+
+type ClassResponse struct {
+	PreviousSchoolNumber string `json:"previous_school_number"`
+	Year                 string `json:"year"`
+	Class                string `json:"class" `
 }
 
 type ParentResponse struct {
