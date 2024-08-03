@@ -5,6 +5,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 )
@@ -39,6 +41,15 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 	var studentResponse responses.StudentApplicant
 	var parentResponse responses.ParentResponse
 	var previousSchoolsResponse []responses.PreviousSchoolResponse
+	Classs, err := repositories.GetClassByCampusClassNumber(student.CampusClassNumber)
+	if err != nil {
+		return responses.ApplicationResponse{}
+	}
+
+	prefferedCampus, err := repositories2.GetCampusByNumber(student.PreferedCampusNumber)
+	if err != nil {
+		return responses.ApplicationResponse{}
+	}
 
 	studentResponse = responses.StudentApplicant{
 		Surname:                   student.Surname,
@@ -57,6 +68,8 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		AttentionNeeded:           student.AttentionNeeded,
 		DateOfBirth:               student.DateOfBirth,
 		PreferredTypeOfEnrollment: student.PreferredTypeOfEnrollment,
+		CampusClass:               Classs.Name,
+		PreferredCampus:           prefferedCampus.Name,
 	}
 
 	for _, previousSchool := range previousSchools {
