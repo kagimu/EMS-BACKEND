@@ -48,6 +48,11 @@ type UpdateGradingStatusStandardRequest struct {
 	GradingStandardNumber string `json:"grading_standard_number"`
 }
 
+type MakeGradingStandardDefault struct {
+	ClassNumber           string `json:"class_number"`
+	GradingStandardNumber string `json:"grading_standard_number"`
+}
+
 func (a *UpdateGradingStatusStandardRequest) Validate() error {
 
 	if a.GradingStandardNumber == "" {
@@ -56,6 +61,19 @@ func (a *UpdateGradingStatusStandardRequest) Validate() error {
 
 	if a.Status == "" {
 		return errors.New("grading standard number is required")
+	}
+
+	return nil
+}
+
+func (a *MakeGradingStandardDefault) Validate() error {
+
+	if a.GradingStandardNumber == "" {
+		return errors.New("choose the grading standard")
+	}
+
+	if a.ClassNumber == "" {
+		return errors.New("choose class")
 	}
 
 	return nil

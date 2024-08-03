@@ -1172,3 +1172,26 @@ func EditAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.EditAsse
 
 	return nil
 }
+
+func MakeGradingStandardDefault(payload requests.MakeGradingStandardDefault) error {
+
+	classGradingStandard, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(payload.GradingStandardNumber, payload.ClassNumber)
+
+	if err != nil {
+		return errors.New("checking class on grading standard error: " + err.Error())
+	}
+
+	if classGradingStandard.ClassNumber == "" {
+		return errors.New("class and grading standard are not set up")
+	}
+
+	classGradingStandard.DefaultStandard = constants.StatusYes
+
+	err = repositories.SaveGradingStandardClassScale(classGradingStandard)
+
+	if err != nil {
+		return errors.New("updating default grading standard error: " + err.Error())
+	}
+
+	return nil
+}

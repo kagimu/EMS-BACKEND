@@ -75,7 +75,7 @@ func FindInterviewAssessmentMetricByInterviewNumber(interviewNumber string, trn 
 		db = trn[0]
 	}
 
-	var interviewAssessmentMetrics = make([]models.InterviewAssessmentMetric, 0)
+	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
 
 	if err := db.
 		Where("interview_number = ? ", interviewNumber).Find(&interviewAssessmentMetrics).Error; err != nil {
