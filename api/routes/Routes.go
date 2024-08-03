@@ -427,6 +427,7 @@ func SetupRoutes() *gin.Engine {
 			interview.POST("", interviewController.CreateInterview)
 			interview.GET("/all", interviewController.FetchAllInterviews)
 			interview.GET("details", interviewController.FetchAnInterview)
+			interview.DELETE("delete/:interview_number", interviewController.RemoveInterview)
 			interview.PUT("", interviewController.EditInterview)
 			interview.GET("/students-by-interview", interviewController.FetchStudentsByInterviewNumber)
 			interview.POST("add-student-to-interview", interviewController.AddStudentToInterview)
@@ -618,6 +619,7 @@ func SetupRoutes() *gin.Engine {
 			gradingStandard.POST("attach-assessment-area", aggregateScaleController.AttachAssessmentAreas)
 			gradingStandard.GET("assessment-areas", aggregateScaleController.FetchAssessmentAreasByGradingStandard)
 			gradingStandard.GET("details", aggregateScaleController.DetailsGradingStandard)
+			gradingStandard.POST("default-for-class", aggregateScaleController.MakeGradingStandardDefault)
 		}
 
 		enrollment := main.Group("enrollment")

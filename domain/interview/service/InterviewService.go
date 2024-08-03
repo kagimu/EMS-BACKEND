@@ -9,6 +9,7 @@ import (
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	assessmentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	assessmentAreaRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
@@ -342,7 +343,22 @@ func GetInterviewDetails(interviewNumber string) (interviewResponses.InterviewRe
 }
 
 func createInterviewResponse(interview models.Interview) (interviewResponses.InterviewResponse, error) {
-	class, err := classRepositories.GetClassByCampusClassNumber(interview.CampusClassNumber)
+
+	campusClass, err := classRepositories.GetCampusClassByNumber(interview.CampusClassNumber)
+	if err != nil {
+		return interviewResponses.InterviewResponse{}, errors.New("checking campus class error: " + err.Error())
+	}
+
+	if campusClass.Number == "" {
+		return interviewResponses.InterviewResponse{}, errors.New("invalid campus class number")
+	}
+
+	campus, err := repositories.GetCampusByNumber(campusClass.CampusNumber)
+	if err != nil {
+		return interviewResponses.InterviewResponse{}, errors.New("checking campus error: " + err.Error())
+	}
+
+	class, err := classRepositories.GetClassByCampusClassNumber(campusClass.Number)
 	if err != nil {
 		return interviewResponses.InterviewResponse{}, errors.New("getting class error: " + err.Error())
 	}
@@ -355,6 +371,8 @@ func createInterviewResponse(interview models.Interview) (interviewResponses.Int
 		Venue:             interview.Venue,
 		Name:              interview.Name,
 		InterviewNumber:   interview.Number,
+		SchoolNumber:      campus.SchoolNumber,
+		CampusNumber:      campusClass.CampusNumber,
 	}, nil
 }
 
@@ -462,4 +480,57 @@ func InterviewStudents(assessmentMetricNumber, interviewNumber string) ([]respon
 	}
 
 	return studentsList, nil
+}
+
+func RemoveInterview(interviewNumber string) error {
+
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+
+		repo := repository2.NewInterviewRepoImpl(tx)
+
+		interview, err := repo.FindInterviewByNumber(interviewNumber)
+		if err != nil {
+			return errors.New("error checking interview number: " + err.Error())
+		}
+
+		if interview.Number == "" {
+			return errors.New("invalid interview number")
+		}
+
+		//FindInterviewStudentsByInterViewNumber
+		students, err := repository2.FindInterviewStudentsByInterViewNumber(interview.Number, tx)
+		if err != nil {
+			return errors.New("checking interview students error: " + err.Error())
+		}
+
+		if len(students) > 0 {
+			return errors.New("this interview has students added to it, you may need to remove them before deleting")
+		}
+
+		schedules, err := interviewRepositories.FindInterviewAssessmentMetricByInterviewNumber(interview.Number, tx)
+		if err != nil {
+			return errors.New("getting old schedules error: " + err.Error())
+		}
+
+		for _, schedule := range schedules {
+			err = interviewRepositories.RemoveInterviewAssessmentMetric(schedule, tx)
+			if err != nil {
+				return errors.New("failed removing schedule from interview: " + err.Error())
+			}
+		}
+
+		err = repo.DeleteInterview(interview)
+		if err != nil {
+			return errors.New("failed to remove interview: " + err.Error())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }

@@ -25,6 +25,8 @@ type InterviewResponse struct {
 	InterviewDate     string `json:"interview_date"`
 	CampusClassNumber string `json:"campus_class_number"`
 	Class             string `json:"class"`
+	SchoolNumber      string `json:"school_number"`
+	CampusNumber      string `json:"campus_number"`
 }
 
 type InterviewResponseDetails struct {
