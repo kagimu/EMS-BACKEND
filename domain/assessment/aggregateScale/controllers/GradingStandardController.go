@@ -180,3 +180,25 @@ func UpdateStatusGradingStandard(ctx *gin.Context) {
 
 	ctx.JSON(201, gin.H{"message": "Status updated successfully"})
 }
+
+func MakeGradingStandardDefault(ctx *gin.Context) {
+
+	var payload requests.MakeGradingStandardDefault
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err := services.MakeGradingStandardDefault(payload)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(201, gin.H{"message": "Default grading standard set successfully"})
+}
