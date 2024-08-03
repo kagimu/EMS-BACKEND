@@ -4,19 +4,18 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
-	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 )
 
 type ApplicationResponse struct {
-	Number                    string `json:"number"`
-	Status                    string `json:"status"`
-	ApplicationFeePayment     bool   `json:"application_fee_payment"`
-	ApplicationFeeInvalidDate string `json:"application_fee_invalid_date"`
-	UserNumber                string `json:"user_number"`
-	InterviewMode             string `json:"interview_mode"`
-	Student                   studentModel.Student
-	Parent                    ParentResponse
-	PreviousSchools           []PreviousSchoolResponse
+	Number                    string                   `json:"number"`
+	Status                    string                   `json:"status"`
+	ApplicationFeePayment     bool                     `json:"application_fee_payment"`
+	ApplicationFeeInvalidDate string                   `json:"application_fee_invalid_date"`
+	UserNumber                string                   `json:"user_number"`
+	InterviewMode             string                   `json:"interview_mode"`
+	Student                   StudentApplicant         `json:"student"`
+	Parent                    ParentResponse           `json:"parent"`
+	PreviousSchools           []PreviousSchoolResponse `json:"previous_schools"`
 }
 
 type StudentApplicant struct {
