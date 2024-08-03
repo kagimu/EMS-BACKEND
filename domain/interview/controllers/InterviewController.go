@@ -247,3 +247,19 @@ func FetchQuestionsByInterviewNumber(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": questions})
 }
+
+func RemoveInterview(context *gin.Context) {
+	interviewNumber := context.Param("interview_number")
+	if interviewNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("choose interview to delete"))
+		return
+	}
+
+	err := service.RemoveInterview(interviewNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Interview removed successfully"))
+}

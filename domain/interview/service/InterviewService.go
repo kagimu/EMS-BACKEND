@@ -481,3 +481,56 @@ func InterviewStudents(assessmentMetricNumber, interviewNumber string) ([]respon
 
 	return studentsList, nil
 }
+
+func RemoveInterview(interviewNumber string) error {
+
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+
+		repo := repository2.NewInterviewRepoImpl(tx)
+
+		interview, err := repo.FindInterviewByNumber(interviewNumber)
+		if err != nil {
+			return errors.New("error checking interview number: " + err.Error())
+		}
+
+		if interview.Number == "" {
+			return errors.New("invalid interview number")
+		}
+
+		//FindInterviewStudentsByInterViewNumber
+		students, err := repository2.FindInterviewStudentsByInterViewNumber(interview.Number, tx)
+		if err != nil {
+			return errors.New("checking interview students error: " + err.Error())
+		}
+
+		if len(students) > 0 {
+			return errors.New("this interview has students added to it, you may need to remove them before deleting")
+		}
+
+		schedules, err := interviewRepositories.FindInterviewAssessmentMetricByInterviewNumber(interview.Number, tx)
+		if err != nil {
+			return errors.New("getting old schedules error: " + err.Error())
+		}
+
+		for _, schedule := range schedules {
+			err = interviewRepositories.RemoveInterviewAssessmentMetric(schedule, tx)
+			if err != nil {
+				return errors.New("failed removing schedule from interview: " + err.Error())
+			}
+		}
+
+		err = repo.DeleteInterview(interview)
+		if err != nil {
+			return errors.New("failed to remove interview: " + err.Error())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
