@@ -32,7 +32,7 @@ func (a ApplicationRepositoryImpl) FindPreviousSchoolsByApplicationNumber(applic
 
 func (a ApplicationRepositoryImpl) GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error) {
 	var student studentModel.Student
-	err := a.DB.Preload("PreferredCampus").Preload("CampusClass").Where("application_number = ?", applicationNumber).First(student).Error
+	err := a.DB.Preload("PreferredCampus").Preload("CampusClass").Where("application_number = ?", applicationNumber).First(&student).Error
 	if err != nil {
 		return student, err
 	}
