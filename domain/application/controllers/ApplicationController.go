@@ -24,7 +24,8 @@ func FetchApplication(c *gin.Context) {
 
 	application, err := services.GetApplicationById(c.Param("application_number"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, commons.Feedback("Application not found"))
+		c.JSON(http.StatusBadRequest, commons.Feedback("Application not found"+err.Error()))
+		return
 	}
 
 	c.JSON(http.StatusOK, application)
