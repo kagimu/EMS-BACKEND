@@ -9,6 +9,7 @@ import (
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -134,4 +135,31 @@ func CreateAssessmentsResponse(assessment models.AssessmentMetric) (responses.As
 	assessmentMetricResponse.ScheduledOn = assessment.ScheduledOn.Format(time.DateOnly)
 
 	return assessmentMetricResponse, nil
+}
+
+func FindInterviewAssessments(interviewNumber, campusClassNumber string) ([]responses.AssessmentMetricResponse, error) {
+	var assessmentsResponse = make([]responses.AssessmentMetricResponse, 0)
+
+	assessmentMetrics, err := repositories5.FindInterviewAssessmentMetricByInterviewNumberAndCampusClassNumber(interviewNumber, campusClassNumber)
+	if err != nil {
+		return assessmentsResponse, errors.New("error getting list of assessments: " + err.Error())
+	}
+
+	metricRepo := repositories.NewAssessmentMetricRepository()
+
+	for _, assessmentMetric := range assessmentMetrics {
+		assessment, err := metricRepo.FindAssessmentMetricByNumber(assessmentMetric.AssessmentMetricNumber)
+		if err != nil {
+			return assessmentsResponse, errors.New("error getting assessment details: " + err.Error())
+		}
+
+		response, err := CreateAssessmentsResponse(assessment)
+		if err != nil {
+			return assessmentsResponse, err
+		}
+
+		assessmentsResponse = append(assessmentsResponse, response)
+	}
+
+	return assessmentsResponse, nil
 }

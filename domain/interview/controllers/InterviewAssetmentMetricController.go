@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/service"
 	"net/http"
 
@@ -65,14 +65,22 @@ func CreateInterviewAssessmentMetric(c *gin.Context) {
 }
 
 func FetchInterviewAssessmentMetrics(c *gin.Context) {
-	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
+
 	interviewNumber := c.Param("interview_number")
-	if err := config.DB.Scopes(filters.ByInterviewNumber(interviewNumber)).Preload("AssessmentMetric").Preload("Interview").Find(&interviewAssessmentMetrics).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch interview assessment metrics"})
+	if interviewNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Interview number is empty"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": interviewAssessmentMetrics})
+	campusClassNumber := c.Query("campus_class_number")
+
+	assessments, err := services.FindInterviewAssessments(interviewNumber, campusClassNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": assessments})
 }
 
 func FetchInterviewAssessmentMetricByStudent(c *gin.Context) {

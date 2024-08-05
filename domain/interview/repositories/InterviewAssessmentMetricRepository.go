@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
 	"gorm.io/gorm"
 )
@@ -17,8 +18,9 @@ func FindInterviewAssessmentMetricByInterviewNumberAndCampusClassNumber(intervie
 	var interviewAssessmentMetrics []models.InterviewAssessmentMetric
 
 	if err := db.
-		Joins("join assessment_metrics on assessment_metrics.number = interview_assessment_metrics.assessment_metric_number AND assessment_metrics.campus_class_number = ? ", campusClassNumber).
-		Where("interview_number = ? ", interviewNumber).Find(&interviewAssessmentMetrics).Error; err != nil {
+		Joins("join assessment_metrics on assessment_metrics.number = interview_assessment_metrics.assessment_metric_number").
+		Scopes(filters.ByAnyField("assessment_metrics.campus_class_number", campusClassNumber), filters.ByInterviewNumber(interviewNumber)).
+		Find(&interviewAssessmentMetrics).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return interviewAssessmentMetrics, nil
