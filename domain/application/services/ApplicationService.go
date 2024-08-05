@@ -58,6 +58,7 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 	}
 
 	studentResponse = responses.StudentApplicant{
+		Number:                    student.Number,
 		Surname:                   student.Surname,
 		SecondName:                student.SecondName,
 		OtherName:                 student.OtherName,
