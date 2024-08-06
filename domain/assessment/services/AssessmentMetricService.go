@@ -163,3 +163,39 @@ func FindInterviewAssessments(interviewNumber, campusClassNumber string) ([]resp
 
 	return assessmentsResponse, nil
 }
+
+func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMetricRequest, currentUser string) error {
+
+	formatDate, err := time.Parse(time.DateOnly, assessmentMetricRequest.ScheduledOn)
+	if err != nil {
+		return err
+	}
+
+	assessmentRepository := repositories.NewAssessmentMetricRepository()
+	assessmentMetric, err := assessmentRepository.FindAssessmentMetricByNumber(assessmentMetricRequest.AssessmentMetricNumber)
+	if err != nil {
+		return errors.New("error getting assessment details: " + err.Error())
+	}
+
+	if assessmentMetric.Number == "" {
+		return errors.New("invalid assessment metric number")
+	}
+
+	assessmentMetric.UserNumber = currentUser
+	assessmentMetric.MaxScore = assessmentMetricRequest.MaxScore
+	assessmentMetric.RequireComment = assessmentMetricRequest.RequireComment
+	assessmentMetric.Description = assessmentMetricRequest.Description
+	assessmentMetric.AssessmentAreaNumber = assessmentMetricRequest.AssessmentAreaNumber
+	assessmentMetric.StudyPeriodNumber = assessmentMetricRequest.StudyPeriodNumber
+	assessmentMetric.MetricNumber = assessmentMetricRequest.MetricNumber
+	assessmentMetric.ScheduledOn = formatDate
+	assessmentMetric.CampusClassNumber = assessmentMetricRequest.CampusClassNumber
+
+	err = repository.SaveAssessmentMetric(assessmentMetric)
+	if err != nil {
+		return errors.New("updating schedule error: " + err.Error())
+	}
+
+	return nil
+
+}

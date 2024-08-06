@@ -17,6 +17,11 @@ type AssessmentMetricRequest struct {
 	RequireComment        string  `json:"require_comment"`
 }
 
+type UpdateAssessmentMetricRequest struct {
+	AssessmentMetricRequest
+	AssessmentMetricNumber string `json:"assessment_metric_number"`
+}
+
 func (assessmentMetric *AssessmentMetricRequest) Validate() error {
 	if assessmentMetric.GradingStandardNumber == "" {
 		return errors.New("grading standard number is required")
@@ -44,6 +49,20 @@ func (assessmentMetric *AssessmentMetricRequest) Validate() error {
 	}
 	if assessmentMetric.MaxScore <= 0 {
 		return errors.New("max score can not be zero or negative")
+	}
+
+	return nil
+}
+
+func (assessmentMetric *UpdateAssessmentMetricRequest) Validate() error {
+
+	if assessmentMetric.AssessmentMetricNumber == "" {
+		return errors.New("choose the assessment metric being edited")
+	}
+
+	err := assessmentMetric.Validate()
+	if err != nil {
+		return err
 	}
 
 	return nil
