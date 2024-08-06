@@ -612,7 +612,7 @@ func SetupRoutes() *gin.Engine {
 		gradingStandard := main.Group("grading-standard")
 		{
 			gradingStandard.GET("", aggregateScaleController.FetchGradingStandards)
-			gradingStandard.GET("class-grading-standards", aggregateScaleController.ClassGradingStandards)
+			gradingStandard.GET("classes", aggregateScaleController.ClassGradingStandards)
 			gradingStandard.POST("", aggregateScaleController.CreateGradingStandard)
 			gradingStandard.POST("update", aggregateScaleController.UpdateGradingStandard)
 			gradingStandard.POST("status", aggregateScaleController.UpdateStatusGradingStandard)

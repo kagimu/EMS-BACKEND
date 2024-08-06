@@ -68,6 +68,11 @@ func FetchGradingStandards(ctx *gin.Context) {
 	classNumber := ctx.Query("class_number")
 	scaleNumber := ctx.Query("scale_number")
 
+	if schoolNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school to see the grading standards"})
+		return
+	}
+
 	response, err := services.FetchGradingStandards(schoolNumber, classNumber, scaleNumber)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -209,6 +214,11 @@ func ClassGradingStandards(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	scaleNumber := context.Query("scale_number")
 	defaultStatus := context.Query("default_status")
+
+	if schoolNumber == "" || classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school or class to see the grading standards"})
+		return
+	}
 
 	response, err := services.ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, scaleNumber, defaultStatus)
 	if err != nil {
