@@ -215,7 +215,7 @@ func ClassGradingStandards(context *gin.Context) {
 	scaleNumber := context.Query("scale_number")
 	defaultStatus := context.Query("default_status")
 
-	if schoolNumber == "" || classNumber == "" {
+	if schoolNumber == "" && classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school or class to see the grading standards"})
 		return
 	}
