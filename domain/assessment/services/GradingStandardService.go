@@ -1175,7 +1175,7 @@ func EditAssessmentGrade(assessmentGradeRequest assessmentGradeRequests.EditAsse
 
 func MakeGradingStandardDefault(payload requests.MakeGradingStandardDefault) error {
 
-	classGradingStandard, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(payload.GradingStandardNumber, payload.ClassNumber)
+	classGradingStandard, err := repositories.GetGradingStandardClassScaleByClassNumberAndStandard(payload.ClassNumber, payload.GradingStandardNumber)
 
 	if err != nil {
 		return errors.New("checking class on grading standard error: " + err.Error())
