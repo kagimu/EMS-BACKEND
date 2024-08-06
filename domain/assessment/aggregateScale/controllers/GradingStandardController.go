@@ -202,3 +202,19 @@ func MakeGradingStandardDefault(ctx *gin.Context) {
 
 	ctx.JSON(201, gin.H{"message": "Default grading standard set successfully"})
 }
+
+func ClassGradingStandards(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	gradingStandardNumber := context.Query("grading_standard_number")
+	classNumber := context.Query("class_number")
+	scaleNumber := context.Query("scale_number")
+	defaultStatus := context.Query("default_status")
+
+	response, err := services.ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, scaleNumber, defaultStatus)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(200, gin.H{"data": response})
+}
