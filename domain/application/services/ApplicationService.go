@@ -58,6 +58,7 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 	}
 
 	studentResponse = responses.StudentApplicant{
+		Number:                    student.Number,
 		Surname:                   student.Surname,
 		SecondName:                student.SecondName,
 		OtherName:                 student.OtherName,
@@ -76,6 +77,7 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		PreferredTypeOfEnrollment: student.PreferredTypeOfEnrollment,
 		CampusClass:               Classes.Name,
 		PreferredCampus:           preferredCampus.Name,
+		CampusClassNumber:         student.CampusClassNumber,
 	}
 
 	for _, previousSchool := range previousSchools {

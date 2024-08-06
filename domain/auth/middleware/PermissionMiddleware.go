@@ -38,7 +38,8 @@ func ValidatePermission(permission string) gin.HandlerFunc {
 			}
 
 			if !allowed {
-				c.AbortWithStatusJSON(http.StatusForbidden, commons.Feedback("You don't have permission to access this resource"))
+				c.JSON(http.StatusForbidden, commons.Feedback("You don't have permission to access this resource"))
+				c.Abort()
 				return
 			} else {
 				c.Next()
