@@ -72,3 +72,17 @@ func notInGroupUsers() func(*gorm.DB) *gorm.DB {
 			Where("feeding_group_users.user_number IS NULL")
 	}
 }
+
+func CreateFeedingGroupUser(fgu models.FeedingGroupUser, txn ...*gorm.DB) error {
+
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+
+	if err := db.Create(&fgu).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
