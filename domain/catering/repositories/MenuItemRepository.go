@@ -91,7 +91,7 @@ func GetPaginatedMenuItems(schoolNumber string, status string, itemType string, 
 	if err := config.DB.
 		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByStatus(status), filters.ByType(itemType), pagination.
 			Paginate(c, paginatedResponse)).Preload("School").Preload("UnitOfMeasure").
-		Order("code asc").
+		Order("name asc").
 		Find(&menuItems).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -110,6 +110,7 @@ func GetAllMenuItems(schoolNumber string, status string, itemType string) ([]mod
 
 	if err := config.DB.
 		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByStatus(status), filters.ByType(itemType)).Preload("School").Preload("UnitOfMeasure").
+		Order("name asc").
 		Find(&menuItems).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

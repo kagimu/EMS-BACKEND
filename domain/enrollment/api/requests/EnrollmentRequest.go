@@ -3,16 +3,17 @@ package requests
 import "errors"
 
 type EnrollmentRequest struct {
-	StudentNumber     string           `json:"student_number"`
-	StudyPeriodNumber string           `json:"study_period_number"`
-	CampusNumber      string           `json:"campus_number"`
-	SchoolNumber      string           `json:"school_number"`
-	EnrollmentDate    string           `json:"enrollment_date"`
-	Status            string           `json:"status"`
-	CampusClassNumber string           `json:"campus_class_number"`
-	ContinuingStudent bool             `json:"continuing_student"`
-	StreamNumber      string           `json:"stream_number"`
-	Items             []EnrollmentItem `json:"items"`
+	StudentNumber      string           `json:"student_number"`
+	StudyPeriodNumber  string           `json:"study_period_number"`
+	CampusNumber       string           `json:"campus_number"`
+	SchoolNumber       string           `json:"school_number"`
+	EnrollmentDate     string           `json:"enrollment_date"`
+	Status             string           `json:"status"`
+	CampusClassNumber  string           `json:"campus_class_number"`
+	ContinuingStudent  bool             `json:"continuing_student"`
+	StreamNumber       string           `json:"stream_number"`
+	Items              []EnrollmentItem `json:"items"`
+	FeedingGroupNumber string           `json:"feeding_group_number"`
 }
 
 type EnrollmentItem struct {

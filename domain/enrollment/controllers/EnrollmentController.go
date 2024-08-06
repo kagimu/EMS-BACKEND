@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
@@ -139,6 +141,24 @@ func CreateEnrollment(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update other enrollments status"})
 			return
 		}
+	}
+
+	if payload.FeedingGroupNumber != "" {
+		fg, err := repositories.GetFeedingGroupByNumber(payload.FeedingGroupNumber)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding group"})
+			return
+		}
+
+		if fg.Number != "" {
+			// create feeding group user
+			err := services.CreateFeedingGroupUser(saveEnrollment.UserNumber, payload.CampusNumber, payload.FeedingGroupNumber, payload.Status, tx)
+			if err != nil {
+				return
+			}
+		}
+
 	}
 
 	tx.Commit()
