@@ -19,3 +19,10 @@ type GradingStandardClassesResponse struct {
 	Class responses.ClassResponse `json:"class"`
 	Scale DetailedScaleResponse   `json:"scale"`
 }
+
+type ClassGradingStandardResponse struct {
+	Class           responses.ClassResponse `json:"class"`
+	Scale           ScaleResponse           `json:"scale"`
+	GradingStandard GradingStandardResponse `json:"grading_standard"`
+	Status          string                  `json:"status"`
+}

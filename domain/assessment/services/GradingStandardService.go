@@ -1195,3 +1195,46 @@ func MakeGradingStandardDefault(payload requests.MakeGradingStandardDefault) err
 
 	return nil
 }
+
+func ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, scaleNumber string) ([]responses.ClassGradingStandardResponse, error) {
+
+	var classGradingStandardResponse = make([]responses.ClassGradingStandardResponse, 0)
+
+	gradingStandards, err := repositories.AllGradingStandardClassScale(schoolNumber, gradingStandardNumber, classNumber, scaleNumber)
+	if err != nil {
+		return nil, errors.New("getting class grading standards error: " + err.Error())
+	}
+
+	for _, gradingStandard := range gradingStandards {
+		class, err := classRepositories.GetClassByNumber(gradingStandard.ClassNumber)
+		if err != nil {
+			return nil, errors.New("getting class error: " + err.Error())
+		}
+
+		scale, err := repositories.GetScaleByNumber(gradingStandard.ScaleNumber)
+		if err != nil {
+			return nil, errors.New("getting scale error: " + err.Error())
+		}
+
+		gradingStandard_, err := repositories.GetGradingStandardByNumber(gradingStandard.GradingStandardNumber)
+		if err != nil {
+			return nil, errors.New("getting grading standard error: " + err.Error())
+		}
+
+		classResponse := services.CreateClassResponse(class)
+
+		scaleResponse := createMinResponse(scale)
+
+		gradingStandardResponse := createGradingStandardResponse(gradingStandard_)
+
+		classGradingStandardResponse = append(classGradingStandardResponse, responses.ClassGradingStandardResponse{
+			Class:           classResponse,
+			Scale:           scaleResponse,
+			GradingStandard: gradingStandardResponse,
+			Status:          gradingStandard.DefaultStandard,
+		})
+
+	}
+
+	return classGradingStandardResponse, nil
+}
