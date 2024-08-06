@@ -1196,11 +1196,11 @@ func MakeGradingStandardDefault(payload requests.MakeGradingStandardDefault) err
 	return nil
 }
 
-func ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, scaleNumber string) ([]responses.ClassGradingStandardResponse, error) {
+func ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, scaleNumber, defaultStatus string) ([]responses.ClassGradingStandardResponse, error) {
 
 	var classGradingStandardResponse = make([]responses.ClassGradingStandardResponse, 0)
 
-	gradingStandards, err := repositories.AllGradingStandardClassScale(schoolNumber, gradingStandardNumber, classNumber, scaleNumber)
+	gradingStandards, err := repositories.AllGradingStandardClassScale(schoolNumber, gradingStandardNumber, classNumber, scaleNumber, defaultStatus)
 	if err != nil {
 		return nil, errors.New("getting class grading standards error: " + err.Error())
 	}

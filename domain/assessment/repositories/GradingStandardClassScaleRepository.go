@@ -111,7 +111,7 @@ func GetGradingStandardClassScaleByClassNumberAndScaleNumber(classNumber, scaleN
 	return grades, nil
 }
 
-func AllGradingStandardClassScale(schoolNumber, gradingStandardNumber, classNumber, scaleNumber string, trn ...*gorm.DB) ([]models.GradingStandardClassScale, error) {
+func AllGradingStandardClassScale(schoolNumber, gradingStandardNumber, classNumber, scaleNumber, defaultStatus string, trn ...*gorm.DB) ([]models.GradingStandardClassScale, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -122,7 +122,7 @@ func AllGradingStandardClassScale(schoolNumber, gradingStandardNumber, classNumb
 
 	if err := db.
 		Joins("join grading_standards on grading_standards.number = grading_standard_class_scales.grading_standard_number").
-		Scopes(filters.ByAnyField("grading_standard_number", gradingStandardNumber), filters.ByAnyField("school_number", schoolNumber), filters.ByAnyField("scale_number", scaleNumber), filters.ByAnyField("class_number", classNumber)).
+		Scopes(filters.ByAnyField("default_standard", defaultStatus), filters.ByAnyField("grading_standard_number", gradingStandardNumber), filters.ByAnyField("school_number", schoolNumber), filters.ByAnyField("scale_number", scaleNumber), filters.ByAnyField("class_number", classNumber)).
 		Find(&grades).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
