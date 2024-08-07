@@ -6,15 +6,14 @@ import (
 )
 
 type AssessmentMetricRequest struct {
-	MaxScore              float64 `json:"max_score"`
-	GradingStandardNumber string  `json:"grading_standard_number"`
-	Description           string  `json:"description"`
-	AssessmentAreaNumber  string  `json:"assessment_area_number"`
-	StudyPeriodNumber     string  `json:"study_period_number"`
-	ScheduledOn           string  `json:"scheduled_on"`
-	MetricNumber          string  `json:"metric_number"`
-	CampusClassNumber     string  `json:"campus_class_number"`
-	RequireComment        string  `json:"require_comment"`
+	MaxScore             float64 `json:"max_score"`
+	Description          string  `json:"description"`
+	AssessmentAreaNumber string  `json:"assessment_area_number"`
+	StudyPeriodNumber    string  `json:"study_period_number"`
+	ScheduledOn          string  `json:"scheduled_on"`
+	MetricNumber         string  `json:"metric_number"`
+	CampusClassNumber    string  `json:"campus_class_number"`
+	RequireComment       string  `json:"require_comment"`
 }
 
 type UpdateAssessmentMetricRequest struct {
@@ -23,9 +22,6 @@ type UpdateAssessmentMetricRequest struct {
 }
 
 func (assessmentMetric *AssessmentMetricRequest) Validate() error {
-	if assessmentMetric.GradingStandardNumber == "" {
-		return errors.New("grading standard number is required")
-	}
 	if assessmentMetric.AssessmentAreaNumber == "" {
 		return errors.New("assessment area number is required")
 	}
