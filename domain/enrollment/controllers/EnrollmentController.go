@@ -155,13 +155,17 @@ func CreateEnrollment(c *gin.Context) {
 			// create feeding group user
 			err := services.CreateFeedingGroupUser(saveEnrollment.UserNumber, payload.CampusNumber, payload.FeedingGroupNumber, payload.Status, tx)
 			if err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create feeding group user " + err.Error()})
 				return
 			}
 		}
 
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
 }
