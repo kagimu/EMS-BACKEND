@@ -88,6 +88,7 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		CampusClassNumber:         student.CampusClassNumber,
 		Gender:                    student.Gender,
 		SchoolNumber:              student.SchoolNumber,
+		PreferredCampusNumber:     student.PreferedCampusNumber,
 	}
 
 	for _, previousSchool := range previousSchools {
