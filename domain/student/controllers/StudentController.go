@@ -191,6 +191,7 @@ func EditStudent(c *gin.Context) {
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		CampusClassNumber:         payload.CampusClassNumber,
+		SchoolNumber:              payload.SchoolNumber,
 	}
 
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
