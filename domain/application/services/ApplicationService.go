@@ -42,6 +42,7 @@ func GetApplicationById(id string) (responses.ApplicationResponse, error) {
 func BuildSingleApplicationResponse(application *models.Application, student *studentModel.Student, previousSchools []previousSchoolModel.PreviousSchool) responses.ApplicationResponse {
 	var studentResponse responses.StudentApplicant
 	var previousSchoolsResponse []responses.PreviousSchoolResponse
+
 	Classes, err := repositories.GetClassByCampusClassNumber(student.CampusClassNumber)
 	if err != nil {
 		return responses.ApplicationResponse{}
@@ -49,7 +50,14 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 
 	preferredCampus, err := repositories2.GetCampusByNumber(student.PreferedCampusNumber)
 	if err != nil {
-		return responses.ApplicationResponse{}
+		return responses.ApplicationResponse{
+			ApplicationFeePayment:     application.ApplicationFeePayment,
+			ApplicationFeeInvalidDate: application.ApplicationFeeInvalidDate,
+			InterviewMode:             application.InterviewMode,
+			Number:                    application.Number,
+			Status:                    application.Status,
+			UserNumber:                application.UserNumber,
+		}
 	}
 
 	parent, err := repositories3.GetParentByApplicationNumber(application.Number)
