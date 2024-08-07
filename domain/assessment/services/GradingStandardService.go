@@ -637,48 +637,49 @@ func UpdateAggregateScale(aggregateScaleRequest requests.EditAggregateScaleReque
 		return errors.New("checking assessment grade error: " + err.Error())
 	}
 
-	trn := config.DB.Begin()
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
 
-	if assessmentGrade.Number != "" {
-		err = clearGradingCategory(assessmentGrade, trn)
-	}
-
-	for _, aggregateScale := range aggregateScales {
-		err = repositories.RemoveAggregateScale(aggregateScale, trn)
-		if err != nil {
-			return errors.New("clearing old scale error: " + err.Error())
+		if assessmentGrade.Number != "" {
+			err = clearGradingCategory(assessmentGrade, trn)
 		}
-	}
 
-	scale.Name = aggregateScaleRequest.ScaleName
-	scale.Count = aggregateScaleRequest.AggregateScaleCount
-	scale.UserNumber = currentUser
+		for _, aggregateScale := range aggregateScales {
+			err = repositories.RemoveAggregateScale(aggregateScale, trn)
+			if err != nil {
+				return errors.New("clearing old scale error: " + err.Error())
+			}
+		}
 
-	_, err = repositories.SaveScale(scale, trn)
-	if err != nil {
-		return errors.New("updating base scale error: " + err.Error())
-	}
+		scale.Name = aggregateScaleRequest.ScaleName
+		scale.Count = aggregateScaleRequest.AggregateScaleCount
+		scale.UserNumber = currentUser
 
-	for _, grade := range grades {
-
-		err = createAggregateScales(trn, grade, scale.Number)
+		_, err = repositories.SaveScale(scale, trn)
 		if err != nil {
-			trn.Rollback()
+			return errors.New("updating base scale error: " + err.Error())
+		}
+
+		for _, grade := range grades {
+
+			err = createAggregateScales(trn, grade, scale.Number)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = saveGradingCategory(aggregateScaleRequest.AssessmentGrades, scale.Number, currentUser, trn)
+		if err != nil {
 			return err
 		}
-	}
 
-	err = saveGradingCategory(aggregateScaleRequest.AssessmentGrades, scale.Number, currentUser, trn)
+		return nil
+	})
+
 	if err != nil {
-		return err
-	}
-
-	if err := trn.Commit().Error; err != nil {
-		return errors.New("commit grading scales error: " + err.Error())
+		return errors.New("updating grading scale error: " + err.Error())
 	}
 
 	return nil
-
 }
 
 func clearGradingCategory(assessmentGrade assessmentGradeModels.AssessmentGrade, trn *gorm.DB) error {
