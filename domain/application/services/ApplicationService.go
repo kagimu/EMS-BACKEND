@@ -27,12 +27,12 @@ func GetApplicationById(id string) (responses.ApplicationResponse, error) {
 
 	student, err = applicationRepo.GetStudentByApplicationNumber(id)
 	if err != nil {
-		return responses.ApplicationResponse{}, err
+		return BuildSingleApplicationResponse(application, &student, previousSchools), nil
 	}
 
 	previousSchools, err = applicationRepo.FindPreviousSchoolsByApplicationNumber(id)
 	if err != nil {
-		return responses.ApplicationResponse{}, err
+		return BuildSingleApplicationResponse(application, &student, previousSchools), nil
 
 	}
 
