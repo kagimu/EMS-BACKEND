@@ -27,7 +27,7 @@ func CreateFeedingGroupUser(userNumber, campusNumber, feedingGroupNumber, status
 		CampusNumber:       campusNumber,
 	}
 
-	if err := repositories.CreateFeedingGroupUser(saveFeedingGroupUser, txn).Error; err != nil {
+	if err := repositories.CreateFeedingGroupUser(saveFeedingGroupUser, txn); err != nil {
 		return errors.New("failed to create feeding group user ")
 	}
 
