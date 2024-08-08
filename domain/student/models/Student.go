@@ -35,4 +35,5 @@ type Student struct {
 	UserNumber                string                  `json:"user_number" gorm:"size:36;unique;not null"`
 	User                      models.User             `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Status                    string                  `json:"status" gorm:"size:20;default:Active"`
+	SchoolNumber              string                  `json:"school_number" gorm:"size:36;"`
 }

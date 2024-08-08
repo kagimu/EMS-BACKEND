@@ -24,6 +24,7 @@ type StudentRequest struct {
 	ApplicationNumber         string                  `json:"application_number"`
 	ParentNumber              string                  `json:"parent_number"`
 	CampusClassNumber         string                  `json:"campus_class_number"`
+	SchoolNumber              string                  `json:"school_number"`
 }
 
 func (s *StudentRequest) Validate() error {
@@ -49,6 +50,9 @@ func (s *StudentRequest) Validate() error {
 
 	if s.SourceOfSchoolInfo == "" {
 		return errors.New("source of school information is required")
+	}
+	if s.SchoolNumber == "" {
+		return errors.New("school number is required to proceed")
 	}
 
 	return nil

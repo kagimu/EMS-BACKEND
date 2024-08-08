@@ -35,6 +35,7 @@ type StudentApplicant struct {
 	CampusClass               string `json:"campus_class"`
 	SourceOfSchoolInfo        string `json:"source_of_school_info"`
 	Status                    string `json:"status"`
+	SchoolNumber              string `json:"school_number"`
 }
 type PreviousSchoolResponse struct {
 	Name    string          `json:"name"`

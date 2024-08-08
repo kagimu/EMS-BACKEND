@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	"github.com/gin-gonic/gin"
@@ -33,10 +33,17 @@ func CreatePreviousSchools(c *gin.Context) {
 		return
 	}
 
+	applicationRepo := repository.NewApplicationRepositoryImpl(config.DB)
+
 	applicationNumber := c.Param("application_number")
 
-	var application applicationModel.Application
-	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
+	application, err := applicationRepo.FindApplicationByNumber(applicationNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Application err" + err.Error()})
+		return
+	}
+
+	if application.Number == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
 		return
 	}
@@ -89,13 +96,12 @@ func CreatePreviousSchools(c *gin.Context) {
 			}
 		}
 
-		application.Status = "SUBMITTED"
-		if err := tx.Model(&application).Where("number = ?", applicationNumber).Updates(map[string]interface{}{"status": application.Status}).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update application status", "err": err.Error()})
-			return
-		}
+	}
 
+	if err := applicationRepo.UpdateApplicationStatus(applicationNumber, "SUBMITTED", tx); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update application status", "err": err.Error()})
+		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
