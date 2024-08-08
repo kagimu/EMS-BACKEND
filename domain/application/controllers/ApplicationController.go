@@ -50,13 +50,13 @@ func FetchApplications(c *gin.Context) {
 	if user.Type == "User" {
 
 		if err := config.DB.Model(&models.Application{}).
-			Where("user_number = ?", user.Number).
-			Preload("Student").Preload("Parent").
-			Preload("PreviousSchools").
 			Scopes(
 				filters.ByStatus(c.Query("status")),
 				pagination.Paginate(c, &paginationResponse),
 			).
+			Where("user_number = ?", user.Number).
+			Preload("Student").Preload("Parent").
+			Preload("PreviousSchools").
 			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "application fetching failed",
