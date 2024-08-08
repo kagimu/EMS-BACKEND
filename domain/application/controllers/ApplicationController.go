@@ -49,7 +49,15 @@ func FetchApplications(c *gin.Context) {
 	//check for user account type and return applications accordingly
 	if user.Type == "User" {
 
-		if err := config.DB.Model(&models.Application{}).Where("user_number = ?", user.Number).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications).Error; err != nil {
+		if err := config.DB.Model(&models.Application{}).
+			Where("user_number = ?", user.Number).
+			Preload("Student").Preload("Parent").
+			Preload("PreviousSchools").
+			Scopes(
+				filters.ByStatus(c.Query("status")),
+				pagination.Paginate(c, &paginationResponse),
+			).
+			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "application fetching failed",
 			})
@@ -57,6 +65,7 @@ func FetchApplications(c *gin.Context) {
 		}
 
 	} else {
+
 		if err := config.DB.Model(&models.Application{}).
 			Preload("Student").Preload("Parent").
 			Preload("PreviousSchools").
@@ -71,12 +80,12 @@ func FetchApplications(c *gin.Context) {
 			return
 		}
 
-		if applications != nil {
-			apps = applications
-		}
-		paginationResponse.Content = apps
-
 	}
+
+	if applications != nil {
+		apps = applications
+	}
+	paginationResponse.Content = apps
 
 	c.JSON(http.StatusOK, paginationResponse)
 }
