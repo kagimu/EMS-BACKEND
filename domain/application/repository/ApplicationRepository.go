@@ -15,10 +15,15 @@ type ApplicationRepository interface {
 	FindAllApplicationsPaginated(ctx *gin.Context, pagination *pagination.PaginatedResponse, schoolNumber string) ([]applicationModels.Application, error)
 	FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error)
 	GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error)
+	UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error
 }
 
 type ApplicationRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (a ApplicationRepositoryImpl) UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error {
+	return txn.Model(&applicationModels.Application{}).Where("number = ?", applicationNumber).Update("status", status).Error
 }
 
 func (a ApplicationRepositoryImpl) FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error) {
