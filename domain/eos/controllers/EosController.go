@@ -297,8 +297,8 @@ func DeleteEntity(context *gin.Context) {
 		return
 	}
 
-	entityNumber, _ := commons.GetUserEntityNumber(context)
-	//entityNumber := context.GetString("entity_number")
+	//entityNumber, _ := commons.GetUserEntityNumber(context)
+	entityNumber := context.Query("entity_number")
 	if entityNumber == "" {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to delete"))
 		return
