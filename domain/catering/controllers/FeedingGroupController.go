@@ -155,3 +155,19 @@ func FetchFeedingGroupOnCalendars(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": groupCalendarEventResponse})
 }
+
+func FetchUserMeals(context *gin.Context) {
+	userNumber := context.Query("user_number")
+	if userNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide user number"))
+		return
+	}
+
+	userMeal, err := services.UserMeals(userNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": userMeal})
+}
