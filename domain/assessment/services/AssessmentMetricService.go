@@ -191,7 +191,7 @@ func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMet
 	assessmentMetric.ScheduledOn = formatDate
 	assessmentMetric.CampusClassNumber = assessmentMetricRequest.CampusClassNumber
 
-	err = repository.SaveAssessmentMetric(assessmentMetric)
+	err = assessmentRepository.SaveAssessmentMetric(assessmentMetric)
 	if err != nil {
 		return errors.New("updating schedule error: " + err.Error())
 	}
