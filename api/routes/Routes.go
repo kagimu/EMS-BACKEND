@@ -601,6 +601,7 @@ func SetupRoutes() *gin.Engine {
 			users.GET("all", authController.FetchAllUsers)
 			users.GET(":user_number", authController.FetchUser)
 			users.POST("", authController.CreateUser)
+			users.GET("meals", cateringController.FetchUserMeals)
 		}
 
 		reportCards := main.Group("report-cards")
