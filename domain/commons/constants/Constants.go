@@ -1,6 +1,7 @@
 package constants
 
 const StatusPending = "PENDING"
+const StatusDraft = "DRAFT"
 const StatusActive = "ACTIVE"
 const StatusInactive = "INACTIVE"
 const StatusEnrolled = "Enrolled"

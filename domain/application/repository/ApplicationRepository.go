@@ -2,6 +2,7 @@ package repository
 
 import (
 	applicationModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
@@ -16,10 +17,15 @@ type ApplicationRepository interface {
 	FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error)
 	GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error)
 	UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error
+	DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error
 }
 
 type ApplicationRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (a ApplicationRepositoryImpl) DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error {
+	return txn.Where("number = ? AND status = ? ", applicationNumber, constants.StatusDraft).Delete(&applicationModels.Application{}).Error
 }
 
 func (a ApplicationRepositoryImpl) UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error {

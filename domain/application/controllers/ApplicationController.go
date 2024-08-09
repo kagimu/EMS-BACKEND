@@ -1,10 +1,13 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -173,4 +176,56 @@ func SubmitApplication(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully"))
+}
+func DeleteApplication(ctx *gin.Context) {
+	txn := config.DB.Begin()
+	applicationRepo := repository.NewApplicationRepositoryImpl(txn)
+	parentRepo := repositories.NewParentRepositoryImpl(txn)
+	studentRepo := repositories2.NewStudentRepositoryImpl(txn)
+
+	application, err := applicationRepo.FindApplicationByNumber(ctx.Param("application_number"))
+	if err != nil {
+		txn.Rollback()
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+		return
+	}
+
+	parent, err := parentRepo.GetParentByApplicationNumber(application.Number)
+
+	if err != nil {
+		txn.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete parent"})
+		return
+	}
+
+	if parent.Number != "" {
+		if err := parentRepo.Delete(parent.Number); err != nil {
+			txn.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete parent information"})
+			return
+		}
+	}
+
+	student, err := studentRepo.GetStudentByApplicationNumber(application.Number)
+	if err != nil {
+		txn.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete student information"})
+		return
+	}
+	if student.Number != "" {
+		if err := studentRepo.Delete(student.Number, txn); err != nil {
+			txn.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete student information"})
+			return
+		}
+	}
+
+	if err := applicationRepo.DeleteDraftApplication(application.Number, txn); err != nil {
+		txn.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete application"})
+		return
+	}
+
+	txn.Commit()
+
 }
