@@ -23,7 +23,7 @@ func (p ParentRepositoryImpl) Create(parent models.Parent) error {
 	panic("implement me")
 }
 
-func (p *ParentRepositoryImpl) GetParentByApplicationNumber(applicationNumber string) (models.Parent, error) {
+func (p ParentRepositoryImpl) GetParentByApplicationNumber(applicationNumber string) (models.Parent, error) {
 	var parent models.Parent
 	if err := p.DB.Where("application_number = ?", applicationNumber).First(&parent).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -40,7 +40,7 @@ func (p ParentRepositoryImpl) FindAll() ([]models.Parent, error) {
 }
 
 func (p ParentRepositoryImpl) Delete(ParentId string) error {
-	return p.DB.Delete(ParentId).Error
+	return p.DB.Where("number = ?", ParentId).Delete(&models.Parent{}).Error
 }
 
 func NewParentRepositoryImpl(db *gorm.DB) ParentRepository {
