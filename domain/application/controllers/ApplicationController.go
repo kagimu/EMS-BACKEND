@@ -228,4 +228,6 @@ func DeleteApplication(ctx *gin.Context) {
 
 	txn.Commit()
 
+	ctx.JSON(http.StatusOK, commons.Feedback("Application deleted successfully"))
+
 }
