@@ -1082,6 +1082,10 @@ func UserMeals(userNumber string) (responses.CalendarGroupItem, error) {
 		return responses.CalendarGroupItem{}, errors.New("Fetching user group error: " + err.Error())
 	}
 
+	if userGroup.Number == "" {
+		return responses.CalendarGroupItem{}, errors.New("not attached to any group for meals")
+	}
+
 	group, err := cateringRepositories.GetFeedingGroupByNumber(userGroup.FeedingGroupNumber)
 	if err != nil {
 		return responses.CalendarGroupItem{}, errors.New("Getting group details error: " + err.Error())
