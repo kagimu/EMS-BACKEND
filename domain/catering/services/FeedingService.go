@@ -1020,35 +1020,12 @@ func GetFeedingGroupCalendarEvent(schoolNumber string, entityNumber string) (res
 	var calendarGroupItems []responses.CalendarGroupItem
 
 	for _, feedingGroup := range feedingGroups {
+		calendarGroupItem, err := createGroupCalendarItem(feedingGroup, calendarEvents)
 
-		calendarGroupItem := responses.CalendarGroupItem{
-			GroupName: feedingGroup.Name,
-			Number:    feedingGroup.Number,
+		if err != nil {
+			return feedingGroupCalendarEvent, err
 		}
 
-		var activeCalendarItems []responses.ActiveCalendarItem
-
-		for _, calendarEvent := range calendarEvents {
-			activeCalendarItem := responses.ActiveCalendarItem{}
-			activeCalendarItem.FeedingGroupCalendarEventItem = calendarEventFrom(calendarEvent)
-
-			check, err := cateringRepositories.GetCalendarEventFeedingGroupsByGroupNumber(feedingGroup.Number, calendarEvent.Number)
-			if err != nil {
-				return feedingGroupCalendarEvent, errors.New("Checking group " + feedingGroup.Number + " on calendar " + calendarEvent.Name + " error: " + err.Error())
-			}
-
-			if check.Number == "" {
-				activeCalendarItem.Active = false
-				activeCalendarItem.Message = "Not active during this period"
-			} else {
-				activeCalendarItem.Active = true
-				activeCalendarItem.Message = "Activated for this period"
-			}
-
-			activeCalendarItems = append(activeCalendarItems, activeCalendarItem)
-		}
-
-		calendarGroupItem.ActiveCalendars = activeCalendarItems
 		calendarGroupItems = append(calendarGroupItems, calendarGroupItem)
 	}
 
@@ -1057,9 +1034,79 @@ func GetFeedingGroupCalendarEvent(schoolNumber string, entityNumber string) (res
 	return feedingGroupCalendarEvent, nil
 }
 
+func createGroupCalendarItem(feedingGroup models.FeedingGroup, calendarEvents []eosModels.CalendarEvent) (responses.CalendarGroupItem, error) {
+
+	calendarGroupItem := responses.CalendarGroupItem{
+		GroupName: feedingGroup.Name,
+		Number:    feedingGroup.Number,
+	}
+
+	var activeCalendarItems []responses.ActiveCalendarItem
+
+	for _, calendarEvent := range calendarEvents {
+		activeCalendarItem := responses.ActiveCalendarItem{}
+		activeCalendarItem.FeedingGroupCalendarEventItem = calendarEventFrom(calendarEvent)
+
+		check, err := cateringRepositories.GetCalendarEventFeedingGroupsByGroupNumber(feedingGroup.Number, calendarEvent.Number)
+		if err != nil {
+			return calendarGroupItem, errors.New("Checking group " + feedingGroup.Number + " on calendar " + calendarEvent.Name + " error: " + err.Error())
+		}
+
+		if check.Number == "" {
+			activeCalendarItem.Active = false
+			activeCalendarItem.Message = "Not active during this period"
+		} else {
+			activeCalendarItem.Active = true
+			activeCalendarItem.Message = "Activated for this period"
+		}
+
+		activeCalendarItems = append(activeCalendarItems, activeCalendarItem)
+	}
+
+	calendarGroupItem.ActiveCalendars = activeCalendarItems
+
+	return calendarGroupItem, nil
+}
+
 func calendarEventFrom(calendarEvent eosModels.CalendarEvent) responses.FeedingGroupCalendarEventItem {
 	return responses.FeedingGroupCalendarEventItem{
 		CalendarName: calendarEvent.Name,
 		Number:       calendarEvent.Number,
 	}
+}
+
+func UserMeals(userNumber string) (responses.CalendarGroupItem, error) {
+
+	userGroup, err := cateringRepositories.GetFeedingGroupUserByUserNumber(userNumber)
+	if err != nil {
+		return responses.CalendarGroupItem{}, errors.New("Fetching user group error: " + err.Error())
+	}
+
+	if userGroup.Number == "" {
+		return responses.CalendarGroupItem{}, errors.New("not attached to any group for meals")
+	}
+
+	group, err := cateringRepositories.GetFeedingGroupByNumber(userGroup.FeedingGroupNumber)
+	if err != nil {
+		return responses.CalendarGroupItem{}, errors.New("Getting group details error: " + err.Error())
+	}
+
+	school, err := schoolRepositories.GetSchoolByNumber(group.SchoolNumber)
+	if err != nil {
+		return responses.CalendarGroupItem{}, errors.New("Checking school error: " + err.Error())
+	}
+
+	endDateAfter := time.Now()
+
+	calendarEvents, err := repositories.FindCalendarEvent(school.EntityNumber, endDateAfter)
+	if err != nil {
+		return responses.CalendarGroupItem{}, errors.New("Getting group details error: " + err.Error())
+	}
+
+	userMealResponse, err := createGroupCalendarItem(group, calendarEvents)
+	if err != nil {
+		return responses.CalendarGroupItem{}, err
+	}
+
+	return userMealResponse, nil
 }
