@@ -1072,6 +1072,8 @@ func calendarEventFrom(calendarEvent eosModels.CalendarEvent) responses.FeedingG
 	return responses.FeedingGroupCalendarEventItem{
 		CalendarName: calendarEvent.Name,
 		Number:       calendarEvent.Number,
+		StartDate:    calendarEvent.StartDate.Format(time.DateTime),
+		EndDate:      calendarEvent.EndDate.Format(time.DateTime),
 	}
 }
 

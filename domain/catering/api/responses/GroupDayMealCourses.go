@@ -15,6 +15,8 @@ type FeedingGroupCalendarEvent struct {
 type FeedingGroupCalendarEventItem struct {
 	CalendarName string `json:"calendar_name"`
 	Number       string `json:"number"`
+	StartDate    string `json:"start_date"`
+	EndDate      string `json:"end_date"`
 }
 
 type CalendarGroupItem struct {
