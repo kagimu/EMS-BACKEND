@@ -520,7 +520,7 @@ func SetupRoutes() *gin.Engine {
 			assessment.GET("", assessmentController.FetchAssessmentByStudent)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
-			assessment.PUT("assessment-metrics", assessmentController.UpdateAssessmentMetric)
+			assessment.POST("update", assessmentController.UpdateAssessmentMetric)
 			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
 
 			assessment.POST("metrics", assessmentController.CreateMetric)
