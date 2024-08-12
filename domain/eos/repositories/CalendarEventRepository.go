@@ -18,6 +18,7 @@ func FindCalendarEvent(entityNumber string, endDateIsAfter time.Time) ([]models.
 		Scopes(filters.ByDateAfter("calendar_events.end_date", endDateIsAfter)).
 		Joins("JOIN general_calendars on general_calendars.number = calendar_events.calendar_number").
 		Where("entity_number = ?", entityNumber).
+		Order("calendar_events.start_date asc").
 		Find(&calendarEvents).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
