@@ -79,7 +79,7 @@ func FetchAssessmentMetrics(c *gin.Context) {
 }
 
 func UpdateAssessmentMetric(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
@@ -96,11 +96,11 @@ func UpdateAssessmentMetric(c *gin.Context) {
 		return
 	}
 
-	/*err = services.UpdateAssessmentMetric(payload, user.Number)
+	err = services.UpdateAssessmentMetric(payload, user.Number)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
-	}*/
+	}
 
-	c.JSON(http.StatusOK, gin.H{"data": payload})
+	c.JSON(http.StatusOK, commons.Feedback("Schedule updated successfully"))
 }
