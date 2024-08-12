@@ -56,7 +56,7 @@ func (assessmentMetric *UpdateAssessmentMetricRequest) Validate() error {
 		return errors.New("choose the assessment metric being edited")
 	}
 
-	err := assessmentMetric.Validate()
+	err := assessmentMetric.AssessmentMetricRequest.Validate()
 	if err != nil {
 		return err
 	}
