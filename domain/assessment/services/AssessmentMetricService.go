@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var repository = repositories.NewAssessmentMetricRepository()
+var assessmentRepository = repositories.NewAssessmentMetricRepository()
 
 func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricRequest, currentUser string) error {
 
@@ -38,7 +38,7 @@ func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricReque
 		UserNumber:           currentUser,
 	}
 
-	err = repository.SaveAssessmentMetric(saveAssessmentMetric)
+	err = assessmentRepository.SaveAssessmentMetric(saveAssessmentMetric)
 	if err != nil {
 		return errors.New("creating schedule error: " + err.Error())
 	}
@@ -52,7 +52,7 @@ func AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClas
 
 	var paginate = pagination.Paginate(ctx, &paginatedResponse)
 
-	assessments, err := repository.AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, paginate)
+	assessments, err := assessmentRepository.AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, paginate)
 	if err != nil {
 		return paginatedResponse, errors.New("error getting list of assessments: " + err.Error())
 	}
@@ -75,7 +75,7 @@ func AllAssessments(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, 
 
 	var assessmentsResponse = make([]responses.AssessmentMetricResponse, 0)
 
-	assessments, err := repository.AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber)
+	assessments, err := assessmentRepository.AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber)
 	if err != nil {
 		return assessmentsResponse, errors.New("error getting list of assessments: " + err.Error())
 	}
@@ -145,10 +145,8 @@ func FindInterviewAssessments(interviewNumber, campusClassNumber string) ([]resp
 		return assessmentsResponse, errors.New("error getting list of assessments: " + err.Error())
 	}
 
-	metricRepo := repositories.NewAssessmentMetricRepository()
-
 	for _, assessmentMetric := range assessmentMetrics {
-		assessment, err := metricRepo.FindAssessmentMetricByNumber(assessmentMetric.AssessmentMetricNumber)
+		assessment, err := assessmentRepository.FindAssessmentMetricByNumber(assessmentMetric.AssessmentMetricNumber)
 		if err != nil {
 			return assessmentsResponse, errors.New("error getting assessment details: " + err.Error())
 		}
@@ -171,7 +169,6 @@ func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMet
 		return err
 	}
 
-	assessmentRepository := repositories.NewAssessmentMetricRepository()
 	assessmentMetric, err := assessmentRepository.FindAssessmentMetricByNumber(assessmentMetricRequest.AssessmentMetricNumber)
 	if err != nil {
 		return errors.New("error getting assessment details: " + err.Error())
