@@ -36,5 +36,5 @@ func RemoveSchool(school schoolModel.School, tx ...*gorm.DB) error {
 		db = tx[0]
 	}
 
-	return db.Delete(&school).Error
+	return db.Unscoped().Delete(&school).Error
 }
