@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -256,54 +256,20 @@ func EditSchool(context *gin.Context) {
 }
 
 func DeleteSchool(context *gin.Context) {
-	type SchoolInfo struct {
-		SchoolNumber string `json:"school_number"`
+
+	schoolNumber := context.Param("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide the school number"})
+		return
 	}
 
-	var schoolInfo SchoolInfo
-	err := context.BindJSON(&schoolInfo)
+	err := services.RemoveSchool(schoolNumber)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	schoolNumber := schoolInfo.SchoolNumber
-
-	userNumber := context.Request.Header["User-Number"][0]
-
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	db := config.DB
-
-	var schoolChecker models2.Campus
-	if err := db.
-		Where("school_number = ?", schoolNumber).
-		First(&schoolChecker).Error; err == nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this School, it has Campus"})
-		return
-	}
-
-	var schoolData schoolCurriculumModels.School
-
-	classLevelInfo := config.DB.
-		Where("number = ?", schoolNumber).
-		First(&schoolData)
-	if classLevelInfo.Error != nil {
-		context.JSON(http.StatusNotFound, gin.H{"message": "School not found!"})
-		return
-	}
-
-	db.Unscoped().Where("number = ?", schoolNumber).Delete(&schoolData)
-
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "School deleted successfully!"})
+	context.JSON(http.StatusBadRequest, gin.H{"message": "School Removed Successfully!"})
 }
 
 func FetchSchoolInfo(context *gin.Context) {
