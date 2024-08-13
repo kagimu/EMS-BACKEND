@@ -2,12 +2,11 @@ package models
 
 import (
 	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
-	"gorm.io/gorm"
 )
 
 type (
 	SchoolCurriculum struct {
-		gorm.Model
+		ID               uint                       `gorm:"primarykey"`
 		Number           string                     `json:"number" gorm:"size:36;unique;not null"`
 		CurriculumNumber string                     `json:"curriculum_number" gorm:"size:36;index;not null"`
 		SchoolNumber     string                     `json:"school_number" gorm:"size:36;index;not null"`

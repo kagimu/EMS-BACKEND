@@ -7,11 +7,14 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetSchoolByNumber(schoolNumber string) (schoolModel.School, error) {
-
-	var school schoolModel.School
+func GetSchoolByNumber(schoolNumber string, tx ...*gorm.DB) (schoolModel.School, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var school schoolModel.School
 
 	if err := db.Where("number = ?", schoolNumber).First(&school).Error; err != nil {
 
@@ -24,4 +27,14 @@ func GetSchoolByNumber(schoolNumber string) (schoolModel.School, error) {
 
 	return school, nil
 
+}
+
+func RemoveSchool(school schoolModel.School, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Delete(&school).Error
 }
