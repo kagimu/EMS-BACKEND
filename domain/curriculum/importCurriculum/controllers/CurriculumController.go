@@ -629,7 +629,6 @@ func FetchSchoolCurriculum(context *gin.Context) {
 	if err := config.DB.
 		Where("school_number = ?", schoolNumber).
 		Preload("Curriculum").
-		Order("created_at desc").
 		Find(&schoolCurriculum).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
 		return
