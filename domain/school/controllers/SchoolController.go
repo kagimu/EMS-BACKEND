@@ -269,7 +269,7 @@ func DeleteSchool(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusBadRequest, gin.H{"message": "School Removed Successfully!"})
+	context.JSON(http.StatusOK, gin.H{"message": "School Removed Successfully!"})
 }
 
 func FetchSchoolInfo(context *gin.Context) {
