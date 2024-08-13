@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	"gorm.io/gorm"
 	"net/http"
 
@@ -53,6 +54,12 @@ func CreateEnrollment(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch the student admission details"})
 			return
 		}
+	}
+
+	student, err := repositories2.FindStudentByNumber(payload.StudentNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch student details"})
+		return
 	}
 
 	saveEnrollment := models.Enrollment{
@@ -153,7 +160,7 @@ func CreateEnrollment(c *gin.Context) {
 
 		if fg.Number != "" {
 			// create feeding group user
-			err := services.CreateFeedingGroupUser(saveEnrollment.UserNumber, payload.CampusNumber, payload.FeedingGroupNumber, payload.Status, tx)
+			err := services.CreateFeedingGroupUser(student.UserNumber, payload.CampusNumber, payload.FeedingGroupNumber, payload.Status, tx)
 			if err != nil {
 				tx.Rollback()
 				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create feeding group user " + err.Error()})
