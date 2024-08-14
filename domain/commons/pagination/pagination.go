@@ -38,9 +38,9 @@ func Paginate(ctx *gin.Context, pagination *PaginatedResponse) func(db *gorm.DB)
 			pageSize = 10
 		}
 
-		dbClone := db.Session(&gorm.Session{})
+		//dbClone := db.Session(&gorm.Session{})
 		var total int64
-		dbClone.Count(&total)
+		db.Session(&gorm.Session{}).Model(&db.Statement.Model).Count(&total)
 
 		totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
 
