@@ -5,6 +5,7 @@ type FeedingSessionResponse struct {
 	Name                 string     `json:"name"`
 	AddedBy              string     `json:"added_by"`
 	SchoolNumber         string     `json:"school_number"`
+	PackCost             float64    `json:"pack_cost"`
 	PackItems            []PackItem `json:"pack_items"`
 }
 
