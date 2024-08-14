@@ -194,7 +194,7 @@ func FetchAdmissions(c *gin.Context) {
 
 	var admissions []models.Admission
 
-	if err := config.DB.Scopes(
+	if err := config.DB.Model(models.Admission{}).Scopes(
 		filters.ByStudyPeriodNumber(studyPeriodNumber),
 		filters.ByCampusNumber(campusNumber),
 		filters.ByStreamNumber(streamNumber),
