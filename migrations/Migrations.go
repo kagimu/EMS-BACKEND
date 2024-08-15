@@ -199,6 +199,7 @@ func Init() error {
 		&assessmentGradeModels.GradingStandardClassScale{},
 		&assessmentGradeModels.AssessmentGradeScale{},
 		&models2.LandingPage{},
+		&studyPeriodModel.StudyPeriodName{},
 	)
 
 	if err != nil {
