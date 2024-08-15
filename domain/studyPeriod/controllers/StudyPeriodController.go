@@ -7,14 +7,15 @@ import (
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 	"time"
@@ -528,57 +529,106 @@ func FetchStudyPeriod(context *gin.Context) {
 
 }
 
-func academicYearFilter(academicYearNumber string) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		if academicYearNumber != "" {
-			return db.Where("academic_year_number = ?", academicYearNumber)
-		}
-		return db
+var studyPeriodService = services.NewStudyPeriodService()
+
+func NewStudyPeriodName(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
 	}
+
+	var studyPeriodNameRequest requests.StudyPeriodNameRequest
+	err = context.BindJSON(&studyPeriodNameRequest)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Processing body request error: " + err.Error()})
+		return
+	}
+
+	err = studyPeriodNameRequest.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = studyPeriodService.NewStudyPeriodName(studyPeriodNameRequest, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Study period name created successfully"})
+	return
 }
 
-func DeleteStudyPeriod(context *gin.Context) {
+func UpdateStudyPeriodName(context *gin.Context) {
 
-	var studyPeriodInfo requests.StudyPeriodDelRequest
-	err := context.BindJSON(&studyPeriodInfo)
+	user, err := commons.GetUserFromHeader(context)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	studyPeriodNumber := studyPeriodInfo.Number
-
-	var studyPeriodData studyPeriodModel.StudyPeriod
-
-	studyPeriodDataInfo := config.DB.
-		Where("number = ?", studyPeriodNumber).
-		First(&studyPeriodData)
-	if studyPeriodDataInfo.Error != nil {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Study Period not found!"})
+	var studyPeriodNameRequest requests.UpdateStudyPeriodNameRequest
+	err = context.BindJSON(&studyPeriodNameRequest)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Processing body request error: " + err.Error()})
 		return
 	}
 
-	tx := config.DB.Begin()
-
-	//delete Study Period
-	if err := tx.
-		Unscoped().
-		Where("number = ?", studyPeriodNumber).
-		Delete(&studyPeriodData).Error; err != nil {
-		// If any error occurs, rollback the transaction
-		tx.Rollback()
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Study period"})
+	err = studyPeriodNameRequest.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	// Commit the transaction if there is no error
-	if err := tx.Commit().Error; err != nil {
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete Study period"})
+	err = studyPeriodService.UpdateStudyPeriodName(studyPeriodNameRequest, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Study Period deleted successfully!"})
+	context.JSON(http.StatusOK, gin.H{"message": "Study period name updated successfully"})
+	return
+}
 
+func RemoveStudyPeriodName(context *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	studyPeriodNameNumber := context.Param("study_period_name_number")
+
+	if studyPeriodNameNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose study period name"})
+		return
+	}
+
+	err = studyPeriodService.RemoveStudyPeriodName(studyPeriodNameNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Study period name removed successfully"})
+}
+
+func AllStudyPeriodName(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose school"})
+		return
+	}
+
+	all, err := studyPeriodService.FindAllStudyPeriodNames(schoolNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": all})
 }
