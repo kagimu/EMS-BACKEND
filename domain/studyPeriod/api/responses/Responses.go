@@ -12,4 +12,10 @@ type (
 		AcademicYearNumber   string `json:"academic_year_number"`
 		AcademicYearName     string `json:"academic_year_name"`
 	}
+
+	StudyPeriodNameResponse struct {
+		DateAdded             string `json:"date_added"`
+		Name                  string `json:"name"`
+		StudyPeriodNameNumber string `json:"study_period_name_number"`
+	}
 )
