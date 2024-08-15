@@ -94,7 +94,7 @@ func CreateService(c *gin.Context) {
 func FetchServices(c *gin.Context) {
 
 	var services []models2.Service
-	if err := config.DB.Preload("Item").Find(&services).Error; err != nil {
+	if err := config.DB.Preload("Item").Preload("CampusServices").Find(&services).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch services"})
 		return
 	}
