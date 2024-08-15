@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 	"math"
-	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -14,26 +12,9 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
-
-func DeleteFileFromPath(path string, context *gin.Context) {
-	//path := "/fileRepo/excelFile/" + pdfDel.FileName
-	// detect file if it exists
-	_, err2 := mimetype.DetectFile(path)
-	if err2 == nil {
-		//a file is removed if it exists in the path
-		//removing png file
-		errRemove := os.Remove(path)
-		if errRemove != nil {
-			context.JSON(http.StatusBadRequest, gin.H{"message": errRemove})
-			return
-		}
-
-	}
-}
 
 func CheckValidPhone(phone string) string {
 
@@ -156,10 +137,11 @@ func PermissionGroups() []PermissionGroup {
 			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream"}},
 		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
 		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete_permission", "update_permission"}},
-
+		{"STUDENT APPLICATION": []string{"view_applications", "view_application_list"}},
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
 		{"CALENDAR": []string{"view_calendar", "view_calendar-details"}},
 		{"INTERVIEWS": []string{"view_interview-details", "create_interview_schedules"}},
+		{"INVOICING": []string{"add_custom_invoice", "pay_invoice", "cancel_invoice", "cancel_payment"}},
 		{"Catering": []string{"view_catering_menu", "create_unit_of_measure",
 			"record_meals", "view_meals", "view_unit_of_measure", "create_feeding_groups", ""}},
 		{"PRODUCTS & SERVICES": []string{"create_product", "create_service", "edit_product", "edit_service", "view_services", "view_products"}},
