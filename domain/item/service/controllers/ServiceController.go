@@ -52,6 +52,7 @@ func CreateService(c *gin.Context) {
 		RepeatCycle:     payload.RepeatCycle,
 		PaymentMode:     payload.PaymentMode,
 		Name:            payload.Name,
+		SchoolNumber:    payload.SchoolNumber,
 	}
 
 	if err := tx.Create(&saveItem).Error; err != nil {
@@ -152,6 +153,7 @@ func EditService(c *gin.Context) {
 		RepeatCycle:     payload.RepeatCycle,
 		PaymentMode:     payload.PaymentMode,
 		OneTimePurchase: payload.OneTimePurchase,
+		SchoolNumber:    payload.SchoolNumber,
 	}
 
 	if err := config.DB.Model(&service).Where("number = ?", serviceNumber).Updates(updateService).Error; err != nil {
