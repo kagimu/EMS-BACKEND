@@ -31,14 +31,6 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
-	generateProductSerialCode := models2.SerialCode{}
-
-	if err := config.DB.Create(&generateProductSerialCode).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate service serial code"})
-	}
-
-	payload.SerialCode = fmt.Sprintf("SVC%04d", generateProductSerialCode.ID)
-
 	tx := config.DB.Begin()
 	itemNumber := uuid.NewV4().String()
 	saveItem := models.Item{
@@ -47,7 +39,7 @@ func CreateService(c *gin.Context) {
 		Description:     payload.Description,
 		OneTimePurchase: payload.OneTimePurchase,
 		UserNumber:      user.Number,
-		SerialCode:      payload.SerialCode,
+		SerialCode:      payload.Prefix,
 		Mandatory:       payload.Mandatory,
 		RepeatCycle:     payload.RepeatCycle,
 		PaymentMode:     payload.PaymentMode,
@@ -149,7 +141,7 @@ func EditService(c *gin.Context) {
 		Cost:            payload.Cost,
 		Name:            payload.Name,
 		Mandatory:       payload.Mandatory,
-		SerialCode:      payload.SerialCode,
+		SerialCode:      payload.Prefix,
 		RepeatCycle:     payload.RepeatCycle,
 		PaymentMode:     payload.PaymentMode,
 		OneTimePurchase: payload.OneTimePurchase,

@@ -34,22 +34,12 @@ func CreateProduct(c *gin.Context) {
 
 	tx := config.DB.Begin()
 
-	generateProductSerialCode := productModels.ProductSerialCode{}
-
-	if err := tx.Create(&generateProductSerialCode).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": " Failed to generate product serial code"})
-		return
-	}
-
-	payload.SerialCode = fmt.Sprintf("PDT%04d", generateProductSerialCode.ID)
-
 	itemNumber := uuid.NewV4().String()
 	saveProductItem := models.Item{
 		Number:      itemNumber,
 		Name:        payload.Name,
 		Cost:        payload.Cost,
-		SerialCode:  payload.SerialCode,
+		SerialCode:  payload.Prefix,
 		Description: payload.Description,
 		Prefix:      payload.Prefix,
 		UserNumber:  user.Number,

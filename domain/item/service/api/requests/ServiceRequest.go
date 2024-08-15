@@ -11,8 +11,8 @@ type ServiceRequest struct {
 	Description     string   `json:"description"`
 	Cost            float64  `json:"cost"`
 	Name            string   `json:"name"`
+	Prefix          string   `json:"prefix"`
 	Mandatory       bool     `json:"mandatory"`
-	SerialCode      string   `json:"serial_code"`
 	CampusNumbers   []string `json:"campus_numbers"`
 	OneTimePurchase bool     `json:"one_time_purchase"`
 	RepeatCycle     string   `json:"repeat_cycle"`
