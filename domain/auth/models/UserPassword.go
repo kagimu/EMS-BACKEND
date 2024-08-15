@@ -6,7 +6,7 @@ type (
 	UserPassword struct {
 		ID           uint   `gorm:"primaryKey"`
 		UserNumber   string `json:"user_number" gorm:"size:36;unique;index;not null"`
-		UserPassword string `json:"user_password" form:"user_password" binding:"required" gorm:"size:70;unique;index;not null"`
+		UserPassword string `json:"user_password" form:"user_password" binding:"required" gorm:"size:70;not null"`
 		CreatedAt    time.Time
 		UpdatedAt    time.Time
 		DeletedAt    *time.Time `sql:"index"`
