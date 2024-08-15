@@ -177,6 +177,20 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
+	// check if email or phone already exists
+
+	if err := tx.Where("contact = ?", user.Email).First(&models.Contact{}).Error; err == nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This Email was already used to create an account"})
+		return
+	}
+
+	if err := tx.Where("contact = ?", user.Phone).First(&models.Contact{}).Error; err == nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This Phone was already used to create an account"})
+		return
+	}
+
 	//after you need to save user email
 	saveEmailContact := models.Contact{
 		Contact:     user.Email,
