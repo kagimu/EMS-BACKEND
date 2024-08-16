@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"fmt"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"net/http"
 
@@ -39,7 +41,7 @@ func CreateService(c *gin.Context) {
 		Description:     payload.Description,
 		OneTimePurchase: payload.OneTimePurchase,
 		UserNumber:      user.Number,
-		SerialCode:      payload.Prefix,
+		SerialCode:      payload.SerialCode,
 		Mandatory:       payload.Mandatory,
 		RepeatCycle:     payload.RepeatCycle,
 		PaymentMode:     payload.PaymentMode,
@@ -87,12 +89,55 @@ func CreateService(c *gin.Context) {
 func FetchServices(c *gin.Context) {
 
 	var services []models2.Service
-	if err := config.DB.Preload("Item").Preload("CampusServices").Find(&services).Error; err != nil {
+	if err := config.DB.Preload("Item").Find(&services).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch services"})
 		return
 	}
+	var response []responses.ServiceResponse
+	for _, service := range services {
+		var campusServices []models2.CampusServices
+		if err := config.DB.Where("service_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
+			return
+		}
 
-	c.JSON(http.StatusOK, services)
+		var campusServiceResponse []responses.CampusServiceResponse
+		for _, campusService := range campusServices {
+			//get campus name
+			var campus campusModel.Campus
+			if err := config.DB.Where("number = ?", campusService.CampusNumber).First(&campus).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus"})
+				return
+			}
+
+			campusServiceResponse = append(campusServiceResponse, responses.CampusServiceResponse{
+				Number:       campusService.Number,
+				CampusNumber: campusService.CampusNumber,
+				Name:         campus.Name,
+			})
+		}
+
+		response = append(response, responses.ServiceResponse{
+			ItemNumber: service.ItemNumber,
+			Item: responses.ItemResponse{
+				Number:          service.Item.Number,
+				Name:            service.Item.Name,
+				Description:     service.Item.Description,
+				Type:            service.Item.Type,
+				Cost:            service.Item.Cost,
+				SerialCode:      service.Item.SerialCode,
+				PaymentMode:     service.Item.PaymentMode,
+				Mandatory:       service.Item.Mandatory,
+				SchoolNumber:    service.Item.SchoolNumber,
+				UserNumber:      service.Item.UserNumber,
+				RepeatCycle:     service.Item.RepeatCycle,
+				OneTimePurchase: service.Item.OneTimePurchase,
+			},
+			Campuses: campusServiceResponse,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func FetchAllItems(c *gin.Context) {
@@ -141,7 +186,7 @@ func EditService(c *gin.Context) {
 		Cost:            payload.Cost,
 		Name:            payload.Name,
 		Mandatory:       payload.Mandatory,
-		SerialCode:      payload.Prefix,
+		SerialCode:      payload.SerialCode,
 		RepeatCycle:     payload.RepeatCycle,
 		PaymentMode:     payload.PaymentMode,
 		OneTimePurchase: payload.OneTimePurchase,
