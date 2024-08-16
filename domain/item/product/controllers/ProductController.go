@@ -119,7 +119,7 @@ func EditProduct(c *gin.Context) {
 	}
 
 	// synchronize campus services by deleting all and adding them again
-	if err := txn.Where("service_number = ?", productNumber).Delete(&models2.CampusItem{}).Error; err != nil {
+	if err := txn.Where("item_number = ?", productNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		txn.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
 		return
@@ -154,7 +154,7 @@ func FetchProducts(c *gin.Context) {
 
 	for _, product := range products {
 		var campusServices []models2.CampusItem
-		if err := config.DB.Where("service_number = ?", product.ItemNumber).Find(&campusServices).Error; err != nil {
+		if err := config.DB.Where("item_number = ?", product.ItemNumber).Find(&campusServices).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
 			return
 		}

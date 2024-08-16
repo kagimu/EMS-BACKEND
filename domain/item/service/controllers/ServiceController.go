@@ -96,7 +96,7 @@ func FetchServices(c *gin.Context) {
 	var response []responses.ServiceResponse
 	for _, service := range services {
 		var campusServices []models2.CampusItem
-		if err := config.DB.Where("service_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
+		if err := config.DB.Where("item_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
 			return
 		}
@@ -199,7 +199,7 @@ func EditService(c *gin.Context) {
 	}
 
 	// synchronize campus services by deleting all and adding them again
-	if err := config.DB.Where("service_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
+	if err := config.DB.Where("item_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
 		return
 
@@ -238,7 +238,7 @@ func DeleteService(c *gin.Context) {
 	tx := config.DB.Begin()
 
 	//delete campus services
-	if err := tx.Where("service_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
+	if err := tx.Where("item_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
 		return
