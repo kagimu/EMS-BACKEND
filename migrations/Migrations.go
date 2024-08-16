@@ -124,7 +124,7 @@ func Init() error {
 		&invoiceModel.InvoiceItem{},
 		//&serviceModel.SerialCode{},
 		//&productModels.ProductSerialCode{},
-		&serviceModel.CampusServices{},
+		//&serviceModel.CampusServices{},
 		&serviceModel.Discount{},
 		&invoiceModel.InvoicePayment{},
 		&assessmentScaleModels.GradingStandard{},
