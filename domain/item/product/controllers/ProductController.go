@@ -204,7 +204,7 @@ func DeleteProduct(c *gin.Context) {
 	productNumber := c.Param("product_number")
 	var service productModels.Product
 	if err := config.DB.Where("number = ?", productNumber).First(&service).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found"})
+		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found "})
 		return
 	}
 
