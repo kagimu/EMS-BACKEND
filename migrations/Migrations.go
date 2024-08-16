@@ -122,7 +122,7 @@ func Init() error {
 		&serviceModel.Service{},
 		&invoiceModel.Invoice{},
 		&invoiceModel.InvoiceItem{},
-		&serviceModel.CampusServices{},
+		&serviceModel.CampusService{},
 		&serviceModel.Discount{},
 		&invoiceModel.InvoicePayment{},
 		&assessmentScaleModels.GradingStandard{},
