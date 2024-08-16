@@ -489,7 +489,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			services.POST("", serviceController.CreateService)
 			services.GET("", serviceController.FetchServices)
-			services.DELETE("", serviceController.DeleteService)
+			services.DELETE("/:service_number", serviceController.DeleteService)
 			services.PUT(":service_number", serviceController.EditService)
 		}
 
