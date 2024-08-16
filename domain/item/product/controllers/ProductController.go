@@ -67,9 +67,9 @@ func CreateProduct(c *gin.Context) {
 
 	// loop through the campuses and create a campus service
 	for _, campusNumber := range payload.CampusNumbers {
-		campusService := models2.CampusService{
-			ServiceNumber: itemNumber,
-			CampusNumber:  campusNumber,
+		campusService := models2.CampusItem{
+			ItemNumber:   itemNumber,
+			CampusNumber: campusNumber,
 		}
 		if err := tx.Create(&campusService).Error; err != nil {
 			tx.Rollback()
@@ -119,17 +119,17 @@ func EditProduct(c *gin.Context) {
 	}
 
 	// synchronize campus services by deleting all and adding them again
-	if err := txn.Where("service_number = ?", productNumber).Delete(&models2.CampusService{}).Error; err != nil {
+	if err := txn.Where("service_number = ?", productNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		txn.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
 		return
 	}
 
 	for _, campusNumber := range payload.CampusNumbers {
-		saveCampusService := models2.CampusService{
-			Number:        uuid.NewV4().String(),
-			CampusNumber:  campusNumber,
-			ServiceNumber: productNumber,
+		saveCampusService := models2.CampusItem{
+			Number:       uuid.NewV4().String(),
+			CampusNumber: campusNumber,
+			ItemNumber:   productNumber,
 		}
 		if err := txn.Create(&saveCampusService).Error; err != nil {
 			txn.Rollback()
@@ -153,7 +153,7 @@ func FetchProducts(c *gin.Context) {
 	var response []responses.ServiceResponse
 
 	for _, product := range products {
-		var campusServices []models2.CampusService
+		var campusServices []models2.CampusItem
 		if err := config.DB.Where("service_number = ?", product.ItemNumber).Find(&campusServices).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
 			return
