@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
 	"strconv"
 	"time"
@@ -630,10 +631,13 @@ func AcademicYearsByCampusClass(context *gin.Context) {
 
 		// Populate the selected columns from the fetched data
 		for _, studyPeriodList := range studyPeriodInfo {
+
+			studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(studyPeriodList.StudyPeriodNameNumber)
+
 			studyPeriodInfo_ = append(studyPeriodInfo_, responses2.StudyPeriodList{
 				Number:               studyPeriodList.Number,
 				Code:                 studyPeriodList.Code,
-				StudyPeriodName:      studyPeriodList.StudyPeriodName,
+				StudyPeriodName:      studyPeriodName.Name,
 				StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
 				StudyPeriodEndDate:   (studyPeriodList.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
 				//AcademicYearNumber:   studyPeriodList.AcademicYearNumber,
