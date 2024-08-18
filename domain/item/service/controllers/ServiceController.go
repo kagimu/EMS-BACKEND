@@ -205,6 +205,11 @@ func DeleteService(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete service"})
 		return
 	}
+	if err := tx.Where("number = ?", serviceNumber).Delete(&models.Item{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete service item"})
+		return
+	}
 
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit service transaction"})

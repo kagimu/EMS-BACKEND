@@ -135,8 +135,8 @@ func PermissionGroups() []PermissionGroup {
 		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
 		{"SETUP": []string{"view_school", "add_school", "edit_school", "delete_school", "create_campus", "edit_campus", "delete_campus", "create_academic-year", "view_academic-year", "update_academic-year",
 			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream"}},
-		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
-		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete_permission", "update_permission"}},
+		{"USERS": []string{"create_user", "view_users", "view_roles", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
+		{"PERMISSIONS": []string{"create_permission", "view_permission", "view_scopes", "delete_permission", "update_permission"}},
 		{"STUDENT APPLICATION": []string{"view_applications", "view_application_list"}},
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
 		{"CALENDAR": []string{"view_calendar", "view_calendar-details"}},
@@ -148,7 +148,7 @@ func PermissionGroups() []PermissionGroup {
 		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype"}},
 		{"ADMISSION": []string{"admit_student", "view_admissions", "cancel_admission"}},
 		{"ENROLLMENT": []string{"enroll_student", "view_enrollments", "terminate_enrollment", "re-instate_enrollment"}},
-		{"SETTINGS": []string{"access_settings_menu", "view_learning_area", "update_learning_area"}},
+		{"SETTINGS": []string{"access_settings_menu", "view_learning_area", "update_learning_area", "create_study_period_group_name", "view_study_period_group_name", "view_entities"}},
 	}
 
 }
