@@ -113,7 +113,7 @@ func (r *ReportColumn) AfterFind(tx *gorm.DB) (err error) {
 	if err := tx.Model(&ReportSetting{}).Preload("AcademicYear").Preload("CampusClass").Preload("StudyPeriod").Where("number = ?", r.ReportSettingNumber).First(&reportSetting).Error; err != nil {
 		return err
 	}
-	r.ReportSettingName = reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName
+	r.ReportSettingName = reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName.Name
 	return nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -269,6 +270,8 @@ func FetchStudentByNumber(c *gin.Context) {
 		return
 	}
 
+	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
+
 	var response = enrollmentResponse.Enrollment{}
 	response.StudentNumber = enrollment.StudentNumber
 	response.EnrollmentDate = enrollment.EnrollmentDate
@@ -277,7 +280,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	response.Stream = enrollment.Stream.Name
 	response.School = enrollment.School.Name
 	response.Campus = enrollment.Campus.Name
-	response.StudyPeriod = enrollment.StudyPeriod.StudyPeriodName
+	response.StudyPeriod = studyPeriodName.Name
 	response.ContinuingStudent = enrollment.ContinuingStudent
 	response.AcademicYear = enrollment.StudyPeriod.AcademicYear.AcademicYearName
 

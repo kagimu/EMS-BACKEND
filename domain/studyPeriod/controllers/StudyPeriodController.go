@@ -1,378 +1,80 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/services"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"net/http"
-	"strconv"
-	"time"
 )
+
+var studyPeriodService = services.NewStudyPeriodService()
 
 func NewStudyPeriod(context *gin.Context) {
 
-	var studyPeriodInfo requests.StudyPeriodInfo
-	err := context.BindJSON(&studyPeriodInfo)
+	user, err := commons.GetUserFromHeader(context)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	code := studyPeriodInfo.Code
-	studyPeriodName := studyPeriodInfo.StudyPeriodName
-	academicYearNumber := studyPeriodInfo.AcademicYearNumber
-	studyPeriodStartDate := studyPeriodInfo.StudyPeriodStartDate
-	studyPeriodEndDate := studyPeriodInfo.StudyPeriodEndDate
-	userNumber := context.Request.Header["User-Number"][0]
-
-	if academicYearNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year Name is required!"})
-		return
-	}
-
-	if studyPeriodName == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Study Periods is required!"})
-		return
-	}
-
-	if studyPeriodStartDate == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Start date is required!"})
-		return
-	}
-
-	if studyPeriodEndDate == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "End date is required!"})
-		return
-	}
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	codeNo, err := strconv.ParseInt(code, 10, 64)
+	var studyPeriodInfo requests.StudyPeriodRequest
+	err = context.BindJSON(&studyPeriodInfo)
 	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed parsing request: " + err.Error()})
 		return
 	}
 
-	var duplicateCode studyPeriodModel.StudyPeriod
-	if duplicate := config.DB.
-		Where("code = ?", code).
-		Where("academic_year_number = ?", academicYearNumber).
-		First(&duplicateCode).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+	err = studyPeriodInfo.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var duplicateStudyPeriod studyPeriodModel.StudyPeriod
-	if duplicate := config.DB.
-		Where("study_period_name = ?", studyPeriodName).
-		Where("academic_year_number = ?", academicYearNumber).
-		First(&duplicateStudyPeriod).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Study Period already exists"})
+	err = studyPeriodService.NewStudyPeriod(studyPeriodInfo, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	layout := "2006-01-02T15:04:05.000Z"
-	startDate, errorDate := time.Parse(layout, studyPeriodStartDate)
-
-	if errorDate != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": errorDate.Error()})
-		return
-	}
-
-	endDate, errorDate := time.Parse(layout, studyPeriodEndDate)
-
-	if errorDate != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": errorDate.Error()})
-		return
-	}
-
-	//validate academic year scope validation (Boundary)
-	//academicYearNumber
-
-	var academicYearData academicYearModels.AcademicYear
-	//check if user is a valid user
-	validateAcademicYr := config.DB.
-		Where("number = ?", academicYearNumber).
-		First(&academicYearData)
-	if validateAcademicYr.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year not found"})
-		return
-	}
-
-	startDateAcademicYr := academicYearData.AcademicYearStartDate
-	endDateAcademicYr := academicYearData.AcademicYearEndDate
-
-	//validate start date
-	startDate = startDate.Add(3 * time.Hour) // Converting UTC to EAT for comparison
-	if startDateAcademicYr.After(startDate) {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Start date on Study Period is out of bounds"})
-		return
-	}
-
-	//validate end date
-	endDate = endDate.Add(3 * time.Hour) // Converting UTC to EAT for comparison
-	if endDateAcademicYr.Before(endDate) {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "End date on Study Period is out of bounds"})
-		return
-	}
-
-	tx := config.DB.Begin()
-
-	// create calendar event
-
-	var calendarEvent = eosModels.CalendarEvent{}
-
-	// Format the time as "15:04" (24-hour format)
-	startTime := startDate.Format("15:04")
-	endTime := endDate.Format("15:04")
-
-	calendarEvent.Number = uuid.NewV4().String()
-	calendarEvent.StartDate = startDate
-	calendarEvent.EndDate = endDate
-	calendarEvent.StartTime = startTime
-	calendarEvent.EndTime = endTime
-	calendarEvent.CalendarNumber = academicYearData.CalendarNumber
-	calendarEvent.Name = studyPeriodName
-
-	if err := tx.Create(&calendarEvent).Error; err != nil {
-
-		tx.Rollback()
-
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create calendar event"})
-		return
-	}
-
-	number := uuid.NewV4().String()
-	///save user data
-	saveStudyPeriod := studyPeriodModel.StudyPeriod{
-		Number:               number,
-		Code:                 codeNo,
-		StudyPeriodName:      studyPeriodName,
-		StudyPeriodStartDate: startDate,
-		StudyPeriodEndDate:   endDate,
-		AcademicYearNumber:   academicYearNumber,
-		UserNumber:           userNumber,
-		CalendarEventNumber:  calendarEvent.Number,
-	}
-	//config.DB.Save(&saveStudyPeriod)
-
-	if err := tx.Create(&saveStudyPeriod).Error; err != nil {
-		// If any error occurs, rollback the transaction
-		tx.Rollback()
-		// Handle or return the error as needed
-		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Study Period"})
-		return
-	}
-
-	// Commit the transaction if there is no error
-	if err := tx.Commit().Error; err != nil {
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Study Period"})
-		return
-	}
-
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Study Period Successfully!", "data": saveStudyPeriod})
+	context.JSON(http.StatusOK, gin.H{"message": "Study period created successfully"})
 }
 
 func EditStudyPeriod(context *gin.Context) {
 
-	var studyPeriodInfo requests.StudyPeriodInfo
-	err := context.BindJSON(&studyPeriodInfo)
+	user, err := commons.GetUserFromHeader(context)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	code := studyPeriodInfo.Code
-	studyPeriodName := studyPeriodInfo.StudyPeriodName
-	academicYearNumber := studyPeriodInfo.AcademicYearNumber
-	studyPeriodStartDate := studyPeriodInfo.StudyPeriodStartDate
-	studyPeriodEndDate := studyPeriodInfo.StudyPeriodEndDate
-	studyPeriodNumber := studyPeriodInfo.StudyPeriodNumber
-	userNumber := context.Request.Header["User-Number"][0]
-
-	if academicYearNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year Name is required!"})
-		return
-	}
-
-	if studyPeriodName == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Study Periods is required!"})
-		return
-	}
-
-	if studyPeriodStartDate == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Start date is required!"})
-		return
-	}
-
-	if studyPeriodEndDate == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "End date is required!"})
-		return
-	}
-
-	if code == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code is required!"})
-		return
-	}
-
-	if code == "0" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
-		return
-	}
-
-	if studyPeriodNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Study Period number is required!"})
-		return
-	}
-
-	codeNo, err := strconv.ParseInt(code, 10, 64)
+	var studyPeriodInfo requests.UpdateStudyPeriodRequest
+	err = context.BindJSON(&studyPeriodInfo)
 	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed parsing request: " + err.Error()})
 		return
 	}
 
-	var duplicateCode studyPeriodModel.StudyPeriod
-	if duplicate := config.DB.
-		Where("code = ?", code).
-		Where("academic_year_number = ?", academicYearNumber).
-		Where("number != ?", studyPeriodNumber).
-		First(&duplicateCode).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+	err = studyPeriodInfo.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var duplicateStudyPeriod studyPeriodModel.StudyPeriod
-	if duplicate := config.DB.
-		Where("study_period_name = ?", studyPeriodName).
-		Where("academic_year_number = ?", academicYearNumber).
-		Where("number != ?", studyPeriodNumber).
-		First(&duplicateStudyPeriod).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Study Period already exists"})
+	err = studyPeriodService.UpdateStudyPeriod(studyPeriodInfo, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	layout := "2006-01-02T15:04:05.000Z"
-	startDate, errorDate := time.Parse(layout, studyPeriodStartDate)
-
-	if errorDate != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": errorDate.Error()})
-		return
-	}
-
-	endDate, errorDate := time.Parse(layout, studyPeriodEndDate)
-
-	if errorDate != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": errorDate.Error()})
-		return
-	}
-
-	//validate academic year scope validation (Boundary)
-	//academicYearNumber
-
-	var academicYearData academicYearModels.AcademicYear
-	validateAcademicYr := config.DB.
-		Where("number = ?", academicYearNumber).
-		First(&academicYearData)
-	if validateAcademicYr.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic Year not found"})
-		return
-	}
-
-	startDateAcademicYr := academicYearData.AcademicYearStartDate
-	endDateAcademicYr := academicYearData.AcademicYearEndDate
-
-	//validate start date
-	startDate = startDate.Add(3 * time.Hour) // Converting UTC to EAT for comparison
-	if startDateAcademicYr.After(startDate) {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Start date on Study Period is out of bounds"})
-		return
-	}
-
-	//validate end date
-	endDate = endDate.Add(3 * time.Hour) // Converting UTC to EAT for comparison
-	if endDateAcademicYr.Before(endDate) {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "End date on Study Period is out of bounds"})
-		return
-	}
-
-	tx := config.DB.Begin()
-
-	// create calendar event
-
-	// Format the time as "15:04" (24-hour format)
-	startTime := startDate.Format("15:04")
-	endTime := endDate.Format("15:04")
-
-	//var campusDataInfo campusModel.Campus
-	var calendarEvent eosModels.CalendarEvent
-	updateCalendar := tx.Model(&calendarEvent).
-		Where("number = ?", studyPeriodNumber).
-		Updates(eosModels.CalendarEvent{StartDate: startDate, EndDate: endDate, StartTime: startTime, EndTime: endTime, CalendarNumber: academicYearData.CalendarNumber, Name: studyPeriodName})
-	if updateCalendar.Error != nil {
-		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
-		return
-	}
-
-	//var campusDataInfo campusModel.Campus
-	var saveStudyPeriod studyPeriodModel.StudyPeriod
-	updateStudyPeriod := tx.Model(&saveStudyPeriod).
-		Where("number = ?", studyPeriodNumber).
-		Updates(studyPeriodModel.StudyPeriod{Code: codeNo, StudyPeriodName: studyPeriodName, StudyPeriodStartDate: startDate, StudyPeriodEndDate: endDate, AcademicYearNumber: academicYearNumber, UserNumber: userNumber, CalendarEventNumber: calendarEvent.Number})
-	if updateStudyPeriod.Error != nil {
-		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
-		return
-	}
-
-	// Commit the transaction if there is no error
-	if err := tx.Commit().Error; err != nil {
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Study Period"})
-		return
-	}
-
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Study Period Edited Successfully!", "data": saveStudyPeriod})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Study Period Edited Successfully!"})
 }
 
 func FetchStudyPeriodByAcademicYear(context *gin.Context) {
@@ -393,7 +95,7 @@ func FetchStudyPeriodByAcademicYear(context *gin.Context) {
 		studyPeriodInfo_ = append(studyPeriodInfo_, responses2.StudyPeriodList{
 			Number:               studyPeriodList.Number,
 			Code:                 studyPeriodList.Code,
-			StudyPeriodName:      studyPeriodList.StudyPeriodName,
+			StudyPeriodName:      "studyPeriodList.StudyPeriodName",
 			StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
 			StudyPeriodEndDate:   (studyPeriodList.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
 			//AcademicYearNumber:   studyPeriodList.AcademicYearNumber,
@@ -405,7 +107,7 @@ func FetchStudyPeriodByAcademicYear(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": studyPeriodInfo_})
 }
 
-func FetchStudyPeriodInfo(context *gin.Context) {
+func FetchStudyPeriodDetails(context *gin.Context) {
 
 	studyPeriodNumber := context.Query("study_period_number")
 
@@ -414,32 +116,15 @@ func FetchStudyPeriodInfo(context *gin.Context) {
 		return
 	}
 
-	var studyPeriodInfo studyPeriodModel.StudyPeriod
-	if err := config.DB.
-		Where("number = ?", studyPeriodNumber).
-		Preload("AcademicYear").
-		Order("code asc").
-		First(&studyPeriodInfo).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Academic year found"})
+	studyPeriodInfo, err := studyPeriodService.StudyPeriodDetails(studyPeriodNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	// Populate the selected columns from the fetched data
-	studyPeriodInfo_ := responses2.StudyPeriodList{
-		Number:               studyPeriodInfo.Number,
-		Code:                 studyPeriodInfo.Code,
-		StudyPeriodName:      studyPeriodInfo.StudyPeriodName,
-		StudyPeriodStartDate: (studyPeriodInfo.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
-		StudyPeriodEndDate:   (studyPeriodInfo.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
-		AcademicYearNumber:   studyPeriodInfo.AcademicYearNumber,
-		LevelNumber:          studyPeriodInfo.AcademicYear.CampusLevelNumber,
-		AcademicYearName:     studyPeriodInfo.AcademicYear.AcademicYearName,
-		UserNumber:           studyPeriodInfo.UserNumber,
-	}
-
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": studyPeriodInfo_})
-
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": studyPeriodInfo})
 }
+
 func FetchStudyPeriod(context *gin.Context) {
 
 	campusCurriculumNumber := context.Query("campus_curriculum_number")
@@ -493,7 +178,7 @@ func FetchStudyPeriod(context *gin.Context) {
 				studyPeriodInfo_ = append(studyPeriodInfo_, responses2.StudyPeriodList{
 					Number:               studyPeriodList.Number,
 					Code:                 studyPeriodList.Code,
-					StudyPeriodName:      studyPeriodList.StudyPeriodName,
+					StudyPeriodName:      "studyPeriodList.StudyPeriodName",
 					StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
 					StudyPeriodEndDate:   (studyPeriodList.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
 					//AcademicYearNumber:   studyPeriodList.AcademicYearNumber,
@@ -528,8 +213,6 @@ func FetchStudyPeriod(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campusLevel_})
 
 }
-
-var studyPeriodService = services.NewStudyPeriodService()
 
 func NewStudyPeriodName(context *gin.Context) {
 
@@ -631,4 +314,35 @@ func AllStudyPeriodName(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"data": all})
+}
+
+func RemoveStudyPeriod(context *gin.Context) {
+	studyPeriodNumber := context.Param("study_period_number")
+	if studyPeriodNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose study period"})
+		return
+	}
+
+	err := studyPeriodService.RemoveStudyPeriod(studyPeriodNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Study period removed successfully"})
+}
+
+func AllStudyPeriods(context *gin.Context) {
+	academicYearNumber := context.Query("academic_year_number")
+	calendarEventNumber := context.Query("calendar_event_number")
+	studyPeriodNameNumber := context.Query("study_period_name_number")
+
+	all, err := studyPeriodService.FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": all})
+	return
 }

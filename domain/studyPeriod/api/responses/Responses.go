@@ -1,5 +1,7 @@
 package responses
 
+import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
+
 type (
 	StudyPeriodList struct {
 		Number               string `json:"number"`
@@ -17,5 +19,10 @@ type (
 		DateAdded             string `json:"date_added"`
 		Name                  string `json:"name"`
 		StudyPeriodNameNumber string `json:"study_period_name_number"`
+	}
+
+	StudyPeriodListDetail struct {
+		StudyPeriodList
+		Classes []responses.ClassResponse `json:"classes"`
 	}
 )
