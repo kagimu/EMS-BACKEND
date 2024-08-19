@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 )
 
 func CreateHeadTeacherComment(payload requests.HeadTeacherCommentRequest, reportSettingNumber, userNumber string) error {
@@ -60,12 +61,17 @@ func FetchHeadTeacherComments() ([]responses.HeadTeacherCommentResponse, error) 
 }
 
 func BuildHeadTeacherResponse(comment models.HeadTeacherComment) responses.HeadTeacherCommentResponse {
+
+	studyPeriod, _ := repositories.GetStudyPeriodByNumber(comment.ReportSetting.StudyPeriodNumber)
+
+	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+
 	return responses.HeadTeacherCommentResponse{
 		MinAggregate: comment.MinAggregate,
 		MaxAggregate: comment.MaxAggregate,
 		Comment:      comment.Comment,
 		AcademicYear: comment.ReportSetting.AcademicYear.AcademicYearName,
-		StudyPeriod:  comment.ReportSetting.StudyPeriod.StudyPeriodName,
+		StudyPeriod:  studyPeriodName.Name,
 		Class:        comment.ReportSetting.CampusClass.ClassName,
 	}
 }

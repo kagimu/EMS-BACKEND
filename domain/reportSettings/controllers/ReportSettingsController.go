@@ -19,6 +19,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strconv"
@@ -82,14 +83,17 @@ func FetchReportSettings(c *gin.Context) {
 	var rs []responses.ReportSettingsResponse
 
 	for _, reportSetting := range reportSettings {
+
+		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSetting.StudyPeriod.StudyPeriodNameNumber)
+
 		response := responses.ReportSettingsResponse{
-			Name:         reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
+			Name:         reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + studyPeriodName.Name,
 			Number:       reportSetting.Number,
 			Status:       reportSetting.Status,
 			Columns:      reportSetting.Columns,
 			Code:         reportSetting.Code,
 			AcademicYear: reportSetting.AcademicYear.AcademicYearName,
-			StudyPeriod:  reportSetting.StudyPeriod.StudyPeriodName,
+			StudyPeriod:  studyPeriodName.Name,
 			Class:        reportSetting.CampusClass.ClassName,
 		}
 
@@ -251,13 +255,16 @@ func FetchReportSummaries(ctx *gin.Context) {
 	}
 
 	for _, reportSummary := range reportSummaries {
+
+		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
+
 		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
 			Number:        reportSummary.Number,
 			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
 			StudentNumber: reportSummary.StudentNumber,
 			Grade:         reportSummary.Grade,
 			Stream:        reportSummary.Stream.Name,
-			StudyPeriod:   reportSummary.StudyPeriod.StudyPeriodName,
+			StudyPeriod:   studyPeriodName.Name,
 			Class:         reportSummary.CampusClass.ClassName,
 		})
 	}
@@ -373,6 +380,9 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	}
 	scales := reporsitory.BuildAppliedScaleResponse(scalesUsed)
+
+	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
+
 	response := responses.FullReportSummary{
 		Student: responses.LeanStudent{
 			Number:     reportSummary.Student.Number,
@@ -388,7 +398,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		ClassAbbreviation:   campusClass.ClassAbbreviation,
 		School:              campusClass.Campus.School,
 		Campus:              campusClass.Campus,
-		StudyPeriod:         reportSummary.StudyPeriod.StudyPeriodName,
+		StudyPeriod:         studyPeriodName.Name,
 		ReportColumns:       rcs,
 		ReportTemplateName:  reportSummary.ReportTemplateName,
 		TeacherComment:      reportSummary.TeacherComment,

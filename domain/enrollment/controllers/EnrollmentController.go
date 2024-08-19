@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"gorm.io/gorm"
 	"net/http"
 
@@ -206,6 +207,9 @@ func FetchEnrolledStudents(c *gin.Context) {
 	}
 
 	for _, enrollment := range enrolledStudents {
+
+		studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
+
 		students = append(students, responses.Enrollment{
 			StudentSurname:    enrollment.Student.Surname,
 			StudentSecondName: enrollment.Student.SecondName,
@@ -214,7 +218,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 			Number:            enrollment.Number,
 			School:            enrollment.School.Name,
 			Campus:            enrollment.Campus.Name,
-			StudyPeriod:       enrollment.StudyPeriod.StudyPeriodName,
+			StudyPeriod:       studyPeriodName.Name,
 			Status:            enrollment.Status,
 			EnrollmentDate:    enrollment.EnrollmentDate,
 			ContinuingStudent: enrollment.ContinuingStudent,
