@@ -108,6 +108,15 @@ func createStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPerio
 
 func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest requests.StudyPeriodRequest, currentUserNumber string) error {
 
+	academicYear, err := repositories4.GetAcademicYearByNumber(studyPeriodRequest.AcademicYearNumber)
+	if err != nil {
+		return errors.New("Checking academic year number error " + err.Error())
+	}
+
+	if academicYear.Number == "" {
+		return errors.New("Invalid academic year number provided ")
+	}
+
 	layout := "2006-01-02T15:04:05.000Z"
 	startDate, errorDate := time.Parse(layout, studyPeriodRequest.StudyPeriodStartDate)
 	if errorDate != nil {
