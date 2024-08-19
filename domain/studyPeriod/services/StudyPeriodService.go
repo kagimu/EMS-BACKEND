@@ -150,7 +150,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 		calendarEvent.EndDate = endDate
 		calendarEvent.StartTime = startTime
 		calendarEvent.EndTime = endTime
-		calendarEvent.CalendarNumber = studyPeriodRequest.AcademicYearNumber
+		calendarEvent.CalendarNumber = academicYear.CalendarNumber
 		calendarEvent.Name = ""
 
 		err := repositories2.SaveCalendarEvent(calendarEvent, tx)
@@ -233,6 +233,15 @@ func prepareClasses(classes []string, period studyModels.StudyPeriod, tx *gorm.D
 
 func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodRequest requests.UpdateStudyPeriodRequest, currentUserNumber string) error {
 
+	academicYear, err := repositories4.GetAcademicYearByNumber(studyPeriodRequest.AcademicYearNumber)
+	if err != nil {
+		return errors.New("Checking academic year number error " + err.Error())
+	}
+
+	if academicYear.Number == "" {
+		return errors.New("Invalid academic year number provided ")
+	}
+
 	studyPeriod, err := repositories.GetStudyPeriodByNumber(studyPeriodRequest.StudyPeriodNumber)
 	if err != nil {
 		return errors.New("Checking study period number error: " + err.Error())
@@ -284,7 +293,7 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 		calendarEvent.EndDate = endDate
 		calendarEvent.StartTime = startTime
 		calendarEvent.EndTime = endTime
-		calendarEvent.CalendarNumber = studyPeriodRequest.AcademicYearNumber
+		calendarEvent.CalendarNumber = academicYear.CalendarNumber
 		calendarEvent.Name = ""
 
 		err := repositories2.SaveCalendarEvent(calendarEvent, tx)
