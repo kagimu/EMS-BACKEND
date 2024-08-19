@@ -159,6 +159,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 		}
 
 		studyPeriod, err := repositories.SaveStudyPeriod(studyModels.StudyPeriod{
+			Number:                uuid.NewV4().String(),
 			UserNumber:            currentUserNumber,
 			AcademicYearNumber:    studyPeriodRequest.AcademicYearNumber,
 			CalendarEventNumber:   calendarEvent.Number,
