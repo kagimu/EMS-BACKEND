@@ -3,13 +3,16 @@ package requests
 import "errors"
 
 type ProductRequest struct {
-	Name            string  `json:"name"`
-	Description     string  `json:"description"`
-	SerialCode      string  `json:"serial_code"`
-	Cost            float64 `json:"cost"`
-	Prefix          string  `json:"prefix"`
-	RepeatCycle     string  `json:"repeat_cycle"`
-	OneTimePurchase bool    `json:"one_time_purchase"`
+	Description     string   `json:"description"`
+	Cost            float64  `json:"cost"`
+	Name            string   `json:"name"`
+	SerialCode      string   `json:"serial_code"`
+	Mandatory       bool     `json:"mandatory"`
+	CampusNumbers   []string `json:"campus_numbers"`
+	OneTimePurchase bool     `json:"one_time_purchase"`
+	RepeatCycle     string   `json:"repeat_cycle"`
+	PaymentMode     string   `json:"payment_mode"`
+	SchoolNumber    string   `json:"school_number"`
 }
 
 func (p *ProductRequest) Validate() error {
@@ -25,18 +28,5 @@ func (p *ProductRequest) Validate() error {
 	if p.Cost == 0 {
 		return errors.New("cost is required")
 	}
-	if p.Prefix == " " {
-		return errors.New("prefix is required")
-	}
-
 	return nil
-}
-
-type ProductUpdateRequest struct {
-	Name               string `json:"name"`
-	Description        string `json:"description"`
-	DiscountPercentage uint   `json:"discount_percentage"`
-	DiscountAmount     uint   `json:"discount_amount"`
-	Cost               uint   `json:"cost"`
-	Prefix             string `json:"prefix"`
 }

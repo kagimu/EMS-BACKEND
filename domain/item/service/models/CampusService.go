@@ -2,10 +2,9 @@ package models
 
 import "gorm.io/gorm"
 
-type CampusServices struct {
+type CampusItem struct {
 	gorm.Model
-	Number        string  `json:"number" gorm:"size:36;not null"`
-	CampusNumber  string  `json:"campus_number" gorm:"size:36;"`
-	ServiceNumber string  `json:"service_number" gorm:"size:36;"`
-	Service       Service `gorm:"foreignKey:ServiceNumber;references:ItemNumber;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Number       string `json:"number" gorm:"size:36;not null"`
+	CampusNumber string `json:"campus_number" gorm:"size:36;"`
+	ItemNumber   string `json:"item_number" gorm:"size:36;"`
 }
