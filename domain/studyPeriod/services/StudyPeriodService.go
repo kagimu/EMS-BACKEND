@@ -26,7 +26,7 @@ type StudyPeriodService interface {
 	UpdateStudyPeriod(studyPeriodRequest requests.UpdateStudyPeriodRequest, currentUserNumber string) error
 	UpdateStudyPeriodName(studyPeriodNameRequest requests.UpdateStudyPeriodNameRequest, currentUserNumber string) error
 	FindAllStudyPeriodNames(schoolNumber string) ([]responses.StudyPeriodNameResponse, error)
-	FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string) ([]responses.StudyPeriodListDetail, error)
+	FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber string) ([]responses.StudyPeriodListDetail, error)
 	RemoveStudyPeriodName(studyPeriodNameNumber string) error
 	RemoveStudyPeriod(studyPeriodNumber string) error
 }
@@ -34,10 +34,10 @@ type StudyPeriodService interface {
 type studyPeriodService struct {
 }
 
-func (studyPeriodService *studyPeriodService) FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string) ([]responses.StudyPeriodListDetail, error) {
+func (studyPeriodService *studyPeriodService) FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber string) ([]responses.StudyPeriodListDetail, error) {
 	var studyPeriodsResponse = make([]responses.StudyPeriodListDetail, 0)
 
-	studyPeriods, err := repositories.FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNumber)
+	studyPeriods, err := repositories.FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber)
 	if err != nil {
 		return nil, errors.New("Filtering study period error " + err.Error())
 	}
