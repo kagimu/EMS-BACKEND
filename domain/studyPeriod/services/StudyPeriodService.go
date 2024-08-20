@@ -77,7 +77,7 @@ func createStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) (responses.S
 		return responses.StudyPeriodListDetail{}, errors.New("Getting study period classes error: " + err.Error())
 	}
 
-	var classesResponse []responses2.ClassResponse
+	var classesResponse = make([]responses2.ClassResponse, 0)
 
 	for _, classNumber := range classes {
 		class, _ := repositories3.GetClassByNumber(classNumber.ClassNumber)
@@ -89,6 +89,10 @@ func createStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) (responses.S
 	}
 
 	response.StudyPeriodList = createStudyPeriod(studyPeriod)
+
+	if len(classesResponse) > 0 {
+		response.LevelName = classesResponse[0].LevelName
+	}
 
 	return response, nil
 }
