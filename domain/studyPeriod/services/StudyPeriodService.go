@@ -163,6 +163,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 		}
 
 		studyPeriod, err := repositories.SaveStudyPeriod(studyModels.StudyPeriod{
+			Code:                  studyPeriodRequest.Code,
 			Number:                uuid.NewV4().String(),
 			UserNumber:            currentUserNumber,
 			AcademicYearNumber:    studyPeriodRequest.AcademicYearNumber,
@@ -277,6 +278,7 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 	}
 
 	studyPeriod.UserNumber = currentUserNumber
+	studyPeriod.Code = studyPeriodRequest.Code
 	studyPeriod.AcademicYearNumber = studyPeriodRequest.AcademicYearNumber
 	studyPeriod.StudyPeriodStartDate = startDate
 	studyPeriod.StudyPeriodEndDate = endDate
@@ -334,7 +336,7 @@ func (studyPeriodService *studyPeriodService) RemoveStudyPeriod(studyPeriodNumbe
 	}
 
 	if studyPeriod.Number == "" {
-		return errors.New("Invalid study period numner ")
+		return errors.New("Invalid study period number ")
 	}
 
 	calendarEvent, err := repositories2.GetCalendarEventByNumber(studyPeriod.CalendarEventNumber)
