@@ -100,7 +100,6 @@ func createStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPerio
 
 	return responses.StudyPeriodList{
 		StudyPeriodName:      studyPeriodName.Name,
-		LevelNumber:          academicYear.CampusLevelNumber,
 		AcademicYearName:     academicYear.AcademicYearName,
 		AcademicYearNumber:   studyPeriod.AcademicYearNumber,
 		Number:               studyPeriod.Number,
