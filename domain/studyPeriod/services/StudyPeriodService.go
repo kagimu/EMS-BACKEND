@@ -26,7 +26,7 @@ type StudyPeriodService interface {
 	UpdateStudyPeriod(studyPeriodRequest requests.UpdateStudyPeriodRequest, currentUserNumber string) error
 	UpdateStudyPeriodName(studyPeriodNameRequest requests.UpdateStudyPeriodNameRequest, currentUserNumber string) error
 	FindAllStudyPeriodNames(schoolNumber string) ([]responses.StudyPeriodNameResponse, error)
-	FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string) ([]responses.StudyPeriodList, error)
+	FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string) ([]responses.StudyPeriodListDetail, error)
 	RemoveStudyPeriodName(studyPeriodNameNumber string) error
 	RemoveStudyPeriod(studyPeriodNumber string) error
 }
@@ -34,8 +34,8 @@ type StudyPeriodService interface {
 type studyPeriodService struct {
 }
 
-func (studyPeriodService *studyPeriodService) FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string) ([]responses.StudyPeriodList, error) {
-	var studyPeriodsResponse = make([]responses.StudyPeriodList, 0)
+func (studyPeriodService *studyPeriodService) FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string) ([]responses.StudyPeriodListDetail, error) {
+	var studyPeriodsResponse = make([]responses.StudyPeriodListDetail, 0)
 
 	studyPeriods, err := repositories.FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNumber)
 	if err != nil {
@@ -43,7 +43,12 @@ func (studyPeriodService *studyPeriodService) FindAllStudyPeriods(academicYearNu
 	}
 
 	for _, studyPeriod := range studyPeriods {
-		studyPeriodsResponse = append(studyPeriodsResponse, createStudyPeriod(studyPeriod))
+		details, err := createStudyPeriodResponse(studyPeriod)
+		if err != nil {
+			return nil, err
+		}
+
+		studyPeriodsResponse = append(studyPeriodsResponse, details)
 	}
 
 	return studyPeriodsResponse, nil
