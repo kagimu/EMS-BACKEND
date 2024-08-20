@@ -26,7 +26,7 @@ type StudyPeriodService interface {
 	UpdateStudyPeriod(studyPeriodRequest requests.UpdateStudyPeriodRequest, currentUserNumber string) error
 	UpdateStudyPeriodName(studyPeriodNameRequest requests.UpdateStudyPeriodNameRequest, currentUserNumber string) error
 	FindAllStudyPeriodNames(schoolNumber string) ([]responses.StudyPeriodNameResponse, error)
-	FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string) ([]responses.StudyPeriodListDetail, error)
+	FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber string) ([]responses.StudyPeriodListDetail, error)
 	RemoveStudyPeriodName(studyPeriodNameNumber string) error
 	RemoveStudyPeriod(studyPeriodNumber string) error
 }
@@ -34,10 +34,10 @@ type StudyPeriodService interface {
 type studyPeriodService struct {
 }
 
-func (studyPeriodService *studyPeriodService) FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string) ([]responses.StudyPeriodListDetail, error) {
+func (studyPeriodService *studyPeriodService) FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber string) ([]responses.StudyPeriodListDetail, error) {
 	var studyPeriodsResponse = make([]responses.StudyPeriodListDetail, 0)
 
-	studyPeriods, err := repositories.FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNumber)
+	studyPeriods, err := repositories.FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber)
 	if err != nil {
 		return nil, errors.New("Filtering study period error " + err.Error())
 	}
@@ -77,7 +77,7 @@ func createStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) (responses.S
 		return responses.StudyPeriodListDetail{}, errors.New("Getting study period classes error: " + err.Error())
 	}
 
-	var classesResponse []responses2.ClassResponse
+	var classesResponse = make([]responses2.ClassResponse, 0)
 
 	for _, classNumber := range classes {
 		class, _ := repositories3.GetClassByNumber(classNumber.ClassNumber)
@@ -90,6 +90,10 @@ func createStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) (responses.S
 
 	response.StudyPeriodList = createStudyPeriod(studyPeriod)
 
+	if len(classesResponse) > 0 {
+		response.LevelName = classesResponse[0].LevelName
+	}
+
 	return response, nil
 }
 
@@ -100,7 +104,6 @@ func createStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPerio
 
 	return responses.StudyPeriodList{
 		StudyPeriodName:      studyPeriodName.Name,
-		LevelNumber:          academicYear.CampusLevelNumber,
 		AcademicYearName:     academicYear.AcademicYearName,
 		AcademicYearNumber:   studyPeriod.AcademicYearNumber,
 		Number:               studyPeriod.Number,
@@ -164,6 +167,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 		}
 
 		studyPeriod, err := repositories.SaveStudyPeriod(studyModels.StudyPeriod{
+			Code:                  studyPeriodRequest.Code,
 			Number:                uuid.NewV4().String(),
 			UserNumber:            currentUserNumber,
 			AcademicYearNumber:    studyPeriodRequest.AcademicYearNumber,
@@ -278,6 +282,7 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 	}
 
 	studyPeriod.UserNumber = currentUserNumber
+	studyPeriod.Code = studyPeriodRequest.Code
 	studyPeriod.AcademicYearNumber = studyPeriodRequest.AcademicYearNumber
 	studyPeriod.StudyPeriodStartDate = startDate
 	studyPeriod.StudyPeriodEndDate = endDate
@@ -335,7 +340,7 @@ func (studyPeriodService *studyPeriodService) RemoveStudyPeriod(studyPeriodNumbe
 	}
 
 	if studyPeriod.Number == "" {
-		return errors.New("Invalid study period numner ")
+		return errors.New("Invalid study period number ")
 	}
 
 	calendarEvent, err := repositories2.GetCalendarEventByNumber(studyPeriod.CalendarEventNumber)
