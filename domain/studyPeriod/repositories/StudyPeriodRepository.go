@@ -67,11 +67,10 @@ func FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNum
 	var studyPeriods []studyPeriodModel.StudyPeriod
 
 	if err := db.
-		Table("study_periods").
-		Select("DISTINCT study_periods.*").
-		Joins("join class_study_periods on class_study_periods.study_period_number = study_periods.number").
+		Joins("JOIN class_study_periods ON class_study_periods.study_period_number = study_periods.number").
 		Scopes(filters.ByAcademicYearNumber(academicYearNumber), filters.ByAnyField("class_study_periods.class_number", classNumber), filters.ByAnyField("study_period_name_number", studyPeriodNameNumber), filters.ByAnyField("calendar_event_number", calendarEventNumber)).
 		Order("code asc").
+		Distinct("study_periods.*").
 		Find(&studyPeriods).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
