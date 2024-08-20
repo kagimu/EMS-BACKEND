@@ -10,9 +10,9 @@ type (
 		StudyPeriodStartDate string `json:"study_period_start_date"`
 		StudyPeriodEndDate   string `json:"study_period_end_date"`
 		UserNumber           string `json:"user_number"`
-		LevelNumber          string `json:"level_number"`
 		AcademicYearNumber   string `json:"academic_year_number"`
 		AcademicYearName     string `json:"academic_year_name"`
+		LevelName            string `json:"level_name"`
 	}
 
 	StudyPeriodNameResponse struct {

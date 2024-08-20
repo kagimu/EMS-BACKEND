@@ -58,7 +58,7 @@ func RemoveStudyPeriod(studyPeriod studyPeriodModel.StudyPeriod, trn ...*gorm.DB
 	return db.Delete(&studyPeriod).Error
 }
 
-func FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNumber string, trn ...*gorm.DB) ([]studyPeriodModel.StudyPeriod, error) {
+func FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber string, trn ...*gorm.DB) ([]studyPeriodModel.StudyPeriod, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
@@ -67,8 +67,10 @@ func FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNum
 	var studyPeriods []studyPeriodModel.StudyPeriod
 
 	if err := db.
-		Scopes(filters.ByAcademicYearNumber(academicYearNumber), filters.ByAnyField("study_period_name_number", studyPeriodNameNumber), filters.ByAnyField("calendar_event_number", calendarEventNumber)).
+		Joins("JOIN class_study_periods ON class_study_periods.study_period_number = study_periods.number").
+		Scopes(filters.ByAcademicYearNumber(academicYearNumber), filters.ByAnyField("class_study_periods.class_number", classNumber), filters.ByAnyField("study_period_name_number", studyPeriodNameNumber), filters.ByAnyField("calendar_event_number", calendarEventNumber)).
 		Order("code asc").
+		Distinct("study_periods.number", "study_periods.code", "study_periods.study_period_name_number", "study_periods.study_period_start_date", "study_periods.study_period_end_date", "study_periods.academic_year_number", "study_periods.calendar_event_number", "study_periods.user_number").
 		Find(&studyPeriods).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 )
 
@@ -24,9 +25,14 @@ func FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculum
 }
 
 func CreateClassResponse(class classModels.Class) responses.ClassResponse {
+
+	level, _ := repositories2.GetLevelByNumber(class.LevelNumber)
+
 	return responses.ClassResponse{
 		Number:       class.Number,
 		Name:         class.Name,
 		Abbreviation: class.Abbreviation,
+		LevelNumber:  level.Number,
+		LevelName:    level.Name,
 	}
 }

@@ -11,6 +11,8 @@ type ClassResponse struct {
 	Number       string `json:"number"`
 	Name         string `json:"name"`
 	Abbreviation string `json:"abbreviation"`
+	LevelName    string `json:"level_name"`
+	LevelNumber  string `json:"level_number"`
 }
 
 type StudyTimetables struct {
