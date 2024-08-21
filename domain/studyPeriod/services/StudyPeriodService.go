@@ -143,6 +143,8 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 		return errors.New("Checking code error " + err.Error())
 	}
 
+	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriodRequest.StudyPeriodNameNumber)
+
 	if checkDuplicate.Number != "" {
 		return errors.New("Study period code already used ")
 	}
@@ -161,7 +163,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 		calendarEvent.StartTime = startTime
 		calendarEvent.EndTime = endTime
 		calendarEvent.CalendarNumber = academicYear.CalendarNumber
-		calendarEvent.Name = ""
+		calendarEvent.Name = studyPeriodName.Name
 
 		err := repositories2.SaveCalendarEvent(calendarEvent, tx)
 		if err != nil {
@@ -272,6 +274,8 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 		return errors.New("Study period code already used ")
 	}
 
+	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriodRequest.StudyPeriodNameNumber)
+
 	layout := "2006-01-02T15:04:05.000Z"
 	startDate, errorDate := time.Parse(layout, studyPeriodRequest.StudyPeriodStartDate)
 	if errorDate != nil {
@@ -300,14 +304,12 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 		// Format the time as "15:04" (24-hour format)
 		startTime := startDate.Format("15:04")
 		endTime := endDate.Format("15:04")
-
-		calendarEvent.Number = uuid.NewV4().String()
 		calendarEvent.StartDate = startDate
 		calendarEvent.EndDate = endDate
 		calendarEvent.StartTime = startTime
 		calendarEvent.EndTime = endTime
 		calendarEvent.CalendarNumber = academicYear.CalendarNumber
-		calendarEvent.Name = ""
+		calendarEvent.Name = studyPeriodName.Name
 
 		err := repositories2.SaveCalendarEvent(calendarEvent, tx)
 		if err != nil {
