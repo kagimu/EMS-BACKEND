@@ -103,15 +103,16 @@ func createStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPerio
 	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	return responses.StudyPeriodList{
-		CampusLevelNumber:    academicYear.CampusLevelNumber,
-		StudyPeriodName:      studyPeriodName.Name,
-		AcademicYearName:     academicYear.AcademicYearName,
-		AcademicYearNumber:   studyPeriod.AcademicYearNumber,
-		StudyPeriodNumber:    studyPeriod.Number,
-		Code:                 studyPeriod.Code,
-		StudyPeriodStartDate: studyPeriod.StudyPeriodStartDate.Format(time.DateTime),
-		StudyPeriodEndDate:   studyPeriod.StudyPeriodEndDate.Format(time.DateTime),
-		UserNumber:           studyPeriod.UserNumber,
+		CampusLevelNumber:     academicYear.CampusLevelNumber,
+		StudyPeriodName:       studyPeriodName.Name,
+		StudyPeriodNameNumber: studyPeriodName.Number,
+		AcademicYearName:      academicYear.AcademicYearName,
+		AcademicYearNumber:    studyPeriod.AcademicYearNumber,
+		StudyPeriodNumber:     studyPeriod.Number,
+		Code:                  studyPeriod.Code,
+		StudyPeriodStartDate:  studyPeriod.StudyPeriodStartDate.Format(time.DateTime),
+		StudyPeriodEndDate:    studyPeriod.StudyPeriodEndDate.Format(time.DateTime),
+		UserNumber:            studyPeriod.UserNumber,
 	}
 }
 
