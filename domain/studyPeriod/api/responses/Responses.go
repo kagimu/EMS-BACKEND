@@ -4,7 +4,7 @@ import "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/res
 
 type (
 	StudyPeriodList struct {
-		Number               string `json:"number"`
+		StudyPeriodNumber    string `json:"study_period_number"`
 		Code                 int64  `json:"code"`
 		StudyPeriodName      string `json:"study_period_name"`
 		StudyPeriodStartDate string `json:"study_period_start_date"`
@@ -13,6 +13,7 @@ type (
 		AcademicYearNumber   string `json:"academic_year_number"`
 		AcademicYearName     string `json:"academic_year_name"`
 		LevelName            string `json:"level_name"`
+		CampusLevelNumber    string `json:"campus_level_number"`
 	}
 
 	StudyPeriodNameResponse struct {

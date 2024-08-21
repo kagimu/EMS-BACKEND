@@ -93,7 +93,7 @@ func FetchStudyPeriodByAcademicYear(context *gin.Context) {
 	// Populate the selected columns from the fetched data
 	for _, studyPeriodList := range studyPeriodInfo {
 		studyPeriodInfo_ = append(studyPeriodInfo_, responses2.StudyPeriodList{
-			Number:               studyPeriodList.Number,
+			StudyPeriodNumber:    studyPeriodList.Number,
 			Code:                 studyPeriodList.Code,
 			StudyPeriodName:      "studyPeriodList.StudyPeriodName",
 			StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
@@ -176,7 +176,7 @@ func FetchStudyPeriod(context *gin.Context) {
 			// Populate the selected columns from the fetched data
 			for _, studyPeriodList := range studyPeriodInfo {
 				studyPeriodInfo_ = append(studyPeriodInfo_, responses2.StudyPeriodList{
-					Number:               studyPeriodList.Number,
+					StudyPeriodNumber:    studyPeriodList.Number,
 					Code:                 studyPeriodList.Code,
 					StudyPeriodName:      "studyPeriodList.StudyPeriodName",
 					StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
