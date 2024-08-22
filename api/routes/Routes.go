@@ -498,6 +498,7 @@ func SetupRoutes() *gin.Engine {
 			{
 				billable.POST("", invoiceController.CreateBillable)
 				billable.GET("", invoiceController.AllBillable)
+				billable.GET("details", invoiceController.BillableDetails)
 			}
 		}
 

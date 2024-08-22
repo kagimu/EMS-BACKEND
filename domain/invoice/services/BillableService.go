@@ -10,6 +10,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -18,9 +19,59 @@ import (
 type BillableService interface {
 	NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error
 	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error)
+	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
 }
 
 type billableService struct {
+}
+
+func (billableService *billableService) BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error) {
+
+	var detailedResponse responses.DetailedBillableResponse
+
+	bill, err := repositories.GetBillableByNumber(billableNumber)
+	if err != nil {
+		return detailedResponse, errors.New("Checking billable number error " + err.Error())
+	}
+
+	if bill.Number == "" {
+		return detailedResponse, errors.New("Invalid billable number ")
+	}
+
+	return createDetailedBillableResponse(bill)
+}
+
+func createDetailedBillableResponse(billable models.Billable) (responses.DetailedBillableResponse, error) {
+	billResponse := responses.DetailedBillableResponse{}
+	billResponse.BillableResponse = createBillResponse(billable)
+
+	var itemsResponse = make([]responses.InvoiceItemResponse, 0)
+
+	billItems, err := repositories.FindBillableItems(billable.Number)
+	if err != nil {
+		return billResponse, errors.New("Getting billable items error " + err.Error())
+	}
+
+	for _, item := range billItems {
+		itemsResponse = append(itemsResponse, createItemResponse(item))
+	}
+
+	billResponse.BillableItems = itemsResponse
+
+	return billResponse, nil
+}
+
+func createItemResponse(billableItem models.BillableItem) responses.InvoiceItemResponse {
+
+	item, _ := repositories5.GetItemByNumber(billableItem.ItemNumber)
+
+	return responses.InvoiceItemResponse{
+		ItemNumber: billableItem.ItemNumber,
+		ItemName:   item.Name,
+		UnitCost:   billableItem.UnitPrice,
+		Quantity:   billableItem.Quantity,
+		TotalCost:  billableItem.Quantity * billableItem.UnitPrice,
+	}
 }
 
 func (billableService *billableService) FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error) {
