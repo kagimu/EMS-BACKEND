@@ -137,7 +137,7 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 			return errors.New("Error saving bill " + err.Error())
 		}
 
-		err = processBillItems(newBillable, billableRequest.BillItems, tx)
+		err = processBillItems(newBillable, billableRequest.BillableItems, tx)
 
 		if err != nil {
 			return err
