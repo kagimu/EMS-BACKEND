@@ -202,32 +202,15 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 
 func prepareClasses(classes []string, period studyModels.StudyPeriod, tx *gorm.DB) error {
 
-	//Clear all other classes on this study period
-	classStudyPeriods, err := repositories.FindClassStudyPeriods("", period.Number, tx)
-	if err != nil {
-		return errors.New("Checking classes on study period error: " + err.Error())
-	}
-
-	for _, classStudyPeriod := range classStudyPeriods {
-		err = repositories.DeleteClassStudyPeriod(classStudyPeriod, tx)
-		if err != nil {
-			return errors.New("Clearing previous classes on study period error: " + err.Error())
-		}
-	}
-
 	for _, classNumber := range classes {
 
-		//Clear this class form any other study period
-		classStudyPeriods, err = repositories.FindClassStudyPeriods(classNumber, "", tx)
+		checkDuplicates, err := repositories.GetDuplicateClassStudyPeriod(classNumber, period.AcademicYearNumber, period.StudyPeriodNameNumber, tx)
 		if err != nil {
-			return errors.New("Checking classes on study period error: " + err.Error())
+			return errors.New("Checking class study period duplicate error " + err.Error())
 		}
 
-		for _, classStudyPeriod := range classStudyPeriods {
-			err = repositories.DeleteClassStudyPeriod(classStudyPeriod, tx)
-			if err != nil {
-				return errors.New("Clearing previous study period on class error: " + err.Error())
-			}
+		if checkDuplicates.Number != "" {
+			continue
 		}
 
 		//Attach class to study period
@@ -316,10 +299,22 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 			return err
 		}
 
-		studyPeriod, err := repositories.SaveStudyPeriod(studyPeriod, tx)
+		_, err = repositories.SaveStudyPeriod(studyPeriod, tx)
 
 		if err != nil {
 			return err
+		}
+
+		currentClasses, err := repositories.FindClassStudyPeriods("", studyPeriod.Number, tx)
+		if err != nil {
+			return errors.New("Checking previous classes error " + err.Error())
+		}
+
+		for _, currentClass := range currentClasses {
+			err = repositories.DeleteClassStudyPeriod(currentClass, tx)
+			if err != nil {
+				return errors.New("Removing previous class error: " + err.Error())
+			}
 		}
 
 		err = prepareClasses(studyPeriodRequest.Classes, studyPeriod, tx)

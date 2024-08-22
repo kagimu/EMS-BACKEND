@@ -8,7 +8,7 @@ type BillableRequest struct {
 	CampusNumber      string               `json:"campus_number"`
 	StudyPeriodNumber string               `json:"study_period_number"`
 	ClassNumber       string               `json:"class_number"`
-	BillItems         []InvoiceItemRequest `json:"bill_items"`
+	BillableItems     []InvoiceItemRequest `json:"billable_items"`
 }
 
 type UpdateBillableRequest struct {
@@ -38,11 +38,11 @@ func (billableRequest *BillableRequest) Validate() error {
 		return errors.New("Choose class ")
 	}
 
-	if len(billableRequest.BillItems) == 0 {
+	if len(billableRequest.BillableItems) == 0 {
 		return errors.New("Add items on this bill ")
 	}
 
-	return ValidateItems(billableRequest.BillItems)
+	return ValidateItems(billableRequest.BillableItems)
 }
 func (updateBillableRequest *UpdateBillableRequest) Validate() error {
 

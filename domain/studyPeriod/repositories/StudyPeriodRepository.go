@@ -82,3 +82,26 @@ func FindStudyPeriod(academicYearNumber, calendarEventNumber, studyPeriodNameNum
 
 	return studyPeriods, nil
 }
+
+func GetDuplicateClassStudyPeriod(classNumber, academicYearNumber, studyPeriodNameNumber string, trn ...*gorm.DB) (studyPeriodModel.StudyPeriod, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var studyPeriod studyPeriodModel.StudyPeriod
+
+	if err := db.
+		Joins("JOIN class_study_periods ON class_study_periods.study_period_number = study_periods.number").
+		Where("academic_year_number = ? AND class_number = ? AND study_period_name_number", academicYearNumber, classNumber, studyPeriodNameNumber).
+		Find(&studyPeriod).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return studyPeriod, nil
+		}
+
+		return studyPeriod, err
+	}
+
+	return studyPeriod, nil
+}
