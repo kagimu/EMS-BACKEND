@@ -59,3 +59,19 @@ func AllBillable(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "All billable", "data": all})
 }
+
+func BillableDetails(context *gin.Context) {
+	billableNumber := context.Query("billable_number")
+	if billableNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose billable item"})
+		return
+	}
+
+	billable, err := billableService.BillableDetails(billableNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": billable})
+}

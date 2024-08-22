@@ -12,3 +12,8 @@ type BillableResponse struct {
 	Type              string  `json:"type"`
 	TotalAmount       float64 `json:"total_amount"`
 }
+
+type DetailedBillableResponse struct {
+	BillableResponse
+	BillableItems []InvoiceItemResponse `json:"billable_items"`
+}
