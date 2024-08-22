@@ -59,8 +59,8 @@ func FetchAssessmentAreas(c *gin.Context) {
 	if classNumber != "" && curriculumNumber != "" {
 
 		if err := config.DB.
-			Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
 			Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number").
+			Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
 			Where("curriculum_classes.class_number = ? AND curriculum_levels.curriculum_number = ?", classNumber, curriculumNumber).
 			Distinct("assessment_areas.id", "assessment_areas.curriculum_class_number", "assessment_areas.number", "assessment_areas.name", "assessment_areas.user_number", "assessment_areas.subject_number").
 			Find(&assessmentAreas).Error; err != nil {
