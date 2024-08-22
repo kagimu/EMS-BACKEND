@@ -201,6 +201,7 @@ func Init() error {
 		&models2.LandingPage{},
 		&studyPeriodModel.StudyPeriodName{},
 		&studyPeriodModel.ClassStudyPeriod{},
+		&schoolModels.ModeOfStudy{},
 	)
 
 	if err != nil {

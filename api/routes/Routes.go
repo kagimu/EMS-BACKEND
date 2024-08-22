@@ -135,6 +135,14 @@ func SetupRoutes() *gin.Engine {
 				template.POST("/remove-template", reportTemplate.RemoveTemplateFromClass)
 			}
 
+			modeOfStudy := school.Group("mode-of-study")
+			{
+				modeOfStudy.POST("", schoolController.NewModeOfStudy)
+				modeOfStudy.GET("", schoolController.AllModeOfStudy)
+				modeOfStudy.PUT("", schoolController.UpdateModeOfStudy)
+				modeOfStudy.DELETE("/:mode_of_study_number", schoolController.DeleteModeOfStudy)
+			}
+
 		}
 
 		//manage campus
