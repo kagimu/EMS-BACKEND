@@ -26,7 +26,7 @@ func FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, ac
 	var billable []models.Billable
 
 	if err := db.
-		Joins("study_periods on study_periods.number = billables.study_period_number").
+		Joins("JOIN study_periods ON study_periods.number = billables.study_period_number").
 		Scopes(filters.ByStatus(status), filters.ByAnyField("bill_type", billType), filters.ByCampusNumber(campusNumber), filters.ByAnyField("academic_year_number", academicYearNumber), filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByAnyField("class_number", classNumber)).
 		Distinct("billables.*").
 		Where("school_number = ?", schoolNumber).Find(&billable).Error; err != nil {
