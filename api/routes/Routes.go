@@ -493,6 +493,12 @@ func SetupRoutes() *gin.Engine {
 
 			invoices.POST("delete", invoiceController.DeleteInvoice)
 			invoices.POST("cancel", invoiceController.CancelInvoice)
+
+			billable := invoices.Group("billable")
+			{
+				billable.POST("", invoiceController.CreateBillable)
+				billable.GET("", invoiceController.AllBillable)
+			}
 		}
 
 		services := main.Group("/services")

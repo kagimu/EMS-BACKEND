@@ -4,6 +4,7 @@ import (
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"gorm.io/gorm"
 )
@@ -11,6 +12,8 @@ import (
 type Billable struct {
 	gorm.Model
 	Number            string                       `json:"number" gorm:"size:36;unique;not null"`
+	BillType          string                       `json:"bill_type" gorm:"size:36;unique;not null"`
+	Status            string                       `json:"status" gorm:"size:36;unique;not null;default:ACTIVE"`
 	UserNumber        string                       `json:"user_number" gorm:"size:36;not null"`
 	User              authModel.User               `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriodNumber string                       `json:"study_period_number" gorm:"size:36;not null"`
@@ -19,4 +22,12 @@ type Billable struct {
 	Class             classModels.Class            `gorm:"foreignKey:ClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	CampusNumber      string                       `json:"campus_number" gorm:"size:36;not null"`
 	Campus            campusModel.Campus           `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	ModeOfStudyNumber string                       `json:"mode_of_study_number" gorm:"size:36;not null"`
+	ModeOfStudy       models.ModeOfStudy           `gorm:"foreignKey:ModeOfStudyNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	SchoolNumber      string                       `json:"school_number" gorm:"size:36;not null"`
+	School            models.School                `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+}
+
+func (billable *Billable) TableName() string {
+	return "billables"
 }

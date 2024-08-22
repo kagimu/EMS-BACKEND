@@ -17,3 +17,7 @@ type ModeOfStudy struct {
 	SchoolNumber string         `json:"school_number" gorm:"size:36;not null"`
 	School       School         `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
+
+func (modeOfStudy *ModeOfStudy) TableName() string {
+	return "mode_of_studies"
+}
