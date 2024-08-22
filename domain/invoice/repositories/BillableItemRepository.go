@@ -55,7 +55,7 @@ func GetDuplicatedBillableItem(billableNumber, itemNumber string, trn ...*gorm.D
 	var billableItem models.BillableItem
 
 	if err := db.
-		Where("item_number = ? AND billable_number", itemNumber, billableNumber).First(&billableItem).Error; err != nil {
+		Where("item_number = ? AND billable_number = ?", itemNumber, billableNumber).First(&billableItem).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return billableItem, nil

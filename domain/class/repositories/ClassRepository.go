@@ -65,6 +65,7 @@ func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, cu
 		Joins("join campuses on campuses.number = campus_classes.campus_number").
 		Scopes(filters.ByAnyField("campuses.school_number", schoolNumber), filters.ByAnyField("curriculum_classes.curriculum_number", curriculumNumber), filters.ByAnyField("campus_classes.campus_number", campusNumber), filters.ByAnyField("campus_level_number", campusLevelNumber)).
 		Distinct("classes.number", "classes.name", "classes.code", "classes.abbreviation", "classes.user_number", "classes.level_number", "classes.created_at", "classes.updated_at", "classes.id").
+		Order("classes.code asc").
 		Find(&classes).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
