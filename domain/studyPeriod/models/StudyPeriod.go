@@ -4,14 +4,16 @@ import (
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
-	"gorm.io/gorm"
 	"time"
 )
 
 type (
 	StudyPeriod struct {
-		gorm.Model
+		ID                    uint `gorm:"primarykey"`
+		CreatedAt             time.Time
+		UpdatedAt             time.Time
 		Number                string                          `json:"number" gorm:"size:36;unique;not null"`
+		Status                string                          `json:"status" gorm:"size:36;default:ACTIVE"`
 		Code                  int64                           `json:"code" form:"code" binding:"required" gorm:"size:60;not null"`
 		StudyPeriodNameNumber string                          `json:"study_period_name_number" gorm:"size:36;not null"`
 		StudyPeriodName       StudyPeriodName                 `gorm:"foreignKey:StudyPeriodNameNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`

@@ -93,7 +93,7 @@ func GetDuplicateClassStudyPeriod(classNumber, academicYearNumber, studyPeriodNa
 
 	if err := db.
 		Joins("JOIN class_study_periods ON class_study_periods.study_period_number = study_periods.number").
-		Where("academic_year_number = ? AND class_number = ? AND study_period_name_number", academicYearNumber, classNumber, studyPeriodNameNumber).
+		Where("academic_year_number = ? AND class_number = ? AND study_period_name_number = ?", academicYearNumber, classNumber, studyPeriodNameNumber).
 		Find(&studyPeriod).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
