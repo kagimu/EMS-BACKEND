@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -9,6 +10,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -48,11 +50,39 @@ func FetchAssessmentAreas(c *gin.Context) {
 	}
 
 	var curriculumClassNumber = c.Query("curriculum_class_number")
+
+	var classNumber = c.Query("class_number")
+	var curriculumNumber = c.Query("curriculum_number")
+
 	var assessmentAreas []models.AssessmentArea
 
-	if err := config.DB.Where("curriculum_class_number = ?", curriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
-		return
+	if classNumber != "" && curriculumNumber != "" {
+
+		if err := config.DB.
+			Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
+			Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number").
+			Where("curriculum_classes.class_number = ? AND curriculum_levels.curriculum_number = ?", classNumber, curriculumNumber).
+			Distinct("assessment_areas.*").
+			Find(&assessmentAreas).Error; err != nil {
+
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusOK, gin.H{"data": make([]models.AssessmentArea, 0)})
+				return
+			}
+
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment areas"})
+			return
+		}
+
+	} else {
+		if err := config.DB.Where("curriculum_class_number = ?", curriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusOK, gin.H{"data": make([]models.AssessmentArea, 0)})
+				return
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment areas"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": assessmentAreas})
