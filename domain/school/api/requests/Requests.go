@@ -26,3 +26,34 @@ func (r *SchoolInfo) Validate() error {
 
 	return nil
 }
+
+type ModeOfStudyRequest struct {
+	SchoolNumber string `json:"school_number"`
+	Name         string `json:"name"`
+}
+
+type UpdateModeOfStudyRequest struct {
+	ModeOfStudyNumber string `json:"mode_of_study_number"`
+	Status            string `json:"status"`
+	ModeOfStudyRequest
+}
+
+func (modeOfStudyRequest *ModeOfStudyRequest) Validate() error {
+	if modeOfStudyRequest.SchoolNumber == "" {
+		return errors.New("Choose school ")
+	}
+
+	if modeOfStudyRequest.Name == "" {
+		return errors.New("Enter mode name I.E Boarding, Half Day ")
+	}
+
+	return nil
+}
+
+func (modeOfStudyRequest *UpdateModeOfStudyRequest) Validate() error {
+	if modeOfStudyRequest.ModeOfStudyNumber == "" {
+		return errors.New("Choose mode of study being updated ")
+	}
+
+	return modeOfStudyRequest.ModeOfStudyRequest.Validate()
+}
