@@ -46,6 +46,8 @@ func FetchAssessmentMetrics(c *gin.Context) {
 	studyPeriodNumber := c.Query("study_period_number")
 	campusClassNumber := c.Query("campus_class_number")
 	metricNumber := c.Query("metric_number")
+	classNumber := c.Query("class_number")
+	campusNumber := c.Query("campus_number")
 
 	var paginated = c.DefaultQuery("paginated", "no")
 
@@ -57,7 +59,7 @@ func FetchAssessmentMetrics(c *gin.Context) {
 
 	if paginated == "yes" {
 
-		allAssessments, err := services.AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, c)
+		allAssessments, err := services.AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 			return
@@ -67,7 +69,7 @@ func FetchAssessmentMetrics(c *gin.Context) {
 
 	} else {
 
-		assessmentMetrics, err := services.AllAssessments(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber)
+		assessmentMetrics, err := services.AllAssessments(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 			return

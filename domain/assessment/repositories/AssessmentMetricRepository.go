@@ -11,26 +11,33 @@ import (
 type AssessmentMetricRepository interface {
 	FindAssessmentMetricByNumber(assessmentMetricNumber string, tx ...*gorm.DB) (assessmenModels.AssessmentMetric, error)
 	FindAssessmentMetricsByInterviewNumber(interviewNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
-	AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, paginated func(db *gorm.DB) *gorm.DB) ([]assessmenModels.AssessmentMetric, error)
-	AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
+	AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, paginated func(db *gorm.DB) *gorm.DB) ([]assessmenModels.AssessmentMetric, error)
+	AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
 	SaveAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error
 }
 
 type repository struct {
 }
 
-func (a *repository) AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, paginated func(db *gorm.DB) *gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
+func (a *repository) AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, paginated func(db *gorm.DB) *gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
 	db := config.DB
 
 	var assessmentMetrics []assessmenModels.AssessmentMetric
 
-	if err := db.Scopes(
-		filters.ByStudyPeriodNumber(studyPeriodNumber),
-		filters.ByAssessmentAreaNumber(assessmentAreaNumber),
-		filters.ByCampusClassNumber(campusClassNumber),
-		filters.ByMetricNumber(metricNumber),
-		paginated,
-	).Find(&assessmentMetrics).Error; err != nil {
+	if err := db.
+		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
+		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+		Scopes(
+			filters.ByAnyField("campus_classes.campus_number", campusNumber),
+			filters.ByAnyField("curriculum_classes.class_number", classNumber),
+			filters.ByStudyPeriodNumber(studyPeriodNumber),
+			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
+			filters.ByAnyField("assessment_metrics.campus_class_number", campusClassNumber),
+			filters.ByMetricNumber(metricNumber),
+			paginated,
+		).
+		Distinct("assessment_metrics.*").
+		Find(&assessmentMetrics).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return assessmentMetrics, nil
@@ -42,7 +49,7 @@ func (a *repository) AllAssessmentMetricPaginated(assessmentAreaNumber, studyPer
 
 	return assessmentMetrics, nil
 }
-func (a *repository) AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
+func (a *repository) AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
 	db := config.DB
 	if len(tx) > 0 {
 		db = tx[0]
@@ -50,12 +57,19 @@ func (a *repository) AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber
 
 	var assessmentMetrics []assessmenModels.AssessmentMetric
 
-	if err := db.Scopes(
-		filters.ByStudyPeriodNumber(studyPeriodNumber),
-		filters.ByAssessmentAreaNumber(assessmentAreaNumber),
-		filters.ByCampusClassNumber(campusClassNumber),
-		filters.ByMetricNumber(metricNumber),
-	).Find(&assessmentMetrics).Error; err != nil {
+	if err := db.
+		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
+		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+		Scopes(
+			filters.ByAnyField("campus_classes.campus_number", campusNumber),
+			filters.ByAnyField("curriculum_classes.class_number", classNumber),
+			filters.ByStudyPeriodNumber(studyPeriodNumber),
+			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
+			filters.ByAnyField("assessment_metrics.campus_class_number", campusClassNumber),
+			filters.ByMetricNumber(metricNumber),
+		).
+		Distinct("assessment_metrics.*").
+		Find(&assessmentMetrics).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return assessmentMetrics, nil
