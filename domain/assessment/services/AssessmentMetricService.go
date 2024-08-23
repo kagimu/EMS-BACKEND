@@ -52,13 +52,13 @@ func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricReque
 	return nil
 }
 
-func AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, ctx *gin.Context) (pagination.PaginatedResponse, error) {
+func AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, ctx *gin.Context) (pagination.PaginatedResponse, error) {
 
 	var paginatedResponse = pagination.PaginatedResponse{}
 
 	var paginate = pagination.Paginate(ctx, &paginatedResponse)
 
-	assessments, err := assessmentRepository.AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, paginate)
+	assessments, err := assessmentRepository.AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber, paginate)
 	if err != nil {
 		return paginatedResponse, errors.New("error getting list of assessments: " + err.Error())
 	}
@@ -77,11 +77,11 @@ func AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClas
 	return paginatedResponse, nil
 }
 
-func AllAssessments(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string) ([]responses.AssessmentMetricResponse, error) {
+func AllAssessments(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string) ([]responses.AssessmentMetricResponse, error) {
 
 	var assessmentsResponse = make([]responses.AssessmentMetricResponse, 0)
 
-	assessments, err := assessmentRepository.AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber)
+	assessments, err := assessmentRepository.AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber)
 	if err != nil {
 		return assessmentsResponse, errors.New("error getting list of assessments: " + err.Error())
 	}
