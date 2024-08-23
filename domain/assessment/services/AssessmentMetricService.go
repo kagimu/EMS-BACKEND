@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	campusClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
@@ -25,11 +26,16 @@ func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricReque
 		return err
 	}
 
+	campusClass, err := resolveCampusClass(assessmentMetricRequest.ClassNumber, assessmentMetricRequest.CampusNumber)
+	if err != nil {
+		return err
+	}
+
 	saveAssessmentMetric := models.AssessmentMetric{
 		Number:               uuid.NewV4().String(),
 		StudyPeriodNumber:    assessmentMetricRequest.StudyPeriodNumber,
 		ScheduledOn:          formatDate,
-		CampusClassNumber:    assessmentMetricRequest.CampusClassNumber,
+		CampusClassNumber:    campusClass.Number,
 		MetricNumber:         assessmentMetricRequest.MetricNumber,
 		AssessmentAreaNumber: assessmentMetricRequest.AssessmentAreaNumber,
 		Description:          assessmentMetricRequest.Description,
@@ -44,6 +50,19 @@ func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricReque
 	}
 
 	return nil
+}
+
+func resolveCampusClass(classNumber string, campusNumber string) (campusClassModel.CampusClass, error) {
+	campusClass, err := repositories3.GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber)
+	if err != nil {
+		return campusClass, errors.New("Checking class and campus error: " + err.Error())
+	}
+
+	if campusClass.Number == "" {
+		return campusClass, errors.New("Class is not active on the selected campus ")
+	}
+
+	return campusClass, nil
 }
 
 func AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber string, ctx *gin.Context) (pagination.PaginatedResponse, error) {
@@ -178,6 +197,11 @@ func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMet
 		return errors.New("invalid assessment metric number")
 	}
 
+	campusClass, err := resolveCampusClass(assessmentMetricRequest.ClassNumber, assessmentMetricRequest.CampusNumber)
+	if err != nil {
+		return err
+	}
+
 	assessmentMetric.UserNumber = currentUser
 	assessmentMetric.MaxScore = assessmentMetricRequest.MaxScore
 	assessmentMetric.RequireComment = assessmentMetricRequest.RequireComment
@@ -186,7 +210,7 @@ func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMet
 	assessmentMetric.StudyPeriodNumber = assessmentMetricRequest.StudyPeriodNumber
 	assessmentMetric.MetricNumber = assessmentMetricRequest.MetricNumber
 	assessmentMetric.ScheduledOn = formatDate
-	assessmentMetric.CampusClassNumber = assessmentMetricRequest.CampusClassNumber
+	assessmentMetric.CampusClassNumber = campusClass.Number
 
 	err = assessmentRepository.SaveAssessmentMetric(assessmentMetric)
 	if err != nil {
