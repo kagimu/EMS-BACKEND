@@ -59,22 +59,34 @@ func CreateReportSettings(c *gin.Context) {
 
 func FetchReportSettings(c *gin.Context) {
 
+	campusNumber := c.Query("campus_number")
+	classNumber := c.Query("class_number")
 	campusClassNumber := c.Query("campus_class_number")
 
-	if campusClassNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a class"})
+	if campusClassNumber == "" || (campusNumber == "" && classNumber == "") {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a campus and class"})
 		return
 	}
 
+	if campusNumber != "" && classNumber != "" {
+		campusClassNumber = ""
+	}
+
 	var reportSettings []models.ReportSetting
-	if err := config.DB.Preload("AcademicYear").
+	if err := config.DB.
+		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
+		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+		Preload("AcademicYear").
 		Preload("CampusClass").
 		Preload("StudyPeriod").
 		Scopes(
+			filters.ByAnyField("campus_classes.campus_number", campusNumber),
+			filters.ByAnyField("curriculum_classes.class_number", classNumber),
 			filters.ByCampusClassNumber(campusClassNumber),
 			filters.ByAcademicYearNumber(c.Query("academic_year_number")),
 			filters.ByStudyPeriodNumber(c.Query("study_period_number")),
 		).
+		Distinct("report_settings.").
 		Find(&reportSettings).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
