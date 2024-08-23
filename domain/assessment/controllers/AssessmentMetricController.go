@@ -51,10 +51,13 @@ func FetchAssessmentMetrics(c *gin.Context) {
 
 	var paginated = c.DefaultQuery("paginated", "no")
 
-	if campusClassNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class number is required"})
+	if campusClassNumber == "" || (campusNumber == "" && classNumber == "") {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a campus and class"})
 		return
+	}
 
+	if campusNumber != "" && classNumber != "" {
+		campusClassNumber = ""
 	}
 
 	if paginated == "yes" {
