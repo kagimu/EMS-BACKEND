@@ -10,8 +10,8 @@ import (
 	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
-	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	classService "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
@@ -29,22 +29,9 @@ import (
 
 func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, currentUserNumber string) error {
 
-	campusClass, err := repositories.GetCampusClassByClassNumberAndCampusNumber(reportSettingsRequest.ClassNumber, reportSettingsRequest.CampusNumber)
+	campusClass, err := classService.ResolveCampusClass(reportSettingsRequest.ClassNumber, reportSettingsRequest.CampusNumber)
 	if err != nil {
-		return errors.New("Checking class on campus error " + err.Error())
-	}
-
-	campus, err := repositories3.GetCampusByNumber(reportSettingsRequest.CampusNumber)
-	if err != nil {
-		return errors.New("Checking campus error " + err.Error())
-	}
-
-	if campus.Number == "" {
-		return errors.New("Invalid campus number ")
-	}
-
-	if campusClass.Number == "" {
-		return errors.New("This class is not attached to the selected campus '" + campus.Name + "'")
+		return err
 	}
 
 	existingReportSettings, err := reporsitory.FindDuplicateReportSettings(reportSettingsRequest.StudyPeriodNumber, reportSettingsRequest.AcademicYearNumber, campusClass.Number, constants.StatusActive)
@@ -62,7 +49,7 @@ func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, cu
 		Number:             uuid.NewV4().String(),
 		StudyPeriodNumber:  reportSettingsRequest.StudyPeriodNumber,
 		AcademicYearNumber: reportSettingsRequest.AcademicYearNumber,
-		CampusClassNumber:  reportSettingsRequest.CampusClassNumber,
+		CampusClassNumber:  campusClass.Number,
 		Columns:            reportSettingsRequest.Columns,
 		Status:             constants.StatusActive,
 		UserNumber:         currentUserNumber,
