@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"gorm.io/gorm"
 )
@@ -95,6 +96,32 @@ func FindAssessmentAreasByCurriculumClassNumber(curriculumClassNumber string, tr
 	var assessmentAreas []assessmentAreaModels.AssessmentArea
 
 	if err := db.Where("curriculum_class_number = ?", curriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
+
+		return assessmentAreas, err
+	}
+
+	return assessmentAreas, nil
+}
+
+func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber string, trn ...*gorm.DB) ([]assessmentAreaModels.AssessmentArea, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentAreas []assessmentAreaModels.AssessmentArea
+
+	if err := db.
+		Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number").
+		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
+		Scopes(filters.ByAnyField("curriculum_class_number", curriculumClassNumber), filters.ByAnyField("curriculum_classes.curriculum_level_number", curriculumLevelNumber), filters.ByAnyField("curriculum_levels.level_number", levelNumber), filters.ByAnyField("curriculum_classes.class_number", classNumber), filters.ByAnyField("curriculum_levels.curriculum_number", curriculumNumber)).
+		Distinct("assessment_areas.id", "assessment_areas.curriculum_class_number", "assessment_areas.number", "assessment_areas.name", "assessment_areas.user_number", "assessment_areas.subject_number").
+		Find(&assessmentAreas).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentAreas, nil
+		}
 
 		return assessmentAreas, err
 	}

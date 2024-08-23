@@ -125,9 +125,9 @@ func UpdateAssessmentArea(payload requests.UpdateAssessmentAreaRequest, currentU
 	return nil
 }
 
-func FetchAssessmentAreasByGradingStandard(schoolNumber, assessmentAreaNumber, gradingStandardNumber string) ([]responses.AssessmentAreaResponse, error) {
+func FetchAssessmentAreasByGradingStandard(schoolNumber, assessmentAreaNumber, gradingStandardNumber string) ([]responses.GradingStandardAssessmentAreaResponse, error) {
 
-	var assessmentAreaResponses = make([]responses.AssessmentAreaResponse, 0)
+	var assessmentAreaResponses = make([]responses.GradingStandardAssessmentAreaResponse, 0)
 
 	assessmentAreaGradingStandards, err := repositories.FindAssessmentAreaGradingStandardsByGradingStandardNumber(schoolNumber, assessmentAreaNumber, gradingStandardNumber)
 	if err != nil {
@@ -141,7 +141,7 @@ func FetchAssessmentAreasByGradingStandard(schoolNumber, assessmentAreaNumber, g
 			return assessmentAreaResponses, err
 		}
 
-		assessmentAreaResponses = append(assessmentAreaResponses, responses.AssessmentAreaResponse{
+		assessmentAreaResponses = append(assessmentAreaResponses, responses.GradingStandardAssessmentAreaResponse{
 			Code:                assessmentAreaGradingStandard.Code,
 			GradingStandardName: gradingStandard.Name,
 			AssessmentAreaName:  assessmentArea.Name,
@@ -216,4 +216,38 @@ func findAssessmentAreaAndGradingStandard(assessmentAreaNumber string, gradingSt
 	}
 
 	return assessmentArea, gradingStandard, nil
+}
+
+func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber string) ([]responses.AssessmentAreaResponse, error) {
+
+	var assessmentAreasResponse = make([]responses.AssessmentAreaResponse, 0)
+
+	all, err := repositories.FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber)
+	if err != nil {
+		return assessmentAreasResponse, errors.New("Fetching assessment areas error: " + err.Error())
+	}
+
+	for _, assessmentArea := range all {
+
+		name := assessmentArea.Name
+
+		if assessmentArea.SubjectNumber != "" {
+			subject, err := subjectRepositories.GetSubjectByNumber(assessmentArea.SubjectNumber)
+			if err != nil {
+				fmt.Println("Subject error: " + err.Error())
+			} else {
+				name = subject.Name
+			}
+		}
+
+		assessmentAreasResponse = append(assessmentAreasResponse, responses.AssessmentAreaResponse{
+			Name:                  name,
+			Number:                assessmentArea.Number,
+			UserNumber:            assessmentArea.UserNumber,
+			SubjectNumber:         assessmentArea.SubjectNumber,
+			CurriculumClassNumber: assessmentArea.CurriculumClassNumber,
+		})
+	}
+
+	return assessmentAreasResponse, nil
 }

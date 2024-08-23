@@ -1,16 +1,11 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -50,11 +45,16 @@ func FetchAssessmentAreas(c *gin.Context) {
 	}
 
 	var curriculumClassNumber = c.Query("curriculum_class_number")
-
 	var classNumber = c.Query("class_number")
 	var curriculumNumber = c.Query("curriculum_number")
+	var levelNumber = c.Query("level_number")
+	var curriculumLevelNumber = c.Query("curriculum_level_number")
 
-	var assessmentAreas []models.AssessmentArea
+	if classNumber != "" && curriculumNumber != "" {
+		curriculumClassNumber = ""
+	}
+
+	/*var assessmentAreas []models.AssessmentArea
 
 	if classNumber != "" && curriculumNumber != "" {
 
@@ -83,9 +83,15 @@ func FetchAssessmentAreas(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch assessment areas"})
 			return
 		}
+	}*/
+
+	all, err := services.FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": assessmentAreas})
+	c.JSON(http.StatusOK, gin.H{"data": all})
 }
 
 func EditAssessmentArea(c *gin.Context) {
@@ -122,7 +128,7 @@ func FetchAssessmentAreasByCampusClassNumber(c *gin.Context) {
 		return
 	}
 
-	var campusClass campusClassModels.CampusClass
+	/*var campusClass campusClassModels.CampusClass
 	if err := config.DB.Preload("CurriculumClass").Where("number = ?", campusClassNumber).First(&campusClass).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus class"})
 		return
@@ -132,9 +138,15 @@ func FetchAssessmentAreasByCampusClassNumber(c *gin.Context) {
 	if err := config.DB.Where("curriculum_class_number = ?", campusClass.CurriculumClass.Number).Find(&assessmentAreas).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
 		return
+	}*/
+
+	all, err := services.FindAllAssessmentAreas(campusClassNumber, "", "", "", "")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": assessmentAreas})
+	c.JSON(http.StatusOK, gin.H{"data": all})
 }
 
 //prepare Scope for assessment area
