@@ -8,6 +8,8 @@ type ReportSettingsRequest struct {
 	Code               int64  `json:"code"`
 	AcademicYearNumber string `json:"academic_year_number"`
 	StudyPeriodNumber  string `json:"study_period_number"`
+	ClassNumber        string `json:"class_number"`
+	CampusNumber       string `json:"campus_number"`
 	CampusClassNumber  string `json:"campus_class_number"`
 	Columns            int64  `json:"columns"`
 }
@@ -102,8 +104,13 @@ func (reportSetting *ReportSettingsRequest) ValidateReportSetting() error {
 	if reportSetting.StudyPeriodNumber == "" {
 		return errors.New("study period is required")
 	}
-	if reportSetting.CampusClassNumber == "" {
-		return errors.New("class is required")
+
+	if reportSetting.CampusNumber == "" {
+		return errors.New("Choose a campus ")
+	}
+
+	if reportSetting.ClassNumber == "" {
+		return errors.New("Choose a class ")
 	}
 	if reportSetting.Columns == 0 {
 		return errors.New("number of columns is required")
