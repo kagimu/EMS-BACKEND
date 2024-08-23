@@ -10,6 +10,7 @@ import (
 	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -28,7 +29,25 @@ import (
 
 func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, currentUserNumber string) error {
 
-	existingReportSettings, err := reporsitory.FindDuplicateReportSettings(reportSettingsRequest.StudyPeriodNumber, reportSettingsRequest.AcademicYearNumber, reportSettingsRequest.CampusClassNumber, constants.StatusActive)
+	campusClass, err := repositories.GetCampusClassByClassNumberAndCampusNumber(reportSettingsRequest.ClassNumber, reportSettingsRequest.CampusNumber)
+	if err != nil {
+		return errors.New("Checking class on campus error " + err.Error())
+	}
+
+	campus, err := repositories3.GetCampusByNumber(reportSettingsRequest.CampusNumber)
+	if err != nil {
+		return errors.New("Checking campus error " + err.Error())
+	}
+
+	if campus.Number == "" {
+		return errors.New("Invalid campus number ")
+	}
+
+	if campusClass.Number == "" {
+		return errors.New("This class is not attached to the selected campus '" + campus.Name + "'")
+	}
+
+	existingReportSettings, err := reporsitory.FindDuplicateReportSettings(reportSettingsRequest.StudyPeriodNumber, reportSettingsRequest.AcademicYearNumber, campusClass.Number, constants.StatusActive)
 
 	if err != nil {
 		return errors.New("error checking report duplicate: " + err.Error())
