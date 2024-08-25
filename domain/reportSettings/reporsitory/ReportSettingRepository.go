@@ -3,6 +3,7 @@ package reporsitory
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	reportSettingsModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"gorm.io/gorm"
 )
@@ -85,4 +86,36 @@ func FindReportColumnsByReportSettingNumber(reportSettingNumber string) ([]repor
 	}
 
 	return reportColumns, nil
+}
+
+func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academicYearNumber, studyPeriodNumber string, txn ...*gorm.DB) ([]reportSettingsModel.ReportSetting, error) {
+
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+
+	var reportSettings []reportSettingsModel.ReportSetting
+
+	if err := db.
+		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
+		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+		Scopes(
+			filters.ByAnyField("campus_classes.campus_number", campusNumber),
+			filters.ByAnyField("curriculum_classes.class_number", classNumber),
+			filters.ByAnyField("report_settings.campus_class_number", campusClassNumber),
+			filters.ByAnyField("report_settings.academic_year_number", academicYearNumber),
+			filters.ByAnyField("report_settings.study_period_number", studyPeriodNumber),
+		).
+		Distinct("report_settings.*").
+		Find(&reportSettings).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportSettings, nil
+		}
+
+		return reportSettings, err
+	}
+
+	return reportSettings, nil
 }

@@ -62,17 +62,19 @@ func FetchReportSettings(c *gin.Context) {
 	campusNumber := c.Query("campus_number")
 	classNumber := c.Query("class_number")
 	campusClassNumber := c.Query("campus_class_number")
+	academicYearNumber := c.Query("academic_year_number")
+	studyPeriodNumber := c.Query("study_period_number")
 
 	if campusClassNumber == "" || (campusNumber == "" && classNumber == "") {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a campus and class"})
 		return
 	}
 
-	if campusNumber != "" && classNumber != "" {
+	/*if campusNumber != "" && classNumber != "" {
 		campusClassNumber = ""
-	}
+	}*/
 
-	var reportSettings []models.ReportSetting
+	/*var reportSettings []models.ReportSetting
 	if err := config.DB.
 		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
 		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
@@ -110,9 +112,15 @@ func FetchReportSettings(c *gin.Context) {
 		}
 
 		rs = append(rs, response)
+	}*/
+
+	allReportSettings, err := services3.FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academicYearNumber, studyPeriodNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": rs})
+	c.JSON(http.StatusOK, gin.H{"data": allReportSettings})
 
 }
 

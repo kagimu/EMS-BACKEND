@@ -56,9 +56,9 @@ func FetchAssessmentMetrics(c *gin.Context) {
 		return
 	}
 
-	if campusNumber != "" && classNumber != "" {
+	/*if campusNumber != "" && classNumber != "" {
 		campusClassNumber = ""
-	}
+	}*/
 
 	if paginated == "yes" {
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	gradesModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
@@ -18,10 +19,12 @@ import (
 	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
@@ -476,4 +479,40 @@ func GetProperHeadTeacherCommentByReportSettingNumberAndPoints(reportSettingNumb
 	}
 
 	return headTeacherComment, errors.New("no matching head teacher comment found")
+}
+
+func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academicYearNumber, studyPeriodNumber string) ([]responses.ReportSettingsResponse, error) {
+	var reportSettingsResponse = make([]responses.ReportSettingsResponse, 0)
+	all, err := reporsitory.FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academicYearNumber, studyPeriodNumber)
+	if err != nil {
+		return reportSettingsResponse, errors.New("Fetching report settings error: " + err.Error())
+	}
+
+	for _, reportSetting := range all {
+		reportSettingsResponse = append(reportSettingsResponse, createReportSettingsResponse(reportSetting))
+	}
+
+	return reportSettingsResponse, nil
+}
+
+func createReportSettingsResponse(reportSetting models.ReportSetting) responses.ReportSettingsResponse {
+
+	studyPeriodName, err := repositories3.GetStudyPeriodNameByNumber(reportSetting.StudyPeriod.StudyPeriodNameNumber)
+	if err != nil {
+		fmt.Println("Error getting academic year: " + err.Error())
+	}
+
+	academicYear, _ := repositories4.GetAcademicYearByNumber(reportSetting.AcademicYearNumber)
+	class, _ := repositories.GetClassByCampusClassNumber(reportSetting.CampusClassNumber)
+
+	return responses.ReportSettingsResponse{
+		Name:         academicYear.AcademicYearName + " - " + class.Name + " - " + studyPeriodName.Name,
+		Number:       reportSetting.Number,
+		Status:       reportSetting.Status,
+		Columns:      reportSetting.Columns,
+		Code:         reportSetting.Code,
+		AcademicYear: academicYear.AcademicYearName,
+		StudyPeriod:  studyPeriodName.Name,
+		Class:        class.Name,
+	}
 }
