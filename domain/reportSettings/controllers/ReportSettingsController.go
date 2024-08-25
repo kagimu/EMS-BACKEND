@@ -86,9 +86,9 @@ func FetchReportSettings(c *gin.Context) {
 			filters.ByAcademicYearNumber(c.Query("academic_year_number")),
 			filters.ByStudyPeriodNumber(c.Query("study_period_number")),
 		).
-		Distinct("report_settings.").
+		Distinct("report_settings.*").
 		Find(&reportSettings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings error: " + err.Error()})
 		return
 	}
 
