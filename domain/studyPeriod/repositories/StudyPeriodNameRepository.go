@@ -69,10 +69,10 @@ func GetStudyPeriodNameByNumber(studyPeriodNameNumber string, trn ...*gorm.DB) (
 	if err := db.Where("number = ?", studyPeriodNameNumber).First(&studyPeriodName).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return studyPeriodName, nil
+			return models.StudyPeriodName{}, nil
 		}
 
-		return studyPeriodName, err
+		return models.StudyPeriodName{}, err
 	}
 
 	return studyPeriodName, nil
