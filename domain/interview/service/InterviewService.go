@@ -11,6 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	assessmentAreaRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
@@ -152,6 +153,11 @@ func CreateInterview(interviewRequest requests.InterviewRequest, currentUser str
 		return err
 	}
 
+	campusClass, err := services2.ResolveCampusClass(interviewRequest.ClassNumber, interviewRequest.CampusNumber)
+	if err != nil {
+		return err
+	}
+
 	tx := config.DB.Begin()
 
 	var repo = repository2.NewInterviewRepoImpl(tx)
@@ -164,7 +170,7 @@ func CreateInterview(interviewRequest requests.InterviewRequest, currentUser str
 		Name:              interviewRequest.Name,
 		InterviewDate:     scheduledOn,
 		UserNumber:        currentUser,
-		CampusClassNumber: interviewRequest.CampusClassNumber,
+		CampusClassNumber: campusClass.Number,
 	}
 
 	if err := repo.SaveInterview(saveInterview); err != nil {
@@ -224,16 +230,21 @@ func processInterviewAssessments(interview models.Interview, assessmentMetrics [
 	return nil
 }
 
-func UpdateInterview(payload requests.EditInterviewRequest, currentUserNumber string) error {
+func UpdateInterview(editInterviewRequest requests.EditInterviewRequest, currentUserNumber string) error {
 
-	scheduledOn, err := commons.ConvertStringToDate(payload.InterviewDate)
+	scheduledOn, err := commons.ConvertStringToDate(editInterviewRequest.InterviewDate)
 	if err != nil {
 		return err
 	}
 
-	oldSchedules, err := interviewRepositories.FindInterviewAssessmentMetricByInterviewNumber(payload.InterviewNumber)
+	oldSchedules, err := interviewRepositories.FindInterviewAssessmentMetricByInterviewNumber(editInterviewRequest.InterviewNumber)
 	if err != nil {
 		return errors.New("getting old schedules error: " + err.Error())
+	}
+
+	campusClass, err := services2.ResolveCampusClass(editInterviewRequest.ClassNumber, editInterviewRequest.CampusNumber)
+	if err != nil {
+		return err
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
@@ -247,7 +258,7 @@ func UpdateInterview(payload requests.EditInterviewRequest, currentUserNumber st
 
 		var repo = repository2.NewInterviewRepoImpl(tx)
 
-		interview, err := repo.FindInterviewByNumber(payload.InterviewNumber)
+		interview, err := repo.FindInterviewByNumber(editInterviewRequest.InterviewNumber)
 		if err != nil {
 			return errors.New("checking interview by number error: " + err.Error())
 		}
@@ -256,7 +267,7 @@ func UpdateInterview(payload requests.EditInterviewRequest, currentUserNumber st
 			return errors.New("invalid interview number")
 		}
 
-		checkName, err := repo.FindInterviewByName(interview.Name, payload.CampusClassNumber)
+		checkName, err := repo.FindInterviewByName(interview.Name, campusClass.Number)
 		if err != nil {
 			return errors.New("checking duplicates by name error: " + err.Error())
 		}
@@ -265,19 +276,19 @@ func UpdateInterview(payload requests.EditInterviewRequest, currentUserNumber st
 			return errors.New("name already used on another interview")
 		}
 
-		interview.Name = payload.Name
-		interview.CampusClassNumber = payload.CampusClassNumber
+		interview.Name = editInterviewRequest.Name
+		interview.CampusClassNumber = campusClass.Number
 		interview.InterviewDate = scheduledOn
 		interview.UserNumber = currentUserNumber
-		interview.Message = payload.Message
-		interview.Venue = payload.Venue
+		interview.Message = editInterviewRequest.Message
+		interview.Venue = editInterviewRequest.Venue
 
 		err = repo.SaveInterview(interview)
 		if err != nil {
 			return errors.New("updating interview error: " + err.Error())
 		}
 
-		err = processInterviewAssessments(interview, payload.AssessmentMetrics, tx)
+		err = processInterviewAssessments(interview, editInterviewRequest.AssessmentMetrics, tx)
 		if err != nil {
 			return err
 		}
