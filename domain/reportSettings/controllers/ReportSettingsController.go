@@ -6,6 +6,7 @@ import (
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
@@ -485,11 +486,27 @@ func FetchReportScoreSummaries(ctx *gin.Context) {
 func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 	studyPeriodNumber := ctx.Query("study_period_number")
 	campusClassNumber := ctx.Query("campus_class_number")
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+
+	if classNumber != "" && campusNumber != "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if campusClass.Number == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "The selected class is not active on the selected campus"})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
 
 	if studyPeriodNumber == "" || campusClassNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Study period number and campus class number are required"})
 		return
-
 	}
 
 	var response []responses.SummarizedFinalReportResponse
