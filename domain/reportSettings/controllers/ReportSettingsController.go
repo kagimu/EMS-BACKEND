@@ -221,8 +221,8 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 	var reportColumnAssessmentResponses = make([]responses.ReportColumnAssessmentResponse, 0)
 
 	var reportColumnAssessments []models.ReportColumnAssessment
-	if err := config.DB.Joins("JOIN report_columns  on report_columns.number = report_column_assessments.report_column_number").
-		Joins("JOIN report_settings rs on rs.number = report_columns.report_setting_number").
+	if err := config.DB.Joins("JOIN report_columns ON report_columns.number = report_column_assessments.report_column_number").
+		Joins("JOIN report_settings ON report_settings.number = report_columns.report_setting_number").
 		Scopes(
 			filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
 			filters.ByAssessmentMetricNumber(ctx.Query("assessment_metric_number")),
@@ -232,6 +232,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 			filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
 			filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
 		).
+		Distinct("report_column_assessments.*").
 		Find(&reportColumnAssessments).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
