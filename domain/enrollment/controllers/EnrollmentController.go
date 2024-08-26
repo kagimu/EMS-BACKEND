@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"gorm.io/gorm"
@@ -22,6 +23,8 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+var enrolmentService = services2.NewEnrolmentService()
 
 func CreateEnrollment(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
@@ -41,13 +44,15 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
-	// validate if student exists on the same campus and school and campus_class_number and study period and   is active
-	var existingEnrollment models.Enrollment
+	err := enrolmentService.NewEnrolment(payload, user.Number)
 
-	if err := config.DB.Where("student_number = ? AND study_period_number = ? AND status = ?", payload.StudentNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
+	// validate if student exists on the same campus and school and campus_class_number and study period and   is active
+	//var existingEnrollment models.Enrollment
+
+	/*if err := config.DB.Where("student_number = ? AND study_period_number = ? AND status = ?", payload.StudentNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Student is already enrolled for this study period"})
 		return
-	}
+	}*/
 
 	var admission admissionModel.Admission
 	if err := config.DB.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
