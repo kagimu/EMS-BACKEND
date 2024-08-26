@@ -9,7 +9,8 @@ type InterviewRequest struct {
 	Venue             string   `json:"venue"`
 	InterviewDate     string   `json:"interview_date"`
 	Name              string   `json:"name"`
-	CampusClassNumber string   `json:"campus_class_number"`
+	ClassNumber       string   `json:"class_number"`
+	CampusNumber      string   `json:"campus_number"`
 	AssessmentMetrics []string `json:"assessment_metrics"`
 }
 
@@ -19,6 +20,12 @@ type EditInterviewRequest struct {
 }
 
 func (i *InterviewRequest) Validate() error {
+	if i.CampusNumber == "" {
+		return errors.New("Choose campus ")
+	}
+	if i.ClassNumber == "" {
+		return errors.New("Choose class ")
+	}
 	if i.Message == "" {
 		return errors.New("message is required")
 	}
