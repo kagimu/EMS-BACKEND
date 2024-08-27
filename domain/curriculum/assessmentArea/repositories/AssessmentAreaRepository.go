@@ -116,7 +116,7 @@ func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber
 		Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number").
 		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
 		Scopes(filters.ByAnyField("curriculum_class_number", curriculumClassNumber), filters.ByAnyField("curriculum_classes.curriculum_level_number", curriculumLevelNumber), filters.ByAnyField("curriculum_levels.level_number", levelNumber), filters.ByAnyField("curriculum_classes.class_number", classNumber), filters.ByAnyField("curriculum_levels.curriculum_number", curriculumNumber)).
-		Distinct("assessment_areas.id", "assessment_areas.curriculum_class_number", "assessment_areas.number", "assessment_areas.name", "assessment_areas.user_number", "assessment_areas.subject_number").
+		Distinct("assessment_areas.*").
 		Find(&assessmentAreas).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
