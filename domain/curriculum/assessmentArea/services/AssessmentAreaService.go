@@ -7,11 +7,14 @@ import (
 	aggregateScaleRequests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
 	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assessmentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	subjectRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -240,12 +243,20 @@ func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber
 			}
 		}
 
+		curriculumClass, _ := repositories2.GetCurriculumClass(assessmentArea.CurriculumClassNumber)
+
+		curriculumLevel, _ := repositories3.GetCurriculumLevelByNumber(curriculumClass.CurriculumLevelNumber)
+
+		curriculum, _ := models2.GetCurriculumByNumber(curriculumLevel.CurriculumNumber)
+
 		assessmentAreasResponse = append(assessmentAreasResponse, responses.AssessmentAreaResponse{
 			Name:                  name,
 			Number:                assessmentArea.Number,
 			UserNumber:            assessmentArea.UserNumber,
 			SubjectNumber:         assessmentArea.SubjectNumber,
 			CurriculumClassNumber: assessmentArea.CurriculumClassNumber,
+			CurriculumNumber:      curriculumLevel.CurriculumNumber,
+			CurriculumName:        curriculum.Name,
 		})
 	}
 

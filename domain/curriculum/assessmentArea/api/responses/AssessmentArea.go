@@ -12,4 +12,6 @@ type AssessmentAreaResponse struct {
 	SubjectNumber         string `json:"subject_number"`
 	UserNumber            string `json:"user_number"`
 	CurriculumClassNumber string `json:"curriculum_class_number"`
+	CurriculumNumber      string `json:"curriculum_number"`
+	CurriculumName        string `json:"curriculum_name"`
 }
