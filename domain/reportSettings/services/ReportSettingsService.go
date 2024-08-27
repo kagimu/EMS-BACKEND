@@ -30,6 +30,8 @@ import (
 	"strconv"
 )
 
+var enrolmentRepository = repository.NewEnrolmentRepository()
+
 func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, currentUserNumber string) error {
 
 	campusClass, err := classService.ResolveCampusClass(reportSettingsRequest.ClassNumber, reportSettingsRequest.CampusNumber)
@@ -86,13 +88,16 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	}
 
-	tx := config.DB.Begin()
-	enrollment, err := repository.GetEnrollmentByStudentNumber(payload.StudentNumber, tx)
-
+	enrollment, err := enrolmentRepository.GetStudentEnrolment(payload.StudentNumber, payload.StudyPeriodNumber, payload.CampusClassNumber, constants.StatusActive)
 	if err != nil {
-		return errors.New("failed to fetch enrollment for this student to pick stream")
-
+		return errors.New("Getting active student enrolment error: " + err.Error())
 	}
+
+	if enrollment.Number == "" {
+		return errors.New("The selected student is not yet enrolled ")
+	}
+
+	tx := config.DB.Begin()
 
 	var reportTemplate reportTemplateModel.ReportTemplate
 
@@ -478,7 +483,7 @@ func GetProperHeadTeacherCommentByReportSettingNumberAndPoints(reportSettingNumb
 		}
 	}
 
-	return headTeacherComment, errors.New("no matching head teacher comment found")
+	return headTeacherComment, errors.New(fmt.Sprintf("No matching head teacher comment found for '%.1f' aggregate points", points))
 }
 
 func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academicYearNumber, studyPeriodNumber string) ([]responses.ReportSettingsResponse, error) {

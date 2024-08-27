@@ -22,6 +22,7 @@ import (
 )
 
 var assessmentMetricRepository = assessmentMetricRepositories.NewAssessmentMetricRepository()
+var enrolmentRepository = repository2.NewEnrolmentRepository()
 
 func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNumber string) error {
 
@@ -59,7 +60,7 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	}
 
 	//check if there is existing enrollment for the student
-	enrollment, err := repository2.GetEnrollmentByStudentNumber(student.Number)
+	enrollment, err := enrolmentRepository.GetStudentEnrolment(student.Number, assessmentMetric.StudyPeriodNumber, assessmentMetric.CampusClassNumber, constants.StatusActive)
 	if err != nil {
 		return errors.New("checking student enrollment error: " + err.Error())
 	}
@@ -69,13 +70,15 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 		if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
 			return errors.New("You can not add results on this schedule because this assessment is not meant  for this student")
 		}
-		//return errors.New("student is not enrolled yet")
-	} else {
+
+		return errors.New("student is not enrolled yet")
+	} /*else {
+
 		if enrollment.CampusClassNumber != assessmentMetric.CampusClassNumber {
 			return errors.New("You can not add results on this schedule because this assessment is not meant  for this student on the current enrollment")
 		}
 
-	}
+	}*/
 
 	//find if assessment with student number and assessment metric  already exists
 	currentAssessment, err := assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assessmentMetric.Number)

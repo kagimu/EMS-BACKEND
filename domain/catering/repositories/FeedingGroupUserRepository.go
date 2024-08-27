@@ -73,14 +73,14 @@ func notInGroupUsers() func(*gorm.DB) *gorm.DB {
 	}
 }
 
-func CreateFeedingGroupUser(fgu models.FeedingGroupUser, txn ...*gorm.DB) error {
+func SaveFeedingGroupUser(fgu models.FeedingGroupUser, txn ...*gorm.DB) error {
 
 	db := config.DB
 	if len(txn) > 0 {
 		db = txn[0]
 	}
 
-	if err := db.Create(&fgu).Error; err != nil {
+	if err := db.Save(&fgu).Error; err != nil {
 		return err
 	}
 

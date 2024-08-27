@@ -3,11 +3,13 @@ package models
 import (
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	"gorm.io/gorm"
+	"time"
 )
 
 type FeedingGroupUser struct {
-	gorm.Model
+	ID                 uint `gorm:"primarykey"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 	Number             string             `json:"number" gorm:"size:36;unique;not null"`
 	FeedingGroupNumber string             `json:"feeding_group_number" gorm:"size:36;not null"`
 	Status             string             `json:"status"`
