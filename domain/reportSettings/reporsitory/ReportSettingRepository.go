@@ -98,7 +98,7 @@ func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academ
 	var reportSettings []reportSettingsModel.ReportSetting
 
 	if err := db.
-		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
+		Joins("JOIN campus_classes ON campus_classes.number = report_settings.campus_class_number").
 		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
 		Scopes(
 			filters.ByAnyField("campus_classes.campus_number", campusNumber),

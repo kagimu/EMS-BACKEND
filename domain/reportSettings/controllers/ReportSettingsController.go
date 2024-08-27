@@ -6,6 +6,7 @@ import (
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
@@ -59,14 +60,14 @@ func CreateReportSettings(c *gin.Context) {
 
 func FetchReportSettings(c *gin.Context) {
 
-	campusNumber := c.Query("campus_number")
 	classNumber := c.Query("class_number")
+	campusNumber := c.Query("campus_number")
 	campusClassNumber := c.Query("campus_class_number")
 	academicYearNumber := c.Query("academic_year_number")
 	studyPeriodNumber := c.Query("study_period_number")
 
-	if campusClassNumber == "" || (campusNumber == "" && classNumber == "") {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a campus and class"})
+	if campusClassNumber == "" && (campusNumber == "" || classNumber == "") {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a campus and class to view report settings"})
 		return
 	}
 
@@ -203,24 +204,45 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 
 func FetchReportColumnAssessments(ctx *gin.Context) {
 
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+	campusClassNumber := ctx.Query("campus_class_number")
+
+	if classNumber != "" && campusNumber != "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber)
+		if err != nil {
+			ctx.JSON(http.StatusOK, gin.H{"message": err.Error()})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
+
+	var reportColumnAssessmentResponses = make([]responses.ReportColumnAssessmentResponse, 0)
+
 	var reportColumnAssessments []models.ReportColumnAssessment
-	if err := config.DB.Joins("JOIN report_columns  on report_columns.number = report_column_assessments.report_column_number").
-		Joins("JOIN report_settings rs on rs.number = report_columns.report_setting_number").
+	if err := config.DB.Joins("JOIN report_columns ON report_columns.number = report_column_assessments.report_column_number").
+		Joins("JOIN report_settings ON report_settings.number = report_columns.report_setting_number").
 		Scopes(
 			filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
 			filters.ByAssessmentMetricNumber(ctx.Query("assessment_metric_number")),
 			filters.ByAnyField("report_column_number", ctx.Query("report_column_number")),
-			filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
+			filters.ByCampusClassNumber(campusClassNumber),
 			filters.ByAnyField("report_settings.number", ctx.Query("report_setting_number")),
 			filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
 			filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
 		).
+		Distinct("report_column_assessments.*").
 		Find(&reportColumnAssessments).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column assessments"})
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessmentResponses})
+			return
+		}
+
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report column assessments error: " + err.Error()})
 		return
 	}
-
-	var rca = make([]responses.ReportColumnAssessmentResponse, 0)
 
 	for _, reportColumnAssessment := range reportColumnAssessments {
 		var assessmentArea assessmentAreaModel.AssessmentArea
@@ -247,11 +269,11 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 			AssessmentMetric: "Assessment Metric Name",
 			ReportColumn:     reportColumn.Name,
 		}
-		rca = append(rca, response)
+		reportColumnAssessmentResponses = append(reportColumnAssessmentResponses, response)
 
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": rca})
+	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessmentResponses})
 
 }
 
@@ -485,11 +507,27 @@ func FetchReportScoreSummaries(ctx *gin.Context) {
 func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 	studyPeriodNumber := ctx.Query("study_period_number")
 	campusClassNumber := ctx.Query("campus_class_number")
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+
+	if classNumber != "" && campusNumber != "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if campusClass.Number == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "The selected class is not active on the selected campus"})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
 
 	if studyPeriodNumber == "" || campusClassNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Study period number and campus class number are required"})
 		return
-
 	}
 
 	var response []responses.SummarizedFinalReportResponse
