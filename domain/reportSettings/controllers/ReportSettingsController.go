@@ -615,7 +615,7 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 	err = services3.CreateHeadTeacherComment(payload, reportSettingNumber, ctx.Request.Header["User-Number"][0])
 
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 

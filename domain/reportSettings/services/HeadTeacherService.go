@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -10,36 +9,27 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 )
 
-func CreateHeadTeacherComment(payload requests.HeadTeacherCommentRequest, reportSettingNumber, userNumber string) error {
-	var reportSummary models.ReportSetting
-	if err := config.DB.Where("number = ?", reportSettingNumber).First(&reportSummary).Error; err != nil {
-
-		return errors.New("failed to fetch given  report setting")
+func CreateHeadTeacherComment(headTeacherCommentRequest requests.HeadTeacherCommentRequest, reportSettingNumber, userNumber string) error {
+	reportSummary, err := reporsitory.GetReportSettingByNumber(reportSettingNumber)
+	if err != nil {
+		return errors.New("Checking report settings error: " + err.Error())
 	}
 
-	var headTeacherComment models.HeadTeacherComment
-	if err := config.DB.Where("report_setting_number = ?", reportSettingNumber).First(&headTeacherComment).Error; err == nil {
-		headTeacherComment.Comment = payload.Comment
-		headTeacherComment.UserNumber = userNumber
+	if reportSummary.Number == "" {
+		return errors.New("Invalid report settings number ")
+	}
 
-		err := reporsitory.SaveHeadTeacherComment(headTeacherComment)
-		if err != nil {
-			return errors.New("failed to update head teacher comment")
-		}
+	headTeacherComment := models.HeadTeacherComment{
+		MinAggregate:        headTeacherCommentRequest.MinAggregate,
+		MaxAggregate:        headTeacherCommentRequest.MaxAggregate,
+		ReportSettingNumber: reportSettingNumber,
+		Comment:             headTeacherCommentRequest.Comment,
+		UserNumber:          userNumber,
+	}
 
-	} else {
-		headTeacherComment = models.HeadTeacherComment{
-			MinAggregate:        payload.MinAggregate,
-			MaxAggregate:        payload.MaxAggregate,
-			ReportSettingNumber: reportSettingNumber,
-			Comment:             payload.Comment,
-			UserNumber:          userNumber,
-		}
-
-		err := reporsitory.CreateHeadTeacherComment(headTeacherComment)
-		if err != nil {
-			return errors.New("failed to create head teacher comment")
-		}
+	err = reporsitory.SaveHeadTeacherComment(headTeacherComment)
+	if err != nil {
+		return errors.New("failed to create head teacher comment")
 	}
 
 	return nil
