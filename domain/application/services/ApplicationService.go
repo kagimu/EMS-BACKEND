@@ -48,7 +48,7 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		return responses.ApplicationResponse{}
 	}
 
-	preferredCampus, err := repositories2.GetCampusByNumber(student.PreferedCampusNumber)
+	preferredCampus, err := repositories2.GetCampusByNumber(student.PreferredCampusNumber)
 	if err != nil {
 		return responses.ApplicationResponse{
 			ApplicationFeePayment:     application.ApplicationFeePayment,
@@ -88,7 +88,7 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		CampusClassNumber:         student.CampusClassNumber,
 		Gender:                    student.Gender,
 		SchoolNumber:              student.SchoolNumber,
-		PreferredCampusNumber:     student.PreferedCampusNumber,
+		PreferredCampusNumber:     student.PreferredCampusNumber,
 	}
 
 	for _, previousSchool := range previousSchools {

@@ -27,8 +27,8 @@ type Student struct {
 	AttentionNeeded           string                  `json:"attention_needed"`
 	DateOfBirth               string                  `json:"date_of_birth" form:"date_of_birth" binding:"required" gorm:"not null"`
 	PreferredTypeOfEnrollment string                  `json:"preferred_type_of_enrollment" gorm:"size:100;not null"`
-	PreferedCampusNumber      string                  `json:"preferred_campus_number" gorm:"size:36; not null"`
-	PreferredCampus           campusModels.Campus     `gorm:"foreignKey:PreferedCampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	PreferredCampusNumber     string                  `json:"preferred_campus_number" gorm:"size:36; not null"`
+	PreferredCampus           campusModels.Campus     `gorm:"foreignKey:PreferredCampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusClassNumber         string                  `json:"campus_class_number" gorm:"size:36; not null"`
 	CampusClass               classModels.CampusClass `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	SourceOfSchoolInfo        string                  `json:"source_of_school_info" gorm:"size:100;not null"`

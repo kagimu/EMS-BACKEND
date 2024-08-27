@@ -14,6 +14,7 @@ type EnrollmentRequest struct {
 	StreamNumber       string           `json:"stream_number"`
 	Items              []EnrollmentItem `json:"items"`
 	FeedingGroupNumber string           `json:"feeding_group_number"`
+	ModeOfStudyNumber  string           `json:"mode_of_study_number"`
 }
 
 type EnrollmentItem struct {
@@ -44,6 +45,10 @@ func (e *EnrollmentRequest) Validate() error {
 	}
 	if e.Status == "" {
 		return errors.New("status is required")
+	}
+
+	if e.ModeOfStudyNumber == "" {
+		return errors.New("Choose mode of study ")
 	}
 	if e.Status != "active" && e.Status != "inactive" {
 		return errors.New("status must be active or inactive")

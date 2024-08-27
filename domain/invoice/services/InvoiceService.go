@@ -23,6 +23,8 @@ import (
 	"time"
 )
 
+var admissionRepository = repositories2.NewAdmissionRepository()
+
 func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) error {
 
 	userNumber := payload.UserNumber
@@ -63,7 +65,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 
 	var admission admissionModel.Admission
 
-	if admission, err = repositories2.FindAdmissionByStudentNumber(student.Number); err != nil {
+	if admission, err = admissionRepository.FindAdmissionByStudentNumber(student.Number); err != nil {
 		return err
 	}
 
