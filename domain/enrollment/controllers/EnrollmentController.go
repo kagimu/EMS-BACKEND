@@ -2,13 +2,10 @@ package controllers
 
 import (
 	"errors"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/services"
-	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"gorm.io/gorm"
 	"net/http"
@@ -16,12 +13,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 var enrolmentService = services2.NewEnrolmentService()
@@ -44,7 +39,7 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
-	err := enrolmentService.NewEnrolment(payload, user.Number)
+	err = enrolmentService.NewEnrolment(payload, user.Number)
 
 	// validate if student exists on the same campus and school and campus_class_number and study period and   is active
 	//var existingEnrollment models.Enrollment
@@ -54,7 +49,7 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}*/
 
-	var admission admissionModel.Admission
+	/*var admission admissionModel.Admission
 	if err := config.DB.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch the student admission details"})
@@ -66,9 +61,9 @@ func CreateEnrollment(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch student details"})
 		return
-	}
+	}*/
 
-	saveEnrollment := models.Enrollment{
+	/*saveEnrollment := models.Enrollment{
 		Number:            uuid.NewV4().String(),
 		StudentNumber:     payload.StudentNumber,
 		StreamNumber:      payload.StreamNumber,
@@ -80,11 +75,11 @@ func CreateEnrollment(c *gin.Context) {
 		Status:            constants.StatusActive,
 		UserNumber:        user.Number,
 		ContinuingStudent: payload.ContinuingStudent,
-	}
+	}*/
 
-	tx := config.DB.Begin()
+	//tx := config.DB.Begin()
 
-	if err := tx.Create(&saveEnrollment).Error; err != nil {
+	/*if err := tx.Create(&saveEnrollment).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
 		return
@@ -98,13 +93,13 @@ func CreateEnrollment(c *gin.Context) {
 			return
 		}
 
-	}
+	}*/
 
-	if len(items) > 0 {
-		//validate if all mandatory items have been checked
-	}
+	//if len(items) > 0 {
+	//validate if all mandatory items have been checked
+	//}
 
-	for _, item := range payload.Items {
+	/*for _, item := range payload.Items {
 		var enrolmentItem models.EnrollmentItem
 		enrolmentItem.ItemNumber = item.ItemNumber
 		enrolmentItem.EnrollmentNumber = saveEnrollment.Number
@@ -116,27 +111,27 @@ func CreateEnrollment(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
 			return
 		}
-	}
+	}*/
 
 	// update admission status to enrolled where student number is equal to payload.StudentNumber
 
-	if err := tx.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
+	/*if err := tx.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
 		tx.Commit()
 		c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
 		return
-	}
+	}*/
 
-	if admission.Number != "" {
+	/*if admission.Number != "" {
 		admission.Status = constants.StatusEnrolled
 		if err := tx.Save(&admission).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update admission status"})
 			return
 		}
-	}
+	}*/
 
 	// find all other enrollments for the student and set their status to inactive
-	var enrollments []models.Enrollment
+	/*var enrollments []models.Enrollment
 	if err := tx.Where("student_number = ? AND number != ? AND status = ? ", payload.StudentNumber, saveEnrollment.Number, constants.StatusActive).Find(&enrollments).Error; err != nil {
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -145,18 +140,18 @@ func CreateEnrollment(c *gin.Context) {
 			return
 		}
 
-	}
+	}*/
 
-	for _, enrollment := range enrollments {
+	/*for _, enrollment := range enrollments {
 		enrollment.Status = constants.StatusInactive
 		if err := tx.Save(&enrollment).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update other enrollments status"})
 			return
 		}
-	}
+	}*/
 
-	if payload.FeedingGroupNumber != "" {
+	/*if payload.FeedingGroupNumber != "" {
 		fg, err := repositories.GetFeedingGroupByNumber(payload.FeedingGroupNumber)
 		if err != nil {
 			tx.Rollback()
@@ -165,7 +160,6 @@ func CreateEnrollment(c *gin.Context) {
 		}
 
 		if fg.Number != "" {
-			// create feeding group user
 			err := services.CreateFeedingGroupUser(student.UserNumber, payload.CampusNumber, payload.FeedingGroupNumber, payload.Status, tx)
 			if err != nil {
 				tx.Rollback()
@@ -174,10 +168,11 @@ func CreateEnrollment(c *gin.Context) {
 			}
 		}
 
-	}
+	}*/
 
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
