@@ -50,8 +50,9 @@ func FetchAssessmentAreas(c *gin.Context) {
 	var levelNumber = c.Query("level_number")
 	var curriculumLevelNumber = c.Query("curriculum_level_number")
 
-	if classNumber != "" && curriculumNumber != "" {
-		curriculumClassNumber = ""
+	if curriculumClassNumber == "" && (classNumber == "" || curriculumNumber == "") {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose class form the curriculum"})
+		return
 	}
 
 	/*var assessmentAreas []models.AssessmentArea
