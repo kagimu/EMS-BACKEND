@@ -227,7 +227,7 @@ func CreateGeneralCalendar(ctx *gin.Context) {
 func CreateStudyTimetable(ctx *gin.Context) {
 
 	var request = requests.StudyTimetableRequest{}
-	var StudyTimetable = models.StudyTimetable{}
+	var studyTimetable = models.StudyTimetable{}
 
 	err := ctx.Bind(&request)
 
@@ -236,12 +236,12 @@ func CreateStudyTimetable(ctx *gin.Context) {
 		return
 	}
 
-	StudyTimetable.Number = uuid.NewV4().String()
-	StudyTimetable.UserNumber = ctx.GetHeader("User-Number")
-	StudyTimetable.Status = constants.StatusPending
-	StudyTimetable.StudyPeriodNumber = request.StudyPeriodNumber
-	StudyTimetable.Name = request.Name
-	err = config.DB.Create(&StudyTimetable).Error
+	studyTimetable.Number = uuid.NewV4().String()
+	studyTimetable.UserNumber = ctx.GetHeader("User-Number")
+	studyTimetable.Status = constants.StatusPending
+	studyTimetable.StudyPeriodNumber = request.StudyPeriodNumber
+	studyTimetable.Name = request.Name
+	err = config.DB.Create(&studyTimetable).Error
 
 	if err != nil {
 		fmt.Println("Error", err.Error())
@@ -254,10 +254,16 @@ func CreateStudyTimetable(ctx *gin.Context) {
 
 func FetchStudyTimetables(ctx *gin.Context) {
 
+	studyPeriodNumber := ctx.Query("study_period_number")
+	if studyPeriodNumber == "" {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Choose study period "))
+		return
+	}
+
 	var timetables []models.StudyTimetable
 	studyTimetables := []responses.StudyTimetables{}
 
-	err := config.DB.Find(&timetables).Error
+	err := config.DB.Where("study_period_number = ? ", studyPeriodNumber).Find(&timetables).Error
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, commons.Feedback("Failed to fetch timetables"))
 		return
