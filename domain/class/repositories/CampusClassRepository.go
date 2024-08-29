@@ -74,20 +74,20 @@ func DeleteCampusClassByNumber(classNumber, campusNumber, campusLevelNumber stri
 	return nil
 }
 
-func GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber string, txn ...*gorm.DB) (campusClassModel.CampusClass, error) {
+func GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber string, txn ...*gorm.DB) ([]campusClassModel.CampusClass, error) {
 	db := config.DB
 	if len(txn) > 0 {
 		db = txn[0]
 	}
 
-	var campusClass campusClassModel.CampusClass
+	var campusClass []campusClassModel.CampusClass
 
 	if err := db.
 		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
-		Where("curriculum_classes.class_number = ? AND campus_classes.campus_number = ?", classNumber, campusNumber).First(&campusClass).Error; err != nil {
+		Where("curriculum_classes.class_number = ? AND campus_classes.campus_number = ?", classNumber, campusNumber).Find(&campusClass).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return campusClassModel.CampusClass{}, nil
+			return campusClass, nil
 		}
 
 		return campusClass, err

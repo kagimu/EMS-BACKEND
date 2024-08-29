@@ -41,21 +41,27 @@ func CreateClassResponse(class classModels.Class) responses.ClassResponse {
 func ResolveCampusClass(classNumber string, campusNumber string) (classModels.CampusClass, error) {
 	campusClass, err := repositories.GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber)
 	if err != nil {
-		return campusClass, errors.New("Checking class on campus error " + err.Error())
+		return classModels.CampusClass{}, errors.New("Checking class on campus error " + err.Error())
 	}
 
 	campus, err := repositories3.GetCampusByNumber(campusNumber)
 	if err != nil {
-		return campusClass, errors.New("Checking campus error " + err.Error())
+		return classModels.CampusClass{}, errors.New("Checking campus error " + err.Error())
 	}
 
 	if campus.Number == "" {
-		return campusClass, errors.New("Invalid campus number ")
+		return classModels.CampusClass{}, errors.New("Invalid campus number ")
 	}
 
-	if campusClass.Number == "" {
-		return campusClass, errors.New("This class is not attached to the selected campus '" + campus.Name + "'")
+	size := len(campusClass)
+
+	if size == 0 {
+		return classModels.CampusClass{}, errors.New("This class is not attached to the selected campus '" + campus.Name + "'")
 	}
 
-	return campusClass, nil
+	if size > 1 {
+		return classModels.CampusClass{}, errors.New("Selected campus has this class on multiple curriculum, specify the curriculum ")
+	}
+
+	return campusClass[0], nil
 }

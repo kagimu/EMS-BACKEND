@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	rolesResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	"net/http"
 	"regexp"
@@ -366,10 +367,11 @@ func Register(context *gin.Context) {
 	err = d.SendEmail()
 	if err != nil {
 		// If any error occurs, rollback the transaction
-		tx.Rollback()
+		//tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email"})
-		return
+		//context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email"})
+		//return
+		fmt.Printf("Sending mail error %s\n", err.Error())
 	}
 
 	var collection []interface{}
