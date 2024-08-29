@@ -153,7 +153,7 @@ func CreateInterview(interviewRequest requests.InterviewRequest, currentUser str
 		return err
 	}
 
-	campusClass, err := services2.ResolveCampusClass(interviewRequest.ClassNumber, interviewRequest.CampusNumber)
+	campusClass, err := services2.ResolveCampusClass(interviewRequest.ClassNumber, interviewRequest.CampusNumber, interviewRequest.CurriculumNumber)
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func UpdateInterview(editInterviewRequest requests.EditInterviewRequest, current
 		return errors.New("getting old schedules error: " + err.Error())
 	}
 
-	campusClass, err := services2.ResolveCampusClass(editInterviewRequest.ClassNumber, editInterviewRequest.CampusNumber)
+	campusClass, err := services2.ResolveCampusClass(editInterviewRequest.ClassNumber, editInterviewRequest.CampusNumber, editInterviewRequest.CurriculumNumber)
 	if err != nil {
 		return err
 	}

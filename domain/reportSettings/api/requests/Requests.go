@@ -10,6 +10,7 @@ type ReportSettingsRequest struct {
 	StudyPeriodNumber  string `json:"study_period_number"`
 	ClassNumber        string `json:"class_number"`
 	CampusNumber       string `json:"campus_number"`
+	CurriculumNumber   string `json:"curriculum_number"`
 	CampusClassNumber  string `json:"campus_class_number"`
 	Columns            int64  `json:"columns"`
 }

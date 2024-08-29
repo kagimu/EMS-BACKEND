@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -38,8 +39,8 @@ func CreateClassResponse(class classModels.Class) responses.ClassResponse {
 	}
 }
 
-func ResolveCampusClass(classNumber string, campusNumber string) (classModels.CampusClass, error) {
-	campusClass, err := repositories.GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber)
+func ResolveCampusClass(classNumber, campusNumber, curriculumNumber string) (classModels.CampusClass, error) {
+	campusClass, err := repositories.GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, curriculumNumber)
 	if err != nil {
 		return classModels.CampusClass{}, errors.New("Checking class on campus error " + err.Error())
 	}
@@ -60,7 +61,7 @@ func ResolveCampusClass(classNumber string, campusNumber string) (classModels.Ca
 	}
 
 	if size > 1 {
-		return classModels.CampusClass{}, errors.New("Selected campus has this class on multiple curriculum, specify the curriculum ")
+		return classModels.CampusClass{}, errors.New(fmt.Sprintf("Selected campus has this class on multiple curriculum (%d), specify the curriculum %s %s %s", size, classNumber, campusNumber, curriculumNumber))
 	}
 
 	return campusClass[0], nil
