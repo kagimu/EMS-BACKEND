@@ -135,6 +135,7 @@ func CreateAssessmentsResponse(assessment models.AssessmentMetric) (responses.As
 	assessmentMetricResponse.RequireComment = assessment.RequireComment
 	assessmentMetricResponse.MaxScore = assessment.MaxScore
 	assessmentMetricResponse.Class = class.Name
+	assessmentMetricResponse.ClassNumber = class.Number
 	assessmentMetricResponse.CampusLevelNumber = campusClass.CampusLevelNumber
 	assessmentMetricResponse.AcademicYearNumber = studyPeriod.AcademicYearNumber
 	assessmentMetricResponse.CampusClassNumber = assessment.CampusClassNumber

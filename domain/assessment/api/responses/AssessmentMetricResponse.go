@@ -10,8 +10,10 @@ type AssessmentMetricResponse struct {
 	AssessmentArea       string  `json:"assessment_area"`
 	MetricNumber         string  `json:"metric_number"`
 	StudyPeriodNumber    string  `json:"study_period_number"`
+	StudyPeriodName      string  `json:"study_period_name"`
 	CampusClassNumber    string  `json:"campus_class_number"`
 	Class                string  `json:"class"`
+	ClassNumber          string  `json:"class_number"`
 	RequireComment       string  `json:"require_comment"`
 	CampusLevelNumber    string  `json:"campus_level_number"`
 	AcademicYearNumber   string  `json:"academic_year_number"`
