@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
@@ -53,12 +54,25 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	var campusClass classModels.CampusClass
-	if err := config.DB.Where("number = ?", payload.CampusClassNumber).First(&campusClass).Error; err != nil {
+	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Error checking class and campus: " + err.Error()})
+		return
+	}
+
+	if campusClass.Number == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Selected class is not active on the selected campus"})
+		return
+	}
+
+	/*var campusClass classModels.CampusClass
+	if err := config.DB.Where("number = ?", campusClass.Number).First(&campusClass).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Campus class not found"})
 		return
-	}
+	}*/
 
 	tx := config.DB.Begin()
 	studentAPN, err := CreateAPN(tx)
@@ -92,7 +106,7 @@ func CreateStudent(c *gin.Context) {
 			UserNumber:                userNumber,
 			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 			ApplicationNumber:         applicationNumber,
-			CampusClassNumber:         payload.CampusClassNumber,
+			CampusClassNumber:         campusClass.Number,
 			SchoolNumber:              payload.SchoolNumber,
 		}
 
@@ -139,7 +153,7 @@ func CreateStudent(c *gin.Context) {
 		UserNumber:                createdUser.Number,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 		ApplicationNumber:         applicationNumber,
-		CampusClassNumber:         payload.CampusClassNumber,
+		CampusClassNumber:         campusClass.Number,
 		SchoolNumber:              payload.SchoolNumber,
 	}
 
