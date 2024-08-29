@@ -75,7 +75,7 @@ func DeleteCampusClassByNumber(classNumber, campusNumber, campusLevelNumber stri
 	return nil
 }
 
-func GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, campusCurriculumNumber, curriculumLevelNumber, curriculumNumber, curriculumClassNumber string, txn ...*gorm.DB) ([]campusClassModel.CampusClass, error) {
+func GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, curriculumNumber string, txn ...*gorm.DB) ([]campusClassModel.CampusClass, error) {
 	db := config.DB
 	if len(txn) > 0 {
 		db = txn[0]
@@ -83,7 +83,7 @@ func GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, campu
 
 	var campusClass []campusClassModel.CampusClass
 
-	if err := db.
+	/*if err := db.
 		Joins("JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number").
 		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
 		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
@@ -94,6 +94,24 @@ func GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, campu
 			filters.ByAnyField("curriculum_levels.curriculum_number", curriculumNumber),
 			filters.ByAnyField("campus_classes.campus_number", campusNumber),
 			filters.ByAnyField("curriculum_classes.class_number", classNumber)).
+		Distinct("campus_classes.*").
+		Find(&campusClass).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return campusClass, nil
+		}
+
+		return campusClass, err
+	}*/
+
+	if err := db.
+		Joins("JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number").
+		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
+		Scopes(
+			filters.ByAnyField("curriculum_classes.class_number", classNumber),
+			filters.ByAnyField("campus_classes.campus_number", campusNumber),
+			filters.ByAnyField("curriculum_levels.curriculum_number", curriculumNumber)).
 		Distinct("campus_classes.*").
 		Find(&campusClass).Error; err != nil {
 
