@@ -14,6 +14,7 @@ type AssessmentMetricRequest struct {
 	MetricNumber         string  `json:"metric_number"`
 	ClassNumber          string  `json:"class_number"`
 	CampusNumber         string  `json:"campus_number"`
+	CurriculumNumber     string  `json:"curriculum_number"`
 	RequireComment       string  `json:"require_comment"`
 }
 

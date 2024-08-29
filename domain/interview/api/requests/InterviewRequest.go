@@ -11,6 +11,7 @@ type InterviewRequest struct {
 	Name              string   `json:"name"`
 	ClassNumber       string   `json:"class_number"`
 	CampusNumber      string   `json:"campus_number"`
+	CurriculumNumber  string   `json:"curriculum_number"`
 	AssessmentMetrics []string `json:"assessment_metrics"`
 }
 
