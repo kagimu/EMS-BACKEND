@@ -8,10 +8,13 @@ import (
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -80,6 +83,17 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		}
 	}
 
+	class, _ := repositories5.GetClassByCampusClassNumber(enrolmentRequest.CampusClassNumber)
+
+	billable, err := repositories4.GetDuplicatedBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, constants.BillTypeContinuing, enrolmentRequest.ModeOfStudyNumber, constants.StatusActive)
+	if err != nil {
+		return errors.New("Checking billable error " + err.Error())
+	}
+
+	if billable.Number == "" {
+		return errors.New("This enrollment can not be invoiced, check billable configurations ")
+	}
+
 	saveEnrollment := models.Enrollment{
 		Number:            uuid.NewV4().String(),
 		StudentNumber:     student.Number,
@@ -92,6 +106,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		Status:            constants.StatusActive,
 		UserNumber:        currentUserNumber,
 		ContinuingStudent: enrolmentRequest.ContinuingStudent,
+		ModeOfStudyNumber: enrolmentRequest.ModeOfStudyNumber,
 	}
 
 	var requiredItems []models2.AdmissionCondition
@@ -161,6 +176,8 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 			}
 
 		}
+
+		err = services2.CreateInvoiceFromBillable(billable, student, currentUserNumber, tx)
 
 		return nil
 	})

@@ -45,9 +45,13 @@ func NewStudentRepositoryImpl(db *gorm.DB) StudentRepository {
 	return &StudentRepositoryImpl{DB: db}
 }
 
-func FindStudentByUserNumber(userNumber string) (studentModel.Student, error) {
+func FindStudentByUserNumber(userNumber string, txn ...*gorm.DB) (studentModel.Student, error) {
 
 	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+
 	var student studentModel.Student
 
 	if err := db.Where("user_number = ?", userNumber).First(&student).Error; err != nil {

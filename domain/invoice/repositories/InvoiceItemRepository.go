@@ -7,9 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetInvoiceItemByInvoiceNumberAndItemNumber(invoiceNumber string, itemNumber string) (invoiceModel.InvoiceItem, error) {
+func GetInvoiceItemByInvoiceNumberAndItemNumber(invoiceNumber string, itemNumber string, txn ...*gorm.DB) (invoiceModel.InvoiceItem, error) {
 
 	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
 
 	var invoiceItem invoiceModel.InvoiceItem
 

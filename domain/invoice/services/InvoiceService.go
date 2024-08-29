@@ -18,6 +18,7 @@ import (
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"math/rand"
 	"strings"
 	"time"
@@ -100,6 +101,62 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 
 }
 
+func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, currentUserNumber string, txn *gorm.DB) error {
+
+	invoiceNumber := generateNewInvoiceNumber()
+
+	invoice, err := invoiceRepositories.FindInvoiceByRefNumber(invoiceNumber)
+
+	if err != nil {
+		return err
+	}
+
+	if invoice.Number != "" {
+		return errors.New("try again to generate a new invoice number")
+	}
+
+	dueDate := time.Now().AddDate(0, 0, 14)
+
+	billableItems, err := invoiceRepositories.FindBillableItems(billable.Number, txn)
+	if err != nil {
+		return errors.New("Getting billable items error: " + err.Error())
+	}
+
+	newInvoice := models.Invoice{
+		Number:        uuid.NewV4().String(),
+		DueDate:       dueDate,
+		Description:   billable.Description,
+		UserNumber:    student.UserNumber,
+		RefNumber:     invoiceNumber,
+		AddedByNumber: currentUserNumber,
+		SchoolNumber:  billable.SchoolNumber,
+		CampusNumber:  billable.CampusNumber,
+	}
+
+	if err = invoiceRepositories.SaveInvoice(newInvoice, txn); err != nil {
+		return errors.New("Creating invoice error: " + err.Error())
+	}
+
+	err = invoiceRepositories.SaveBillableInvoice(models.BillableInvoice{
+		BillableNumber: billable.Number,
+		InvoiceNumber:  newInvoice.Number,
+	})
+
+	if err != nil {
+		return errors.New("Creating attaching invoice to billable error: " + err.Error())
+	}
+
+	for _, invoiceItem := range billableItems {
+
+		if err = doSaveBillableInvoiceItem(invoiceItem, newInvoice.Number, txn); err != nil {
+			return err
+		}
+
+	}
+
+	return err
+}
+
 func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string) error {
 
 	item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber)
@@ -131,6 +188,43 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 	}
 
 	if _, err := invoiceRepositories.SaveInvoiceItem(newInvoiceItem); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func doSaveBillableInvoiceItem(invoiceItem models.BillableItem, newInvoiceNumber string, txn *gorm.DB) error {
+
+	item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber, txn)
+
+	if err != nil {
+		return errors.New("Checking item error: " + err.Error())
+	}
+
+	if item.Number == "" {
+		return errors.New("invalid item number")
+	}
+
+	if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoiceNumber, invoiceItem.ItemNumber, txn); err != nil || checkItemOnInvoice.Number != "" {
+
+		if err != nil {
+			return err
+		}
+
+		return errors.New("item already added to Invoice")
+	}
+
+	newInvoiceItem := models.InvoiceItem{
+		Number:          uuid.NewV4().String(),
+		InvoiceNumber:   newInvoiceNumber,
+		ItemNumber:      invoiceItem.ItemNumber,
+		Quantity:        invoiceItem.Quantity,
+		UnitPrice:       invoiceItem.UnitPrice,
+		ActualUnitPrice: item.Cost,
+	}
+
+	if _, err := invoiceRepositories.SaveInvoiceItem(newInvoiceItem, txn); err != nil {
 		return err
 	}
 
