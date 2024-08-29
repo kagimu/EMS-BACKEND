@@ -71,7 +71,7 @@ func GetBillableByNumber(billableNumber string, trn ...*gorm.DB) (models.Billabl
 	return billable, nil
 }
 
-func GetDuplicatedBill(studyPeriodNumber, classNumber, campusNumber, status string, trn ...*gorm.DB) (models.Billable, error) {
+func GetDuplicatedBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, status string, trn ...*gorm.DB) (models.Billable, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
@@ -80,7 +80,7 @@ func GetDuplicatedBill(studyPeriodNumber, classNumber, campusNumber, status stri
 	var billable models.Billable
 
 	if err := db.
-		Scopes(filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByAnyField("class_number", classNumber)).
+		Scopes(filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByAnyField("mode_of_study_number", modeOfStudyNumber), filters.ByAnyField("bill_type", billType), filters.ByAnyField("class_number", classNumber)).
 		Where("status = ? AND campus_number = ?", status, campusNumber).First(&billable).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

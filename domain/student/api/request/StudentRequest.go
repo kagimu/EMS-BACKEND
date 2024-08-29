@@ -23,13 +23,20 @@ type StudentRequest struct {
 	SourceOfSchoolInfo        string                  `json:"source_of_school_info"`
 	ApplicationNumber         string                  `json:"application_number"`
 	ParentNumber              string                  `json:"parent_number"`
-	CampusClassNumber         string                  `json:"campus_class_number"`
+	ClassNumber               string                  `json:"class_number"`
+	CampusNumber              string                  `json:"campus_number"`
 	SchoolNumber              string                  `json:"school_number"`
 }
 
 func (s *StudentRequest) Validate() error {
 	if s.Surname == "" {
 		return errors.New("surname is required")
+	}
+	if s.CampusNumber == "" {
+		return errors.New("choose campus")
+	}
+	if s.ClassNumber == "" {
+		return errors.New("choose class")
 	}
 	if s.SecondName == "" {
 		return errors.New("second name is required")

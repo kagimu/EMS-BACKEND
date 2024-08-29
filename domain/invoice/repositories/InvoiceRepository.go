@@ -138,9 +138,13 @@ func GetMostRecentInvoice(userNumber string) (invoiceModel.Invoice, error) {
 
 }
 
-func SaveInvoice(invoice invoiceModel.Invoice) error {
+func SaveInvoice(invoice invoiceModel.Invoice, txn ...*gorm.DB) error {
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
 
-	if err := config.DB.Create(&invoice).Error; err != nil {
+	if err := db.Save(&invoice).Error; err != nil {
 		return err
 	}
 

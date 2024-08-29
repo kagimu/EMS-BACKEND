@@ -45,9 +45,12 @@ func (s *SqlUserRepo) GetUserByNumber(userNumber string) (models.User, error) {
 
 }
 
-func GetUserByNumber(userNumber string) (models.User, error) {
+func GetUserByNumber(userNumber string, txn ...*gorm.DB) (models.User, error) {
 
 	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
 
 	var user models.User
 

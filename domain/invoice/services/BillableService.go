@@ -111,7 +111,7 @@ func createBillResponse(billable models.Billable) responses.BillableResponse {
 }
 
 func (billableService *billableService) NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error {
-	billable, err := repositories.GetDuplicatedBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, constants.StatusActive)
+	billable, err := repositories.GetDuplicatedBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, constants.StatusActive)
 	if err != nil {
 		return errors.New("Checking duplicates error " + err.Error())
 	}
@@ -128,6 +128,8 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 		Number:            uuid.NewV4().String(),
 		CampusNumber:      billableRequest.CampusNumber,
 		SchoolNumber:      billableRequest.SchoolNumber,
+		Description:       billableRequest.Description,
+		BillType:          billableRequest.BillType,
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {

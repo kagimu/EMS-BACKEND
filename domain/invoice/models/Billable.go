@@ -6,12 +6,15 @@ import (
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
-	"gorm.io/gorm"
+	"time"
 )
 
 type Billable struct {
-	gorm.Model
+	ID                uint `gorm:"primarykey"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 	Number            string                       `json:"number" gorm:"size:36;unique;not null"`
+	Description       string                       `json:"description" gorm:"size:2000"`
 	BillType          string                       `json:"bill_type" gorm:"size:36;unique;not null"`
 	Status            string                       `json:"status" gorm:"size:36;unique;not null;default:ACTIVE"`
 	UserNumber        string                       `json:"user_number" gorm:"size:36;not null"`
