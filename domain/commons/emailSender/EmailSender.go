@@ -53,6 +53,7 @@ func (i Info) SendEmail() error {
 	//m.Attach("/home/Alex/lolcat.jpg")
 
 	d := gomail.NewDialer("smtp.gmail.com", 587, "andysteve2222@gmail.com", "rhknebyyuqbqfity")
+	//d := gomail.NewDialer(os.Getenv("MAIL_HOST"), os.Getenv("MAIL_PORT"), os.Getenv("MAIL_USERNAME"), os.Getenv("MAIL_PASSWORD"))
 
 	if err := d.DialAndSend(m); err != nil {
 		log.Println("Error sending email:", err)
