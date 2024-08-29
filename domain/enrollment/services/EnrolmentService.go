@@ -13,6 +13,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
+	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
@@ -177,7 +178,19 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		}
 
-		err = services2.CreateInvoiceFromBillable(billable, student, currentUserNumber, tx)
+		invoice, err := services2.CreateInvoiceFromBillable(billable, student, currentUserNumber, tx)
+		if err != nil {
+			return err
+		}
+
+		err = repositories4.SaveEnrollmentInvoice(models4.EnrollmentInvoice{
+			InvoiceNumber:    invoice.Number,
+			EnrollmentNumber: saveEnrollment.Number,
+		}, tx)
+
+		if err != nil {
+			return errors.New("Attaching enrollment to invoice error: " + err.Error())
+		}
 
 		return nil
 	})

@@ -101,25 +101,25 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 
 }
 
-func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, currentUserNumber string, txn *gorm.DB) error {
+func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, currentUserNumber string, txn *gorm.DB) (models.Invoice, error) {
 
 	invoiceNumber := generateNewInvoiceNumber()
 
 	invoice, err := invoiceRepositories.FindInvoiceByRefNumber(invoiceNumber)
 
 	if err != nil {
-		return err
+		return models.Invoice{}, err
 	}
 
 	if invoice.Number != "" {
-		return errors.New("try again to generate a new invoice number")
+		return models.Invoice{}, errors.New("try again to generate a new invoice number")
 	}
 
 	dueDate := time.Now().AddDate(0, 0, 14)
 
 	billableItems, err := invoiceRepositories.FindBillableItems(billable.Number, txn)
 	if err != nil {
-		return errors.New("Getting billable items error: " + err.Error())
+		return models.Invoice{}, errors.New("Getting billable items error: " + err.Error())
 	}
 
 	newInvoice := models.Invoice{
@@ -134,7 +134,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if err = invoiceRepositories.SaveInvoice(newInvoice, txn); err != nil {
-		return errors.New("Creating invoice error: " + err.Error())
+		return models.Invoice{}, errors.New("Creating invoice error: " + err.Error())
 	}
 
 	err = invoiceRepositories.SaveBillableInvoice(models.BillableInvoice{
@@ -143,18 +143,18 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	})
 
 	if err != nil {
-		return errors.New("Creating attaching invoice to billable error: " + err.Error())
+		return models.Invoice{}, errors.New("Creating attaching invoice to billable error: " + err.Error())
 	}
 
 	for _, invoiceItem := range billableItems {
 
 		if err = doSaveBillableInvoiceItem(invoiceItem, newInvoice.Number, txn); err != nil {
-			return err
+			return models.Invoice{}, err
 		}
 
 	}
 
-	return err
+	return newInvoice, err
 }
 
 func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string) error {

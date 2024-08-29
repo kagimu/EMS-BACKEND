@@ -204,6 +204,8 @@ func Init() error {
 		&schoolModels.ModeOfStudy{},
 		&invoiceModel.Billable{},
 		&invoiceModel.BillableItem{},
+		&invoiceModel.BillableInvoice{},
+		&invoiceModel.EnrollmentInvoice{},
 	)
 
 	if err != nil {
