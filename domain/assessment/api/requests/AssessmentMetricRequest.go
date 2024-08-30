@@ -6,16 +6,17 @@ import (
 )
 
 type AssessmentMetricRequest struct {
-	MaxScore             float64 `json:"max_score"`
-	Description          string  `json:"description"`
-	AssessmentAreaNumber string  `json:"assessment_area_number"`
-	StudyPeriodNumber    string  `json:"study_period_number"`
-	ScheduledOn          string  `json:"scheduled_on"`
-	MetricNumber         string  `json:"metric_number"`
-	ClassNumber          string  `json:"class_number"`
-	CampusNumber         string  `json:"campus_number"`
-	CurriculumNumber     string  `json:"curriculum_number"`
-	RequireComment       string  `json:"require_comment"`
+	MaxScore               float64 `json:"max_score"`
+	Description            string  `json:"description"`
+	AssessmentAreaNumber   string  `json:"assessment_area_number"`
+	StudyPeriodNumber      string  `json:"study_period_number"`
+	ScheduledOn            string  `json:"scheduled_on"`
+	MetricNumber           string  `json:"metric_number"`
+	ClassNumber            string  `json:"class_number"`
+	CampusNumber           string  `json:"campus_number"`
+	CurriculumNumber       string  `json:"curriculum_number"`
+	CampusCurriculumNumber string  `json:"campus_curriculum_number"`
+	RequireComment         string  `json:"require_comment"`
 }
 
 type UpdateAssessmentMetricRequest struct {

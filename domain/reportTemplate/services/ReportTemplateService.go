@@ -163,7 +163,7 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 
 	for _, classNumber := range selectedClasses {
 
-		campusClass, err := services.ResolveCampusClass(classNumber, classReportTemplateRequest.CampusNumber, classReportTemplateRequest.CurriculumNumber)
+		campusClass, err := services.ResolveCampusClass(classNumber, classReportTemplateRequest.CampusNumber, classReportTemplateRequest.CurriculumNumber, classReportTemplateRequest.CampusCurriculumNumber)
 		if err != nil {
 			return "Error checking class and campus: " + err.Error(), nil
 		}

@@ -3,10 +3,11 @@ package requests
 import "errors"
 
 type ClassReportTemplateRequest struct {
-	Classes              []string `json:"classes"`
-	CampusNumber         string   `json:"campus_number"`
-	CurriculumNumber     string   `json:"curriculum_number"`
-	ReportTemplateNumber string   `json:"report_template_number"`
+	Classes                []string `json:"classes"`
+	CampusNumber           string   `json:"campus_number"`
+	CurriculumNumber       string   `json:"curriculum_number"`
+	CampusCurriculumNumber string   `json:"campus_curriculum_number"`
+	ReportTemplateNumber   string   `json:"report_template_number"`
 }
 
 func (classReportTemplateRequest *ClassReportTemplateRequest) Validate() error {

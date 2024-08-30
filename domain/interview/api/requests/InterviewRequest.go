@@ -5,14 +5,15 @@ import (
 )
 
 type InterviewRequest struct {
-	Message           string   `json:"message"`
-	Venue             string   `json:"venue"`
-	InterviewDate     string   `json:"interview_date"`
-	Name              string   `json:"name"`
-	ClassNumber       string   `json:"class_number"`
-	CampusNumber      string   `json:"campus_number"`
-	CurriculumNumber  string   `json:"curriculum_number"`
-	AssessmentMetrics []string `json:"assessment_metrics"`
+	Message                string   `json:"message"`
+	Venue                  string   `json:"venue"`
+	InterviewDate          string   `json:"interview_date"`
+	Name                   string   `json:"name"`
+	ClassNumber            string   `json:"class_number"`
+	CampusNumber           string   `json:"campus_number"`
+	CampusCurriculumNumber string   `json:"campus_curriculum_number"`
+	CurriculumNumber       string   `json:"curriculum_number"`
+	AssessmentMetrics      []string `json:"assessment_metrics"`
 }
 
 type EditInterviewRequest struct {

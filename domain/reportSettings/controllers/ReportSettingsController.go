@@ -208,9 +208,10 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 	campusNumber := ctx.Query("campus_number")
 	campusClassNumber := ctx.Query("campus_class_number")
 	curriculumNumber := ctx.Query("curriculum_umber")
+	campusCurriculumNumber := ctx.Query("campus_curriculum_umber")
 
 	if classNumber != "" && campusNumber != "" {
-		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber)
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 		if err != nil {
 			ctx.JSON(http.StatusOK, gin.H{"message": err.Error()})
 			return
@@ -511,9 +512,10 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 	classNumber := ctx.Query("class_number")
 	campusNumber := ctx.Query("campus_number")
 	curriculumNumber := ctx.Query("curriculum_number")
+	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
 
 	if classNumber != "" && campusNumber != "" {
-		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber)
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
