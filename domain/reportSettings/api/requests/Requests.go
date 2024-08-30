@@ -5,14 +5,15 @@ import (
 )
 
 type ReportSettingsRequest struct {
-	Code               int64  `json:"code"`
-	AcademicYearNumber string `json:"academic_year_number"`
-	StudyPeriodNumber  string `json:"study_period_number"`
-	ClassNumber        string `json:"class_number"`
-	CampusNumber       string `json:"campus_number"`
-	CurriculumNumber   string `json:"curriculum_number"`
-	CampusClassNumber  string `json:"campus_class_number"`
-	Columns            int64  `json:"columns"`
+	Code                   int64  `json:"code"`
+	AcademicYearNumber     string `json:"academic_year_number"`
+	StudyPeriodNumber      string `json:"study_period_number"`
+	ClassNumber            string `json:"class_number"`
+	CampusNumber           string `json:"campus_number"`
+	CurriculumNumber       string `json:"curriculum_number"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	CampusClassNumber      string `json:"campus_class_number"`
+	Columns                int64  `json:"columns"`
 }
 
 type ReportColumnRequest struct {

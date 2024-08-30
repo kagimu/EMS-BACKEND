@@ -34,7 +34,7 @@ var enrolmentRepository = repository.NewEnrolmentRepository()
 
 func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, currentUserNumber string) error {
 
-	campusClass, err := classService.ResolveCampusClass(reportSettingsRequest.ClassNumber, reportSettingsRequest.CampusNumber, reportSettingsRequest.CurriculumNumber)
+	campusClass, err := classService.ResolveCampusClass(reportSettingsRequest.ClassNumber, reportSettingsRequest.CampusNumber, reportSettingsRequest.CurriculumNumber, reportSettingsRequest.CampusCurriculumNumber)
 	if err != nil {
 		return err
 	}

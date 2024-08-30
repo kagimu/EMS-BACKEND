@@ -39,8 +39,8 @@ func CreateClassResponse(class classModels.Class) responses.ClassResponse {
 	}
 }
 
-func ResolveCampusClass(classNumber, campusNumber, curriculumNumber string) (classModels.CampusClass, error) {
-	campusClass, err := repositories.GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, curriculumNumber)
+func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) (classModels.CampusClass, error) {
+	campusClass, err := repositories.GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
 		return classModels.CampusClass{}, errors.New("Checking class on campus error " + err.Error())
 	}

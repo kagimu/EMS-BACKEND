@@ -26,7 +26,7 @@ func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricReque
 		return err
 	}
 
-	campusClass, err := classService.ResolveCampusClass(assessmentMetricRequest.ClassNumber, assessmentMetricRequest.CampusNumber, assessmentMetricRequest.CurriculumNumber)
+	campusClass, err := classService.ResolveCampusClass(assessmentMetricRequest.ClassNumber, assessmentMetricRequest.CampusNumber, assessmentMetricRequest.CurriculumNumber, assessmentMetricRequest.CampusCurriculumNumber)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMet
 		return errors.New("invalid assessment metric number")
 	}
 
-	campusClass, err := classService.ResolveCampusClass(assessmentMetricRequest.ClassNumber, assessmentMetricRequest.CampusNumber, assessmentMetricRequest.CurriculumNumber)
+	campusClass, err := classService.ResolveCampusClass(assessmentMetricRequest.ClassNumber, assessmentMetricRequest.CampusNumber, assessmentMetricRequest.CurriculumNumber, assessmentMetricRequest.CampusCurriculumNumber)
 	if err != nil {
 		return err
 	}

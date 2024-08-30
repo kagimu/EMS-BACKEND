@@ -54,7 +54,7 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber)
+	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, payload.CampusCurriculumNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Error checking class and campus: " + err.Error()})

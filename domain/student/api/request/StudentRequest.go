@@ -25,6 +25,7 @@ type StudentRequest struct {
 	ParentNumber              string                  `json:"parent_number"`
 	ClassNumber               string                  `json:"class_number"`
 	CurriculumNumber          string                  `json:"curriculum_number"`
+	CampusCurriculumNumber    string                  `json:"campus_curriculum_number"`
 	CampusNumber              string                  `json:"campus_number"`
 	SchoolNumber              string                  `json:"school_number"`
 }
