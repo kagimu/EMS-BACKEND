@@ -51,7 +51,7 @@ func GetClassByNumber(classNumber string, trn ...*gorm.DB) (models.Class, error)
 	return class, nil
 }
 
-func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber string, trn ...*gorm.DB) ([]models.Class, error) {
+func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string, trn ...*gorm.DB) ([]models.Class, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[1]
@@ -60,10 +60,13 @@ func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, cu
 	var classes []models.Class
 
 	if err := db.
+		Joins("join curriculum_levels on curriculum_levels.level_number = classes.level_number").
+		Joins("join curriculum_classes on curriculum_classes.curriculum_level_number = curriculum_levels.number").
+		Joins("join campus_levels on campus_levels.curriculum_level_number = curriculum_levels.number").
 		Joins("join curriculum_classes on curriculum_classes.class_number = classes.number").
 		Joins("join campus_classes on campus_classes.curriculum_class_number = curriculum_classes.number").
 		Joins("join campuses on campuses.number = campus_classes.campus_number").
-		Scopes(filters.ByAnyField("campuses.school_number", schoolNumber), filters.ByAnyField("curriculum_classes.curriculum_number", curriculumNumber), filters.ByAnyField("campus_classes.campus_number", campusNumber), filters.ByAnyField("campus_level_number", campusLevelNumber)).
+		Scopes(filters.ByAnyField("campuses.school_number", schoolNumber), filters.ByAnyField("campus_levels.campus_curriculum_number", campusCurriculumNumber), filters.ByAnyField("curriculum_classes.curriculum_number", curriculumNumber), filters.ByAnyField("campus_classes.campus_number", campusNumber), filters.ByAnyField("campus_level_number", campusLevelNumber)).
 		Distinct("classes.number", "classes.name", "classes.code", "classes.abbreviation", "classes.user_number", "classes.level_number", "classes.created_at", "classes.updated_at", "classes.id").
 		Order("classes.code asc").
 		Find(&classes).Error; err != nil {
