@@ -60,11 +60,10 @@ func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, cu
 	var classes []models.Class
 
 	if err := db.
-		Joins("JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number").
+		Joins("JOIN campus_classes ON campus_classes.class_number = classes.number").
 		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
 		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
-		Joins("JOIN curriculums ON curriculums.number = curriculum_levels.curriculum_number").
-		Joins("JOIN classes ON curriculum_classes.class_number = classes.number").
+		Joins("JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number").
 		Joins("JOIN campuses ON campuses.number = campus_classes.campus_number").
 		Scopes(
 			filters.ByAnyField("campuses.school_number", schoolNumber),
