@@ -4,10 +4,12 @@ import (
 	appModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"gorm.io/gorm"
+	"time"
 )
 
 type InterviewStudent struct {
-	gorm.Model
+	ID              uint `gorm:"primarykey"`
+	CreatedAt       time.Time
 	Number          string               `json:"number" gorm:"size:36;unique;not null"`
 	InterviewNumber string               `json:"interview_number" gorm:"size:36;not null"`
 	StudentNumber   string               `json:"student_number" gorm:"size:36;not null"`

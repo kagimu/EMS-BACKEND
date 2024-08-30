@@ -91,3 +91,25 @@ func FindInterviewAssessmentMetricByInterviewNumber(interviewNumber string, trn 
 
 	return interviewAssessmentMetrics, nil
 }
+
+func GetStudentInterviewAndAssessmentMetric(studentNumber, assessmentMetricNumber string, txn ...*gorm.DB) (models.Interview, error) {
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+
+	var interview models.Interview
+
+	if err := db.
+		Joins("JOIN interview_students ON interview_students.interview_number = interviews.number").
+		Joins("JOIN interview_assessment_metrics ON interview_assessment_metrics.interview_number = interviews.number").
+		Where("interview_students.student_number = ? AND interview_assessment_metrics.assessment_metric_number = ?", studentNumber, assessmentMetricNumber).First(&interview).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Interview{}, nil
+		}
+
+		return models.Interview{}, err
+	}
+
+	return interview, nil
+}

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
+	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
@@ -14,6 +16,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/repositories"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
@@ -58,6 +62,14 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	if assessmentMetric.RequireComment == constants.StatusYes && assessmentRequest.Comment == "" {
 		return errors.New("this assessment requires a comment")
 	}
+	admission, err := admissionRepository.FindAdmissionByStudentNumber(student.Number)
+	if err != nil {
+		return errors.New("checking admission error: " + err.Error())
+	}
+
+	if admission.Number == "" {
+		return errors.New("This learner has no admission record ")
+	}
 
 	//check if there is existing enrollment for the student
 	enrollment, err := enrolmentRepository.GetStudentEnrolment(student.Number, assessmentMetric.StudyPeriodNumber, assessmentMetric.CampusClassNumber, constants.StatusActive)
@@ -71,14 +83,15 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 			return errors.New("You can not add results on this schedule because this assessment is not meant  for this student")
 		}
 
-		return errors.New("student is not enrolled yet")
-	} /*else {
-
-		if enrollment.CampusClassNumber != assessmentMetric.CampusClassNumber {
-			return errors.New("You can not add results on this schedule because this assessment is not meant  for this student on the current enrollment")
+		if admission.Status != constants.StatusEnrolled {
+			err = ValidateInterviewScore(student, assessmentMetric, admission)
+			if err != nil {
+				return err
+			}
 		}
 
-	}*/
+		return errors.New("student is not enrolled yet")
+	}
 
 	//find if assessment with student number and assessment metric  already exists
 	currentAssessment, err := assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assessmentMetric.Number)
@@ -117,6 +130,26 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 
 	return nil
 }
+
+func ValidateInterviewScore(student studentModel.Student, assessmentMetric models.AssessmentMetric, admission admissionModel.Admission) error {
+
+	interview, err := repositories6.GetStudentInterviewAndAssessmentMetric(student.Number, assessmentMetric.Number)
+	if err != nil {
+		return errors.New("Checking student and interview error: " + err.Error())
+	}
+
+	if interview.Number == "" {
+		return errors.New("Student not added to any interview with this assessment ")
+	}
+
+	if admission.StudyPeriodNumber != assessmentMetric.StudyPeriodNumber || admission.CampusClassNumber != assessmentMetric.CampusClassNumber {
+		return errors.New("This assessment does not match with the learners admission offer (Study period and Class for the given campus) ")
+	}
+
+	return err
+}
+
+var admissionRepository = repositories5.NewAdmissionRepository()
 
 func FetchLearnerNarrative(studentNumber string) ([]responses.NarrativeResponse, error) {
 
