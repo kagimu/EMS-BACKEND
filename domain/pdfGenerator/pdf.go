@@ -55,3 +55,20 @@ func GeneratePdf(templateName string, data interface{}) (*wkhtmltopdf.PDFGenerat
 
 	return pdfg, nil
 }
+
+func GeneratePdfFromHtmlString(htmlString string) (*wkhtmltopdf.PDFGenerator, error) {
+	// convert html to pdf
+	pdfg, err := wkhtmltopdf.NewPDFGenerator()
+	if err != nil {
+		return nil, err
+	}
+
+	pdfg.AddPage(wkhtmltopdf.NewPageReader(bytes.NewReader([]byte(htmlString))))
+	err = pdfg.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	return pdfg, nil
+
+}
