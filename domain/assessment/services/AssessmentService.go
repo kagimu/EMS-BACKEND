@@ -91,9 +91,9 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 			if err != nil {
 				return err
 			}
+		} else {
+			return errors.New("student is not enrolled yet")
 		}
-
-		return errors.New("student is not enrolled yet")
 	}
 
 	//find if assessment with student number and assessment metric  already exists
