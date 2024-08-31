@@ -8,6 +8,7 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
@@ -17,6 +18,7 @@ import (
 	itemRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"math/rand"
@@ -272,16 +274,53 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 		_paidAmount = paidAmount
 	}
 
-	invoiceResponse := responses.MinInvoiceResponse{
-		RefNumber:   invoice.RefNumber,
-		Date:        invoice.CreatedAt.Format(time.DateOnly),
-		DueDate:     invoice.DueDate.Format(time.DateOnly),
-		Number:      invoice.Number,
-		TotalAmount: _invoiceAmount,
-		PaidAmount:  _paidAmount,
-		Balance:     _invoiceAmount - _paidAmount,
-		Status:      invoice.Status,
+	student, err := repositories.FindStudentByUserNumber(invoice.UserNumber)
+	if err != nil {
+		fmt.Println("Error getting student from user number " + err.Error())
+		return responses.MinInvoiceResponse{}
 	}
+
+	if student.Number == "" {
+		return responses.MinInvoiceResponse{}
+	}
+
+	billable, err := invoiceRepositories.GetBillableByInvoiceNumber(invoice.Number)
+	if err != nil {
+		fmt.Println("Error getting student from user number " + err.Error())
+		return responses.MinInvoiceResponse{}
+	}
+
+	campusName := ""
+	studyPeriodName := ""
+
+	if billable.Number != "" {
+		campus, err := repositories3.GetCampusByNumber(billable.CampusNumber)
+		if err == nil {
+			campusName = campus.Name
+		}
+
+		studyPeriod, err := repositories4.GetStudyPeriodNameByStudyPeriodNumber(billable.StudyPeriodNumber)
+		if err == nil {
+			studyPeriodName = studyPeriod.Name
+		}
+	}
+
+	invoiceResponse := responses.MinInvoiceResponse{
+		StudyPeriodName: studyPeriodName,
+		RefNumber:       invoice.RefNumber,
+		Date:            invoice.CreatedAt.Format(time.DateOnly),
+		DueDate:         invoice.DueDate.Format(time.DateOnly),
+		Number:          invoice.Number,
+		TotalAmount:     _invoiceAmount,
+		PaidAmount:      _paidAmount,
+		Balance:         _invoiceAmount - _paidAmount,
+		Status:          invoice.Status,
+		Adn:             student.ADN,
+		Lin:             student.Lin,
+		Names:           student.Surname + " " + student.SecondName + " " + student.OtherName,
+		CampusName:      campusName,
+	}
+
 	return invoiceResponse
 }
 
