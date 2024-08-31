@@ -16,6 +16,10 @@ wkhtmltopdf \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/*
 
+ENV XDG_RUNTIME_DIR=/tmp/runtime-root
+RUN mkdir -p /tmp/runtime-root && chmod 700 /tmp/runtime-root
+
+
 WORKDIR /usr/bin
 COPY --from=build /go/src/app/bin /go/bin
 EXPOSE 2053
