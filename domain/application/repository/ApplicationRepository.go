@@ -20,48 +20,48 @@ type ApplicationRepository interface {
 	DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error
 }
 
-type ApplicationRepositoryImpl struct {
+type applicationRepositoryImpl struct {
 	DB *gorm.DB
 }
 
-func (a ApplicationRepositoryImpl) DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error {
+func (applicationRepository *applicationRepositoryImpl) DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error {
 	return txn.Where("number = ? AND status = ? ", applicationNumber, constants.StatusDraft).Delete(&applicationModels.Application{}).Error
 }
 
-func (a ApplicationRepositoryImpl) UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error {
+func (applicationRepository *applicationRepositoryImpl) UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error {
 	return txn.Model(&applicationModels.Application{}).Where("number = ?", applicationNumber).Update("status", status).Error
 }
 
-func (a ApplicationRepositoryImpl) FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error) {
+func (applicationRepository *applicationRepositoryImpl) FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error) {
 	previousSchools := make([]models.PreviousSchool, 0)
-	err := a.DB.Preload("Classes").Where("application_number = ?", applicationNumber).Find(&previousSchools).Error
+	err := applicationRepository.DB.Preload("Classes").Where("application_number = ?", applicationNumber).Find(&previousSchools).Error
 	if err != nil {
 		return nil, err
 	}
 	return previousSchools, nil
 }
 
-func (a ApplicationRepositoryImpl) GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error) {
+func (applicationRepository *applicationRepositoryImpl) GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error) {
 	var student studentModel.Student
-	err := a.DB.Preload("PreferredCampus").Preload("CampusClass").Where("application_number = ?", applicationNumber).First(&student).Error
+	err := applicationRepository.DB.Preload("PreferredCampus").Preload("CampusClass").Where("application_number = ?", applicationNumber).First(&student).Error
 	if err != nil {
 		return student, err
 	}
 	return student, nil
 }
 
-func (a ApplicationRepositoryImpl) FindApplicationByNumber(applicationNumber string) (*applicationModels.Application, error) {
+func (applicationRepository *applicationRepositoryImpl) FindApplicationByNumber(applicationNumber string) (*applicationModels.Application, error) {
 	application := &applicationModels.Application{}
-	err := a.DB.Preload("Parent").Where("number = ?", applicationNumber).First(application).Error
+	err := applicationRepository.DB.Preload("Parent").Where("number = ?", applicationNumber).First(application).Error
 	if err != nil {
 		return nil, err
 	}
 	return application, nil
 }
 
-func (a ApplicationRepositoryImpl) FindAllApplications(schoolNumber string) ([]applicationModels.Application, error) {
+func (applicationRepository *applicationRepositoryImpl) FindAllApplications(schoolNumber string) ([]applicationModels.Application, error) {
 	applications := make([]applicationModels.Application, 0)
-	err := a.DB.Where("school_number = ?", schoolNumber).Find(&applications).Error
+	err := applicationRepository.DB.Where("school_number = ?", schoolNumber).Find(&applications).Error
 	if err != nil {
 		return nil, err
 
@@ -69,10 +69,10 @@ func (a ApplicationRepositoryImpl) FindAllApplications(schoolNumber string) ([]a
 	return applications, nil
 }
 
-func (a ApplicationRepositoryImpl) FindAllApplicationsPaginated(ctx *gin.Context, paginationResponse *pagination.PaginatedResponse, schoolNumber string) ([]applicationModels.Application, error) {
+func (applicationRepository *applicationRepositoryImpl) FindAllApplicationsPaginated(ctx *gin.Context, paginationResponse *pagination.PaginatedResponse, schoolNumber string) ([]applicationModels.Application, error) {
 	applications := make([]applicationModels.Application, 0)
 
-	err := a.DB.Scopes(pagination.Paginate(ctx, paginationResponse)).Where("school_number = ?", schoolNumber).Find(&applications).Error
+	err := applicationRepository.DB.Scopes(pagination.Paginate(ctx, paginationResponse)).Where("school_number = ?", schoolNumber).Find(&applications).Error
 	if err != nil {
 		return applications, err
 	}
@@ -81,5 +81,5 @@ func (a ApplicationRepositoryImpl) FindAllApplicationsPaginated(ctx *gin.Context
 }
 
 func NewApplicationRepositoryImpl(db *gorm.DB) ApplicationRepository {
-	return &ApplicationRepositoryImpl{DB: db}
+	return &applicationRepositoryImpl{DB: db}
 }

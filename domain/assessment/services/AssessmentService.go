@@ -3,9 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
-	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
-	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
@@ -62,14 +62,6 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	if assessmentMetric.RequireComment == constants.StatusYes && assessmentRequest.Comment == "" {
 		return errors.New("this assessment requires a comment")
 	}
-	admission, err := admissionRepository.FindAdmissionByStudentNumber(student.Number)
-	if err != nil {
-		return errors.New("checking admission error: " + err.Error())
-	}
-
-	if admission.Number == "" {
-		return errors.New("This learner has no admission record ")
-	}
 
 	//check if there is existing enrollment for the student
 	enrollment, err := enrolmentRepository.GetStudentEnrolment(student.Number, assessmentMetric.StudyPeriodNumber, assessmentMetric.CampusClassNumber, constants.StatusActive)
@@ -83,8 +75,19 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 			return errors.New("You can not add results on this schedule because this assessment is not meant  for this student")
 		}
 
-		if admission.Status != constants.StatusEnrolled {
-			err = ValidateInterviewScore(student, assessmentMetric, admission)
+		applicationRepository := repository.NewApplicationRepositoryImpl(config.DB)
+
+		application, err := applicationRepository.FindApplicationByNumber(student.ApplicationNumber)
+		if err != nil {
+			return errors.New("Checking student application error " + err.Error())
+		}
+
+		if application.Number == "" {
+			return errors.New(fmt.Sprintf("%s %s has no application", student.Surname, student.SecondName))
+		}
+
+		if application.Status != constants.StatusAdmitted {
+			err = ValidateInterviewScore(student, assessmentMetric)
 			if err != nil {
 				return err
 			}
@@ -131,7 +134,7 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	return nil
 }
 
-func ValidateInterviewScore(student studentModel.Student, assessmentMetric models.AssessmentMetric, admission admissionModel.Admission) error {
+func ValidateInterviewScore(student studentModel.Student, assessmentMetric models.AssessmentMetric) error {
 
 	interview, err := repositories6.GetStudentInterviewAndAssessmentMetric(student.Number, assessmentMetric.Number)
 	if err != nil {
@@ -142,14 +145,8 @@ func ValidateInterviewScore(student studentModel.Student, assessmentMetric model
 		return errors.New("Student not added to any interview with this assessment ")
 	}
 
-	if admission.StudyPeriodNumber != assessmentMetric.StudyPeriodNumber || admission.CampusClassNumber != assessmentMetric.CampusClassNumber {
-		return errors.New("This assessment does not match with the learners admission offer (Study period and Class for the given campus) ")
-	}
-
 	return err
 }
-
-var admissionRepository = repositories5.NewAdmissionRepository()
 
 func FetchLearnerNarrative(studentNumber string) ([]responses.NarrativeResponse, error) {
 

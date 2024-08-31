@@ -5,6 +5,7 @@ import (
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"net/http"
@@ -105,7 +106,7 @@ func CreateAdmission(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
 			return
 		}
-		application.Status = "ADMITTED"
+		application.Status = constants.StatusAdmitted
 
 		tx := config.DB.Begin()
 		generateADN, err := studentControllers.CreateADN(student.APNStatus, tx)
@@ -118,7 +119,7 @@ func CreateAdmission(c *gin.Context) {
 		student.APNStatus = "Archive"
 		student.ADN = generateADN
 		// Update the student status
-		student.Status = "ADMITTED"
+		student.Status = constants.StatusAdmitted
 		if err := tx.Save(&student).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
