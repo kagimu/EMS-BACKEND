@@ -86,3 +86,25 @@ func RemoveStudyPeriodName(studyPeriodName models.StudyPeriodName, trn ...*gorm.
 
 	return db.Delete(&studyPeriodName).Error
 }
+
+func GetStudyPeriodNameByStudyPeriodNumber(studyPeriodNumber string, trn ...*gorm.DB) (models.StudyPeriodName, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var studyPeriodName models.StudyPeriodName
+
+	if err := db.
+		Joins("JOIN study_periods ON study_periods.study_period_name_number = study_period_names.number").
+		Where("study_period_number = ?", studyPeriodNumber).First(&studyPeriodName).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.StudyPeriodName{}, nil
+		}
+
+		return models.StudyPeriodName{}, err
+	}
+
+	return studyPeriodName, nil
+}
