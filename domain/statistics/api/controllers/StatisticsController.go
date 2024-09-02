@@ -39,3 +39,14 @@ func PrintReport(ctx *gin.Context) {
 	err = pdfObject.WriteFile("output.pdf")
 	ctx.JSON(http.StatusOK, commons.Feedback(base64.StdEncoding.EncodeToString(pdfObject.Bytes())))
 }
+
+func PrintTestReport(ctx *gin.Context) {
+	pdfObject, err := pdfGenerator.GeneratePdf("sr", pdfGenerator.ReturnNewData())
+	if err != nil {
+		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
+		return
+	}
+
+	err = pdfObject.WriteFile("output.pdf")
+	ctx.JSON(http.StatusOK, commons.Feedback(base64.StdEncoding.EncodeToString(pdfObject.Bytes())))
+}

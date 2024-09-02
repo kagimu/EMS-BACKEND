@@ -859,6 +859,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			statistics.GET("summary", statisticsController.FetchStatistics)
 			statistics.POST("print", statisticsController.PrintReport)
+			statistics.POST("test", statisticsController.PrintTestReport)
 		}
 
 		activityReporting := main.Group("activity-reporting")
