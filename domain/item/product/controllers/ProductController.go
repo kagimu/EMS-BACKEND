@@ -155,7 +155,7 @@ func FetchProducts(c *gin.Context) {
 
 	for _, product := range products {
 		var campusServices []models2.CampusItem
-		if err := config.DB.Where("item_number = ?", product.ItemNumber).Find(&campusServices).Error; err != nil {
+		if err := config.DB.Where("item_number = ?", product.Item.Number).Find(&campusServices).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
 			return
 		}
