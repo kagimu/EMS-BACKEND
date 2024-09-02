@@ -47,6 +47,6 @@ func PrintTestReport(ctx *gin.Context) {
 		return
 	}
 
-	err = pdfObject.WriteFile("output.pdf")
+	//err = pdfObject.WriteFile("output.pdf")
 	ctx.JSON(http.StatusOK, commons.Feedback(base64.StdEncoding.EncodeToString(pdfObject.Bytes())))
 }

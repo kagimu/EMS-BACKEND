@@ -47,7 +47,7 @@ func GeneratePdf(templateName string, data interface{}) (*wkhtmltopdf.PDFGenerat
 		return nil, err
 	}
 
-	pdfg.AddPage(wkhtmltopdf.NewPageReader(&doc))
+	pdfg.AddPage(wkhtmltopdf.NewPageReader(bytes.NewReader(doc.Bytes())))
 	err = pdfg.Create()
 	if err != nil {
 		return nil, err
