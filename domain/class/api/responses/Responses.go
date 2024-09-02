@@ -11,8 +11,9 @@ type (
 		Streams               []StreamInfo `json:"streams"`
 	}
 	StreamInfo struct {
-		StreamNumber string `json:"stream_number"`
-		Name         string `json:"name"`
+		StreamNumber      string `json:"stream_number"`
+		Name              string `json:"name"`
+		CampusClassNumber string `json:"campus_class_number"`
 	}
 
 	ClassDataList struct {

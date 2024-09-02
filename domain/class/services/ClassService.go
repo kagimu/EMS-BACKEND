@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
@@ -65,4 +66,36 @@ func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurri
 	}
 
 	return campusClass[0], nil
+}
+
+func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber string) ([]responses2.StreamInfo, error) {
+
+	var streamResponses = make([]responses2.StreamInfo, 0)
+
+	campusClass, err := ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+
+	if err != nil && classLevelNumber == "" {
+		return streamResponses, err
+	}
+
+	if campusClass.Number == "" && classLevelNumber == "" {
+		return streamResponses, errors.New("Selected class and curriculum are not on the selected campus ")
+	} else {
+		classLevelNumber = campusClass.Number
+	}
+
+	streams, err := repositories.FetchStreamByCampusClassNumber(campusClass.Number)
+	if err != nil {
+		return streamResponses, errors.New("Getting streams error " + err.Error())
+	}
+
+	for _, stream := range streams {
+		streamResponses = append(streamResponses, responses2.StreamInfo{
+			StreamNumber:      stream.Number,
+			CampusClassNumber: stream.ClassLevelNumber,
+			Name:              stream.Name,
+		})
+	}
+
+	return streamResponses, nil
 }
