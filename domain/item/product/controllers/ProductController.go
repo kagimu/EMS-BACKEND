@@ -104,13 +104,14 @@ func EditProduct(c *gin.Context) {
 	txn := config.DB.Begin()
 
 	updateProduct := models.Item{
-		Number:      uuid.NewV4().String(),
-		Name:        payload.Name,
-		Cost:        payload.Cost,
-		Description: payload.Description,
-		UserNumber:  user.Number,
-		SerialCode:  payload.SerialCode,
-		Mandatory:   payload.Mandatory,
+		Number:       uuid.NewV4().String(),
+		Name:         payload.Name,
+		Cost:         payload.Cost,
+		Description:  payload.Description,
+		UserNumber:   user.Number,
+		SerialCode:   payload.SerialCode,
+		Mandatory:    payload.Mandatory,
+		SchoolNumber: payload.SchoolNumber,
 	}
 
 	if err := txn.Model(&product).Where("number = ?", productNumber).Updates(updateProduct).Error; err != nil {

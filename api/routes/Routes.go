@@ -99,7 +99,7 @@ func SetupRoutes() *gin.Engine {
 		auth.POST("reset-password", authController.ResetPassword)
 	}
 
-	main := router.Group("/main", middleware.AuthorizeJWT())
+	main := router.Group("/main" /*middleware.AuthorizeJWT()*/)
 	{
 		main.GET("profile", authController.Profile)
 
