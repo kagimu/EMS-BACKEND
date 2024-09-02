@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"gorm.io/gorm/logger"
 	"log"
 	"os"
@@ -18,14 +17,14 @@ import (
 )
 
 func main() {
-	err := godotenv.Load(".env")
+	/*err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
-	}
+	}*/
 
 	gin.SetMode(gin.DebugMode)
 
-	err = os.Setenv("TZ", "Africa/Nairobi")
+	err := os.Setenv("TZ", "Africa/Nairobi")
 	if err != nil {
 		return
 	}
