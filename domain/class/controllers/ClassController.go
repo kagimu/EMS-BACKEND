@@ -924,30 +924,15 @@ func AddClassStream(ctx *gin.Context) {
 }
 
 func FetchStreamsByClassLevelNumber(ctx *gin.Context) {
-	var streams []classModel.Stream
 	classLevelNumber := ctx.Query("class_level_number")
 	classNumber := ctx.Query("class_number")
 	campusNumber := ctx.Query("campus_number")
 	curriculumNumber := ctx.Query("curriculum_number")
 	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
 
-	campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
-	if err != nil && classLevelNumber == "" {
+	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber)
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	if campusClass.Number == "" && classLevelNumber == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Selected class and curriculum are not on the selected campus"})
-		return
-	} else {
-		classLevelNumber = campusClass.Number
-	}
-
-	if err := config.DB.
-		Where("class_level_number = ?", classLevelNumber).
-		Find(&streams).Error; err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Streams!"})
 		return
 	}
 
