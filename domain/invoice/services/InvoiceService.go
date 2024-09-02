@@ -142,7 +142,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	err = invoiceRepositories.SaveBillableInvoice(models.BillableInvoice{
 		BillableNumber: billable.Number,
 		InvoiceNumber:  newInvoice.Number,
-	})
+	}, txn)
 
 	if err != nil {
 		return models.Invoice{}, errors.New("Creating attaching invoice to billable error: " + err.Error())
