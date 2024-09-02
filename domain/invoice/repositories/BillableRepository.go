@@ -92,3 +92,25 @@ func GetDuplicatedBill(studyPeriodNumber, classNumber, campusNumber, billType, m
 
 	return billable, nil
 }
+
+func GetBillableByInvoiceNumber(invoiceNumber string, trn ...*gorm.DB) (models.Billable, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var billable models.Billable
+
+	if err := db.
+		Joins("JOIN billable_invoices On billable_invoices.invoice_number = invoices.number").
+		Where("invoice_number = ?", invoiceNumber).First(&billable).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return billable, nil
+		}
+
+		return billable, err
+	}
+
+	return billable, nil
+}

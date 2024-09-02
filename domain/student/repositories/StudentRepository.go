@@ -57,10 +57,10 @@ func FindStudentByUserNumber(userNumber string, txn ...*gorm.DB) (studentModel.S
 	if err := db.Where("user_number = ?", userNumber).First(&student).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return student, nil
+			return studentModel.Student{}, nil
 		}
 
-		return student, err
+		return studentModel.Student{}, err
 	}
 
 	return student, nil

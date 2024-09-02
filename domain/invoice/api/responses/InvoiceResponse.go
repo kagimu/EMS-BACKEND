@@ -7,12 +7,17 @@ type InvoiceResponse struct {
 }
 
 type MinInvoiceResponse struct {
-	Number      string  `json:"number"`
-	RefNumber   string  `json:"ref_number"`
-	Date        string  `json:"date"`
-	DueDate     string  `json:"due_date"`
-	TotalAmount float64 `json:"total_amount"`
-	PaidAmount  float64 `json:"paid_amount"`
-	Balance     float64 `json:"balance"`
-	Status      string  `json:"status"`
+	Number          string  `json:"number"`
+	RefNumber       string  `json:"ref_number"`
+	Date            string  `json:"date"`
+	DueDate         string  `json:"due_date"`
+	TotalAmount     float64 `json:"total_amount"`
+	PaidAmount      float64 `json:"paid_amount"`
+	Balance         float64 `json:"balance"`
+	Status          string  `json:"status"`
+	Adn             string  `json:"adn"`
+	Lin             string  `json:"lin"`
+	Names           string  `json:"names"`
+	CampusName      string  `json:"campus_name"`
+	StudyPeriodName string  `json:"study_period_name"`
 }
