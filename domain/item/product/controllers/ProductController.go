@@ -104,7 +104,6 @@ func EditProduct(c *gin.Context) {
 	txn := config.DB.Begin()
 
 	updateProduct := models.Item{
-		Number:       uuid.NewV4().String(),
 		Name:         payload.Name,
 		Cost:         payload.Cost,
 		Description:  payload.Description,
