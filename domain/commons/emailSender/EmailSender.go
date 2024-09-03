@@ -2,6 +2,7 @@ package emailSender
 
 import (
 	"bytes"
+	"crypto/tls"
 	"html/template"
 	"log"
 
@@ -54,7 +55,7 @@ func (i Info) SendEmail() error {
 
 	d := gomail.NewDialer("smtp.gmail.com", 587, "andysteve2222@gmail.com", "rhknebyyuqbqfity")
 	//d := gomail.NewDialer(os.Getenv("MAIL_HOST"), os.Getenv("MAIL_PORT"), os.Getenv("MAIL_USERNAME"), os.Getenv("MAIL_PASSWORD"))
-
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	if err := d.DialAndSend(m); err != nil {
 		log.Println("Error sending email:", err)
 	}
