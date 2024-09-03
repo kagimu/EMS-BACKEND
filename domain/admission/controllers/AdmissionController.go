@@ -118,6 +118,7 @@ func CreateAdmission(c *gin.Context) {
 
 		student.APNStatus = "Archive"
 		student.ADN = generateADN
+		student.Lin = uuid.NewV4().String()
 		// Update the student status
 		student.Status = constants.StatusAdmitted
 		if err := tx.Save(&student).Error; err != nil {
