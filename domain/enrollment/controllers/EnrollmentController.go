@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/services"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"gorm.io/gorm"
 	"net/http"
@@ -208,22 +209,28 @@ func FetchEnrolledStudents(c *gin.Context) {
 
 	for _, enrollment := range enrolledStudents {
 
+		campusLevel, _ := repositories4.GetCampusLevelByNumber(enrollment.CampusClass.CampusLevelNumber)
+
+		curriculumLevel, _ := repositories4.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
+
 		studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
 
 		students = append(students, responses.Enrollment{
-			StudentSurname:    enrollment.Student.Surname,
-			StudentSecondName: enrollment.Student.SecondName,
-			StudentOtherName:  enrollment.Student.OtherName,
-			StudentNumber:     enrollment.Student.Number,
-			Number:            enrollment.Number,
-			School:            enrollment.School.Name,
-			Campus:            enrollment.Campus.Name,
-			StudyPeriod:       studyPeriodName.Name,
-			Status:            enrollment.Status,
-			EnrollmentDate:    enrollment.EnrollmentDate,
-			ContinuingStudent: enrollment.ContinuingStudent,
-			Class:             enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")",
-			Adn:               enrollment.Student.ADN,
+			LevelNumber:            curriculumLevel.LevelNumber,
+			CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
+			StudentSurname:         enrollment.Student.Surname,
+			StudentSecondName:      enrollment.Student.SecondName,
+			StudentOtherName:       enrollment.Student.OtherName,
+			StudentNumber:          enrollment.Student.Number,
+			Number:                 enrollment.Number,
+			School:                 enrollment.School.Name,
+			Campus:                 enrollment.Campus.Name,
+			StudyPeriod:            studyPeriodName.Name,
+			Status:                 enrollment.Status,
+			EnrollmentDate:         enrollment.EnrollmentDate,
+			ContinuingStudent:      enrollment.ContinuingStudent,
+			Class:                  enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")",
+			Adn:                    enrollment.Student.ADN,
 		})
 	}
 

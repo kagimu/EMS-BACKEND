@@ -5,6 +5,7 @@ import (
 	"fmt"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
@@ -288,7 +289,13 @@ func FetchStudentByNumber(c *gin.Context) {
 
 	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
 
+	campusLevel, _ := repositories4.GetCampusLevelByNumber(enrollment.CampusClass.CampusLevelNumber)
+
+	curriculumLevel, _ := repositories4.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
+
 	var response = enrollmentResponse.Enrollment{}
+	response.LevelNumber = curriculumLevel.LevelNumber
+	response.CampusCurriculumNumber = campusLevel.CampusCurriculumNumber
 	response.StudentNumber = enrollment.StudentNumber
 	response.EnrollmentDate = enrollment.EnrollmentDate
 	response.Class = enrollment.CampusClass.ClassName
