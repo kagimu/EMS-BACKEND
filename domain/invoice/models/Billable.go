@@ -16,7 +16,7 @@ type Billable struct {
 	Number            string                       `json:"number" gorm:"size:36;unique;not null"`
 	Description       string                       `json:"description" gorm:"size:2000"`
 	BillType          string                       `json:"bill_type" gorm:"size:36;unique;not null"`
-	Status            string                       `json:"status" gorm:"size:36;unique;not null;default:ACTIVE"`
+	Status            string                       `json:"status" gorm:"size:36;not null;default:ACTIVE"`
 	UserNumber        string                       `json:"user_number" gorm:"size:36;not null"`
 	User              authModel.User               `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriodNumber string                       `json:"study_period_number" gorm:"size:36;not null"`
