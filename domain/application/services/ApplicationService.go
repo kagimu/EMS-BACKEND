@@ -41,7 +41,7 @@ func GetApplicationById(id string) (responses.ApplicationResponse, error) {
 }
 
 func BuildSingleApplicationResponse(application *models.Application, student *studentModel.Student, previousSchools []previousSchoolModel.PreviousSchool) responses.ApplicationResponse {
-	var studentResponse responses.StudentApplicant
+	var studentResponse responses.StudentResponse
 	var previousSchoolsResponse []responses.PreviousSchoolResponse
 
 	applicationResponse := responses.ApplicationResponse{
@@ -53,32 +53,63 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		UserNumber:                application.UserNumber,
 	}
 
-	preferredCampus, err := repositories2.GetCampusByNumber(student.PreferredCampusNumber)
+	studentResponse = CreateStudentResponse(student)
+
+	for _, previousSchool := range previousSchools {
+		ps := responses.PreviousSchoolResponse{
+			Name: previousSchool.Name,
+		}
+
+		for _, class := range previousSchool.Classes {
+			ps.Classes = append(ps.Classes, responses.PreviousSchoolClassResponse{
+				PreviousSchoolNumber: class.PreviousSchoolNumber,
+				Year:                 class.Year,
+				Class:                class.Class,
+			})
+		}
+		previousSchoolsResponse = append(previousSchoolsResponse, ps)
+	}
+
+	parent, err := repositories3.GetParentByApplicationNumber(application.Number)
 	if err != nil {
 		return applicationResponse
+	}
+
+	applicationResponse.Student = studentResponse
+	applicationResponse.Parent = createParentResponse(parent)
+	applicationResponse.PreviousSchools = previousSchoolsResponse
+
+	return applicationResponse
+}
+
+func CreateStudentResponse(student *studentModel.Student) responses.StudentResponse {
+
+	preferredCampus, err := repositories2.GetCampusByNumber(student.PreferredCampusNumber)
+	if err != nil {
+		return responses.StudentResponse{}
 	}
 
 	campusClass, err := repositories.GetCampusClassByNumber(student.CampusClassNumber)
 	if err != nil {
-		return applicationResponse
+		return responses.StudentResponse{}
 	}
 
 	class, err := repositories.GetClassByCampusClassNumber(student.CampusClassNumber)
 	if err != nil {
-		return applicationResponse
+		return responses.StudentResponse{}
 	}
 
 	campusLevel, err := repositories4.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
 	if err != nil {
-		return applicationResponse
+		return responses.StudentResponse{}
 	}
 
 	curriculumLevel, err := repositories4.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
 	if err != nil {
-		return applicationResponse
+		return responses.StudentResponse{}
 	}
 
-	studentResponse = responses.StudentApplicant{
+	return responses.StudentResponse{
 		LevelNumber:               curriculumLevel.LevelNumber,
 		CampusCurriculumNumber:    campusLevel.CampusCurriculumNumber,
 		Number:                    student.Number,
@@ -105,32 +136,6 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 		SchoolNumber:              student.SchoolNumber,
 		PreferredCampusNumber:     student.PreferredCampusNumber,
 	}
-
-	for _, previousSchool := range previousSchools {
-		ps := responses.PreviousSchoolResponse{
-			Name: previousSchool.Name,
-		}
-
-		for _, class := range previousSchool.Classes {
-			ps.Classes = append(ps.Classes, responses.ClassResponse{
-				PreviousSchoolNumber: class.PreviousSchoolNumber,
-				Year:                 class.Year,
-				Class:                class.Class,
-			})
-		}
-		previousSchoolsResponse = append(previousSchoolsResponse, ps)
-	}
-
-	parent, err := repositories3.GetParentByApplicationNumber(application.Number)
-	if err != nil {
-		return applicationResponse
-	}
-
-	applicationResponse.Student = studentResponse
-	applicationResponse.Parent = createParentResponse(parent)
-	applicationResponse.PreviousSchools = previousSchoolsResponse
-
-	return applicationResponse
 }
 
 func createParentResponse(parent parentModel.Parent) responses.ParentResponse {

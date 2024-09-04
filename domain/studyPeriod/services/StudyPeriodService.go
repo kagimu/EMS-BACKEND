@@ -88,7 +88,7 @@ func createStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) (responses.S
 		Classes: classesResponse,
 	}
 
-	response.StudyPeriodList = createStudyPeriod(studyPeriod)
+	response.StudyPeriodList = CreateStudyPeriod(studyPeriod)
 
 	if len(classesResponse) > 0 {
 		response.LevelName = classesResponse[0].LevelName
@@ -97,7 +97,7 @@ func createStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) (responses.S
 	return response, nil
 }
 
-func createStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPeriodList {
+func CreateStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPeriodList {
 
 	academicYear, _ := repositories4.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
 	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
