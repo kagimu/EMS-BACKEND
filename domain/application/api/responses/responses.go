@@ -7,12 +7,12 @@ type ApplicationResponse struct {
 	ApplicationFeeInvalidDate string                   `json:"application_fee_invalid_date"`
 	UserNumber                string                   `json:"user_number"`
 	InterviewMode             string                   `json:"interview_mode"`
-	Student                   StudentApplicant         `json:"student"`
+	Student                   StudentResponse          `json:"student"`
 	Parent                    ParentResponse           `json:"parent"`
 	PreviousSchools           []PreviousSchoolResponse `json:"previous_schools"`
 }
 
-type StudentApplicant struct {
+type StudentResponse struct {
 	Number                    string `json:"number"`
 	APN                       string `json:"apn"`
 	ADN                       string `json:"adn"`
@@ -40,11 +40,11 @@ type StudentApplicant struct {
 	LevelNumber               string `json:"level_number"`
 }
 type PreviousSchoolResponse struct {
-	Name    string          `json:"name"`
-	Classes []ClassResponse `json:"classes"`
+	Name    string                        `json:"name"`
+	Classes []PreviousSchoolClassResponse `json:"classes"`
 }
 
-type ClassResponse struct {
+type PreviousSchoolClassResponse struct {
 	PreviousSchoolNumber string `json:"previous_school_number"`
 	Year                 string `json:"year"`
 	Class                string `json:"class" `

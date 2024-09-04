@@ -45,11 +45,11 @@ type (
 	}
 
 	CampusResponse struct {
-		Name             string    `json:"name" form:"name" `
-		Phone            string    `json:"phone" form:"phone" `
-		Email            string    `json:"email" form:"email" `
-		Location         string    `json:"location" form:"location" `
-		SchoolNumber     string    `json:"school_number" `
+		Name             string    `json:"name"`
+		Phone            string    `json:"phone"`
+		Email            string    `json:"email"`
+		Location         string    `json:"location"`
+		SchoolNumber     string    `json:"school_number"`
 		CommencementDate time.Time `json:"commencement_date" `
 	}
 )

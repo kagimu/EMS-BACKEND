@@ -9,12 +9,33 @@ import (
 
 type StudentRepository interface {
 	FindAll() ([]studentModel.Student, error)
-	GetStudentByApplicationNumber(studentNumber string) (studentModel.Student, error)
+	GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error)
 	Delete(studentNumber string, tx *gorm.DB) error
+	GetStudentByNumber(studentNumber string, tx ...*gorm.DB) (studentModel.Student, error)
 }
 
 type StudentRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (s StudentRepositoryImpl) GetStudentByNumber(studentNumber string, txn ...*gorm.DB) (studentModel.Student, error) {
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+
+	var student studentModel.Student
+
+	if err := db.Where("number = ?", studentNumber).First(&student).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return studentModel.Student{}, nil
+		}
+
+		return studentModel.Student{}, err
+	}
+
+	return student, nil
 }
 
 func (s StudentRepositoryImpl) GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error) {

@@ -68,9 +68,9 @@ func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurri
 	return campusClass[0], nil
 }
 
-func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber string) ([]responses2.StreamInfo, error) {
+func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber string) ([]responses2.StreamResponse, error) {
 
-	var streamResponses = make([]responses2.StreamInfo, 0)
+	var streamResponses = make([]responses2.StreamResponse, 0)
 
 	campusClass, err := ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 
@@ -90,12 +90,16 @@ func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumN
 	}
 
 	for _, stream := range streams {
-		streamResponses = append(streamResponses, responses2.StreamInfo{
-			StreamNumber:      stream.Number,
-			CampusClassNumber: stream.ClassLevelNumber,
-			Name:              stream.Name,
-		})
+		streamResponses = append(streamResponses, CreateStreamResponse(stream))
 	}
 
 	return streamResponses, nil
+}
+
+func CreateStreamResponse(stream classModels.Stream) responses2.StreamResponse {
+	return responses2.StreamResponse{
+		StreamNumber:      stream.Number,
+		CampusClassNumber: stream.ClassLevelNumber,
+		Name:              stream.Name,
+	}
 }

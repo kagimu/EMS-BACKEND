@@ -718,10 +718,10 @@ func FetchClassLevel(context *gin.Context) {
 
 		for _, lst := range classLevel {
 
-			var stream_ []responses.StreamInfo
+			var stream_ []responses.StreamResponse
 
 			for _, list := range lst.Streams {
-				stream_ = append(stream_, responses.StreamInfo{
+				stream_ = append(stream_, responses.StreamResponse{
 					StreamNumber: list.Number,
 					Name:         list.Name,
 				})
