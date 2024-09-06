@@ -65,6 +65,9 @@ func (s *StudentRequest) Validate() error {
 	if s.SchoolNumber == "" {
 		return errors.New("school number is required to proceed")
 	}
+	if s.ModeOfStudyNumber == "" {
+		return errors.New("Choose mode of study ")
+	}
 
 	return nil
 }
