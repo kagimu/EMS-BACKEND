@@ -97,7 +97,6 @@ func CreatePreviousSchools(c *gin.Context) {
 		}
 
 	}
-
 	/*if err := applicationRepo.UpdateApplicationStatus(applicationNumber, "SUBMITTED", tx); err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update application status", "err": err.Error()})
