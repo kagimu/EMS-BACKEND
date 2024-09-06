@@ -136,6 +136,8 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 		Gender:                    student.Gender,
 		SchoolNumber:              student.SchoolNumber,
 		PreferredCampusNumber:     student.PreferredCampusNumber,
+		ClassNumber:               class.Number,
+		ModeOfStudyNumber:         student.ModeOfStudyNumber,
 	}
 }
 

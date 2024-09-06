@@ -4,6 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"gorm.io/gorm"
 )
 
@@ -36,4 +37,6 @@ type Student struct {
 	User                      models.User             `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Status                    string                  `json:"status" gorm:"size:20;default:Active"`
 	SchoolNumber              string                  `json:"school_number" gorm:"size:36;"`
+	ModeOfStudyNumber         string                  `json:"mode_of_study_number" gorm:"size:36; not null"`
+	ModeOfStudy               models2.ModeOfStudy     `gorm:"foreignKey:ModeOfStudyNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
