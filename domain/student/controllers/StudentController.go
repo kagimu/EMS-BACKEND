@@ -110,6 +110,7 @@ func CreateStudent(c *gin.Context) {
 			CampusClassNumber:         campusClass.Number,
 			SchoolNumber:              payload.SchoolNumber,
 			Lin:                       payload.Lin,
+			ModeOfStudyNumber:         payload.ModeOfStudyNumber,
 		}
 
 		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
@@ -158,6 +159,7 @@ func CreateStudent(c *gin.Context) {
 		CampusClassNumber:         campusClass.Number,
 		SchoolNumber:              payload.SchoolNumber,
 		Lin:                       payload.Lin,
+		ModeOfStudyNumber:         payload.ModeOfStudyNumber,
 	}
 
 	if err := tx.Create(&savStudent).Error; err != nil {

@@ -110,6 +110,7 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 	}
 
 	return responses.StudentResponse{
+		CurriculumLevelNumber:     curriculumLevel.Number,
 		LevelNumber:               curriculumLevel.LevelNumber,
 		CampusCurriculumNumber:    campusLevel.CampusCurriculumNumber,
 		Number:                    student.Number,
@@ -135,6 +136,8 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 		Gender:                    student.Gender,
 		SchoolNumber:              student.SchoolNumber,
 		PreferredCampusNumber:     student.PreferredCampusNumber,
+		ClassNumber:               class.Number,
+		ModeOfStudyNumber:         student.ModeOfStudyNumber,
 	}
 }
 
