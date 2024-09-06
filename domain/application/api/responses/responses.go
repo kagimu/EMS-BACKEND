@@ -42,6 +42,7 @@ type StudentResponse struct {
 	CurriculumLevelNumber     string `json:"curriculum_level_number"`
 	ClassNumber               string `json:"class_number"`
 	ModeOfStudyNumber         string `json:"mode_of_study_number"`
+	CampusLevelNumber         string `json:"campus_level_number"`
 }
 type PreviousSchoolResponse struct {
 	Name    string                        `json:"name"`

@@ -113,6 +113,7 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 		CurriculumLevelNumber:     curriculumLevel.Number,
 		LevelNumber:               curriculumLevel.LevelNumber,
 		CampusCurriculumNumber:    campusLevel.CampusCurriculumNumber,
+		CampusLevelNumber:         campusLevel.Number,
 		Number:                    student.Number,
 		Surname:                   student.Surname,
 		SecondName:                student.SecondName,
