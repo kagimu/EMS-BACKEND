@@ -10,7 +10,7 @@ type ApplicationResponse struct {
 	Student                   StudentResponse          `json:"student"`
 	Parent                    ParentResponse           `json:"parent"`
 	PreviousSchools           []PreviousSchoolResponse `json:"previous_schools"`
-	ModeOfStudy               string                   `json:"mode_of_study"`
+	PreviousSchoolResult      PreviousSchoolResult     `json:"previous_school_result"`
 }
 
 type StudentResponse struct {
@@ -43,6 +43,7 @@ type StudentResponse struct {
 	ClassNumber               string `json:"class_number"`
 	ModeOfStudyNumber         string `json:"mode_of_study_number"`
 	CampusLevelNumber         string `json:"campus_level_number"`
+	Lin                       string `json:"lin"`
 }
 type PreviousSchoolResponse struct {
 	Name    string                        `json:"name"`
@@ -63,4 +64,14 @@ type ParentResponse struct {
 	AlternativeNumber string `json:"alternative_number"`
 	Email             string `json:"email"`
 	AlternativeEmail  string `json:"alternative_email"`
+}
+
+type PreviousSchoolResult struct {
+	ReportFile string                  `json:"report_file"`
+	Subjects   []PreviousSchoolSubject `json:"subjects"`
+}
+
+type PreviousSchoolSubject struct {
+	Name  string  `json:"name"`
+	Score float64 `json:"score"`
 }
