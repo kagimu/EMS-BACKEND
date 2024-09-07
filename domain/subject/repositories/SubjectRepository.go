@@ -28,3 +28,25 @@ func GetSubjectByNumber(subjectNumber string, trn ...*gorm.DB) (subjectModels.Su
 	return subject, nil
 
 }
+
+func AllSubjects(trn ...*gorm.DB) ([]subjectModels.Subject, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var subjects []subjectModels.Subject
+
+	if err := db.Find(&subjects).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return subjects, nil
+		}
+
+		return subjects, err
+	}
+
+	return subjects, nil
+
+}

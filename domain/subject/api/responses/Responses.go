@@ -12,4 +12,9 @@ type (
 		LearningAreaNumber   string                     `json:"learning_area_number"`
 		Strand               []responses.StrandDataList `json:"strand"`
 	}
+
+	SubjectResponse struct {
+		Name          string `json:"name"`
+		SubjectNumber string `json:"subject_number"`
+	}
 )
