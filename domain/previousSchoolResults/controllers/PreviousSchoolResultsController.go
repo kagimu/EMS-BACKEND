@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 
@@ -23,8 +25,33 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 	studentNumber := c.PostForm("student_number")
 	applicationNumber := c.PostForm("application_number")
 
+	if applicationNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide application number "})
+		return
+	}
+
+	if studentNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide student number "})
+		return
+	}
+
 	subjects := c.PostFormArray("subject")
 	scores := c.PostFormArray("score")
+
+	if len(subjects) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Enter some subjects "})
+		return
+	}
+
+	if len(scores) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Enter subjects scores "})
+		return
+	}
+
+	if len(scores) != len(subjects) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Subjects should be equal to the scores "})
+		return
+	}
 
 	fileName, err := commons.HandleFileUpload(c, "attachment", "./fileRepo/uploads")
 	if err != nil {
@@ -32,25 +59,39 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 		return
 	}
 
-	for i := range subjects {
-		score, _ := strconv.ParseFloat(scores[i], 64)
+	if fileName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "File did not upload successfully, tey again "})
+		return
+	}
 
-		previousSchoolResultsNumber := uuid.NewV4().String()
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
-		previousSchoolResults := models.PreviousSchoolResults{
-			Number:            previousSchoolResultsNumber,
-			StudentNumber:     studentNumber,
-			Subject:           subjects[i],
-			Score:             score,
-			Attachment:        fileName,
-			ApplicationNumber: applicationNumber,
-			UserNumber:        user.Number,
+		for i := range subjects {
+			score, _ := strconv.ParseFloat(scores[i], 64)
+
+			previousSchoolResultsNumber := uuid.NewV4().String()
+
+			previousSchoolResults := models.PreviousSchoolResults{
+				Number:            previousSchoolResultsNumber,
+				StudentNumber:     studentNumber,
+				Subject:           subjects[i],
+				Score:             score,
+				Attachment:        fileName,
+				ApplicationNumber: applicationNumber,
+				UserNumber:        user.Number,
+			}
+
+			if err := tx.Create(&previousSchoolResults).Error; err != nil {
+				return errors.New("Failed to create previous school results error " + err.Error())
+			}
 		}
 
-		if err := config.DB.Create(&previousSchoolResults).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create previous school results"})
-			return
-		}
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Previous school results created successfully"})
