@@ -364,6 +364,7 @@ func UploadSchoolLogo(context *gin.Context) {
 	//check if the school exists
 	if err := services.UploadSchoolLogo(schoolNumber, context); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Logo uploaded successfully!"})
