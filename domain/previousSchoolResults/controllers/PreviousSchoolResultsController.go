@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/api/responses"
@@ -44,7 +43,7 @@ func CreatePreviousSchoolResults(context *gin.Context) {
 	var subjects []string
 	err = json.Unmarshal([]byte(subjectString), &subjects)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": fmt.Printf("Error '%s' converting '%s'\n", err.Error(), subjectString)})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error " + err.Error() + " converting " + subjectString})
 		return
 	}
 
@@ -62,7 +61,7 @@ func CreatePreviousSchoolResults(context *gin.Context) {
 	var scores []float64
 	err = json.Unmarshal([]byte(scoresString), &scores)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": fmt.Printf("Error '%s' converting '%s'\n", err.Error(), scoresString)})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error " + err.Error() + " converting " + scoresString})
 		return
 	}
 
