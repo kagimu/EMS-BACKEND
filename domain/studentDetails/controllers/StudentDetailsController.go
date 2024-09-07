@@ -141,7 +141,7 @@ func UploadStudentPhoto(c *gin.Context) {
 	userNumber := c.Request.Header["User-Number"][0]
 
 	if err := services.UploadStudentPhoto(studentNumber, userNumber, c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload student photo"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload student photo" + err.Error()})
 		return
 	}
 
