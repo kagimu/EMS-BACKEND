@@ -340,6 +340,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			studentDetails.POST("/:student_number", studentDetailsController.CreateStudentDetails)
 			studentDetails.PUT("/:student_number", studentDetailsController.EditStudentDetails)
+			studentDetails.POST("/upload-student-photo", studentDetailsController.UploadStudentPhoto)
 		}
 
 		timetable := main.Group("/timetable")
