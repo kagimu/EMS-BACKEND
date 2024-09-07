@@ -23,7 +23,7 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 	studentNumber := c.PostForm("student_number")
 	applicationNumber := c.PostForm("application_number")
 
-	areas := c.PostFormArray("assessment_area_number")
+	subjects := c.PostFormArray("subject")
 	scores := c.PostFormArray("score")
 
 	fileName, err := commons.HandleFileUpload(c, "attachment", "./fileRepo/uploads")
@@ -32,22 +32,22 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 		return
 	}
 
-	for i := range areas {
+	for i := range subjects {
 		score, _ := strconv.ParseFloat(scores[i], 64)
 
 		previousSchoolResultsNumber := uuid.NewV4().String()
 
-		savepreviousSchoolResults := models.PreviousSchoolResults{
-			Number:               previousSchoolResultsNumber,
-			StudentNumber:        studentNumber,
-			AssessmentAreaNumber: areas[i],
-			Score:                score,
-			Attachment:           fileName,
-			ApplicationNumber:    applicationNumber,
-			UserNumber:           user.Number,
+		previousSchoolResults := models.PreviousSchoolResults{
+			Number:            previousSchoolResultsNumber,
+			StudentNumber:     studentNumber,
+			Subject:           subjects[i],
+			Score:             score,
+			Attachment:        fileName,
+			ApplicationNumber: applicationNumber,
+			UserNumber:        user.Number,
 		}
 
-		if err := config.DB.Create(&savepreviousSchoolResults).Error; err != nil {
+		if err := config.DB.Create(&previousSchoolResults).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to create previous school results"})
 			return
 		}
@@ -79,13 +79,12 @@ func FetchPreviousSchoolResultsByStudent(c *gin.Context) {
 	var response []responses.PreviousSchoolResultResponses
 	for _, result := range previousSchoolResults {
 		response = append(response, responses.PreviousSchoolResultResponses{
-			Number:               result.Number,
-			StudentName:          result.Application.Student.SecondName + " " + result.Student.OtherName + " " + result.Student.Surname,
-			AssessmentAreaName:   result.AssessmentArea.Name,
-			Score:                result.Score,
-			Attachment:           result.Attachment,
-			ApplicationNumber:    result.ApplicationNumber,
-			AssessmentAreaNumber: result.AssessmentAreaNumber,
+			Number:             result.Number,
+			StudentName:        result.Application.Student.SecondName + " " + result.Student.OtherName + " " + result.Student.Surname,
+			AssessmentAreaName: result.Subject,
+			Score:              result.Score,
+			Attachment:         result.Attachment,
+			ApplicationNumber:  result.ApplicationNumber,
 		})
 	}
 
@@ -109,13 +108,12 @@ func FetchAllPreviousSchoolResults(c *gin.Context) {
 	var response []responses.PreviousSchoolResultResponses
 	for _, result := range previousSchoolResults {
 		response = append(response, responses.PreviousSchoolResultResponses{
-			Number:               result.Number,
-			StudentName:          result.Application.Student.SecondName + " " + result.Student.OtherName + " " + result.Student.Surname,
-			AssessmentAreaName:   result.AssessmentArea.Name,
-			Score:                result.Score,
-			Attachment:           result.Attachment,
-			ApplicationNumber:    result.ApplicationNumber,
-			AssessmentAreaNumber: result.AssessmentAreaNumber,
+			Number:             result.Number,
+			StudentName:        result.Application.Student.SecondName + " " + result.Student.OtherName + " " + result.Student.Surname,
+			AssessmentAreaName: result.Subject,
+			Score:              result.Score,
+			Attachment:         result.Attachment,
+			ApplicationNumber:  result.ApplicationNumber,
 		})
 	}
 
