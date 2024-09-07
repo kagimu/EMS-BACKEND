@@ -346,3 +346,25 @@ func FetchSchools(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_, "message": "Schools fetched successfully!"})
 }
+
+func UploadSchoolLogo(context *gin.Context) {
+
+	file, err := context.FormFile("logo")
+	schoolNumber := context.PostForm("school_number")
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "File not found!"})
+		return
+	}
+
+	if file.Size > 1024*1024*2 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "File size should not exceed 2MB"})
+		return
+	}
+
+	//check if the school exists
+	if err := services.UploadSchoolLogo(schoolNumber, context); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Logo uploaded successfully!"})
+}

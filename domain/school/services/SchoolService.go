@@ -4,7 +4,9 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -55,4 +57,31 @@ func RemoveSchool(schoolNumber string) error {
 	}
 
 	return nil
+}
+
+func UploadSchoolLogo(schoolNumber string, ctx *gin.Context) error {
+	repo := repositories.NewSchoolRepositoryImpl(config.DB)
+	school, err := repo.FindSchoolByNumber(schoolNumber)
+	if err != nil {
+		return errors.New("checking school existence: " + err.Error())
+	}
+
+	if school.Number == "" {
+		return errors.New("invalid school number")
+	}
+
+	logo, err := commons.HandleFileUpload(ctx, "logo", "school_logo")
+	if err != nil {
+		return errors.New("uploading school logo: " + err.Error())
+	}
+
+	school.Logo = logo
+
+	err = repo.UpdateSchool(school)
+	if err != nil {
+		return errors.New("updating school logo: " + err.Error())
+	}
+
+	return nil
+
 }

@@ -7,6 +7,38 @@ import (
 	"gorm.io/gorm"
 )
 
+type SchoolRepository interface {
+	FindSchoolByNumber(schoolNumber string) (schoolModel.School, error)
+	UpdateSchool(school schoolModel.School) error
+}
+
+type SchoolRepositoryImpl struct {
+	db *gorm.DB
+}
+
+func NewSchoolRepositoryImpl(db *gorm.DB) SchoolRepository {
+	return &SchoolRepositoryImpl{db}
+}
+
+func (s SchoolRepositoryImpl) FindSchoolByNumber(schoolNumber string) (schoolModel.School, error) {
+	var school schoolModel.School
+
+	if err := s.db.Where("number = ?", schoolNumber).First(&school).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return school, nil
+		}
+
+		return school, err
+	}
+
+	return school, nil
+}
+
+func (s SchoolRepositoryImpl) UpdateSchool(school schoolModel.School) error {
+	return s.db.Save(&school).Error
+}
+
 func GetSchoolByNumber(schoolNumber string, tx ...*gorm.DB) (schoolModel.School, error) {
 
 	db := config.DB
