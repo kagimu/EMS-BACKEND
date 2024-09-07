@@ -13,12 +13,15 @@ import (
 	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"html"
 	"net/http"
 	"strconv"
 )
+
+var subjectService = services.NewSubjectService()
 
 func NewSubject(context *gin.Context) {
 
@@ -480,4 +483,14 @@ func SubjectEdit(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": subjectDataInfo})
+}
+
+func FetchAllSubjects(context *gin.Context) {
+	subjects, err := subjectService.AllSubjects()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": subjects})
 }
