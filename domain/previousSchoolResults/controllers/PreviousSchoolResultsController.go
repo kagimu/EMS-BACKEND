@@ -2,80 +2,103 @@ package controllers
 
 import (
 	"errors"
-	"gorm.io/gorm"
-	"net/http"
-	"strconv"
-
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-json"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
+	"net/http"
 )
 
-func CreatePreviousSchoolResults(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+func CreatePreviousSchoolResults(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	studentNumber := c.PostForm("student_number")
-	applicationNumber := c.PostForm("application_number")
+	studentNumber := context.PostForm("student_number")
+	applicationNumber := context.PostForm("application_number")
 
 	if applicationNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide application number "})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide application number "})
 		return
 	}
 
 	if studentNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide student number "})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide student number "})
 		return
 	}
 
-	subjects := c.PostFormArray("subject")
-	scores := c.PostFormArray("score")
+	subjectString := context.PostForm("subject")
+	if subjectString == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide subjects data"})
+		return
+	}
+
+	var subjects []string
+	err = json.Unmarshal([]byte(subjectString), &subjects)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": fmt.Printf("Error '%s' converting '%s'\n", err.Error(), subjectString)})
+		return
+	}
 
 	if len(subjects) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Enter some subjects "})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Enter some subjects "})
+		return
+	}
+
+	scoresString := context.PostForm("score")
+	if scoresString == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide scores data"})
+		return
+	}
+
+	var scores []float64
+	err = json.Unmarshal([]byte(scoresString), &scores)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": fmt.Printf("Error '%s' converting '%s'\n", err.Error(), scoresString)})
 		return
 	}
 
 	if len(scores) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Enter subjects scores "})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Enter subjects scores "})
 		return
 	}
 
 	if len(scores) != len(subjects) {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Subjects should be equal to the scores "})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Subjects should be equal to the scores "})
 		return
 	}
 
-	fileName, err := commons.HandleFileUpload(c, "attachment", "./fileRepo/uploads")
+	fileName, err := commons.HandleFileUpload(context, "attachment", "./fileRepo/uploads")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
 		return
 	}
 
 	if fileName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "File did not upload successfully, tey again "})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "File did not upload successfully, tey again "})
 		return
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
-		for i := range subjects {
-			score, _ := strconv.ParseFloat(scores[i], 64)
+		for i, subject := range subjects {
+			//score, _ := strconv.ParseFloat(scores[i], 64)
 
 			previousSchoolResultsNumber := uuid.NewV4().String()
 
 			previousSchoolResults := models.PreviousSchoolResults{
 				Number:            previousSchoolResultsNumber,
 				StudentNumber:     studentNumber,
-				Subject:           subjects[i],
-				Score:             score,
+				Subject:           subject,
+				Score:             scores[i],
 				Attachment:        fileName,
 				ApplicationNumber: applicationNumber,
 				UserNumber:        user.Number,
@@ -90,11 +113,11 @@ func CreatePreviousSchoolResults(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Previous school results created successfully"})
+	context.JSON(http.StatusOK, gin.H{"message": "Previous school results created successfully"})
 }
 
 func FetchPreviousSchoolResultsByStudent(c *gin.Context) {
