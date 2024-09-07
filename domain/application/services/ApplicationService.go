@@ -10,9 +10,12 @@ import (
 	parentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/repositories"
 	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/services"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 )
+
+var previousSchoolResultsService = services.NewPreviousSchoolResultsService()
 
 func GetApplicationById(id string) (responses.ApplicationResponse, error) {
 
@@ -79,6 +82,10 @@ func BuildSingleApplicationResponse(application *models.Application, student *st
 	applicationResponse.Parent = createParentResponse(parent)
 	applicationResponse.PreviousSchools = previousSchoolsResponse
 
+	prevSchoolResults, _ := previousSchoolResultsService.PreviousSchoolResults(application.Number)
+
+	applicationResponse.PreviousSchoolResult = prevSchoolResults
+
 	return applicationResponse
 }
 
@@ -110,6 +117,7 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 	}
 
 	return responses.StudentResponse{
+		Lin:                       student.Lin,
 		CurriculumLevelNumber:     curriculumLevel.Number,
 		LevelNumber:               curriculumLevel.LevelNumber,
 		CampusCurriculumNumber:    campusLevel.CampusCurriculumNumber,
