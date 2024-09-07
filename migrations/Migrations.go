@@ -48,6 +48,7 @@ import (
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	staffModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails"
 	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
@@ -203,6 +204,7 @@ func Init() error {
 		&invoiceModel.BillableInvoice{},
 		&invoiceModel.EnrollmentInvoice{},
 		&serviceModel.CampusItem{},
+		&studentDetails.StudentPhoto{},
 	)
 
 	if err != nil {

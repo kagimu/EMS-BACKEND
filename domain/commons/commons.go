@@ -170,9 +170,9 @@ func HandleFileUpload(c *gin.Context, formFileKey string, savePath string) (stri
 	t := time.Now()
 	name := GeneratedFormattedUUID() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
 	extension := filepath.Ext(attachmentFile.Filename)
-	if extension != ".pdf" {
-		return " ", errors.New("file should be a .pdf")
-	}
+	//if extension != ".pdf" {
+	//	return " ", errors.New("file should be a .pdf")
+	//}
 
 	fileName := name + extension
 	filePath := savePath + fileName
