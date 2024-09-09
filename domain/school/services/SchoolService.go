@@ -70,7 +70,7 @@ func UploadSchoolLogo(schoolNumber string, ctx *gin.Context) error {
 		return errors.New("invalid school number")
 	}
 
-	logo, err := commons.HandleFileUpload(ctx, "logo", "school_logo")
+	logo, err := commons.HandleFileUpload(ctx, "logo", "school_logos")
 	if err != nil {
 		return errors.New("uploading school logo: " + err.Error())
 	}
