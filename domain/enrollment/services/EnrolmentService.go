@@ -91,7 +91,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		billType = constants.BillTypeNewApplication
 	}
 
-	billable, err := repositories4.GetDuplicatedBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, constants.StatusActive)
+	billable, err := repositories4.GetEnrollmentBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, constants.StatusActive)
 	if err != nil {
 		return errors.New("Checking billable error " + err.Error())
 	}

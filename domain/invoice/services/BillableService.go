@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
@@ -20,9 +21,45 @@ type BillableService interface {
 	NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error
 	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error)
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
+	GetBill(studentNumber, curriculumNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error)
 }
 
 type billableService struct {
+}
+
+func (billableService *billableService) GetBill(studentNumber, curriculumNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error) {
+
+	billableResponse := responses.DetailedBillableResponse{}
+
+	admission, err := admissionRepository.FindAdmissionByStudentNumber(studentNumber)
+	if err != nil {
+		return billableResponse, errors.New("Error checking for student admission " + err.Error())
+	}
+
+	if admission.Number == "" {
+		return billableResponse, errors.New("This student has no any admission! ")
+	}
+
+	billType := constants.BillTypeContinuing
+	if admission.Status == constants.StatusPending {
+		billType = constants.BillTypeNewApplication
+	}
+
+	campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+	if err != nil {
+		return billableResponse, err
+	}
+
+	billable, err := repositories.GetEnrollmentBill(studyPeriodNumber, classNumber, campusClass.Number, billType, modeOfStudyNumber, constants.StatusActive)
+	if err != nil {
+		return billableResponse, errors.New("Checking billable error " + err.Error())
+	}
+
+	if billable.Number == "" {
+		return billableResponse, errors.New("This enrollment can not be invoiced, check billable configurations ")
+	}
+
+	return createDetailedBillableResponse(billable)
 }
 
 func (billableService *billableService) BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error) {
@@ -111,7 +148,7 @@ func createBillResponse(billable models.Billable) responses.BillableResponse {
 }
 
 func (billableService *billableService) NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error {
-	billable, err := repositories.GetDuplicatedBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, constants.StatusActive)
+	billable, err := repositories.GetEnrollmentBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, constants.StatusActive)
 	if err != nil {
 		return errors.New("Checking duplicates error " + err.Error())
 	}
