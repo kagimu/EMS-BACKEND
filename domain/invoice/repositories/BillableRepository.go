@@ -71,7 +71,7 @@ func GetBillableByNumber(billableNumber string, trn ...*gorm.DB) (models.Billabl
 	return billable, nil
 }
 
-func GetDuplicatedBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, status string, trn ...*gorm.DB) (models.Billable, error) {
+func GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, status string, trn ...*gorm.DB) (models.Billable, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
