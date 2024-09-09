@@ -343,7 +343,7 @@ func FetchSchools(context *gin.Context) {
 			Name:             item.Name,
 			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
 			SchoolCurriculum: curriculum_,
-			Logo:             os.Getenv("BASE_URL") + "/school_logos/" + item.Logo,
+			Logo:             os.Getenv("BASE_URL") + "fileRepo/school_logos/" + item.Logo,
 		})
 	}
 
