@@ -117,3 +117,26 @@ func GetBill(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": billable})
 }
+
+func DeleteBillable(context *gin.Context) {
+
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	billableNumber := context.Param("billable_number")
+
+	if billableNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose bill to delete"})
+		return
+	}
+
+	err := billableService.DeleteBillable(billableNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Billable removed successfully"))
+}

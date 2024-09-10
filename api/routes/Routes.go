@@ -500,6 +500,7 @@ func SetupRoutes() *gin.Engine {
 			billable := invoices.Group("billable")
 			{
 				billable.POST("", invoiceController.CreateBillable)
+				billable.DELETE("/:billable_number", invoiceController.DeleteBillable)
 				billable.GET("", invoiceController.AllBillable)
 				billable.GET("details", invoiceController.BillableDetails)
 				billable.GET("determine", invoiceController.GetBill)
