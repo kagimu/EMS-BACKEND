@@ -5,7 +5,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
@@ -21,13 +20,13 @@ type BillableService interface {
 	NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error
 	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error)
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
-	GetBill(studentNumber, curriculumNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error)
+	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error)
 }
 
 type billableService struct {
 }
 
-func (billableService *billableService) GetBill(studentNumber, curriculumNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error) {
+func (billableService *billableService) GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error) {
 
 	billableResponse := responses.DetailedBillableResponse{}
 
@@ -45,12 +44,12 @@ func (billableService *billableService) GetBill(studentNumber, curriculumNumber,
 		billType = constants.BillTypeNewApplication
 	}
 
-	campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+	/*campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
 		return billableResponse, err
-	}
+	}*/
 
-	billable, err := repositories.GetEnrollmentBill(studyPeriodNumber, classNumber, campusClass.Number, billType, modeOfStudyNumber, constants.StatusActive)
+	billable, err := repositories.GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, constants.StatusActive)
 	if err != nil {
 		return billableResponse, errors.New("Checking billable error " + err.Error())
 	}
