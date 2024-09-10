@@ -47,7 +47,7 @@ func (r *ItemAssembly) Validate() error {
 
 	}
 
-	return nil
+	return r.MenuItemRequest.Validate()
 }
 
 func (r *UpdateItemAssembly) Validate() error {

@@ -553,6 +553,14 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 	stocking.UserNumber = currentUser
 	stocking.PurchaseUnitOfMeasureNumber = item.PurchaseUnitOfMeasureNumber
 
+	if item.PurchaseUnitOfMeasureNumber == "" {
+		stocking.PurchaseUnitOfMeasureNumber = item.UnitOfMeasureNumber
+	}
+
+	if stocking.PurchaseUnitOfMeasureNumber == "" {
+		return errors.New("Set a base unit of measure for " + item.Name)
+	}
+
 	err = cateringRepositories.SaveStocking(stocking, tx)
 	if err != nil {
 		return errors.New("error reducing stock: " + err.Error())
