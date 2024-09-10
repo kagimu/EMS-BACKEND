@@ -501,13 +501,13 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
 func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSessionItem models.FeedingSessionItem, mealRequest requests.MealRequest, newMeal models.Meal, groupUser models.FeedingGroupUser, currentUser string) error {
 
-	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(feedingSessionItem.MenuItemNumber)
+	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(feedingSessionItem.MenuItemNumber, tx)
 	if err != nil {
 		return err
 	}
 
 	if currentStock < feedingSessionItem.Quantity {
-		menu, _ := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber)
+		menu, _ := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber, tx)
 		return errors.New("not enough stock for '" + menu.Name + "'")
 	}
 
