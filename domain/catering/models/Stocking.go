@@ -19,5 +19,7 @@ type Stocking struct {
 	UserNumber                  string              `json:"user_number" gorm:"size:36;index;not null"`
 	User                        authModels.User     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	PurchaseUnitOfMeasureNumber string              `json:"purchase_unit_of_measure_number" gorm:"size:36;"`
-	UnitOfMeasure               UnitOfMeasure       `gorm:"foreignKey:PurchaseUnitOfMeasureNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	PurchaseUnitOfMeasure       UnitOfMeasure       `gorm:"foreignKey:PurchaseUnitOfMeasureNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	UnitOfMeasureNumber         string              `json:"unit_of_measure_number" gorm:"size:36"`
+	UnitOfMeasure               UnitOfMeasure       `gorm:"foreignKey:UnitOfMeasureNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }

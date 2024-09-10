@@ -552,6 +552,7 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 	stocking.CampusNumber = groupUser.CampusNumber
 	stocking.UserNumber = currentUser
 	stocking.PurchaseUnitOfMeasureNumber = item.PurchaseUnitOfMeasureNumber
+	stocking.UnitOfMeasureNumber = item.UnitOfMeasureNumber
 
 	if item.PurchaseUnitOfMeasureNumber == "" {
 		stocking.PurchaseUnitOfMeasureNumber = item.UnitOfMeasureNumber
