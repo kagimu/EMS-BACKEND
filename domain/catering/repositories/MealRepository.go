@@ -15,16 +15,7 @@ func SaveMeal(meal models.Meal, tx ...*gorm.DB) error {
 		db = tx[0]
 	}
 
-	if err := db.Save(&meal).Error; err != nil {
-
-		if err = db.Rollback().Error; err != nil {
-			return err
-		}
-
-		return err
-	}
-
-	return nil
+	return db.Save(&meal).Error
 }
 
 func GetMealByMealNumberAndDateAndUserNumber(mealCourseNumber string, date time.Time, userNumber string, tx ...*gorm.DB) (models.Meal, error) {
