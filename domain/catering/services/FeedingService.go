@@ -541,14 +541,17 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 	if stocking.Number == "" {
 		stocking.Number = uuid.NewV4().String()
 		stocking.MenuItemNumber = feedingSessionItem.MenuItemNumber
-		stocking.Quantity = feedingSessionItem.Quantity * -1
-		stocking.CampusNumber = groupUser.CampusNumber
-		stocking.UserNumber = currentUser
-	} else {
-		stocking.Quantity = feedingSessionItem.Quantity * -1
-		stocking.CampusNumber = groupUser.CampusNumber
-		stocking.UserNumber = currentUser
 	}
+
+	item, err := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber, tx)
+	if err != nil {
+		return errors.New("Error checking item " + err.Error())
+	}
+
+	stocking.Quantity = feedingSessionItem.Quantity * -1
+	stocking.CampusNumber = groupUser.CampusNumber
+	stocking.UserNumber = currentUser
+	stocking.PurchaseUnitOfMeasureNumber = item.PurchaseUnitOfMeasureNumber
 
 	err = cateringRepositories.SaveStocking(stocking, tx)
 	if err != nil {
