@@ -21,13 +21,13 @@ type BillableService interface {
 	NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error
 	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error)
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
-	GetBill(studentNumber, curriculumNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error)
+	GetBill(studentNumber, curriculumNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error)
 }
 
 type billableService struct {
 }
 
-func (billableService *billableService) GetBill(studentNumber, curriculumNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error) {
+func (billableService *billableService) GetBill(studentNumber, curriculumNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error) {
 
 	billableResponse := responses.DetailedBillableResponse{}
 
@@ -45,7 +45,7 @@ func (billableService *billableService) GetBill(studentNumber, curriculumNumber,
 		billType = constants.BillTypeNewApplication
 	}
 
-	campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+	campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
 		return billableResponse, err
 	}
