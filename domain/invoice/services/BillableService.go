@@ -21,9 +21,42 @@ type BillableService interface {
 	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error)
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
 	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error)
+	DeleteBillable(billableNumber string) error
 }
 
 type billableService struct {
+}
+
+func (billableService *billableService) DeleteBillable(billableNumber string) error {
+	bill, err := repositories.GetBillableByNumber(billableNumber)
+	if err != nil {
+		return errors.New("Checking billable by number error " + err.Error())
+	}
+
+	if bill.Number == "" {
+		return errors.New("Invalid billable number ")
+	}
+
+	billableInvoice, err := repositories.GetBillableInvoiceByBillableNumber(billableNumber)
+	if err != nil {
+		return errors.New("Checking if bill has ever created an invoice error " + err.Error())
+	}
+
+	if billableInvoice.InvoiceNumber != "" {
+		return errors.New("You can not remove this bill, but you can make it Inactive ")
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		err := repositories.RemoveBillable(bill, tx)
+
+		if err != nil {
+			return errors.New("Removing bill error " + err.Error())
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (billableService *billableService) GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error) {
@@ -43,11 +76,6 @@ func (billableService *billableService) GetBill(studentNumber, campusNumber, cla
 	if admission.Status == constants.StatusPending {
 		billType = constants.BillTypeNewApplication
 	}
-
-	/*campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
-	if err != nil {
-		return billableResponse, err
-	}*/
 
 	billable, err := repositories.GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, constants.StatusActive)
 	if err != nil {
