@@ -2,11 +2,17 @@ package repositories
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"gorm.io/gorm"
 )
 
-func GetMealStockByMealNumberAndMenuItemNumber(db *gorm.DB, mealNumber string, menuItemNumber string) (models.Stocking, error) {
+func GetMealStockByMealNumberAndMenuItemNumber(mealNumber, menuItemNumber string, txn ...*gorm.DB) (models.Stocking, error) {
+
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
 
 	var stocking models.Stocking
 
@@ -25,23 +31,22 @@ func GetMealStockByMealNumberAndMenuItemNumber(db *gorm.DB, mealNumber string, m
 	return stocking, nil
 }
 
-func SaveMealStocking(tx *gorm.DB, stock models.MealStock) error {
+func SaveMealStocking(stock models.MealStock, tx ...*gorm.DB) error {
 
-	if err := tx.Save(&stock).Error; err != nil {
-
-		if err = tx.Rollback().Error; err != nil {
-			return err
-		}
-
-		return err
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
 	}
 
-	return nil
+	return db.Save(&stock).Error
 }
 
-func GetMealStockingByMealNumberAndStockingNumber(db *gorm.DB, mealNumber string, stockingNumber string) (models.MealStock, error) {
+func GetMealStockingByMealNumberAndStockingNumber(mealNumber, stockingNumber string, txn ...*gorm.DB) (models.MealStock, error) {
 
-	//db := config.DB
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
 
 	var mealStock models.MealStock
 

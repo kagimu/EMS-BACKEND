@@ -8,18 +8,14 @@ import (
 	"time"
 )
 
-func SaveStocking(tx *gorm.DB, stocking models.Stocking) error {
+func SaveStocking(stocking models.Stocking, tx ...*gorm.DB) error {
 
-	if err := tx.Save(&stocking).Error; err != nil {
-
-		if err = tx.Rollback().Error; err != nil {
-			return err
-		}
-
-		return err
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
 	}
 
-	return nil
+	return db.Save(&stocking).Error
 }
 
 func GetMealStockingByMealNumberAndDateUserNumber(mealCourseNumber string, date time.Time, userNumber string, menuItemNumber string) (models.Stocking, error) {
