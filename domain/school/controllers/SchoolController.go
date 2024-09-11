@@ -305,7 +305,7 @@ func FetchSchoolInfo(context *gin.Context) {
 		Name:             schools.Name,
 		CommencementDate: schools.CommencementDate.Format("2006-01-02"),
 		SchoolCurriculum: curriculum_,
-		Logo:             os.Getenv("BASE_URL") + "/school_logos/" + schools.Logo,
+		Logo:             os.Getenv("BASE_URL") + "attachments/download/" + schools.Logo,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
@@ -343,7 +343,7 @@ func FetchSchools(context *gin.Context) {
 			Name:             item.Name,
 			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
 			SchoolCurriculum: curriculum_,
-			Logo:             os.Getenv("BASE_URL") + "fileRepo/school_logos/" + item.Logo,
+			Logo:             os.Getenv("BASE_URL") + "attachments/download/" + item.Logo,
 		})
 	}
 

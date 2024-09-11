@@ -3,8 +3,8 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -70,7 +70,7 @@ func UploadSchoolLogo(schoolNumber string, ctx *gin.Context) error {
 		return errors.New("invalid school number")
 	}
 
-	logo, err := commons.HandleFileUpload(ctx, "logo", "school_logos")
+	logo, err := services.UploadAttachment(ctx, "logo") // commons.HandleFileUpload(ctx, "logo", "school_logos")
 	if err != nil {
 		return errors.New("uploading school logo: " + err.Error())
 	}
@@ -84,4 +84,18 @@ func UploadSchoolLogo(schoolNumber string, ctx *gin.Context) error {
 
 	return nil
 
+}
+
+func GetLatestSchoolLogo(schoolNumber string) (string, error) {
+	repo := repositories.NewSchoolRepositoryImpl(config.DB)
+	school, err := repo.FindSchoolByNumber(schoolNumber)
+	if err != nil {
+		return "", errors.New("checking school existence: " + err.Error())
+	}
+
+	if school.Number == "" {
+		return "", errors.New("invalid school number")
+	}
+
+	return school.Logo, nil
 }
