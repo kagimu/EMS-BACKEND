@@ -9,6 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
@@ -268,7 +269,7 @@ func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate tim
 
 	projectionCalenderResponse.ItemsSummary = summary
 
-	projectionCalenderResponse.TotalCost = totalCost
+	projectionCalenderResponse.TotalCost = commons.RoundFloat(totalCost, 2)
 
 	return projectionCalenderResponse, nil
 }
