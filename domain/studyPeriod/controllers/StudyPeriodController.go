@@ -337,13 +337,19 @@ func AllStudyPeriods(context *gin.Context) {
 	calendarEventNumber := context.Query("calendar_event_number")
 	studyPeriodNameNumber := context.Query("study_period_name_number")
 	classNumber := context.Query("class_number")
+	schoolNumber := context.Query("school_number")
+
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school"})
+		return
+	}
 
 	if academicYearNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the academic year"})
 		return
 	}
 
-	all, err := studyPeriodService.FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber)
+	all, err := studyPeriodService.FindAllStudyPeriods(academicYearNumber, calendarEventNumber, studyPeriodNameNumber, classNumber, schoolNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

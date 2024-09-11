@@ -75,3 +75,68 @@ func BillableDetails(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": billable})
 }
+
+func GetBill(context *gin.Context) {
+	studentNumber := context.Query("student_number")
+	studyPeriodNumber := context.Query("study_period_number")
+	classNumber := context.Query("class_number")
+	modeOfStudyNumber := context.Query("mode_of_study_number")
+	//curriculumNumber := context.Query("curriculum_number")
+	//campusCurriculumNumber := context.Query("campus_curriculum_number")
+	campusNumber := context.Query("campus_number")
+	if studentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose student"})
+		return
+	}
+
+	if studyPeriodNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose study period"})
+		return
+	}
+
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose class"})
+		return
+	}
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose campus"})
+		return
+	}
+
+	if modeOfStudyNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose mode of study"})
+		return
+	}
+
+	billable, err := billableService.GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": billable})
+}
+
+func DeleteBillable(context *gin.Context) {
+
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	billableNumber := context.Param("billable_number")
+
+	if billableNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose bill to delete"})
+		return
+	}
+
+	err := billableService.DeleteBillable(billableNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Billable removed successfully"))
+}

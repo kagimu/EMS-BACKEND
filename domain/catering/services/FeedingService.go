@@ -482,32 +482,30 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		return errors.New("Fetching session items error: " + err.Error())
 	}
 
-	tx := config.DB.Begin()
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
-	for _, sessionItem := range sessionItems {
-		err = processSingleItem(tx, day, formatDate, sessionItem, mealRequest, newMeal, groupUser, currentUser)
-		if err != nil {
-			tx.Rollback()
-			return errors.New("marking meal failed, try again: " + err.Error())
+		for _, sessionItem := range sessionItems {
+			err = processSingleItem(tx, day, formatDate, sessionItem, mealRequest, newMeal, groupUser, currentUser)
+			if err != nil {
+				return err
+			}
 		}
-	}
 
-	if err = tx.Commit().Error; err != nil {
-		return errors.New("Commit error: " + err.Error())
-	}
+		return nil
+	})
 
-	return nil
+	return err
 }
 
 func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSessionItem models.FeedingSessionItem, mealRequest requests.MealRequest, newMeal models.Meal, groupUser models.FeedingGroupUser, currentUser string) error {
 
-	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(feedingSessionItem.MenuItemNumber)
+	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(feedingSessionItem.MenuItemNumber, tx)
 	if err != nil {
 		return err
 	}
 
 	if currentStock < feedingSessionItem.Quantity {
-		menu, _ := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber)
+		menu, _ := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber, tx)
 		return errors.New("not enough stock for '" + menu.Name + "'")
 	}
 
@@ -535,7 +533,7 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 		return errors.New("error creating meal: " + err.Error())
 	}
 
-	stocking, err := cateringRepositories.GetMealStockByMealNumberAndMenuItemNumber(tx, newMeal.Number, feedingSessionItem.MenuItemNumber)
+	stocking, err := cateringRepositories.GetMealStockByMealNumberAndMenuItemNumber(newMeal.Number, feedingSessionItem.MenuItemNumber, tx)
 	if err != nil {
 		return err
 	}
@@ -543,21 +541,33 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 	if stocking.Number == "" {
 		stocking.Number = uuid.NewV4().String()
 		stocking.MenuItemNumber = feedingSessionItem.MenuItemNumber
-		stocking.Quantity = feedingSessionItem.Quantity * -1
-		stocking.CampusNumber = groupUser.CampusNumber
-		stocking.UserNumber = currentUser
-	} else {
-		stocking.Quantity = feedingSessionItem.Quantity * -1
-		stocking.CampusNumber = groupUser.CampusNumber
-		stocking.UserNumber = currentUser
 	}
 
-	err = cateringRepositories.SaveStocking(tx, stocking)
+	item, err := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber, tx)
+	if err != nil {
+		return errors.New("Error checking item " + err.Error())
+	}
+
+	stocking.Quantity = feedingSessionItem.Quantity * -1
+	stocking.CampusNumber = groupUser.CampusNumber
+	stocking.UserNumber = currentUser
+	stocking.PurchaseUnitOfMeasureNumber = item.PurchaseUnitOfMeasureNumber
+	stocking.UnitOfMeasureNumber = item.UnitOfMeasureNumber
+
+	if item.PurchaseUnitOfMeasureNumber == "" {
+		stocking.PurchaseUnitOfMeasureNumber = item.UnitOfMeasureNumber
+	}
+
+	if stocking.PurchaseUnitOfMeasureNumber == "" {
+		return errors.New("Set a base unit of measure for " + item.Name)
+	}
+
+	err = cateringRepositories.SaveStocking(stocking, tx)
 	if err != nil {
 		return errors.New("error reducing stock: " + err.Error())
 	}
 
-	mealStocking, err := cateringRepositories.GetMealStockingByMealNumberAndStockingNumber(tx, newMeal.Number, stocking.Number)
+	mealStocking, err := cateringRepositories.GetMealStockingByMealNumberAndStockingNumber(newMeal.Number, stocking.Number, tx)
 	if err != nil {
 		return err
 	}
@@ -567,7 +577,7 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 		mealStocking.StockingNumber = stocking.Number
 	}
 
-	err = cateringRepositories.SaveMealStocking(tx, mealStocking)
+	err = cateringRepositories.SaveMealStocking(mealStocking, tx)
 	if err != nil {
 		return errors.New("error mapping stock with meal taken: " + err.Error())
 	}
