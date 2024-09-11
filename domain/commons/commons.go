@@ -175,7 +175,7 @@ func HandleFileUpload(c *gin.Context, formFileKey string, savePath string) (stri
 	//}
 
 	fileName := name + extension
-	filePath := "fileRepo/" + savePath + "/" + fileName
+	filePath := "/fileRepo/" + savePath + "/" + fileName
 
 	if err := c.SaveUploadedFile(attachmentFile, filePath); err != nil {
 		return "", err
