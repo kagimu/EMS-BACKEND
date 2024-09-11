@@ -58,7 +58,7 @@ func GetAttachmentByNumber(number string) (responses.AttachmentResponse, error) 
 		return resp, err
 	}
 
-	resp.FilePath = "fileRepo/attachments/" + attachment.AttachmentName
+	resp.FilePath = "/fileRepo/attachments/" + attachment.AttachmentName
 	resp.Extension = attachment.AttachmentType
 	resp.FileName = attachment.AttachmentName
 
