@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 func DownloadAttachment(context *gin.Context) {
@@ -15,9 +15,9 @@ func DownloadAttachment(context *gin.Context) {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "File not found " + err.Error()})
 		return
 	}
-	filePath := "fileRepo/attachments/" + fileDetails.FileName
+	filePath := "/fileRepo/attachments/" + fileDetails.FileName
 	// get bytes from file
-	byteFile, err := ioutil.ReadFile(filePath)
+	byteFile, err := os.ReadFile(filePath)
 	if err != nil {
 		//fmt.Println("Internal server error")
 		fmt.Println(err)
