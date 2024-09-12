@@ -12,7 +12,7 @@ func DownloadAttachment(context *gin.Context) {
 	fileName := context.Param("attachment_number")
 	fileDetails, err := services.GetAttachmentByNumber(fileName)
 	if err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "File not found"})
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "File not found " + err.Error()})
 		return
 	}
 	filePath := "fileRepo/attachments/" + fileDetails.FileName
