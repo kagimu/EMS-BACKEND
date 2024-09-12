@@ -29,7 +29,7 @@ func UploadAttachment(c *gin.Context, formKey string) (string, error) {
 	extension := filepath.Ext(attachmentFile.Filename)
 
 	fileName := name + extension
-	filePath := "fileRepo/attachments/" + fileName
+	filePath := "/fileRepo/attachments/" + fileName
 
 	if err := c.SaveUploadedFile(attachmentFile, filePath); err != nil {
 		return "", err
