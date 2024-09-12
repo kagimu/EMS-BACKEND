@@ -300,12 +300,15 @@ func FetchSchoolInfo(context *gin.Context) {
 		})
 	}
 
+	if schools.Logo != "" {
+		schools.Logo = os.Getenv("BASE_URL") + "attachments/download/" + schools.Logo
+	}
 	schools_ := responses.SchoolResponseInfo{
 		Number:           schools.Number,
 		Name:             schools.Name,
 		CommencementDate: schools.CommencementDate.Format("2006-01-02"),
 		SchoolCurriculum: curriculum_,
-		Logo:             os.Getenv("BASE_URL") + "attachments/download/" + schools.Logo,
+		Logo:             schools.Logo,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
@@ -337,13 +340,16 @@ func FetchSchools(context *gin.Context) {
 				Number: schoolCurr.Number,
 			})
 		}
+		if item.Logo != "" {
+			item.Logo = os.Getenv("BASE_URL") + "attachments/download/" + item.Logo
+		}
 
 		schools_ = append(schools_, responses.SchoolResponseInfo{
 			Number:           item.Number,
 			Name:             item.Name,
 			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
 			SchoolCurriculum: curriculum_,
-			Logo:             os.Getenv("BASE_URL") + "attachments/download/" + item.Logo,
+			Logo:             item.Logo,
 		})
 	}
 
