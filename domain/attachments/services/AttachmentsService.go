@@ -36,9 +36,10 @@ func UploadAttachment(c *gin.Context, formKey string) (string, error) {
 	}
 
 	repo := repository.NewAttachmentRepositoryImpl(config.DB)
+	attachmentNumber := uuid.NewV4().String()
 	err = repo.CreateAttachment(&models.Attachment{
 		AttachmentName: fileName,
-		Number:         uuid.NewV4().String(),
+		Number:         attachmentNumber,
 		AttachmentType: extension,
 	})
 
@@ -46,7 +47,7 @@ func UploadAttachment(c *gin.Context, formKey string) (string, error) {
 		return "", err
 	}
 
-	return fileName, nil
+	return attachmentNumber, nil
 
 }
 
