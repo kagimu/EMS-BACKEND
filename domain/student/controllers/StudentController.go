@@ -9,6 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
+	"os"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 
@@ -262,6 +263,10 @@ func FetchStudentByNumber(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 		}
 		return
+	}
+
+	if student.Photo != "" {
+		student.Photo = os.Getenv("BASE_URL") + "attachments/download/" + student.Photo
 	}
 
 	var detailedStudent = responses.DetailedStudentProfile{}
