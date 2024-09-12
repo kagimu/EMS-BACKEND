@@ -10,6 +10,7 @@ import (
 	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	gradesModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	cateringModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -205,6 +206,7 @@ func Init() error {
 		&invoiceModel.EnrollmentInvoice{},
 		&serviceModel.CampusItem{},
 		&studentDetails.StudentPhoto{},
+		&models3.Attachment{},
 	)
 
 	if err != nil {
