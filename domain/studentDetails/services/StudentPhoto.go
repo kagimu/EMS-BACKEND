@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/repository"
 	"github.com/gin-gonic/gin"
@@ -11,7 +11,10 @@ import (
 func UploadStudentPhoto(studentNumber string, userNumber string, ctx *gin.Context) error {
 	repo := repository.NewStudentPhotoRepo(config.DB)
 
-	photo, err := commons.HandleFileUpload(ctx, "photo", "student_photos")
+	photo, err := services.UploadAttachment(ctx, "photo")
+	if err != nil {
+		return err
+	}
 
 	studentPhoto := studentDetails.StudentPhoto{
 		StudentNumber: studentNumber,
