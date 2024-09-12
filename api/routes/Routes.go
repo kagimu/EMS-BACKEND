@@ -883,11 +883,10 @@ func SetupRoutes() *gin.Engine {
 			landingPage.GET("all", controllers2.GetLandingPage)
 		}
 
-		attachments := main.Group("attachments")
-		{
-			attachments.GET("download/:attachment_number", controller.DownloadAttachment)
-		}
-
+	}
+	attachments := router.Group("attachments")
+	{
+		attachments.GET("download/:attachment_number", controller.DownloadAttachment)
 	}
 
 	return router
