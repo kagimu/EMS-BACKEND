@@ -227,6 +227,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 			StudentSecondName:      enrollment.Student.SecondName,
 			StudentOtherName:       enrollment.Student.OtherName,
 			StudentNumber:          enrollment.Student.Number,
+			Photo:                  enrollment.Student.Photo,
 			Number:                 enrollment.Number,
 			School:                 enrollment.School.Name,
 			Campus:                 enrollment.Campus.Name,
