@@ -13,6 +13,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/services"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"os"
 )
 
 var previousSchoolResultsService = services.NewPreviousSchoolResultsService()
@@ -116,6 +117,9 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 		return responses.StudentResponse{}
 	}
 
+	if student.Photo != "" {
+		student.Photo = os.Getenv("BASE_URL") + "attachments/download/" + student.Photo
+	}
 	return responses.StudentResponse{
 		Lin:                       student.Lin,
 		CurriculumLevelNumber:     curriculumLevel.Number,

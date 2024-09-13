@@ -10,6 +10,7 @@ import (
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"gorm.io/gorm"
 	"net/http"
+	"os"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 
@@ -214,6 +215,10 @@ func FetchEnrolledStudents(c *gin.Context) {
 		curriculumLevel, _ := repositories4.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
 
 		studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
+
+		if enrollment.Student.Photo != "" {
+			enrollment.Student.Photo = os.Getenv("BASE_URL") + "attachments/download/" + enrollment.Student.Photo
+		}
 
 		students = append(students, responses.Enrollment{
 			LevelNumber:            curriculumLevel.LevelNumber,
