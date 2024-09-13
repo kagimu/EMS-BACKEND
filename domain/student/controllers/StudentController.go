@@ -278,6 +278,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	detailedStudent.ADNStatus = student.ADNStatus
 	detailedStudent.DateOfBirth = student.DateOfBirth
 	detailedStudent.ReasonForChoosingSchool = student.ReasonForChoosingSchool
+	detailedStudent.Photo = student.Photo
 
 	// find the latest enrollment for the student
 	var enrollment enrollmentModel.Enrollment
