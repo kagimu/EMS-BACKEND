@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 	"math"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -238,4 +239,11 @@ func ConvertStringToDate(dateString string) (time.Time, error) {
 	}
 
 	return dueDate, nil
+}
+
+func GenerateDownloadPath(number string) string {
+	if number == "" {
+		return ""
+	}
+	return os.Getenv("BASE_URL") + "attachments/download/" + number
 }

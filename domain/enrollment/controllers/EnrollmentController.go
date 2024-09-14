@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
@@ -10,9 +11,6 @@ import (
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"gorm.io/gorm"
 	"net/http"
-	"os"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -216,10 +214,6 @@ func FetchEnrolledStudents(c *gin.Context) {
 
 		studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
 
-		if enrollment.Student.Photo != "" {
-			enrollment.Student.Photo = os.Getenv("BASE_URL") + "attachments/download/" + enrollment.Student.Photo
-		}
-
 		students = append(students, responses.Enrollment{
 			LevelNumber:            curriculumLevel.LevelNumber,
 			CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
@@ -227,7 +221,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 			StudentSecondName:      enrollment.Student.SecondName,
 			StudentOtherName:       enrollment.Student.OtherName,
 			StudentNumber:          enrollment.Student.Number,
-			Photo:                  enrollment.Student.Photo,
+			Photo:                  commons.GenerateDownloadPath(enrollment.Student.Photo),
 			Number:                 enrollment.Number,
 			School:                 enrollment.School.Name,
 			Campus:                 enrollment.Campus.Name,

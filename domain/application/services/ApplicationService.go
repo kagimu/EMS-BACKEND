@@ -7,13 +7,13 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	parentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/repositories"
 	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/services"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
-	"os"
 )
 
 var previousSchoolResultsService = services.NewPreviousSchoolResultsService()
@@ -117,9 +117,6 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 		return responses.StudentResponse{}
 	}
 
-	if student.Photo != "" {
-		student.Photo = os.Getenv("BASE_URL") + "attachments/download/" + student.Photo
-	}
 	return responses.StudentResponse{
 		Lin:                       student.Lin,
 		CurriculumLevelNumber:     curriculumLevel.Number,
@@ -134,7 +131,7 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 		APN:                       student.APN,
 		APNStatus:                 student.APNStatus,
 		ADNStatus:                 student.ADNStatus,
-		Photo:                     student.Photo,
+		Photo:                     commons.GenerateDownloadPath(student.Photo),
 		AcademicReport:            student.AcademicReport,
 		Status:                    student.Status,
 		SourceOfSchoolInfo:        student.SourceOfSchoolInfo,

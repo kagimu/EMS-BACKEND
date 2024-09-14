@@ -20,10 +20,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"os"
 	"strconv"
 
 	"net/http"
@@ -301,19 +301,13 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 	for _, reportSummary := range reportSummaries {
 
-		var photo string
-
-		if reportSummary.Student.Photo != "" {
-			photo = os.Getenv("BASE_URL") + "attachments/download/" + reportSummary.Student.Photo
-		}
-
 		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
 
 		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
 			Number:        reportSummary.Number,
 			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
 			StudentNumber: reportSummary.StudentNumber,
-			Photo:         photo,
+			Photo:         commons.GenerateDownloadPath(reportSummary.Student.Photo),
 			Grade:         reportSummary.Grade,
 			Stream:        reportSummary.Stream.Name,
 			StudyPeriod:   studyPeriodName.Name,
@@ -448,7 +442,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		Stream:              "",
 		Class:               campusClass.ClassName,
 		ClassAbbreviation:   campusClass.ClassAbbreviation,
-		School:              campusClass.Campus.School,
+		School:              services4.BuildLeanSchoolResponse(&campusClass.Campus.School),
 		Campus:              campusClass.Campus,
 		StudyPeriod:         studyPeriodName.Name,
 		ReportColumns:       rcs,

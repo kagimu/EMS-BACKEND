@@ -5,13 +5,11 @@ import (
 	"fmt"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
-	"os"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -265,10 +263,6 @@ func FetchStudentByNumber(c *gin.Context) {
 		return
 	}
 
-	if student.Photo != "" {
-		student.Photo = os.Getenv("BASE_URL") + "attachments/download/" + student.Photo
-	}
-
 	var detailedStudent = responses.DetailedStudentProfile{}
 
 	detailedStudent.Surname = student.Surname
@@ -278,7 +272,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	detailedStudent.ADNStatus = student.ADNStatus
 	detailedStudent.DateOfBirth = student.DateOfBirth
 	detailedStudent.ReasonForChoosingSchool = student.ReasonForChoosingSchool
-	detailedStudent.Photo = student.Photo
+	detailedStudent.Photo = commons.GenerateDownloadPath(student.Photo)
 
 	// find the latest enrollment for the student
 	var enrollment enrollmentModel.Enrollment
