@@ -118,7 +118,7 @@ func CancelPayment(context *gin.Context) {
 
 func DeletePayment(context *gin.Context) {
 
-	_, err := commons.GetUserFromHeader(context)
+	user, err := commons.GetUserFromHeader(context)
 	if err != nil {
 		context.JSON(http.StatusUnauthorized, gin.H{"Message": "Unauthorized"})
 		return
@@ -130,7 +130,7 @@ func DeletePayment(context *gin.Context) {
 		return
 	}
 
-	err = services.DeletePayment(paymentNumber)
+	err = services.DeletePayment(paymentNumber, user.Number)
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))

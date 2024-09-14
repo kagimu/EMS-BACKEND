@@ -76,31 +76,55 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 		return errors.New("no admission details found")
 	}
 
-	newInvoice := models.Invoice{
+	invoiceTotal := newInvoiceTotalAmount(payload.Items)
+
+	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, currentUserNumber)
+
+	statement := models.Statement{
 		Number:        uuid.NewV4().String(),
-		DueDate:       dueDate,
-		Description:   payload.Description,
-		UserNumber:    userNumber,
-		RefNumber:     invoiceNumber,
-		AddedByNumber: currentUserNumber,
+		Amount:        invoiceTotal,
+		UserNumber:    payload.UserNumber,
+		Description:   "New bill " + invoiceNumber,
 		SchoolNumber:  admission.SchoolNumber,
 		CampusNumber:  admission.CampusNumber,
+		RefNumber:     invoiceNumber,
+		Balance:       balance,
+		Type:          "Out",
+		AddedByNumber: currentUserNumber,
 	}
 
-	if err = invoiceRepositories.SaveInvoice(newInvoice); err != nil {
-		return err
+	newInvoice := models.Invoice{
+		StatementNumber: statement.Number,
+		Number:          uuid.NewV4().String(),
+		DueDate:         dueDate,
+		Description:     payload.Description,
+		RefNumber:       invoiceNumber,
 	}
 
-	for _, invoiceItem := range payload.Items {
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
-		if err = doSaveInvoiceItem(invoiceItem, newInvoice.Number); err != nil {
-			return err
+		err := invoiceRepositories.SaveStatement(statement, tx)
+		if err != nil {
+			return errors.New("Error creating new bill statement " + err.Error())
 		}
 
-	}
+		err = invoiceRepositories.SaveInvoice(newInvoice, tx)
+		if err != nil {
+			return errors.New("Error creating new bill " + err.Error())
+		}
 
-	return nil
+		for _, invoiceItem := range payload.Items {
 
+			if err = doSaveInvoiceItem(invoiceItem, newInvoice.Number, tx); err != nil {
+				return err
+			}
+
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, currentUserNumber string, txn *gorm.DB) (models.Invoice, error) {
@@ -125,14 +149,10 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	newInvoice := models.Invoice{
-		Number:        uuid.NewV4().String(),
-		DueDate:       dueDate,
-		Description:   billable.Description,
-		UserNumber:    student.UserNumber,
-		RefNumber:     invoiceNumber,
-		AddedByNumber: currentUserNumber,
-		SchoolNumber:  billable.SchoolNumber,
-		CampusNumber:  billable.CampusNumber,
+		Number:      uuid.NewV4().String(),
+		DueDate:     dueDate,
+		Description: billable.Description,
+		RefNumber:   invoiceNumber,
 	}
 
 	if err = invoiceRepositories.SaveInvoice(newInvoice, txn); err != nil {
@@ -159,9 +179,9 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	return newInvoice, err
 }
 
-func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string) error {
+func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string, tx *gorm.DB) error {
 
-	item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber)
+	item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber, tx)
 
 	if err != nil {
 		return err
@@ -171,7 +191,7 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 		return errors.New("invalid item number")
 	}
 
-	if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoiceNumber, invoiceItem.ItemNumber); err != nil || checkItemOnInvoice.Number != "" {
+	if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoiceNumber, invoiceItem.ItemNumber, tx); err != nil || checkItemOnInvoice.Number != "" {
 
 		if err != nil {
 			return err
@@ -189,11 +209,21 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 		ActualUnitPrice: item.Cost,
 	}
 
-	if _, err := invoiceRepositories.SaveInvoiceItem(newInvoiceItem); err != nil {
+	if _, err := invoiceRepositories.SaveInvoiceItem(newInvoiceItem, tx); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func newInvoiceTotalAmount(invoiceItem []requests.InvoiceItemRequest) float64 {
+	var total float64
+
+	for _, item := range invoiceItem {
+		total = total + item.Quantity*item.UnitCost
+	}
+
+	return total
 }
 
 func doSaveBillableInvoiceItem(invoiceItem models.BillableItem, newInvoiceNumber string, txn *gorm.DB) error {
@@ -398,7 +428,7 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 	return invoiceResponse, nil
 }
 
-func createPaymentResponse(payment models.InvoicePayment, user authModel.User, invoice models.Invoice) responses.InvoicePaymentResponse {
+func createPaymentResponse(payment models.Transaction, user authModel.User, invoice models.Invoice) responses.InvoicePaymentResponse {
 	paymentResponse := responses.InvoicePaymentResponse{
 		Amount:           payment.Amount,
 		InvoiceRefNumber: invoice.RefNumber,
@@ -428,7 +458,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
 	}
 
-	saveInvoicePayment := models.InvoicePayment{
+	saveInvoicePayment := models.Transaction{
 		Number:        uuid.NewV4().String(),
 		Amount:        invoicePaymentRequest.Amount,
 		Date:          dateTimePaid,
@@ -436,7 +466,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		UserNumber:    currentUserNumber,
 	}
 
-	if _, err := invoiceRepositories.SavePayment(saveInvoicePayment); err != nil {
+	if _, err := invoiceRepositories.SaveTransaction(saveInvoicePayment); err != nil {
 		return minInvoiceResponse, err
 	}
 
@@ -590,7 +620,7 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 
 func CancelPayment(paymentNumber string, currentUser string) error {
 
-	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	invoicePayment, err := invoiceRepositories.GetTransactionByNumber(paymentNumber)
 	if err != nil {
 		return errors.New("checking payment number error: " + err.Error())
 	}
@@ -602,7 +632,7 @@ func CancelPayment(paymentNumber string, currentUser string) error {
 	invoicePayment.UserNumber = currentUser
 	invoicePayment.Status = constants.StatusCancelled
 
-	_, err = invoiceRepositories.SavePayment(invoicePayment)
+	_, err = invoiceRepositories.SaveTransaction(invoicePayment)
 	if err != nil {
 		return errors.New("updating payment failed : " + err.Error())
 	}
@@ -610,30 +640,82 @@ func CancelPayment(paymentNumber string, currentUser string) error {
 	return nil
 }
 
-func DeletePayment(paymentNumber string) error {
+func DeletePayment(transactionNumber, currentUser string) error {
 
-	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	transaction, err := invoiceRepositories.GetTransactionByNumber(transactionNumber)
 	if err != nil {
 		return errors.New("checking payment number error: " + err.Error())
 	}
 
-	if invoicePayment.Number == "" {
+	if transaction.Number == "" {
 		return errors.New("invalid payment number")
 	}
 
-	err = invoiceRepositories.DeleteInvoicePayment(invoicePayment)
+	oldStatement, err := invoiceRepositories.GetStatementByNumber(transaction.StatementNumber)
 	if err != nil {
-		return errors.New("deleting payment failed : " + err.Error())
+		return errors.New("Checking statement error " + err.Error())
 	}
 
-	return nil
+	balance, err := ComputeNextBalance(oldStatement.Amount, constants.StatementTypeOut, oldStatement.UserNumber)
+	if err != nil {
+		return err
+	}
+
+	statement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		Amount:        transaction.Amount * -1,
+		UserNumber:    oldStatement.UserNumber,
+		Description:   "Reversal of " + oldStatement.RefNumber,
+		SchoolNumber:  oldStatement.SchoolNumber,
+		CampusNumber:  oldStatement.CampusNumber,
+		RefNumber:     generateNewInvoiceNumber(),
+		Balance:       balance,
+		Type:          "Out",
+		AddedByNumber: currentUser,
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		err := invoiceRepositories.DeleteTransaction(transaction, tx)
+		if err != nil {
+			return errors.New("deleting transaction failed : " + err.Error())
+		}
+
+		err = invoiceRepositories.SaveStatement(statement, tx)
+
+		if err != nil {
+			return errors.New("Creating statement error " + err.Error())
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func ComputeNextBalance(newAmount float64, statementType string, userNumber string) (float64, error) {
+
+	if statementType != constants.StatementTypeIn && statementType != constants.StatementTypeOut {
+		return 0, errors.New("Invalid statement type: '" + statementType + "'")
+	}
+
+	recentStatement, err := invoiceRepositories.GetRecentStatementByUserNumber(userNumber)
+	if err != nil {
+		return 0, errors.New("Getting recent statement error " + err.Error())
+	}
+
+	balance := recentStatement.Balance - newAmount
+
+	if statementType == "IN" {
+		balance = recentStatement.Balance + newAmount
+	}
+
+	return balance, nil
 }
 
 func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUser string) error {
 
-	tx := config.DB.Begin()
-
-	invoice, err := invoiceRepositories.FindInvoiceByNumber(updateInvoiceRequest.InvoiceNumber, tx)
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(updateInvoiceRequest.InvoiceNumber)
 	if err != nil {
 		return errors.New("checking invoice number error: " + err.Error())
 	}
@@ -642,7 +724,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 		return errors.New("invalid invoice number")
 	}
 
-	paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number, tx)
+	paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
 	if err != nil {
 		return errors.New("checking paid amount error: " + err.Error())
 	}
@@ -656,20 +738,19 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 		return err
 	}
 
-	invoice.AddedByNumber = currentUser
+	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number)
+	if err != nil {
+		return errors.New("getting current invoice items failed : " + err.Error())
+	}
+
 	invoice.Description = updateInvoiceRequest.Description
 	invoice.DueDate = dueDate
 
+	tx := config.DB.Begin()
 	err = invoiceRepositories.UpdateInvoice(invoice, tx)
 	if err != nil {
 		tx.Rollback()
 		return errors.New("updating invoice failed : " + err.Error())
-	}
-
-	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number, tx)
-	if err != nil {
-		tx.Rollback()
-		return errors.New("getting current invoice items failed : " + err.Error())
 	}
 
 	for _, item := range items {
