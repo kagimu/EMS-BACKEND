@@ -100,7 +100,11 @@ type FullReportSummary struct {
 	AggregateScale      []AppliedScale `json:"aggregate_scale"`
 }
 
-type LeanSchool interface{}
+type LeanSchool struct {
+	Name   string `json:"name"`
+	Number string `json:"number"`
+	Logo   string `json:"logo"`
+}
 
 type LeanCampus interface{}
 

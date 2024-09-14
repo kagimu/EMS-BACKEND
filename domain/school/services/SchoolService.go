@@ -5,6 +5,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
+	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -98,4 +101,12 @@ func GetLatestSchoolLogo(schoolNumber string) (string, error) {
 	}
 
 	return school.Logo, nil
+}
+
+func BuildLeanSchoolResponse(school *schoolModel.School) responses.LeanSchool {
+	return responses.LeanSchool{
+		Number: school.Number,
+		Name:   school.Name,
+		Logo:   commons.GenerateDownloadPath(school.Logo),
+	}
 }
