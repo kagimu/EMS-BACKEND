@@ -6,7 +6,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
-	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -25,6 +24,8 @@ import (
 	"strings"
 	"time"
 )
+
+var invoiceTransactionRepository = invoiceRepositories.NewInvoiceTransactionRepository()
 
 var admissionRepository = repositories2.NewAdmissionRepository()
 
@@ -304,7 +305,9 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 		_paidAmount = paidAmount
 	}
 
-	student, err := repositories.FindStudentByUserNumber(invoice.UserNumber)
+	statement, _ := invoiceRepositories.GetStatementByNumber(invoice.StatementNumber)
+
+	student, err := repositories.FindStudentByUserNumber(statement.UserNumber)
 	if err != nil {
 		fmt.Println("Error getting student from user number " + err.Error())
 		return responses.MinInvoiceResponse{}
@@ -336,8 +339,8 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 
 	invoiceResponse := responses.MinInvoiceResponse{
 		StudyPeriodName: studyPeriodName,
-		RefNumber:       invoice.RefNumber,
-		Date:            invoice.CreatedAt.Format(time.DateOnly),
+		RefNumber:       statement.RefNumber,
+		Date:            statement.CreatedAt.Format(time.DateOnly),
 		DueDate:         invoice.DueDate.Format(time.DateOnly),
 		Number:          invoice.Number,
 		TotalAmount:     _invoiceAmount,
@@ -359,7 +362,7 @@ func generateNewInvoiceNumber() string {
 	month := now.Format("01") // MM format
 
 	// Generate random four-digit number
-	rand.Seed(time.Now().UnixNano())
+	rand.NewSource(time.Now().UnixNano())
 	randomNum := rand.Intn(10000) // Generate random number between 0 and 9999
 
 	// Format invoice number
@@ -402,7 +405,7 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 
 	}
 
-	payments, err := invoiceRepositories.GetInvoicePayments(invoice.Number)
+	payments, err := invoiceRepositories.FindAllInvoiceTransactions(invoice.Number)
 	if err != nil {
 		return responses.InvoiceResponse{}, err
 	}
@@ -410,10 +413,12 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 	var invoicePaymentsResponse []responses.InvoicePaymentResponse
 
 	for _, payment := range payments {
-		_invoice := payment.Invoice
-		_user := payment.User
+		_invoiceStatement, _ := invoiceRepositories.FindInvoiceByNumber(payment.InvoiceNumber)
+		transaction, _ := invoiceRepositories.GetTransactionByNumber(payment.TransactionNumber)
+		transactionStatement := transaction.Statement
+		addedBy, _ := repository.GetUserByNumber(transactionStatement.AddedByNumber)
 
-		paymentResponse := createPaymentResponse(payment, _user, _invoice)
+		paymentResponse := createPaymentResponse(payment, _invoiceStatement.Statement.RefNumber, transactionStatement.RefNumber, addedBy.FirstName)
 
 		invoicePaymentsResponse = append(invoicePaymentsResponse, paymentResponse)
 
@@ -428,14 +433,14 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 	return invoiceResponse, nil
 }
 
-func createPaymentResponse(payment models.Transaction, user authModel.User, invoice models.Invoice) responses.InvoicePaymentResponse {
+func createPaymentResponse(invoiceTransaction models.InvoiceTransaction, invoiceNumber, transactionNumber, addedBy string) responses.InvoicePaymentResponse {
 	paymentResponse := responses.InvoicePaymentResponse{
-		Amount:           payment.Amount,
-		InvoiceRefNumber: invoice.RefNumber,
-		RecordedBy:       user.FirstName,
-		DateTime:         payment.Date.Format(time.DateOnly),
-		Status:           payment.Status,
-		PaymentNumber:    payment.Number,
+		Amount:           invoiceTransaction.AmountPaidOff,
+		InvoiceRefNumber: invoiceNumber,
+		RecordedBy:       addedBy,
+		DateTime:         invoiceTransaction.CreatedAt.Format(time.DateOnly),
+		Status:           constants.StatusActive,
+		PaymentNumber:    transactionNumber,
 	}
 	return paymentResponse
 }
@@ -453,32 +458,90 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		return minInvoiceResponse, errors.New("invalid invoice number: " + invoicePaymentRequest.InvoiceNumber)
 	}
 
+	invoiceStatement := invoice.Statement
+
 	var dateTimePaid time.Time
 	if dateTimePaid, err = time.Parse(time.DateOnly, invoicePaymentRequest.Date); err != nil {
 		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
 	}
 
-	saveInvoicePayment := models.Transaction{
-		Number:        uuid.NewV4().String(),
-		Amount:        invoicePaymentRequest.Amount,
-		Date:          dateTimePaid,
-		InvoiceNumber: invoice.Number,
-		UserNumber:    currentUserNumber,
+	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number)
+
+	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
+
+	if paidAmount >= invoiceAmount {
+		return minInvoiceResponse, errors.New("This invoice is fully paid ")
 	}
 
-	if _, err := invoiceRepositories.SaveTransaction(saveInvoicePayment); err != nil {
+	invoiceBalance := invoiceAmount - paidAmount
+
+	payAmount := invoiceBalance
+
+	if invoicePaymentRequest.Amount < invoiceBalance {
+		payAmount = invoicePaymentRequest.Amount
+	}
+
+	trnRefNo := generateNewInvoiceNumber()
+
+	nextBlc, err := ComputeNextBalance(invoicePaymentRequest.Amount, constants.StatementTypeIn, invoiceStatement.UserNumber)
+	if err != nil {
 		return minInvoiceResponse, err
 	}
 
-	minInvoiceResponse = createMinInvoiceResponse(invoice)
+	newStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		SchoolNumber:  invoiceStatement.SchoolNumber,
+		AddedByNumber: currentUserNumber,
+		RefNumber:     trnRefNo,
+		CampusNumber:  invoiceStatement.CampusNumber,
+		UserNumber:    invoiceStatement.UserNumber,
+		Type:          constants.StatementTypeIn,
+		Description:   "Payment received on invoice " + invoiceStatement.RefNumber,
+		Amount:        invoicePaymentRequest.Amount,
+		Balance:       nextBlc,
+	}
+
+	newTransaction := models.Transaction{
+		StatementNumber: newStatement.Number,
+		Number:          uuid.NewV4().String(),
+		Date:            dateTimePaid,
+		Status:          constants.StatusActive,
+	}
+
+	newInvoiceTransaction := models.InvoiceTransaction{
+		InvoiceNumber:     invoice.Number,
+		TransactionNumber: newTransaction.Number,
+		AmountPaidOff:     payAmount,
+	}
 
 	var newStatus string
 
-	if minInvoiceResponse.PaidAmount >= minInvoiceResponse.TotalAmount {
+	if payAmount >= invoiceBalance {
 		newStatus = constants.StatusPaid
 	} else {
 		newStatus = constants.StatusPartiallyPaid
 	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		tx = invoiceTransactionRepository.UseTx(tx)
+
+		err := invoiceRepositories.SaveStatement(newStatement, tx)
+		if err != nil {
+			return errors.New("Creating statement error " + err.Error())
+		}
+
+		if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
+			return errors.New("Adding new transaction error " + err.Error())
+		}
+
+		err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
+		if err != nil {
+			return errors.New("Attaching transaction to invoice error " + err.Error())
+		}
+
+		return nil
+	})
 
 	if newStatus != invoice.Status {
 		invoice.Status = newStatus
@@ -487,7 +550,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		}
 	}
 
-	return minInvoiceResponse, nil
+	return createMinInvoiceResponse(invoice), nil
 }
 
 func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse, error) {
@@ -527,7 +590,7 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 		InvoiceAmount: minInvoice.TotalAmount,
 		InvoiceDate:   minInvoice.Date,
 		PaidAmount:    mostRecentPayment.Amount,
-		PaidDate:      mostRecentPayment.Date.Format(time.DateOnly),
+		PaidDate:      mostRecentPayment.CreatedAt.Format(time.DateOnly),
 	}
 
 	var financialSummaryResponse = responses.FinancialSummaryResponse{

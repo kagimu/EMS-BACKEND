@@ -36,7 +36,9 @@ func FindInvoiceByNumber(invoiceNumber string, tx ...*gorm.DB) (invoiceModel.Inv
 
 	var invoice invoiceModel.Invoice
 
-	if err := db.Where("number = ?", invoiceNumber).First(&invoice).Error; err != nil {
+	if err := db.
+		Preload("Statement").
+		Where("number = ?", invoiceNumber).First(&invoice).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return invoice, nil

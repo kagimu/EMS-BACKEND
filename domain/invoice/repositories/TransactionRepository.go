@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func SaveTransaction(invoicePayment invoiceModels.Transaction, tx ...*gorm.DB) (invoiceModels.Transaction, error) {
+func SaveTransaction(transaction invoiceModels.Transaction, tx ...*gorm.DB) (invoiceModels.Transaction, error) {
 
 	db := config.DB
 
@@ -18,11 +18,11 @@ func SaveTransaction(invoicePayment invoiceModels.Transaction, tx ...*gorm.DB) (
 		db = tx[0]
 	}
 
-	if err := db.Save(&invoicePayment).Error; err != nil {
-		return invoicePayment, err
+	if err := db.Save(&transaction).Error; err != nil {
+		return transaction, err
 	}
 
-	return invoicePayment, nil
+	return transaction, nil
 }
 
 func GetInvoicePaidAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error) {
@@ -50,16 +50,14 @@ func GetInvoicePaidAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error)
 	return totalAmount, nil
 }
 
-func GetInvoicePayments(invoiceNumber string) ([]invoiceModels.Transaction, error) {
+func FindAllInvoiceTransactions(invoiceNumber string) ([]invoiceModels.InvoiceTransaction, error) {
 
 	db := config.DB
 
-	var invoiceItems []invoiceModels.Transaction
+	var invoiceItems []invoiceModels.InvoiceTransaction
 
 	if err := db.
-		Joins("").
-		Preload("User").Preload("Invoice").Where("invoice_number = ?", invoiceNumber).Find(&invoiceItems).Error; err != nil {
-
+		Where("invoice_number = ?", invoiceNumber).Find(&invoiceItems).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return invoiceItems, nil
 		}
@@ -115,30 +113,6 @@ func SumAllUserPayments(userNumber string) (float64, error) {
 	return totalAmount, nil
 }
 
-func GetMostRecentPayment(userNumber string) (invoiceModels.Transaction, error) {
-
-	db := config.DB
-
-	var invoicePayment invoiceModels.Transaction
-
-	if err := db.
-		Joins("JOIN statements ON statements.number = transactions.statement_number").
-		Where("statements.user_number = ? ", userNumber).
-		Where("transactions.status = ? ", constants.StatusActive).
-		Order("statements.created_at desc").
-		First(&invoicePayment).Error; err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return invoiceModels.Transaction{}, nil
-		}
-
-		return invoiceModels.Transaction{}, err
-	}
-
-	return invoicePayment, nil
-
-}
-
 func GetAllPayments(userNumber string, schoolNumber string, refNumber string, startDate time.Time, endDate time.Time) ([]invoiceModels.Transaction, error) {
 
 	db := config.DB
@@ -171,7 +145,9 @@ func GetTransactionByNumber(transactionNumber string) (invoiceModels.Transaction
 
 	var invoicePayment invoiceModels.Transaction
 
-	if err := db.Where("number = ?", transactionNumber).First(&invoicePayment).Error; err != nil {
+	if err := db.
+		Preload("Statement").
+		Where("number = ?", transactionNumber).First(&invoicePayment).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return invoicePayment, nil
 		}

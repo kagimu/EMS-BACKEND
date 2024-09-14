@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
 )
@@ -58,4 +59,27 @@ func GetRecentStatementByUserNumber(userNumber string, tx ...*gorm.DB) (models.S
 	}
 
 	return statement, nil
+}
+
+func GetMostRecentPayment(userNumber string) (models.Statement, error) {
+
+	db := config.DB
+
+	var statement models.Statement
+
+	if err := db.
+		Where("user_number = ? ", userNumber).
+		Where("type = ? ", constants.StatementTypeIn).
+		Order("created_at desc").
+		First(&statement).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Statement{}, nil
+		}
+
+		return statement, err
+	}
+
+	return statement, nil
+
 }
