@@ -47,6 +47,7 @@ type LeanReportSummary struct {
 	Number        string `json:"number"`
 	StudentName   string `json:"student_name"`
 	StudentNumber string `json:"student_number"`
+	Photo         string `json:"photo"`
 	Grade         string `json:"grade"`
 	StudyPeriod   string `json:"study_period"`
 	Stream        string `json:"stream"`
