@@ -131,7 +131,7 @@ func CreateStudentResponse(student *studentModel.Student) responses.StudentRespo
 		APN:                       student.APN,
 		APNStatus:                 student.APNStatus,
 		ADNStatus:                 student.ADNStatus,
-		Photo:                     commons.GenerateDownloadPath(student.Photo),
+		Photo:                     commons.GenerateDownloadPath(student.Photo, true),
 		AcademicReport:            student.AcademicReport,
 		Status:                    student.Status,
 		SourceOfSchoolInfo:        student.SourceOfSchoolInfo,

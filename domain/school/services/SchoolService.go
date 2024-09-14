@@ -107,6 +107,6 @@ func BuildLeanSchoolResponse(school *schoolModel.School) responses.LeanSchool {
 	return responses.LeanSchool{
 		Number: school.Number,
 		Name:   school.Name,
-		Logo:   commons.GenerateDownloadPath(school.Logo),
+		Logo:   commons.GenerateDownloadPath(school.Logo, false),
 	}
 }

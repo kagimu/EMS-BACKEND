@@ -241,9 +241,11 @@ func ConvertStringToDate(dateString string) (time.Time, error) {
 	return dueDate, nil
 }
 
-func GenerateDownloadPath(number string) string {
-	if number == "" {
-		return ""
+func GenerateDownloadPath(number string, persona bool) string {
+	if number == "" && persona {
+		return "https://www.oddscreenprinting.com.au/wp-content/uploads/person-dummy.jpg"
+	} else if number == "" {
+		return "https://www.oddscreenprinting.com.au/wp-content/uploads/2017/04/placeholder.png"
 	}
 	return os.Getenv("BASE_URL") + "attachments/download/" + number
 }

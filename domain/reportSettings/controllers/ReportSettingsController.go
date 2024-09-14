@@ -307,7 +307,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 			Number:        reportSummary.Number,
 			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
 			StudentNumber: reportSummary.StudentNumber,
-			Photo:         commons.GenerateDownloadPath(reportSummary.Student.Photo),
+			Photo:         commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
 			Grade:         reportSummary.Grade,
 			Stream:        reportSummary.Stream.Name,
 			StudyPeriod:   studyPeriodName.Name,
