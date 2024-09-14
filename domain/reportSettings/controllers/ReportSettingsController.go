@@ -23,6 +23,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"os"
 	"strconv"
 
 	"net/http"
@@ -300,12 +301,19 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 	for _, reportSummary := range reportSummaries {
 
+		var photo string
+
+		if reportSummary.Student.Photo != "" {
+			photo = os.Getenv("BASE_URL") + "attachments/download/" + reportSummary.Student.Photo
+		}
+
 		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
 
 		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
 			Number:        reportSummary.Number,
 			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
 			StudentNumber: reportSummary.StudentNumber,
+			Photo:         photo,
 			Grade:         reportSummary.Grade,
 			Stream:        reportSummary.Stream.Name,
 			StudyPeriod:   studyPeriodName.Name,
