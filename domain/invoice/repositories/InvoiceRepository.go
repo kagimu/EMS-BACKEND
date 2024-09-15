@@ -168,9 +168,14 @@ func UpdateInvoice(invoice invoiceModel.Invoice, tx ...*gorm.DB) error {
 	return nil
 }
 
-func DeleteInvoice(invoice invoiceModel.Invoice) error {
+func DeleteInvoice(invoice invoiceModel.Invoice, tx ...*gorm.DB) error {
 
-	if err := config.DB.Delete(&invoice).Error; err != nil {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Delete(&invoice).Error; err != nil {
 		return err
 	}
 
