@@ -11,6 +11,6 @@ type Invoice struct {
 	Type            string    `json:"type" gorm:"default:CLIENT"`
 	DueDate         time.Time `json:"due_date" gorm:"type:date"`
 	RefNumber       string    `json:"ref_number"  gorm:"size:16;not null"`
-	StatementNumber string    `json:"statement_number" gorm:"size:36;not null"`
+	StatementNumber string    `json:"statement_number" gorm:"size:36;not null;unique"`
 	Statement       Statement `gorm:"foreignKey:StatementNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
