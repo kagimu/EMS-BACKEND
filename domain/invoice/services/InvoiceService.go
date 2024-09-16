@@ -609,7 +609,7 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 	}
 	minInvoice := createMinInvoiceResponse(recentInvoice)
 
-	mostRecentPayment, err := invoiceRepositories.GetMostRecentPayment(userNumber)
+	mostRecentPayment, err := invoiceRepositories.GetMostRecentTransaction(userNumber)
 	if err != nil {
 		return responses.FinancialSummaryResponse{}, err
 	}
@@ -1082,12 +1082,16 @@ func UserStatement(userNumber string, startDate time.Time, endDate time.Time) ([
 	}
 
 	for _, statement := range allStatements {
+
+		receivedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
+
 		statementResponse = append(statementResponse, responses.StatementResponse{
 			Amount:       statement.Amount,
 			Balance:      statement.Balance,
 			Type:         statement.Type,
 			Description:  statement.Description,
 			DateReceived: statement.CreatedAt.Format(time.DateTime),
+			ReceivedBy:   receivedBy.FirstName,
 		})
 	}
 

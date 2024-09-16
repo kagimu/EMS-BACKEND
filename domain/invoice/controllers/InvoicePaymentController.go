@@ -172,12 +172,12 @@ func AllStatements(context *gin.Context) {
 		return
 	}
 
-	invoices, err := services.UserStatement(userNumber, startDate, endDate)
+	statementResponses, err := services.UserStatement(userNumber, startDate, endDate)
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get statements, try again", "err": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, invoices)
+	context.JSON(http.StatusOK, statementResponses)
 }
