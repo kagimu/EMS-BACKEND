@@ -79,7 +79,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 
 	invoiceTotal := newInvoiceTotalAmount(payload.Items)
 
-	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, currentUserNumber)
+	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, userNumber)
 
 	newStatement := models.Statement{
 		Number:        uuid.NewV4().String(),
@@ -128,7 +128,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 	return err
 }
 
-func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, currentUserNumber string, txn *gorm.DB) (models.Invoice, error) {
+func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, txn *gorm.DB) (models.Invoice, error) {
 
 	invoiceNumber := generateNewInvoiceNumber()
 
@@ -149,11 +149,37 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 		return models.Invoice{}, errors.New("Getting billable items error: " + err.Error())
 	}
 
+	var invoiceTotal float64
+
+	for _, billItem := range billableItems {
+		invoiceTotal = invoiceTotal + (billItem.Quantity * billItem.UnitPrice)
+	}
+
+	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, student.UserNumber)
+
+	newStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		Amount:        invoiceTotal,
+		UserNumber:    student.UserNumber,
+		Description:   "New bill " + invoiceNumber,
+		SchoolNumber:  billable.SchoolNumber,
+		CampusNumber:  billable.CampusNumber,
+		RefNumber:     invoiceNumber,
+		Balance:       balance,
+		Type:          constants.StatementTypeOut,
+		AddedByNumber: currentUserNumber,
+	}
+
 	newInvoice := models.Invoice{
-		Number:      uuid.NewV4().String(),
-		DueDate:     dueDate,
-		Description: billable.Description,
-		RefNumber:   invoiceNumber,
+		StatementNumber: newStatement.Number,
+		Number:          uuid.NewV4().String(),
+		DueDate:         dueDate,
+		Description:     billable.Description,
+		RefNumber:       invoiceNumber,
+	}
+
+	if err = invoiceRepositories.SaveStatement(newStatement, txn); err != nil {
+		return models.Invoice{}, errors.New("Creating statement error: " + err.Error())
 	}
 
 	if err = invoiceRepositories.SaveInvoice(newInvoice, txn); err != nil {
