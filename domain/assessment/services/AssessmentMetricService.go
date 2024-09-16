@@ -143,7 +143,7 @@ func CreateAssessmentsResponse(assessment models.AssessmentMetric) (responses.As
 	assessmentMetricResponse.CampusClassNumber = assessment.CampusClassNumber
 	assessmentMetricResponse.ScheduledOn = assessment.ScheduledOn.Format(time.DateOnly)
 	assessmentMetricResponse.MarkingGuide = commons.GenerateDownloadPath(assessment.MarkingGuide, false)
-	assessmentMetricResponse.TestScript = commons.GenerateDownloadPath(assessment.TestScript, false)
+	assessmentMetricResponse.AssessmentScript = commons.GenerateDownloadPath(assessment.TestScript, false)
 
 	return assessmentMetricResponse, nil
 }

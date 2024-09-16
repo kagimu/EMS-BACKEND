@@ -128,13 +128,13 @@ func UploadMarkingGuide(c *gin.Context) {
 }
 
 func UploadScript(c *gin.Context) {
-	metricNumber := c.Param("assessment_metric_number")
+	metricNumber := c.PostForm("assessment_metric_number")
 	if metricNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the assessment schedule"})
 		return
 	}
 
-	err := services.UploadMarkingGuide(c, metricNumber, "TEST_SCRIPT")
+	err := services.UploadMarkingGuide(c, metricNumber, "ASSESSMENT_SCRIPT")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

@@ -153,12 +153,12 @@ func FinancialSummary(context *gin.Context) {
 
 	summary, err := services.GetFinancialSummary(userNumber)
 
+	var errorDesc string
 	if err != nil {
-		context.JSON(http.StatusBadRequest, commons.Feedback("Getting financial summary failed, try again: "+err.Error()))
+		errorDesc = err.Error()
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message": "Financial summary", "data": summary})
-
+	context.JSON(http.StatusOK, gin.H{"message": "Financial summary", "data": summary, "error": errorDesc})
 }
 
 func DeleteInvoice(context *gin.Context) {
