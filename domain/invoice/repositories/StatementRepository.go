@@ -4,8 +4,10 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
+	"time"
 )
 
 func GetStatementByNumber(statementNumber string, tx ...*gorm.DB) (models.Statement, error) {
@@ -82,4 +84,26 @@ func GetMostRecentPayment(userNumber string) (models.Statement, error) {
 
 	return statement, nil
 
+}
+
+func FindAllStatements(userNumber string, startDate, endDate time.Time) ([]models.Statement, error) {
+
+	db := config.DB
+
+	var statements []models.Statement
+
+	if err := db.
+		Scopes(
+			filters.ByUserNumber(userNumber),
+			filters.ByDateBetween("created_at", startDate, endDate)).
+		Find(&statements).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return statements, nil
+		}
+
+		return statements, err
+	}
+
+	return statements, nil
 }

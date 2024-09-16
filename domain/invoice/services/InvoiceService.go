@@ -1045,3 +1045,25 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 
 	return nil
 }
+
+func UserStatement(userNumber string, startDate time.Time, endDate time.Time) ([]responses.StatementResponse, error) {
+
+	var statementResponse = make([]responses.StatementResponse, 0)
+
+	allStatements, err := invoiceRepositories.FindAllStatements(userNumber, startDate, endDate)
+	if err != nil {
+		return statementResponse, errors.New("Error getting statements " + err.Error())
+	}
+
+	for _, statement := range allStatements {
+		statementResponse = append(statementResponse, responses.StatementResponse{
+			Amount:       statement.Amount,
+			Balance:      statement.Balance,
+			Type:         statement.Type,
+			Description:  statement.Description,
+			DateReceived: statement.CreatedAt.Format(time.DateTime),
+		})
+	}
+
+	return statementResponse, nil
+}
