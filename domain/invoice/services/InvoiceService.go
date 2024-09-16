@@ -583,54 +583,62 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 
 func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse, error) {
 
+	var financialSummaryResponse = responses.FinancialSummaryResponse{}
+
+	var errorDesc string
+
 	paymentsCount, err := invoiceRepositories.CountAllUserPayments(userNumber)
-	if err != nil {
-		return responses.FinancialSummaryResponse{}, err
+	if err == nil {
+		financialSummaryResponse.TotalPayments = paymentsCount
+	} else {
+		errorDesc = err.Error()
 	}
 
 	invoicesCount, err := invoiceRepositories.CountAllUserInvoices(userNumber)
-	if err != nil {
-		return responses.FinancialSummaryResponse{}, err
+	if err == nil {
+		financialSummaryResponse.TotalInvoices = invoicesCount
+	} else {
+		errorDesc = err.Error()
 	}
 
 	invoiceAmount, err := invoiceRepositories.GetAllInvoicedAmount(userNumber)
-	if err != nil {
-		return responses.FinancialSummaryResponse{}, err
+	if err == nil {
+		financialSummaryResponse.TotalInvoiceAmount = invoiceAmount
+	} else {
+		errorDesc = err.Error()
 	}
 
 	paymentAmount, err := invoiceRepositories.SumAllUserPayments(userNumber)
-	if err != nil {
-		return responses.FinancialSummaryResponse{}, err
+	if err == nil {
+		financialSummaryResponse.TotalPaidAmount = paymentAmount
+	} else {
+		errorDesc = err.Error()
 	}
+
+	financialSummaryResponse.TotalBalanceAmount = financialSummaryResponse.TotalInvoiceAmount - financialSummaryResponse.TotalPaidAmount
+
+	mostRecent := responses.MostRecent{}
 
 	recentInvoice, err := invoiceRepositories.GetMostRecentInvoice(userNumber)
-	if err != nil {
-		return responses.FinancialSummaryResponse{}, err
+	if err == nil {
+		minInvoice := createMinInvoiceResponse(recentInvoice)
+		mostRecent.InvoiceAmount = minInvoice.TotalAmount
+		mostRecent.InvoiceDate = minInvoice.Date
+	} else {
+		errorDesc = err.Error()
 	}
-	minInvoice := createMinInvoiceResponse(recentInvoice)
 
 	mostRecentPayment, err := invoiceRepositories.GetMostRecentTransaction(userNumber)
-	if err != nil {
-		return responses.FinancialSummaryResponse{}, err
+	if err == nil {
+		mostRecent.PaidAmount = mostRecentPayment.Amount
+		mostRecent.PaidDate = mostRecentPayment.CreatedAt.Format(time.DateOnly)
+	} else {
+		errorDesc = err.Error()
 	}
 
-	mostRecent := responses.MostRecent{
-		InvoiceAmount: minInvoice.TotalAmount,
-		InvoiceDate:   minInvoice.Date,
-		PaidAmount:    mostRecentPayment.Amount,
-		PaidDate:      mostRecentPayment.CreatedAt.Format(time.DateOnly),
-	}
+	financialSummaryResponse.MostRecent = mostRecent
 
-	var financialSummaryResponse = responses.FinancialSummaryResponse{
-		TotalPayments:      paymentsCount,
-		TotalInvoices:      invoicesCount,
-		TotalInvoiceAmount: invoiceAmount,
-		TotalPaidAmount:    paymentAmount,
-		TotalBalanceAmount: invoiceAmount - paymentAmount,
-		MostRecent:         mostRecent,
-	}
-
-	return financialSummaryResponse, nil
+	return financialSummaryResponse, errors.New(errorDesc)
 }
 
 func GetAllPayments(userNumber string, refNumber string, schoolNumber string, startDate time.Time, endDate time.Time) ([]responses.TransactionResponse, error) {

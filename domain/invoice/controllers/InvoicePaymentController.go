@@ -144,7 +144,12 @@ func AllStatements(context *gin.Context) {
 		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
+
 	userNumber := context.Query("user_number")
+	if userNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide user number "})
+		return
+	}
 
 	_startDate := context.Query("start_date")
 	_endDate := context.Query("end_date")
@@ -179,5 +184,5 @@ func AllStatements(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, statementResponses)
+	context.JSON(http.StatusOK, gin.H{"data": statementResponses})
 }
