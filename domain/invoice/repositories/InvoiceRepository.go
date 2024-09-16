@@ -57,6 +57,7 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 	var invoices []invoiceModel.Invoice
 
 	if err := db.
+		Joins("JOIN statements ON statements.number =  invoices.statement_number").
 		Joins("JOIN invoice_items ON invoice_items.invoice_number =  invoices.number").
 		Scopes(
 			filters.ByStatus(status),
