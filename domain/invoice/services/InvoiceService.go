@@ -475,6 +475,10 @@ func createPaymentResponse(invoiceTransaction models.InvoiceTransaction) respons
 
 func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) (responses.MinInvoiceResponse, error) {
 
+	if len(invoicePaymentRequest.Credits) >= 1 {
+		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits)
+	}
+
 	var minInvoiceResponse responses.MinInvoiceResponse
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber)
@@ -504,14 +508,15 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 	invoiceBalance := invoiceAmount - paidAmount
 
 	payAmount := invoiceBalance
+	payRequestAmount := invoicePaymentRequest.Amount
 
-	if invoicePaymentRequest.Amount < invoiceBalance {
-		payAmount = invoicePaymentRequest.Amount
+	if payRequestAmount < invoiceBalance {
+		payAmount = payRequestAmount
 	}
 
 	trnRefNo := generateNewInvoiceNumber()
 
-	nextBlc, err := ComputeNextBalance(invoicePaymentRequest.Amount, constants.StatementTypeIn, invoiceStatement.UserNumber)
+	nextBlc, err := ComputeNextBalance(payRequestAmount, constants.StatementTypeIn, invoiceStatement.UserNumber)
 	if err != nil {
 		return minInvoiceResponse, err
 	}
@@ -525,7 +530,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		UserNumber:    invoiceStatement.UserNumber,
 		Type:          constants.StatementTypeIn,
 		Description:   "Payment received on invoice " + invoiceStatement.RefNumber,
-		Amount:        invoicePaymentRequest.Amount,
+		Amount:        payRequestAmount,
 		Balance:       nextBlc,
 	}
 
@@ -534,7 +539,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		Number:          uuid.NewV4().String(),
 		Date:            dateTimePaid,
 		Status:          constants.StatusActive,
-		AmountInCredit:  invoicePaymentRequest.Amount - payAmount,
+		AmountInCredit:  payRequestAmount - payAmount,
 	}
 
 	newInvoiceTransaction := models.InvoiceTransaction{
@@ -565,6 +570,105 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		}
 
 		err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
+		if err != nil {
+			return errors.New("Attaching transaction to invoice error " + err.Error())
+		}
+
+		return nil
+	})
+
+	if newStatus != invoice.Status {
+		invoice.Status = newStatus
+		if err = invoiceRepositories.UpdateInvoice(invoice); err != nil {
+			return minInvoiceResponse, errors.New("Updating invoice failed : " + err.Error())
+		}
+	}
+
+	return createMinInvoiceResponse(invoice), nil
+}
+func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string) (responses.MinInvoiceResponse, error) {
+
+	var minInvoiceResponse responses.MinInvoiceResponse
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
+	if err != nil {
+		return minInvoiceResponse, err
+	}
+
+	if invoice.Number == "" {
+		return minInvoiceResponse, errors.New("invalid invoice number: " + invoiceNumber)
+	}
+
+	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number)
+
+	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
+
+	if paidAmount >= invoiceAmount {
+		return minInvoiceResponse, errors.New("This invoice is fully paid ")
+	}
+
+	invoiceBalance := invoiceAmount - paidAmount
+
+	var totalCreditAmount float64
+
+	var creditTransactions = make([]models.Transaction, 0)
+
+	for _, transactionNumber := range credits {
+
+		availableCredit, err := GetTransactionCredit(transactionNumber)
+		if err != nil {
+			return minInvoiceResponse, err
+		}
+
+		if availableCredit.AmountInCredit > 0 {
+			creditTransactions = append(creditTransactions, availableCredit)
+			totalCreditAmount = totalCreditAmount + availableCredit.AmountInCredit
+		}
+
+	}
+
+	if totalCreditAmount <= 0 {
+		return minInvoiceResponse, errors.New("All the selected transactions have no credit ")
+	}
+
+	var newStatus string
+
+	if totalCreditAmount >= invoiceBalance {
+		newStatus = constants.StatusPaid
+	} else {
+		newStatus = constants.StatusPartiallyPaid
+	}
+
+	var payAmount float64
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		tx = invoiceTransactionRepository.UseTx(tx)
+
+		for _, creditTransaction := range creditTransactions {
+
+			payAmount = invoiceBalance
+
+			if creditTransaction.AmountInCredit < invoiceBalance {
+				payAmount = creditTransaction.AmountInCredit
+			}
+
+			err = invoiceTransactionRepository.SaveInvoiceTransaction(models.InvoiceTransaction{
+				InvoiceNumber:     invoice.Number,
+				TransactionNumber: creditTransaction.Number,
+				AmountPaidOff:     payAmount,
+				AddedByNumber:     currentUserNumber,
+			})
+
+			creditTransaction.AmountInCredit = creditTransaction.AmountInCredit - payAmount
+			_, err := invoiceRepositories.SaveTransaction(creditTransaction, tx)
+			if err != nil {
+				return errors.New("Updating credit error ")
+			}
+
+			invoiceBalance = invoiceBalance - payAmount
+		}
+
 		if err != nil {
 			return errors.New("Attaching transaction to invoice error " + err.Error())
 		}
@@ -1132,23 +1236,25 @@ func UserCredits(userNumber string) ([]responses.TransactionResponse, error) {
 	return creditsResponse, nil
 }
 
-func GetTransactionCredit(transactionNumber string) (float64, error) {
+func GetTransactionCredit(transactionNumber string) (models.Transaction, error) {
 
 	transaction, err := invoiceRepositories.GetTransactionByNumber(transactionNumber)
 	if err != nil {
-		return 0, errors.New("Error getting transaction " + err.Error())
+		return transaction, errors.New("Error getting transaction " + err.Error())
 	}
 
 	if transaction.Number == "" {
-		return 0, errors.New("Invalid transaction number ")
+		return transaction, errors.New("Invalid transaction number ")
 	}
 
 	creditsUsed, err := invoiceRepositories.TransactionUsedCredit(transactionNumber)
 	if err != nil {
-		return 0, errors.New("Error getting transaction used credit " + err.Error())
+		return transaction, errors.New("Error getting transaction used credit " + err.Error())
 	}
 
 	statement := transaction.Statement
 
-	return statement.Amount - creditsUsed, nil
+	transaction.AmountInCredit = statement.Amount - creditsUsed
+
+	return transaction, nil
 }
