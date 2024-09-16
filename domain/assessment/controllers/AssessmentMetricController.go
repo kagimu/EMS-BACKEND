@@ -118,11 +118,6 @@ func UploadMarkingGuide(c *gin.Context) {
 		return
 	}
 
-	if c.PostForm("attachment") == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the attachment"})
-		return
-	}
-
 	err := services.UploadMarkingGuide(c, metricNumber, "MARKING_GUIDE")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
