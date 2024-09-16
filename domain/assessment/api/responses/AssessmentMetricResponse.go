@@ -18,4 +18,6 @@ type AssessmentMetricResponse struct {
 	CampusLevelNumber    string  `json:"campus_level_number"`
 	AcademicYearNumber   string  `json:"academic_year_number"`
 	GradeStandardNumber  string  `json:"grade_standard_number"`
+	MarkingGuide         string  `json:"marking_guide"`
+	TestScript           string  `json:"test_script"`
 }

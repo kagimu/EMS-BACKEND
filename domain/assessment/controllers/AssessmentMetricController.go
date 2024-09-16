@@ -109,3 +109,45 @@ func UpdateAssessmentMetric(c *gin.Context) {
 
 	c.JSON(http.StatusOK, commons.Feedback("Schedule updated successfully"))
 }
+
+func UploadMarkingGuide(c *gin.Context) {
+
+	metricNumber := c.PostForm("assessment_metric_number")
+	if metricNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the assessment schedule"})
+		return
+	}
+
+	if c.PostForm("attachment") == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the attachment"})
+		return
+	}
+
+	err := services.UploadMarkingGuide(c, metricNumber, "MARKING_GUIDE")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Marking guide uploaded successfully"))
+}
+
+func UploadTestScript(c *gin.Context) {
+	metricNumber := c.Param("assessment_metric_number")
+	if metricNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the assessment schedule"})
+		return
+	}
+
+	if c.PostForm("attachment") == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the attachment"})
+		return
+	}
+
+	err := services.UploadMarkingGuide(c, metricNumber, "TEST_SCRIPT")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, commons.Feedback("Test script uploaded successfully"))
+}
