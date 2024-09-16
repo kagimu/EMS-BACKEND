@@ -36,7 +36,9 @@ func FindInvoiceByNumber(invoiceNumber string, tx ...*gorm.DB) (invoiceModel.Inv
 
 	var invoice invoiceModel.Invoice
 
-	if err := db.Where("number = ?", invoiceNumber).First(&invoice).Error; err != nil {
+	if err := db.
+		Preload("Statement").
+		Where("number = ?", invoiceNumber).First(&invoice).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return invoice, nil
@@ -166,9 +168,14 @@ func UpdateInvoice(invoice invoiceModel.Invoice, tx ...*gorm.DB) error {
 	return nil
 }
 
-func DeleteInvoice(invoice invoiceModel.Invoice) error {
+func DeleteInvoice(invoice invoiceModel.Invoice, tx ...*gorm.DB) error {
 
-	if err := config.DB.Delete(&invoice).Error; err != nil {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Delete(&invoice).Error; err != nil {
 		return err
 	}
 

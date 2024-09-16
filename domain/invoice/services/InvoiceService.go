@@ -6,7 +6,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
-	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -25,6 +24,8 @@ import (
 	"strings"
 	"time"
 )
+
+var invoiceTransactionRepository = invoiceRepositories.NewInvoiceTransactionRepository()
 
 var admissionRepository = repositories2.NewAdmissionRepository()
 
@@ -76,31 +77,55 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 		return errors.New("no admission details found")
 	}
 
-	newInvoice := models.Invoice{
+	invoiceTotal := newInvoiceTotalAmount(payload.Items)
+
+	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, currentUserNumber)
+
+	newStatement := models.Statement{
 		Number:        uuid.NewV4().String(),
-		DueDate:       dueDate,
-		Description:   payload.Description,
-		UserNumber:    userNumber,
-		RefNumber:     invoiceNumber,
-		AddedByNumber: currentUserNumber,
+		Amount:        invoiceTotal,
+		UserNumber:    payload.UserNumber,
+		Description:   "New bill " + invoiceNumber,
 		SchoolNumber:  admission.SchoolNumber,
 		CampusNumber:  admission.CampusNumber,
+		RefNumber:     invoiceNumber,
+		Balance:       balance,
+		Type:          constants.StatementTypeOut,
+		AddedByNumber: currentUserNumber,
 	}
 
-	if err = invoiceRepositories.SaveInvoice(newInvoice); err != nil {
-		return err
+	newInvoice := models.Invoice{
+		StatementNumber: newStatement.Number,
+		Number:          uuid.NewV4().String(),
+		DueDate:         dueDate,
+		Description:     payload.Description,
+		RefNumber:       invoiceNumber,
 	}
 
-	for _, invoiceItem := range payload.Items {
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
-		if err = doSaveInvoiceItem(invoiceItem, newInvoice.Number); err != nil {
-			return err
+		err := invoiceRepositories.SaveStatement(newStatement, tx)
+		if err != nil {
+			return errors.New("Error creating new bill statement " + err.Error())
 		}
 
-	}
+		err = invoiceRepositories.SaveInvoice(newInvoice, tx)
+		if err != nil {
+			return errors.New("Error creating new bill " + err.Error())
+		}
 
-	return nil
+		for _, invoiceItem := range payload.Items {
 
+			if err = doSaveInvoiceItem(invoiceItem, newInvoice.Number, tx); err != nil {
+				return err
+			}
+
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, currentUserNumber string, txn *gorm.DB) (models.Invoice, error) {
@@ -125,14 +150,10 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	newInvoice := models.Invoice{
-		Number:        uuid.NewV4().String(),
-		DueDate:       dueDate,
-		Description:   billable.Description,
-		UserNumber:    student.UserNumber,
-		RefNumber:     invoiceNumber,
-		AddedByNumber: currentUserNumber,
-		SchoolNumber:  billable.SchoolNumber,
-		CampusNumber:  billable.CampusNumber,
+		Number:      uuid.NewV4().String(),
+		DueDate:     dueDate,
+		Description: billable.Description,
+		RefNumber:   invoiceNumber,
 	}
 
 	if err = invoiceRepositories.SaveInvoice(newInvoice, txn); err != nil {
@@ -159,9 +180,9 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	return newInvoice, err
 }
 
-func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string) error {
+func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string, tx *gorm.DB) error {
 
-	item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber)
+	item, err := itemRepositories.GetItemByNumber(invoiceItem.ItemNumber, tx)
 
 	if err != nil {
 		return err
@@ -171,7 +192,7 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 		return errors.New("invalid item number")
 	}
 
-	if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoiceNumber, invoiceItem.ItemNumber); err != nil || checkItemOnInvoice.Number != "" {
+	if checkItemOnInvoice, err := invoiceRepositories.GetInvoiceItemByInvoiceNumberAndItemNumber(newInvoiceNumber, invoiceItem.ItemNumber, tx); err != nil || checkItemOnInvoice.Number != "" {
 
 		if err != nil {
 			return err
@@ -189,11 +210,21 @@ func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber
 		ActualUnitPrice: item.Cost,
 	}
 
-	if _, err := invoiceRepositories.SaveInvoiceItem(newInvoiceItem); err != nil {
+	if _, err := invoiceRepositories.SaveInvoiceItem(newInvoiceItem, tx); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func newInvoiceTotalAmount(invoiceItem []requests.InvoiceItemRequest) float64 {
+	var total float64
+
+	for _, item := range invoiceItem {
+		total = total + item.Quantity*item.UnitCost
+	}
+
+	return total
 }
 
 func doSaveBillableInvoiceItem(invoiceItem models.BillableItem, newInvoiceNumber string, txn *gorm.DB) error {
@@ -274,7 +305,9 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 		_paidAmount = paidAmount
 	}
 
-	student, err := repositories.FindStudentByUserNumber(invoice.UserNumber)
+	statement, _ := invoiceRepositories.GetStatementByNumber(invoice.StatementNumber)
+
+	student, err := repositories.FindStudentByUserNumber(statement.UserNumber)
 	if err != nil {
 		fmt.Println("Error getting student from user number " + err.Error())
 		return responses.MinInvoiceResponse{}
@@ -306,8 +339,8 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 
 	invoiceResponse := responses.MinInvoiceResponse{
 		StudyPeriodName: studyPeriodName,
-		RefNumber:       invoice.RefNumber,
-		Date:            invoice.CreatedAt.Format(time.DateOnly),
+		RefNumber:       statement.RefNumber,
+		Date:            statement.CreatedAt.Format(time.DateOnly),
 		DueDate:         invoice.DueDate.Format(time.DateOnly),
 		Number:          invoice.Number,
 		TotalAmount:     _invoiceAmount,
@@ -329,7 +362,7 @@ func generateNewInvoiceNumber() string {
 	month := now.Format("01") // MM format
 
 	// Generate random four-digit number
-	rand.Seed(time.Now().UnixNano())
+	rand.NewSource(time.Now().UnixNano())
 	randomNum := rand.Intn(10000) // Generate random number between 0 and 9999
 
 	// Format invoice number
@@ -372,7 +405,7 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 
 	}
 
-	payments, err := invoiceRepositories.GetInvoicePayments(invoice.Number)
+	payments, err := invoiceRepositories.FindAllInvoiceTransactions(invoice.Number)
 	if err != nil {
 		return responses.InvoiceResponse{}, err
 	}
@@ -380,10 +413,8 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 	var invoicePaymentsResponse []responses.InvoicePaymentResponse
 
 	for _, payment := range payments {
-		_invoice := payment.Invoice
-		_user := payment.User
 
-		paymentResponse := createPaymentResponse(payment, _user, _invoice)
+		paymentResponse := createPaymentResponse(payment)
 
 		invoicePaymentsResponse = append(invoicePaymentsResponse, paymentResponse)
 
@@ -398,14 +429,20 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 	return invoiceResponse, nil
 }
 
-func createPaymentResponse(payment models.InvoicePayment, user authModel.User, invoice models.Invoice) responses.InvoicePaymentResponse {
+func createPaymentResponse(invoiceTransaction models.InvoiceTransaction) responses.InvoicePaymentResponse {
+
+	_invoiceStatement, _ := invoiceRepositories.FindInvoiceByNumber(invoiceTransaction.InvoiceNumber)
+	transaction, _ := invoiceRepositories.GetTransactionByNumber(invoiceTransaction.TransactionNumber)
+	transactionStatement := transaction.Statement
+	addedBy, _ := repository.GetUserByNumber(transactionStatement.AddedByNumber)
+
 	paymentResponse := responses.InvoicePaymentResponse{
-		Amount:           payment.Amount,
-		InvoiceRefNumber: invoice.RefNumber,
-		RecordedBy:       user.FirstName,
-		DateTime:         payment.Date.Format(time.DateOnly),
-		Status:           payment.Status,
-		PaymentNumber:    payment.Number,
+		Amount:           invoiceTransaction.AmountPaidOff,
+		InvoiceRefNumber: _invoiceStatement.RefNumber,
+		RecordedBy:       addedBy.FirstName,
+		DateTime:         invoiceTransaction.CreatedAt.Format(time.DateOnly),
+		Status:           constants.StatusActive,
+		PaymentNumber:    transactionStatement.RefNumber,
 	}
 	return paymentResponse
 }
@@ -423,32 +460,90 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		return minInvoiceResponse, errors.New("invalid invoice number: " + invoicePaymentRequest.InvoiceNumber)
 	}
 
+	invoiceStatement := invoice.Statement
+
 	var dateTimePaid time.Time
 	if dateTimePaid, err = time.Parse(time.DateOnly, invoicePaymentRequest.Date); err != nil {
 		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
 	}
 
-	saveInvoicePayment := models.InvoicePayment{
-		Number:        uuid.NewV4().String(),
-		Amount:        invoicePaymentRequest.Amount,
-		Date:          dateTimePaid,
-		InvoiceNumber: invoice.Number,
-		UserNumber:    currentUserNumber,
+	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number)
+
+	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
+
+	if paidAmount >= invoiceAmount {
+		return minInvoiceResponse, errors.New("This invoice is fully paid ")
 	}
 
-	if _, err := invoiceRepositories.SavePayment(saveInvoicePayment); err != nil {
+	invoiceBalance := invoiceAmount - paidAmount
+
+	payAmount := invoiceBalance
+
+	if invoicePaymentRequest.Amount < invoiceBalance {
+		payAmount = invoicePaymentRequest.Amount
+	}
+
+	trnRefNo := generateNewInvoiceNumber()
+
+	nextBlc, err := ComputeNextBalance(invoicePaymentRequest.Amount, constants.StatementTypeIn, invoiceStatement.UserNumber)
+	if err != nil {
 		return minInvoiceResponse, err
 	}
 
-	minInvoiceResponse = createMinInvoiceResponse(invoice)
+	newStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		SchoolNumber:  invoiceStatement.SchoolNumber,
+		AddedByNumber: currentUserNumber,
+		RefNumber:     trnRefNo,
+		CampusNumber:  invoiceStatement.CampusNumber,
+		UserNumber:    invoiceStatement.UserNumber,
+		Type:          constants.StatementTypeIn,
+		Description:   "Payment received on invoice " + invoiceStatement.RefNumber,
+		Amount:        invoicePaymentRequest.Amount,
+		Balance:       nextBlc,
+	}
+
+	newTransaction := models.Transaction{
+		StatementNumber: newStatement.Number,
+		Number:          uuid.NewV4().String(),
+		Date:            dateTimePaid,
+		Status:          constants.StatusActive,
+	}
+
+	newInvoiceTransaction := models.InvoiceTransaction{
+		InvoiceNumber:     invoice.Number,
+		TransactionNumber: newTransaction.Number,
+		AmountPaidOff:     payAmount,
+	}
 
 	var newStatus string
 
-	if minInvoiceResponse.PaidAmount >= minInvoiceResponse.TotalAmount {
+	if payAmount >= invoiceBalance {
 		newStatus = constants.StatusPaid
 	} else {
 		newStatus = constants.StatusPartiallyPaid
 	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		tx = invoiceTransactionRepository.UseTx(tx)
+
+		err := invoiceRepositories.SaveStatement(newStatement, tx)
+		if err != nil {
+			return errors.New("Creating statement error " + err.Error())
+		}
+
+		if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
+			return errors.New("Adding new transaction error " + err.Error())
+		}
+
+		err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
+		if err != nil {
+			return errors.New("Attaching transaction to invoice error " + err.Error())
+		}
+
+		return nil
+	})
 
 	if newStatus != invoice.Status {
 		invoice.Status = newStatus
@@ -457,7 +552,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		}
 	}
 
-	return minInvoiceResponse, nil
+	return createMinInvoiceResponse(invoice), nil
 }
 
 func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse, error) {
@@ -497,7 +592,7 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 		InvoiceAmount: minInvoice.TotalAmount,
 		InvoiceDate:   minInvoice.Date,
 		PaidAmount:    mostRecentPayment.Amount,
-		PaidDate:      mostRecentPayment.Date.Format(time.DateOnly),
+		PaidDate:      mostRecentPayment.CreatedAt.Format(time.DateOnly),
 	}
 
 	var financialSummaryResponse = responses.FinancialSummaryResponse{
@@ -512,29 +607,19 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 	return financialSummaryResponse, nil
 }
 
-func GetAllPayments(userNumber string, refNumber string, schoolNumber string, startDate time.Time, endDate time.Time) ([]responses.InvoicePaymentResponse, error) {
+func GetAllPayments(userNumber string, refNumber string, schoolNumber string, startDate time.Time, endDate time.Time) ([]responses.TransactionResponse, error) {
 
-	var invoicePaymentsResponse []responses.InvoicePaymentResponse
+	var invoicePaymentsResponse []responses.TransactionResponse
 
-	allPayments, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber, startDate, endDate)
+	transactions, err := invoiceRepositories.GetAllPayments(userNumber, schoolNumber, refNumber, startDate, endDate)
 
 	if err != nil {
 		return invoicePaymentsResponse, err
 	}
 
-	for _, payment := range allPayments {
+	for _, transaction := range transactions {
 
-		_user, err := repository.GetUserByNumber(payment.UserNumber)
-		if err != nil {
-			return invoicePaymentsResponse, err
-		}
-
-		_invoice, err := invoiceRepositories.FindInvoiceByNumber(payment.InvoiceNumber)
-		if err != nil {
-			return invoicePaymentsResponse, err
-		}
-
-		paymentResponse := createPaymentResponse(payment, _user, _invoice)
+		paymentResponse := createTransactionResponse(transaction)
 
 		invoicePaymentsResponse = append(invoicePaymentsResponse, paymentResponse)
 
@@ -543,7 +628,22 @@ func GetAllPayments(userNumber string, refNumber string, schoolNumber string, st
 	return invoicePaymentsResponse, nil
 }
 
-func DeleteInvoice(invoiceNumber string) error {
+func createTransactionResponse(transaction models.Transaction) responses.TransactionResponse {
+	statement, _ := invoiceRepositories.GetStatementByNumber(transaction.StatementNumber)
+	addedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
+	paidBy, _ := repository.GetUserByNumber(statement.UserNumber)
+	return responses.TransactionResponse{
+		Amount:        statement.Amount,
+		ReceiptNumber: statement.RefNumber,
+		DateReceived:  statement.CreatedAt.Format(time.DateTime),
+		DatePaid:      transaction.Date.Format(time.DateOnly),
+		ReceivedBy:    addedBy.FirstName,
+		PaidBy:        paidBy.FirstName,
+		Description:   statement.Description,
+	}
+}
+
+func DeleteInvoice(invoiceNumber, currentUser string) error {
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
 	if err != nil {
@@ -558,12 +658,47 @@ func DeleteInvoice(invoiceNumber string) error {
 		return errors.New("you can only delete a not paid invoice")
 	}
 
-	err = invoiceRepositories.DeleteInvoice(invoice)
+	invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoiceNumber)
+
+	invoiceStatement, err := invoiceRepositories.GetStatementByNumber(invoice.StatementNumber)
 	if err != nil {
-		return errors.New("deleting invoice failed : " + err.Error())
+		return errors.New("Checking statement error " + err.Error())
 	}
 
-	return nil
+	nextBalance, err := ComputeNextBalance(invoiceAmount, constants.StatementTypeIn, invoiceStatement.UserNumber)
+	if err != nil {
+		return errors.New("Computing next balance error " + err.Error())
+	}
+
+	newStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		Type:          constants.StatementTypeIn,
+		Amount:        invoiceAmount,
+		Balance:       nextBalance,
+		SchoolNumber:  invoiceStatement.SchoolNumber,
+		AddedByNumber: currentUser,
+		RefNumber:     generateNewInvoiceNumber(),
+		CampusNumber:  invoiceStatement.CampusNumber,
+		UserNumber:    invoiceStatement.UserNumber,
+		Description:   "Invoice deleted " + invoiceStatement.RefNumber,
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		err := invoiceRepositories.SaveStatement(newStatement, tx)
+		if err != nil {
+			return errors.New("Creating statement error " + err.Error())
+		}
+
+		err = invoiceRepositories.DeleteInvoice(invoice, tx)
+		if err != nil {
+			return errors.New("deleting invoice failed : " + err.Error())
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
@@ -577,63 +712,258 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 		return errors.New("invalid invoice number")
 	}
 
-	invoice.Status = constants.StatusCancelled
-	invoice.UserNumber = currentUserNumber
-
-	err = invoiceRepositories.UpdateInvoice(invoice)
+	invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoice.Number)
 	if err != nil {
-		return errors.New("updating invoice failed : " + err.Error())
+		return errors.New("Checking amount error " + err.Error())
 	}
 
-	return nil
+	invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions(invoiceNumber, "")
+	if err != nil {
+		return errors.New("Checking payments error " + err.Error())
+	}
+
+	invoiceStatement, err := invoiceRepositories.GetStatementByNumber(invoice.StatementNumber)
+	if err != nil {
+		return errors.New("Checking statement error " + err.Error())
+	}
+
+	nextBalance, err := ComputeNextBalance(invoiceAmount, constants.StatementTypeIn, invoiceStatement.UserNumber)
+	if err != nil {
+		return errors.New("Computing next balance error " + err.Error())
+	}
+
+	newStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		Type:          constants.StatementTypeIn,
+		Amount:        invoiceAmount,
+		Balance:       nextBalance,
+		SchoolNumber:  invoiceStatement.SchoolNumber,
+		AddedByNumber: currentUserNumber,
+		RefNumber:     generateNewInvoiceNumber(),
+		CampusNumber:  invoiceStatement.CampusNumber,
+		UserNumber:    invoiceStatement.UserNumber,
+		Description:   "Invoice cancelled " + invoiceStatement.RefNumber,
+	}
+
+	invoice.Status = constants.StatusCancelled
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		invoiceTransactionRepository.UseTx(tx)
+
+		for _, invoiceTransaction := range invoiceTransactions {
+			err := invoiceTransactionRepository.DeleteTransaction(invoiceTransaction)
+			if err != nil {
+				return errors.New("Clearing invoice payments error " + err.Error())
+			}
+		}
+
+		err := invoiceRepositories.UpdateInvoice(invoice, tx)
+		if err != nil {
+			return errors.New("updating invoice failed : " + err.Error())
+		}
+
+		err = invoiceRepositories.SaveStatement(newStatement, tx)
+		if err != nil {
+			return errors.New("Creating statement error " + err.Error())
+		}
+
+		return nil
+	})
+
+	return err
 }
 
-func CancelPayment(paymentNumber string, currentUser string) error {
+func CancelPayment(transactionNumber string, currentUser string) error {
 
-	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	invoicePayment, err := invoiceRepositories.GetTransactionByNumber(transactionNumber)
 	if err != nil {
 		return errors.New("checking payment number error: " + err.Error())
 	}
 
 	if invoicePayment.Number == "" {
-		return errors.New("invalid payment number")
+		return errors.New("invalid transaction number")
 	}
 
-	invoicePayment.UserNumber = currentUser
+	transactionStatement, err := invoiceRepositories.GetStatementByNumber(invoicePayment.StatementNumber)
+	if err != nil {
+		return errors.New("Checking transaction statement error " + err.Error())
+	}
+
+	invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
+	if err != nil {
+		return errors.New("Checking invoice transactions error " + err.Error())
+	}
+
+	nextBlc, err := ComputeNextBalance(transactionStatement.Amount, constants.StatementTypeOut, transactionStatement.UserNumber)
+	if err != nil {
+		return errors.New("Checking next user balance error " + err.Error())
+	}
+
+	newStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		SchoolNumber:  transactionStatement.SchoolNumber,
+		AddedByNumber: currentUser,
+		RefNumber:     generateNewInvoiceNumber(),
+		CampusNumber:  transactionStatement.CampusNumber,
+		UserNumber:    transactionStatement.UserNumber,
+		Type:          constants.StatementTypeOut,
+		Description:   "Payment cancelled " + transactionStatement.RefNumber,
+		Amount:        transactionStatement.Amount,
+		Balance:       nextBlc,
+	}
+
 	invoicePayment.Status = constants.StatusCancelled
 
-	_, err = invoiceRepositories.SavePayment(invoicePayment)
-	if err != nil {
-		return errors.New("updating payment failed : " + err.Error())
-	}
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
-	return nil
+		invoiceTransactionRepository.UseTx(tx)
+
+		for _, invoiceTransaction := range invoiceTransactions {
+
+			paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoiceTransaction.InvoiceNumber, tx)
+
+			err := invoiceTransactionRepository.DeleteTransaction(invoiceTransaction)
+			if err != nil {
+				return errors.New("Clearing invoice transaction error " + err.Error())
+			}
+
+			invoice, _ := invoiceRepositories.FindInvoiceByNumber(invoiceTransaction.InvoiceNumber, tx)
+
+			if (paidAmount - invoiceTransaction.AmountPaidOff) > 0 {
+				invoice.Status = constants.StatusPartiallyPaid
+			} else {
+				invoice.Status = constants.StatusNotPaid
+			}
+
+			err = invoiceRepositories.SaveInvoice(invoice, tx)
+			if err != nil {
+				return errors.New("Updating invoice status error " + err.Error())
+			}
+		}
+
+		_, err := invoiceRepositories.SaveTransaction(invoicePayment, tx)
+		if err != nil {
+			return errors.New("Updating transaction failed : " + err.Error())
+		}
+
+		err = invoiceRepositories.SaveStatement(newStatement, tx)
+		if err != nil {
+			return errors.New("Creating statement error " + err.Error())
+		}
+
+		return nil
+	})
+
+	return err
 }
 
-func DeletePayment(paymentNumber string) error {
+func DeletePayment(transactionNumber, currentUser string) error {
 
-	invoicePayment, err := invoiceRepositories.GetInvoicePaymentByNumber(paymentNumber)
+	transaction, err := invoiceRepositories.GetTransactionByNumber(transactionNumber)
 	if err != nil {
 		return errors.New("checking payment number error: " + err.Error())
 	}
 
-	if invoicePayment.Number == "" {
+	if transaction.Number == "" {
 		return errors.New("invalid payment number")
 	}
 
-	err = invoiceRepositories.DeleteInvoicePayment(invoicePayment)
+	invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
 	if err != nil {
-		return errors.New("deleting payment failed : " + err.Error())
+		return errors.New("Checking invoice transactions error " + err.Error())
 	}
 
-	return nil
+	oldStatement, err := invoiceRepositories.GetStatementByNumber(transaction.StatementNumber)
+	if err != nil {
+		return errors.New("Checking statement error " + err.Error())
+	}
+
+	balance, err := ComputeNextBalance(oldStatement.Amount, constants.StatementTypeOut, oldStatement.UserNumber)
+	if err != nil {
+		return err
+	}
+
+	statement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		Amount:        oldStatement.Amount,
+		UserNumber:    oldStatement.UserNumber,
+		Description:   "Payment deleted " + oldStatement.RefNumber,
+		SchoolNumber:  oldStatement.SchoolNumber,
+		CampusNumber:  oldStatement.CampusNumber,
+		RefNumber:     generateNewInvoiceNumber(),
+		Balance:       balance,
+		Type:          constants.StatementTypeOut,
+		AddedByNumber: currentUser,
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		invoiceTransactionRepository.UseTx(tx)
+
+		for _, invoiceTransaction := range invoiceTransactions {
+
+			paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoiceTransaction.InvoiceNumber, tx)
+
+			err := invoiceTransactionRepository.DeleteTransaction(invoiceTransaction)
+			if err != nil {
+				return errors.New("Clearing invoice transaction error " + err.Error())
+			}
+
+			invoice, _ := invoiceRepositories.FindInvoiceByNumber(invoiceTransaction.InvoiceNumber, tx)
+
+			if (paidAmount - invoiceTransaction.AmountPaidOff) > 0 {
+				invoice.Status = constants.StatusPartiallyPaid
+			} else {
+				invoice.Status = constants.StatusNotPaid
+			}
+
+			err = invoiceRepositories.SaveInvoice(invoice, tx)
+			if err != nil {
+				return errors.New("Updating invoice status error " + err.Error())
+			}
+		}
+
+		err := invoiceRepositories.DeleteTransaction(transaction, tx)
+		if err != nil {
+			return errors.New("deleting transaction failed : " + err.Error())
+		}
+
+		err = invoiceRepositories.SaveStatement(statement, tx)
+
+		if err != nil {
+			return errors.New("Creating statement error " + err.Error())
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func ComputeNextBalance(newAmount float64, statementType string, userNumber string) (float64, error) {
+
+	if statementType != constants.StatementTypeIn && statementType != constants.StatementTypeOut {
+		return 0, errors.New("Invalid statement type: '" + statementType + "'")
+	}
+
+	recentStatement, err := invoiceRepositories.GetRecentStatementByUserNumber(userNumber)
+	if err != nil {
+		return 0, errors.New("Getting recent statement error " + err.Error())
+	}
+
+	balance := recentStatement.Balance - newAmount
+
+	if statementType == "IN" {
+		balance = recentStatement.Balance + newAmount
+	}
+
+	return balance, nil
 }
 
 func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUser string) error {
 
-	tx := config.DB.Begin()
-
-	invoice, err := invoiceRepositories.FindInvoiceByNumber(updateInvoiceRequest.InvoiceNumber, tx)
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(updateInvoiceRequest.InvoiceNumber)
 	if err != nil {
 		return errors.New("checking invoice number error: " + err.Error())
 	}
@@ -642,7 +972,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 		return errors.New("invalid invoice number")
 	}
 
-	paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number, tx)
+	paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
 	if err != nil {
 		return errors.New("checking paid amount error: " + err.Error())
 	}
@@ -656,20 +986,19 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 		return err
 	}
 
-	invoice.AddedByNumber = currentUser
+	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number)
+	if err != nil {
+		return errors.New("getting current invoice items failed : " + err.Error())
+	}
+
 	invoice.Description = updateInvoiceRequest.Description
 	invoice.DueDate = dueDate
 
+	tx := config.DB.Begin()
 	err = invoiceRepositories.UpdateInvoice(invoice, tx)
 	if err != nil {
 		tx.Rollback()
 		return errors.New("updating invoice failed : " + err.Error())
-	}
-
-	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number, tx)
-	if err != nil {
-		tx.Rollback()
-		return errors.New("getting current invoice items failed : " + err.Error())
 	}
 
 	for _, item := range items {
@@ -715,4 +1044,26 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 	}
 
 	return nil
+}
+
+func UserStatement(userNumber string, startDate time.Time, endDate time.Time) ([]responses.StatementResponse, error) {
+
+	var statementResponse = make([]responses.StatementResponse, 0)
+
+	allStatements, err := invoiceRepositories.FindAllStatements(userNumber, startDate, endDate)
+	if err != nil {
+		return statementResponse, errors.New("Error getting statements " + err.Error())
+	}
+
+	for _, statement := range allStatements {
+		statementResponse = append(statementResponse, responses.StatementResponse{
+			Amount:       statement.Amount,
+			Balance:      statement.Balance,
+			Type:         statement.Type,
+			Description:  statement.Description,
+			DateReceived: statement.CreatedAt.Format(time.DateTime),
+		})
+	}
+
+	return statementResponse, nil
 }
