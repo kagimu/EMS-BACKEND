@@ -186,3 +186,26 @@ func AllStatements(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": statementResponses})
 }
+
+func TransactionCredits(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	userNumber := context.Query("user_number")
+	if userNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide user number "})
+		return
+	}
+
+	statementResponses, err := services.UserCredits(userNumber)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get statements, try again", "err": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": statementResponses})
+}

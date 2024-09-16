@@ -491,6 +491,7 @@ func SetupRoutes() *gin.Engine {
 			payments := invoices.Group("/payments")
 			{
 				payments.GET("statements", invoiceController.AllStatements)
+				payments.GET("credits", invoiceController.TransactionCredits)
 				payments.GET("", invoiceController.GetAllPayments)
 				payments.POST("cancel", invoiceController.CancelPayment)
 				payments.POST("delete", invoiceController.DeletePayment)

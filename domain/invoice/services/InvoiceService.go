@@ -534,6 +534,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		Number:          uuid.NewV4().String(),
 		Date:            dateTimePaid,
 		Status:          constants.StatusActive,
+		AmountInCredit:  invoicePaymentRequest.Amount - payAmount,
 	}
 
 	newInvoiceTransaction := models.InvoiceTransaction{
@@ -667,13 +668,14 @@ func createTransactionResponse(transaction models.Transaction) responses.Transac
 	addedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
 	paidBy, _ := repository.GetUserByNumber(statement.UserNumber)
 	return responses.TransactionResponse{
-		Amount:        statement.Amount,
-		ReceiptNumber: statement.RefNumber,
-		DateReceived:  statement.CreatedAt.Format(time.DateTime),
-		DatePaid:      transaction.Date.Format(time.DateOnly),
-		ReceivedBy:    addedBy.FirstName,
-		PaidBy:        paidBy.FirstName,
-		Description:   statement.Description,
+		Amount:         statement.Amount,
+		ReceiptNumber:  statement.RefNumber,
+		DateReceived:   statement.CreatedAt.Format(time.DateTime),
+		DatePaid:       transaction.Date.Format(time.DateOnly),
+		ReceivedBy:     addedBy.FirstName,
+		PaidBy:         paidBy.FirstName,
+		Description:    statement.Description,
+		AmountInCredit: transaction.AmountInCredit,
 	}
 }
 
@@ -790,6 +792,13 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 			if err != nil {
 				return errors.New("Clearing invoice payments error " + err.Error())
 			}
+
+			transaction, _ := invoiceRepositories.GetTransactionByNumber(invoiceTransaction.TransactionNumber, tx)
+			transaction.AmountInCredit = transaction.AmountInCredit + invoiceTransaction.AmountPaidOff
+			_, err = invoiceRepositories.SaveTransaction(transaction, tx)
+			if err != nil {
+				return errors.New("Updating credit error " + err.Error())
+			}
 		}
 
 		err := invoiceRepositories.UpdateInvoice(invoice, tx)
@@ -848,6 +857,7 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 	}
 
 	invoicePayment.Status = constants.StatusCancelled
+	invoicePayment.AmountInCredit = transactionStatement.Amount
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
@@ -1104,4 +1114,41 @@ func UserStatement(userNumber string, startDate time.Time, endDate time.Time) ([
 	}
 
 	return statementResponse, nil
+}
+
+func UserCredits(userNumber string) ([]responses.TransactionResponse, error) {
+
+	var creditsResponse = make([]responses.TransactionResponse, 0)
+
+	userTransactions, err := invoiceRepositories.AllUserCredit(userNumber)
+	if err != nil {
+		return creditsResponse, errors.New("Getting user transactions error " + err.Error())
+	}
+
+	for _, transaction := range userTransactions {
+		creditsResponse = append(creditsResponse, createTransactionResponse(transaction))
+	}
+
+	return creditsResponse, nil
+}
+
+func GetTransactionCredit(transactionNumber string) (float64, error) {
+
+	transaction, err := invoiceRepositories.GetTransactionByNumber(transactionNumber)
+	if err != nil {
+		return 0, errors.New("Error getting transaction " + err.Error())
+	}
+
+	if transaction.Number == "" {
+		return 0, errors.New("Invalid transaction number ")
+	}
+
+	creditsUsed, err := invoiceRepositories.TransactionUsedCredit(transactionNumber)
+	if err != nil {
+		return 0, errors.New("Error getting transaction used credit " + err.Error())
+	}
+
+	statement := transaction.Statement
+
+	return statement.Amount - creditsUsed, nil
 }
