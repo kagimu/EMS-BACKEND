@@ -27,4 +27,6 @@ type AssessmentMetric struct {
 	RequireComment       string                             `json:"require_comment" gorm:"size:5;not null;default:'YES'"`
 	UserNumber           string                             `json:"user_number" gorm:"size:36;not null"`
 	User                 userModel.User                     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;" json:"user"`
+	MarkingGuide         string                             `json:"marking_guide" gorm:"size:36;"`
+	TestScript           string                             `json:"test_script" gorm:"size:36;"`
 }

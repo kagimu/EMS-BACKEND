@@ -6,8 +6,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	classService "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/repositories"
@@ -140,6 +142,8 @@ func CreateAssessmentsResponse(assessment models.AssessmentMetric) (responses.As
 	assessmentMetricResponse.AcademicYearNumber = studyPeriod.AcademicYearNumber
 	assessmentMetricResponse.CampusClassNumber = assessment.CampusClassNumber
 	assessmentMetricResponse.ScheduledOn = assessment.ScheduledOn.Format(time.DateOnly)
+	assessmentMetricResponse.MarkingGuide = commons.GenerateDownloadPath(assessment.MarkingGuide, false)
+	assessmentMetricResponse.TestScript = commons.GenerateDownloadPath(assessment.TestScript, false)
 
 	return assessmentMetricResponse, nil
 }
@@ -207,4 +211,27 @@ func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMet
 
 	return nil
 
+}
+
+func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, nature string) error {
+	uploadNumber, err := services.UploadAttachment(ctx, "attachment")
+	if err != nil {
+		return errors.New("uploading marking guide error: " + err.Error())
+	}
+	repo := repositories.NewAssessmentMetricRepository()
+	assessmentMetric, err := repo.FindAssessmentMetricByNumber(assessmentMetricNumber)
+	if err != nil {
+		return errors.New("error getting assessment metric details: " + err.Error())
+	}
+	if nature == "MARKING_GUIDE" {
+		assessmentMetric.MarkingGuide = uploadNumber
+	} else {
+		assessmentMetric.TestScript = uploadNumber
+	}
+	err = repo.SaveAssessmentMetric(assessmentMetric)
+	if err != nil {
+		return errors.New("updating marking guide error: " + err.Error())
+	}
+
+	return nil
 }
