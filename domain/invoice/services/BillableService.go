@@ -107,7 +107,11 @@ func (billableService *billableService) BillableDetails(billableNumber string) (
 
 func createDetailedBillableResponse(billable models.Billable) (responses.DetailedBillableResponse, error) {
 	billResponse := responses.DetailedBillableResponse{}
-	billResponse.BillableResponse = createBillResponse(billable)
+	bResponse, err := createBillResponse(billable)
+	if err != nil {
+		return billResponse, err
+	}
+	billResponse.BillableResponse = bResponse
 
 	var itemsResponse = make([]responses.InvoiceItemResponse, 0)
 
@@ -148,18 +152,28 @@ func (billableService *billableService) FindAllBillable(schoolNumber, campusNumb
 	}
 
 	for _, bill := range bills {
-		billsResponse = append(billsResponse, createBillResponse(bill))
+		bResponse, err := createBillResponse(bill)
+		if err != nil {
+			return billsResponse, err
+		}
+		billsResponse = append(billsResponse, bResponse)
 	}
 
 	return billsResponse, nil
 }
 
-func createBillResponse(billable models.Billable) responses.BillableResponse {
+func createBillResponse(billable models.Billable) (responses.BillableResponse, error) {
 
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(billable.StudyPeriodNumber)
 	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 	class, _ := repositories2.GetClassByNumber(billable.ClassNumber)
 	campus, _ := repositories4.GetCampusByNumber(billable.CampusNumber)
+
+	amount, err := repositories.GetBillableTotal(billable.Number)
+
+	if err != nil {
+		return responses.BillableResponse{}, errors.New("Getting billable total amount error: " + err.Error())
+	}
 
 	return responses.BillableResponse{
 		BillableNumber:    billable.Number,
@@ -171,7 +185,8 @@ func createBillResponse(billable models.Billable) responses.BillableResponse {
 		CampusNumber:      campus.Number,
 		CampusName:        campus.Name,
 		Type:              billable.BillType,
-	}
+		TotalAmount:       amount,
+	}, nil
 }
 
 func (billableService *billableService) NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error {
