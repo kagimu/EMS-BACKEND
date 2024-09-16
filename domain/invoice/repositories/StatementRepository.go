@@ -3,7 +3,6 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
@@ -63,15 +62,15 @@ func GetRecentStatementByUserNumber(userNumber string, tx ...*gorm.DB) (models.S
 	return statement, nil
 }
 
-func GetMostRecentPayment(userNumber string) (models.Statement, error) {
+func GetMostRecentTransaction(userNumber string) (models.Statement, error) {
 
 	db := config.DB
 
 	var statement models.Statement
 
 	if err := db.
+		Joins("JOIN transactions ON transactions.statement_number = statements.number").
 		Where("user_number = ? ", userNumber).
-		Where("type = ? ", constants.StatementTypeIn).
 		Order("created_at desc").
 		First(&statement).Error; err != nil {
 

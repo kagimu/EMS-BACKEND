@@ -127,15 +127,10 @@ func UploadMarkingGuide(c *gin.Context) {
 	c.JSON(http.StatusOK, commons.Feedback("Marking guide uploaded successfully"))
 }
 
-func UploadTestScript(c *gin.Context) {
+func UploadScript(c *gin.Context) {
 	metricNumber := c.Param("assessment_metric_number")
 	if metricNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the assessment schedule"})
-		return
-	}
-
-	if c.PostForm("attachment") == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the attachment"})
 		return
 	}
 

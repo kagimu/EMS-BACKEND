@@ -84,7 +84,9 @@ func CountAllUserInvoices(userNumber string) (int64, error) {
 
 	var invoicesCount int64
 
-	if err := db.Model(&invoiceModel.Invoice{}).
+	if err := db.
+		Joins("JOIN statements ON statements.number =  invoices.statement_number").
+		Model(&invoiceModel.Invoice{}).
 		Where("user_number = ?", userNumber).
 		Count(&invoicesCount).Error; err != nil {
 
@@ -104,9 +106,11 @@ func GetAllInvoicedAmount(userNumber string) (float64, error) {
 
 	var totalAmount float64
 
-	if err := db.Model(&invoiceModel.Invoice{}).
-		Joins("JOIN invoice_items ON invoices.number = invoice_items.invoice_number").
-		Where("invoices.user_number = ? ", userNumber).
+	if err := db.
+		Model(&invoiceModel.Invoice{}).
+		Joins("JOIN statements ON statements.number =  invoices.statement_number").
+		Joins("JOIN invoice_items ON invoice_items.invoice_number = invoices.number").
+		Where("statements.user_number = ? ", userNumber).
 		Select("COALESCE(sum(invoice_items.quantity * invoice_items.unit_price), 0)").
 		Scan(&totalAmount).Error; err != nil {
 
@@ -126,15 +130,16 @@ func GetMostRecentInvoice(userNumber string) (invoiceModel.Invoice, error) {
 	var invoice invoiceModel.Invoice
 
 	if err := db.
-		Where("user_number = ? ", userNumber).
-		Order("created_at desc").
+		Joins("JOIN statements ON statements.number =  invoices.statement_number").
+		Where("statements.user_number = ? ", userNumber).
+		Order("statements.created_at desc").
 		First(&invoice).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return invoice, nil
+			return invoiceModel.Invoice{}, nil
 		}
 
-		return invoice, err
+		return invoiceModel.Invoice{}, err
 	}
 
 	return invoice, nil

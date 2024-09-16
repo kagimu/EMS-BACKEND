@@ -609,7 +609,7 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 	}
 	minInvoice := createMinInvoiceResponse(recentInvoice)
 
-	mostRecentPayment, err := invoiceRepositories.GetMostRecentPayment(userNumber)
+	mostRecentPayment, err := invoiceRepositories.GetMostRecentTransaction(userNumber)
 	if err != nil {
 		return responses.FinancialSummaryResponse{}, err
 	}
