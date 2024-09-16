@@ -95,6 +95,7 @@ func FindAllStatements(userNumber string, startDate, endDate time.Time) ([]model
 		Scopes(
 			filters.ByUserNumber(userNumber),
 			filters.ByDateBetween("created_at", startDate, endDate)).
+		Order("created_at asc").
 		Find(&statements).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
