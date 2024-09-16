@@ -139,9 +139,12 @@ func GetAllPayments(userNumber string, schoolNumber string, refNumber string, st
 	return invoicePayment, nil
 }
 
-func GetTransactionByNumber(transactionNumber string) (invoiceModels.Transaction, error) {
+func GetTransactionByNumber(transactionNumber string, tx ...*gorm.DB) (invoiceModels.Transaction, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var invoicePayment invoiceModels.Transaction
 
@@ -169,4 +172,52 @@ func DeleteTransaction(transactionNumber invoiceModels.Transaction, tx ...*gorm.
 	}
 
 	return nil
+}
+
+func AllUserCredit(userNumber string, tx ...*gorm.DB) ([]invoiceModels.Transaction, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var transactions []invoiceModels.Transaction
+
+	if err := db.
+		Joins("JOIN statements ON statements.number = transactions.statement_number").
+		Where("statements.user_number", userNumber).
+		Where("amount_in_credit > ?", 0).
+		Find(&transactions).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return transactions, nil
+		}
+
+		return transactions, err
+	}
+
+	return transactions, nil
+}
+
+func TransactionUsedCredit(transactionNumber string, tx ...*gorm.DB) (float64, error) {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var totalAmount float64
+
+	if err := db.Model(&invoiceModels.InvoiceTransaction{}).
+		Where("transaction_number = ? ", transactionNumber).
+		Select("COALESCE(sum(amount_paid_off),0)").
+		Scan(&totalAmount).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+
+		return 0, err
+	}
+
+	return totalAmount, nil
 }
