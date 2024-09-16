@@ -15,6 +15,10 @@ type EnrollmentRequest struct {
 	Items              []EnrollmentItem `json:"items"`
 	FeedingGroupNumber string           `json:"feeding_group_number"`
 	ModeOfStudyNumber  string           `json:"mode_of_study_number"`
+	BillableNumber     string           `json:"billable_number"`
+	ClientReference    string           `json:"client_reference"`
+	Description        string           `json:"description"`
+	PaidAmount         float64          `json:"paid_amount"`
 }
 
 type EnrollmentItem struct {
