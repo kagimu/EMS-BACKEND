@@ -114,3 +114,24 @@ func GetBillableByInvoiceNumber(invoiceNumber string, trn ...*gorm.DB) (models.B
 
 	return billable, nil
 }
+
+func GetBillableTotal(billableNumber string) (float64, error) {
+
+	db := config.DB
+
+	var totalAmount float64
+
+	if err := db.Model(&models.BillableItem{}).
+		Where("billable_number = ? ", billableNumber).
+		Select("COALESCE(sum(quantity * unit_price),0)").
+		Scan(&totalAmount).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+
+		return totalAmount, err
+	}
+
+	return totalAmount, nil
+}
