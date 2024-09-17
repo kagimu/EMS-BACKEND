@@ -511,13 +511,17 @@ func createReportSettingsResponse(reportSetting models.ReportSetting) responses.
 	class, _ := repositories.GetClassByCampusClassNumber(reportSetting.CampusClassNumber)
 
 	return responses.ReportSettingsResponse{
-		Name:         academicYear.AcademicYearName + " - " + class.Name + " - " + studyPeriodName.Name,
-		Number:       reportSetting.Number,
-		Status:       reportSetting.Status,
-		Columns:      reportSetting.Columns,
-		Code:         reportSetting.Code,
-		AcademicYear: academicYear.AcademicYearName,
-		StudyPeriod:  studyPeriodName.Name,
-		Class:        class.Name,
+		Name:               academicYear.AcademicYearName + " - " + class.Name + " - " + studyPeriodName.Name,
+		Number:             reportSetting.Number,
+		Status:             reportSetting.Status,
+		Columns:            reportSetting.Columns,
+		Code:               reportSetting.Code,
+		AcademicYear:       academicYear.AcademicYearName,
+		StudyPeriod:        studyPeriodName.Name,
+		Class:              class.Name,
+		StudyPeriodNumber:  studyPeriodName.Number,
+		AcademicYearNumber: academicYear.Number,
+		ClassNumber:        class.Number,
+		LevelNumber:        class.LevelNumber,
 	}
 }

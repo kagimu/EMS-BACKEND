@@ -91,9 +91,28 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		billType = constants.BillTypeNewApplication
 	}
 
-	billable, err := repositories4.GetEnrollmentBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, constants.StatusActive)
-	if err != nil {
-		return errors.New("Checking billable error " + err.Error())
+	var billable models4.Billable
+
+	if enrolmentRequest.BillableNumber != "" {
+
+		billable, err = repositories4.GetBillableByNumber(enrolmentRequest.BillableNumber)
+		if err != nil {
+			return errors.New("Checking billable by number error " + err.Error())
+		}
+
+		if billable.Number == "" {
+			return errors.New("Invalid bill number ")
+		}
+
+		if billable.Status != constants.StatusActive {
+			return errors.New("Selected bill is no longer active ")
+		}
+
+	} else {
+		billable, err = repositories4.GetEnrollmentBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, constants.StatusActive)
+		if err != nil {
+			return errors.New("Checking billable error " + err.Error())
+		}
 	}
 
 	if billable.Number == "" {
@@ -183,7 +202,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		}
 
-		invoice, err := services2.CreateInvoiceFromBillable(billable, student, currentUserNumber, tx)
+		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, tx)
 		if err != nil {
 			return err
 		}

@@ -17,7 +17,7 @@ import (
 func UploadAttachment(c *gin.Context, formKey string) (string, error) {
 	attachmentFile, err := c.FormFile(formKey)
 	if err != nil {
-		return "", err
+		return "", errors.New("File error: " + err.Error())
 	}
 
 	if attachmentFile.Size > 20971520 {

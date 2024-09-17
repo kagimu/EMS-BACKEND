@@ -491,6 +491,7 @@ func SetupRoutes() *gin.Engine {
 			payments := invoices.Group("/payments")
 			{
 				payments.GET("statements", invoiceController.AllStatements)
+				payments.GET("credits", invoiceController.TransactionCredits)
 				payments.GET("", invoiceController.GetAllPayments)
 				payments.POST("cancel", invoiceController.CancelPayment)
 				payments.POST("delete", invoiceController.DeletePayment)
@@ -556,7 +557,7 @@ func SetupRoutes() *gin.Engine {
 			assessment.POST("update", assessmentController.UpdateAssessmentMetric)
 			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
 			assessment.POST("upload-marking-guide", assessmentController.UploadMarkingGuide)
-			assessment.POST("upload-test-script", assessmentController.UploadTestScript)
+			assessment.POST("upload-script", assessmentController.UploadScript)
 
 			assessment.POST("metrics", assessmentController.CreateMetric)
 			assessment.GET("metrics", assessmentController.FetchMetrics)
