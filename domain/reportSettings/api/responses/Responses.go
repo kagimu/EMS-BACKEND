@@ -17,6 +17,7 @@ type ReportSettingsResponse struct {
 	AcademicYearNumber string `json:"academic_year_number"`
 	ClassNumber        string `json:"class_number"`
 	LevelNumber        string `json:"level_number"`
+	CampusClassNumber  string `json:"campus_class_number"`
 }
 
 type ReportColumnResponse struct {

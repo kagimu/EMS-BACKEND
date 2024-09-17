@@ -502,10 +502,9 @@ func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academ
 
 func createReportSettingsResponse(reportSetting models.ReportSetting) responses.ReportSettingsResponse {
 
-	studyPeriodName, err := repositories3.GetStudyPeriodNameByNumber(reportSetting.StudyPeriod.StudyPeriodNameNumber)
-	if err != nil {
-		fmt.Println("Error getting academic year: " + err.Error())
-	}
+	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(reportSetting.StudyPeriodNumber)
+
+	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	academicYear, _ := repositories4.GetAcademicYearByNumber(reportSetting.AcademicYearNumber)
 	class, _ := repositories.GetClassByCampusClassNumber(reportSetting.CampusClassNumber)
@@ -519,9 +518,10 @@ func createReportSettingsResponse(reportSetting models.ReportSetting) responses.
 		AcademicYear:       academicYear.AcademicYearName,
 		StudyPeriod:        studyPeriodName.Name,
 		Class:              class.Name,
-		StudyPeriodNumber:  studyPeriodName.Number,
+		StudyPeriodNumber:  studyPeriod.Number,
 		AcademicYearNumber: academicYear.Number,
 		ClassNumber:        class.Number,
 		LevelNumber:        class.LevelNumber,
+		CampusClassNumber:  reportSetting.CampusClassNumber,
 	}
 }
