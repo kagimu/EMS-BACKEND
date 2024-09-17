@@ -419,32 +419,49 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 		return errors.New("invalid meal course selected")
 	}
 
-	for _, feedingSession := range mealCourseFeedingSessionRequest.FeedingSessions {
-
-		mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Number, feedingSession)
-		if err != nil {
-			return err
-		}
-
-		if mealCourseFeedingSession.Number != "" {
-			fmt.Println("feeding session already added to the meal course")
-			continue
-		}
-
-		newMealCourseFeedingSession := models.MealCourseFeedingSession{
-			MealCourseNumber:     mealCourse.Number,
-			FeedingSessionNumber: feedingSession,
-			Number:               uuid.NewV4().String(),
-		}
-
-		err = repositories.SaveMealCourseFeedingSession(newMealCourseFeedingSession)
-		if err != nil {
-			return err
-		}
-
+	sessions, err := repositories.GetMealCourseFeedingSessionsByMealCourseNumber(mealCourse.Number)
+	if err != nil {
+		return errors.New("Getting sessions error " + err.Error())
 	}
 
-	return nil
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, session := range sessions {
+			err := repositories.DeleteMealCourseFeedingSession(session, tx)
+			if err != nil {
+				return errors.New("Clearing sessions error " + err.Error())
+			}
+		}
+
+		for _, feedingSession := range mealCourseFeedingSessionRequest.FeedingSessions {
+
+			mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Number, feedingSession)
+			if err != nil {
+				return errors.New("Checking duplicates error " + err.Error())
+			}
+
+			if mealCourseFeedingSession.Number != "" {
+				fmt.Println("feeding session already added to the meal course")
+				continue
+			}
+
+			newMealCourseFeedingSession := models.MealCourseFeedingSession{
+				MealCourseNumber:     mealCourse.Number,
+				FeedingSessionNumber: feedingSession,
+				Number:               uuid.NewV4().String(),
+			}
+
+			err = repositories.SaveMealCourseFeedingSession(newMealCourseFeedingSession, tx)
+			if err != nil {
+				return errors.New("Error saving meal course sessions " + err.Error())
+			}
+
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func MealCourseFeedingSessions(mealCourseNumber string) ([]responses.FeedingSessionResponse, error) {

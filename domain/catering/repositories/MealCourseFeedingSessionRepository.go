@@ -7,9 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func SaveMealCourseFeedingSession(mealCourseFeedingSession models.MealCourseFeedingSession) error {
+func SaveMealCourseFeedingSession(mealCourseFeedingSession models.MealCourseFeedingSession, tx ...*gorm.DB) error {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Create(&mealCourseFeedingSession).Error; err != nil {
 		return err
@@ -84,4 +87,15 @@ func GetFeedingSessionForCampusAndMealCourseAndDay(day string, mealCourseNumber 
 	}
 
 	return mealCourseFeedingSession, nil
+}
+
+func DeleteMealCourseFeedingSession(mealCourseFeedingSession models.MealCourseFeedingSession, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Delete(&mealCourseFeedingSession).Error
+
 }
