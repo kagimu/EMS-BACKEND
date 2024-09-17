@@ -546,6 +546,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		InvoiceNumber:     invoice.Number,
 		TransactionNumber: newTransaction.Number,
 		AmountPaidOff:     payAmount,
+		AddedByNumber:     currentUserNumber,
 	}
 
 	var newStatus string
