@@ -574,17 +574,17 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 			return errors.New("Attaching transaction to invoice error " + err.Error())
 		}
 
+		if newStatus != invoice.Status {
+			invoice.Status = newStatus
+			if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
+				return errors.New("Updating invoice failed : " + err.Error())
+			}
+		}
+
 		return nil
 	})
 
-	if newStatus != invoice.Status {
-		invoice.Status = newStatus
-		if err = invoiceRepositories.UpdateInvoice(invoice); err != nil {
-			return minInvoiceResponse, errors.New("Updating invoice failed : " + err.Error())
-		}
-	}
-
-	return createMinInvoiceResponse(invoice), nil
+	return createMinInvoiceResponse(invoice), err
 }
 func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string) (responses.MinInvoiceResponse, error) {
 
@@ -673,17 +673,17 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 			return errors.New("Attaching transaction to invoice error " + err.Error())
 		}
 
+		if newStatus != invoice.Status {
+			invoice.Status = newStatus
+			if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
+				return errors.New("Updating invoice failed : " + err.Error())
+			}
+		}
+
 		return nil
 	})
 
-	if newStatus != invoice.Status {
-		invoice.Status = newStatus
-		if err = invoiceRepositories.UpdateInvoice(invoice); err != nil {
-			return minInvoiceResponse, errors.New("Updating invoice failed : " + err.Error())
-		}
-	}
-
-	return createMinInvoiceResponse(invoice), nil
+	return createMinInvoiceResponse(invoice), err
 }
 
 func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse, error) {
