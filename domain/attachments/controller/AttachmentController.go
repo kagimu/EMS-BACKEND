@@ -25,5 +25,7 @@ func DownloadAttachment(context *gin.Context) {
 	}
 
 	context.Header("Content-Disposition", "attachment; filename="+fileDetails.FileName)
+	context.Header("Content-Type", "application/pdf")
+	//context.Header("Content-Type", "application/octet-stream")
 	context.Data(http.StatusOK, "application/octet-stream", byteFile)
 }
