@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
@@ -244,4 +245,44 @@ func GetReportColumns(reportSettingNumber string) ([]responses.ReportColumnRespo
 	}
 
 	return reportColumns, nil
+}
+
+func AllReportColumnAssessments(reportColumnNumber, assessmentAreaNumber, assessmentMetricNumber, academicYearNumber, studyPeriodNumber, campusClassNumber, reportSettingNumber string) ([]responses.ReportColumnAssessmentResponse, error) {
+
+	var columnAssessmentResponse = make([]responses.ReportColumnAssessmentResponse, 0)
+
+	allAssessments, err := reporsitory.AllReportColumnAssessments(reportColumnNumber, assessmentAreaNumber, assessmentMetricNumber, academicYearNumber, studyPeriodNumber, campusClassNumber, reportSettingNumber)
+	if err != nil {
+		return columnAssessmentResponse, errors.New("Getting report column assessments error " + err.Error())
+	}
+
+	for _, columnAssessment := range allAssessments {
+		columnAssessmentResponse = append(columnAssessmentResponse, CreateReportColumnAssessmentResponse(columnAssessment))
+	}
+
+	return columnAssessmentResponse, nil
+}
+
+func CreateReportColumnAssessmentResponse(reportColumnAssessment models.ReportColumnAssessment) responses.ReportColumnAssessmentResponse {
+
+	assessmentArea, _ := repositories.GetAssessmentAreaByNumber(reportColumnAssessment.AssessmentAreaNumber)
+
+	assessmentSchedule, _ := assessmentRepository.FindAssessmentMetricByNumber(reportColumnAssessment.AssessmentMetricNumber)
+
+	metric, _ := repositories2.GetMetricByNumber(assessmentSchedule.MetricNumber)
+
+	reportColumn, _ := reporsitory.GetReportColumnByNumber(reportColumnAssessment.ReportColumnNumber)
+
+	reportSetting, _ := reporsitory.GetReportSettingByNumber(reportColumn.ReportSettingNumber)
+
+	class, _ := repositories3.GetClassByCampusClassNumber(reportSetting.CampusClassNumber)
+
+	return responses.ReportColumnAssessmentResponse{
+		Number:           reportColumnAssessment.Number,
+		AssessmentArea:   assessmentArea.Name,
+		AssessmentMetric: metric.Name,
+		ReportColumn:     reportColumn.Name,
+		ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateTime),
+		Class:            class.Name,
+	}
 }

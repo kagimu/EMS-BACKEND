@@ -3,6 +3,7 @@ package reporsitory
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"gorm.io/gorm"
 )
@@ -66,5 +67,25 @@ func FindReportColumnAssessmentByReportColumnNumberAndAssessmentAreaNumber(repor
 	}
 
 	return reportColumnAssessment, nil
-	//tx.Where("assessment_area_number = ? AND report_column_number = ? ", assessmentArea.Number, reportColum.Number).Find(&rcas).Error;
+}
+
+func AllReportColumnAssessments(reportColumnNumber, assessmentAreaNumber, assessmentMetricNumber, academicYearNumber, studyPeriodNumber, campusClassNumber, reportSettingNumber string) ([]models.ReportColumnAssessment, error) {
+
+	db := config.DB
+	var reportColumnAssessments []models.ReportColumnAssessment
+
+	if err := db.
+		Joins("JOIN report_columns ON report_columns.number = report_column_assessments.report_column_number").
+		Joins("JOIN report_settings ON report_settings.number = report_columns.report_setting_number").
+		Scopes(filters.ByAnyField("report_column_number", reportColumnNumber), filters.ByAcademicYearNumber(academicYearNumber), filters.ByAnyField("report_setting_number", reportSettingNumber), filters.ByCampusClassNumber(campusClassNumber), filters.ByStudyPeriodNumber(studyPeriodNumber), filters.ByAnyField("assessment_metric_number", assessmentMetricNumber), filters.ByAnyField("assessment_area_number", assessmentAreaNumber)).
+		Find(&reportColumnAssessments).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportColumnAssessments, nil
+		}
+
+		return reportColumnAssessments, err
+	}
+
+	return reportColumnAssessments, nil
 }
