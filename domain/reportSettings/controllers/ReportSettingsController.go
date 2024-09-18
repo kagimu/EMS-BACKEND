@@ -208,7 +208,7 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 	classNumber := ctx.Query("class_number")
 	campusNumber := ctx.Query("campus_number")
 	campusClassNumber := ctx.Query("campus_class_number")
-	curriculumNumber := ctx.Query("curriculum_umber")
+	curriculumNumber := ctx.Query("curriculum_number")
 	campusCurriculumNumber := ctx.Query("campus_curriculum_umber")
 
 	if classNumber != "" && campusNumber != "" {
@@ -274,6 +274,40 @@ func FetchReportColumnAssessments(ctx *gin.Context) {
 		}
 		reportColumnAssessmentResponses = append(reportColumnAssessmentResponses, response)
 
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessmentResponses})
+
+}
+
+func AllReportColumnAssessments(ctx *gin.Context) {
+
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+	campusClassNumber := ctx.Query("campus_class_number")
+	curriculumNumber := ctx.Query("curriculum_number")
+	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
+	reportColumnNumber := ctx.Query("report_column_number")
+	assessmentAreaNumber := ctx.Query("assessment_area_number")
+	assessmentMetricNumber := ctx.Query("assessment_metric_number")
+	academicYearNumber := ctx.Query("academic_year_number")
+	studyPeriodNumber := ctx.Query("study_period_number")
+	reportSettingNumber := ctx.Query("report_setting_number")
+
+	if classNumber != "" && campusNumber != "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+		if err != nil {
+			ctx.JSON(http.StatusOK, gin.H{"message": err.Error()})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
+
+	reportColumnAssessmentResponses, err := services3.AllReportColumnAssessments(reportColumnNumber, assessmentAreaNumber, assessmentMetricNumber, academicYearNumber, studyPeriodNumber, campusClassNumber, reportSettingNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessmentResponses})
