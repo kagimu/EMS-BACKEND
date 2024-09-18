@@ -797,7 +797,6 @@ func SetupRoutes() *gin.Engine {
 			{
 				menuItems.POST("", cateringController.CreateMenuItem)
 				menuItems.GET("", cateringController.FetchMenuItems)
-				menuItems.GET("details", cateringController.FetchMenuItemDetails)
 				menuItems.POST("update", cateringController.EditMenuItem)
 				menuItems.POST("delete", cateringController.DeleteMenuItem)
 			}
