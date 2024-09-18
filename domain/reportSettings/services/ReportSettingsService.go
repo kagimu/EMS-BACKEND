@@ -71,7 +71,7 @@ func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, cu
 func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNumber string) error {
 
 	//check if report settings exists
-	reportSettings, err := reporsitory.GetReportSettingByCampusClassNumberAndStatus(payload.CampusClassNumber, constants.StatusActive)
+	reportSettings, err := reporsitory.GetReportSettingByCampusClassNumberAndStatus(payload.CampusClassNumber, payload.StudyPeriodNumber, constants.StatusActive)
 
 	if err != nil {
 		return errors.New("Failed to fetch settings  for this class")

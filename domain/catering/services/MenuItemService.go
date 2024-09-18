@@ -372,7 +372,7 @@ func createProjectionMenuItem(menuItem models.MenuItem, totalQuantity float64) r
 		RateToPurchaseUnit: menuItem.ConversionToPurchaseUnit,
 		PurchaseQuantity:   totalQuantity * menuItem.ConversionToPurchaseUnit,
 		MenuItemNumber:     menuItem.Number,
-		TotalCost:          totalQuantity * determineUnitCost(menuItem),
+		TotalCost:          commons.RoundFloat(totalQuantity*determineUnitCost(menuItem), 2),
 	}
 
 	unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
@@ -595,11 +595,11 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		SchoolNumber:                menuItem.SchoolNumber,
 		UnitOfMeasureNumber:         menuItem.UnitOfMeasureNumber,
 		UnitOfMeasureName:           menuItem.UnitOfMeasure.Name,
-		CurrentQuantity:             currentQuantity,
+		CurrentQuantity:             commons.RoundFloat(currentQuantity, 6),
 		PurchaseUnitOfMeasureNumber: purchaseUnitOfMeasure.Number,
 		PurchaseUnitOfMeasureName:   purchaseUnitOfMeasure.Name,
 		Parts:                       parts,
-		UnitCost:                    determineUnitCost(menuItem),
+		UnitCost:                    commons.RoundFloat(determineUnitCost(menuItem), 2),
 		ConversionToPurchaseUnit:    menuItem.ConversionToPurchaseUnit,
 	}, nil
 }
