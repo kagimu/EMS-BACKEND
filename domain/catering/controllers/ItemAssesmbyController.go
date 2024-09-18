@@ -60,7 +60,7 @@ func FetchItemAssemblies(c *gin.Context) {
 			PrimaryItemName:     itemAssembly.SecondaryItem.Name,
 			SecondaryItemNumber: itemAssembly.SecondaryItemNumber,
 			SecondaryItemName:   itemAssembly.SecondaryItem.Name,
-			Quantity:            itemAssembly.Quantity,
+			Quantity:            commons.RoundFloat(itemAssembly.Quantity, 6),
 		})
 	}
 
