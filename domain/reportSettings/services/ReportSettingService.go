@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
@@ -10,6 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"time"
@@ -276,6 +278,9 @@ func CreateReportColumnAssessmentResponse(reportColumnAssessment models.ReportCo
 	reportSetting, _ := reporsitory.GetReportSettingByNumber(reportColumn.ReportSettingNumber)
 
 	class, _ := repositories3.GetClassByCampusClassNumber(reportSetting.CampusClassNumber)
+	sp, _ := repositories4.GetStudyPeriodByNumber(reportSetting.StudyPeriodNumber)
+	ay, _ := repositories5.GetAcademicYearByNumber(reportSetting.AcademicYearNumber)
+	spn, _ := repositories4.GetStudyPeriodNameByStudyPeriodNumber(sp.Number)
 
 	return responses.ReportColumnAssessmentResponse{
 		Number:           reportColumnAssessment.Number,
@@ -284,5 +289,7 @@ func CreateReportColumnAssessmentResponse(reportColumnAssessment models.ReportCo
 		ReportColumn:     reportColumn.Name,
 		ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateTime),
 		Class:            class.Name,
+		StudyPeriod:      spn.Name,
+		AcademicYear:     ay.AcademicYearName,
 	}
 }
