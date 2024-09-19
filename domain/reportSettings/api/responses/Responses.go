@@ -33,9 +33,11 @@ type ReportColumnAssessmentResponse struct {
 	Number           string `json:"number"`
 	AssessmentArea   string `json:"assessment_area"`
 	AssessmentMetric string `json:"assessment_metric"`
-	Code             int64  `json:"code"`
 	ReportColumn     string `json:"report_column"`
 	ScheduledOn      string `json:"scheduled_on"`
+	Class            string `json:"class"`
+	AcademicYear     string `json:"academic_year"`
+	StudyPeriod      string `json:"study_period"`
 }
 
 type SummarizedFinalReportResponse struct {

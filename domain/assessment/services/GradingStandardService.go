@@ -130,10 +130,22 @@ func processGradingStandardClass(gradingStandardClassRequest requests.GradingSta
 
 	}
 
+	defaultStatus := constants.StatusNo
+
+	hasDefault, err := repositories.GetDefaultGradingStandardClassScaleByClassNumber(class.Number, trn)
+	if err != nil {
+		return errors.New("Checking default error: " + err.Error())
+	}
+
+	if hasDefault.GradingStandardNumber == "" {
+		defaultStatus = constants.StatusYes
+	}
+
 	err = repositories.SaveGradingStandardClassScale(assessmentGradeModels.GradingStandardClassScale{
 		ClassNumber:           class.Number,
 		ScaleNumber:           gradingStandardClassRequest.ScaleNumber,
 		GradingStandardNumber: gradingStandardNumber,
+		DefaultStandard:       defaultStatus,
 	}, trn)
 
 	if err != nil {
@@ -1186,15 +1198,38 @@ func MakeGradingStandardDefault(payload requests.MakeGradingStandardDefault) err
 		return errors.New("class and grading standard are not set up")
 	}
 
-	classGradingStandard.DefaultStandard = constants.StatusYes
-
-	err = repositories.SaveGradingStandardClassScale(classGradingStandard)
-
+	currentDefault, err := repositories.GetDefaultGradingStandardClassScaleByClassNumber(payload.ClassNumber)
 	if err != nil {
-		return errors.New("updating default grading standard error: " + err.Error())
+		return errors.New("Checking default error: " + err.Error())
 	}
 
-	return nil
+	if currentDefault.GradingStandardNumber == payload.GradingStandardNumber {
+		return errors.New("This standard is already set as the default ")
+	}
+
+	classGradingStandard.DefaultStandard = constants.StatusYes
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		err := repositories.SaveGradingStandardClassScale(classGradingStandard, tx)
+
+		if err != nil {
+			return errors.New("updating default grading standard error: " + err.Error())
+		}
+
+		if currentDefault.GradingStandardNumber != "" {
+			currentDefault.DefaultStandard = constants.StatusNo
+			err = repositories.SaveGradingStandardClassScale(currentDefault, tx)
+
+			if err != nil {
+				return errors.New("updating previous default grading standard error: " + err.Error())
+			}
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, scaleNumber, defaultStatus string) ([]responses.ClassGradingStandardResponse, error) {
