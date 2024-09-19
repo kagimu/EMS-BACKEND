@@ -67,6 +67,7 @@ type Part struct {
 	Code                      int64   `json:"code"`
 	Number                    string  `json:"number"`
 	UnitOfMeasureAbbreviation string  `json:"unit_of_measure"`
+	UnitCost                  float64 `json:"unit_cost"`
 }
 
 type StockingResponse struct {
