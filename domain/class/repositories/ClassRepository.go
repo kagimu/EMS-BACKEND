@@ -72,6 +72,7 @@ func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, cu
 			filters.ByAnyField("campus_classes.campus_number", campusNumber),
 			filters.ByAnyField("curriculum_levels.curriculum_number", curriculumNumber)).
 		Distinct("classes.*").
+		Order("classes.code asc").
 		Find(&classes).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
