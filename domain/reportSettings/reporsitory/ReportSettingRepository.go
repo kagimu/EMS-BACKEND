@@ -61,7 +61,7 @@ func FindDuplicateReportSettings(studyPeriodNumber, academicYearNumber, campusCl
 	return reportSetting, nil
 }
 
-func GetReportSettingByCampusClassNumberAndStatus(campusClassNumber, studyPeriodNumber, status string) (reportSettingsModel.ReportSetting, error) {
+func GetReportSettingByCampusClassNumberAndStudyPeriodAndStatus(campusClassNumber, studyPeriodNumber, status string) (reportSettingsModel.ReportSetting, error) {
 	var reportSetting reportSettingsModel.ReportSetting
 
 	if err := config.DB.Where("campus_class_number = ? AND study_period_number = ? AND status = ?", campusClassNumber, studyPeriodNumber, status).First(&reportSetting).Error; err != nil {

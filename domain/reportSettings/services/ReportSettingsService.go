@@ -71,7 +71,7 @@ func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, cu
 func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNumber string) error {
 
 	//check if report settings exists
-	reportSettings, err := reporsitory.GetReportSettingByCampusClassNumberAndStatus(payload.CampusClassNumber, payload.StudyPeriodNumber, constants.StatusActive)
+	reportSettings, err := reporsitory.GetReportSettingByCampusClassNumberAndStudyPeriodAndStatus(payload.CampusClassNumber, payload.StudyPeriodNumber, constants.StatusActive)
 
 	if err != nil {
 		return errors.New("Failed to fetch settings  for this class")
@@ -84,7 +84,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 
 	if len(reportColumns) != int(reportSettings.Columns) {
-		return errors.New("report columns set for the settings are not yet fully set up")
+		return errors.New("report columns are not yet fully set up, ensure all columns are set up with assessments")
 
 	}
 
