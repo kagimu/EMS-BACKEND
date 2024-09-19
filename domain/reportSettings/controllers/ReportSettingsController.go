@@ -377,7 +377,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	// find the latest report settings for the class
 	var reportSetting models.ReportSetting
-	if err := config.DB.Where("number = ? AND status = ?", reportSummary.ReportSettingNumber).First(&reportSetting).Error; err != nil {
+	if err := config.DB.Where("number = ?", reportSummary.ReportSettingNumber).First(&reportSetting).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
 
