@@ -8,7 +8,6 @@ import (
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
@@ -378,7 +377,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	// find the latest report settings for the class
 	var reportSetting models.ReportSetting
-	if err := config.DB.Where("campus_class_number = ? AND status = ?", campusClass.Number, constants.StatusActive).First(&reportSetting).Error; err != nil {
+	if err := config.DB.Where("number = ? AND status = ?", reportSummary.ReportSettingNumber).First(&reportSetting).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
 
