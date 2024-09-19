@@ -714,7 +714,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("columns", reportSettingsController.CreatReportColumn)
 			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
 			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
-			reportSettings.GET("report-column-assessment", reportSettingsController.FetchReportColumnAssessments)
+			reportSettings.GET("report-column-assessment", reportSettingsController.AllReportColumnAssessments)
 			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
 			reportSettings.POST("report-score", reportSettingsController.CreateReportScore)
 			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
@@ -797,7 +797,6 @@ func SetupRoutes() *gin.Engine {
 			{
 				menuItems.POST("", cateringController.CreateMenuItem)
 				menuItems.GET("", cateringController.FetchMenuItems)
-				menuItems.GET("details", cateringController.FetchMenuItemDetails)
 				menuItems.POST("update", cateringController.EditMenuItem)
 				menuItems.POST("delete", cateringController.DeleteMenuItem)
 			}

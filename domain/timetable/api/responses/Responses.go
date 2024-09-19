@@ -13,6 +13,7 @@ type ClassResponse struct {
 	Abbreviation string `json:"abbreviation"`
 	LevelName    string `json:"level_name"`
 	LevelNumber  string `json:"level_number"`
+	Code         int64  `json:"code"`
 }
 
 type StudyTimetables struct {

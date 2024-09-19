@@ -15,7 +15,6 @@ import (
 	classService "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
@@ -218,7 +217,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			if length > 0 && score > 0 {
 				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
 
-				scale, err = GetProperAggregateScale(scoreAverage, assessmentArea, campusClass.Number)
+				scale, err = GetProperAggregateScale(scoreAverage, campusClass.Number)
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -295,7 +294,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			summation += r.Score
 		}
 
-		scale, err = GetProperAggregateScale(summation, assessmentArea, campusClass.Number)
+		scale, err = GetProperAggregateScale(summation, campusClass.Number)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -383,36 +382,38 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 }
 
-func GetProperAggregateScale(score float64, assessmentArea assessmentAreaModels.AssessmentArea, campusClassNumber string) (aggregateSaceltModel.AggregateScale, error) {
+func GetProperAggregateScale(score float64, campusClassNumber string) (aggregateSaceltModel.AggregateScale, error) {
 	var scale aggregateSaceltModel.AggregateScale
 	var aggregateScales []aggregateSaceltModel.AggregateScale
 
 	score = commons.RoundFloat(score, 0)
 
 	class, err := repositories.GetClassByCampusClassNumber(campusClassNumber)
-	gradingStandard, err := reporsitory.GetGradingStandardNumberByAssessmentAreaNumber(assessmentArea.Number)
 	if err != nil {
-		return scale, errors.New("failed to fetch grading standard by assessment area number")
-
+		return scale, errors.New("Getting class from campus error " + err.Error())
 	}
 
-	if gradingStandard.Number == "" {
-		return scale, errors.New(fmt.Sprintf("no grading standard for this assessment area (%s)", assessmentArea.Name))
-
+	classGradingStandard, err := repositories2.GetDefaultGradingStandardClassScaleByClassNumber(class.Number)
+	if err != nil {
+		return scale, errors.New("Checking for default grading standard error " + err.Error())
 	}
 
-	scaleNumber, err := reporsitory.GetScaleNumberByGradingStandardNumberAndClassNumber(gradingStandard.Number, class.Number)
+	if classGradingStandard.GradingStandardNumber == "" {
+		return scale, errors.New(fmt.Sprintf("%s has no grading standard set", class.Name))
+	}
+
+	scaleNumber, err := reporsitory.GetScaleNumberByGradingStandardNumberAndClassNumber(classGradingStandard.GradingStandardNumber, class.Number)
 	if err != nil {
 		return scale, errors.New("failed to fetch grading standard number")
 	}
 
 	if scaleNumber == "" {
+		gradingStandard, _ := repositories2.GetGradingStandardByNumber(classGradingStandard.GradingStandardNumber)
 		return scale, errors.New(fmt.Sprintf("There is no scale configured for %s and class %s ", gradingStandard.Name, class.Name))
 	}
 
 	aggregateScales, err = repositories2.FindAggregateScaleByScaleNumber(scaleNumber)
 
-	//TODO get proper aggregate scale via  grading standard and class scales then scale then .. var aags assessmentAreaModel.AssessmentAreaGradingStandard
 	for _, val := range aggregateScales {
 		if score >= val.MinValue && score <= val.MaxValue {
 			scale = val
@@ -421,7 +422,7 @@ func GetProperAggregateScale(score float64, assessmentArea assessmentAreaModels.
 		}
 	}
 
-	return scale, errors.New("no matching aggregate scale found")
+	return scale, errors.New(fmt.Sprintf("no matching aggregate scale found for %d", scale))
 }
 
 func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGradeScale, error) {
