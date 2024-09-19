@@ -41,7 +41,6 @@ func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 		}
 
 		if unitOfMeasure.Number == "" {
-			//return nil, errors.New("unit of measure number is empty")
 			unitOfMeasure = models.UnitOfMeasure{}
 		}
 
@@ -51,6 +50,7 @@ func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 			Code:                      secondaryItem.Code,
 			Number:                    secondaryItem.Number,
 			UnitOfMeasureAbbreviation: unitOfMeasure.Abbreviation,
+			UnitCost:                  commons.RoundFloat(determineUnitCost(secondaryItem), 2),
 		}
 
 		parts = append(parts, part)
