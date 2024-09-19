@@ -37,6 +37,7 @@ func CreateClassResponse(class classModels.Class) responses.ClassResponse {
 		Abbreviation: class.Abbreviation,
 		LevelNumber:  level.Number,
 		LevelName:    level.Name,
+		Code:         class.Code,
 	}
 }
 
