@@ -204,7 +204,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if paidAmount > 0 {
-		err = addTransactionToInvoice(invoiceStatement, paidAmount, invoice, currentUserNumber, clientReference, description, datePaid, txn)
+		err = addTransactionToInvoice(invoiceStatement, paidAmount, newInvoice, currentUserNumber, clientReference, description, datePaid, txn)
 	}
 
 	return newInvoice, err
