@@ -19,6 +19,7 @@ type BillableRequest struct {
 type UpdateBillableRequest struct {
 	BillableRequest
 	BillableNumber string `json:"billable_number"`
+	Status         string `json:"status"`
 }
 
 func (billableRequest *BillableRequest) Validate() error {
