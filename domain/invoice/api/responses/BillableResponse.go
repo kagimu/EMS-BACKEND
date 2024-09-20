@@ -16,6 +16,7 @@ type BillableResponse struct {
 	AcademicYearName       string  `json:"academic_year_name"`
 	CampusLevelNumber      string  `json:"campus_level_number"`
 	Description            string  `json:"description"`
+	ModeOfStudyNumber      string  `json:"mode_of_study_number"`
 }
 
 type DetailedBillableResponse struct {

@@ -261,6 +261,7 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 		AcademicYearName:       academicYear.AcademicYearName,
 		CampusLevelNumber:      academicYear.CampusLevelNumber,
 		Description:            billable.Description,
+		ModeOfStudyNumber:      billable.ModeOfStudyNumber,
 	}, nil
 }
 
