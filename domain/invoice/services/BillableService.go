@@ -56,6 +56,10 @@ func (billableService *billableService) UpdateBillable(updateBillableRequest req
 	billable.BillType = updateBillableRequest.BillType
 	billable.ModeOfStudyNumber = updateBillableRequest.ModeOfStudyNumber
 
+	if updateBillableRequest.Status != "" {
+		billable.Status = updateBillableRequest.Status
+	}
+
 	billItems, err := repositories.FindBillableItems(billable.Number)
 	if err != nil {
 		return errors.New("Checking billable items error " + err.Error())

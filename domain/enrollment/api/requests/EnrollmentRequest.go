@@ -1,6 +1,10 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+)
 
 type EnrollmentRequest struct {
 	StudentNumber      string           `json:"student_number"`
@@ -36,7 +40,6 @@ func (e *EnrollmentRequest) Validate() error {
 	}
 	if e.CampusClassNumber == "" {
 		return errors.New("class is required")
-
 	}
 	if e.StudentNumber == "" {
 		return errors.New("student number is required")
@@ -54,8 +57,21 @@ func (e *EnrollmentRequest) Validate() error {
 	if e.ModeOfStudyNumber == "" {
 		return errors.New("Choose mode of study ")
 	}
-	if e.Status != "active" && e.Status != "inactive" {
-		return errors.New("status must be active or inactive")
+
+	if e.BillableNumber == "" {
+		return errors.New("No bill selected for this enrollment ")
+	}
+	if e.PaidAmount <= 0 {
+		return errors.New("Enter amount paid on this bill ")
+	}
+	if e.ClientReference == "" {
+		return errors.New("Enter payment reference I.E Receipt number or Bank transaction reference ")
+	}
+	if e.Description == "" {
+		return errors.New("Describe the payment E.G Bank account, Mobile phone or Cashier ")
+	}
+	if e.Status != constants.StatusActive && e.Status != constants.StatusInactive {
+		return errors.New(fmt.Sprintf("status must be %s or %s", constants.StatusActive, constants.StatusInactive))
 	}
 	if e.StreamNumber == "" {
 		return errors.New("stream number is required")
