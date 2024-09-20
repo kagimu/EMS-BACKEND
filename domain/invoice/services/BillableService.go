@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -11,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -239,17 +241,24 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 		return responses.BillableResponse{}, errors.New("Getting billable total amount error: " + err.Error())
 	}
 
+	academicYear, _ := repositories6.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
+
+	campusLevel, _ := repositories7.GetCampusLevelByNumber(academicYear.CampusLevelNumber)
+
 	return responses.BillableResponse{
-		BillableNumber:    billable.Number,
-		Status:            billable.Status,
-		ClassName:         class.Name,
-		ClassNumber:       class.Number,
-		StudyPeriodNumber: billable.StudyPeriodNumber,
-		StudyPeriodName:   studyPeriodName.Name,
-		CampusNumber:      campus.Number,
-		CampusName:        campus.Name,
-		Type:              billable.BillType,
-		TotalAmount:       amount,
+		BillableNumber:         billable.Number,
+		Status:                 billable.Status,
+		ClassName:              class.Name,
+		ClassNumber:            class.Number,
+		StudyPeriodNumber:      billable.StudyPeriodNumber,
+		StudyPeriodName:        studyPeriodName.Name,
+		CampusNumber:           campus.Number,
+		CampusName:             campus.Name,
+		BillType:               billable.BillType,
+		TotalAmount:            amount,
+		AcademicYearNumber:     academicYear.Number,
+		CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
+		AcademicYearName:       academicYear.AcademicYearName,
 	}, nil
 }
 
