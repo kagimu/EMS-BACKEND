@@ -128,7 +128,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 	return err
 }
 
-func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, txn *gorm.DB) (models.Invoice, error) {
+func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, txn *gorm.DB) (models.Invoice, error) {
 
 	invoiceNumber := generateNewInvoiceNumber()
 
@@ -204,13 +204,13 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if paidAmount > 0 {
-		err = addTransactionToInvoice(invoiceStatement, paidAmount, invoice, currentUserNumber, clientReference, description, txn)
+		err = addTransactionToInvoice(invoiceStatement, paidAmount, invoice, currentUserNumber, clientReference, description, datePaid, txn)
 	}
 
 	return newInvoice, err
 }
 
-func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description string, txn *gorm.DB) error {
+func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description, datePaid string, txn *gorm.DB) error {
 
 	nextBlc, err := ComputeNextBalance(paidAmount, constants.StatementTypeIn, invoiceStatement.UserNumber)
 	if err != nil {
@@ -238,10 +238,15 @@ func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float
 		payAmount = paidAmount
 	}
 
+	var transactionDate time.Time
+	if transactionDate, err = time.Parse(time.DateOnly, datePaid); err != nil {
+		return errors.New("Error reading payment date: " + err.Error())
+	}
+
 	newTransaction := models.Transaction{
 		StatementNumber: transactionStatement.Number,
 		Number:          uuid.NewV4().String(),
-		Date:            time.Time{},
+		Date:            transactionDate,
 		Status:          constants.StatusActive,
 		AmountInCredit:  paidAmount - payAmount,
 		Description:     description,

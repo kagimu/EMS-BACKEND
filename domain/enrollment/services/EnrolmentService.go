@@ -202,7 +202,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		}
 
-		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, tx)
+		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, enrolmentRequest.DatePaid, tx)
 		if err != nil {
 			return err
 		}
