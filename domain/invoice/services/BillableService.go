@@ -259,6 +259,7 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 		AcademicYearNumber:     academicYear.Number,
 		CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
 		AcademicYearName:       academicYear.AcademicYearName,
+		CampusLevelNumber:      academicYear.CampusLevelNumber,
 	}, nil
 }
 
