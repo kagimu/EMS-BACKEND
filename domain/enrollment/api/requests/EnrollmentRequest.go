@@ -23,6 +23,7 @@ type EnrollmentRequest struct {
 	ClientReference    string           `json:"client_reference"`
 	Description        string           `json:"description"`
 	PaidAmount         float64          `json:"paid_amount"`
+	DatePaid           string           `json:"date_paid"`
 }
 
 type EnrollmentItem struct {
@@ -66,6 +67,9 @@ func (e *EnrollmentRequest) Validate() error {
 	}
 	if e.ClientReference == "" {
 		return errors.New("Enter payment reference I.E Receipt number or Bank transaction reference ")
+	}
+	if e.DatePaid == "" {
+		return errors.New("Provide date paid ")
 	}
 	if e.Description == "" {
 		return errors.New("Describe the payment E.G Bank account, Mobile phone or Cashier ")
