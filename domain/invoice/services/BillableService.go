@@ -22,9 +22,69 @@ type BillableService interface {
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
 	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error)
 	DeleteBillable(billableNumber string) error
+	UpdateBillable(updateBillableRequest requests.UpdateBillableRequest, currentUserNumber string) error
 }
 
 type billableService struct {
+}
+
+func (billableService *billableService) UpdateBillable(updateBillableRequest requests.UpdateBillableRequest, currentUserNumber string) error {
+	billable, err := repositories.GetBillableByNumber(updateBillableRequest.BillableNumber)
+	if err != nil {
+		return errors.New("Checking billable number error " + err.Error())
+	}
+
+	if billable.Number == "" {
+		return errors.New("Invalid billable number ")
+	}
+
+	invoices, err := repositories.GetBillableInvoiceByBillableNumber(billable.Number, []string{constants.StatusPaid, constants.StatusPending, constants.StatusPartiallyPaid})
+	if err != nil {
+		return errors.New("Checking invoices from this bill error " + err.Error())
+	}
+
+	if len(invoices) != 0 {
+		return errors.New("This bill created invoices, it can not be edited ")
+	}
+
+	billable.ClassNumber = updateBillableRequest.ClassNumber
+	billable.CampusNumber = updateBillableRequest.CampusNumber
+	billable.Description = updateBillableRequest.Description
+	billable.UserNumber = currentUserNumber
+	billable.SchoolNumber = updateBillableRequest.SchoolNumber
+	billable.StudyPeriodNumber = updateBillableRequest.StudyPeriodNumber
+	billable.BillType = updateBillableRequest.BillType
+	billable.ModeOfStudyNumber = updateBillableRequest.ModeOfStudyNumber
+
+	billItems, err := repositories.FindBillableItems(billable.Number)
+	if err != nil {
+		return errors.New("Checking billable items error " + err.Error())
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, billableItem := range billItems {
+			err := repositories.RemoveBillableItem(billableItem, tx)
+			if err != nil {
+				return errors.New("Removing billable item error " + err.Error())
+			}
+		}
+
+		err := repositories.SaveBillable(billable, tx)
+		if err != nil {
+			return errors.New("Error updating bill " + err.Error())
+		}
+
+		err = processBillItems(billable, updateBillableRequest.BillableItems, tx)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (billableService *billableService) DeleteBillable(billableNumber string) error {
@@ -37,12 +97,12 @@ func (billableService *billableService) DeleteBillable(billableNumber string) er
 		return errors.New("Invalid billable number ")
 	}
 
-	billableInvoice, err := repositories.GetBillableInvoiceByBillableNumber(billableNumber)
+	billableInvoice, err := repositories.GetBillableInvoiceByBillableNumber(billableNumber, []string{constants.StatusPaid, constants.StatusPending, constants.StatusPartiallyPaid})
 	if err != nil {
 		return errors.New("Checking if bill has ever created an invoice error " + err.Error())
 	}
 
-	if billableInvoice.InvoiceNumber != "" {
+	if len(billableInvoice) != 0 {
 		return errors.New("You can not remove this bill, but you can make it Inactive ")
 	}
 

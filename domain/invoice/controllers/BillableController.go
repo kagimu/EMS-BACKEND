@@ -140,3 +140,29 @@ func DeleteBillable(context *gin.Context) {
 
 	context.JSON(http.StatusOK, commons.Feedback("Billable removed successfully"))
 }
+
+func UpdateBillable(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateBillableRequest
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err = billableService.UpdateBillable(payload, user.Number); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Billable updated successfully"})
+}
