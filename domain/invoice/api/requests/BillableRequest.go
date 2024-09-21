@@ -44,6 +44,9 @@ func (billableRequest *BillableRequest) Validate() error {
 	if billableRequest.ClassNumber == "" {
 		return errors.New("Choose class ")
 	}
+	if billableRequest.CampusCurriculumNumber == "" {
+		return errors.New("Choose campus curriculum ")
+	}
 
 	if billableRequest.BillType != constants.BillTypeContinuing && billableRequest.BillType != constants.BillTypeNewApplication {
 		return errors.New("Choose a valid bill type ")

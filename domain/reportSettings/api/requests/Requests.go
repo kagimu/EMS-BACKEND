@@ -4,6 +4,11 @@ import (
 	"errors"
 )
 
+type UpdateReportSettingsRequest struct {
+	ReportSettingsRequest
+	ReportSettingNumber string `json:"report_setting_number"`
+}
+
 type ReportSettingsRequest struct {
 	Code                   int64  `json:"code"`
 	AcademicYearNumber     string `json:"academic_year_number"`
@@ -203,6 +208,8 @@ func (reportColumnRequest *ReportColumnRequest) ValidateReportColumn() error {
 		return errors.New("set columns list")
 	}
 
+	var totalShare float64
+
 	for _, reportColumn := range columns {
 
 		if reportColumn.Name == "" {
@@ -216,6 +223,12 @@ func (reportColumnRequest *ReportColumnRequest) ValidateReportColumn() error {
 		if reportColumn.Code <= 0 {
 			return errors.New("code is required")
 		}
+
+		totalShare += reportColumn.PercentageShare
+	}
+
+	if totalShare != 100 {
+		return errors.New("Columns percentage total sum should be 100 ")
 	}
 
 	return nil

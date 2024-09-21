@@ -276,22 +276,23 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 }
 
 func (billableService *billableService) NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error {
-	billable, err := repositories.GetEnrollmentBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, constants.StatusActive)
+
+	curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(billableRequest.CampusCurriculumNumber, billableRequest.CampusNumber)
+	if err != nil {
+		return errors.New("Checking curriculum and campus error " + err.Error())
+	}
+
+	if curriculum.Number == "" {
+		return errors.New("Invalid Curriculum on campus ")
+	}
+
+	billable, err := repositories.GetEnrollmentBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, constants.StatusActive, curriculum.Number)
 	if err != nil {
 		return errors.New("Checking duplicates error " + err.Error())
 	}
 
 	if billable.Number != "" {
 		return errors.New("You already have an active similar bill ")
-	}
-
-	curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(billableRequest.CampusCurriculumNumber, billableRequest.CampusNumber)
-	if err != nil {
-		return errors.New("Checking duplicates error " + err.Error())
-	}
-
-	if curriculum.Number == "" {
-		return errors.New("Invalid Curriculum on campus ")
 	}
 
 	newBillable := models.Billable{
