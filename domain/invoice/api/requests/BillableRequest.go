@@ -6,14 +6,15 @@ import (
 )
 
 type BillableRequest struct {
-	SchoolNumber      string               `json:"school_number"`
-	ModeOfStudyNumber string               `json:"mode_of_study_number"`
-	CampusNumber      string               `json:"campus_number"`
-	StudyPeriodNumber string               `json:"study_period_number"`
-	ClassNumber       string               `json:"class_number"`
-	BillType          string               `json:"bill_type"`
-	Description       string               `json:"description"`
-	BillableItems     []InvoiceItemRequest `json:"billable_items"`
+	SchoolNumber           string               `json:"school_number"`
+	ModeOfStudyNumber      string               `json:"mode_of_study_number"`
+	CampusNumber           string               `json:"campus_number"`
+	StudyPeriodNumber      string               `json:"study_period_number"`
+	ClassNumber            string               `json:"class_number"`
+	BillType               string               `json:"bill_type"`
+	Description            string               `json:"description"`
+	BillableItems          []InvoiceItemRequest `json:"billable_items"`
+	CampusCurriculumNumber string               `json:"campus_curriculum_number"`
 }
 
 type UpdateBillableRequest struct {

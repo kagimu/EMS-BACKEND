@@ -71,7 +71,7 @@ func GetBillableByNumber(billableNumber string, trn ...*gorm.DB) (models.Billabl
 	return billable, nil
 }
 
-func GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, status string, trn ...*gorm.DB) (models.Billable, error) {
+func GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, status, curriculumNumber string, trn ...*gorm.DB) (models.Billable, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
@@ -81,7 +81,7 @@ func GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, m
 
 	if err := db.
 		Scopes(filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByAnyField("mode_of_study_number", modeOfStudyNumber), filters.ByAnyField("bill_type", billType), filters.ByAnyField("class_number", classNumber)).
-		Where("status = ? AND campus_number = ?", status, campusNumber).First(&billable).Error; err != nil {
+		Where("status = ? AND campus_number = ? AND curriculum_number", status, campusNumber, curriculumNumber).First(&billable).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return billable, nil
