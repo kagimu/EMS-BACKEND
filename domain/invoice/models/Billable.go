@@ -4,13 +4,14 @@ import (
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"time"
 )
 
 type Billable struct {
-	ID                uint `gorm:"primarykey"`
+	ID                uint `gorm:"primaryKey"`
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	Number            string                       `json:"number" gorm:"size:36;unique;not null"`
@@ -29,6 +30,8 @@ type Billable struct {
 	ModeOfStudy       models.ModeOfStudy           `gorm:"foreignKey:ModeOfStudyNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	SchoolNumber      string                       `json:"school_number" gorm:"size:36;not null"`
 	School            models.School                `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	CurriculumNumber  string                       `json:"curriculum_number" gorm:"size:36;not null"`
+	Curriculum        models2.Curriculum           `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
 
 func (billable *Billable) TableName() string {

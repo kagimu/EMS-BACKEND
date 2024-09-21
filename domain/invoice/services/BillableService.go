@@ -7,6 +7,7 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
@@ -22,7 +23,7 @@ type BillableService interface {
 	NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error
 	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error)
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
-	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error)
+	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error)
 	DeleteBillable(billableNumber string) error
 	UpdateBillable(updateBillableRequest requests.UpdateBillableRequest, currentUserNumber string) error
 }
@@ -125,7 +126,7 @@ func (billableService *billableService) DeleteBillable(billableNumber string) er
 	return err
 }
 
-func (billableService *billableService) GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error) {
+func (billableService *billableService) GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error) {
 
 	billableResponse := responses.DetailedBillableResponse{}
 
@@ -143,7 +144,16 @@ func (billableService *billableService) GetBill(studentNumber, campusNumber, cla
 		billType = constants.BillTypeNewApplication
 	}
 
-	billable, err := repositories.GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, constants.StatusActive)
+	curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(campusCurriculumNumber, campusNumber)
+	if err != nil {
+		return billableResponse, errors.New("Checking curriculum and campus error " + err.Error())
+	}
+
+	if curriculum.Number == "" {
+		return billableResponse, errors.New("Invalid Curriculum on campus ")
+	}
+
+	billable, err := repositories.GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, curriculum.Number, constants.StatusActive)
 	if err != nil {
 		return billableResponse, errors.New("Checking billable error " + err.Error())
 	}
@@ -275,6 +285,15 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 		return errors.New("You already have an active similar bill ")
 	}
 
+	curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(billableRequest.CampusCurriculumNumber, billableRequest.CampusNumber)
+	if err != nil {
+		return errors.New("Checking duplicates error " + err.Error())
+	}
+
+	if curriculum.Number == "" {
+		return errors.New("Invalid Curriculum on campus ")
+	}
+
 	newBillable := models.Billable{
 		ModeOfStudyNumber: billableRequest.ModeOfStudyNumber,
 		ClassNumber:       billableRequest.ClassNumber,
@@ -285,6 +304,7 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 		SchoolNumber:      billableRequest.SchoolNumber,
 		Description:       billableRequest.Description,
 		BillType:          billableRequest.BillType,
+		CurriculumNumber:  curriculum.Number,
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {

@@ -7,23 +7,24 @@ import (
 )
 
 type EnrollmentRequest struct {
-	StudentNumber      string           `json:"student_number"`
-	StudyPeriodNumber  string           `json:"study_period_number"`
-	CampusNumber       string           `json:"campus_number"`
-	SchoolNumber       string           `json:"school_number"`
-	EnrollmentDate     string           `json:"enrollment_date"`
-	Status             string           `json:"status"`
-	CampusClassNumber  string           `json:"campus_class_number"`
-	ContinuingStudent  bool             `json:"continuing_student"`
-	StreamNumber       string           `json:"stream_number"`
-	Items              []EnrollmentItem `json:"items"`
-	FeedingGroupNumber string           `json:"feeding_group_number"`
-	ModeOfStudyNumber  string           `json:"mode_of_study_number"`
-	BillableNumber     string           `json:"billable_number"`
-	ClientReference    string           `json:"client_reference"`
-	Description        string           `json:"description"`
-	PaidAmount         float64          `json:"paid_amount"`
-	DatePaid           string           `json:"date_paid"`
+	StudentNumber          string           `json:"student_number"`
+	StudyPeriodNumber      string           `json:"study_period_number"`
+	CampusNumber           string           `json:"campus_number"`
+	SchoolNumber           string           `json:"school_number"`
+	EnrollmentDate         string           `json:"enrollment_date"`
+	Status                 string           `json:"status"`
+	CampusClassNumber      string           `json:"campus_class_number"`
+	ContinuingStudent      bool             `json:"continuing_student"`
+	StreamNumber           string           `json:"stream_number"`
+	Items                  []EnrollmentItem `json:"items"`
+	FeedingGroupNumber     string           `json:"feeding_group_number"`
+	ModeOfStudyNumber      string           `json:"mode_of_study_number"`
+	BillableNumber         string           `json:"billable_number"`
+	ClientReference        string           `json:"client_reference"`
+	Description            string           `json:"description"`
+	PaidAmount             float64          `json:"paid_amount"`
+	DatePaid               string           `json:"date_paid"`
+	CampusCurriculumNumber string           `json:"campus_curriculum_number"`
 }
 
 type EnrollmentItem struct {

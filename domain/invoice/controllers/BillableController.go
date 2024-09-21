@@ -82,7 +82,7 @@ func GetBill(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	modeOfStudyNumber := context.Query("mode_of_study_number")
 	//curriculumNumber := context.Query("curriculum_number")
-	//campusCurriculumNumber := context.Query("campus_curriculum_number")
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
 	campusNumber := context.Query("campus_number")
 	if studentNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose student"})
@@ -109,7 +109,7 @@ func GetBill(context *gin.Context) {
 		return
 	}
 
-	billable, err := billableService.GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber)
+	billable, err := billableService.GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
