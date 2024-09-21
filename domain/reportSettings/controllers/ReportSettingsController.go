@@ -3,7 +3,6 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
@@ -70,50 +69,6 @@ func FetchReportSettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a campus and class to view report settings"})
 		return
 	}
-
-	/*if campusNumber != "" && classNumber != "" {
-		campusClassNumber = ""
-	}*/
-
-	/*var reportSettings []models.ReportSetting
-	if err := config.DB.
-		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
-		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
-		Preload("AcademicYear").
-		Preload("CampusClass").
-		Preload("StudyPeriod").
-		Scopes(
-			filters.ByAnyField("campus_classes.campus_number", campusNumber),
-			filters.ByAnyField("curriculum_classes.class_number", classNumber),
-			filters.ByCampusClassNumber(campusClassNumber),
-			filters.ByAcademicYearNumber(c.Query("academic_year_number")),
-			filters.ByStudyPeriodNumber(c.Query("study_period_number")),
-		).
-		Distinct("report_settings.*").
-		Find(&reportSettings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings error: " + err.Error()})
-		return
-	}
-
-	var rs []responses.ReportSettingsResponse
-
-	for _, reportSetting := range reportSettings {
-
-		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSetting.StudyPeriod.StudyPeriodNameNumber)
-
-		response := responses.ReportSettingsResponse{
-			Name:         reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + studyPeriodName.Name,
-			Number:       reportSetting.Number,
-			Status:       reportSetting.Status,
-			Columns:      reportSetting.Columns,
-			Code:         reportSetting.Code,
-			AcademicYear: reportSetting.AcademicYear.AcademicYearName,
-			StudyPeriod:  studyPeriodName.Name,
-			Class:        reportSetting.CampusClass.ClassName,
-		}
-
-		rs = append(rs, response)
-	}*/
 
 	allReportSettings, err := services3.FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academicYearNumber, studyPeriodNumber)
 	if err != nil {
@@ -200,83 +155,6 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Report column assessment added successfully"})
-}
-
-func FetchReportColumnAssessments(ctx *gin.Context) {
-
-	classNumber := ctx.Query("class_number")
-	campusNumber := ctx.Query("campus_number")
-	campusClassNumber := ctx.Query("campus_class_number")
-	curriculumNumber := ctx.Query("curriculum_number")
-	campusCurriculumNumber := ctx.Query("campus_curriculum_umber")
-
-	if classNumber != "" && campusNumber != "" {
-		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
-		if err != nil {
-			ctx.JSON(http.StatusOK, gin.H{"message": err.Error()})
-			return
-		}
-
-		campusClassNumber = campusClass.Number
-	}
-
-	var reportColumnAssessmentResponses = make([]responses.ReportColumnAssessmentResponse, 0)
-
-	var reportColumnAssessments []models.ReportColumnAssessment
-	if err := config.DB.Joins("JOIN report_columns ON report_columns.number = report_column_assessments.report_column_number").
-		Joins("JOIN report_settings ON report_settings.number = report_columns.report_setting_number").
-		Scopes(
-			filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
-			filters.ByAssessmentMetricNumber(ctx.Query("assessment_metric_number")),
-			filters.ByAnyField("report_column_number", ctx.Query("report_column_number")),
-			filters.ByCampusClassNumber(campusClassNumber),
-			filters.ByAnyField("report_settings.number", ctx.Query("report_setting_number")),
-			filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
-			filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
-		).
-		Distinct("report_column_assessments.*").
-		Find(&reportColumnAssessments).Error; err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessmentResponses})
-			return
-		}
-
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report column assessments error: " + err.Error()})
-		return
-	}
-
-	for _, reportColumnAssessment := range reportColumnAssessments {
-		var assessmentArea assessmentAreaModel.AssessmentArea
-		if err := config.DB.Where("number = ?", reportColumnAssessment.AssessmentAreaNumber).First(&assessmentArea).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment area"})
-			return
-		}
-
-		var assessmentMetric assesmentModel.AssessmentMetric
-		if err := config.DB.Where("number = ?", reportColumnAssessment.AssessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment metric"})
-			return
-		}
-
-		var reportColumn models.ReportColumn
-		if err := config.DB.Where("number = ?", reportColumnAssessment.ReportColumnNumber).First(&reportColumn).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column"})
-			return
-		}
-
-		response := responses.ReportColumnAssessmentResponse{
-			Number:           reportColumnAssessment.Number,
-			AssessmentArea:   assessmentArea.Name,
-			AssessmentMetric: "Assessment Metric Name",
-			ReportColumn:     reportColumn.Name,
-		}
-		reportColumnAssessmentResponses = append(reportColumnAssessmentResponses, response)
-
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessmentResponses})
-
 }
 
 func AllReportColumnAssessments(ctx *gin.Context) {
@@ -723,4 +601,32 @@ func FetchNarrativeScore(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": narrations})
 
+}
+
+func UpdateReportSettings(context *gin.Context) {
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateReportSettingsRequest
+	if err = context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	err = payload.ValidateReportSetting()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services3.UpdateReportSettings(payload, currentUser.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report settings updated successfully"})
 }

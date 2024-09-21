@@ -187,3 +187,27 @@ func DeleteInvoice(invoice invoiceModel.Invoice, tx ...*gorm.DB) error {
 
 	return nil
 }
+
+func GetBillableInvoiceByBillableNumber(billableNumber string, invoiceStatuses []string, txn ...*gorm.DB) ([]invoiceModel.Invoice, error) {
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+
+	var billableInvoice []invoiceModel.Invoice
+
+	if err := db.
+		Joins("JOIN billable_invoices ON billable_invoices.invoice_number = invoices.number").
+		Scopes(filters.ByAnyField("billable_number", billableNumber), filters.ByValueIn("invoices.status", invoiceStatuses)).
+		Find(&billableInvoice).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return billableInvoice, nil
+		}
+
+		return billableInvoice, err
+
+	}
+
+	return billableInvoice, nil
+}

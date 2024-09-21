@@ -3,14 +3,17 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -20,11 +23,75 @@ type BillableService interface {
 	NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error
 	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error)
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
-	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error)
+	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error)
 	DeleteBillable(billableNumber string) error
+	UpdateBillable(updateBillableRequest requests.UpdateBillableRequest, currentUserNumber string) error
 }
 
 type billableService struct {
+}
+
+func (billableService *billableService) UpdateBillable(updateBillableRequest requests.UpdateBillableRequest, currentUserNumber string) error {
+	billable, err := repositories.GetBillableByNumber(updateBillableRequest.BillableNumber)
+	if err != nil {
+		return errors.New("Checking billable number error " + err.Error())
+	}
+
+	if billable.Number == "" {
+		return errors.New("Invalid billable number ")
+	}
+
+	invoices, err := repositories.GetBillableInvoiceByBillableNumber(billable.Number, []string{constants.StatusPaid, constants.StatusPending, constants.StatusPartiallyPaid})
+	if err != nil {
+		return errors.New("Checking invoices from this bill error " + err.Error())
+	}
+
+	if len(invoices) != 0 {
+		return errors.New("This bill created invoices, it can not be edited ")
+	}
+
+	billable.ClassNumber = updateBillableRequest.ClassNumber
+	billable.CampusNumber = updateBillableRequest.CampusNumber
+	billable.Description = updateBillableRequest.Description
+	billable.UserNumber = currentUserNumber
+	billable.SchoolNumber = updateBillableRequest.SchoolNumber
+	billable.StudyPeriodNumber = updateBillableRequest.StudyPeriodNumber
+	billable.BillType = updateBillableRequest.BillType
+	billable.ModeOfStudyNumber = updateBillableRequest.ModeOfStudyNumber
+
+	if updateBillableRequest.Status != "" {
+		billable.Status = updateBillableRequest.Status
+	}
+
+	billItems, err := repositories.FindBillableItems(billable.Number)
+	if err != nil {
+		return errors.New("Checking billable items error " + err.Error())
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, billableItem := range billItems {
+			err := repositories.RemoveBillableItem(billableItem, tx)
+			if err != nil {
+				return errors.New("Removing billable item error " + err.Error())
+			}
+		}
+
+		err := repositories.SaveBillable(billable, tx)
+		if err != nil {
+			return errors.New("Error updating bill " + err.Error())
+		}
+
+		err = processBillItems(billable, updateBillableRequest.BillableItems, tx)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (billableService *billableService) DeleteBillable(billableNumber string) error {
@@ -37,12 +104,12 @@ func (billableService *billableService) DeleteBillable(billableNumber string) er
 		return errors.New("Invalid billable number ")
 	}
 
-	billableInvoice, err := repositories.GetBillableInvoiceByBillableNumber(billableNumber)
+	billableInvoice, err := repositories.GetBillableInvoiceByBillableNumber(billableNumber, []string{constants.StatusPaid, constants.StatusPending, constants.StatusPartiallyPaid})
 	if err != nil {
 		return errors.New("Checking if bill has ever created an invoice error " + err.Error())
 	}
 
-	if billableInvoice.InvoiceNumber != "" {
+	if len(billableInvoice) != 0 {
 		return errors.New("You can not remove this bill, but you can make it Inactive ")
 	}
 
@@ -59,7 +126,7 @@ func (billableService *billableService) DeleteBillable(billableNumber string) er
 	return err
 }
 
-func (billableService *billableService) GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber string) (responses.DetailedBillableResponse, error) {
+func (billableService *billableService) GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error) {
 
 	billableResponse := responses.DetailedBillableResponse{}
 
@@ -77,7 +144,16 @@ func (billableService *billableService) GetBill(studentNumber, campusNumber, cla
 		billType = constants.BillTypeNewApplication
 	}
 
-	billable, err := repositories.GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, constants.StatusActive)
+	curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(campusCurriculumNumber, campusNumber)
+	if err != nil {
+		return billableResponse, errors.New("Checking curriculum and campus error " + err.Error())
+	}
+
+	if curriculum.Number == "" {
+		return billableResponse, errors.New("Invalid Curriculum on campus ")
+	}
+
+	billable, err := repositories.GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, curriculum.Number, constants.StatusActive)
 	if err != nil {
 		return billableResponse, errors.New("Checking billable error " + err.Error())
 	}
@@ -175,22 +251,42 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 		return responses.BillableResponse{}, errors.New("Getting billable total amount error: " + err.Error())
 	}
 
+	academicYear, _ := repositories6.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
+
+	campusLevel, _ := repositories7.GetCampusLevelByNumber(academicYear.CampusLevelNumber)
+
 	return responses.BillableResponse{
-		BillableNumber:    billable.Number,
-		Status:            billable.Status,
-		ClassName:         class.Name,
-		ClassNumber:       class.Number,
-		StudyPeriodNumber: billable.StudyPeriodNumber,
-		StudyPeriodName:   studyPeriodName.Name,
-		CampusNumber:      campus.Number,
-		CampusName:        campus.Name,
-		Type:              billable.BillType,
-		TotalAmount:       amount,
+		BillableNumber:         billable.Number,
+		Status:                 billable.Status,
+		ClassName:              class.Name,
+		ClassNumber:            class.Number,
+		StudyPeriodNumber:      billable.StudyPeriodNumber,
+		StudyPeriodName:        studyPeriodName.Name,
+		CampusNumber:           campus.Number,
+		CampusName:             campus.Name,
+		BillType:               billable.BillType,
+		TotalAmount:            amount,
+		AcademicYearNumber:     academicYear.Number,
+		CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
+		AcademicYearName:       academicYear.AcademicYearName,
+		CampusLevelNumber:      academicYear.CampusLevelNumber,
+		Description:            billable.Description,
+		ModeOfStudyNumber:      billable.ModeOfStudyNumber,
 	}, nil
 }
 
 func (billableService *billableService) NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error {
-	billable, err := repositories.GetEnrollmentBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, constants.StatusActive)
+
+	curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(billableRequest.CampusCurriculumNumber, billableRequest.CampusNumber)
+	if err != nil {
+		return errors.New("Checking curriculum and campus error " + err.Error())
+	}
+
+	if curriculum.Number == "" {
+		return errors.New("Invalid Curriculum on campus ")
+	}
+
+	billable, err := repositories.GetEnrollmentBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, constants.StatusActive, curriculum.Number)
 	if err != nil {
 		return errors.New("Checking duplicates error " + err.Error())
 	}
@@ -209,6 +305,7 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 		SchoolNumber:      billableRequest.SchoolNumber,
 		Description:       billableRequest.Description,
 		BillType:          billableRequest.BillType,
+		CurriculumNumber:  curriculum.Number,
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
