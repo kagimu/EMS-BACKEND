@@ -18,6 +18,7 @@ type ReportSettingsResponse struct {
 	ClassNumber        string `json:"class_number"`
 	LevelNumber        string `json:"level_number"`
 	CampusClassNumber  string `json:"campus_class_number"`
+	CampusLevelNumber  string `json:"campus_level_number"`
 }
 
 type ReportColumnResponse struct {

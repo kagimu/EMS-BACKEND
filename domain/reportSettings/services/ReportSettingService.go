@@ -70,7 +70,7 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 	}
 
 	if checkByCode.Number != "" {
-		return errors.New("Column code already used: " + reportColumnRequest.Name)
+		return errors.New("Column code already used on: " + reportColumnRequest.Name)
 	}
 
 	reportColumns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number)

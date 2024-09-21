@@ -67,6 +67,60 @@ func SaveReportSettings(reportSettingsRequest requests.ReportSettingsRequest, cu
 	return nil
 }
 
+func UpdateReportSettings(reportSettingsRequest requests.UpdateReportSettingsRequest, currentUserNumber string) error {
+
+	reportSettings, err := reporsitory.GetReportSettingByNumber(reportSettingsRequest.ReportSettingNumber)
+	if err != nil {
+		return errors.New("error checking report setting by number error: " + err.Error())
+	}
+
+	if reportSettings.Number == "" {
+		return errors.New("Invalid Report Settings Number ")
+	}
+
+	campusClass, err := classService.ResolveCampusClass(reportSettingsRequest.ClassNumber, reportSettingsRequest.CampusNumber, reportSettingsRequest.CurriculumNumber, reportSettingsRequest.CampusCurriculumNumber)
+	if err != nil {
+		return err
+	}
+
+	existingReportSettings, err := reporsitory.FindDuplicateReportSettings(reportSettingsRequest.StudyPeriodNumber, reportSettingsRequest.AcademicYearNumber, campusClass.Number, constants.StatusActive)
+
+	if err != nil {
+		return errors.New("error checking report duplicate: " + err.Error())
+	}
+
+	if existingReportSettings.Number != "" && existingReportSettings.Number != reportSettings.Number {
+		return errors.New("Report settings for this class  already exists")
+	}
+
+	if reportSettings.Columns != reportSettingsRequest.Columns {
+
+		columns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSettings.Number)
+		if err != nil {
+			return errors.New("error checking report columns error: " + err.Error())
+		}
+
+		if len(columns) != 0 {
+			return errors.New("Number of columns can not be changed ")
+		}
+
+	}
+
+	reportSettings.StudyPeriodNumber = reportSettingsRequest.StudyPeriodNumber
+	reportSettings.AcademicYearNumber = reportSettingsRequest.AcademicYearNumber
+	reportSettings.CampusClassNumber = campusClass.Number
+	reportSettings.Columns = reportSettingsRequest.Columns
+	reportSettings.Status = constants.StatusActive
+	reportSettings.UserNumber = currentUserNumber
+	reportSettings.Code = reportSettingsRequest.Code
+
+	if err = reporsitory.SaveReportSettings(reportSettings); err != nil {
+		return errors.New("Failed to create report settings" + err.Error())
+	}
+
+	return nil
+}
+
 func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNumber string) error {
 
 	//check if report settings exists
@@ -508,7 +562,8 @@ func createReportSettingsResponse(reportSetting models.ReportSetting) responses.
 	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	academicYear, _ := repositories4.GetAcademicYearByNumber(reportSetting.AcademicYearNumber)
-	class, _ := repositories.GetClassByCampusClassNumber(reportSetting.CampusClassNumber)
+	campusClass, _ := repositories.GetCampusClassByNumber(reportSetting.CampusClassNumber)
+	class, _ := repositories.GetClassByCampusClassNumber(campusClass.Number)
 
 	return responses.ReportSettingsResponse{
 		Name:               academicYear.AcademicYearName + " - " + class.Name + " - " + studyPeriodName.Name,
@@ -524,5 +579,6 @@ func createReportSettingsResponse(reportSetting models.ReportSetting) responses.
 		ClassNumber:        class.Number,
 		LevelNumber:        class.LevelNumber,
 		CampusClassNumber:  reportSetting.CampusClassNumber,
+		CampusLevelNumber:  campusClass.CampusLevelNumber,
 	}
 }

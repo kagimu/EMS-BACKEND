@@ -10,6 +10,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
@@ -109,7 +110,17 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		}
 
 	} else {
-		billable, err = repositories4.GetEnrollmentBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, constants.StatusActive)
+
+		curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(enrolmentRequest.CampusCurriculumNumber, enrolmentRequest.CampusNumber)
+		if err != nil {
+			return errors.New("Checking curriculum and campus error " + err.Error())
+		}
+
+		if curriculum.Number == "" {
+			return errors.New("Invalid Curriculum on campus ")
+		}
+
+		billable, err = repositories4.GetEnrollmentBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, constants.StatusActive, curriculum.Number)
 		if err != nil {
 			return errors.New("Checking billable error " + err.Error())
 		}
@@ -202,7 +213,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		}
 
-		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, tx)
+		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, enrolmentRequest.DatePaid, tx)
 		if err != nil {
 			return err
 		}

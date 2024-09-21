@@ -128,7 +128,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 	return err
 }
 
-func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, txn *gorm.DB) (models.Invoice, error) {
+func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, txn *gorm.DB) (models.Invoice, error) {
 
 	invoiceNumber := generateNewInvoiceNumber()
 
@@ -157,7 +157,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 
 	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, student.UserNumber)
 
-	newStatement := models.Statement{
+	invoiceStatement := models.Statement{
 		Number:        uuid.NewV4().String(),
 		Amount:        invoiceTotal,
 		UserNumber:    student.UserNumber,
@@ -171,14 +171,14 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	newInvoice := models.Invoice{
-		StatementNumber: newStatement.Number,
+		StatementNumber: invoiceStatement.Number,
 		Number:          uuid.NewV4().String(),
 		DueDate:         dueDate,
 		Description:     billable.Description,
 		RefNumber:       invoiceNumber,
 	}
 
-	if err = invoiceRepositories.SaveStatement(newStatement, txn); err != nil {
+	if err = invoiceRepositories.SaveStatement(invoiceStatement, txn); err != nil {
 		return models.Invoice{}, errors.New("Creating statement error: " + err.Error())
 	}
 
@@ -203,7 +203,90 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 
 	}
 
+	if paidAmount > 0 {
+		err = addTransactionToInvoice(invoiceStatement, paidAmount, newInvoice, currentUserNumber, clientReference, description, datePaid, txn)
+	}
+
 	return newInvoice, err
+}
+
+func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description, datePaid string, txn *gorm.DB) error {
+
+	nextBlc, err := ComputeNextBalance(paidAmount, constants.StatementTypeIn, invoiceStatement.UserNumber)
+	if err != nil {
+		return err
+	}
+
+	transactionStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		Amount:        paidAmount,
+		UserNumber:    invoiceStatement.UserNumber,
+		Description:   "Payment received on invoice " + invoiceStatement.RefNumber,
+		SchoolNumber:  invoiceStatement.SchoolNumber,
+		CampusNumber:  invoiceStatement.CampusNumber,
+		RefNumber:     generateNewInvoiceNumber(),
+		Type:          constants.StatementTypeIn,
+		Balance:       nextBlc,
+		AddedByNumber: currentUserNumber,
+	}
+
+	invoiceBalance := invoiceStatement.Amount
+
+	payAmount := invoiceBalance
+
+	if paidAmount < invoiceBalance {
+		payAmount = paidAmount
+	}
+
+	var transactionDate time.Time
+	if transactionDate, err = time.Parse(time.DateOnly, datePaid); err != nil {
+		return errors.New("Error reading payment date: " + err.Error())
+	}
+
+	newTransaction := models.Transaction{
+		StatementNumber: transactionStatement.Number,
+		Number:          uuid.NewV4().String(),
+		Date:            transactionDate,
+		Status:          constants.StatusActive,
+		AmountInCredit:  paidAmount - payAmount,
+		Description:     description,
+		ClientReference: clientReference,
+	}
+
+	newInvoiceTransaction := models.InvoiceTransaction{
+		InvoiceNumber:     invoice.Number,
+		TransactionNumber: newTransaction.Number,
+		AmountPaidOff:     payAmount,
+		AddedByNumber:     currentUserNumber,
+	}
+
+	invoiceTransactionRepository.UseTx(txn)
+
+	err = invoiceRepositories.SaveStatement(transactionStatement, txn)
+	if err != nil {
+		return errors.New("Creating statement error " + err.Error())
+	}
+
+	if _, err = invoiceRepositories.SaveTransaction(newTransaction, txn); err != nil {
+		return errors.New("Adding new transaction error " + err.Error())
+	}
+
+	err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
+	if err != nil {
+		return errors.New("Attaching transaction to invoice error " + err.Error())
+	}
+
+	if payAmount >= invoiceBalance {
+		invoice.Status = constants.StatusPaid
+	} else {
+		invoice.Status = constants.StatusPartiallyPaid
+	}
+
+	if err := invoiceRepositories.UpdateInvoice(invoice, txn); err != nil {
+		return errors.New("Updating invoice status failed : " + err.Error())
+	}
+
+	return err
 }
 
 func doSaveInvoiceItem(invoiceItem requests.InvoiceItemRequest, newInvoiceNumber string, tx *gorm.DB) error {

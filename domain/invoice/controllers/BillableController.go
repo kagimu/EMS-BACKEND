@@ -82,7 +82,7 @@ func GetBill(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	modeOfStudyNumber := context.Query("mode_of_study_number")
 	//curriculumNumber := context.Query("curriculum_number")
-	//campusCurriculumNumber := context.Query("campus_curriculum_number")
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
 	campusNumber := context.Query("campus_number")
 	if studentNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose student"})
@@ -109,7 +109,7 @@ func GetBill(context *gin.Context) {
 		return
 	}
 
-	billable, err := billableService.GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber)
+	billable, err := billableService.GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -139,4 +139,30 @@ func DeleteBillable(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Billable removed successfully"))
+}
+
+func UpdateBillable(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateBillableRequest
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err = billableService.UpdateBillable(payload, user.Number); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Billable updated successfully"})
 }
