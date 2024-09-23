@@ -17,10 +17,10 @@ type scriptMarkingGuideRepository struct {
 	Db *gorm.DB
 }
 
-func (s *scriptMarkingGuideRepository) AllScriptMarkingGuide(assessmentMetricNumber string) ([]models.ScriptMarkingGuide, error) {
+func (scriptMarkingGuideRepository *scriptMarkingGuideRepository) AllScriptMarkingGuide(assessmentMetricNumber string) ([]models.ScriptMarkingGuide, error) {
 
 	var scriptMarkingGuides []models.ScriptMarkingGuide
-	if err := s.Db.
+	if err := scriptMarkingGuideRepository.Db.
 		Where("assessment_metric_number = ?", assessmentMetricNumber).
 		Find(&scriptMarkingGuides).Error; err != nil {
 
@@ -34,13 +34,13 @@ func (s *scriptMarkingGuideRepository) AllScriptMarkingGuide(assessmentMetricNum
 	return scriptMarkingGuides, nil
 }
 
-func (s *scriptMarkingGuideRepository) UseTx(tx *gorm.DB) *gorm.DB {
-	s.Db = tx
-	return s.Db
+func (scriptMarkingGuideRepository *scriptMarkingGuideRepository) UseTx(tx *gorm.DB) *gorm.DB {
+	scriptMarkingGuideRepository.Db = tx
+	return scriptMarkingGuideRepository.Db
 }
 
-func (s *scriptMarkingGuideRepository) SaveScriptMarkingGuide(scriptMarkingGuide models.ScriptMarkingGuide) error {
-	return s.Db.Save(&scriptMarkingGuide).Error
+func (scriptMarkingGuideRepository *scriptMarkingGuideRepository) SaveScriptMarkingGuide(scriptMarkingGuide models.ScriptMarkingGuide) error {
+	return scriptMarkingGuideRepository.Db.Save(&scriptMarkingGuide).Error
 }
 
 func NewScriptMarkingGuideRepository() ScriptMarkingGuideRepository {

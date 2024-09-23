@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
@@ -236,6 +237,8 @@ func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, currentUserNum
 		return errors.New("uploading marking guide error: " + err.Error())
 	}
 
+	scriptMarkingGuideRepository.UseTx(config.DB)
+
 	err = scriptMarkingGuideRepository.SaveScriptMarkingGuide(models.ScriptMarkingGuide{
 		ScriptName:             scriptFile,
 		MarkingGuideName:       markingGuideFile,
@@ -251,6 +254,8 @@ func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, currentUserNum
 }
 
 func GetScriptMarkingGuides(assessmentMetricNumber string) ([]responses.ScriptMarkingGuideResponse, error) {
+
+	scriptMarkingGuideRepository.UseTx(config.DB)
 
 	var scriptMarkingGuideResponses = make([]responses.ScriptMarkingGuideResponse, 0)
 
