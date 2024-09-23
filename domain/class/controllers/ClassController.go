@@ -288,10 +288,10 @@ func AddCampusClass(context *gin.Context) {
 	}
 	// automatically create a stream
 	stream := classModel.Stream{
-		Number:           uuid.NewV4().String(),
-		Name:             saveClass.ClassName,
-		ClassLevelNumber: number,
-		UserNumber:       userNumber,
+		Number:            uuid.NewV4().String(),
+		Name:              saveClass.ClassName,
+		CampusClassNumber: number,
+		UserNumber:        userNumber,
 	}
 
 	err = repositories.CreateStream(&stream, trn)
@@ -883,8 +883,8 @@ func AddClassStream(ctx *gin.Context) {
 		return
 	}
 
-	if streamRequest.ClassLevelNumber == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Class Level Number is required!"})
+	if streamRequest.CampusClassNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Class Number is required!"})
 		return
 	}
 
@@ -894,10 +894,10 @@ func AddClassStream(ctx *gin.Context) {
 	if streams != nil {
 		for _, stream := range streams {
 			streamObj := classModel.Stream{
-				Number:           uuid.NewV4().String(),
-				Name:             stream,
-				ClassLevelNumber: streamRequest.ClassLevelNumber,
-				UserNumber:       ctx.GetHeader("User-Number"),
+				Number:            uuid.NewV4().String(),
+				Name:              stream,
+				CampusClassNumber: streamRequest.CampusClassNumber,
+				UserNumber:        ctx.GetHeader("User-Number"),
 			}
 
 			err = config.DB.Save(&streamObj).Error

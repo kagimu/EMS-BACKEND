@@ -47,7 +47,6 @@ func CreateStaff(c *gin.Context) {
 	saveStaff := models.Staff{
 		Number:            uuid.NewV4().String(),
 		StaffIDNumber:     staffNumber,
-		JobTitleNumber:    payload.JobTitleNumber,
 		CampusNumber:      payload.CampusNumber,
 		SalaryScaleNumber: payload.SalaryScaleNumber,
 		UserNumber:        user.Number,
@@ -129,7 +128,6 @@ func EditStaff(c *gin.Context) {
 	}
 
 	saveStaff := models.Staff{
-		JobTitleNumber:    payload.JobTitleNumber,
 		CampusNumber:      payload.CampusNumber,
 		SalaryScaleNumber: payload.SalaryScaleNumber,
 	}

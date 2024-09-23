@@ -699,13 +699,6 @@ func SetupRoutes() *gin.Engine {
 				taskSupervisions.GET("", staffController.FetchTaskSUpervisions)
 			}
 
-			joTitles := staff.Group("job-titles")
-			{
-				joTitles.POST("", staffController.CreateJobTitle)
-				joTitles.GET("", staffController.FetchJobTitles)
-				joTitles.PUT("", staffController.EditJobTitle)
-			}
-
 		}
 
 		reportSettings := main.Group("report-settings")

@@ -100,7 +100,7 @@ func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumN
 func CreateStreamResponse(stream classModels.Stream) responses2.StreamResponse {
 	return responses2.StreamResponse{
 		StreamNumber:      stream.Number,
-		CampusClassNumber: stream.ClassLevelNumber,
+		CampusClassNumber: stream.CampusClassNumber,
 		Name:              stream.Name,
 	}
 }
