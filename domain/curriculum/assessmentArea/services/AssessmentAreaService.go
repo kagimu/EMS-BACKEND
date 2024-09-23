@@ -167,7 +167,7 @@ func SaveAssessmentAreaGradingStandard(assessmentAreaGradingStandardRequest aggr
 
 	checkDuplicate, err := repositories.GetAssessmentAreaGradingStandardsByCodeAndSchoolNumber(assessmentAreaGradingStandardRequest.Code, school.Number)
 	if err != nil {
-		return errors.New("checking duplicate error: " + err.Error())
+		return errors.New("checking duplicate for assessment area code and school error: " + err.Error())
 	}
 
 	if checkDuplicate.Number != "" {
