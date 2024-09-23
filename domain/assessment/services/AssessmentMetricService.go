@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	classService "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -247,4 +248,30 @@ func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, currentUserNum
 	}
 
 	return nil
+}
+
+func GetScriptMarkingGuides(assessmentMetricNumber string) ([]responses.ScriptMarkingGuideResponse, error) {
+
+	var scriptMarkingGuideResponses = make([]responses.ScriptMarkingGuideResponse, 0)
+
+	scriptMarkingGuides, err := scriptMarkingGuideRepository.AllScriptMarkingGuide(assessmentMetricNumber)
+	if err != nil {
+		return scriptMarkingGuideResponses, errors.New("getting all script marking guide error: " + err.Error())
+	}
+
+	for _, scriptMarkingGuide := range scriptMarkingGuides {
+
+		user, _ := repository.GetUserByNumber(scriptMarkingGuide.UserNumber)
+
+		scriptMarkingGuideResponses = append(scriptMarkingGuideResponses, responses.ScriptMarkingGuideResponse{
+			ScriptName:             scriptMarkingGuide.ScriptName,
+			MarkingGuideName:       scriptMarkingGuide.MarkingGuideName,
+			CreatedOn:              scriptMarkingGuide.CreatedAt.Format(time.DateTime),
+			UpdatedOn:              scriptMarkingGuide.UpdatedAt.Format(time.DateTime),
+			AddedBy:                user.FirstName,
+			AssessmentMetricNumber: assessmentMetricNumber,
+		})
+	}
+
+	return scriptMarkingGuideResponses, nil
 }

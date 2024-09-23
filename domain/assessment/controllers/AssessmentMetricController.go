@@ -128,3 +128,26 @@ func ScriptMarkingGuide(c *gin.Context) {
 
 	c.JSON(http.StatusOK, commons.Feedback("Marking guide uploaded successfully"))
 }
+
+func GetScriptMarkingGuide(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	metricNumber := c.Query("assessment_metric_number")
+	if metricNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the assessment schedule"})
+		return
+	}
+
+	documents, err := services.GetScriptMarkingGuides(metricNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": documents})
+}

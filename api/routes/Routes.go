@@ -558,6 +558,7 @@ func SetupRoutes() *gin.Engine {
 			assessment.POST("update", assessmentController.UpdateAssessmentMetric)
 			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
 			assessment.POST("script-marking-guide", assessmentController.ScriptMarkingGuide)
+			assessment.GET("script-marking-guide", assessmentController.GetScriptMarkingGuide)
 
 			assessment.POST("metrics", assessmentController.CreateMetric)
 			assessment.GET("metrics", assessmentController.FetchMetrics)
