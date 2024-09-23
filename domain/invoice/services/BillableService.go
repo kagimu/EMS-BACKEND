@@ -330,7 +330,7 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 func processBillItems(billable models.Billable, billItems []requests.InvoiceItemRequest, tx *gorm.DB) error {
 
 	for _, itemRequest := range billItems {
-		checkDuplicate, err := repositories.GetDuplicatedBillableItem(billable.Number, itemRequest.ItemNumber)
+		checkDuplicate, err := repositories.GetDuplicatedBillableItem(billable.Number, itemRequest.ItemNumber, tx)
 		if err != nil {
 			return errors.New("Checking duplicate item error " + err.Error())
 		}
