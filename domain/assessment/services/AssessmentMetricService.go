@@ -236,9 +236,10 @@ func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, currentUserNum
 	}
 
 	err = scriptMarkingGuideRepository.SaveScriptMarkingGuide(models.ScriptMarkingGuide{
-		ScriptName:       scriptFile,
-		MarkingGuideName: markingGuideFile,
-		UserNumber:       currentUserNumber,
+		ScriptName:             scriptFile,
+		MarkingGuideName:       markingGuideFile,
+		UserNumber:             currentUserNumber,
+		AssessmentMetricNumber: assessmentMetricNumber,
 	})
 
 	if err != nil {
