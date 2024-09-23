@@ -209,6 +209,7 @@ func Init() error {
 		&serviceModel.CampusItem{},
 		&studentDetails.StudentPhoto{},
 		&models3.Attachment{},
+		&assessmentModel.ScriptMarkingGuide{},
 	)
 
 	if err != nil {

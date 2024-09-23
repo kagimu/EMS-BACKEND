@@ -20,6 +20,7 @@ import (
 )
 
 var assessmentRepository = repositories.NewAssessmentMetricRepository()
+var scriptMarkingGuideRepository = repositories.NewScriptMarkingGuideRepository()
 
 func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricRequest, currentUser string) error {
 
@@ -213,24 +214,35 @@ func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMet
 
 }
 
-func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, nature string) error {
-	uploadNumber, err := services.UploadAttachment(ctx, "attachment")
-	if err != nil {
-		return errors.New("uploading marking guide error: " + err.Error())
-	}
-	repo := repositories.NewAssessmentMetricRepository()
-	assessmentMetric, err := repo.FindAssessmentMetricByNumber(assessmentMetricNumber)
+func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, currentUserNumber string) error {
+
+	assessmentMetric, err := assessmentRepository.FindAssessmentMetricByNumber(assessmentMetricNumber)
 	if err != nil {
 		return errors.New("error getting assessment metric details: " + err.Error())
 	}
-	if nature == "MARKING_GUIDE" {
-		assessmentMetric.MarkingGuide = uploadNumber
-	} else {
-		assessmentMetric.TestScript = uploadNumber
+
+	if assessmentMetric.Number == "" {
+		return errors.New("invalid assessment metric number")
 	}
-	err = repo.SaveAssessmentMetric(assessmentMetric)
+
+	scriptFile, err := services.UploadAttachment(ctx, "script-file")
 	if err != nil {
-		return errors.New("updating marking guide error: " + err.Error())
+		return errors.New("uploading script file error: " + err.Error())
+	}
+
+	markingGuideFile, err := services.UploadAttachment(ctx, "marking-guide-file")
+	if err != nil {
+		return errors.New("uploading marking guide error: " + err.Error())
+	}
+
+	err = scriptMarkingGuideRepository.SaveScriptMarkingGuide(models.ScriptMarkingGuide{
+		ScriptName:       scriptFile,
+		MarkingGuideName: markingGuideFile,
+		UserNumber:       currentUserNumber,
+	})
+
+	if err != nil {
+		return errors.New("storing script marking guide error: " + err.Error())
 	}
 
 	return nil
