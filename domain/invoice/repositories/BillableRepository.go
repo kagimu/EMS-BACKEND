@@ -81,7 +81,7 @@ func GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, m
 
 	if err := db.
 		Scopes(filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByAnyField("mode_of_study_number", modeOfStudyNumber), filters.ByAnyField("bill_type", billType), filters.ByAnyField("class_number", classNumber)).
-		Where("status = ? AND campus_number = ? AND curriculum_number", status, campusNumber, curriculumNumber).First(&billable).Error; err != nil {
+		Where("status = ? AND campus_number = ? AND curriculum_number = ?", status, campusNumber, curriculumNumber).First(&billable).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return billable, nil
