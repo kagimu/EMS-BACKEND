@@ -141,7 +141,6 @@ func Init() error {
 		&assessmentScaleModels.Scale{},
 		&assessmentScaleModels.AggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
-		&staffModel.JobTitle{},
 		&staffModel.SalaryScale{},
 		&staffModel.Task{},
 		&staffModel.TaskSupervision{},
@@ -209,6 +208,7 @@ func Init() error {
 		&serviceModel.CampusItem{},
 		&studentDetails.StudentPhoto{},
 		&models3.Attachment{},
+		&staffModel.StreamTeacher{},
 		&assessmentModel.ScriptMarkingGuide{},
 	)
 
