@@ -54,7 +54,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 	currentEnrolment, err := enrolmentRepository.GetStudentEnrolment(enrolmentRequest.StudentNumber, enrolmentRequest.StudyPeriodNumber, enrolmentRequest.CampusClassNumber, "")
 	if err != nil {
-		return errors.New("Checking duplicate error: " + err.Error())
+		return errors.New("Checking student current enrollment error: " + err.Error())
 	}
 
 	if currentEnrolment.Number != "" {
