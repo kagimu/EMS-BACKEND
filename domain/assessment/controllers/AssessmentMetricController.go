@@ -56,10 +56,6 @@ func FetchAssessmentMetrics(c *gin.Context) {
 		return
 	}
 
-	/*if campusNumber != "" && classNumber != "" {
-		campusClassNumber = ""
-	}*/
-
 	if paginated == "yes" {
 
 		allAssessments, err := services.AllAssessmentsPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber, c)
@@ -110,7 +106,13 @@ func UpdateAssessmentMetric(c *gin.Context) {
 	c.JSON(http.StatusOK, commons.Feedback("Schedule updated successfully"))
 }
 
-func UploadMarkingGuide(c *gin.Context) {
+func ScriptMarkingGuide(c *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
 
 	metricNumber := c.PostForm("assessment_metric_number")
 	if metricNumber == "" {
@@ -118,7 +120,7 @@ func UploadMarkingGuide(c *gin.Context) {
 		return
 	}
 
-	err := services.UploadMarkingGuide(c, metricNumber, "MARKING_GUIDE")
+	err = services.UploadMarkingGuide(c, metricNumber, user.Number)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -127,17 +129,25 @@ func UploadMarkingGuide(c *gin.Context) {
 	c.JSON(http.StatusOK, commons.Feedback("Marking guide uploaded successfully"))
 }
 
-func UploadScript(c *gin.Context) {
-	metricNumber := c.PostForm("assessment_metric_number")
+func GetScriptMarkingGuide(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	metricNumber := c.Query("assessment_metric_number")
 	if metricNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the assessment schedule"})
 		return
 	}
 
-	err := services.UploadMarkingGuide(c, metricNumber, "ASSESSMENT_SCRIPT")
+	documents, err := services.GetScriptMarkingGuides(metricNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, commons.Feedback("Test script uploaded successfully"))
+
+	c.JSON(http.StatusOK, gin.H{"data": documents})
 }

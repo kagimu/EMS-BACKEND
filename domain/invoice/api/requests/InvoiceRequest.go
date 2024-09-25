@@ -2,6 +2,7 @@ package requests
 
 import (
 	"errors"
+	"strconv"
 )
 
 type InvoiceRequest struct {
@@ -30,7 +31,11 @@ func ValidateItems(items []InvoiceItemRequest) error {
 		return errors.New("add at least one item")
 	}
 
-	for _, item := range items {
+	for position, item := range items {
+
+		if item.ItemNumber == "" {
+			return errors.New("Set the item number at position '" + strconv.Itoa(position) + "'")
+		}
 
 		if item.Quantity <= 0 {
 			return errors.New("quantity must be greater than zero")

@@ -503,7 +503,7 @@ func SetupRoutes() *gin.Engine {
 			billable := invoices.Group("billable")
 			{
 				billable.POST("", invoiceController.CreateBillable)
-				billable.POST("update", invoiceController.UpdateBillable)
+				billable.PUT("", invoiceController.UpdateBillable)
 				billable.DELETE("/:billable_number", invoiceController.DeleteBillable)
 				billable.GET("", invoiceController.AllBillable)
 				billable.GET("details", invoiceController.BillableDetails)
@@ -557,8 +557,8 @@ func SetupRoutes() *gin.Engine {
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.POST("update", assessmentController.UpdateAssessmentMetric)
 			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
-			assessment.POST("upload-marking-guide", assessmentController.UploadMarkingGuide)
-			assessment.POST("upload-script", assessmentController.UploadScript)
+			assessment.POST("script-marking-guide", assessmentController.ScriptMarkingGuide)
+			assessment.GET("script-marking-guide", assessmentController.GetScriptMarkingGuide)
 
 			assessment.POST("metrics", assessmentController.CreateMetric)
 			assessment.GET("metrics", assessmentController.FetchMetrics)
@@ -697,13 +697,6 @@ func SetupRoutes() *gin.Engine {
 			{
 				taskSupervisions.POST("", staffController.CreateTaskSupervision)
 				taskSupervisions.GET("", staffController.FetchTaskSUpervisions)
-			}
-
-			joTitles := staff.Group("job-titles")
-			{
-				joTitles.POST("", staffController.CreateJobTitle)
-				joTitles.GET("", staffController.FetchJobTitles)
-				joTitles.PUT("", staffController.EditJobTitle)
 			}
 
 		}

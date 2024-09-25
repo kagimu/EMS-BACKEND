@@ -209,6 +209,7 @@ func Init() error {
 		&studentDetails.StudentPhoto{},
 		&models3.Attachment{},
 		&staffModel.StreamTeacher{},
+		&assessmentModel.ScriptMarkingGuide{},
 	)
 
 	if err != nil {

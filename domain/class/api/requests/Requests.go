@@ -15,8 +15,8 @@ type ClassInfo struct {
 }
 
 type StreamRequest struct {
-	Name             string `json:"name"`
-	ClassLevelNumber string `json:"class_level_number"`
+	Name              string `json:"name"`
+	CampusClassNumber string `json:"campus_class_number"`
 }
 
 type ClassDelRequest struct {

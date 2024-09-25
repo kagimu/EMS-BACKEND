@@ -2,11 +2,13 @@ package services
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	classService "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -20,6 +22,7 @@ import (
 )
 
 var assessmentRepository = repositories.NewAssessmentMetricRepository()
+var scriptMarkingGuideRepository = repositories.NewScriptMarkingGuideRepository()
 
 func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricRequest, currentUser string) error {
 
@@ -213,25 +216,67 @@ func UpdateAssessmentMetric(assessmentMetricRequest requests.UpdateAssessmentMet
 
 }
 
-func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, nature string) error {
-	uploadNumber, err := services.UploadAttachment(ctx, "attachment")
-	if err != nil {
-		return errors.New("uploading marking guide error: " + err.Error())
-	}
-	repo := repositories.NewAssessmentMetricRepository()
-	assessmentMetric, err := repo.FindAssessmentMetricByNumber(assessmentMetricNumber)
+func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, currentUserNumber string) error {
+
+	assessmentMetric, err := assessmentRepository.FindAssessmentMetricByNumber(assessmentMetricNumber)
 	if err != nil {
 		return errors.New("error getting assessment metric details: " + err.Error())
 	}
-	if nature == "MARKING_GUIDE" {
-		assessmentMetric.MarkingGuide = uploadNumber
-	} else {
-		assessmentMetric.TestScript = uploadNumber
+
+	if assessmentMetric.Number == "" {
+		return errors.New("invalid assessment metric number")
 	}
-	err = repo.SaveAssessmentMetric(assessmentMetric)
+
+	scriptFile, err := services.UploadAttachment(ctx, "script-file")
 	if err != nil {
-		return errors.New("updating marking guide error: " + err.Error())
+		return errors.New("uploading script file error: " + err.Error())
+	}
+
+	markingGuideFile, err := services.UploadAttachment(ctx, "marking-guide-file")
+	if err != nil {
+		return errors.New("uploading marking guide error: " + err.Error())
+	}
+
+	scriptMarkingGuideRepository.UseTx(config.DB)
+
+	err = scriptMarkingGuideRepository.SaveScriptMarkingGuide(models.ScriptMarkingGuide{
+		ScriptName:             scriptFile,
+		MarkingGuideName:       markingGuideFile,
+		UserNumber:             currentUserNumber,
+		AssessmentMetricNumber: assessmentMetricNumber,
+	})
+
+	if err != nil {
+		return errors.New("storing script marking guide error: " + err.Error())
 	}
 
 	return nil
+}
+
+func GetScriptMarkingGuides(assessmentMetricNumber string) ([]responses.ScriptMarkingGuideResponse, error) {
+
+	scriptMarkingGuideRepository.UseTx(config.DB)
+
+	var scriptMarkingGuideResponses = make([]responses.ScriptMarkingGuideResponse, 0)
+
+	scriptMarkingGuides, err := scriptMarkingGuideRepository.AllScriptMarkingGuide(assessmentMetricNumber)
+	if err != nil {
+		return scriptMarkingGuideResponses, errors.New("getting all script marking guide error: " + err.Error())
+	}
+
+	for _, scriptMarkingGuide := range scriptMarkingGuides {
+
+		user, _ := repository.GetUserByNumber(scriptMarkingGuide.UserNumber)
+
+		scriptMarkingGuideResponses = append(scriptMarkingGuideResponses, responses.ScriptMarkingGuideResponse{
+			ScriptName:             scriptMarkingGuide.ScriptName,
+			MarkingGuideName:       scriptMarkingGuide.MarkingGuideName,
+			CreatedOn:              scriptMarkingGuide.CreatedAt.Format(time.DateTime),
+			UpdatedOn:              scriptMarkingGuide.UpdatedAt.Format(time.DateTime),
+			AddedBy:                user.FirstName,
+			AssessmentMetricNumber: assessmentMetricNumber,
+		})
+	}
+
+	return scriptMarkingGuideResponses, nil
 }
