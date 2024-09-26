@@ -61,7 +61,7 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		return errors.New("Error checking column code: " + err.Error())
 	}
 
-	if checkByCode.Number != "" {
+	if checkByCode.Number != "" && reportColumnRequest.Name != checkByCode.Name {
 		return errors.New("Column code already used on: " + reportColumnRequest.Name)
 	}
 
