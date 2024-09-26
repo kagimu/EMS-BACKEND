@@ -88,28 +88,15 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		if err != nil {
 			return errors.New("Error checking report column by number: " + err.Error())
 		}
+
+		if oldColumn_.Number == "" {
+			return errors.New("Invalid report column number provided ")
+		}
+
 		oldColumn = oldColumn_
 	}
 
-	/*checkName, err := reporsitory.GetReportColumnByNameAndReportSettingsNumber(reportColumnRequest.Name, reportSetting.Number, tx)
-	if err != nil {
-		return errors.New("Error checking report column by name: " + reportColumnRequest.Name)
-	}
-
-	if checkName.Number != "" && oldColumnNumber.Number != checkName.Number {
-		return errors.New(fmt.Sprintf("Column name '%s' already used on report setting with code '%d'", reportColumnRequest.Name, reportSetting.Code))
-	}
-
-	checkByCode, err := reporsitory.GetReportColumnByCodeAndReportSettingsNumber(reportColumnRequest.Code, reportSetting.Number, tx)
-	if err != nil {
-		return errors.New("Error checking column code: " + err.Error())
-	}
-
-	if checkByCode.Number != "" && oldColumnNumber.Number != checkByCode.Number {
-		return errors.New(fmt.Sprintf("Column code '%d' already used on '%s'", reportColumnRequest.Code, checkByCode.Name))
-	}*/
-
-	if oldColumn.Number == "" {
+	if reportColumnRequest.ReportColumnNumber == "" {
 		newReportColumn := models.ReportColumn{
 			Number:              uuid.NewV4().String(),
 			ReportSettingNumber: reportSetting.Number,
@@ -119,6 +106,7 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 			Code:                reportColumnRequest.Code,
 		}
 
+		fmt.Println("Saving new report column name: " + reportColumnRequest.Name)
 		err := reporsitory.SaveReportColumn(newReportColumn, tx)
 
 		if err != nil {
@@ -130,6 +118,8 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		oldColumn.PercentageShare = reportColumnRequest.PercentageShare
 		oldColumn.UserNumber = currentUser
 		oldColumn.Code = reportColumnRequest.Code
+
+		fmt.Println("Updating report column name: " + reportColumnRequest.Name)
 
 		err := reporsitory.SaveReportColumn(oldColumn, tx)
 
