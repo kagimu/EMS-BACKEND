@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
@@ -34,37 +35,28 @@ func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentU
 		return errors.New("you should define upto the specified columns")
 	}
 
-	trn := config.DB.Begin()
-
-	for _, reportColumn := range reportColumnRequest.Columns {
-
-		err = processReportColumn(reportColumn, currentUser, reportSetting)
-		if err != nil {
-			trn.Rollback()
-			return err
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		for _, reportColumn := range reportColumnRequest.Columns {
+			return processReportColumn(reportColumn, currentUser, reportSetting, tx)
 		}
+		return nil
+	})
 
-	}
-
-	if err := trn.Commit().Error; err != nil {
-		return errors.New("failed to commit report columns transaction: " + err.Error())
-	}
-
-	return nil
+	return err
 }
 
-func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, currentUser string, reportSetting models.ReportSetting) error {
+func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, currentUser string, reportSetting models.ReportSetting, tx *gorm.DB) error {
 
-	checkName, err := reporsitory.GetReportColumnByNameAndReportSettingsNumber(reportColumnRequest.Name, reportSetting.Number)
+	checkName, err := reporsitory.GetReportColumnByNameAndReportSettingsNumber(reportColumnRequest.Name, reportSetting.Number, tx)
 	if err != nil {
 		return errors.New("Error checking report column by name: " + reportColumnRequest.Name)
 	}
 
-	if checkName.Name != "" {
-		return errors.New("Column name already used: " + reportColumnRequest.Name)
+	if checkName.Number != "" {
+		return errors.New(fmt.Sprintf("Column name '%s' already used on report setting with code '%d'", reportColumnRequest.Name, reportSetting.Code))
 	}
 
-	checkByCode, err := reporsitory.GetReportColumnByCodeAndReportSettingsNumber(reportColumnRequest.Code, reportSetting.Number)
+	checkByCode, err := reporsitory.GetReportColumnByCodeAndReportSettingsNumber(reportColumnRequest.Code, reportSetting.Number, tx)
 	if err != nil {
 		return errors.New("Error checking column code: " + err.Error())
 	}
@@ -73,7 +65,7 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		return errors.New("Column code already used on: " + reportColumnRequest.Name)
 	}
 
-	reportColumns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number)
+	reportColumns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number, tx)
 	if err != nil {
 		return errors.New("Error getting report columns: " + err.Error())
 	}
@@ -84,7 +76,7 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		return errors.New("report columns count reached")
 	}
 
-	totalPercentageShare, err := reporsitory.CountReportSettingTotalPercentageScores(reportSetting.Number)
+	totalPercentageShare, err := reporsitory.CountReportSettingTotalPercentageScores(reportSetting.Number, tx)
 	if err != nil {
 		return errors.New("Error getting report setting total percentage scores: " + err.Error())
 	}
@@ -110,7 +102,7 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		Code:                reportColumnRequest.Code,
 	}
 
-	err = reporsitory.SaveReportColumn(newReportColumn)
+	err = reporsitory.SaveReportColumn(newReportColumn, tx)
 	if err != nil {
 		return errors.New("Error saving report column: " + err.Error())
 	}
