@@ -41,9 +41,14 @@ func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentU
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
 		for _, reportColumn := range reportColumnRequest.Columns {
-			return processReportColumn(reportColumn, currentUser, reportSetting, tx)
+			err := processReportColumn(reportColumn, currentUser, reportSetting, tx)
+			if err != nil {
+				return err
+			}
 		}
+
 		return nil
 	})
 
@@ -96,8 +101,6 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		oldColumn = oldColumn_
 	}
 
-	fmt.Println("Incoming column " + reportColumnRequest.Name)
-
 	if reportColumnRequest.ReportColumnNumber == "" {
 		newReportColumn := models.ReportColumn{
 			Number:              uuid.NewV4().String(),
@@ -108,12 +111,11 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 			Code:                reportColumnRequest.Code,
 		}
 
-		fmt.Println("Saving new report column name: " + reportColumnRequest.Name)
 		err := reporsitory.SaveReportColumn(newReportColumn, tx)
-
 		if err != nil {
 			return errors.New("Error saving report column: " + err.Error())
 		}
+
 	} else {
 
 		oldColumn.Name = reportColumnRequest.Name
@@ -121,10 +123,7 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		oldColumn.UserNumber = currentUser
 		oldColumn.Code = reportColumnRequest.Code
 
-		fmt.Println("Updating report column name: " + reportColumnRequest.Name)
-
 		err := reporsitory.SaveReportColumn(oldColumn, tx)
-
 		if err != nil {
 			return errors.New("Error updating report column: " + err.Error())
 		}
