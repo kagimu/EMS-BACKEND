@@ -96,6 +96,8 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		oldColumn = oldColumn_
 	}
 
+	fmt.Println("Incoming column " + reportColumnRequest.Name)
+
 	if reportColumnRequest.ReportColumnNumber == "" {
 		newReportColumn := models.ReportColumn{
 			Number:              uuid.NewV4().String(),
