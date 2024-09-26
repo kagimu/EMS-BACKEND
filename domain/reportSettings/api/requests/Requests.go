@@ -2,7 +2,6 @@ package requests
 
 import (
 	"errors"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 )
 
 type UpdateReportSettingsRequest struct {
@@ -233,7 +232,7 @@ func (reportColumnRequest *ReportColumnRequest) ValidateReportColumn() error {
 		return errors.New("Columns percentage total sum should be 100 ")
 	}
 
-	return services.CheckReportColumnDuplicates(reportColumnRequest.Columns)
+	return nil
 }
 
 func (rpt *GenerateReportSummaryRequest) ValidateGenerateReportSummary() error {
