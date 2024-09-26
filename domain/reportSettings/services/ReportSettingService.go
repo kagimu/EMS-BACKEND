@@ -45,14 +45,53 @@ func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentU
 	return err
 }
 
+func CheckReportColumnDuplicates(reportColumnRequestItems []requests.ReportColumnRequestItem) error {
+
+	cleanColumnsByName := make([]requests.ReportColumnRequestItem, len(reportColumnRequestItems))
+	for _, reportColumn := range reportColumnRequestItems {
+
+		for _, cleanColumn := range cleanColumnsByName {
+			if reportColumn.Name == cleanColumn.Name {
+				return errors.New(fmt.Sprintf("Column name %s is already used", reportColumn.Name))
+			}
+		}
+
+		cleanColumnsByName = append(cleanColumnsByName, reportColumn)
+	}
+
+	cleanColumnsByCode := make([]requests.ReportColumnRequestItem, len(reportColumnRequestItems))
+	for _, reportColumn := range reportColumnRequestItems {
+
+		for _, cleanColumn := range cleanColumnsByCode {
+			if reportColumn.Code == cleanColumn.Code {
+				return errors.New(fmt.Sprintf("Column code %d on %s is already used on %s", cleanColumn.Code, cleanColumn.Name, reportColumn.Name))
+			}
+		}
+
+		cleanColumnsByCode = append(cleanColumnsByCode, reportColumn)
+	}
+
+	return nil
+}
+
 func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, currentUser string, reportSetting models.ReportSetting, tx *gorm.DB) error {
 
-	checkName, err := reporsitory.GetReportColumnByNameAndReportSettingsNumber(reportColumnRequest.Name, reportSetting.Number, tx)
+	oldColumn := models.ReportColumn{}
+
+	if reportColumnRequest.ReportColumnNumber != "" {
+		oldColumn_, err := reporsitory.GetReportColumnByNumber(reportColumnRequest.ReportColumnNumber)
+		if err != nil {
+			return errors.New("Error checking report column by number: " + err.Error())
+		}
+		oldColumn = oldColumn_
+	}
+
+	/*checkName, err := reporsitory.GetReportColumnByNameAndReportSettingsNumber(reportColumnRequest.Name, reportSetting.Number, tx)
 	if err != nil {
 		return errors.New("Error checking report column by name: " + reportColumnRequest.Name)
 	}
 
-	if checkName.Number != "" {
+	if checkName.Number != "" && oldColumnNumber.Number != checkName.Number {
 		return errors.New(fmt.Sprintf("Column name '%s' already used on report setting with code '%d'", reportColumnRequest.Name, reportSetting.Code))
 	}
 
@@ -61,50 +100,37 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		return errors.New("Error checking column code: " + err.Error())
 	}
 
-	if checkByCode.Number != "" && reportColumnRequest.Name != checkByCode.Name {
-		return errors.New("Column code already used on: " + reportColumnRequest.Name)
-	}
+	if checkByCode.Number != "" && oldColumnNumber.Number != checkByCode.Number {
+		return errors.New(fmt.Sprintf("Column code '%d' already used on '%s'", reportColumnRequest.Code, checkByCode.Name))
+	}*/
 
-	reportColumns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number, tx)
-	if err != nil {
-		return errors.New("Error getting report columns: " + err.Error())
-	}
+	if oldColumn.Number == "" {
+		newReportColumn := models.ReportColumn{
+			Number:              uuid.NewV4().String(),
+			ReportSettingNumber: reportSetting.Number,
+			Name:                reportColumnRequest.Name,
+			PercentageShare:     reportColumnRequest.PercentageShare,
+			UserNumber:          currentUser,
+			Code:                reportColumnRequest.Code,
+		}
 
-	savedReportColumn := int64(len(reportColumns))
+		err := reporsitory.SaveReportColumn(newReportColumn, tx)
 
-	if savedReportColumn >= reportSetting.Columns {
-		return errors.New("report columns count reached")
-	}
+		if err != nil {
+			return errors.New("Error saving report column: " + err.Error())
+		}
+	} else {
 
-	totalPercentageShare, err := reporsitory.CountReportSettingTotalPercentageScores(reportSetting.Number, tx)
-	if err != nil {
-		return errors.New("Error getting report setting total percentage scores: " + err.Error())
-	}
+		oldColumn.Name = reportColumnRequest.Name
+		oldColumn.PercentageShare = reportColumnRequest.PercentageShare
+		oldColumn.UserNumber = currentUser
+		oldColumn.Code = reportColumnRequest.Code
 
-	savedColumnsPercentageShare := totalPercentageShare + reportColumnRequest.PercentageShare
+		err := reporsitory.SaveReportColumn(oldColumn, tx)
 
-	if (savedColumnsPercentageShare) > 100 {
-		return errors.New("report settings columns exceeds 100%")
-	}
-
-	remainingPercentageScore := 100 - savedColumnsPercentageShare
-
-	if remainingPercentageScore > reportColumnRequest.PercentageShare && (savedReportColumn+1) >= reportSetting.Columns {
-		return errors.New("the report column '" + reportColumnRequest.Name + "' should cover upto percentage")
-	}
-
-	newReportColumn := models.ReportColumn{
-		Number:              uuid.NewV4().String(),
-		ReportSettingNumber: reportSetting.Number,
-		Name:                reportColumnRequest.Name,
-		PercentageShare:     reportColumnRequest.PercentageShare,
-		UserNumber:          currentUser,
-		Code:                reportColumnRequest.Code,
-	}
-
-	err = reporsitory.SaveReportColumn(newReportColumn, tx)
-	if err != nil {
-		return errors.New("Error saving report column: " + err.Error())
+		if err != nil {
+			return errors.New("Error updating report column: " + err.Error())
+		}
 	}
 
 	return nil
