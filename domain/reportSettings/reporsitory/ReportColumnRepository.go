@@ -51,7 +51,9 @@ func FindReportColumnsByReportSettingsNumber(reportSettingsNumber string, tx ...
 
 	var reportColumns []reportSettings.ReportColumn
 
-	if err := db.Where("report_setting_number = ?", reportSettingsNumber).Find(&reportColumns).Error; err != nil {
+	if err := db.Where("report_setting_number = ?", reportSettingsNumber).
+		Order("code asc").
+		Find(&reportColumns).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return reportColumns, nil
 		}
