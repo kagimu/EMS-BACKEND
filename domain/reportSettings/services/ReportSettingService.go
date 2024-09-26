@@ -35,6 +35,11 @@ func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentU
 		return errors.New("you should define upto the specified columns")
 	}
 
+	err = CheckReportColumnDuplicates(reportColumnRequest.Columns)
+	if err != nil {
+		return err
+	}
+
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 		for _, reportColumn := range reportColumnRequest.Columns {
 			return processReportColumn(reportColumn, currentUser, reportSetting, tx)
