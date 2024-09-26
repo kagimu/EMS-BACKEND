@@ -91,9 +91,9 @@ func GetReportColumnByCodeAndReportSettingsNumber(code int64, reportSettingsNumb
 
 	if err := db.Where("code = ? AND report_setting_number = ?", code, reportSettingsNumber).First(&reportColumn).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return reportColumn, nil
+			return reportSettings.ReportColumn{}, nil
 		}
-		return reportColumn, err
+		return reportSettings.ReportColumn{}, err
 	}
 
 	return reportColumn, nil
