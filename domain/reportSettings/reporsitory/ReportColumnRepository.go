@@ -7,9 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func CountReportSettingTotalPercentageScores(reportSettingNumber string) (float64, error) {
+func CountReportSettingTotalPercentageScores(reportSettingNumber string, tx ...*gorm.DB) (float64, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var totalPercentageShare float64
 
@@ -39,13 +42,18 @@ func SaveReportColumn(reportSettingColumn reportSettings.ReportColumn, trn ...*g
 	return db.Save(&reportSettingColumn).Error
 }
 
-func FindReportColumnsByReportSettingsNumber(reportSettingsNumber string) ([]reportSettings.ReportColumn, error) {
+func FindReportColumnsByReportSettingsNumber(reportSettingsNumber string, tx ...*gorm.DB) ([]reportSettings.ReportColumn, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var reportColumns []reportSettings.ReportColumn
 
-	if err := db.Where("report_setting_number = ?", reportSettingsNumber).Find(&reportColumns).Error; err != nil {
+	if err := db.Where("report_setting_number = ?", reportSettingsNumber).
+		Order("code asc").
+		Find(&reportColumns).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return reportColumns, nil
 		}
@@ -55,29 +63,39 @@ func FindReportColumnsByReportSettingsNumber(reportSettingsNumber string) ([]rep
 	return reportColumns, nil
 }
 
-func GetReportColumnByNameAndReportSettingsNumber(name string, reportSettingsNumber string) (reportSettings.ReportColumn, error) {
+func GetReportColumnByNameAndReportSettingsNumber(name, reportSettingsNumber string, tx ...*gorm.DB) (reportSettings.ReportColumn, error) {
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var reportColumn reportSettings.ReportColumn
 
 	if err := db.Where("name = ? AND report_setting_number = ?", name, reportSettingsNumber).First(&reportColumn).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return reportColumn, nil
+			return reportSettings.ReportColumn{}, nil
 		}
-		return reportColumn, err
+		return reportSettings.ReportColumn{}, err
 	}
 
 	return reportColumn, nil
 }
 
-func GetReportColumnByCodeAndReportSettingsNumber(code int64, reportSettingsNumber string) (reportSettings.ReportColumn, error) {
+func GetReportColumnByCodeAndReportSettingsNumber(code int64, reportSettingsNumber string, tx ...*gorm.DB) (reportSettings.ReportColumn, error) {
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var reportColumn reportSettings.ReportColumn
 
 	if err := db.Where("code = ? AND report_setting_number = ?", code, reportSettingsNumber).First(&reportColumn).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return reportColumn, nil
+			return reportSettings.ReportColumn{}, nil
 		}
-		return reportColumn, err
+		return reportSettings.ReportColumn{}, err
 	}
 
 	return reportColumn, nil
