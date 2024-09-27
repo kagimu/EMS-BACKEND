@@ -41,9 +41,14 @@ func SaveReportColumn(reportColumnRequest requests.ReportColumnRequest, currentU
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
 		for _, reportColumn := range reportColumnRequest.Columns {
-			return processReportColumn(reportColumn, currentUser, reportSetting, tx)
+			err := processReportColumn(reportColumn, currentUser, reportSetting, tx)
+			if err != nil {
+				return err
+			}
 		}
+
 		return nil
 	})
 
@@ -88,28 +93,15 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		if err != nil {
 			return errors.New("Error checking report column by number: " + err.Error())
 		}
+
+		if oldColumn_.Number == "" {
+			return errors.New("Invalid report column number provided ")
+		}
+
 		oldColumn = oldColumn_
 	}
 
-	/*checkName, err := reporsitory.GetReportColumnByNameAndReportSettingsNumber(reportColumnRequest.Name, reportSetting.Number, tx)
-	if err != nil {
-		return errors.New("Error checking report column by name: " + reportColumnRequest.Name)
-	}
-
-	if checkName.Number != "" && oldColumnNumber.Number != checkName.Number {
-		return errors.New(fmt.Sprintf("Column name '%s' already used on report setting with code '%d'", reportColumnRequest.Name, reportSetting.Code))
-	}
-
-	checkByCode, err := reporsitory.GetReportColumnByCodeAndReportSettingsNumber(reportColumnRequest.Code, reportSetting.Number, tx)
-	if err != nil {
-		return errors.New("Error checking column code: " + err.Error())
-	}
-
-	if checkByCode.Number != "" && oldColumnNumber.Number != checkByCode.Number {
-		return errors.New(fmt.Sprintf("Column code '%d' already used on '%s'", reportColumnRequest.Code, checkByCode.Name))
-	}*/
-
-	if oldColumn.Number == "" {
+	if reportColumnRequest.ReportColumnNumber == "" {
 		newReportColumn := models.ReportColumn{
 			Number:              uuid.NewV4().String(),
 			ReportSettingNumber: reportSetting.Number,
@@ -120,10 +112,10 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		}
 
 		err := reporsitory.SaveReportColumn(newReportColumn, tx)
-
 		if err != nil {
 			return errors.New("Error saving report column: " + err.Error())
 		}
+
 	} else {
 
 		oldColumn.Name = reportColumnRequest.Name
@@ -132,7 +124,6 @@ func processReportColumn(reportColumnRequest requests.ReportColumnRequestItem, c
 		oldColumn.Code = reportColumnRequest.Code
 
 		err := reporsitory.SaveReportColumn(oldColumn, tx)
-
 		if err != nil {
 			return errors.New("Error updating report column: " + err.Error())
 		}
