@@ -708,6 +708,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("", reportSettingsController.FetchReportSettings)
 			reportSettings.POST("columns", reportSettingsController.CreatReportColumn)
 			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
+			reportSettings.DELETE("columns/:report_column_number", reportSettingsController.DeleteReportColumns)
 			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
 			reportSettings.GET("report-column-assessment", reportSettingsController.AllReportColumnAssessments)
 			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
