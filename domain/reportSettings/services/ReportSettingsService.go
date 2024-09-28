@@ -123,8 +123,24 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		return errors.New("failed to fetch columns  for this class")
 	}
 
-	if len(reportColumns) != int(reportSettings.Columns) {
-		return errors.New("report columns are not yet fully set up, ensure all columns are set up with assessments")
+	configuredColumnsTotal := len(reportColumns)
+	columnsTotal := int(reportSettings.Columns)
+
+	if configuredColumnsTotal != columnsTotal {
+		return errors.New(fmt.Sprintf("You have configured %d and the report settings expects %d", configuredColumnsTotal, columnsTotal))
+	}
+
+	//Check if all has assessment schedules
+	for _, reportColumn := range reportColumns {
+
+		checkAssessments, err := reporsitory.FindReportColumnAssessmentsByReportColumnNumber(reportColumn.Number)
+		if err != nil {
+			return errors.New("Checking column assessments error " + err.Error())
+		}
+
+		if len(checkAssessments) == 0 {
+			return errors.New(fmt.Sprintf("Report column '%s' has no assessment schedules set", reportColumn.Name))
+		}
 
 	}
 
