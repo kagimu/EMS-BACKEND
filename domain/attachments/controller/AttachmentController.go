@@ -25,11 +25,16 @@ func DownloadAttachment(context *gin.Context) {
 	}
 
 	context.Header("Content-Disposition", "attachment; filename="+fileDetails.FileName)
-	if fileDetails.Extension == "pdf" {
-		context.Header("Content-Type", "application/pdf")
-	} else if fileDetails.Extension == "doc" || fileDetails.Extension == "docx" {
-		context.Header("Content-Type", "application/msword")
+	contentType := "application/octet-stream"
+
+	switch fileDetails.Extension {
+	case ".pdf":
+		contentType = "application/pdf"
+	case ".doc", ".docx":
+		contentType = "application/msword"
 	}
-	//context.Header("Content-Type", "application/octet-stream")
-	context.Data(http.StatusOK, "application/octet-stream", byteFile)
+
+	context.Header("Content-Type", contentType)
+
+	context.Data(http.StatusOK, contentType, byteFile)
 }
