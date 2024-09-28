@@ -93,19 +93,6 @@ func UpdateReportSettings(reportSettingsRequest requests.UpdateReportSettingsReq
 		return errors.New("Report settings for this class  already exists")
 	}
 
-	if reportSettings.Columns != reportSettingsRequest.Columns {
-
-		columns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSettings.Number)
-		if err != nil {
-			return errors.New("error checking report columns error: " + err.Error())
-		}
-
-		if len(columns) != 0 {
-			return errors.New("Number of columns can not be changed ")
-		}
-
-	}
-
 	reportSettings.StudyPeriodNumber = reportSettingsRequest.StudyPeriodNumber
 	reportSettings.AcademicYearNumber = reportSettingsRequest.AcademicYearNumber
 	reportSettings.CampusClassNumber = campusClass.Number
@@ -136,8 +123,24 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		return errors.New("failed to fetch columns  for this class")
 	}
 
-	if len(reportColumns) != int(reportSettings.Columns) {
-		return errors.New("report columns are not yet fully set up, ensure all columns are set up with assessments")
+	configuredColumnsTotal := len(reportColumns)
+	columnsTotal := int(reportSettings.Columns)
+
+	if configuredColumnsTotal != columnsTotal {
+		return errors.New(fmt.Sprintf("You have configured %d and the report settings expects %d", configuredColumnsTotal, columnsTotal))
+	}
+
+	//Check if all has assessment schedules
+	for _, reportColumn := range reportColumns {
+
+		checkAssessments, err := reporsitory.FindReportColumnAssessmentsByReportColumnNumber(reportColumn.Number)
+		if err != nil {
+			return errors.New("Checking column assessments error " + err.Error())
+		}
+
+		if len(checkAssessments) == 0 {
+			return errors.New(fmt.Sprintf("Report column '%s' has no assessment schedules set", reportColumn.Name))
+		}
 
 	}
 
@@ -566,19 +569,37 @@ func createReportSettingsResponse(reportSetting models.ReportSetting) responses.
 	class, _ := repositories.GetClassByCampusClassNumber(campusClass.Number)
 
 	return responses.ReportSettingsResponse{
-		Name:               academicYear.AcademicYearName + " - " + class.Name + " - " + studyPeriodName.Name,
-		Number:             reportSetting.Number,
-		Status:             reportSetting.Status,
-		Columns:            reportSetting.Columns,
-		Code:               reportSetting.Code,
-		AcademicYear:       academicYear.AcademicYearName,
-		StudyPeriod:        studyPeriodName.Name,
-		Class:              class.Name,
-		StudyPeriodNumber:  studyPeriod.Number,
-		AcademicYearNumber: academicYear.Number,
-		ClassNumber:        class.Number,
-		LevelNumber:        class.LevelNumber,
-		CampusClassNumber:  reportSetting.CampusClassNumber,
-		CampusLevelNumber:  campusClass.CampusLevelNumber,
+		Name:                academicYear.AcademicYearName + " - " + class.Name + " - " + studyPeriodName.Name,
+		ReportSettingNumber: reportSetting.Number,
+		Status:              reportSetting.Status,
+		Columns:             reportSetting.Columns,
+		Code:                reportSetting.Code,
+		AcademicYear:        academicYear.AcademicYearName,
+		StudyPeriod:         studyPeriodName.Name,
+		Class:               class.Name,
+		StudyPeriodNumber:   studyPeriod.Number,
+		AcademicYearNumber:  academicYear.Number,
+		ClassNumber:         class.Number,
+		LevelNumber:         class.LevelNumber,
+		CampusClassNumber:   reportSetting.CampusClassNumber,
+		CampusLevelNumber:   campusClass.CampusLevelNumber,
 	}
+}
+
+func DeleteReportColumn(reportColumnNumber string) error {
+	reportColumn, err := reporsitory.GetReportColumnByNumber(reportColumnNumber)
+	if err != nil {
+		return errors.New("failed to fetch report column by number: " + err.Error())
+	}
+
+	if reportColumn.Number == "" {
+		return errors.New("Invalid report column number ")
+	}
+
+	err = reporsitory.DeleteReportColumn(reportColumn)
+	if err != nil {
+		return errors.New("failed to delete report column: " + err.Error())
+	}
+
+	return nil
 }

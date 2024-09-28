@@ -22,8 +22,8 @@ type AssessmentResponse struct {
 
 type ScriptMarkingGuideResponse struct {
 	AssessmentMetricNumber string `json:"assessment_metric_number"`
-	ScriptName             string `json:"script_name"`
-	MarkingGuideName       string `json:"marking_guide_name"`
+	ScriptNumber           string `json:"script_number"`
+	MarkingGuideNumber     string `json:"marking_guide_number"`
 	AddedBy                string `json:"added_by"`
 	CreatedOn              string `json:"created_on"`
 	UpdatedOn              string `json:"updated_on"`

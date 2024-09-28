@@ -1,164 +1,71 @@
 package controllers
 
 import (
-	"errors"
-	"fmt"
-	"net/http"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"gorm.io/gorm"
+	"net/http"
 )
 
-func CreateStaff(c *gin.Context) {
+func AttachStaffToStream(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	var payload requests.StaffRequest
+	var payload requests.StreamTeacherRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	generateStaffNumber := models.StaffNumber{}
-
-	tx := config.DB.Begin()
-
-	if err := tx.Create(&generateStaffNumber).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": " Failed to generate staff number"})
-		return
-	}
-
-	staffNumber := fmt.Sprintf("STN%03d", generateStaffNumber.ID)
-
-	saveStaff := models.Staff{
-		Number:            uuid.NewV4().String(),
-		StaffIDNumber:     staffNumber,
-		CampusNumber:      payload.CampusNumber,
-		SalaryScaleNumber: payload.SalaryScaleNumber,
-		UserNumber:        user.Number,
-	}
-
-	if err := tx.Create(&saveStaff).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save staff member"})
-		return
-	}
-
-	tx.Commit()
-
-	c.JSON(http.StatusOK, gin.H{"message": "Staff member created successfully"})
-}
-
-func FetchStaff(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var staffMembers []models.Staff
-	if err := config.DB.Find(&staffMembers).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch staff members"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": staffMembers})
-}
-
-func FetchMemberByStaffNumber(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var staff models.Staff
-
-	staffNumber := c.Query("staff_id_number")
-
-	if staffNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Staff number is missing"})
-		return
-	}
-
-	if err := config.DB.First(&staff, "staff_id_number = ?", staffNumber).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"message": "No staff member found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
-		}
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": staff})
-}
-
-func EditStaff(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	var payload requests.StaffRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	var staff models.Staff
-	staffNumber := c.Query("staff_number")
-	if err := config.DB.First(&staff, "staff_number = ?", staffNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No staff found with the specified staff number"})
+	saveStreamTeacher := models.StreamTeacher{
+		Number:               uuid.NewV4().String(),
+		UserNumber:           payload.UserNumber,
+		StreamNumber:         payload.StreamNumber,
+		CampusClassNumber:    payload.CampusClassNumber,
+		AddedBy:              user.Number,
+		AssessmentAreaNumber: payload.AssessmentAreaNumber,
+	}
+
+	if err := services.AttachStaffToStream(saveStreamTeacher); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to attach staff to stream"})
 		return
 	}
 
-	saveStaff := models.Staff{
-		CampusNumber:      payload.CampusNumber,
-		SalaryScaleNumber: payload.SalaryScaleNumber,
+	c.JSON(http.StatusOK, gin.H{"message": "Staff has been attached to stream"})
+}
+
+func DetachStaffFromStream(c *gin.Context) {
+
+	staffNumber := c.Param("staff_number")
+	streamNumber := c.Param("stream_number")
+
+	if err := services.DetachStaffFromStream(staffNumber, streamNumber); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to detach staff from stream"})
+		return
 	}
 
-	if err := config.DB.Model(&staff).Where("staff_number = ?", staffNumber).Updates(saveStaff).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update staff member info"})
+	c.JSON(http.StatusOK, gin.H{"message": "Staff has been detached from stream"})
+}
+
+func GetStaffOnStream(c *gin.Context) {
+	streamNumber := c.Param("stream_number")
+
+	staff, err := services.GetStaffOnStream(streamNumber)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get staff on stream"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": staff})
-}
-
-func DeleteStaff(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	staffNumber := c.Param("staff_number")
-	var staff models.Staff
-
-	if err := config.DB.First(&staff, staffNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No staff member found"})
-		return
-	}
-
-	if err := config.DB.Delete(&staff).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete staff"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Staff deleted successfully"})
 }

@@ -672,11 +672,9 @@ func SetupRoutes() *gin.Engine {
 
 		staff := main.Group("staff-management")
 		{
-			staff.POST("", staffController.CreateStaff)
-			staff.GET("all", staffController.FetchStaff)
-			staff.GET("", staffController.FetchMemberByStaffNumber)
-			staff.PUT("", staffController.EditStaff)
-			staff.DELETE("", staffController.DeleteStaff)
+			staff.POST("attach-staff-to-stream", staffController.AttachStaffToStream)
+			staff.GET("", staffController.GetStaffOnStream)
+			staff.DELETE("", staffController.DetachStaffFromStream)
 
 			salaryScale := staff.Group("salary-scale")
 			{
@@ -704,10 +702,11 @@ func SetupRoutes() *gin.Engine {
 		reportSettings := main.Group("report-settings")
 		{
 			reportSettings.POST("", reportSettingsController.CreateReportSettings)
-			reportSettings.POST("update", reportSettingsController.UpdateReportSettings)
+			reportSettings.PUT("update", reportSettingsController.UpdateReportSettings)
 			reportSettings.GET("", reportSettingsController.FetchReportSettings)
 			reportSettings.POST("columns", reportSettingsController.CreatReportColumn)
 			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
+			reportSettings.DELETE("columns/:report_column_number", reportSettingsController.DeleteReportColumns)
 			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
 			reportSettings.GET("report-column-assessment", reportSettingsController.AllReportColumnAssessments)
 			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
