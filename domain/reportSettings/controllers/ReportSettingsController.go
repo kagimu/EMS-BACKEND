@@ -630,3 +630,24 @@ func UpdateReportSettings(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Report settings updated successfully"})
 }
+
+func DeleteReportColumns(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+	reportColumnNumber := context.Param("report_column_number")
+	if reportColumnNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report column number"})
+		return
+	}
+
+	err = services3.DeleteReportColumn(reportColumnNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report column deleted successfully"})
+}

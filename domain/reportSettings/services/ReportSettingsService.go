@@ -582,3 +582,21 @@ func createReportSettingsResponse(reportSetting models.ReportSetting) responses.
 		CampusLevelNumber:  campusClass.CampusLevelNumber,
 	}
 }
+
+func DeleteReportColumn(reportColumnNumber string) error {
+	reportColumn, err := reporsitory.GetReportColumnByNumber(reportColumnNumber)
+	if err != nil {
+		return errors.New("failed to fetch report column by number: " + err.Error())
+	}
+
+	if reportColumn.Number == "" {
+		return errors.New("Invalid report column number ")
+	}
+
+	err = reporsitory.DeleteReportColumn(reportColumn)
+	if err != nil {
+		return errors.New("failed to delete report column: " + err.Error())
+	}
+
+	return nil
+}
