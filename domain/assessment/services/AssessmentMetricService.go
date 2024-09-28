@@ -240,8 +240,8 @@ func UploadMarkingGuide(ctx *gin.Context, assessmentMetricNumber, currentUserNum
 	scriptMarkingGuideRepository.UseTx(config.DB)
 
 	err = scriptMarkingGuideRepository.SaveScriptMarkingGuide(models.ScriptMarkingGuide{
-		ScriptName:             scriptFile,
-		MarkingGuideName:       markingGuideFile,
+		ScriptNumber:           scriptFile,
+		MarkingGuideNumber:     markingGuideFile,
 		UserNumber:             currentUserNumber,
 		AssessmentMetricNumber: assessmentMetricNumber,
 	})
@@ -269,8 +269,8 @@ func GetScriptMarkingGuides(assessmentMetricNumber string) ([]responses.ScriptMa
 		user, _ := repository.GetUserByNumber(scriptMarkingGuide.UserNumber)
 
 		scriptMarkingGuideResponses = append(scriptMarkingGuideResponses, responses.ScriptMarkingGuideResponse{
-			ScriptName:             scriptMarkingGuide.ScriptName,
-			MarkingGuideName:       scriptMarkingGuide.MarkingGuideName,
+			ScriptNumber:           scriptMarkingGuide.ScriptNumber,
+			MarkingGuideNumber:     scriptMarkingGuide.MarkingGuideNumber,
 			CreatedOn:              scriptMarkingGuide.CreatedAt.Format(time.DateTime),
 			UpdatedOn:              scriptMarkingGuide.UpdatedAt.Format(time.DateTime),
 			AddedBy:                user.FirstName,
