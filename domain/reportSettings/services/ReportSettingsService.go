@@ -93,19 +93,6 @@ func UpdateReportSettings(reportSettingsRequest requests.UpdateReportSettingsReq
 		return errors.New("Report settings for this class  already exists")
 	}
 
-	if reportSettings.Columns != reportSettingsRequest.Columns {
-
-		columns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSettings.Number)
-		if err != nil {
-			return errors.New("error checking report columns error: " + err.Error())
-		}
-
-		if len(columns) != 0 {
-			return errors.New("Number of columns can not be changed ")
-		}
-
-	}
-
 	reportSettings.StudyPeriodNumber = reportSettingsRequest.StudyPeriodNumber
 	reportSettings.AcademicYearNumber = reportSettingsRequest.AcademicYearNumber
 	reportSettings.CampusClassNumber = campusClass.Number
