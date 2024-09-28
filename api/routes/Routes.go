@@ -672,11 +672,9 @@ func SetupRoutes() *gin.Engine {
 
 		staff := main.Group("staff-management")
 		{
-			staff.POST("", staffController.CreateStaff)
-			staff.GET("all", staffController.FetchStaff)
-			staff.GET("", staffController.FetchMemberByStaffNumber)
-			staff.PUT("", staffController.EditStaff)
-			staff.DELETE("", staffController.DeleteStaff)
+			staff.POST("attach-staff-to-stream", staffController.AttachStaffToStream)
+			staff.GET("", staffController.GetStaffOnStream)
+			staff.DELETE("", staffController.DetachStaffFromStream)
 
 			salaryScale := staff.Group("salary-scale")
 			{

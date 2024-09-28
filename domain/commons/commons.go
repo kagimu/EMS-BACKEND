@@ -141,7 +141,7 @@ func PermissionGroups() []PermissionGroup {
 		{"STUDENT APPLICATION": []string{"view_applications", "view_application_list"}},
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
 		{"CALENDAR": []string{"view_calendar", "view_calendar-details"}},
-		{"INTERVIEWS": []string{"view_interview-details", "create_interview_schedules"}},
+		{"INTERVIEWS": []string{"view_interview-details", "create_interview_schedules", "view_interviews"}},
 		{"INVOICING & BILLING": []string{"add_custom_invoice", "pay_invoice", "cancel_invoice", "cancel_payment", "view_financial_records", "view_billables", "create_billables",
 			"edit_billables",
 			"delete_billables"}},
