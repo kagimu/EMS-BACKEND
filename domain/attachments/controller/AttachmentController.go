@@ -34,5 +34,7 @@ func DownloadAttachment(context *gin.Context) {
 		contentType = "application/msword"
 	}
 
+	context.Header("Content-Type", contentType)
+
 	context.Data(http.StatusOK, contentType, byteFile)
 }
