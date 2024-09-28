@@ -21,10 +21,10 @@ func GetReportSettingByNumber(reportSettingsNumber string, trn ...*gorm.DB) (rep
 	if err := db.Where("number = ?", reportSettingsNumber).First(&reportSetting).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return reportSetting, nil
+			return reportSettingsModel.ReportSetting{}, nil
 		}
 
-		return reportSetting, err
+		return reportSettingsModel.ReportSetting{}, err
 	}
 
 	return reportSetting, nil
