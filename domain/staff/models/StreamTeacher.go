@@ -2,8 +2,11 @@ package models
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	streamModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
+	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 )
 
 type StreamTeacher struct {
@@ -18,6 +21,12 @@ type StreamTeacher struct {
 	AddedBy              string                              `json:"added_by" gorm:"size:36;not null"`
 	AssessmentAreaNumber string                              `json:"assessment_area_number" gorm:"size:36;not null"`
 	AssessmentArea       assessmentAreaModels.AssessmentArea `gorm:"foreignKey:AssessmentAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	SchoolNumber         string                              `json:"school_number" gorm:"size:36;not null"`
+	School               schoolModel.School                  `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	CurriculumNumber     string                              `json:"curriculum_number" gorm:"size:36;not null"`
+	Curriculum           curriculumModel.Curriculum          `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	CampusNumber         string                              `json:"campus_number" gorm:"size:36;not null"`
+	Campus               campusModel.Campus                  `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CreatedAt            string                              `json:"created_at"`
 	UpdatedAt            string                              `json:"updated_at"`
 }
