@@ -27,7 +27,7 @@ func FetchStreamByCampusClassNumber(campusClassNumber string, trn ...*gorm.DB) (
 
 	var streams []models.Stream
 
-	if err := db.Where("class_level_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
+	if err := db.Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return streams, nil
