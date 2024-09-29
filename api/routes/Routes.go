@@ -335,6 +335,7 @@ func SetupRoutes() *gin.Engine {
 			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
 			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
+			lessonPlan.POST("import", lessonPlanControllers.ImportLessonPlan)
 		}
 
 		studentDetails := main.Group("/student-details")

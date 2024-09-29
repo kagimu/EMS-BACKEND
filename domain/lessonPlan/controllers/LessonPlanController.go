@@ -7,11 +7,15 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 )
+
+var lessonPlanService = services.NewLessonPlanService()
 
 func NewLessonPlan(context *gin.Context) {
 
@@ -78,7 +82,7 @@ func NewLessonPlan(context *gin.Context) {
 
 	for _, concept := range lessonPlanConceptInfo {
 
-		var duplicateLessonPlanConcept lessonPlanModel.LessonPlanConcepts
+		var duplicateLessonPlanConcept lessonPlanModel.LessonPlanConcept
 		if duplicate := tx.
 			Where("concept_number = ?", concept.LessonPlanConceptNumber).
 			Where("lesson_plan_number = ?", saveLessonPlan.Number).
@@ -88,7 +92,7 @@ func NewLessonPlan(context *gin.Context) {
 			return
 		}
 
-		saveLessonConcepts := lessonPlanModel.LessonPlanConcepts{
+		saveLessonConcepts := lessonPlanModel.LessonPlanConcept{
 			Number:           uuid.NewV4().String(),
 			ConceptNumber:    concept.LessonPlanConceptNumber,
 			Code:             concept.Code,
@@ -248,7 +252,7 @@ func FetchLessonPlan(context *gin.Context) {
 		return
 	}
 
-	var lessonPlanConceptsInfo []lessonPlanModel.LessonPlanConcepts
+	var lessonPlanConceptsInfo []lessonPlanModel.LessonPlanConcept
 	var lessonPlanConceptsInfo_ []responses.LessonPlanConceptData
 
 	if err := config.DB.
@@ -318,4 +322,44 @@ func FetchLessonPlan(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _lessonPlanResp})
 
+}
+
+func ImportLessonPlan(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	schemeSubTopicNumber := context.PostForm("scheme_sub_topic_number")
+	if schemeSubTopicNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the scheme subtopic for this lesson plan"})
+		return
+	}
+
+	file, err := context.FormFile("file")
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get file: " + err.Error()})
+		return
+	}
+
+	uploadedFile, err := file.Open()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to open file: " + err.Error()})
+		return
+	}
+	defer func(uploadedFile multipart.File) {
+		err = uploadedFile.Close()
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Closing file failed with error : " + err.Error()})
+			return
+		}
+	}(uploadedFile)
+
+	err = lessonPlanService.ImportPlan(uploadedFile, schemeSubTopicNumber, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Concepts imported successfully"})
 }

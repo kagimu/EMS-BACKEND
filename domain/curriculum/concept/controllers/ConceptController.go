@@ -300,7 +300,7 @@ func DeleteConcept(context *gin.Context) {
 
 	conceptNumber := conceptInfo.Number
 
-	var conceptChecker lessonPlanModel.LessonPlanConcepts
+	var conceptChecker lessonPlanModel.LessonPlanConcept
 	if err := config.DB.
 		Where("concept_number = ?", conceptNumber).
 		First(&conceptChecker).Error; err == nil {
