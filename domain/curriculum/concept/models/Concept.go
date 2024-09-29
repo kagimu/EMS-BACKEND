@@ -18,9 +18,8 @@ type (
 		SubTopicNumber   string                     `json:"sub_topic_number" gorm:"size:36;not null"`
 		CreatedAt        time.Time                  `json:"created_at"`
 		UpdatedAt        time.Time                  `json:"updated_at"`
-		DeletedAt        *time.Time                 `sql:"index"`
-		Curriculum       curriculumModel.Curriculum `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-		SubTopic         models3.SubTopic           `gorm:"foreignKey:SubTopicNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Curriculum       curriculumModel.Curriculum `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+		SubTopic         models3.SubTopic           `gorm:"foreignKey:SubTopicNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 		User             models.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )

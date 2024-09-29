@@ -96,7 +96,7 @@ func Init() error {
 		&schemeOfWorkmodel.SchemeOfWork{},
 		&schemeOfWorkmodel.SchemeOfWorkSubTopic{},
 		&lessonPlanModel.LessonPlan{},
-		&lessonPlanModel.LessonPlanConcepts{},
+		&lessonPlanModel.LessonPlanConcept{},
 		&lessonPlanModel.LessonPlanStep{},
 		&studentDetailsModels.StudentDetail{},
 		&classModel.CurriculumClass{},
