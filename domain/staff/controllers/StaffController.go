@@ -35,6 +35,9 @@ func AttachStaffToStream(c *gin.Context) {
 		CampusClassNumber:    payload.CampusClassNumber,
 		AddedBy:              user.Number,
 		AssessmentAreaNumber: payload.AssessmentAreaNumber,
+		SchoolNumber:         payload.SchoolNumber,
+		CurriculumNumber:     payload.CurriculumNumber,
+		CampusNumber:         payload.CampusNumber,
 	}
 
 	if err := services.AttachStaffToStream(saveStreamTeacher); err != nil {
@@ -47,8 +50,8 @@ func AttachStaffToStream(c *gin.Context) {
 
 func DetachStaffFromStream(c *gin.Context) {
 
-	staffNumber := c.Param("staff_number")
-	streamNumber := c.Param("stream_number")
+	staffNumber := c.Query("user_number")
+	streamNumber := c.Query("stream_number")
 
 	if err := services.DetachStaffFromStream(staffNumber, streamNumber); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to detach staff from stream"})
