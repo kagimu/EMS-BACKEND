@@ -1,6 +1,9 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+)
 
 type SchoolInfo struct {
 	Name             string   `json:"name"`
@@ -53,6 +56,10 @@ func (modeOfStudyRequest *ModeOfStudyRequest) Validate() error {
 func (modeOfStudyRequest *UpdateModeOfStudyRequest) Validate() error {
 	if modeOfStudyRequest.ModeOfStudyNumber == "" {
 		return errors.New("Choose mode of study being updated ")
+	}
+
+	if modeOfStudyRequest.Status != "" && modeOfStudyRequest.Status != constants.StatusActive && modeOfStudyRequest.Status != constants.StatusInactive {
+		return errors.New("Invalid status ")
 	}
 
 	return modeOfStudyRequest.ModeOfStudyRequest.Validate()
