@@ -41,6 +41,9 @@ func (classLevel *CampusClass) AfterFind(tx *gorm.DB) (err error) {
 
 func (classLevel *CampusClass) PreInsert(tx *gorm.DB) (err error) {
 	classLevel.Number = uuid.NewV4().String()
+	var class CurriculumClass
+	tx.Model(&CurriculumClass{}).Where("number = ?", classLevel.CurriculumClassNumber).Preload("Class").First(&class)
+	classLevel.ClassName = class.Class.Name
 
 	return
 }

@@ -28,21 +28,27 @@ func AttachStaffToStream(c *gin.Context) {
 		return
 	}
 
-	saveStreamTeacher := models.StreamTeacher{
-		Number:               uuid.NewV4().String(),
-		UserNumber:           payload.UserNumber,
-		StreamNumber:         payload.StreamNumber,
-		CampusClassNumber:    payload.CampusClassNumber,
-		AddedBy:              user.Number,
-		AssessmentAreaNumber: payload.AssessmentAreaNumber,
-		SchoolNumber:         payload.SchoolNumber,
-		CurriculumNumber:     payload.CurriculumNumber,
-		CampusNumber:         payload.CampusNumber,
-	}
+	for _, val := range payload.TeacherIds {
 
-	if err := services.AttachStaffToStream(saveStreamTeacher); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to attach staff to stream"})
-		return
+		for _, stream := range payload.Streams {
+
+			saveStreamTeacher := models.StreamTeacher{
+				Number:               uuid.NewV4().String(),
+				UserNumber:           val,
+				StreamNumber:         stream,
+				CampusClassNumber:    payload.CampusClassNumber,
+				AddedBy:              user.Number,
+				AssessmentAreaNumber: payload.AssessmentAreaNumber,
+				SchoolNumber:         payload.SchoolNumber,
+				CurriculumNumber:     payload.CurriculumNumber,
+				CampusNumber:         payload.CampusNumber,
+			}
+			if err := services.AttachStaffToStream(saveStreamTeacher); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to attach staff to stream"})
+				return
+			}
+		}
+
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Staff has been attached to stream"})
