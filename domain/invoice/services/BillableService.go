@@ -13,6 +13,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
+	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
@@ -254,6 +255,7 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 	academicYear, _ := repositories6.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
 
 	campusLevel, _ := repositories7.GetCampusLevelByNumber(academicYear.CampusLevelNumber)
+	modeOfStudy, _ := repositories9.GetModeOfStudyByNumber(billable.ModeOfStudyNumber)
 
 	return responses.BillableResponse{
 		BillableNumber:         billable.Number,
@@ -272,6 +274,7 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 		CampusLevelNumber:      academicYear.CampusLevelNumber,
 		Description:            billable.Description,
 		ModeOfStudyNumber:      billable.ModeOfStudyNumber,
+		ModeOfStudyName:        modeOfStudy.Name,
 	}, nil
 }
 
