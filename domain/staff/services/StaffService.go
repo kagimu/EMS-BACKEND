@@ -9,17 +9,18 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/repository"
 )
 
-var repo = repository.NewStaffRepository(config.DB)
-
 func AttachStaffToStream(streamTeacher *models.StreamTeacher) error {
+	var repo = repository.NewStaffRepository(config.DB)
 	return repo.AttachStaffToStream(streamTeacher)
 }
 
 func DetachStaffFromStream(staffNumber string, streamNumber string) error {
+	var repo = repository.NewStaffRepository(config.DB)
 	return repo.DetachStaffFromStream(staffNumber, streamNumber)
 }
 
 func GetStaffOnStream(streamNumber string) ([]responses.StaffResponse, error) {
+	var repo = repository.NewStaffRepository(config.DB)
 	staff, err := repo.GetStaffOnStream(streamNumber)
 	if err != nil {
 		return nil, err
