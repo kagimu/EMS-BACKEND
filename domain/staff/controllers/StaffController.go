@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
@@ -24,25 +25,37 @@ func AttachStaffToStream(c *gin.Context) {
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	saveStreamTeacher := models.StreamTeacher{
-		Number:               uuid.NewV4().String(),
-		UserNumber:           payload.UserNumber,
-		StreamNumber:         payload.StreamNumber,
-		CampusClassNumber:    payload.CampusClassNumber,
-		AddedBy:              user.Number,
-		AssessmentAreaNumber: payload.AssessmentAreaNumber,
-		SchoolNumber:         payload.SchoolNumber,
-		CurriculumNumber:     payload.CurriculumNumber,
-		CampusNumber:         payload.CampusNumber,
+	campusClass, err := services2.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, "")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to resolve campus class " + err.Error()})
+		return
 	}
 
-	if err := services.AttachStaffToStream(saveStreamTeacher); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to attach staff to stream"})
-		return
+	for _, val := range payload.TeacherIds {
+
+		for _, stream := range payload.Streams {
+
+			saveStreamTeacher := models.StreamTeacher{
+				Number:               uuid.NewV4().String(),
+				UserNumber:           val,
+				StreamNumber:         stream,
+				CampusClassNumber:    campusClass.Number,
+				AddedBy:              user.Number,
+				AssessmentAreaNumber: payload.AssessmentAreaNumber,
+				SchoolNumber:         payload.SchoolNumber,
+				CurriculumNumber:     payload.CurriculumNumber,
+				CampusNumber:         payload.CampusNumber,
+			}
+			if err := services.AttachStaffToStream(&saveStreamTeacher); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to attach staff to stream"})
+				return
+			}
+		}
+
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Staff has been attached to stream"})
