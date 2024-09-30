@@ -7,12 +7,14 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
+	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
@@ -254,6 +256,8 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 	academicYear, _ := repositories6.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
 
 	campusLevel, _ := repositories7.GetCampusLevelByNumber(academicYear.CampusLevelNumber)
+	modeOfStudy, _ := repositories9.GetModeOfStudyByNumber(billable.ModeOfStudyNumber)
+	curriculum, _ := models2.GetCurriculumByNumber(billable.CurriculumNumber)
 
 	return responses.BillableResponse{
 		BillableNumber:         billable.Number,
@@ -272,6 +276,8 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 		CampusLevelNumber:      academicYear.CampusLevelNumber,
 		Description:            billable.Description,
 		ModeOfStudyNumber:      billable.ModeOfStudyNumber,
+		ModeOfStudyName:        modeOfStudy.Name,
+		CurriculumName:         curriculum.Name,
 	}, nil
 }
 
