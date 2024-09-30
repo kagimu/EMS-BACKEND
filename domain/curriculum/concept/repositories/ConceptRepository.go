@@ -18,7 +18,7 @@ type conceptRepositoryImp struct {
 func (conceptRepository *conceptRepositoryImp) FindConceptsBySubTopicNumber(subTopicNumber string) ([]conceptModels.Concept, error) {
 	db := conceptRepository.Db
 
-	var concepts []conceptModels.Concept
+	var concepts = make([]conceptModels.Concept, 0)
 
 	if err := db.Where("sub_topic_number = ?", subTopicNumber).Find(&concepts).Error; err != nil {
 
