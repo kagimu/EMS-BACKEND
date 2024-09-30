@@ -24,7 +24,7 @@ func AttachStaffToStream(c *gin.Context) {
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -43,7 +43,7 @@ func AttachStaffToStream(c *gin.Context) {
 				CurriculumNumber:     payload.CurriculumNumber,
 				CampusNumber:         payload.CampusNumber,
 			}
-			if err := services.AttachStaffToStream(saveStreamTeacher); err != nil {
+			if err := services.AttachStaffToStream(&saveStreamTeacher); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to attach staff to stream"})
 				return
 			}

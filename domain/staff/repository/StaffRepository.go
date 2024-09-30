@@ -7,7 +7,7 @@ import (
 )
 
 type StaffRepository interface {
-	AttachStaffToStream(streamTeacher models.StreamTeacher) error
+	AttachStaffToStream(streamTeacher *models.StreamTeacher) error
 	DetachStaffFromStream(staffNumber string, streamNumber string) error
 	GetStaffOnStream(streamNumber string) ([]userModel.User, error)
 }
@@ -16,7 +16,7 @@ type StaffRepo struct {
 	DB *gorm.DB
 }
 
-func (s StaffRepo) AttachStaffToStream(streamTeacher models.StreamTeacher) error {
+func (s StaffRepo) AttachStaffToStream(streamTeacher *models.StreamTeacher) error {
 	return s.DB.Create(&streamTeacher).Error
 }
 
