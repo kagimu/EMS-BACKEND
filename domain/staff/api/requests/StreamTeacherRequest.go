@@ -5,7 +5,7 @@ import "errors"
 type StreamTeacherRequest struct {
 	TeacherIds           []string `json:"teacher_ids"`
 	Streams              []string `json:"streams"`
-	CampusClassNumber    string   `json:"campus_class_number"`
+	ClassNumber          string   `json:"class_number"`
 	AssessmentAreaNumber string   `json:"assessment_area_number"`
 	SchoolNumber         string   `json:"school_number"`
 	CurriculumNumber     string   `json:"curriculum_number"`
@@ -19,7 +19,7 @@ func (s *StreamTeacherRequest) Validate() error {
 	if len(s.Streams) == 0 {
 		return errors.New("stream number is required")
 	}
-	if s.CampusClassNumber == "" {
+	if s.ClassNumber == "" {
 		return errors.New("campus class number is required")
 	}
 

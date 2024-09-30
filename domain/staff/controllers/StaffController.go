@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
@@ -28,6 +29,12 @@ func AttachStaffToStream(c *gin.Context) {
 		return
 	}
 
+	campusClass, err := services2.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, "")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to resolve campus class"})
+		return
+	}
+
 	for _, val := range payload.TeacherIds {
 
 		for _, stream := range payload.Streams {
@@ -36,7 +43,7 @@ func AttachStaffToStream(c *gin.Context) {
 				Number:               uuid.NewV4().String(),
 				UserNumber:           val,
 				StreamNumber:         stream,
-				CampusClassNumber:    payload.CampusClassNumber,
+				CampusClassNumber:    campusClass.Number,
 				AddedBy:              user.Number,
 				AssessmentAreaNumber: payload.AssessmentAreaNumber,
 				SchoolNumber:         payload.SchoolNumber,
