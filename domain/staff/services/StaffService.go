@@ -11,7 +11,7 @@ import (
 
 var repo = repository.NewStaffRepository(config.DB)
 
-func AttachStaffToStream(streamTeacher models.StreamTeacher) error {
+func AttachStaffToStream(streamTeacher *models.StreamTeacher) error {
 	return repo.AttachStaffToStream(streamTeacher)
 }
 
