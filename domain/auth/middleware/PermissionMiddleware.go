@@ -24,7 +24,8 @@ func ValidatePermission(permission string) gin.HandlerFunc {
 			permissions, err := repository.FetchAllPermissionsByUser(c.GetHeader("User-Number"))
 
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusForbidden, commons.Feedback(err.Error()))
+				c.JSON(http.StatusForbidden, commons.Feedback(err.Error()))
+				c.Abort()
 				return
 			}
 

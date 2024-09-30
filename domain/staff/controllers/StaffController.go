@@ -31,7 +31,7 @@ func AttachStaffToStream(c *gin.Context) {
 
 	campusClass, err := services2.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, "")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to resolve campus class"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to resolve campus class " + err.Error()})
 		return
 	}
 
