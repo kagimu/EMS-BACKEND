@@ -57,6 +57,15 @@ func (modeOfStudyService *modeOfStudyService) UpdateModeOfStudy(updateModeOfStud
 		return errors.New("Invalid mode of study number provided ")
 	}
 
+	checkName, err := repositories.GetModeOfStudyByName(updateModeOfStudyRequest.Name, updateModeOfStudyRequest.SchoolNumber)
+	if err != nil {
+		return errors.New("Checking name error " + err.Error())
+	}
+
+	if checkName.Number != "" && modeOfStudy.Number != checkName.Number {
+		return errors.New("This name is already used ")
+	}
+
 	modeOfStudy.Name = updateModeOfStudyRequest.Name
 	modeOfStudy.SchoolNumber = updateModeOfStudyRequest.SchoolNumber
 	modeOfStudy.UserNumber = currentUserNumber

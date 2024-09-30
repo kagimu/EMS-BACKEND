@@ -63,7 +63,6 @@ func AuthorizeJWT() gin.HandlerFunc {
 				return
 			}
 			c.Set("user", userData)
-
 			c.Next()
 
 		} else {

@@ -15,7 +15,7 @@ func GetSchemeOfWorkSubTopicByNumber(schemeOfWorkSubTopicNumber string, tx ...*g
 
 	var schemeOfWorkSubTopic models.SchemeOfWorkSubTopic
 
-	if err := db.Where("number = ?", schemeOfWorkSubTopicNumber).Find(&schemeOfWorkSubTopic).Error; err != nil {
+	if err := db.Where("number = ?", schemeOfWorkSubTopicNumber).First(&schemeOfWorkSubTopic).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.SchemeOfWorkSubTopic{}, nil
 		}

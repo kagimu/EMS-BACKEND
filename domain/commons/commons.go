@@ -130,7 +130,7 @@ type PermissionGroup map[string][]string
 func PermissionGroups() []PermissionGroup {
 
 	return []PermissionGroup{
-		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum",
+		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum", "setup_curriculum",
 			"delete_curriculum", "import_curriculum", "create_learning_area", "view_learning_area", "update_learning_area", "view_subject-cluster", "view_subject",
 			"view_strands", "view_topic", "view_sub-topic", "view_concept"}},
 		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
