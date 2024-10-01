@@ -75,9 +75,8 @@ func DetachStaffFromStream(c *gin.Context) {
 }
 
 func GetStaffOnStream(c *gin.Context) {
-	streamNumber := c.Param("stream_number")
 
-	staff, err := services.GetStaffOnStream(streamNumber)
+	staff, err := services.GetStaffStreamsAndClasses(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get staff on stream"})
 		return
