@@ -81,7 +81,7 @@ func GetBill(context *gin.Context) {
 	studyPeriodNumber := context.Query("study_period_number")
 	classNumber := context.Query("class_number")
 	modeOfStudyNumber := context.Query("mode_of_study_number")
-	//curriculumNumber := context.Query("curriculum_number")
+	curriculumNumber := context.Query("curriculum_number")
 	campusCurriculumNumber := context.Query("campus_curriculum_number")
 	campusNumber := context.Query("campus_number")
 	if studentNumber == "" {
@@ -106,6 +106,11 @@ func GetBill(context *gin.Context) {
 
 	if modeOfStudyNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose mode of study"})
+		return
+	}
+
+	if curriculumNumber == "" && campusCurriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the curriculum"})
 		return
 	}
 
