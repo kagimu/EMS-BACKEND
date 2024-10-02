@@ -12,7 +12,7 @@ type LessonPlanRepository interface {
 	GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeOfWorkSubTopicNumber string) (lessonPlanModel.LessonPlan, error)
 	SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) error
 	GetLessonPlanConcept(lessonPlanNumber, conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
-	SaveLessonPlanConcept(lessonPlanConcept LessonPlanRepository) error
+	SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error
 	SaveConceptStep(lessonPlanStep lessonPlanModel.LessonPlanStep) error
 }
 
@@ -20,7 +20,7 @@ type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
 }
 
-func (l *lessonPlanRepositoryImpl) SaveLessonPlanConcept(lessonPlanConcept LessonPlanRepository) error {
+func (l *lessonPlanRepositoryImpl) SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error {
 	return l.Db.Save(&lessonPlanConcept).Error
 }
 
