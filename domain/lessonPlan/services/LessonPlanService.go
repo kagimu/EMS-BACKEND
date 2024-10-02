@@ -43,6 +43,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 		return errors.New("Invalid scheme subtopic ")
 	}
 
+	conceptRepository.UseTx(config.DB)
 	concepts, err := conceptRepository.FindConceptsBySubTopicNumber(schemeOfWorkSubTopic.SubTopicNumber)
 	if err != nil {
 		return errors.New("Getting concepts error " + err.Error())
@@ -52,6 +53,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 		return errors.New("The selected sub-topic has no concepts ")
 	}
 
+	lessonPlanRepository.UseTx(config.DB)
 	lessonPlan, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber)
 	if err != nil {
 		return errors.New("Checking lesson plan error " + err.Error())
@@ -91,7 +93,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 					Code:             concept.Code,
 					UserNumber:       currentUserNumber,
 				}
-				err = lessonPlanRepository.SaveLessonPlanConcept(lessonPlanRepository)
+				err = lessonPlanRepository.SaveLessonPlanConcept(lessonPlanConcept)
 				if err != nil {
 					return errors.New("Creating lesson plan concept error " + err.Error())
 				}

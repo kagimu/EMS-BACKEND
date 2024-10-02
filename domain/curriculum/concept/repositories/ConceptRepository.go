@@ -9,10 +9,16 @@ import (
 
 type ConceptRepository interface {
 	FindConceptsBySubTopicNumber(subTopicNumber string) ([]conceptModels.Concept, error)
+	UseTx(tx *gorm.DB) *gorm.DB
 }
 
 type conceptRepositoryImp struct {
 	Db *gorm.DB
+}
+
+func (conceptRepository *conceptRepositoryImp) UseTx(tx *gorm.DB) *gorm.DB {
+	conceptRepository.Db = tx
+	return conceptRepository.Db
 }
 
 func (conceptRepository *conceptRepositoryImp) FindConceptsBySubTopicNumber(subTopicNumber string) ([]conceptModels.Concept, error) {
