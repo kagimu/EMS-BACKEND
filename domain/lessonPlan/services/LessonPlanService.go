@@ -88,6 +88,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 
 			if lessonPlanConcept.Number == "" {
 				lessonPlanConcept = models.LessonPlanConcept{
+					Number:           uuid.NewV4().String(),
 					LessonPlanNumber: lessonPlan.Number,
 					ConceptNumber:    concept.Number,
 					Code:             concept.Code,
