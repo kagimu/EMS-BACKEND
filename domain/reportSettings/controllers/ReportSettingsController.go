@@ -662,3 +662,19 @@ func DeleteReportSetting(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Report setting deleted successfully"})
 }
+
+func DeleteReportColumnAssessment(context *gin.Context) {
+	reportColumnAssessmentNumber := context.Query("report_column_assessment_number")
+	if reportColumnAssessmentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report column assessment number"})
+		return
+	}
+
+	err := services3.DeleteReportColumnAssessment(reportColumnAssessmentNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report column assessment deleted successfully"})
+}

@@ -370,6 +370,20 @@ func DeleteReportColumnAssessment(number string) error {
 		return errors.New("invalid report column assessment number")
 	}
 
+	// find existing report summary by report setting number
+	reportColumn, err := reporsitory.GetReportColumnByNumber(reportColumnAssessment.ReportColumnNumber)
+	if err != nil {
+		return errors.New("Error getting report column: " + err.Error())
+	}
+	reportSummary, err := reporsitory.GetReportSummaryByReportSettingNumber(reportColumn.ReportSettingNumber)
+
+	if err != nil {
+		return errors.New("Error getting report summary: " + err.Error())
+	}
+
+	if reportSummary.Number != "" {
+		return errors.New("report column assessment has already been used in an issued report card , this setting cant be deleted")
+	}
 	err = reporsitory.DeleteReportColumnAssessment(reportColumnAssessment)
 	if err != nil {
 		return errors.New("Error deleting report column assessment: " + err.Error())
