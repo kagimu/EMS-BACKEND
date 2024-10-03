@@ -13,7 +13,9 @@ import studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/stud
 import classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
 type ReportSetting struct {
-	gorm.Model
+	ID                 uint `json:"id" gorm:"primaryKey"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 	Number             string                         `json:"number" gorm:"size:36;unique;not null"`
 	Code               int64                          `json:"code" gorm:"type:bigint;"`
 	AcademicYearNumber string                         `json:"academic_year_number" gorm:"size:36;not null;"`
@@ -29,7 +31,9 @@ type ReportSetting struct {
 }
 
 type ReportColumn struct {
-	gorm.Model
+	ID                  uint `json:"id" gorm:"primaryKey"`
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 	Number              string          `json:"number" gorm:"size:36;unique;not null"`
 	Code                int64           `json:"code" gorm:"type:bigint; not null;"`
 	ReportSettingNumber string          `json:"report_setting_number" gorm:"size:36;not null;"`

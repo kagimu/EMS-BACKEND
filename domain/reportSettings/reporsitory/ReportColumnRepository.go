@@ -67,5 +67,5 @@ func DeleteReportColumn(reportColumn reportSettings.ReportColumn, tx ...*gorm.DB
 }
 
 func DeleteReportColumnsByReportSettingNumber(number string, tx *gorm.DB) error {
-	return tx.Where("report_setting_number = ?", number).Delete(&reportSettings.ReportColumn{}).Error
+	return tx.Where("report_setting_number = ?", number).Unscoped().Delete(&reportSettings.ReportColumn{}).Error
 }
