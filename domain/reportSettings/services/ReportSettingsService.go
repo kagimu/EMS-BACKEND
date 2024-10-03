@@ -282,8 +282,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 			if length > 0 && score > 0 {
 				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
-				fmt.Println(fmt.Sprintf("percentageScore %.1f", percentageScore))
-				scale, err = GetProperAggregateScale(percentageScore, campusClass.Number)
+
+				scale, err = GetProperAggregateScale(scoreAverage, campusClass.Number)
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -358,8 +358,10 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		var summation float64
 		for _, r := range rs {
 			summation += r.Score
+			fmt.Println(fmt.Sprintf("score %.1f", r.Score))
 		}
 
+		fmt.Println(fmt.Sprintf("summation %.1f", summation))
 		scale, err = GetProperAggregateScale(summation, campusClass.Number)
 		if err != nil {
 			tx.Rollback()
