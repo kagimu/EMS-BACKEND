@@ -89,3 +89,18 @@ func AllReportColumnAssessments(reportColumnNumber, assessmentAreaNumber, assess
 
 	return reportColumnAssessments, nil
 }
+
+func DeleteReportColumnAssessmentsByReportColumnNumber(number string, tx *gorm.DB) error {
+
+	db := config.DB
+
+	if tx != nil {
+		db = tx
+	}
+
+	if err := db.Where("report_column_number = ?", number).Delete(&models.ReportColumnAssessment{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

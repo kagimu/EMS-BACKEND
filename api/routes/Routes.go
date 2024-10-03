@@ -703,6 +703,7 @@ func SetupRoutes() *gin.Engine {
 		reportSettings := main.Group("report-settings")
 		{
 			reportSettings.POST("", reportSettingsController.CreateReportSettings)
+			reportSettings.DELETE("", reportSettingsController.DeleteReportSetting)
 			reportSettings.PUT("update", reportSettingsController.UpdateReportSettings)
 			reportSettings.GET("", reportSettingsController.FetchReportSettings)
 			reportSettings.POST("columns", reportSettingsController.CreatReportColumn)

@@ -93,6 +93,15 @@ func UpdateReportSettings(reportSettingsRequest requests.UpdateReportSettingsReq
 		return errors.New("Report settings for this class  already exists")
 	}
 
+	reportColums, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSettings.Number)
+	if err != nil {
+		return err
+	}
+
+	if (reportSettingsRequest.Columns < reportSettings.Columns) && (len(reportColums) > 0) {
+		return errors.New("please delete a column you dont need adn adjust the percentages instead of trying to reduce the colum size")
+	}
+
 	reportSettings.StudyPeriodNumber = reportSettingsRequest.StudyPeriodNumber
 	reportSettings.AcademicYearNumber = reportSettingsRequest.AcademicYearNumber
 	reportSettings.CampusClassNumber = campusClass.Number
