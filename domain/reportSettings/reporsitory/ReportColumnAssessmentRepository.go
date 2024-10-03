@@ -104,3 +104,26 @@ func DeleteReportColumnAssessmentsByReportColumnNumber(number string, tx *gorm.D
 
 	return nil
 }
+
+func DeleteReportColumnAssessment(reportColumnAssessment models.ReportColumnAssessment, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Delete(&reportColumnAssessment).Error
+}
+
+func GetReportColumnAssessmentByNumber(number string) (models.ReportColumnAssessment, error) {
+	db := config.DB
+
+	var reportColumnAssessment models.ReportColumnAssessment
+	if err := db.Where("number = ?", number).First(&reportColumnAssessment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportColumnAssessment, nil
+		}
+		return reportColumnAssessment, err
+	}
+	return reportColumnAssessment, nil
+}

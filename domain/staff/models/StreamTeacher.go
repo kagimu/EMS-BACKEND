@@ -7,6 +7,7 @@ import (
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	"time"
 )
 
 type StreamTeacher struct {
@@ -27,6 +28,6 @@ type StreamTeacher struct {
 	Curriculum           curriculumModel.Curriculum          `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber         string                              `json:"campus_number" gorm:"size:36;not null"`
 	Campus               campusModel.Campus                  `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	CreatedAt            string                              `json:"created_at"`
-	UpdatedAt            string                              `json:"updated_at"`
+	CreatedAt            time.Time                           `json:"created_at"`
+	UpdatedAt            time.Time                           `json:"updated_at"`
 }

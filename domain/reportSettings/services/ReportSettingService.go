@@ -358,3 +358,22 @@ func DeleteReportSetting(number string) error {
 
 	return err
 }
+
+func DeleteReportColumnAssessment(number string) error {
+
+	reportColumnAssessment, err := reporsitory.GetReportColumnAssessmentByNumber(number)
+	if err != nil {
+		return errors.New("Error checking report column assessment by number: " + number)
+	}
+
+	if reportColumnAssessment.Number == "" {
+		return errors.New("invalid report column assessment number")
+	}
+
+	err = reporsitory.DeleteReportColumnAssessment(reportColumnAssessment)
+	if err != nil {
+		return errors.New("Error deleting report column assessment: " + err.Error())
+	}
+
+	return nil
+}
