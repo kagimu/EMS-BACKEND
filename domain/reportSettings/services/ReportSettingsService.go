@@ -488,7 +488,7 @@ func GetProperAggregateScale(score float64, campusClassNumber string) (aggregate
 		}
 	}
 
-	return scale, errors.New(fmt.Sprintf("no matching aggregate scale found for %s", scale.Number))
+	return scale, errors.New(fmt.Sprintf("no matching aggregate scale found for %.1f and %s", score, campusClassNumber))
 }
 
 func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGradeScale, error) {
