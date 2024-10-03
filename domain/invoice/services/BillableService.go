@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
@@ -145,6 +146,8 @@ func (billableService *billableService) GetBill(studentNumber, campusNumber, cla
 	if admission.Status == constants.StatusPending {
 		billType = constants.BillTypeNewApplication
 	}
+
+	fmt.Println("Getting for bill type: " + billType)
 
 	curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(campusCurriculumNumber, campusNumber)
 	if err != nil {
