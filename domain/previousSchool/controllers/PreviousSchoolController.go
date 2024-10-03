@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	"github.com/gin-gonic/gin"
@@ -12,8 +12,8 @@ import (
 )
 
 type Class struct {
-	Name string `json:"name"`
-	Year string `json:"year"`
+	Class string `json:"class"`
+	Year  string `json:"year"`
 }
 type PreviousSchoolInfo struct {
 	Name    string  `json:"name"`
@@ -33,15 +33,39 @@ func CreatePreviousSchools(c *gin.Context) {
 		return
 	}
 
+	applicationRepo := repository.NewApplicationRepositoryImpl(config.DB)
+
 	applicationNumber := c.Param("application_number")
 
-	var application applicationModel.Application
-	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
+	application, err := applicationRepo.FindApplicationByNumber(applicationNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Application err" + err.Error()})
+		return
+	}
+
+	if application.Number == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
 		return
 	}
 
 	tx := config.DB.Begin()
+
+	// delete previous classes
+	var previousSchoolClasses models.PreviousSchoolClass
+	if err := tx.Where("previous_school_number = ?", applicationNumber).Delete(&previousSchoolClasses).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to update previous school classes"})
+		return
+	}
+
+	// delete previous schools
+	var previousSchool models.PreviousSchool
+	if err := tx.Where("application_number = ?", applicationNumber).Delete(&previousSchool).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to update previous schools"})
+		return
+
+	}
 
 	for _, item := range previousSchoolInfo {
 		savePreviousSchool := models.PreviousSchool{
@@ -61,7 +85,7 @@ func CreatePreviousSchools(c *gin.Context) {
 			savePreviousSchoolClass := models.PreviousSchoolClass{
 				Number:               uuid.NewV4().String(),
 				PreviousSchoolNumber: savePreviousSchool.Number,
-				Class:                class.Name,
+				Class:                class.Class,
 				Year:                 class.Year,
 			}
 
@@ -72,14 +96,12 @@ func CreatePreviousSchools(c *gin.Context) {
 			}
 		}
 
-		application.Status = "SUBMITTED"
-		if err := tx.Model(&application).Where("number = ?", applicationNumber).Updates(map[string]interface{}{"status": application.Status}).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update application status", "err": err.Error()})
-			return
-		}
-
 	}
+	/*if err := applicationRepo.UpdateApplicationStatus(applicationNumber, "SUBMITTED", tx); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update application status", "err": err.Error()})
+		return
+	}*/
 
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save previous schools"})
@@ -148,7 +170,7 @@ func UpdatePreviousSchool(ctx *gin.Context) {
 		for _, class := range item.Classes {
 			savePreviousSchoolClass := models.PreviousSchoolClass{
 				PreviousSchoolNumber: savePreviousSchool.Number,
-				Class:                class.Name,
+				Class:                class.Class,
 				Year:                 class.Year,
 			}
 

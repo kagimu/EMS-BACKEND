@@ -3,6 +3,7 @@ package responses
 import (
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
+	"time"
 )
 
 type (
@@ -41,5 +42,14 @@ type (
 		LearningLevelNumber string `json:"learning_level_number"`
 		LevelName           string `json:"level_name"`
 		CampusNumber        string `json:"campus_number"`
+	}
+
+	CampusResponse struct {
+		Name             string    `json:"name"`
+		Phone            string    `json:"phone"`
+		Email            string    `json:"email"`
+		Location         string    `json:"location"`
+		SchoolNumber     string    `json:"school_number"`
+		CommencementDate time.Time `json:"commencement_date" `
 	}
 )

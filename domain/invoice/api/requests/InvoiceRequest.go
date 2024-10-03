@@ -2,6 +2,7 @@ package requests
 
 import (
 	"errors"
+	"strconv"
 )
 
 type InvoiceRequest struct {
@@ -22,11 +23,19 @@ func (i *InvoiceRequest) Validate() error {
 		return errors.New("user number is required")
 	}
 
-	if len(i.Items) == 0 {
+	return ValidateItems(i.Items)
+}
+
+func ValidateItems(items []InvoiceItemRequest) error {
+	if len(items) == 0 {
 		return errors.New("add at least one item")
 	}
 
-	for _, item := range i.Items {
+	for position, item := range items {
+
+		if item.ItemNumber == "" {
+			return errors.New("Set the item number at position '" + strconv.Itoa(position) + "'")
+		}
 
 		if item.Quantity <= 0 {
 			return errors.New("quantity must be greater than zero")

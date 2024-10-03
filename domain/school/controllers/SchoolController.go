@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
@@ -255,54 +256,20 @@ func EditSchool(context *gin.Context) {
 }
 
 func DeleteSchool(context *gin.Context) {
-	type SchoolInfo struct {
-		SchoolNumber string `json:"school_number"`
+
+	schoolNumber := context.Param("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide the school number"})
+		return
 	}
 
-	var schoolInfo SchoolInfo
-	err := context.BindJSON(&schoolInfo)
+	err := services.RemoveSchool(schoolNumber)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	schoolNumber := schoolInfo.SchoolNumber
-
-	userNumber := context.Request.Header["User-Number"][0]
-
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	db := config.DB
-
-	var schoolChecker models2.Campus
-	if err := db.
-		Where("school_number = ?", schoolNumber).
-		First(&schoolChecker).Error; err == nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this School, it has Campus"})
-		return
-	}
-
-	var schoolData schoolCurriculumModels.School
-
-	classLevelInfo := config.DB.
-		Where("number = ?", schoolNumber).
-		First(&schoolData)
-	if classLevelInfo.Error != nil {
-		context.JSON(http.StatusNotFound, gin.H{"message": "School not found!"})
-		return
-	}
-
-	db.Unscoped().Where("number = ?", schoolNumber).Delete(&schoolData)
-
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "School deleted successfully!"})
+	context.JSON(http.StatusOK, gin.H{"message": "School Removed Successfully!"})
 }
 
 func FetchSchoolInfo(context *gin.Context) {
@@ -332,11 +299,12 @@ func FetchSchoolInfo(context *gin.Context) {
 		})
 	}
 
-	schools_ := responses.SchoolResponseInfo{
+	schools_ := responses.SchoolResponse{
 		Number:           schools.Number,
 		Name:             schools.Name,
 		CommencementDate: schools.CommencementDate.Format("2006-01-02"),
 		SchoolCurriculum: curriculum_,
+		Logo:             commons.GenerateDownloadPath(schools.Logo, false),
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
@@ -344,13 +312,15 @@ func FetchSchoolInfo(context *gin.Context) {
 
 func FetchSchools(context *gin.Context) {
 
+	entity, _ := commons.GetUserEntityNumber(context)
+
 	var schools []schoolCurriculumModels.School
-	var schools_ []responses.SchoolResponseInfo
+	var schools_ []responses.SchoolResponse
 	if err := config.DB.
 		Preload("SchoolCurriculum.Curriculum").
 		Preload("SchoolCurriculum").
 		Order("created_at desc").
-		Scopes(filters.ByEntityNumber(context.Query("entity_number"))).
+		Scopes(filters.ByEntityNumber(entity)).
 		Find(&schools).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
 		return
@@ -367,13 +337,37 @@ func FetchSchools(context *gin.Context) {
 			})
 		}
 
-		schools_ = append(schools_, responses.SchoolResponseInfo{
+		schools_ = append(schools_, responses.SchoolResponse{
 			Number:           item.Number,
 			Name:             item.Name,
 			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
 			SchoolCurriculum: curriculum_,
+			Logo:             commons.GenerateDownloadPath(item.Logo, false),
 		})
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_, "message": "Schools fetched successfully!"})
+}
+
+func UploadSchoolLogo(context *gin.Context) {
+
+	file, err := context.FormFile("logo")
+	schoolNumber := context.PostForm("school_number")
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "File not found!"})
+		return
+	}
+
+	if file.Size > 1024*1024*2 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "File size should not exceed 2MB"})
+		return
+	}
+
+	//check if the school exists
+	if err := services.UploadSchoolLogo(schoolNumber, context); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Logo uploaded successfully!"})
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
@@ -40,7 +41,7 @@ func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 		}
 
 		if unitOfMeasure.Number == "" {
-			return nil, errors.New("unit of measure number is empty")
+			unitOfMeasure = models.UnitOfMeasure{}
 		}
 
 		part := responses.Part{
@@ -49,6 +50,7 @@ func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 			Code:                      secondaryItem.Code,
 			Number:                    secondaryItem.Number,
 			UnitOfMeasureAbbreviation: unitOfMeasure.Abbreviation,
+			UnitCost:                  commons.RoundFloat(determineUnitCost(secondaryItem), 2),
 		}
 
 		parts = append(parts, part)
@@ -62,9 +64,18 @@ func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber
 
 	db := config.DB
 
-	if err := db.Transaction(func(transaction *gorm.DB) error {
-		return doRunOnTransaction(transaction, stockingRequest, currentUserNumber)
-	}); err != nil {
+	err := db.Transaction(func(transaction *gorm.DB) error {
+
+		err := doRunOnTransaction(transaction, stockingRequest, currentUserNumber)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return err
 	}
 
@@ -75,20 +86,27 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 
 	for _, stock := range stockingRequest.ItemPriceAndQuantity {
 
-		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber)
+		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber, transaction)
 
 		if err != nil {
-			return err
+			return errors.New("getting menu item by number error: " + err.Error())
 		}
 
 		if menuItem.Name == "" {
 			return errors.New("invalid menu item ID")
 		}
 
+		if menuItem.ConversionToPurchaseUnit > 0 {
+			totalCost := stock.Quantity * stock.UnitCost
+			usageQty := stock.Quantity / menuItem.ConversionToPurchaseUnit //Convert to usage quantity
+			stock.Quantity = usageQty
+			stock.UnitCost = totalCost / usageQty //Convert to usage unit cost
+		}
+
 		if menuItem.Type == constants.TypeAssembled {
 			err = assembleItem(transaction, currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
-			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, currentUserNumber)
+			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, menuItem.ConversionToPurchaseUnit, currentUserNumber, menuItem.UnitOfMeasureNumber)
 		}
 
 		return err
@@ -100,9 +118,9 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 
 func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests.ItemPriceAndQuantity, campusNumber string) error {
 
-	itemAssembles, err := repositories.GetAssembledItemParts(stock.MenuItemNumber)
+	itemAssembles, err := repositories.GetAssembledItemParts(stock.MenuItemNumber, transaction)
 	if err != nil {
-		return err
+		return errors.New("getting assembled parts error: " + err.Error())
 	}
 
 	if len(itemAssembles) == 0 {
@@ -119,41 +137,43 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 		secondaryItem := itemAssemble.SecondaryItem
 
 		requiredQty := itemAssemble.Quantity * stock.Quantity
-		availableQty, err := repositories.GetMenuItemCurrentStock(secondaryItem.Number)
+		availableQty, err := repositories.GetMenuItemCurrentStock(secondaryItem.Number, transaction)
 
 		if err != nil {
-			return err
+			return errors.New("getting item current stock error: " + err.Error())
 		}
 
 		if availableQty < requiredQty {
 			return errors.New("Not enough available quantity for: " + secondaryItem.Name + " " + strconv.FormatFloat(requiredQty, 'f', 2, 64) + " is required but we have " + strconv.FormatFloat(availableQty, 'f', 2, 64))
 		}
 
-		recentStock, err := repositories.GetRecentItemStock(stock.MenuItemNumber)
+		recentStock, err := repositories.GetRecentItemStock(itemAssemble.SecondaryItemNumber, transaction)
 
 		if err != nil {
-			return err
+			return errors.New("getting recent stock for " + secondaryItem.Name + " error: " + err.Error())
 		}
 
 		if recentStock.Number == "" {
-			return errors.New("no recent stock for " + stock.MenuItemNumber)
+			return errors.New("no recent stock for " + itemAssemble.SecondaryItemName)
 		}
 
 		unitCost = recentStock.UnitCost + unitCost
 
-		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, currentUserNumber)
+		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, secondaryItem.ConversionToPurchaseUnit, currentUserNumber, secondaryItem.PurchaseUnitOfMeasureNumber)
 		if err != nil {
-			return err
+			return errors.New("first save of none assembled item error: " + err.Error())
 		}
 
 		stockReducingParts = append(stockReducingParts, negativeStock)
 
 	}
 
-	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, currentUserNumber)
+	menuItem, _ := repositories.GetMenuItemByNumber(stock.MenuItemNumber)
+
+	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, menuItem.ConversionToPurchaseUnit, currentUserNumber, menuItem.PurchaseUnitOfMeasureNumber)
 
 	if err != nil {
-		return err
+		return errors.New("saving none assembled item error: " + err.Error())
 	}
 
 	//Create stocking entries that reduced the stock to create new stock
@@ -164,7 +184,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 			NewStockingNumber:  newStock.Number,
 		}
 
-		err = repositories.SaveAssembledPart(assembledItem)
+		err = repositories.SaveAssembledPart(assembledItem, transaction)
 		if err != nil {
 			return err
 		}
@@ -174,18 +194,23 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 	return nil
 }
 
-func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItem string, quantity float64, currentUserNumber string) (models.Stocking, error) {
+func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItemNumber string, quantity, conversionToPurchaseUnitRate float64, currentUserNumber, unitOfMeasureNumber string) (models.Stocking, error) {
+
+	item, _ := repositories.GetMenuItemByNumber(menuItemNumber)
 
 	saveStock := models.Stocking{
-		Number:         uuid.NewV4().String(),
-		CampusNumber:   campusNumber,
-		UnitCost:       unitCost,
-		MenuItemNumber: menuItem,
-		Quantity:       quantity,
-		UserNumber:     currentUserNumber,
+		Number:                      uuid.NewV4().String(),
+		CampusNumber:                campusNumber,
+		UnitCost:                    unitCost,
+		MenuItemNumber:              menuItemNumber,
+		Quantity:                    quantity,
+		UserNumber:                  currentUserNumber,
+		PurchaseUnitOfMeasureNumber: unitOfMeasureNumber,
+		ConversionToPurchase:        conversionToPurchaseUnitRate,
+		UnitOfMeasureNumber:         item.UnitOfMeasureNumber,
 	}
 
-	if _, err := repositories.CreateStockingEntry(transaction, saveStock); err != nil {
+	if _, err := repositories.SaveStockingEntry(saveStock, transaction); err != nil {
 		return saveStock, err
 	}
 
@@ -244,7 +269,7 @@ func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate tim
 
 	projectionCalenderResponse.ItemsSummary = summary
 
-	projectionCalenderResponse.TotalCost = totalCost
+	projectionCalenderResponse.TotalCost = commons.RoundFloat(totalCost, 2)
 
 	return projectionCalenderResponse, nil
 }
@@ -279,6 +304,7 @@ func updateItemOrAppend(items []responses.ProjectionMenuItem, newItem responses.
 		if item.MenuItemNumber == newItem.MenuItemNumber {
 			items[index].Quantity += newItem.Quantity
 			items[index].TotalCost += newItem.TotalCost
+			items[index].PurchaseQuantity += newItem.RateToPurchaseUnit * newItem.Quantity
 			return items
 		}
 
@@ -341,19 +367,32 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 func createProjectionMenuItem(menuItem models.MenuItem, totalQuantity float64) responses.ProjectionMenuItem {
 
 	projectionMenuItem := responses.ProjectionMenuItem{
-		Name:           menuItem.Name,
-		Quantity:       totalQuantity,
-		MenuItemNumber: menuItem.Number,
-		TotalCost:      totalQuantity * determineUnitCost(menuItem),
+		Name:               menuItem.Name,
+		Quantity:           totalQuantity,
+		RateToPurchaseUnit: menuItem.ConversionToPurchaseUnit,
+		PurchaseQuantity:   totalQuantity * menuItem.ConversionToPurchaseUnit,
+		MenuItemNumber:     menuItem.Number,
+		TotalCost:          commons.RoundFloat(totalQuantity*determineUnitCost(menuItem), 2),
 	}
 
 	unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
 	if err != nil {
-		fmt.Println("Error getting unit of measure for assembled split error: " + err.Error())
+		fmt.Println("Error getting unit of measure: " + err.Error())
 		return projectionMenuItem
 	}
 
 	projectionMenuItem.UnitOfMeasure = unitOfMeasure.Abbreviation
+
+	if menuItem.PurchaseUnitOfMeasureNumber != "" {
+		unitOfMeasure, err = repositories.GetUnitOfMeasureByNumber(menuItem.PurchaseUnitOfMeasureNumber)
+		if err != nil {
+			fmt.Println("Error getting purchase unit of measure: " + err.Error())
+			return projectionMenuItem
+		}
+
+		projectionMenuItem.PurchaseUnitOfMeasure = unitOfMeasure.Abbreviation
+		projectionMenuItem.RateToPurchaseUnit = menuItem.ConversionToPurchaseUnit
+	}
 
 	return projectionMenuItem
 }
@@ -444,15 +483,17 @@ func SaveMenuItem(itemType string, payload requests.MenuItemRequest, currentUser
 	}
 
 	saveMenuItem := models.MenuItem{
-		Number:              uuid.NewV4().String(),
-		Name:                payload.Name,
-		Code:                payload.Code,
-		Type:                itemType,
-		SchoolNumber:        school.Number,
-		UnitOfMeasureNumber: payload.UnitOfMeasureNumber,
-		UserNumber:          currentUserNumber,
-		BaseUnitCost:        payload.BasePrice,
-		Status:              constants.StatusActive,
+		Number:                      uuid.NewV4().String(),
+		Name:                        payload.Name,
+		Code:                        payload.Code,
+		Type:                        itemType,
+		SchoolNumber:                school.Number,
+		UnitOfMeasureNumber:         payload.UnitOfMeasureNumber,
+		UserNumber:                  currentUserNumber,
+		BaseUnitCost:                payload.BasePrice,
+		Status:                      constants.StatusActive,
+		PurchaseUnitOfMeasureNumber: payload.PurchaseUnitOfMeasureNumber,
+		ConversionToPurchaseUnit:    payload.ConversionToPurchaseUnit,
 	}
 
 	err = repositories.SaveMenuItem(saveMenuItem)
@@ -483,7 +524,7 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status stri
 		schoolNumber = campus.SchoolNumber
 	}
 
-	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, status, itemType, paginatedResponse, context)
+	menuItems, err := repositories.GetPaginatedMenuItems(schoolNumber, status, itemType, &paginatedResponse, context)
 
 	if err != nil {
 		return pagination.PaginatedResponse{}, errors.New("getting all menu items error: " + err.Error())
@@ -505,22 +546,9 @@ func GetPaginatedMenuItems(schoolNumber string, campusNumber string, status stri
 	return paginatedResponse, nil
 }
 
-func GetAllMenuItems(schoolNumber string, campusNumber string, status string, itemType string) ([]responses.MenuItemResponse, error) {
+func GetAllMenuItems(schoolNumber string, status string, itemType string) ([]responses.MenuItemResponse, error) {
 
 	response := make([]responses.MenuItemResponse, 0)
-
-	if campusNumber != "" {
-		campus, err := repositories2.GetCampusByNumber(campusNumber)
-		if err != nil {
-			return response, errors.New("validating campus number error: " + err.Error())
-		}
-
-		if campus.Number == "" {
-			return response, errors.New("invalid campus number: " + campusNumber)
-		}
-
-		schoolNumber = campus.SchoolNumber
-	}
 
 	menuItems, err := repositories.GetAllMenuItems(schoolNumber, status, itemType)
 
@@ -550,18 +578,29 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		return responses.MenuItemResponse{}, errors.New("getting parts error: " + err.Error())
 	}
 
+	purchaseUnitOfMeasure := models.UnitOfMeasure{}
+	if menuItem.PurchaseUnitOfMeasureNumber != "" {
+		purchaseUnitOfMeasure, err = repositories.GetUnitOfMeasureByNumber(menuItem.PurchaseUnitOfMeasureNumber)
+		if err != nil {
+			return responses.MenuItemResponse{}, errors.New("getting purchase unit of measure error: " + err.Error())
+		}
+	}
+
 	return responses.MenuItemResponse{
-		Number:              menuItem.Number,
-		Name:                menuItem.Name,
-		Code:                menuItem.Code,
-		Type:                menuItem.Type,
-		SchoolName:          menuItem.School.Name,
-		SchoolNumber:        menuItem.SchoolNumber,
-		UnitOfMeasureNumber: menuItem.UnitOfMeasureNumber,
-		UnitOfMeasureName:   menuItem.UnitOfMeasure.Name,
-		UnitOfMeasureCode:   menuItem.UnitOfMeasure.Code,
-		CurrentQuantity:     currentQuantity,
-		Parts:               parts,
+		Number:                      menuItem.Number,
+		Name:                        menuItem.Name,
+		Code:                        menuItem.Code,
+		Type:                        menuItem.Type,
+		SchoolName:                  menuItem.School.Name,
+		SchoolNumber:                menuItem.SchoolNumber,
+		UnitOfMeasureNumber:         menuItem.UnitOfMeasureNumber,
+		UnitOfMeasureName:           menuItem.UnitOfMeasure.Name,
+		CurrentQuantity:             commons.RoundFloat(currentQuantity, 6),
+		PurchaseUnitOfMeasureNumber: purchaseUnitOfMeasure.Number,
+		PurchaseUnitOfMeasureName:   purchaseUnitOfMeasure.Name,
+		Parts:                       parts,
+		UnitCost:                    commons.RoundFloat(determineUnitCost(menuItem), 2),
+		ConversionToPurchaseUnit:    menuItem.ConversionToPurchaseUnit,
 	}, nil
 }
 
@@ -621,6 +660,8 @@ func UpdateMenuItem(payload requests.UpdateMenuItemRequest, currentUserNumber st
 	menuItem.UnitOfMeasureNumber = payload.UnitOfMeasureNumber
 	menuItem.UserNumber = currentUserNumber
 	menuItem.BaseUnitCost = payload.BasePrice
+	menuItem.PurchaseUnitOfMeasureNumber = payload.PurchaseUnitOfMeasureNumber
+	menuItem.ConversionToPurchaseUnit = payload.ConversionToPurchaseUnit
 
 	err = repositories.SaveMenuItem(menuItem)
 	if err != nil {
@@ -748,4 +789,51 @@ func UpdateItemAssembly(currentUser string, payload requests.UpdateItemAssembly)
 	}
 
 	return nil
+}
+
+func AllStocks(schoolNumber, campusNumber, menuItemNumber string) ([]responses.StockingResponse, error) {
+
+	var stockResponses = make([]responses.StockingResponse, 0)
+
+	allStocks, err := repositories.AllStocking(schoolNumber, campusNumber, menuItemNumber)
+	if err != nil {
+		return stockResponses, errors.New("getting all stock error: " + err.Error())
+	}
+
+	for _, stock := range allStocks {
+		stockResponses = append(stockResponses, createStockResponse(stock))
+	}
+
+	return stockResponses, nil
+}
+
+func createStockResponse(stocking models.Stocking) responses.StockingResponse {
+
+	campus, _ := repositories2.GetCampusByNumber(stocking.CampusNumber)
+
+	menuItem, _ := repositories.GetMenuItemByNumber(stocking.MenuItemNumber)
+
+	return responses.StockingResponse{
+		Number:         stocking.Number,
+		Quantity:       stocking.Quantity,
+		UnitCost:       stocking.UnitCost,
+		MenuItemNumber: stocking.MenuItemNumber,
+		CampusNumber:   stocking.CampusNumber,
+		CampusName:     campus.Name,
+		MenuItemName:   menuItem.Name,
+		MenuItemType:   menuItem.Type,
+		DateTime:       stocking.CreatedAt.Format(time.DateTime),
+	}
+}
+
+func GetStockItem(stockNumber string) (responses.StockingResponse, error) {
+
+	var stockingResponse responses.StockingResponse
+
+	stock, err := repositories.GetStockItemByNumber(stockNumber)
+	if err != nil {
+		return stockingResponse, errors.New("getting stock item error: " + err.Error())
+	}
+
+	return createStockResponse(stock), nil
 }

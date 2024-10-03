@@ -323,7 +323,7 @@ func Register(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create email"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create user email " + err.Error()})
 		return
 	}
 
@@ -338,7 +338,7 @@ func Register(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create phone"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create user phone " + err.Error()})
 		return
 	}
 
@@ -368,8 +368,10 @@ func Register(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email"})
+		//fmt.Println(fmt.Printf("Sending mail error %s\n", err.Error()))
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email\n" + err.Error()})
 		return
+		//fmt.Printf("Sending mail error %s\n", err.Error())
 	}
 
 	var collection []interface{}

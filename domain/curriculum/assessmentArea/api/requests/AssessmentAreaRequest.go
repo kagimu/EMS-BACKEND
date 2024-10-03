@@ -3,20 +3,42 @@ package requests
 import "errors"
 
 type AssessmentAreaRequest struct {
-	Name                  string `json:"name"`
-	CurriculumClassNumber string `json:"curriculum_class_number"`
-	SubjectNumber         string `json:"subject_number"`
+	CurriculumClassNumber string   `json:"curriculum_class_number"`
+	Subjects              []string `json:"subjects"`
 }
 
-func (a *AssessmentAreaRequest) Validate() error {
-	if a.SubjectNumber == "" && a.Name == "" {
-		return errors.New("both subject number and name can not be empty")
+func (assessmentRequest *AssessmentAreaRequest) Validate() error {
+
+	if len(assessmentRequest.Subjects) == 0 {
+		return errors.New("choose subject numbers or custom names")
 	}
-	if a.SubjectNumber != "" && a.Name != "" {
-		return errors.New("either subject number or name has to be empty")
-	}
-	if a.CurriculumClassNumber == "" {
+
+	if assessmentRequest.CurriculumClassNumber == "" {
 		return errors.New("curriculum class number can not be empty")
+	}
+
+	for _, subjectNumber := range assessmentRequest.Subjects {
+		if subjectNumber == "" {
+			return errors.New("subject number can not be empty")
+		}
+	}
+
+	return nil
+}
+
+type UpdateAssessmentAreaRequest struct {
+	Name                 string `json:"name"`
+	AssessmentAreaNumber string `json:"assessment_area_number"`
+}
+
+func (updateAssessmentRequest *UpdateAssessmentAreaRequest) Validate() error {
+
+	if updateAssessmentRequest.AssessmentAreaNumber == "" {
+		return errors.New("provide assessment area number being edited")
+	}
+
+	if updateAssessmentRequest.Name == "" {
+		return errors.New("provide the assessment area updated name")
 	}
 
 	return nil

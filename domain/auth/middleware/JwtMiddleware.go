@@ -16,34 +16,38 @@ func AuthorizeJWT() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "Authorization not set",
 			})
+			c.Abort()
 			return
 		}
 
 		if len(c.Request.Header["User-Number"]) < 1 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "Not Authenticated!",
 			})
+			c.Abort()
 			return
 		}
 
 		tokenString := authHeader[len(BearerSchema):]
 
 		if tokenString == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "Bearer not set",
 			})
+			c.Abort()
 			return
 		}
 
 		token, err := services.JWTAuthService().ValidateToken(tokenString)
 
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": fmt.Sprintf("%s", err),
 			})
+			c.Abort()
 			return
 		}
 
@@ -54,18 +58,19 @@ func AuthorizeJWT() gin.HandlerFunc {
 			var userData models.User
 			//check if user is a valid user
 			if err := config.DB.Where("number = ?", claims.UserNumber).First(&userData).Error; err != nil {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+				c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+				c.Abort()
 				return
 			}
 			c.Set("user", userData)
-
 			c.Next()
 
 		} else {
 
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "Invalid token",
 			})
+			c.Abort()
 		}
 
 	}

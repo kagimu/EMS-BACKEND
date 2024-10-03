@@ -2,19 +2,32 @@ package requests
 
 import (
 	"errors"
-	"html"
-	"strings"
 )
 
 type InterviewRequest struct {
-	Message       string `json:"message"`
-	Venue         string `json:"venue"`
-	InterviewDate string `json:"interview_date"`
-	Name          string `json:"name"`
-	StudentNumber string `json:"student_number"`
+	Message                string   `json:"message"`
+	Venue                  string   `json:"venue"`
+	InterviewDate          string   `json:"interview_date"`
+	Name                   string   `json:"name"`
+	ClassNumber            string   `json:"class_number"`
+	CampusNumber           string   `json:"campus_number"`
+	CampusCurriculumNumber string   `json:"campus_curriculum_number"`
+	CurriculumNumber       string   `json:"curriculum_number"`
+	AssessmentMetrics      []string `json:"assessment_metrics"`
+}
+
+type EditInterviewRequest struct {
+	InterviewRequest
+	InterviewNumber string `json:"interview_number"`
 }
 
 func (i *InterviewRequest) Validate() error {
+	if i.CampusNumber == "" {
+		return errors.New("Choose campus ")
+	}
+	if i.ClassNumber == "" {
+		return errors.New("Choose class ")
+	}
 	if i.Message == "" {
 		return errors.New("message is required")
 	}
@@ -31,7 +44,15 @@ func (i *InterviewRequest) Validate() error {
 	return nil
 }
 
-func (i *InterviewRequest) Prepare() {
-	i.Message = html.EscapeString(strings.TrimSpace((i.Message)))
-	i.Venue = html.EscapeString(strings.TrimSpace((i.Venue)))
+func (i *EditInterviewRequest) Validate() error {
+
+	if i.InterviewNumber == "" {
+		return errors.New("choose interview being edited")
+	}
+
+	if err := i.InterviewRequest.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }

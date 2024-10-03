@@ -3,13 +3,13 @@ package controllers
 import (
 	"fmt"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/services"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	"net/http"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
@@ -21,6 +21,8 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+var admissionService = services.NewAdmissionService()
 
 func CreateAdmission(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
@@ -105,7 +107,7 @@ func CreateAdmission(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
 			return
 		}
-		application.Status = "ADMITTED"
+		application.Status = constants.StatusAdmitted
 
 		tx := config.DB.Begin()
 		generateADN, err := studentControllers.CreateADN(student.APNStatus, tx)
@@ -117,8 +119,9 @@ func CreateAdmission(c *gin.Context) {
 
 		student.APNStatus = "Archive"
 		student.ADN = generateADN
+		student.Lin = uuid.NewV4().String()
 		// Update the student status
-		student.Status = "ADMITTED"
+		student.Status = constants.StatusAdmitted
 		if err := tx.Save(&student).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
@@ -183,7 +186,8 @@ func FetchAdmissions(c *gin.Context) {
 	}
 
 	paginatedResponse := pagination.PaginatedResponse{}
-	adms := make([]models.Admission, 0)
+	paginate := pagination.Paginate(c, &paginatedResponse)
+	//adms := make([]models.Admission, 0)
 
 	campusNumber := c.Query("campus_number")
 	studyPeriodNumber := c.Query("study_period_number")
@@ -192,7 +196,7 @@ func FetchAdmissions(c *gin.Context) {
 	schoolNumber := c.Query("school_number")
 	campusClassNumber := c.Query("campus_class_number")
 
-	var admissions []models.Admission
+	/*var admissions []models.Admission
 
 	if err := config.DB.Scopes(
 		filters.ByStudyPeriodNumber(studyPeriodNumber),
@@ -211,7 +215,15 @@ func FetchAdmissions(c *gin.Context) {
 		adms = admissions
 	}
 
-	paginatedResponse.Content = adms
+	paginatedResponse.Content = adms*/
+
+	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber, paginate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	paginatedResponse.Content = admissions
 
 	c.JSON(http.StatusOK, paginatedResponse)
 }

@@ -24,7 +24,8 @@ func ValidatePermission(permission string) gin.HandlerFunc {
 			permissions, err := repository.FetchAllPermissionsByUser(c.GetHeader("User-Number"))
 
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusForbidden, commons.Feedback(err.Error()))
+				c.JSON(http.StatusForbidden, commons.Feedback(err.Error()))
+				c.Abort()
 				return
 			}
 
@@ -38,7 +39,8 @@ func ValidatePermission(permission string) gin.HandlerFunc {
 			}
 
 			if !allowed {
-				c.AbortWithStatusJSON(http.StatusForbidden, commons.Feedback("You don't have permission to access this resource"))
+				c.JSON(http.StatusForbidden, commons.Feedback("You don't have permission to access this resource"))
+				c.Abort()
 				return
 			} else {
 				c.Next()

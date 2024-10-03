@@ -3,8 +3,11 @@ package requests
 import "errors"
 
 type ClassReportTemplateRequest struct {
-	CampusClasses        []string `json:"campus_classes"`
-	ReportTemplateNumber string   `json:"report_template_number"`
+	Classes                []string `json:"classes"`
+	CampusNumber           string   `json:"campus_number"`
+	CurriculumNumber       string   `json:"curriculum_number"`
+	CampusCurriculumNumber string   `json:"campus_curriculum_number"`
+	ReportTemplateNumber   string   `json:"report_template_number"`
 }
 
 func (classReportTemplateRequest *ClassReportTemplateRequest) Validate() error {
@@ -13,7 +16,7 @@ func (classReportTemplateRequest *ClassReportTemplateRequest) Validate() error {
 		return errors.New("choose the template")
 	}
 
-	if classReportTemplateRequest.CampusClasses == nil || len(classReportTemplateRequest.CampusClasses) == 0 {
+	if classReportTemplateRequest.Classes == nil || len(classReportTemplateRequest.Classes) == 0 {
 		return errors.New("provide a list of campus classes")
 	}
 

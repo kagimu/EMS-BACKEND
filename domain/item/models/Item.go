@@ -18,6 +18,7 @@ type Item struct {
 	SerialCode      string      `json:"serial_code"`
 	OneTimePurchase bool        `json:"one_time_purchase" gorm:"default:false"`
 	RepeatCycle     string      `json:"repeat_cycle" gorm:"size:20"`
+	SchoolNumber    string      `json:"school_number" gorm:"size:36"`
 	UserNumber      string      `json:"user_number" gorm:"size:36;not null"`
 	User            models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

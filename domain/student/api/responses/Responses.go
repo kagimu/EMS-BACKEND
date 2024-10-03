@@ -1,6 +1,7 @@
 package responses
 
 import (
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	authResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 )
@@ -24,4 +25,18 @@ type DetailedStudentProfile struct {
 	CurrentEnrollment        responses.Enrollment   `json:"current_enrollment"`
 	UserProfile              authResponses.UserView `json:"user_profile"`
 	UserNumber               string                 `json:"user_number"`
+}
+
+type SingleStudent struct {
+	responses.EnrolledStudent
+	Assessments []responses2.AssessmentResponse
+}
+type AssessmentAndStudentResponse struct {
+	Headers  []SingleAssessment `json:"headers"`
+	Students []SingleStudent    `json:"students"`
+}
+
+type SingleAssessment struct {
+	AssessmentScheduleNumber string `json:"assessment_schedule_number"`
+	AssessmentScheduleName   string `json:"assessment_schedule_name"`
 }

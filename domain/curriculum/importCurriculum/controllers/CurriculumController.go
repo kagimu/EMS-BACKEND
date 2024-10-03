@@ -76,11 +76,12 @@ func NewCurriculum(context *gin.Context) {
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
+	entityNumber, _ := commons.GetUserEntityNumber(context)
 	saveCurriculum := models5.Curriculum{
 		Number:       uuid.NewV4().String(),
 		Name:         name,
 		UserNumber:   userNumber,
-		EntityNumber: context.GetString("entity_number"),
+		EntityNumber: entityNumber,
 	}
 
 	if err := tx.Create(&saveCurriculum).Error; err != nil {
@@ -628,7 +629,6 @@ func FetchSchoolCurriculum(context *gin.Context) {
 	if err := config.DB.
 		Where("school_number = ?", schoolNumber).
 		Preload("Curriculum").
-		Order("created_at desc").
 		Find(&schoolCurriculum).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
 		return
@@ -730,7 +730,7 @@ func DeleteCurriculum(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete curriculum"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete curriculum" + err.Error()})
 		return
 	}
 

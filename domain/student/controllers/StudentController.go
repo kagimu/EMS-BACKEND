@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
-	"net/http"
-
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -52,12 +54,25 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	var campusClass classModels.CampusClass
-	if err := config.DB.Where("number = ?", payload.CampusClassNumber).First(&campusClass).Error; err != nil {
+	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, payload.CampusCurriculumNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Error checking class and campus: " + err.Error()})
+		return
+	}
+
+	if campusClass.Number == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Selected class is not active on the selected campus"})
+		return
+	}
+
+	/*var campusClass classModels.CampusClass
+	if err := config.DB.Where("number = ?", campusClass.Number).First(&campusClass).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Campus class not found"})
 		return
-	}
+	}*/
 
 	tx := config.DB.Begin()
 	studentAPN, err := CreateAPN(tx)
@@ -87,11 +102,14 @@ func CreateStudent(c *gin.Context) {
 			ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 			PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 			SecondName:                payload.SecondName,
-			PreferedCampusNumber:      payload.PreferredCampusNumber,
+			PreferredCampusNumber:     payload.PreferredCampusNumber,
 			UserNumber:                userNumber,
 			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 			ApplicationNumber:         applicationNumber,
-			CampusClassNumber:         payload.CampusClassNumber,
+			CampusClassNumber:         campusClass.Number,
+			SchoolNumber:              payload.SchoolNumber,
+			Lin:                       payload.Lin,
+			ModeOfStudyNumber:         payload.ModeOfStudyNumber,
 		}
 
 		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
@@ -133,11 +151,14 @@ func CreateStudent(c *gin.Context) {
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		SecondName:                payload.SecondName,
-		PreferedCampusNumber:      payload.PreferredCampusNumber,
+		PreferredCampusNumber:     payload.PreferredCampusNumber,
 		UserNumber:                createdUser.Number,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 		ApplicationNumber:         applicationNumber,
-		CampusClassNumber:         payload.CampusClassNumber,
+		CampusClassNumber:         campusClass.Number,
+		SchoolNumber:              payload.SchoolNumber,
+		Lin:                       payload.Lin,
+		ModeOfStudyNumber:         payload.ModeOfStudyNumber,
 	}
 
 	if err := tx.Create(&savStudent).Error; err != nil {
@@ -189,6 +210,7 @@ func EditStudent(c *gin.Context) {
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		CampusClassNumber:         payload.CampusClassNumber,
+		SchoolNumber:              payload.SchoolNumber,
 	}
 
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
@@ -250,6 +272,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	detailedStudent.ADNStatus = student.ADNStatus
 	detailedStudent.DateOfBirth = student.DateOfBirth
 	detailedStudent.ReasonForChoosingSchool = student.ReasonForChoosingSchool
+	detailedStudent.Photo = commons.GenerateDownloadPath(student.Photo, true)
 
 	// find the latest enrollment for the student
 	var enrollment enrollmentModel.Enrollment
@@ -266,7 +289,15 @@ func FetchStudentByNumber(c *gin.Context) {
 		return
 	}
 
+	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
+
+	campusLevel, _ := repositories4.GetCampusLevelByNumber(enrollment.CampusClass.CampusLevelNumber)
+
+	curriculumLevel, _ := repositories4.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
+
 	var response = enrollmentResponse.Enrollment{}
+	response.LevelNumber = curriculumLevel.LevelNumber
+	response.CampusCurriculumNumber = campusLevel.CampusCurriculumNumber
 	response.StudentNumber = enrollment.StudentNumber
 	response.EnrollmentDate = enrollment.EnrollmentDate
 	response.Class = enrollment.CampusClass.ClassName
@@ -274,7 +305,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	response.Stream = enrollment.Stream.Name
 	response.School = enrollment.School.Name
 	response.Campus = enrollment.Campus.Name
-	response.StudyPeriod = enrollment.StudyPeriod.StudyPeriodName
+	response.StudyPeriod = studyPeriodName.Name
 	response.ContinuingStudent = enrollment.ContinuingStudent
 	response.AcademicYear = enrollment.StudyPeriod.AcademicYear.AcademicYearName
 
@@ -326,7 +357,7 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 
 	var enrollments []enrollmentModel.Enrollment
 
-	if err := config.DB.Where("campus_class_number = ? AND status = ? ", assessmentMetric.CampusClassNumber, constants.StatusActive).Find(&enrollments).Error; err != nil {
+	if err := config.DB.Where("campus_class_number = ? AND status = ? AND study_period_number = ?", assessmentMetric.CampusClassNumber, constants.StatusActive, assessmentMetric.StudyPeriodNumber).Find(&enrollments).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch enrollments"})
 		return
 
@@ -359,13 +390,13 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 		}
 
 		students = append(students, enrollmentResponse.EnrolledStudent{
-
 			Number:            student.Number,
 			StudentSurname:    student.Surname,
 			StudentOtherName:  student.OtherName,
 			StudentSecondName: student.SecondName,
 			Comment:           assessment.Comment,
-			Score:             assessment.ActualScore,
+			ActualScore:       assessment.ActualScore,
+			Score:             assessment.Score,
 			Class:             campusClass.ClassName,
 		})
 	}

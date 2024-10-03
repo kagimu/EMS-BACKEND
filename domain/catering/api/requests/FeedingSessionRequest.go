@@ -11,18 +11,20 @@ type UpdateFeedingSessionRequest struct {
 }
 
 type FeedingSessionRequest struct {
-	Name         string `json:"name"`
-	Code         uint64 `json:"code"`
-	Status       string `json:"status"`
-	SchoolNumber string `json:"school_number"`
+	Name         string             `json:"name"`
+	Status       string             `json:"status"`
+	SchoolNumber string             `json:"school_number"`
+	MenuItems    []MenuItemQuantity `json:"menu_items"`
+}
+
+type MenuItemQuantity struct {
+	MenuItemNumber string  `json:"menu_item_number"`
+	Quantity       float64 `json:"quantity"`
 }
 
 func (r *FeedingSessionRequest) Validate() error {
 	if r.Name == "" {
 		return errors.New("provide name of session")
-	}
-	if r.Code <= 0 {
-		return errors.New("provide the sorting code")
 	}
 	if r.Status == "" {
 		return errors.New("choose the status of session")
@@ -33,6 +35,22 @@ func (r *FeedingSessionRequest) Validate() error {
 	if r.SchoolNumber == "" {
 		return errors.New("choose the school and set the number")
 	}
+
+	if len(r.MenuItems) == 0 {
+		return errors.New("choose at least one menu item")
+	}
+
+	for _, menuItem := range r.MenuItems {
+
+		if menuItem.MenuItemNumber == "" {
+			return errors.New("choose the menu item")
+		}
+
+		if menuItem.Quantity <= 0 {
+			return errors.New("menu item quantity is required")
+		}
+	}
+
 	return nil
 }
 

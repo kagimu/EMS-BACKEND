@@ -2,22 +2,24 @@ package controllers
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/services"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"gorm.io/gorm"
 	"net/http"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
+
+var enrolmentService = services2.NewEnrolmentService()
 
 func CreateEnrollment(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
@@ -37,15 +39,17 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
-	// validate if student exists on the same campus and school and campus_class_number and study period and   is active
-	var existingEnrollment models.Enrollment
+	err = enrolmentService.NewEnrolment(payload, user.Number)
 
-	if err := config.DB.Where("student_number = ? AND study_period_number = ? AND status = ?", payload.StudentNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
+	// validate if student exists on the same campus and school and campus_class_number and study period and   is active
+	//var existingEnrollment models.Enrollment
+
+	/*if err := config.DB.Where("student_number = ? AND study_period_number = ? AND status = ?", payload.StudentNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Student is already enrolled for this study period"})
 		return
-	}
+	}*/
 
-	var admission admissionModel.Admission
+	/*var admission admissionModel.Admission
 	if err := config.DB.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch the student admission details"})
@@ -53,7 +57,13 @@ func CreateEnrollment(c *gin.Context) {
 		}
 	}
 
-	saveEnrollment := models.Enrollment{
+	student, err := repositories2.FindStudentByNumber(payload.StudentNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch student details"})
+		return
+	}*/
+
+	/*saveEnrollment := models.Enrollment{
 		Number:            uuid.NewV4().String(),
 		StudentNumber:     payload.StudentNumber,
 		StreamNumber:      payload.StreamNumber,
@@ -65,11 +75,11 @@ func CreateEnrollment(c *gin.Context) {
 		Status:            constants.StatusActive,
 		UserNumber:        user.Number,
 		ContinuingStudent: payload.ContinuingStudent,
-	}
+	}*/
 
-	tx := config.DB.Begin()
+	//tx := config.DB.Begin()
 
-	if err := tx.Create(&saveEnrollment).Error; err != nil {
+	/*if err := tx.Create(&saveEnrollment).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
 		return
@@ -83,13 +93,13 @@ func CreateEnrollment(c *gin.Context) {
 			return
 		}
 
-	}
+	}*/
 
-	if len(items) > 0 {
-		//validate if all mandatory items have been checked
-	}
+	//if len(items) > 0 {
+	//validate if all mandatory items have been checked
+	//}
 
-	for _, item := range payload.Items {
+	/*for _, item := range payload.Items {
 		var enrolmentItem models.EnrollmentItem
 		enrolmentItem.ItemNumber = item.ItemNumber
 		enrolmentItem.EnrollmentNumber = saveEnrollment.Number
@@ -101,27 +111,27 @@ func CreateEnrollment(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save enrollment"})
 			return
 		}
-	}
+	}*/
 
 	// update admission status to enrolled where student number is equal to payload.StudentNumber
 
-	if err := tx.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
+	/*if err := tx.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
 		tx.Commit()
 		c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
 		return
-	}
+	}*/
 
-	if admission.Number != "" {
+	/*if admission.Number != "" {
 		admission.Status = constants.StatusEnrolled
 		if err := tx.Save(&admission).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update admission status"})
 			return
 		}
-	}
+	}*/
 
 	// find all other enrollments for the student and set their status to inactive
-	var enrollments []models.Enrollment
+	/*var enrollments []models.Enrollment
 	if err := tx.Where("student_number = ? AND number != ? AND status = ? ", payload.StudentNumber, saveEnrollment.Number, constants.StatusActive).Find(&enrollments).Error; err != nil {
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -130,18 +140,40 @@ func CreateEnrollment(c *gin.Context) {
 			return
 		}
 
-	}
+	}*/
 
-	for _, enrollment := range enrollments {
+	/*for _, enrollment := range enrollments {
 		enrollment.Status = constants.StatusInactive
 		if err := tx.Save(&enrollment).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update other enrollments status"})
 			return
 		}
-	}
+	}*/
 
-	tx.Commit()
+	/*if payload.FeedingGroupNumber != "" {
+		fg, err := repositories.GetFeedingGroupByNumber(payload.FeedingGroupNumber)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch feeding group"})
+			return
+		}
+
+		if fg.Number != "" {
+			err := services.CreateFeedingGroupUser(student.UserNumber, payload.CampusNumber, payload.FeedingGroupNumber, payload.Status, tx)
+			if err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create feeding group user " + err.Error()})
+				return
+			}
+		}
+
+	}*/
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
 }
@@ -175,20 +207,30 @@ func FetchEnrolledStudents(c *gin.Context) {
 	}
 
 	for _, enrollment := range enrolledStudents {
+
+		campusLevel, _ := repositories4.GetCampusLevelByNumber(enrollment.CampusClass.CampusLevelNumber)
+
+		curriculumLevel, _ := repositories4.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
+
+		studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
+
 		students = append(students, responses.Enrollment{
-			StudentSurname:    enrollment.Student.Surname,
-			StudentSecondName: enrollment.Student.SecondName,
-			StudentOtherName:  enrollment.Student.OtherName,
-			StudentNumber:     enrollment.Student.Number,
-			Number:            enrollment.Number,
-			School:            enrollment.School.Name,
-			Campus:            enrollment.Campus.Name,
-			StudyPeriod:       enrollment.StudyPeriod.StudyPeriodName,
-			Status:            enrollment.Status,
-			EnrollmentDate:    enrollment.EnrollmentDate,
-			ContinuingStudent: enrollment.ContinuingStudent,
-			Class:             enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")",
-			Adn:               enrollment.Student.ADN,
+			LevelNumber:            curriculumLevel.LevelNumber,
+			CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
+			StudentSurname:         enrollment.Student.Surname,
+			StudentSecondName:      enrollment.Student.SecondName,
+			StudentOtherName:       enrollment.Student.OtherName,
+			StudentNumber:          enrollment.Student.Number,
+			Photo:                  commons.GenerateDownloadPath(enrollment.Student.Photo, true),
+			Number:                 enrollment.Number,
+			School:                 enrollment.School.Name,
+			Campus:                 enrollment.Campus.Name,
+			StudyPeriod:            studyPeriodName.Name,
+			Status:                 enrollment.Status,
+			EnrollmentDate:         enrollment.EnrollmentDate,
+			ContinuingStudent:      enrollment.ContinuingStudent,
+			Class:                  enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")",
+			Adn:                    enrollment.Student.ADN,
 		})
 	}
 

@@ -133,7 +133,7 @@ func UpdateParent(c *gin.Context) {
 		return
 	}
 
-	var parentId = c.Param("id")
+	var applicationNumber = c.Param("id")
 
 	var parentRequest requests.ParentRequest
 
@@ -144,7 +144,7 @@ func UpdateParent(c *gin.Context) {
 
 	var parent models.Parent
 
-	if err := config.DB.Where("number =? ", parentId).First(&parent).Error; err != nil {
+	if err := config.DB.Where("application_number =? ", applicationNumber).First(&parent).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "no parent found"})
 		return
 	}

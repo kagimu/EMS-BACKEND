@@ -3,67 +3,53 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
-	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
-	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
-	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
-	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strconv"
 
-	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
 func CreateReportSettings(c *gin.Context) {
+
+	currentUser, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
 	var payload requests.ReportSettingsRequest
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	if err = c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	err := payload.ValidateReportSetting()
+	err = payload.ValidateReportSetting()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	//check for existing report settings with the same study period number, academic year number and campus class number and status active.
 
-	var existingReportSettings models.ReportSetting
-	if err := config.DB.Where("study_period_number = ? AND academic_year_number = ? AND campus_class_number = ? AND status = ?", payload.StudyPeriodNumber, payload.AcademicYearNumber, payload.CampusClassNumber, constants.StatusActive).First(&existingReportSettings).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class  already exists"})
-		return
-
-	}
-
-	// Save report settings
-	reportSettings := models.ReportSetting{
-		Number:             uuid.NewV4().String(),
-		StudyPeriodNumber:  payload.StudyPeriodNumber,
-		AcademicYearNumber: payload.AcademicYearNumber,
-		CampusClassNumber:  payload.CampusClassNumber,
-		Columns:            payload.Columns,
-		Status:             constants.StatusActive,
-		UserNumber:         c.Request.Header["User-Number"][0],
-		Code:               payload.Code,
-	}
-
-	if err := config.DB.Create(&reportSettings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report settings" + err.Error()})
+	err = services3.SaveReportSettings(payload, currentUser.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -73,106 +59,50 @@ func CreateReportSettings(c *gin.Context) {
 
 func FetchReportSettings(c *gin.Context) {
 
+	classNumber := c.Query("class_number")
+	campusNumber := c.Query("campus_number")
 	campusClassNumber := c.Query("campus_class_number")
+	academicYearNumber := c.Query("academic_year_number")
+	studyPeriodNumber := c.Query("study_period_number")
 
-	if campusClassNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a class"})
+	if campusClassNumber == "" && (campusNumber == "" || classNumber == "") {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select at-least a campus and class to view report settings"})
 		return
 	}
 
-	var reportSettings []models.ReportSetting
-	if err := config.DB.Preload("AcademicYear").
-		Preload("CampusClass").
-		Preload("StudyPeriod").
-		Scopes(
-			filters.ByCampusClassNumber(campusClassNumber),
-			filters.ByAcademicYearNumber(c.Query("academic_year_number")),
-			filters.ByStudyPeriodNumber(c.Query("study_period_number")),
-		).
-		Find(&reportSettings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
+	allReportSettings, err := services3.FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academicYearNumber, studyPeriodNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var rs []responses.ReportSettingsResponse
-
-	for _, reportSetting := range reportSettings {
-		response := responses.ReportSettingsResponse{
-			Name:         reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName,
-			Number:       reportSetting.Number,
-			Status:       reportSetting.Status,
-			Columns:      reportSetting.Columns,
-			Code:         reportSetting.Code,
-			AcademicYear: reportSetting.AcademicYear.AcademicYearName,
-			StudyPeriod:  reportSetting.StudyPeriod.StudyPeriodName,
-			Class:        reportSetting.CampusClass.ClassName,
-		}
-
-		rs = append(rs, response)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": rs})
+	c.JSON(http.StatusOK, gin.H{"data": allReportSettings})
 
 }
 
 func CreatReportColumn(ctx *gin.Context) {
+
+	currentUser, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
 	var payload requests.ReportColumnRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	err := payload.ValidateReportColumn()
+	err = payload.ValidateReportColumn()
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	// validate the current number of entries in the report column table for the report setting
-
-	var reportSetting models.ReportSetting
-	if err := config.DB.Where("number = ?", payload.ReportSettingNumber).First(&reportSetting).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
-		return
-	}
-
-	var reportColumns []models.ReportColumn
-	if err := config.DB.Where("report_setting_number = ?", payload.ReportSettingNumber).Find(&reportColumns).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
-		return
-	}
-
-	if len(reportColumns) >= int(reportSetting.Columns) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report columns for this class are already set up"})
-		return
-	}
-
-	//validate name and code to be unique on each report setting
-
-	var existingReportColumn models.ReportColumn
-	if err := config.DB.Where("name = ? AND report_setting_number = ?", payload.Name, payload.ReportSettingNumber).First(&existingReportColumn).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column with the same name already exists"})
-		return
-	}
-
-	if err := config.DB.Where("code = ? AND report_setting_number = ?", payload.Code, payload.ReportSettingNumber).First(&existingReportColumn).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column with the same code already exists"})
-		return
-
-	}
-
-	// Save report column
-	reportColumn := models.ReportColumn{
-		Number:              uuid.NewV4().String(),
-		ReportSettingNumber: payload.ReportSettingNumber,
-		Name:                payload.Name,
-		PercentageShare:     payload.PercentageShare,
-		UserNumber:          ctx.Request.Header["User-Number"][0],
-		Code:                payload.Code,
-	}
-
-	if err := config.DB.Create(&reportColumn).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report column"})
+	err = services3.SaveReportColumn(payload, currentUser.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -188,140 +118,76 @@ func FetchReportColumns(ctx *gin.Context) {
 		return
 	}
 
-	var reportColumns []models.ReportColumn
-
-	if err := config.DB.Scopes(filters.ByAnyField("report_setting_number", ctx.Query("report_setting_number"))).Find(&reportColumns).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
+	response, err := services3.GetReportColumns(reportSettingsNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var rc []responses.ReportColumnResponse
-
-	for _, reportColumn := range reportColumns {
-		response := responses.ReportColumnResponse{
-			Name:              reportColumn.Name,
-			Number:            reportColumn.Number,
-			PercentageShare:   reportColumn.PercentageShare,
-			Code:              reportColumn.Code,
-			ReportSettingName: reportColumn.ReportSettingName,
-		}
-		rc = append(rc, response)
-
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"data": rc})
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
 
 }
 
 func CreateReportColumnAssessment(ctx *gin.Context) {
+
+	currentUser, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
 	var payload requests.ReportColumnAssessmentRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	err := payload.ValidateReportColumnAssessment()
+	err = payload.ValidateReportColumnAssessment()
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	//check if report column exists
-	var reportColumn models.ReportColumn
-	if err := config.DB.Where("number = ?", payload.ReportColumnNumber).First(&reportColumn).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column does not exist"})
-			return
-		}
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report column"})
-		return
-
-	}
-
-	// check code uniqueness
-
-	var existingReportColumnAssessment models.ReportColumnAssessment
-	if err := config.DB.Where("code = ? AND report_column_number = ?", payload.Code, payload.ReportColumnNumber).First(&existingReportColumnAssessment).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column assessment with the same code already exists"})
+	err = services3.SaveAssessmentToReportColumn(payload, currentUser.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var existingReportColumn models.ReportColumnAssessment
-	if err := config.DB.Where("report_column_number = ? AND assessment_area_number = ? AND assessment_metric_number = ?", payload.ReportColumnNumber, payload.AssessmentAreaNumber, payload.AssessmentMetricNumber).First(&existingReportColumn).Error; err == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report column already configured on an  assessment"})
-		return
-	}
-
-	// Save report column assessment
-	reportColumnAssessment := models.ReportColumnAssessment{
-		Number:                 uuid.NewV4().String(),
-		ReportColumnNumber:     payload.ReportColumnNumber,
-		AssessmentAreaNumber:   payload.AssessmentAreaNumber,
-		AssessmentMetricNumber: payload.AssessmentMetricNumber,
-		UserNumber:             ctx.Request.Header["User-Number"][0],
-		Code:                   payload.Code,
-	}
-
-	if err := config.DB.Create(&reportColumnAssessment).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report column assessment"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Report column assessment created successfully"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Report column assessment added successfully"})
 }
 
-func FetchReportColumnAssessments(ctx *gin.Context) {
+func AllReportColumnAssessments(ctx *gin.Context) {
 
-	var reportColumnAssessments []models.ReportColumnAssessment
-	if err := config.DB.Joins("JOIN report_columns  on report_columns.number = report_column_assessments.report_column_number").
-		Joins("JOIN report_settings rs on rs.number = report_columns.report_setting_number").
-		Scopes(
-			filters.ByAssessmentAreaNumber(ctx.Query("assessment_area_number")),
-			filters.ByAssessmentMetricNumber(ctx.Query("assessment_metric_number")),
-			filters.ByAnyField("report_column_number", ctx.Query("report_column_number")),
-			filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
-			filters.ByAnyField("report_settings.number", ctx.Query("report_setting_number")),
-			filters.ByAnyField("report_settings.academic_year_number", ctx.Query("academic_year_number")),
-			filters.ByAnyField("report_settings.study_period_number", ctx.Query("study_period_number")),
-		).
-		Find(&reportColumnAssessments).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column assessments"})
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+	campusClassNumber := ctx.Query("campus_class_number")
+	curriculumNumber := ctx.Query("curriculum_number")
+	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
+	reportColumnNumber := ctx.Query("report_column_number")
+	assessmentAreaNumber := ctx.Query("assessment_area_number")
+	assessmentMetricNumber := ctx.Query("assessment_metric_number")
+	academicYearNumber := ctx.Query("academic_year_number")
+	studyPeriodNumber := ctx.Query("study_period_number")
+	reportSettingNumber := ctx.Query("report_setting_number")
+
+	if classNumber != "" && campusNumber != "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+		if err != nil {
+			ctx.JSON(http.StatusOK, gin.H{"message": err.Error()})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
+
+	reportColumnAssessmentResponses, err := services3.AllReportColumnAssessments(reportColumnNumber, assessmentAreaNumber, assessmentMetricNumber, academicYearNumber, studyPeriodNumber, campusClassNumber, reportSettingNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
-	var rca = make([]responses.ReportColumnAssessmentResponse, 0)
-
-	for _, reportColumnAssessment := range reportColumnAssessments {
-		var assessmentArea assessmentAreaModel.AssessmentArea
-		if err := config.DB.Where("number = ?", reportColumnAssessment.AssessmentAreaNumber).First(&assessmentArea).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment area"})
-			return
-		}
-
-		var assessmentMetric assesmentModel.AssessmentMetric
-		if err := config.DB.Where("number = ?", reportColumnAssessment.AssessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment metric"})
-			return
-		}
-
-		var reportColumn models.ReportColumn
-		if err := config.DB.Where("number = ?", reportColumnAssessment.ReportColumnNumber).First(&reportColumn).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report column"})
-			return
-		}
-
-		response := responses.ReportColumnAssessmentResponse{
-			Number:           reportColumnAssessment.Number,
-			AssessmentArea:   assessmentArea.Name,
-			AssessmentMetric: assessmentMetric.Name,
-			Code:             reportColumnAssessment.Code,
-			ReportColumn:     reportColumn.Name,
-		}
-		rca = append(rca, response)
-
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"data": rca})
+	ctx.JSON(http.StatusOK, gin.H{"data": reportColumnAssessmentResponses})
 
 }
 
@@ -345,13 +211,17 @@ func FetchReportSummaries(ctx *gin.Context) {
 	}
 
 	for _, reportSummary := range reportSummaries {
+
+		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
+
 		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
 			Number:        reportSummary.Number,
 			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
 			StudentNumber: reportSummary.StudentNumber,
+			Photo:         commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
 			Grade:         reportSummary.Grade,
 			Stream:        reportSummary.Stream.Name,
-			StudyPeriod:   reportSummary.StudyPeriod.StudyPeriodName,
+			StudyPeriod:   studyPeriodName.Name,
 			Class:         reportSummary.CampusClass.ClassName,
 		})
 	}
@@ -371,8 +241,6 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 		return
 	}
 
-	// get curricullum class number from the campus class number
-
 	var campusClass classModel.CampusClass
 	if err := config.DB.Preload("CurriculumClass.CurriculumLevel").Preload("Campus").Preload("Campus.School").Where("number = ?", reportSummary.CampusClassNumber).First(&campusClass).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus class"})
@@ -387,7 +255,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	// find the latest report settings for the class
 	var reportSetting models.ReportSetting
-	if err := config.DB.Where("campus_class_number = ? AND status = ?", campusClass.Number, constants.StatusActive).First(&reportSetting).Error; err != nil {
+	if err := config.DB.Where("number = ?", reportSummary.ReportSettingNumber).First(&reportSetting).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
 		return
 
@@ -408,11 +276,13 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	var la []responses.LearningArea
 	for _, learningArea := range learningAreas {
-		var assessments []responses.Assessments
+		assessments := make([]responses.Assessments, 0)
 
 		var assessmentAreas []assessmentAreaModel.AssessmentArea
 		if err := config.DB.Where("assessment_areas.curriculum_class_number = ?", campusClass.CurriculumClassNumber).
-			Joins("JOIN subjects on subjects.number = assessment_areas.subject_number AND subjects.curriculum_number=?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).Find(&assessmentAreas).Error; err != nil {
+			Joins("JOIN subjects on subjects.number = assessment_areas.subject_number AND subjects.curriculum_number=?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).
+			Joins("JOIN subject_clusters on subject_clusters.number = subjects.subject_cluster_number AND subject_clusters.learning_area_number =?", learningArea.Number).
+			Find(&assessmentAreas).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
 			return
 		}
@@ -460,6 +330,15 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 	if err := config.DB.Where("number = ?", campusClass.Campus.SchoolNumber).First(&school).Error; err != nil {
 
 	}
+	scalesUsed, err := reporsitory.GetAppliedScaleByScaleNumber(reportSummary.AggregateScaleUsed)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch scales used"})
+		return
+
+	}
+	scales := reporsitory.BuildAppliedScaleResponse(scalesUsed)
+
+	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
 
 	response := responses.FullReportSummary{
 		Student: responses.LeanStudent{
@@ -469,16 +348,19 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 			OtherName:  reportSummary.Student.OtherName,
 			Gender:     reportSummary.Student.Gender,
 		},
-		Grade:              reportSummary.Grade,
-		LearningAreas:      la,
-		Stream:             "",
-		Class:              campusClass.ClassName,
-		ClassAbbreviation:  campusClass.ClassAbbreviation,
-		School:             campusClass.Campus.School,
-		Campus:             campusClass.Campus,
-		StudyPeriod:        reportSummary.StudyPeriod.StudyPeriodName,
-		ReportColumns:      rcs,
-		ReportTemplateName: reportSummary.ReportTemplateName,
+		Grade:               reportSummary.Grade,
+		LearningAreas:       la,
+		Stream:              "",
+		Class:               campusClass.ClassName,
+		ClassAbbreviation:   campusClass.ClassAbbreviation,
+		School:              services4.BuildLeanSchoolResponse(&campusClass.Campus.School),
+		Campus:              campusClass.Campus,
+		StudyPeriod:         studyPeriodName.Name,
+		ReportColumns:       rcs,
+		ReportTemplateName:  reportSummary.ReportTemplateName,
+		TeacherComment:      reportSummary.TeacherComment,
+		HeadTeachersComment: reportSummary.HeadTeacherComment,
+		AggregateScale:      scales,
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 
@@ -540,11 +422,29 @@ func FetchReportScoreSummaries(ctx *gin.Context) {
 func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 	studyPeriodNumber := ctx.Query("study_period_number")
 	campusClassNumber := ctx.Query("campus_class_number")
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+	curriculumNumber := ctx.Query("curriculum_number")
+	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
+
+	if classNumber != "" && campusNumber != "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if campusClass.Number == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "The selected class is not active on the selected campus"})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
 
 	if studyPeriodNumber == "" || campusClassNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Study period number and campus class number are required"})
 		return
-
 	}
 
 	var response []responses.SummarizedFinalReportResponse
@@ -604,321 +504,16 @@ func GenerateReportSummary(ctx *gin.Context) {
 		return
 	}
 
-	//check if report settings exists
-	var reportSettings models.ReportSetting
-	if err := config.DB.Where("campus_class_number = ? AND status = ?", payload.CampusClassNumber, constants.StatusActive).First(&reportSettings).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report settings for this class does not exist"})
-			return
-		}
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch settings  for this class"})
-		return
-	}
-
-	//check if report columns exists
-	var reportColumns []models.ReportColumn
-	if err := config.DB.Where("report_setting_number = ?", reportSettings.Number).Find(&reportColumns).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report columns for this class not yet set up"})
-			return
-		}
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch columns  for this class"})
-		return
-	}
-
-	if len(reportColumns) != int(reportSettings.Columns) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report columns set for the settings are not yet fully set up"})
-		return
-
-	}
-	user := ctx.Request.Header["User-Number"][0]
-
-	tx := config.DB.Begin()
-	var stream classModel.Stream
-	if err := tx.Where("id > ?", 0).First(&stream).Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch stream"})
+	if err := services3.GenerateReportSummary(payload, ctx.Request.Header["User-Number"][0]); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 
 	}
 
-	var reportTemplate reportTemplateModel.ReportTemplate
-
-	if reportTemplate, err = services.DetermineReportTemplateForClass(payload.CampusClassNumber); err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	if reportTemplate.Number == "" {
-		tx.Rollback()
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "This class has no report template set up"})
-		return
-	}
-
-	// find it there is an existing report summary for the student
-
-	var reportSummary models.ReportSummary
-	if err := tx.Where("student_number = ? AND study_period_number = ? AND campus_class_number = ?", payload.StudentNumber, payload.StudyPeriodNumber, payload.CampusClassNumber).First(&reportSummary).Error; err == nil {
-		// update the existing report summary with data from the payload
-		reportSummary.ReportSettingNumber = reportSettings.Number
-		reportSummary.Grade = ""
-		reportSummary.Aggregate = -1
-		reportSummary.Comment = ""
-		reportSummary.UserNumber = user
-		reportSummary.StreamNumber = stream.Number
-		reportSummary.ReportTemplateName = reportTemplate.Name
-
-		if err := tx.Save(&reportSummary).Error; err != nil {
-			tx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update report summary"})
-			return
-		}
-
-	} else {
-
-		reportSummary = models.ReportSummary{
-			Number:              uuid.NewV4().String(),
-			ReportSettingNumber: reportSettings.Number,
-			StudentNumber:       payload.StudentNumber,
-			CampusClassNumber:   payload.CampusClassNumber,
-			StudyPeriodNumber:   payload.StudyPeriodNumber,
-			Grade:               "",
-			Aggregate:           -1,
-			Comment:             "",
-			UserNumber:          user,
-			Code:                0,
-			StreamNumber:        stream.Number,
-			ReportTemplateName:  reportTemplate.Name,
-		}
-
-		if err := tx.Create(&reportSummary).Error; err != nil {
-			tx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report summary"})
-			return
-		}
-	}
-
-	var campusClass classModel.CampusClass
-
-	if err := tx.Where("number = ?", payload.CampusClassNumber).First(&campusClass).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch class"})
-		return
-
-	}
-
-	var assessmentAreas []assessmentModel.AssessmentArea
-
-	if err := tx.Where("curriculum_class_number = ?", campusClass.CurriculumClassNumber).Find(&assessmentAreas).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
-		return
-	}
-
-	var totalAggregates float64
-	for _, assessmentArea := range assessmentAreas {
-		var scale aggregateSaceltModel.AggregateScale
-
-		for _, reportColum := range reportColumns {
-
-			var rcas []models.ReportColumnAssessment
-
-			if err := tx.Where("assessment_area_number = ? AND report_column_number = ? ", assessmentArea.Number, reportColum.Number).Find(&rcas).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					continue
-				}
-			}
-
-			var score float64
-			for _, rca := range rcas {
-				var assessment assesmentModel.Assessment
-
-				if err := tx.Where("assessment_metric_number = ? AND student_number = ? ", rca.AssessmentMetricNumber, payload.StudentNumber).First(&assessment).Error; err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						continue
-					}
-				}
-				score += assessment.ActualScore
-
-			}
-			length := float64(len(rcas))
-
-			var scoreAverage = score / length
-			if length == 0 || score == 0 {
-				scoreAverage = -1
-			}
-
-			// find the aggregate scale with from grading standard of the  assessment metric
-			var percentageScore float64
-
-			if length > 0 && score > 0 {
-				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
-				scale, err = GetProperAggregateScale(scoreAverage, assessmentArea.Number)
-			}
-
-			//check if the report score already exists with the same report summary number, assessment area number and report column number
-			var reportScore models.ReportScore
-			if err := tx.Where("report_summary_number = ? AND assessment_area_number = ? AND report_column_number = ?", reportSummary.Number, assessmentArea.Number, reportColum.Number).First(&reportScore).Error; err == nil {
-				//update the report score
-				reportScore.Score = commons.RoundFloat(percentageScore, 2)
-				reportScore.AverageScore = commons.RoundFloat(scoreAverage, 2)
-				reportScore.Aggregate = scale.Weight
-				reportScore.Grade = scale.Name
-				reportScore.UserNumber = user
-
-				if score > 0 {
-					if err = tx.Save(&reportScore).Error; err != nil {
-						tx.Rollback()
-						ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update report score"})
-						return
-					}
-				}
-
-			} else {
-
-				//create a new report score
-
-				reportScore = models.ReportScore{
-					Number:               uuid.NewV4().String(),
-					ReportSummaryNumber:  reportSummary.Number,
-					AssessmentAreaNumber: assessmentArea.Number,
-					ReportColumnNumber:   reportColum.Number,
-					Score:                commons.RoundFloat(percentageScore, 2),
-					AverageScore:         commons.RoundFloat(scoreAverage, 2),
-					Aggregate:            scale.Weight,
-					Grade:                scale.Name,
-					UserNumber:           user,
-				}
-
-				if score > 0 {
-					if err = tx.Create(&reportScore).Error; err != nil {
-						tx.Rollback()
-						ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score"})
-						return
-					}
-				}
-
-			}
-
-		}
-
-		var rs []models.ReportScore
-
-		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).Find(&rs).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				continue
-			}
-		}
-		// sum report scores
-
-		var summation float64
-		for _, r := range rs {
-			summation += r.Score
-		}
-
-		scale, err = GetProperAggregateScale(summation, assessmentArea.Number)
-
-		totalAggregates += scale.Weight
-
-		//check if the report score summary already exists with the same report summary number and assessment area number
-		var reportScoreSummary models.ReportScoreSummary
-		if err := tx.Where("report_summary_number = ? AND assessment_area_number = ?", reportSummary.Number, assessmentArea.Number).First(&reportScoreSummary).Error; err == nil {
-			//update the report score summary
-			reportScoreSummary.Aggregate = scale.Weight
-			reportScoreSummary.Grade = scale.Name
-			reportScoreSummary.Summation = summation
-			reportScoreSummary.UserNumber = user
-
-			if err = tx.Save(&reportScoreSummary).Error; err != nil {
-				tx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update report score summary"})
-				return
-			}
-
-		} else {
-			//create a new report score summary
-			reportScoreSummary = models.ReportScoreSummary{
-				Number:               uuid.NewV4().String(),
-				ReportSummaryNumber:  reportSummary.Number,
-				AssessmentAreaNumber: assessmentArea.Number,
-				Aggregate:            scale.Weight,
-				Grade:                scale.Name,
-				Summation:            summation,
-				Comment:              "Subject teacher comment goes here",
-				UserNumber:           user,
-			}
-
-			if err = tx.Create(&reportScoreSummary).Error; err != nil {
-				tx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create report score summary"})
-				return
-			}
-		}
-
-	}
-	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
-
-	if err != nil {
-		//tx.Rollback()
-		//ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get assessment grade"})
-		//return
-		reportSummary.Grade = "N/A"
-	} else {
-		reportSummary.Grade = assessmentGrade.Name
-	}
-
-	reportSummary.Aggregate = totalAggregates
-
-	if err := tx.Save(&reportSummary).Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update report summary"})
-		return
-	}
-
-	tx.Commit()
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Report summary created successfully"})
+	ctx.JSON(http.StatusOK, commons.Feedback("Report summary generated successfully"))
 
 }
 
-func GetProperAggregateScale(score float64, assessmentAreaNumber string) (aggregateSaceltModel.AggregateScale, error) {
-	var scale aggregateSaceltModel.AggregateScale
-	var aggregateScales []aggregateSaceltModel.AggregateScale
-	var aags assessmentAreaModel.AssessmentAreaGradingStandard
-
-	if err := config.DB.Where("assessment_area_number = ?", assessmentAreaNumber).First(&aags).Error; err != nil {
-	}
-	if err := config.DB.Where("grading_standard_number = ?", aags.GradingStandardNumber).Find(&aggregateScales).Error; err != nil {
-	}
-
-	for _, val := range aggregateScales {
-		if score >= val.MinValue && score <= val.MaxValue {
-			scale = val
-
-			return scale, nil
-		}
-	}
-
-	return scale, errors.New("no scale found")
-}
-
-func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGrade, error) {
-	var assessmentGrade assesmentGradeModel.AssessmentGrade
-	var assessmentGrades []assesmentGradeModel.AssessmentGrade
-
-	if err := config.DB.Where("campus_class_number = ?", campusClassNumber).Find(&assessmentGrades).Error; err != nil {
-	}
-
-	for _, val := range assessmentGrades {
-		if points >= float64(val.MinimumPoints) && points <= float64(val.MaximumPoints) {
-			assessmentGrade = val
-
-			return assessmentGrade, nil
-		}
-	}
-
-	return assessmentGrade, errors.New("no grade found")
-
-}
 func CreateHeadTeacherComment(ctx *gin.Context) {
 	var payload requests.HeadTeacherCommentRequest
 	reportSettingNumber := ctx.Param("report_setting_number")
@@ -934,35 +529,11 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 		return
 	}
 
-	var reportSummary models.ReportSetting
-	if err := config.DB.Where("number = ?", reportSettingNumber).First(&reportSummary).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch given  report setting"})
+	err = services3.CreateHeadTeacherComment(payload, reportSettingNumber, ctx.Request.Header["User-Number"][0])
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
-	}
-
-	var headTeacherComment models.HeadTeacherComment
-	if err := config.DB.Where("report_setting_number = ?", reportSettingNumber).First(&headTeacherComment).Error; err == nil {
-		headTeacherComment.Comment = payload.Comment
-		headTeacherComment.UserNumber = ctx.Request.Header["User-Number"][0]
-
-		if err := config.DB.Save(&headTeacherComment).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update head teacher comment"})
-			return
-		}
-
-	} else {
-		headTeacherComment = models.HeadTeacherComment{
-			MinAggregate:        payload.MinAggregate,
-			MaxAggregate:        payload.MaxAggregate,
-			ReportSettingNumber: reportSettingNumber,
-			Comment:             payload.Comment,
-			UserNumber:          ctx.Request.Header["User-Number"][0],
-		}
-
-		if err := config.DB.Create(&headTeacherComment).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create head teacher comment"})
-			return
-		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Head teacher comment created successfully"})
@@ -970,29 +541,140 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 }
 
 func FetchHeadTeacherComments(ctx *gin.Context) {
-	var headTeacherComment []models.HeadTeacherComment
-	if err := config.DB.Preload("ReportSetting").
-		Preload("ReportSetting.AcademicYear").
-		Preload("ReportSetting.StudyPeriod").
-		Preload("ReportSetting.CampusClass").
-		Find(&headTeacherComment).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch head teacher comment"})
+	comments, err := services3.FetchHeadTeacherComments()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+
+	}
+	ctx.JSON(http.StatusOK, comments)
+
+}
+
+func CreateTeachersComment(ctx *gin.Context) {
+
+	var payload requests.TeacherCommentRequest
+
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
 		return
 	}
 
-	var comments = make([]responses.HeadTeacherCommentResponse, 0)
-
-	for _, comment := range headTeacherComment {
-		comments = append(comments, responses.HeadTeacherCommentResponse{
-			MinAggregate: comment.MinAggregate,
-			MaxAggregate: comment.MaxAggregate,
-			Comment:      comment.Comment,
-			AcademicYear: comment.ReportSetting.AcademicYear.AcademicYearName,
-			StudyPeriod:  comment.ReportSetting.StudyPeriod.StudyPeriodName,
-			Class:        comment.ReportSetting.CampusClass.ClassName,
-		})
+	err := payload.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	ctx.JSON(http.StatusOK, comments)
+	var reportSummary models.ReportSummary
+	if err := config.DB.Where("number = ?", payload.ReportSummaryNumber).First(&reportSummary).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch given  report summary"})
+		return
+	}
 
+	// update the teacher_comment field in the report summary
+	reportSummary.Comment = payload.Comment
+	reportSummary.UserNumber = ctx.Request.Header["User-Number"][0]
+
+	if err := config.DB.Save(&reportSummary).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update teacher comment"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Teacher comment created successfully"})
+
+}
+
+func FetchNarrativeScore(c *gin.Context) {
+
+	studentNumber := c.Query("student_number")
+	if studentNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide student number"})
+		return
+	}
+
+	narrations, err := services2.FetchLearnerNarrative(studentNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": narrations})
+
+}
+
+func UpdateReportSettings(context *gin.Context) {
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.UpdateReportSettingsRequest
+	if err = context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	err = payload.ValidateReportSetting()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services3.UpdateReportSettings(payload, currentUser.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report settings updated successfully"})
+}
+
+func DeleteReportColumns(context *gin.Context) {
+	reportColumnNumber := context.Param("report_column_number")
+	if reportColumnNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report column number"})
+		return
+	}
+
+	err := services3.DeleteReportColumn(reportColumnNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report column deleted successfully"})
+}
+
+func DeleteReportSetting(context *gin.Context) {
+	reportSettingNumber := context.Query("report_setting_number")
+	if reportSettingNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report setting number"})
+		return
+	}
+
+	err := services3.DeleteReportSetting(reportSettingNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report setting deleted successfully"})
+}
+
+func DeleteReportColumnAssessment(context *gin.Context) {
+	reportColumnAssessmentNumber := context.Query("report_column_assessment_number")
+	if reportColumnAssessmentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report column assessment number"})
+		return
+	}
+
+	err := services3.DeleteReportColumnAssessment(reportColumnAssessmentNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report column assessment deleted successfully"})
 }

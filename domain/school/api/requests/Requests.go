@@ -1,6 +1,9 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+)
 
 type SchoolInfo struct {
 	Name             string   `json:"name"`
@@ -25,4 +28,39 @@ func (r *SchoolInfo) Validate() error {
 	}
 
 	return nil
+}
+
+type ModeOfStudyRequest struct {
+	SchoolNumber string `json:"school_number"`
+	Name         string `json:"name"`
+}
+
+type UpdateModeOfStudyRequest struct {
+	ModeOfStudyNumber string `json:"mode_of_study_number"`
+	Status            string `json:"status"`
+	ModeOfStudyRequest
+}
+
+func (modeOfStudyRequest *ModeOfStudyRequest) Validate() error {
+	if modeOfStudyRequest.SchoolNumber == "" {
+		return errors.New("Choose school ")
+	}
+
+	if modeOfStudyRequest.Name == "" {
+		return errors.New("Enter mode name I.E Boarding, Half Day ")
+	}
+
+	return nil
+}
+
+func (modeOfStudyRequest *UpdateModeOfStudyRequest) Validate() error {
+	if modeOfStudyRequest.ModeOfStudyNumber == "" {
+		return errors.New("Choose mode of study being updated ")
+	}
+
+	if modeOfStudyRequest.Status != "" && modeOfStudyRequest.Status != constants.StatusActive && modeOfStudyRequest.Status != constants.StatusInactive {
+		return errors.New("Invalid status ")
+	}
+
+	return modeOfStudyRequest.ModeOfStudyRequest.Validate()
 }

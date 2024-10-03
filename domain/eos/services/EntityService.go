@@ -8,7 +8,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
+	"time"
 )
+
+type EntityService struct{}
 
 func SaveCurrentEntity(entityNumber string, currentUserNumber string) (responses.EntityResponse, error) {
 
@@ -61,7 +64,7 @@ func createEntityResponse(details models.Entity) responses.EntityResponse {
 	}
 }
 
-func GetCurrentEntity(currentUserNumber string) (responses.EntityResponse, error) {
+func (entity *EntityService) GetCurrentEntity(currentUserNumber string) (responses.EntityResponse, error) {
 
 	activeUserEntity, err := repositories.FindActiveUserEntityByUserNumber(currentUserNumber)
 	if err != nil {
@@ -75,7 +78,7 @@ func GetCurrentEntity(currentUserNumber string) (responses.EntityResponse, error
 	return createEntityResponse(activeUserEntity.Entity), nil
 }
 
-func UpdateEntity(updateEntityRequest requests.UpdateEntityRequest, currentUserNumber string) error {
+func (entity *EntityService) UpdateEntity(updateEntityRequest requests.UpdateEntityRequest, currentUserNumber string) error {
 
 	entityUser, err := repositories.FindEntityUser(currentUserNumber, updateEntityRequest.EntityNumber)
 	if err != nil {
@@ -168,4 +171,31 @@ func DeleteEntity(entityNumber string, currentUserNumber string) error {
 	}
 
 	return nil
+}
+
+func FindCalendarEvents(entityNumber string) ([]responses.Calendar, error) {
+
+	var calendars = make([]responses.Calendar, 0)
+
+	endDateAfter := time.Now()
+
+	calendarEvents, err := repositories.FindCalendarEvent(entityNumber, endDateAfter)
+	if err != nil {
+		return calendars, errors.New("finding calendar events error: " + err.Error())
+	}
+
+	for _, calendarEvent := range calendarEvents {
+		calendars = append(calendars, createCalendarResponse(calendarEvent))
+	}
+
+	return calendars, nil
+}
+
+func createCalendarResponse(calendarEvent models.CalendarEvent) responses.Calendar {
+	return responses.Calendar{
+		Name:      calendarEvent.Name,
+		Number:    calendarEvent.Number,
+		StartDate: calendarEvent.StartDate,
+		EndDate:   calendarEvent.EndDate,
+	}
 }

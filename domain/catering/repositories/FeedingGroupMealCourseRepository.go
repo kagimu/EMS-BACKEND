@@ -7,9 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func SaveFeedingGroupMealCourse(feedingGroupMealCourse models.FeedingGroupMealCourse) error {
+func SaveFeedingGroupMealCourse(feedingGroupMealCourse models.FeedingGroupMealCourse, tx ...*gorm.DB) error {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Create(&feedingGroupMealCourse).Error; err != nil {
 		return err
@@ -19,9 +22,13 @@ func SaveFeedingGroupMealCourse(feedingGroupMealCourse models.FeedingGroupMealCo
 
 }
 
-func GetAllFeedingGroupMealCoursesForDay(feedingGroupNumber string, day string) ([]models.FeedingGroupMealCourse, error) {
+func GetAllFeedingGroupMealCoursesForDay(feedingGroupNumber string, day string, tx ...*gorm.DB) ([]models.FeedingGroupMealCourse, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var feedingGroupMealCourse []models.FeedingGroupMealCourse
 
 	if err := db.
@@ -41,9 +48,13 @@ func GetAllFeedingGroupMealCoursesForDay(feedingGroupNumber string, day string) 
 
 }
 
-func GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber string, day string, feedingGroupNumber string) (models.FeedingGroupMealCourse, error) {
+func GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber string, day string, feedingGroupNumber string, tx ...*gorm.DB) (models.FeedingGroupMealCourse, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var feedingGroupMealCourse models.FeedingGroupMealCourse
 
 	if err := db.Where("feeding_group_number = ?", feedingGroupNumber).
@@ -80,4 +91,20 @@ func GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber string, day strin
 	}
 
 	return feedingGroupMealCourse, nil
+}
+
+func DeleteFeedingGroupMealCourse(feedingGroupMealCourse models.FeedingGroupMealCourse, tx ...*gorm.DB) error {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Delete(&feedingGroupMealCourse).Error; err != nil {
+		return err
+	}
+
+	return nil
+
 }

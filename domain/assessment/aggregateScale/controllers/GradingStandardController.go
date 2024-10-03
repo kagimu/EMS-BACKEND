@@ -1,157 +1,230 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	assessmentAreaServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
 func CreateGradingStandard(ctx *gin.Context) {
 	user, err := commons.GetUserFromHeader(ctx)
 	if err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to get user from header"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get user from header"})
 		return
 	}
 
 	var payload requests.GradingStandardRequest
 	if err := ctx.BindJSON(&payload); err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to process payload"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		ctx.JSON(400, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	//validate if code and name already exists on campus class number
-
-	var gradingStandard models.GradingStandard
-	if err := config.DB.Where("code = ? AND campus_class_number = ?", payload.Code, payload.CampusClassNumber).First(&gradingStandard).Error; err == nil {
-		ctx.JSON(400, gin.H{"message": "Grading standard with the same code already exists"})
-		return
-
-	}
-
-	if err := config.DB.Where("name = ? AND campus_class_number = ?", payload.Name, payload.CampusClassNumber).First(&gradingStandard).Error; err == nil {
-		ctx.JSON(400, gin.H{"message": "Grading standard with the same name already exists"})
+	err = services.SaveGradingStandard(payload, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	gs := models.GradingStandard{
-		Code:              payload.Code,
-		Number:            uuid.NewV4().String(),
-		Name:              payload.Name,
-		Description:       payload.Description,
-		Type:              payload.Type,
-		CampusClassNumber: payload.CampusClassNumber,
-		UserNumber:        user.Number,
-		CampusNumber:      payload.CampusNumber,
-	}
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Grading standard created successfully"})
+}
 
-	if err := config.DB.Create(&gs).Error; err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to save grading standard"})
+func UpdateGradingStandard(ctx *gin.Context) {
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get user from header"})
 		return
 	}
 
-	ctx.JSON(201, gin.H{"message": "Grading standard created successfully"})
+	var payload requests.UpdateGradingStandardRequest
+	if err := ctx.BindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.UpdateGradingStandard(payload, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Grading standard updated successfully"})
 }
 
 func FetchGradingStandards(ctx *gin.Context) {
-	campusClassNumber := ctx.Query("campus_class_number")
-	campusNumber := ctx.Query("campus_number")
+	schoolNumber := ctx.Query("school_number")
+	classNumber := ctx.Query("class_number")
+	scaleNumber := ctx.Query("scale_number")
 
-	var gss = make([]responses.GradingStandardResponse, 0)
-	if campusClassNumber == "" {
-		ctx.JSON(http.StatusOK, gin.H{"data": gss})
-		return
-	}
-	var gradingStandards []models.GradingStandard
-	if err := config.DB.Scopes(filters.ByCampusClassNumber(campusClassNumber),
-		filters.ByCampusNumber(campusNumber)).Preload("Campus").Preload("CampusClass").Find(&gradingStandards).Error; err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to get grading standards"})
+	if schoolNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school to see the grading standards"})
 		return
 	}
 
-	var gs []responses.GradingStandardResponse
-
-	for _, val := range gradingStandards {
-		gs = append(gs, responses.GradingStandardResponse{
-			Code:        val.Code,
-			Number:      val.Number,
-			Name:        val.Name,
-			Description: val.Description,
-			Type:        val.Type,
-			Campus:      val.Campus.Name,
-			Class:       val.CampusClass.ClassName,
-		})
+	response, err := services.FetchGradingStandards(schoolNumber, classNumber, scaleNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	ctx.JSON(200, gin.H{"data": gs})
+	ctx.JSON(200, gin.H{"data": response})
 }
 
 func AttachAssessmentAreas(ctx *gin.Context) {
 
 	var payload requests.AssessmentAreaGradingStandardRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to process payload"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		ctx.JSON(400, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	assessmentAreaGradingStandard := assessmentAreaModel.AssessmentAreaGradingStandard{
-		Number:                uuid.NewV4().String(),
-		Code:                  payload.Code,
-		AssessmentAreaNumber:  payload.AssessmentAreaNumber,
-		GradingStandardNumber: payload.GradingStandardNumber,
-	}
-
-	if err := config.DB.Create(&assessmentAreaGradingStandard).Error; err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to save assessment area grading standard"})
+	err := assessmentAreaServices.SaveAssessmentAreaGradingStandard(payload)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	ctx.JSON(201, gin.H{"message": "Assessment area grading standard created successfully", "data": assessmentAreaGradingStandard})
+	ctx.JSON(201, gin.H{"message": "Assessment area grading standard created successfully"})
 }
 
 func FetchAssessmentAreasByGradingStandard(ctx *gin.Context) {
-	//gradingStandardNumber := ctx.Param("gradingStandardNumber")
 
-	type response struct {
-		Code                int64  `json:"code"`
-		AssessmentAreaName  string `json:"assessment_area_name"`
-		GradingStandardName string `json:"grading_standard_name"`
-	}
-	var list []response
-	var assessmentAreaGradingStandards []assessmentAreaModel.AssessmentAreaGradingStandard
-	if err := config.DB.Scopes(filters.ByGradingStandardNumber(ctx.Query("grading_standard_number"))).Find(&assessmentAreaGradingStandards).Error; err != nil {
-		ctx.JSON(400, gin.H{"message": "Failed to get assessment area grading standards"})
+	gradingStandardNumber := ctx.Query("grading_standard_number")
+	assessmentAreaNumber := ctx.Query("assessment_area_number")
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "choose a school"})
 		return
 	}
 
-	for _, val := range assessmentAreaGradingStandards {
-		var gradingStandard models.GradingStandard
-		var assessmentArea assessmentAreaModel.AssessmentArea
-		config.DB.First(&gradingStandard, "number = ?", val.GradingStandardNumber)
-		config.DB.First(&assessmentArea, "number = ?", val.AssessmentAreaNumber)
-		list = append(list, response{
-			Code:                val.Code,
-			AssessmentAreaName:  assessmentArea.Name,
-			GradingStandardName: gradingStandard.Name,
-		})
+	response, err := assessmentAreaServices.FetchAssessmentAreasByGradingStandard(schoolNumber, assessmentAreaNumber, gradingStandardNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	ctx.JSON(200, gin.H{"data": list})
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
 
+}
+
+func RemoveGradingStandard(context *gin.Context) {
+	gradingStandardNumber := context.Param("grading_standard_number")
+	if gradingStandardNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide grading standard number"})
+		return
+	}
+
+	err := services.RemoveGradingStandard(gradingStandardNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Removed grading standard"))
+}
+
+func DetailsGradingStandard(context *gin.Context) {
+
+	gradingStandardNumber := context.Query("grading_standard_number")
+	if gradingStandardNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide grading standard number"})
+		return
+	}
+
+	detailedResponse, err := services.GetGradingStandardDetails(gradingStandardNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": detailedResponse})
+
+}
+
+func UpdateStatusGradingStandard(ctx *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get user from header"})
+		return
+	}
+
+	var payload requests.UpdateGradingStatusStandardRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.UpdateGradingStandardStatus(payload, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(201, gin.H{"message": "Status updated successfully"})
+}
+
+func MakeGradingStandardDefault(ctx *gin.Context) {
+
+	var payload requests.MakeGradingStandardDefault
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err := services.MakeGradingStandardDefault(payload)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(201, gin.H{"message": "Default grading standard set successfully"})
+}
+
+func ClassGradingStandards(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	gradingStandardNumber := context.Query("grading_standard_number")
+	classNumber := context.Query("class_number")
+	scaleNumber := context.Query("scale_number")
+	defaultStatus := context.Query("default_status")
+
+	if schoolNumber == "" && classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school or class to see the grading standards"})
+		return
+	}
+
+	response, err := services.ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, scaleNumber, defaultStatus)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(200, gin.H{"data": response})
 }

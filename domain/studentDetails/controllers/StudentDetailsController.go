@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -132,4 +133,17 @@ func EditStudentDetails(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": studentDetailsModel})
+}
+
+func UploadStudentPhoto(c *gin.Context) {
+
+	studentNumber := c.PostForm("student_number")
+	userNumber := c.Request.Header["User-Number"][0]
+
+	if err := services.UploadStudentPhoto(studentNumber, userNumber, c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload student photo" + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student photo uploaded successfully"})
 }

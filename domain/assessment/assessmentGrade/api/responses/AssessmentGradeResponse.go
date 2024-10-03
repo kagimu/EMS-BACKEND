@@ -1,14 +1,17 @@
 package responses
 
 type AssessmentGradeResponse struct {
-	Code             int64   `json:"code"`
-	Number           string  `json:"number"`
-	Name             string  `json:"name"`
-	Description      string  `json:"description"`
-	MinimumPoints    float64 `json:"minimum_points"`
-	MaximumPoints    float64 `json:"maximum_points"`
-	Abbreviation     string  `json:"abbreviation"`
-	IllustrationPath string  `json:"illustration_path"`
-	Remarks          string  `json:"remarks"`
-	CampusClassName  string  `json:"campus_class_name"`
+	AssessmentGradeCount int                           `json:"assessment_grade_count"`
+	AssessmentAreaCount  int                           `json:"assessment_area_count"`
+	AssessmentGrades     []AssessmentGradeItemResponse `json:"assessment_grades"`
+}
+
+type AssessmentGradeItemResponse struct {
+	Code          int64   `json:"code"`
+	Description   string  `json:"description"`
+	MinimumPoints float64 `json:"minimum_points"`
+	MaximumPoints float64 `json:"maximum_points"`
+	Name          string  `json:"name"`
+	Abbreviation  string  `json:"abbreviation"`
+	Remarks       string  `json:"remarks"`
 }

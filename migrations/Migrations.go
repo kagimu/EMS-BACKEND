@@ -10,6 +10,7 @@ import (
 	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
 	gradesModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	cateringModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -29,6 +30,7 @@ import (
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
 	serviceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/landingPage/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
 	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
@@ -47,6 +49,7 @@ import (
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	staffModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails"
 	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
@@ -93,7 +96,7 @@ func Init() error {
 		&schemeOfWorkmodel.SchemeOfWork{},
 		&schemeOfWorkmodel.SchemeOfWorkSubTopic{},
 		&lessonPlanModel.LessonPlan{},
-		&lessonPlanModel.LessonPlanConcepts{},
+		&lessonPlanModel.LessonPlanConcept{},
 		&lessonPlanModel.LessonPlanStep{},
 		&studentDetailsModels.StudentDetail{},
 		&classModel.CurriculumClass{},
@@ -115,20 +118,16 @@ func Init() error {
 		&interviewModel.Interview{},
 		&materialModels.MaterialSubType{},
 		&lessonPlanModel.LessonPlanReference{},
-		&interviewModel.InterviewQuestion{},
-		&interviewModel.Answer{},
-		&interviewModel.InterviewResult{},
 		&interviewModel.InterviewStudent{},
 		&itemModels.Item{},
 		&productModels.Product{},
 		&serviceModel.Service{},
+		&invoiceModel.Statement{},
 		&invoiceModel.Invoice{},
 		&invoiceModel.InvoiceItem{},
-		&serviceModel.SerialCode{},
-		&productModels.ProductSerialCode{},
-		&serviceModel.CampusServices{},
 		&serviceModel.Discount{},
-		&invoiceModel.InvoicePayment{},
+		&invoiceModel.Transaction{},
+		&invoiceModel.InvoiceTransaction{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
@@ -139,10 +138,9 @@ func Init() error {
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
 		&permissionModels.UserRole{},
+		&assessmentScaleModels.Scale{},
 		&assessmentScaleModels.AggregateScale{},
-		&assessmentScaleModels.AlternativeAggregateScale{},
 		&assessmentGradeModels.AssessmentGrade{},
-		&staffModel.JobTitle{},
 		&staffModel.SalaryScale{},
 		&staffModel.Task{},
 		&staffModel.TaskSupervision{},
@@ -173,7 +171,6 @@ func Init() error {
 		&cateringModels.FeedingSessionItem{},
 		&cateringModels.FeedingGroupUser{},
 		&cateringModels.FeedingGroupSession{},
-		//&cateringModels.GroupMealCourse{},
 		&cateringModels.FeedingAllGroups{},
 		&cateringModels.Meal{},
 		&timetableModels.StudyingTimeBlock{},
@@ -195,7 +192,24 @@ func Init() error {
 		&reportSettings.HeadTeacherComment{},
 		&reportingActivityModels.Indicator{},
 		&eosModels.ActiveUserEntity{},
-		&gradesModels.FormatsOfMeasure{},
+		&gradesModels.GradeGroup{},
+		&gradesModels.Grade{},
+		&cateringModels.CalendarEventFeedingGroup{},
+		&assessmentGradeModels.GradingStandardClassScale{},
+		&assessmentGradeModels.AssessmentGradeScale{},
+		&models2.LandingPage{},
+		&studyPeriodModel.StudyPeriodName{},
+		&studyPeriodModel.ClassStudyPeriod{},
+		&schoolModels.ModeOfStudy{},
+		&invoiceModel.Billable{},
+		&invoiceModel.BillableItem{},
+		&invoiceModel.BillableInvoice{},
+		&invoiceModel.EnrollmentInvoice{},
+		&serviceModel.CampusItem{},
+		&studentDetails.StudentPhoto{},
+		&models3.Attachment{},
+		&staffModel.StreamTeacher{},
+		&assessmentModel.ScriptMarkingGuide{},
 	)
 
 	if err != nil {

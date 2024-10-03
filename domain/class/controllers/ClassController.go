@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"strconv"
@@ -253,43 +255,20 @@ func AddCampusClass(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level is required!"})
 		return
 	}
+	trn := config.DB.Begin()
 
-	var userData authModels.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+	duplicateClass, err := repositories.GetCampusClassByCurriculumClassNumberAndCampusNumberAndCampusLevelNumber(classNumber, campusNumber, campusLevelNumber)
+	if err != nil {
+		trn.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
 		return
 	}
 
-	var duplicateClass classModel.CampusClass
-	db := config.DB
-	if duplicate := config.DB.
-		Where("curriculum_class_number = ?", classNumber).
-		Where("campus_number = ?", campusNumber).
-		Where("campus_level_number = ?", campusLevelNumber).
-		First(&duplicateClass).Error; duplicate == nil {
-
-		//check if this class has children such that it is not deleted
-
-		/*var classChildrenChecker classModel.ClassLevelSubject
-		if err := db.
-			Where("class_level_number = ?", duplicateClass.Number).
-			First(&classChildrenChecker).Error; err == nil {
-			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this Class, it has Children"})
-			return
-		}*/
-
-		//------------------------------------------------------
-		//delete class if it is removed from the level
-		db.Unscoped().Where("curriculum_class_number = ?", classNumber).
-			Where("campus_number = ?", campusNumber).
-			Where("campus_level_number = ?", campusLevelNumber).
-			Delete(&duplicateClass)
-		context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class removed successfully!"})
+	if duplicateClass.Number != "" {
+		trn.Rollback()
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists!"})
 		return
+
 	}
 
 	number := uuid.NewV4().String()
@@ -301,7 +280,32 @@ func AddCampusClass(context *gin.Context) {
 		UserNumber:            userNumber,
 		Code:                  code,
 	}
-	config.DB.Save(&saveClass)
+	if err = repositories.CreateCampusClass(&saveClass, trn); err != nil {
+		trn.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Failed to add class!"})
+		return
+
+	}
+	// automatically create a stream
+	stream := classModel.Stream{
+		Number:            uuid.NewV4().String(),
+		Name:              saveClass.ClassName,
+		CampusClassNumber: number,
+		UserNumber:        userNumber,
+	}
+
+	err = repositories.CreateStream(&stream, trn)
+	if err != nil {
+		trn.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Failed to create stream!"})
+		return
+	}
+
+	if err = trn.Commit().Error; err != nil {
+		trn.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Failed to add class!"})
+		return
+	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Added Successfully!", "data": saveClass})
 }
@@ -714,10 +718,10 @@ func FetchClassLevel(context *gin.Context) {
 
 		for _, lst := range classLevel {
 
-			var stream_ []responses.StreamInfo
+			var stream_ []responses.StreamResponse
 
 			for _, list := range lst.Streams {
-				stream_ = append(stream_, responses.StreamInfo{
+				stream_ = append(stream_, responses.StreamResponse{
 					StreamNumber: list.Number,
 					Name:         list.Name,
 				})
@@ -879,8 +883,8 @@ func AddClassStream(ctx *gin.Context) {
 		return
 	}
 
-	if streamRequest.ClassLevelNumber == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Class Level Number is required!"})
+	if streamRequest.CampusClassNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Class Number is required!"})
 		return
 	}
 
@@ -890,10 +894,10 @@ func AddClassStream(ctx *gin.Context) {
 	if streams != nil {
 		for _, stream := range streams {
 			streamObj := classModel.Stream{
-				Number:           uuid.NewV4().String(),
-				Name:             stream,
-				ClassLevelNumber: streamRequest.ClassLevelNumber,
-				UserNumber:       ctx.GetHeader("User-Number"),
+				Number:            uuid.NewV4().String(),
+				Name:              stream,
+				CampusClassNumber: streamRequest.CampusClassNumber,
+				UserNumber:        ctx.GetHeader("User-Number"),
 			}
 
 			err = config.DB.Save(&streamObj).Error
@@ -920,18 +924,15 @@ func AddClassStream(ctx *gin.Context) {
 }
 
 func FetchStreamsByClassLevelNumber(ctx *gin.Context) {
-	var streams []classModel.Stream
 	classLevelNumber := ctx.Query("class_level_number")
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+	curriculumNumber := ctx.Query("curriculum_number")
+	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
 
-	if classLevelNumber == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Class Level Number is required!"})
-		return
-	}
-
-	if err := config.DB.
-		Where("class_level_number = ?", classLevelNumber).
-		Find(&streams).Error; err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Streams!"})
+	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -1035,4 +1036,25 @@ func ClassInfo(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": class_})
+}
+
+func FetchClassesBySchoolNumber(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	campusLevelNumber := context.Query("campus_level_number")
+	campusNumber := context.Query("campus_number")
+	curriculumNumber := context.Query("curriculum_number")
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
+
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Choose school"})
+		return
+	}
+
+	classes, err := services.FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
 }

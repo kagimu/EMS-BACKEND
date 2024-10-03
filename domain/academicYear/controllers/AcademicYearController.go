@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
 	"strconv"
 	"time"
@@ -102,12 +104,18 @@ func NewAcademicYear(context *gin.Context) {
 		return
 	}
 
+	entityNumber, _ := commons.GetUserEntityNumber(context)
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Set current entity"})
+		return
+	}
+
 	tx := config.DB.Begin()
 
 	// create EOS calendar
 	var generalCalendar = eosModels.GeneralCalendar{
 		Number:       uuid.NewV4().String(),
-		EntityNumber: "TBD",
+		EntityNumber: entityNumber,
 		StartDate:    startDate,
 		EndDate:      endDate,
 		Name:         academicYearName,
@@ -241,13 +249,19 @@ func EditAcademicYear(context *gin.Context) {
 		return
 	}
 
+	entityNumber, _ := commons.GetUserEntityNumber(context)
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Set current entity"})
+		return
+	}
+
 	tx := config.DB.Begin()
 
 	//var calendarEvent eosModels.CalendarEvent
 	var generalCalendar eosModels.GeneralCalendar
 	updateCalendar := tx.Model(&generalCalendar).
 		Where("number = ?", academicYearNumber).
-		Updates(eosModels.GeneralCalendar{EntityNumber: "TBD", StartDate: startDate, EndDate: endDate, Name: academicYearName, UserNumber: userNumber, Description: "Academic Year"})
+		Updates(eosModels.GeneralCalendar{EntityNumber: entityNumber, StartDate: startDate, EndDate: endDate, Name: academicYearName, UserNumber: userNumber, Description: "Academic Year"})
 	if updateCalendar.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
@@ -617,10 +631,13 @@ func AcademicYearsByCampusClass(context *gin.Context) {
 
 		// Populate the selected columns from the fetched data
 		for _, studyPeriodList := range studyPeriodInfo {
+
+			studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(studyPeriodList.StudyPeriodNameNumber)
+
 			studyPeriodInfo_ = append(studyPeriodInfo_, responses2.StudyPeriodList{
-				Number:               studyPeriodList.Number,
+				StudyPeriodNumber:    studyPeriodList.Number,
 				Code:                 studyPeriodList.Code,
-				StudyPeriodName:      studyPeriodList.StudyPeriodName,
+				StudyPeriodName:      studyPeriodName.Name,
 				StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
 				StudyPeriodEndDate:   (studyPeriodList.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
 				//AcademicYearNumber:   studyPeriodList.AcademicYearNumber,

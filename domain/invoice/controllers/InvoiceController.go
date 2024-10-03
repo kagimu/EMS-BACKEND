@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"net/http"
 	"time"
@@ -152,16 +153,21 @@ func FinancialSummary(context *gin.Context) {
 
 	summary, err := services.GetFinancialSummary(userNumber)
 
+	var errorDesc string
 	if err != nil {
-		context.JSON(http.StatusBadRequest, commons.Feedback("Getting financial summary failed, try again: "+err.Error()))
+		errorDesc = err.Error()
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message": "Financial summary", "data": summary})
-
+	context.JSON(http.StatusOK, gin.H{"message": "Financial summary", "data": summary, "error": errorDesc})
 }
 
 func DeleteInvoice(context *gin.Context) {
-	if _, err := commons.GetUserFromHeader(context); err != nil {
+
+	var user *models.User
+
+	user, err := commons.GetUserFromHeader(context)
+
+	if err != nil {
 		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
@@ -172,7 +178,7 @@ func DeleteInvoice(context *gin.Context) {
 		return
 	}
 
-	err := services.DeleteInvoice(invoiceNumber)
+	err = services.DeleteInvoice(invoiceNumber, user.Number)
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))

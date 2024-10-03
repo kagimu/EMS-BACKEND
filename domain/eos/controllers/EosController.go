@@ -250,7 +250,9 @@ func GetCurrentEntity(context *gin.Context) {
 		return
 	}
 
-	entity, err := services.GetCurrentEntity(user.Number)
+	entityService := services.EntityService{}
+
+	entity, err := entityService.GetCurrentEntity(user.Number)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
@@ -277,7 +279,9 @@ func UpdateEntity(context *gin.Context) {
 		return
 	}
 
-	err = services.UpdateEntity(payload, user.Number)
+	entityService := services.EntityService{}
+
+	err = entityService.UpdateEntity(payload, user.Number)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
@@ -293,6 +297,7 @@ func DeleteEntity(context *gin.Context) {
 		return
 	}
 
+	//entityNumber, _ := commons.GetUserEntityNumber(context)
 	entityNumber := context.Query("entity_number")
 	if entityNumber == "" {
 		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to delete"))
@@ -306,4 +311,20 @@ func DeleteEntity(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Entity removed successfully"))
+}
+
+func AllCalendarEvents(context *gin.Context) {
+	entityNumber, _ := commons.GetUserEntityNumber(context)
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide entity number to get events from."))
+		return
+	}
+
+	calendars, err := services.FindCalendarEvents(entityNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": calendars})
 }

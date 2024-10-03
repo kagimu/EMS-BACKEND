@@ -14,8 +14,11 @@ import (
 	cateringRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
 	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -35,25 +38,46 @@ func AddMealCoursesToFeedingGroup(courseToFeedingGroupRequest requests.MealCours
 		return errors.New("selected group is not active")
 	}
 
+	trn := config.DB.Begin()
+
 	for _, day := range courseToFeedingGroupRequest.Days {
 
 		if checkErr := commons.CheckDay(day); checkErr != "" {
 			return errors.New(checkErr)
 		}
 
-		if err = saveMealCoursesForDay(courseToFeedingGroupRequest.MealCourses, day, feedingGroup, currentUser); err != nil {
+		groupMealCourses, err := cateringRepositories.GetAllFeedingGroupMealCoursesForDay(feedingGroup.Number, day, trn)
+		if err != nil {
+			trn.Rollback()
+			return errors.New("failed to get all feeding group meal courses: " + err.Error())
+		}
+
+		for _, groupMealCourse := range groupMealCourses {
+			err = cateringRepositories.DeleteFeedingGroupMealCourse(groupMealCourse, trn)
+			if err != nil {
+				trn.Rollback()
+				return errors.New("failed to clear feeding group meal course: " + err.Error())
+			}
+		}
+
+		if err = saveMealCoursesForDay(courseToFeedingGroupRequest.MealCourses, day, feedingGroup, currentUser, trn); err != nil {
+			trn.Rollback()
 			return err
 		}
 
 	}
 
+	if err = trn.Commit().Error; err != nil {
+		return errors.New("failed to commit transaction: " + err.Error())
+	}
+
 	return nil
 }
 
-func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models.FeedingGroup, currentUser string) error {
+func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models.FeedingGroup, currentUser string, trn *gorm.DB) error {
 
 	for _, mealCourse := range mealCourses {
-		checkMeal, err := cateringRepositories.GetMealCourseByNumber(mealCourse)
+		checkMeal, err := cateringRepositories.GetMealCourseByNumber(mealCourse, trn)
 		if err != nil {
 			return err
 		}
@@ -65,7 +89,7 @@ func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models
 			return errors.New(fmt.Sprintf("meal course '%s' is not active", checkMeal.Name))
 		}
 
-		groupMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(checkMeal.Number, day, feedingGroup.Number)
+		groupMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(checkMeal.Number, day, feedingGroup.Number, trn)
 		if err != nil {
 			return err
 		}
@@ -82,7 +106,7 @@ func saveMealCoursesForDay(mealCourses []string, day string, feedingGroup models
 			UserNumber:         currentUser,
 		}
 
-		if err := cateringRepositories.SaveFeedingGroupMealCourse(newGroupMealCourse); err != nil {
+		if err := cateringRepositories.SaveFeedingGroupMealCourse(newGroupMealCourse, trn); err != nil {
 			return err
 		}
 
@@ -305,7 +329,15 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 				FeedingSessionNumber: feedingSession.Number,
 			}
 
-			userMeal.Meals = findUserMeal(user.Number, feedItems, mealCourse.Number)
+			meals := findUserMeal(user.Number, feedItems, mealCourse.Number)
+
+			for _, meal := range meals {
+				if meal.ServedQuantity != 0 {
+					userMeal.Served = true
+				}
+			}
+
+			userMeal.Meals = meals
 
 			mealsResponse = append(mealsResponse, userMeal)
 		}
@@ -338,7 +370,7 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 		unitOfMeasure, err := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
 		if err != nil {
 			fmt.Println("Error getting unit of measure" + err.Error())
-			return items
+			unitOfMeasure = models.UnitOfMeasure{}
 		}
 
 		unitOfMeasureName := "None"
@@ -420,21 +452,6 @@ func GetFeedingGroupsBySchoolNumber(schoolNumber string, status string) ([]respo
 
 func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 
-	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(mealRequest.MenuItemNumber)
-	if err != nil {
-		return err
-	}
-
-	if mealRequest.Quantity <= 0 {
-		return errors.New("quantities served can not be zero")
-	}
-
-	if currentStock < mealRequest.Quantity {
-		return errors.New("not enough stock")
-	}
-
-	tx := config.DB.Begin()
-
 	formatDate, err := time.Parse(time.DateOnly, mealRequest.Date)
 	if err != nil {
 		return err
@@ -460,10 +477,42 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		return errors.New("user not added to any group")
 	}
 
+	sessionItems, err := cateringRepositories.GetFeedingSessionItems(mealRequest.FeedingSessionNumber)
+	if err != nil {
+		return errors.New("Fetching session items error: " + err.Error())
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, sessionItem := range sessionItems {
+			err = processSingleItem(tx, day, formatDate, sessionItem, mealRequest, newMeal, groupUser, currentUser)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSessionItem models.FeedingSessionItem, mealRequest requests.MealRequest, newMeal models.Meal, groupUser models.FeedingGroupUser, currentUser string) error {
+
+	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(feedingSessionItem.MenuItemNumber, tx)
+	if err != nil {
+		return err
+	}
+
+	if currentStock < feedingSessionItem.Quantity {
+		menu, _ := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber, tx)
+		return errors.New("not enough stock for '" + menu.Name + "'")
+	}
+
 	if newMeal.Number == "" {
 		newMeal.Number = uuid.NewV4().String()
 		newMeal.MealCourseNumber = mealRequest.MealCourseNumber
-		newMeal.FeedingSessionNumber = mealRequest.FeedingSessionNumber
+		newMeal.FeedingSessionNumber = feedingSessionItem.FeedingSessionNumber
 		newMeal.UserNumber = mealRequest.UserNumber
 		newMeal.Date = formatDate
 		newMeal.Time = mealRequest.Time
@@ -475,38 +524,50 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 	} else {
 		newMeal.StaffNumber = currentUser
 		newMeal.CampusNumber = groupUser.CampusNumber
-		newMeal.FeedingSessionNumber = mealRequest.FeedingSessionNumber
+		newMeal.FeedingSessionNumber = feedingSessionItem.FeedingSessionNumber
 		newMeal.FeedingGroupNumber = groupUser.FeedingGroupNumber
 	}
 
-	err = cateringRepositories.SaveMeal(tx, newMeal)
+	err = cateringRepositories.SaveMeal(newMeal, tx)
 	if err != nil {
 		return errors.New("error creating meal: " + err.Error())
 	}
 
-	stocking, err := cateringRepositories.GetMealStockByMealNumberAndMenuItemNumber(tx, newMeal.Number, mealRequest.MenuItemNumber)
+	stocking, err := cateringRepositories.GetMealStockByMealNumberAndMenuItemNumber(newMeal.Number, feedingSessionItem.MenuItemNumber, tx)
 	if err != nil {
 		return err
 	}
 
 	if stocking.Number == "" {
 		stocking.Number = uuid.NewV4().String()
-		stocking.MenuItemNumber = mealRequest.MenuItemNumber
-		stocking.Quantity = mealRequest.Quantity * -1
-		stocking.CampusNumber = groupUser.CampusNumber
-		stocking.UserNumber = currentUser
-	} else {
-		stocking.Quantity = mealRequest.Quantity * -1
-		stocking.CampusNumber = groupUser.CampusNumber
-		stocking.UserNumber = currentUser
+		stocking.MenuItemNumber = feedingSessionItem.MenuItemNumber
 	}
 
-	err = cateringRepositories.SaveStocking(tx, stocking)
+	item, err := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber, tx)
+	if err != nil {
+		return errors.New("Error checking item " + err.Error())
+	}
+
+	stocking.Quantity = feedingSessionItem.Quantity * -1
+	stocking.CampusNumber = groupUser.CampusNumber
+	stocking.UserNumber = currentUser
+	stocking.PurchaseUnitOfMeasureNumber = item.PurchaseUnitOfMeasureNumber
+	stocking.UnitOfMeasureNumber = item.UnitOfMeasureNumber
+
+	if item.PurchaseUnitOfMeasureNumber == "" {
+		stocking.PurchaseUnitOfMeasureNumber = item.UnitOfMeasureNumber
+	}
+
+	if stocking.PurchaseUnitOfMeasureNumber == "" {
+		return errors.New("Set a base unit of measure for " + item.Name)
+	}
+
+	err = cateringRepositories.SaveStocking(stocking, tx)
 	if err != nil {
 		return errors.New("error reducing stock: " + err.Error())
 	}
 
-	mealStocking, err := cateringRepositories.GetMealStockingByMealNumberAndStockingNumber(tx, newMeal.Number, stocking.Number)
+	mealStocking, err := cateringRepositories.GetMealStockingByMealNumberAndStockingNumber(newMeal.Number, stocking.Number, tx)
 	if err != nil {
 		return err
 	}
@@ -516,13 +577,9 @@ func AddMeal(mealRequest requests.MealRequest, currentUser string) error {
 		mealStocking.StockingNumber = stocking.Number
 	}
 
-	err = cateringRepositories.SaveMealStocking(tx, mealStocking)
+	err = cateringRepositories.SaveMealStocking(mealStocking, tx)
 	if err != nil {
 		return errors.New("error mapping stock with meal taken: " + err.Error())
-	}
-
-	if err = tx.Commit().Error; err != nil {
-		return errors.New("Commit error: " + err.Error())
 	}
 
 	return nil
@@ -597,27 +654,82 @@ func SaveFeedingSession(payload requests.FeedingSessionRequest, currentUserNumbe
 		return errors.New("this name is already defined")
 	}
 
-	checkFeedingSession, err = cateringRepositories.GetFeedingSessionByCodeAndSchool(payload.Code, payload.SchoolNumber)
+	err = config.DB.Transaction(func(trn *gorm.DB) error {
+
+		newFeedingSession := models.FeedingSession{
+			Number:       uuid.NewV4().String(),
+			Name:         payload.Name,
+			Status:       payload.Status,
+			SchoolNumber: payload.SchoolNumber,
+			UserNumber:   currentUserNumber,
+		}
+
+		err = cateringRepositories.SaveFeedingSession(newFeedingSession, trn)
+		if err != nil {
+			return err
+		}
+
+		err = processMenuItems(newFeedingSession, payload.MenuItems, currentUserNumber, trn)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return err
 	}
 
-	if checkFeedingSession.Number != "" {
-		return errors.New("the provided code is already used")
-	}
+	return nil
+}
 
-	newFeedingSession := models.FeedingSession{
-		Number:       uuid.NewV4().String(),
-		Name:         payload.Name,
-		Status:       payload.Status,
-		SchoolNumber: payload.SchoolNumber,
-		Code:         payload.Code,
-		UserNumber:   currentUserNumber,
-	}
-
-	err = cateringRepositories.SaveFeedingSession(newFeedingSession)
+func processMenuItems(menuPack models.FeedingSession, menuItemsAndQuantities []requests.MenuItemQuantity, currentUser string, tx *gorm.DB) error {
+	err := checkDuplicates(menuItemsAndQuantities)
 	if err != nil {
 		return err
+	}
+
+	for _, menuItemQuantity := range menuItemsAndQuantities {
+
+		saveItemAssembly := models.FeedingSessionItem{
+			Number:               uuid.NewV4().String(),
+			FeedingSessionNumber: menuPack.Number,
+			MenuItemNumber:       menuItemQuantity.MenuItemNumber,
+			Quantity:             menuItemQuantity.Quantity,
+			UserNumber:           currentUser,
+		}
+
+		err = cateringRepositories.SaveFeedingSessionItem(saveItemAssembly, tx)
+		if err != nil {
+			return errors.New("saving menu pack item error: " + err.Error())
+		}
+
+	}
+
+	return nil
+}
+
+func checkDuplicates(menuItemAndQuantities []requests.MenuItemQuantity) error {
+
+	cleanClassNumbers := make([]requests.MenuItemQuantity, len(menuItemAndQuantities))
+
+	for _, selectedMenuItem := range menuItemAndQuantities {
+
+		for _, cleanClassNumber := range cleanClassNumbers {
+
+			if cleanClassNumber.MenuItemNumber == selectedMenuItem.MenuItemNumber {
+				menuItem, err := cateringRepositories.GetMenuItemByNumber(selectedMenuItem.MenuItemNumber)
+				if err != nil {
+					return errors.New("error fetching item details: " + err.Error())
+				}
+				return errors.New(fmt.Sprintf("%s is selected multiple times", menuItem.Name))
+			}
+
+		}
+
+		cleanClassNumbers = append(cleanClassNumbers, selectedMenuItem)
+
 	}
 
 	return nil
@@ -643,9 +755,9 @@ func GetFeedingSession(schoolNumber string) ([]responses.FeedingSessionResponse,
 func BuildFeedingSessionResponse(session models.FeedingSession) responses.FeedingSessionResponse {
 
 	response := responses.FeedingSessionResponse{
-		Name:   session.Name,
-		Code:   session.Code,
-		Number: session.Number,
+		Name:                 session.Name,
+		SchoolNumber:         session.SchoolNumber,
+		FeedingSessionNumber: session.Number,
 	}
 
 	user, err := repository.GetUserByNumber(session.UserNumber)
@@ -654,6 +766,32 @@ func BuildFeedingSessionResponse(session models.FeedingSession) responses.Feedin
 	} else if user.Number == "" {
 		response.AddedBy = user.FirstName
 	}
+
+	var packItems = make([]responses.PackItem, 0)
+
+	var packCost float64
+
+	sessionItems, err := cateringRepositories.GetFeedingSessionItems(session.Number)
+	for _, sessionItem := range sessionItems {
+		menuItem, _ := cateringRepositories.GetMenuItemByNumber(sessionItem.MenuItemNumber)
+		unitOfUse, _ := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
+		packCost = packCost + menuItem.BaseUnitCost*sessionItem.Quantity
+		packItems = append(packItems, responses.PackItem{
+			ItemNumber: menuItem.Number,
+			Name:       menuItem.Name,
+			Quantity:   sessionItem.Quantity,
+			Type:       menuItem.Type,
+			UnitOfConsumption: responses.UnitOfMeasureResponse{
+				UnitOfMeasureNumber: unitOfUse.Number,
+				Name:                unitOfUse.Name,
+				Abbreviation:        unitOfUse.Abbreviation,
+				Code:                unitOfUse.Code,
+			},
+		})
+	}
+
+	response.PackItems = packItems
+	response.PackCost = commons.RoundFloat(packCost, 2)
 
 	return response
 }
@@ -747,27 +885,43 @@ func UpdateFeedingSession(updateFeedingSessionRequest requests.UpdateFeedingSess
 		return errors.New("Checking feed session name error: " + err.Error())
 	}
 
-	if checkName.Number != "" && checkName.Number != updateFeedingSessionRequest.FeedingSessionNumber {
+	if checkName.Number != "" && checkName.Number != feedingSession.Number {
 		return errors.New("name already used, choose a unique one")
 	}
 
-	checkCode, err := cateringRepositories.GetFeedingSessionByCodeAndSchool(updateFeedingSessionRequest.Code, updateFeedingSessionRequest.SchoolNumber)
+	menuPackItems, err := cateringRepositories.GetFeedingSessionItems(feedingSession.Number)
 	if err != nil {
-		return errors.New("Checking feeding session code error: " + err.Error())
+		return errors.New("checking old items error: " + err.Error())
 	}
 
-	if checkCode.Number != "" && checkCode.Number != updateFeedingSessionRequest.FeedingSessionNumber {
-		return errors.New("feeding session code already used, choose a unique one")
-	}
-
-	feedingSession.Code = updateFeedingSessionRequest.Code
 	feedingSession.UserNumber = currentUserNumber
 	feedingSession.Name = updateFeedingSessionRequest.Name
 	feedingSession.Status = updateFeedingSessionRequest.Status
 
-	err = cateringRepositories.SaveFeedingSession(feedingSession)
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, menuPackItem := range menuPackItems {
+			err = cateringRepositories.RemoveFeedingSessionItem(menuPackItem, tx)
+			if err != nil {
+				return errors.New("clearing old item error: " + err.Error())
+			}
+		}
+
+		err = cateringRepositories.SaveFeedingSession(feedingSession, tx)
+		if err != nil {
+			return errors.New("updating feed session error: " + err.Error())
+		}
+
+		err = processMenuItems(feedingSession, updateFeedingSessionRequest.MenuItems, currentUserNumber, tx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return errors.New("updating feed session error: " + err.Error())
+		return err
 	}
 
 	return nil
@@ -791,4 +945,184 @@ func DeleteFeedingSession(feedingSessionNumber string) error {
 	}
 
 	return nil
+}
+
+func SaveFeedingGroupCalendar(feedingGroupCalendarRequest requests.FeedingGroupCalendarRequest, currentUser string) error {
+
+	trn := config.DB.Begin()
+
+	for _, groupNumber := range feedingGroupCalendarRequest.FeedingGroups {
+		err := processGroupCalendar(groupNumber, trn, feedingGroupCalendarRequest.CalendarEvents, currentUser)
+		if err != nil {
+			trn.Rollback()
+			return err
+		}
+	}
+
+	if err := trn.Commit().Error; err != nil {
+		return errors.New(fmt.Sprintf("Finalizing groups calendars error: %v", err))
+	}
+
+	return nil
+}
+
+func processGroupCalendar(groupNumber string, trn *gorm.DB, calendarEvents []string, currentUser string) error {
+
+	groupCalendars, err := cateringRepositories.FindCalendarEventFeedingGroupsByGroupNumber(groupNumber, trn)
+	if err != nil {
+		return errors.New("Finding group calendars error: " + err.Error())
+	}
+
+	for _, groupCalendar := range groupCalendars {
+		err = cateringRepositories.RemoveCalendarEventFeedingGroup(groupCalendar, trn)
+		if err != nil {
+			return errors.New("Clearing previous group calendar error: " + err.Error())
+		}
+	}
+
+	for _, calendarEvent := range calendarEvents {
+
+		checkDuplicate, err := cateringRepositories.GetCalendarEventFeedingGroupsByGroupNumber(groupNumber, calendarEvent, trn)
+		if err != nil {
+			return errors.New("Checking group calendar duplicates error: " + err.Error())
+		}
+
+		if checkDuplicate.Number != "" {
+			continue
+		}
+
+		err = cateringRepositories.SavedCalendarEventFeedingGroup(models.CalendarEventFeedingGroup{
+			Number:              uuid.NewV4().String(),
+			UserNumber:          currentUser,
+			FeedingGroupNumber:  groupNumber,
+			CalendarEventNumber: calendarEvent,
+		}, trn)
+
+		if err != nil {
+			return errors.New("Activating group calendars error: " + err.Error())
+		}
+	}
+
+	return nil
+}
+
+func GetFeedingGroupCalendarEvent(schoolNumber string, entityNumber string) (responses.FeedingGroupCalendarEvent, error) {
+
+	var feedingGroupCalendarEvent responses.FeedingGroupCalendarEvent
+
+	endDateAfter := time.Now()
+
+	calendarEvents, err := repositories.FindCalendarEvent(entityNumber, endDateAfter)
+	if err != nil {
+		return feedingGroupCalendarEvent, errors.New("Getting calendar event error: " + err.Error())
+	}
+
+	var feedingGroupCalendarEventItems []responses.FeedingGroupCalendarEventItem
+	feedingGroupCalendarEventItems = append(feedingGroupCalendarEventItems, responses.FeedingGroupCalendarEventItem{})
+
+	for _, calendarEvent := range calendarEvents {
+		feedingGroupCalendarEventItems = append(feedingGroupCalendarEventItems, calendarEventFrom(calendarEvent))
+	}
+
+	feedingGroupCalendarEvent.CalendarEvents = feedingGroupCalendarEventItems
+
+	feedingGroups, err := cateringRepositories.GetAllFeedingGroups(schoolNumber, constants.StatusActive)
+	if err != nil {
+		return feedingGroupCalendarEvent, errors.New("Getting groups error: " + err.Error())
+	}
+
+	var calendarGroupItems []responses.CalendarGroupItem
+
+	for _, feedingGroup := range feedingGroups {
+		calendarGroupItem, err := createGroupCalendarItem(feedingGroup, calendarEvents)
+
+		if err != nil {
+			return feedingGroupCalendarEvent, err
+		}
+
+		calendarGroupItems = append(calendarGroupItems, calendarGroupItem)
+	}
+
+	feedingGroupCalendarEvent.CalendarGroups = calendarGroupItems
+
+	return feedingGroupCalendarEvent, nil
+}
+
+func createGroupCalendarItem(feedingGroup models.FeedingGroup, calendarEvents []eosModels.CalendarEvent) (responses.CalendarGroupItem, error) {
+
+	calendarGroupItem := responses.CalendarGroupItem{
+		GroupName: feedingGroup.Name,
+		Number:    feedingGroup.Number,
+	}
+
+	var activeCalendarItems []responses.ActiveCalendarItem
+
+	for _, calendarEvent := range calendarEvents {
+		activeCalendarItem := responses.ActiveCalendarItem{}
+		activeCalendarItem.FeedingGroupCalendarEventItem = calendarEventFrom(calendarEvent)
+
+		check, err := cateringRepositories.GetCalendarEventFeedingGroupsByGroupNumber(feedingGroup.Number, calendarEvent.Number)
+		if err != nil {
+			return calendarGroupItem, errors.New("Checking group " + feedingGroup.Number + " on calendar " + calendarEvent.Name + " error: " + err.Error())
+		}
+
+		if check.Number == "" {
+			activeCalendarItem.Active = false
+			activeCalendarItem.Message = "Not active during this period"
+		} else {
+			activeCalendarItem.Active = true
+			activeCalendarItem.Message = "Activated for this period"
+		}
+
+		activeCalendarItems = append(activeCalendarItems, activeCalendarItem)
+	}
+
+	calendarGroupItem.ActiveCalendars = activeCalendarItems
+
+	return calendarGroupItem, nil
+}
+
+func calendarEventFrom(calendarEvent eosModels.CalendarEvent) responses.FeedingGroupCalendarEventItem {
+	return responses.FeedingGroupCalendarEventItem{
+		CalendarName: calendarEvent.Name,
+		Number:       calendarEvent.Number,
+		StartDate:    calendarEvent.StartDate.Format(time.DateTime),
+		EndDate:      calendarEvent.EndDate.Format(time.DateTime),
+	}
+}
+
+func UserMeals(userNumber string) (responses.CalendarGroupItem, error) {
+
+	userGroup, err := cateringRepositories.GetFeedingGroupUserByUserNumber(userNumber)
+	if err != nil {
+		return responses.CalendarGroupItem{}, errors.New("Fetching user group error: " + err.Error())
+	}
+
+	if userGroup.Number == "" {
+		return responses.CalendarGroupItem{}, errors.New("not attached to any group for meals")
+	}
+
+	group, err := cateringRepositories.GetFeedingGroupByNumber(userGroup.FeedingGroupNumber)
+	if err != nil {
+		return responses.CalendarGroupItem{}, errors.New("Getting group details error: " + err.Error())
+	}
+
+	school, err := schoolRepositories.GetSchoolByNumber(group.SchoolNumber)
+	if err != nil {
+		return responses.CalendarGroupItem{}, errors.New("Checking school error: " + err.Error())
+	}
+
+	endDateAfter := time.Now()
+
+	calendarEvents, err := repositories.FindCalendarEvent(school.EntityNumber, endDateAfter)
+	if err != nil {
+		return responses.CalendarGroupItem{}, errors.New("Getting group details error: " + err.Error())
+	}
+
+	userMealResponse, err := createGroupCalendarItem(group, calendarEvents)
+	if err != nil {
+		return responses.CalendarGroupItem{}, err
+	}
+
+	return userMealResponse, nil
 }

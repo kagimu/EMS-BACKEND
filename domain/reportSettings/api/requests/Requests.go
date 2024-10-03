@@ -4,26 +4,40 @@ import (
 	"errors"
 )
 
+type UpdateReportSettingsRequest struct {
+	ReportSettingsRequest
+	ReportSettingNumber string `json:"report_setting_number"`
+}
+
 type ReportSettingsRequest struct {
-	Code               int64  `json:"code"`
-	AcademicYearNumber string `json:"academic_year_number"`
-	StudyPeriodNumber  string `json:"study_period_number"`
-	CampusClassNumber  string `json:"campus_class_number"`
-	Columns            int64  `json:"columns"`
+	Code                   int64  `json:"code"`
+	AcademicYearNumber     string `json:"academic_year_number"`
+	StudyPeriodNumber      string `json:"study_period_number"`
+	ClassNumber            string `json:"class_number"`
+	CampusNumber           string `json:"campus_number"`
+	CurriculumNumber       string `json:"curriculum_number"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	CampusClassNumber      string `json:"campus_class_number"`
+	Columns                int64  `json:"columns"`
 }
 
 type ReportColumnRequest struct {
-	Code                int64   `json:"code"`
-	ReportSettingNumber string  `json:"report_setting_number"`
-	Name                string  `json:"name"`
-	PercentageShare     float64 `json:"percentage_share"`
+	ReportSettingNumber string                    `json:"report_setting_number"`
+	Columns             []ReportColumnRequestItem `json:"columns"`
+}
+
+type ReportColumnRequestItem struct {
+	Code               int64   `json:"code"`
+	Name               string  `json:"name"`
+	PercentageShare    float64 `json:"percentage_share"`
+	ReportColumnNumber string  `json:"report_column_number"`
 }
 
 type ReportColumnAssessmentRequest struct {
-	Code                   int64  `json:"code"`
-	ReportColumnNumber     string `json:"report_column_number"`
-	AssessmentAreaNumber   string `json:"assessment_area_number"`
-	AssessmentMetricNumber string `json:"assessment_metric_number"`
+	Code                 int64    `json:"code"`
+	ReportColumnNumber   string   `json:"report_column_number"`
+	AssessmentAreaNumber string   `json:"assessment_area_number"`
+	AssessmentMetrics    []string `json:"assessment_schedule"`
 }
 
 type ReportSummaryRequest struct {
@@ -98,8 +112,13 @@ func (reportSetting *ReportSettingsRequest) ValidateReportSetting() error {
 	if reportSetting.StudyPeriodNumber == "" {
 		return errors.New("study period is required")
 	}
-	if reportSetting.CampusClassNumber == "" {
-		return errors.New("class is required")
+
+	if reportSetting.CampusNumber == "" {
+		return errors.New("Choose a campus ")
+	}
+
+	if reportSetting.ClassNumber == "" {
+		return errors.New("Choose a class ")
 	}
 	if reportSetting.Columns == 0 {
 		return errors.New("number of columns is required")
@@ -168,33 +187,52 @@ func (reportColumnAssessment *ReportColumnAssessmentRequest) ValidateReportColum
 	if reportColumnAssessment.AssessmentAreaNumber == "" {
 		return errors.New("assessment area is required")
 	}
-	if reportColumnAssessment.AssessmentMetricNumber == "" {
-		return errors.New("assessment metric is required")
+	if len(reportColumnAssessment.AssessmentMetrics) == 0 {
+		return errors.New("select some assessment schedules")
 	}
 
 	if reportColumnAssessment.Code == 0 {
 		return errors.New("code is required")
 	}
+
 	return nil
 
 }
 
-func (reportColumn *ReportColumnRequest) ValidateReportColumn() error {
-	if reportColumn.ReportSettingNumber == "" {
+func (reportColumnRequest *ReportColumnRequest) ValidateReportColumn() error {
+	if reportColumnRequest.ReportSettingNumber == "" {
 		return errors.New("report setting is required")
 	}
-	if reportColumn.Name == "" {
-		return errors.New("name is required")
-	}
-	if reportColumn.PercentageShare == 0 {
-		return errors.New("percentage share is required")
+
+	columns := reportColumnRequest.Columns
+	if columns == nil {
+		return errors.New("set columns list")
 	}
 
-	if reportColumn.Code == 0 {
-		return errors.New("code is required")
+	var totalShare float64
+
+	for _, reportColumn := range columns {
+
+		if reportColumn.Name == "" {
+			return errors.New("name is required")
+		}
+
+		if reportColumn.PercentageShare <= 0 {
+			return errors.New("percentage share is required")
+		}
+
+		if reportColumn.Code <= 0 {
+			return errors.New("code is required")
+		}
+
+		totalShare += reportColumn.PercentageShare
 	}
+
+	if totalShare != 100 {
+		return errors.New("Columns percentage total sum should be 100 ")
+	}
+
 	return nil
-
 }
 
 func (rpt *GenerateReportSummaryRequest) ValidateGenerateReportSummary() error {

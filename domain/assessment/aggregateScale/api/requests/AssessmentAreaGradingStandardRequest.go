@@ -4,21 +4,26 @@ import "errors"
 
 type AssessmentAreaGradingStandardRequest struct {
 	AssessmentAreaNumber  string `json:"assessment_area_number"`
+	SchoolNumber          string `json:"school_number"`
 	GradingStandardNumber string `json:"grading_standard_number"`
 	Code                  int64  `json:"code"`
 }
 
-func (asgs *AssessmentAreaGradingStandardRequest) Validate() error {
+func (assessmentAreaGradingStandard *AssessmentAreaGradingStandardRequest) Validate() error {
 
-	if asgs.AssessmentAreaNumber == "" {
+	if assessmentAreaGradingStandard.SchoolNumber == "" {
+		return errors.New("choose the school")
+	}
+
+	if assessmentAreaGradingStandard.AssessmentAreaNumber == "" {
 		return errors.New("assessment area  number is required")
 	}
 
-	if asgs.GradingStandardNumber == "" {
+	if assessmentAreaGradingStandard.GradingStandardNumber == "" {
 		return errors.New("grading standard number is required")
 	}
 
-	if asgs.Code == 0 {
+	if assessmentAreaGradingStandard.Code == 0 {
 		return errors.New("code is required")
 	}
 

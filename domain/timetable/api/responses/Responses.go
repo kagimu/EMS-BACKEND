@@ -7,9 +7,13 @@ type Subjects struct {
 	Name   string `json:"name"`
 }
 
-type Classes struct {
-	Number string `json:"number"`
-	Name   string `json:"name"`
+type ClassResponse struct {
+	Number       string `json:"number"`
+	Name         string `json:"name"`
+	Abbreviation string `json:"abbreviation"`
+	LevelName    string `json:"level_name"`
+	LevelNumber  string `json:"level_number"`
+	Code         int64  `json:"code"`
 }
 
 type StudyTimetables struct {

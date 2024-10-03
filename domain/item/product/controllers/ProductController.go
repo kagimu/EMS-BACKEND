@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
@@ -34,16 +37,6 @@ func CreateProduct(c *gin.Context) {
 
 	tx := config.DB.Begin()
 
-	generateProductSerialCode := productModels.ProductSerialCode{}
-
-	if err := tx.Create(&generateProductSerialCode).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": " Failed to generate product serial code"})
-		return
-	}
-
-	payload.SerialCode = fmt.Sprintf("PDT%04d", generateProductSerialCode.ID)
-
 	itemNumber := uuid.NewV4().String()
 	saveProductItem := models.Item{
 		Number:      itemNumber,
@@ -51,8 +44,9 @@ func CreateProduct(c *gin.Context) {
 		Cost:        payload.Cost,
 		SerialCode:  payload.SerialCode,
 		Description: payload.Description,
-		Prefix:      payload.Prefix,
 		UserNumber:  user.Number,
+		Mandatory:   payload.Mandatory,
+		Type:        "Product",
 	}
 
 	if err := tx.Create(&saveProductItem).Error; err != nil {
@@ -70,6 +64,20 @@ func CreateProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create product"})
 		return
 	}
+
+	// loop through the campuses and create a campus service
+	for _, campusNumber := range payload.CampusNumbers {
+		campusService := models2.CampusItem{
+			ItemNumber:   itemNumber,
+			CampusNumber: campusNumber,
+		}
+		if err := tx.Create(&campusService).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create campus service"})
+			return
+		}
+	}
+
 	tx.Commit()
 	c.JSON(http.StatusOK, saveProduct)
 }
@@ -93,22 +101,46 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found."})
 		return
 	}
+	txn := config.DB.Begin()
 
 	updateProduct := models.Item{
-		Number:      uuid.NewV4().String(),
-		Name:        payload.Name,
-		Cost:        payload.Cost,
-		Description: payload.Description,
-		Prefix:      payload.Prefix,
-		UserNumber:  user.Number,
+		Name:         payload.Name,
+		Cost:         payload.Cost,
+		Description:  payload.Description,
+		UserNumber:   user.Number,
+		SerialCode:   payload.SerialCode,
+		Mandatory:    payload.Mandatory,
+		SchoolNumber: payload.SchoolNumber,
 	}
 
-	if err := config.DB.Model(&product).Where("number = ?", productNumber).Updates(updateProduct).Error; err != nil {
+	if err := txn.Model(&product).Where("number = ?", productNumber).Updates(updateProduct).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update product"})
 		return
 	}
 
-	c.JSON(http.StatusOK, updateProduct)
+	// synchronize campus services by deleting all and adding them again
+	if err := txn.Where("item_number = ?", productNumber).Delete(&models2.CampusItem{}).Error; err != nil {
+		txn.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
+		return
+	}
+
+	for _, campusNumber := range payload.CampusNumbers {
+		saveCampusService := models2.CampusItem{
+			Number:       uuid.NewV4().String(),
+			CampusNumber: campusNumber,
+			ItemNumber:   productNumber,
+		}
+		if err := txn.Create(&saveCampusService).Error; err != nil {
+			txn.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create campus service"})
+			return
+		}
+	}
+
+	txn.Commit()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product updated"})
 }
 
 func FetchProducts(c *gin.Context) {
@@ -118,8 +150,49 @@ func FetchProducts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
 		return
 	}
+	var response []responses.ServiceResponse
 
-	c.JSON(http.StatusOK, products)
+	for _, product := range products {
+		var campusServices []models2.CampusItem
+		if err := config.DB.Where("item_number = ?", product.Item.Number).Find(&campusServices).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
+			return
+		}
+		var campuses []responses.CampusServiceResponse
+		for _, campusService := range campusServices {
+			var campus campusModel.Campus
+			if err := config.DB.First(&campus, "number = ?", campusService.CampusNumber).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus"})
+				return
+			}
+			campuses = append(campuses, responses.CampusServiceResponse{
+				Number:       campusService.Number,
+				CampusNumber: campusService.CampusNumber,
+				Name:         campus.Name,
+			})
+		}
+		response = append(response, responses.ServiceResponse{
+			ItemNumber: product.ItemNumber,
+			Item: responses.ItemResponse{
+				Number:          product.Item.Number,
+				Name:            product.Item.Name,
+				Description:     product.Item.Description,
+				Type:            product.Item.Type,
+				Cost:            product.Item.Cost,
+				SerialCode:      product.Item.SerialCode,
+				Prefix:          product.Item.Prefix,
+				PaymentMode:     product.Item.PaymentMode,
+				Mandatory:       product.Item.Mandatory,
+				SchoolNumber:    product.Item.SchoolNumber,
+				UserNumber:      product.Item.UserNumber,
+				RepeatCycle:     product.Item.RepeatCycle,
+				OneTimePurchase: product.Item.OneTimePurchase,
+			},
+			Campuses: campuses,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func DeleteProduct(c *gin.Context) {
@@ -131,7 +204,7 @@ func DeleteProduct(c *gin.Context) {
 	productNumber := c.Param("product_number")
 	var service productModels.Product
 	if err := config.DB.Where("number = ?", productNumber).First(&service).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found"})
+		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found "})
 		return
 	}
 

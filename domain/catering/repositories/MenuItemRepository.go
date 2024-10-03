@@ -10,9 +10,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetMenuItemByNumber(menuItemNumber string) (models.MenuItem, error) {
+func GetMenuItemByNumber(menuItemNumber string, tx ...*gorm.DB) (models.MenuItem, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var menuItem models.MenuItem
 
@@ -81,13 +84,14 @@ func SaveMenuItem(menuItem models.MenuItem) error {
 
 }
 
-func GetPaginatedMenuItems(schoolNumber string, status string, itemType string, paginatedResponse pagination.PaginatedResponse, c *gin.Context) ([]models.MenuItem, error) {
+func GetPaginatedMenuItems(schoolNumber string, status string, itemType string, paginatedResponse *pagination.PaginatedResponse, c *gin.Context) ([]models.MenuItem, error) {
 
 	var menuItems []models.MenuItem
 
 	if err := config.DB.
 		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByStatus(status), filters.ByType(itemType), pagination.
-			Paginate(c, &paginatedResponse)).Preload("School").Preload("UnitOfMeasure").
+			Paginate(c, paginatedResponse)).Preload("School").Preload("UnitOfMeasure").
+		Order("name asc").
 		Find(&menuItems).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -106,6 +110,7 @@ func GetAllMenuItems(schoolNumber string, status string, itemType string) ([]mod
 
 	if err := config.DB.
 		Scopes(filters.BySchoolNumber(schoolNumber), filters.ByStatus(status), filters.ByType(itemType)).Preload("School").Preload("UnitOfMeasure").
+		Order("name asc").
 		Find(&menuItems).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

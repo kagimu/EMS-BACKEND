@@ -8,13 +8,18 @@ import (
 
 type Stocking struct {
 	gorm.Model
-	Number         string              `json:"number" gorm:"size:36;unique;not null"`
-	CampusNumber   string              `json:"campus_number" gorm:"size:36;"`
-	Quantity       float64             `json:"quantity" gorm:"not null"`
-	UnitCost       float64             `json:"unit_cost" gorm:"not null"`
-	MenuItemNumber string              `json:"menu_item_number" gorm:"size:36;"`
-	MenuItem       MenuItem            `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Campus         campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	UserNumber     string              `json:"user_number" gorm:"size:36;index;not null"`
-	User           authModels.User     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Number                      string              `json:"number" gorm:"size:36;unique;not null"`
+	CampusNumber                string              `json:"campus_number" gorm:"size:36;"`
+	Quantity                    float64             `json:"quantity" gorm:"not null"`
+	UnitCost                    float64             `json:"unit_cost" gorm:"not null"`
+	ConversionToPurchase        float64             `json:"conversion_to_purchase"`
+	MenuItemNumber              string              `json:"menu_item_number" gorm:"size:36;"`
+	MenuItem                    MenuItem            `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Campus                      campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	UserNumber                  string              `json:"user_number" gorm:"size:36;index;not null"`
+	User                        authModels.User     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	PurchaseUnitOfMeasureNumber string              `json:"purchase_unit_of_measure_number" gorm:"size:36;"`
+	PurchaseUnitOfMeasure       UnitOfMeasure       `gorm:"foreignKey:PurchaseUnitOfMeasureNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	UnitOfMeasureNumber         string              `json:"unit_of_measure_number" gorm:"size:36"`
+	UnitOfMeasure               UnitOfMeasure       `gorm:"foreignKey:UnitOfMeasureNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }

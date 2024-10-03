@@ -7,11 +7,36 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetCampusByNumber(campusNumber string) (campusModel.Campus, error) {
+func GetCampusByNumber(campusNumber string, tx ...*gorm.DB) (campusModel.Campus, error) {
 
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var campus campusModel.Campus
 	if err := db.Where("number = ?", campusNumber).First(&campus).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return campus, nil
+		}
+
+		return campus, err
+	}
+	return campus, nil
+}
+
+func FindCampuses(schoolNumber string, tx ...*gorm.DB) ([]campusModel.Campus, error) {
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var campus []campusModel.Campus
+
+	if err := db.Where("school_number = ?", schoolNumber).Find(&campus).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return campus, nil

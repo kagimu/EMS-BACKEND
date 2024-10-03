@@ -1,18 +1,11 @@
 package controllers
 
 import (
-	"net/http"
-	"os"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
+	"net/http"
 )
 
 func CreateAggregateScale(c *gin.Context) {
@@ -33,104 +26,18 @@ func CreateAggregateScale(c *gin.Context) {
 		return
 	}
 
-	var fileName string
+	err = services.SaveAggregateScale(payload, user.Number)
 
-	_, err = c.FormFile("illustration")
-	if err == nil {
-		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
-		fileName = file
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
-			return
-		}
-	}
-
-	saveAggregateScale := models.AggregateScale{
-		Code:                  payload.Code,
-		Number:                uuid.NewV4().String(),
-		MinValue:              payload.MinValue,
-		MaxValue:              payload.MaxValue,
-		Illustration:          fileName,
-		CampusClassNumber:     payload.CampusClassNumber,
-		CampusNumber:          payload.CampusNumber,
-		UserNumber:            user.Number,
-		GradeNumber:           payload.GradeNumber,
-		GradingStandardNumber: payload.GradingStandardNumber,
-	}
-
-	var duplicate models.AggregateScale
-	if err := config.DB.Where("name = ? AND campus_class_number = ? AND grading_standard_number = ? ", saveAggregateScale.Name, payload.CampusClassNumber, payload.GradingStandardNumber).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate aggregate scale name on this class and grading standard"})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-
-	if err := config.DB.Where("code = ? AND campus_class_number = ? ", saveAggregateScale.Code, saveAggregateScale.CampusClassNumber).First(&duplicate).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "This code has already been used on this class"})
-		return
-	}
-
-	tx := config.DB.Begin()
-
-	if err := tx.Create(&saveAggregateScale).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save aggregate scale"})
-		return
-	}
-
-	tx.Commit()
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Aggregate scale created successfully"})
 }
 
-func FetchAggregateScales(c *gin.Context) {
-	campusNumber := c.Query("campus_number")
-	if campusNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus number is required"})
-		return
-	}
-
-	campusClassNumber := c.Query("campus_class_number")
-
-	if campusClassNumber == "" {
-		c.JSON(http.StatusOK, gin.H{"data": make([]responses.AggregateScaleResponse, 0)})
-		return
-	}
-
-	var aggregateScales []models.AggregateScale
-	if err := config.DB.
-		Scopes(
-			filters.ByCampusClassNumber(campusClassNumber),
-			filters.ByCampusNumber(campusNumber),
-			filters.ByGradingStandardNumber(c.Query("grading_standard_number")),
-			filters.ByAssessmentAreaNumber(c.Query("assessment_area_number")),
-		).
-		Preload("Campus").Preload("CampusClass").Preload("GradingStandard").
-		Find(&aggregateScales).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch aggregate scales"})
-		return
-	}
-	var response []responses.AggregateScaleResponse
-	baseURL := os.Getenv("BASE_URL")
-	for _, aggregateScale := range aggregateScales {
-		response = append(response, responses.AggregateScaleResponse{
-			Code:                aggregateScale.Code,
-			Number:              aggregateScale.Number,
-			MinValue:            aggregateScale.MinValue,
-			MaxValue:            aggregateScale.MaxValue,
-			Name:                aggregateScale.Name,
-			Weight:              aggregateScale.Weight,
-			Illustration:        baseURL + aggregateScale.Illustration,
-			ClassName:           aggregateScale.CampusClass.ClassName,
-			CampusName:          aggregateScale.Campus.Name,
-			GradingStandardName: aggregateScale.GradingStandard.Name,
-		})
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": response})
-}
-
-func EditAggregateScale(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+func UpdateAggregateScale(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
@@ -142,38 +49,65 @@ func EditAggregateScale(c *gin.Context) {
 		return
 	}
 
-	aggregateScaleNumber := c.Query("aggregate_scale_number")
-	var aggregateScale models.AggregateScale
-	if err := config.DB.First(&aggregateScale, "number = ?", aggregateScaleNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No aggregate scale found with the specified number"})
+	if err = payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var fileName string
-	_, err = c.FormFile("illustration")
-	if err == nil {
-		file, err := commons.HandleFileUpload(c, "illustration", "/fileRepo/illustrations")
-		fileName = file
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
-			return
-		}
-	}
-
-	updateAggregateScale := models.AggregateScale{
-		Code:                  payload.Code,
-		MinValue:              payload.MinValue,
-		MaxValue:              payload.MaxValue,
-		Illustration:          fileName,
-		CampusClassNumber:     payload.CampusClassNumber,
-		CampusNumber:          payload.CampusNumber,
-		GradingStandardNumber: payload.GradingStandardNumber,
-	}
-
-	if err := config.DB.Model(&aggregateScale).Where("number  = ?", aggregateScaleNumber).Updates(updateAggregateScale).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update aggregate scale"})
+	err = services.UpdateAggregateScale(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": aggregateScale})
+	c.JSON(http.StatusOK, commons.Feedback("Aggregate scale updated successfully"))
+}
+
+func FetchAllDetailedScales(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school to fetch scales"})
+		return
+	}
+
+	scales, err := services.FindAllDetailsScales(schoolNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": scales})
+
+}
+
+func FetchAllScales(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school to fetch scales"})
+		return
+	}
+
+	scales, err := services.FindAllScales(schoolNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": scales})
+}
+
+func RemoveAggregateScale(context *gin.Context) {
+	scaleNumber := context.Param("scale_number")
+	if scaleNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose a scale to delete"})
+		return
+	}
+
+	err := services.RemoveScale(scaleNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Scale removed successfully"))
 }

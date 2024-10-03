@@ -1,6 +1,5 @@
-FROM golang:alpine AS build
-RUN apk --no-cache add gcc g++ make git
-
+FROM golang:1.20-bullseye AS build
+RUN apt-get update && apt-get install -y gcc g++ make git
 
 WORKDIR /go/src/app
 
@@ -10,8 +9,17 @@ RUN go mod download
 COPY . .
 RUN GOOS=linux go build -ldflags="-s -w" -o ./bin/web-app ./main.go
 
-FROM alpine:3.13
-RUN apk --no-cache add ca-certificates
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y \
+wkhtmltopdf \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/*
+
+ENV XDG_RUNTIME_DIR=/tmp/runtime-root
+RUN mkdir -p /tmp/runtime-root && chmod 700 /tmp/runtime-root
+
+
 WORKDIR /usr/bin
 COPY --from=build /go/src/app/bin /go/bin
 EXPOSE 2053

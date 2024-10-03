@@ -25,7 +25,7 @@ type (
 		ClassAbbreviation     string              `json:"class_abbreviation" gorm:"-"`
 		LevelName             string              `json:"level_name" gorm:"-"`
 		ClassNumber           string              `json:"class_number" gorm:"-"`
-		Streams               []Stream            `gorm:"foreignKey:ClassLevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Streams               []Stream            `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
 )
 
@@ -41,6 +41,9 @@ func (classLevel *CampusClass) AfterFind(tx *gorm.DB) (err error) {
 
 func (classLevel *CampusClass) PreInsert(tx *gorm.DB) (err error) {
 	classLevel.Number = uuid.NewV4().String()
+	var class CurriculumClass
+	tx.Model(&CurriculumClass{}).Where("number = ?", classLevel.CurriculumClassNumber).Preload("Class").First(&class)
+	classLevel.ClassName = class.Class.Name
 
 	return
 }

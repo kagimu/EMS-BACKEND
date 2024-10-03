@@ -18,6 +18,7 @@ type StudentUpdateRequest struct {
 	SourceOfSchoolInfo        string `json:"source_of_school_info"`
 	ParentNumber              string `json:"parent_number"`
 	CampusClassNumber         string `json:"campus_class_number"`
+	SchoolNumber              string `json:"school_number"`
 }
 
 func (s *StudentUpdateRequest) Prepare() {

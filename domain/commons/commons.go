@@ -2,8 +2,9 @@ package commons
 
 import (
 	"errors"
+	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 	"math"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,26 +13,9 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
-
-func DeleteFileFromPath(path string, context *gin.Context) {
-	//path := "/fileRepo/excelFile/" + pdfDel.FileName
-	// detect file if it exists
-	_, err2 := mimetype.DetectFile(path)
-	if err2 == nil {
-		//a file is removed if it exists in the path
-		//removing png file
-		errRemove := os.Remove(path)
-		if errRemove != nil {
-			context.JSON(http.StatusBadRequest, gin.H{"message": errRemove})
-			return
-		}
-
-	}
-}
 
 func CheckValidPhone(phone string) string {
 
@@ -102,7 +86,43 @@ func GetUserFromHeader(c *gin.Context) (*models.User, error) {
 		return nil, err
 	}
 
+	entityService := services.EntityService{}
+
+	if user.Number != "" {
+		currentEntity, err := entityService.GetCurrentEntity(user.Number)
+		if err != nil {
+			fmt.Println("Getting user current entity error: " + err.Error())
+		} else {
+			c.Set("entity_number", currentEntity.Number)
+		}
+	}
+
 	return &user, nil
+}
+
+func GetUserEntityNumber(c *gin.Context) (string, error) {
+
+	entityService := services.EntityService{}
+
+	userNumber := c.Request.Header["User-Number"][0]
+
+	fmt.Println("Getting current entity for: " + userNumber)
+
+	var currentEntity string
+
+	if userNumber != "" {
+		checkEntity, err := entityService.GetCurrentEntity(userNumber)
+		if err != nil {
+			fmt.Println("Getting user current entity error: " + err.Error())
+		} else {
+			currentEntity = checkEntity.Number
+			c.Set("entity_number", currentEntity)
+		}
+	}
+
+	fmt.Println("Current entity set to: " + currentEntity)
+
+	return currentEntity, nil
 }
 
 type PermissionGroup map[string][]string
@@ -110,25 +130,43 @@ type PermissionGroup map[string][]string
 func PermissionGroups() []PermissionGroup {
 
 	return []PermissionGroup{
-		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum",
+		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum", "setup_curriculum",
 			"delete_curriculum", "import_curriculum", "create_learning_area", "view_learning_area", "update_learning_area", "view_subject-cluster", "view_subject",
 			"view_strands", "view_topic", "view_sub-topic", "view_concept"}},
 		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
 		{"SETUP": []string{"view_school", "add_school", "edit_school", "delete_school", "create_campus", "edit_campus", "delete_campus", "create_academic-year", "view_academic-year", "update_academic-year",
-			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream"}},
-		{"USERS": []string{"create_user", "view_users", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
-		{"PERMISSIONS": []string{"create_permission", "view_permission", "delete_permission", "update_permission"}},
-
+			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream", "view_campus_settings", "view_aggregate", "view_grading", "view_assessment_schedule", "view_report_card_settings", "view_student_score", "view_study_period", "view_study_period_group_names", "view_academic_year", "view_classes", "view_levels"}},
+		{"USERS": []string{"create_user", "view_users", "view_roles", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
+		{"PERMISSIONS": []string{"create_permission", "view_permission", "view_scopes", "delete_permission", "update_permission"}},
+		{"STUDENT APPLICATION": []string{"view_applications", "view_application_list"}},
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
 		{"CALENDAR": []string{"view_calendar", "view_calendar-details"}},
-		{"INTERVIEWS": []string{"view_interview-details", "create_interview_schedules"}},
-		{"Catering": []string{"view_catering_menu", "create_unit_of_measure",
-			"record_meals", "view_meals", "view_unit_of_measure", "create_feeding_groups", ""}},
+		{"INTERVIEWS": []string{"view_interview-details", "create_interview_schedules", "view_interviews"}},
+		{"INVOICING & BILLING": []string{"add_custom_invoice", "pay_invoice", "cancel_invoice", "cancel_payment", "view_financial_records", "view_billables", "create_billables",
+			"edit_billables",
+			"delete_billables"}},
+		{"CATERING": []string{"view_catering_menu", "create_unit_of_measure", "record_meals", "view_meals", "view_unit_of_measure", "view_menu_items", "view_menu_packs", "view_feeding_groups",
+			"create_feeding_groups", "view_meal_cost_projections", "view_meals_delivery", "view_weekly_meal_items",
+			"view_groups_on_calendar", "view_daily_group_courses", "view_meal_course_menu_packs", "view_meal_courses",
+			"view_stock", "create_new_stock", "view_stocking_history", "can_add_new_unit_of_measure", "edit_unit_of_measure", "delete_unit_of_measure", "view_ingredients", "view_menu_Items", "create_menu_item",
+			"edit_menu_item", "remove_menu_item", "delete_menu_pack", "edit_menu_pack", "create_menu_pack", "delete_feeding_group", "edit_feeding_group", "view_feeding_group_list",
+			"create_meal_course", "edit_meal_course", "delete_meal_course", "create_meal_course_menu_pack", "edit_meal_course_menu_pack", "delete_meal_course_menu_pack", "create_daily_group_courses", "activate_groups_on_calendar", "activate_meal_course", "serve_meal"}},
 		{"PRODUCTS & SERVICES": []string{"create_product", "create_service", "edit_product", "edit_service", "view_services", "view_products"}},
-		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype"}},
+		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype", "add_assessment_schedule", "delete_assessment_schedule", "edit_assessment_schedule"}},
 		{"ADMISSION": []string{"admit_student", "view_admissions", "cancel_admission"}},
 		{"ENROLLMENT": []string{"enroll_student", "view_enrollments", "terminate_enrollment", "re-instate_enrollment"}},
-		{"SETTINGS": []string{"access_settings_menu", "view_learning_area", "update_learning_area"}},
+		{"SETTINGS": []string{"access_settings_menu", "view_learning_area", "update_learning_area",
+			"create_study_period_group_name", "view_study_period_group_name",
+			"view_entities", "upload_student_photo",
+			"view_profile",
+			"view_mode_of_study",
+			"create_mode_of_study",
+			"edit_mode_of_study",
+			"view_source_of_school_info",
+			"view_promotion_settings",
+			"view_promotion_value",
+			"upload_school_logo",
+			"set_class_grading_standard_default"}},
 	}
 
 }
@@ -146,12 +184,12 @@ func HandleFileUpload(c *gin.Context, formFileKey string, savePath string) (stri
 	t := time.Now()
 	name := GeneratedFormattedUUID() + "-" + strconv.Itoa(t.Year()) + "-" + strconv.Itoa(int(t.Month())) + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Minute())
 	extension := filepath.Ext(attachmentFile.Filename)
-	if extension != ".pdf" {
-		return " ", errors.New("file should be a .pdf")
-	}
+	//if extension != ".pdf" {
+	//	return " ", errors.New("file should be a .pdf")
+	//}
 
 	fileName := name + extension
-	filePath := savePath + fileName
+	filePath := "/fileRepo/" + savePath + "/" + fileName
 
 	if err := c.SaveUploadedFile(attachmentFile, filePath); err != nil {
 		return "", err
@@ -214,4 +252,13 @@ func ConvertStringToDate(dateString string) (time.Time, error) {
 	}
 
 	return dueDate, nil
+}
+
+func GenerateDownloadPath(number string, persona bool) string {
+	if number == "" && persona {
+		return "https://www.oddscreenprinting.com.au/wp-content/uploads/person-dummy.jpg"
+	} else if number == "" {
+		return "https://www.oddscreenprinting.com.au/wp-content/uploads/2017/04/placeholder.png"
+	}
+	return os.Getenv("BASE_URL") + "attachments/download/" + number
 }

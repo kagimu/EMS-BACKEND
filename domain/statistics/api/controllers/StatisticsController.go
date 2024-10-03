@@ -20,12 +20,33 @@ func FetchStatistics(c *gin.Context) {
 }
 
 func PrintReport(ctx *gin.Context) {
-	pdfObject, err := pdfGenerator.GeneratePdf("sample_template", nil)
+	type request struct {
+		Html string `json:"html"`
+	}
+
+	var req request
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request"})
+		return
+	}
+
+	pdfObject, err := pdfGenerator.GeneratePdfFromHtmlString(req.Html)
 	if err != nil {
 		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
 		return
 	}
 
 	err = pdfObject.WriteFile("output.pdf")
+	ctx.JSON(http.StatusOK, commons.Feedback(base64.StdEncoding.EncodeToString(pdfObject.Bytes())))
+}
+
+func PrintTestReport(ctx *gin.Context) {
+	pdfObject, err := pdfGenerator.GeneratePdf("sr", pdfGenerator.ReturnNewData())
+	if err != nil {
+		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
+		return
+	}
+
+	//err = pdfObject.WriteFile("output.pdf")
 	ctx.JSON(http.StatusOK, commons.Feedback(base64.StdEncoding.EncodeToString(pdfObject.Bytes())))
 }

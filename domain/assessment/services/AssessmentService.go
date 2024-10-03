@@ -2,15 +2,31 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	assessmentMetricRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	userModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/repositories"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"strconv"
+	"time"
 )
+
+var assessmentMetricRepository = assessmentMetricRepositories.NewAssessmentMetricRepository()
+var enrolmentRepository = repository2.NewEnrolmentRepository()
 
 func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNumber string) error {
 
@@ -23,7 +39,7 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 		return errors.New("student not found")
 	}
 
-	assessmentMetric, err := assessmentMetricRepositories.FindAssessmentMetricByNumber(assessmentRequest.AssessmentMetricNumber)
+	assessmentMetric, err := assessmentMetricRepository.FindAssessmentMetricByNumber(assessmentRequest.AssessmentMetricNumber)
 	if err != nil {
 		return errors.New("checking assessment metric error: " + err.Error())
 	}
@@ -48,21 +64,40 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	}
 
 	//check if there is existing enrollment for the student
-	enrollment, err := repository.FindEnrollmentByStudentNumber(student.Number)
+	enrollment, err := enrolmentRepository.GetStudentEnrolment(student.Number, assessmentMetric.StudyPeriodNumber, assessmentMetric.CampusClassNumber, constants.StatusActive)
 	if err != nil {
 		return errors.New("checking student enrollment error: " + err.Error())
 	}
 
 	if enrollment.Number == "" {
-		return errors.New("student is not enrolled yet")
-	}
 
-	if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
-		return errors.New("this assessment is not for this student")
+		if student.CampusClassNumber != assessmentMetric.CampusClassNumber {
+			return errors.New("You can not add results on this schedule because this assessment is not meant  for this student")
+		}
+
+		applicationRepository := repository.NewApplicationRepositoryImpl(config.DB)
+
+		application, err := applicationRepository.FindApplicationByNumber(student.ApplicationNumber)
+		if err != nil {
+			return errors.New("Checking student application error " + err.Error())
+		}
+
+		if application.Number == "" {
+			return errors.New(fmt.Sprintf("%s %s has no application", student.Surname, student.SecondName))
+		}
+
+		if application.Status != constants.StatusAdmitted {
+			err = ValidateInterviewScore(student, assessmentMetric)
+			if err != nil {
+				return err
+			}
+		} else {
+			return errors.New("student is not enrolled yet")
+		}
 	}
 
 	//find if assessment with student number and assessment metric  already exists
-	currentAssessment, err := assessmentMetricRepositories.FindAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assessmentMetric.Number)
+	currentAssessment, err := assessmentMetricRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assessmentMetric.Number)
 	if err != nil {
 		return errors.New("checking student current score error: " + err.Error())
 	}
@@ -97,4 +132,94 @@ func SaveAssessment(assessmentRequest requests.AssessmentRequest, currentUserNum
 	}
 
 	return nil
+}
+
+func ValidateInterviewScore(student studentModel.Student, assessmentMetric models.AssessmentMetric) error {
+
+	interview, err := repositories6.GetStudentInterviewAndAssessmentMetric(student.Number, assessmentMetric.Number)
+	if err != nil {
+		return errors.New("Checking student and interview error: " + err.Error())
+	}
+
+	if interview.Number == "" {
+		return errors.New("Student not added to any interview with this assessment ")
+	}
+
+	return err
+}
+
+func FetchLearnerNarrative(studentNumber string) ([]responses.NarrativeResponse, error) {
+
+	student, err := studentRepositories.FindStudentByNumber(studentNumber)
+	if err != nil {
+		return nil, errors.New("checking student number error: " + err.Error())
+	}
+
+	if student.Number == "" {
+		return nil, errors.New("student not found")
+	}
+
+	var assessmentsResponse = make([]responses.NarrativeResponse, 0)
+
+	var assessments []models.Assessment
+
+	assessments, err = assessmentMetricRepositories.FindAssessmentByStudentNumberAndAssessmentMetricNumber(studentNumber, "")
+	if err != nil {
+		return assessmentsResponse, errors.New("checking student assessments error: " + err.Error())
+	}
+
+	for _, assessment := range assessments {
+		assessmentsResponse = append(assessmentsResponse, buildNarrativeResponse(assessment))
+	}
+
+	return assessmentsResponse, nil
+}
+
+func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeResponse {
+
+	user, err := repository3.GetUserByNumber(assessment.UserNumber)
+	if err != nil {
+		fmt.Println("user not found")
+		user = userModels.User{}
+	}
+
+	assessmentMetric, err := assessmentMetricRepository.FindAssessmentMetricByNumber(assessment.AssessmentMetricNumber)
+	if err != nil {
+		fmt.Println("assessment metric not found")
+		return responses.NarrativeResponse{}
+	}
+
+	if assessmentMetric.Number == "" {
+		return responses.NarrativeResponse{}
+	}
+
+	assessmentArea, err := repositories4.GetAssessmentAreaByNumber(assessmentMetric.AssessmentAreaNumber)
+
+	class, err := repositories.GetCampusClassByNumber(assessmentMetric.CampusClassNumber)
+	if err != nil {
+		return responses.NarrativeResponse{}
+	}
+
+	studyPeriod, err := repositories2.GetStudyPeriodByNumber(assessmentMetric.StudyPeriodNumber)
+	if err != nil {
+		return responses.NarrativeResponse{}
+	}
+
+	academicYear, err := repositories3.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
+	if err != nil {
+		return responses.NarrativeResponse{}
+	}
+
+	studyPeriodName, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+
+	return responses.NarrativeResponse{
+		Date:           assessment.CreatedAt.Format(time.DateOnly),
+		Number:         assessment.Number,
+		Narration:      assessment.Comment,
+		Teacher:        user.FirstName + " " + user.LastName,
+		AssessmentArea: assessmentArea.Name,
+		Class:          class.ClassName,
+		StudyPeriod:    studyPeriodName.Name,
+		AcademicYear:   academicYear.AcademicYearName,
+	}
 }

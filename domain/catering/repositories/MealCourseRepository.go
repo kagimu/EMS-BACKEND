@@ -8,9 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func SaveMealCourse(mealCourse models.MealCourse) (models.MealCourse, error) {
+func SaveMealCourse(mealCourse models.MealCourse, tx ...*gorm.DB) (models.MealCourse, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Save(&mealCourse).Error; err != nil {
 		return models.MealCourse{}, err
@@ -19,9 +22,12 @@ func SaveMealCourse(mealCourse models.MealCourse) (models.MealCourse, error) {
 	return mealCourse, nil
 }
 
-func GetAllMealCoursesByMealCourseCount(mealCourseCountNumber string, status string) ([]models.MealCourse, error) {
+func GetAllMealCoursesByMealCourseCount(mealCourseCountNumber, status string, tx ...*gorm.DB) ([]models.MealCourse, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var mealCourses []models.MealCourse
 
@@ -37,9 +43,12 @@ func GetAllMealCoursesByMealCourseCount(mealCourseCountNumber string, status str
 	return mealCourses, nil
 }
 
-func GetMealCourseByName(name string, mealCourseCountNumber string) (models.MealCourse, error) {
+func GetMealCourseByName(name, mealCourseCountNumber string, tx ...*gorm.DB) (models.MealCourse, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var mealCourse models.MealCourse
 
@@ -58,9 +67,12 @@ func GetMealCourseByName(name string, mealCourseCountNumber string) (models.Meal
 	return mealCourse, nil
 }
 
-func GetMealCourseByNumber(mealCourseNumber string) (models.MealCourse, error) {
+func GetMealCourseByNumber(mealCourseNumber string, tx ...*gorm.DB) (models.MealCourse, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var mealCourse models.MealCourse
 
@@ -78,9 +90,12 @@ func GetMealCourseByNumber(mealCourseNumber string) (models.MealCourse, error) {
 	return mealCourse, nil
 }
 
-func GetMealCourseByNumberAndSchool(mealCourseNumber string, schoolNumber string) (models.MealCourse, error) {
+func GetMealCourseByNumberAndSchool(mealCourseNumber string, schoolNumber string, tx ...*gorm.DB) (models.MealCourse, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var mealCourse models.MealCourse
 
@@ -100,8 +115,12 @@ func GetMealCourseByNumberAndSchool(mealCourseNumber string, schoolNumber string
 	return mealCourse, nil
 }
 
-func GetMealCourseByCode(code int, mealCourseCountNumber string) (models.MealCourse, error) {
+func GetMealCourseByCode(code int, mealCourseCountNumber string, tx ...*gorm.DB) (models.MealCourse, error) {
+
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var mealCourse models.MealCourse
 

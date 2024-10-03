@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"fmt"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"net/http"
 
@@ -31,14 +33,6 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
-	generateProductSerialCode := models2.SerialCode{}
-
-	if err := config.DB.Create(&generateProductSerialCode).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate service serial code"})
-	}
-
-	payload.SerialCode = fmt.Sprintf("SVC%04d", generateProductSerialCode.ID)
-
 	tx := config.DB.Begin()
 	itemNumber := uuid.NewV4().String()
 	saveItem := models.Item{
@@ -52,6 +46,7 @@ func CreateService(c *gin.Context) {
 		RepeatCycle:     payload.RepeatCycle,
 		PaymentMode:     payload.PaymentMode,
 		Name:            payload.Name,
+		SchoolNumber:    payload.SchoolNumber,
 	}
 
 	if err := tx.Create(&saveItem).Error; err != nil {
@@ -70,10 +65,10 @@ func CreateService(c *gin.Context) {
 	}
 
 	for _, campusNumber := range payload.CampusNumbers {
-		saveCampusService := models2.CampusServices{
-			Number:        uuid.NewV4().String(),
-			CampusNumber:  campusNumber,
-			ServiceNumber: saveService.ItemNumber,
+		saveCampusService := models2.CampusItem{
+			Number:       uuid.NewV4().String(),
+			CampusNumber: campusNumber,
+			ItemNumber:   saveService.ItemNumber,
 		}
 
 		if err := tx.Create(&saveCampusService).Error; err != nil {
@@ -98,8 +93,51 @@ func FetchServices(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch services"})
 		return
 	}
+	var response []responses.ServiceResponse
+	for _, service := range services {
+		var campusServices []models2.CampusItem
+		if err := config.DB.Where("item_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
+			return
+		}
 
-	c.JSON(http.StatusOK, services)
+		var campusServiceResponse []responses.CampusServiceResponse
+		for _, campusService := range campusServices {
+			//get campus name
+			var campus campusModel.Campus
+			if err := config.DB.Where("number = ?", campusService.CampusNumber).First(&campus).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus"})
+				return
+			}
+
+			campusServiceResponse = append(campusServiceResponse, responses.CampusServiceResponse{
+				Number:       campusService.Number,
+				CampusNumber: campusService.CampusNumber,
+				Name:         campus.Name,
+			})
+		}
+
+		response = append(response, responses.ServiceResponse{
+			ItemNumber: service.ItemNumber,
+			Item: responses.ItemResponse{
+				Number:          service.Item.Number,
+				Name:            service.Item.Name,
+				Description:     service.Item.Description,
+				Type:            service.Item.Type,
+				Cost:            service.Item.Cost,
+				SerialCode:      service.Item.SerialCode,
+				PaymentMode:     service.Item.PaymentMode,
+				Mandatory:       service.Item.Mandatory,
+				SchoolNumber:    service.Item.SchoolNumber,
+				UserNumber:      service.Item.UserNumber,
+				RepeatCycle:     service.Item.RepeatCycle,
+				OneTimePurchase: service.Item.OneTimePurchase,
+			},
+			Campuses: campusServiceResponse,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func FetchAllItems(c *gin.Context) {
@@ -152,6 +190,7 @@ func EditService(c *gin.Context) {
 		RepeatCycle:     payload.RepeatCycle,
 		PaymentMode:     payload.PaymentMode,
 		OneTimePurchase: payload.OneTimePurchase,
+		SchoolNumber:    payload.SchoolNumber,
 	}
 
 	if err := config.DB.Model(&service).Where("number = ?", serviceNumber).Updates(updateService).Error; err != nil {
@@ -160,17 +199,17 @@ func EditService(c *gin.Context) {
 	}
 
 	// synchronize campus services by deleting all and adding them again
-	if err := config.DB.Where("service_number = ?", serviceNumber).Delete(&models2.CampusServices{}).Error; err != nil {
+	if err := config.DB.Where("item_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
 		return
 
 	}
 
 	for _, campusNumber := range payload.CampusNumbers {
-		saveCampusService := models2.CampusServices{
-			Number:        uuid.NewV4().String(),
-			CampusNumber:  campusNumber,
-			ServiceNumber: serviceNumber,
+		saveCampusService := models2.CampusItem{
+			Number:       uuid.NewV4().String(),
+			CampusNumber: campusNumber,
+			ItemNumber:   serviceNumber,
 		}
 		if err := config.DB.Create(&saveCampusService).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create campus service"})
@@ -199,7 +238,7 @@ func DeleteService(c *gin.Context) {
 	tx := config.DB.Begin()
 
 	//delete campus services
-	if err := tx.Where("service_number = ?", serviceNumber).Delete(&models2.CampusServices{}).Error; err != nil {
+	if err := tx.Where("item_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
 		return
@@ -209,6 +248,11 @@ func DeleteService(c *gin.Context) {
 	if err := tx.Delete(&service).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete service"})
+		return
+	}
+	if err := tx.Where("number = ?", serviceNumber).Delete(&models.Item{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete service item"})
 		return
 	}
 

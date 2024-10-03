@@ -1,6 +1,7 @@
 package constants
 
 const StatusPending = "PENDING"
+const StatusDraft = "DRAFT"
 const StatusActive = "ACTIVE"
 const StatusInactive = "INACTIVE"
 const StatusEnrolled = "Enrolled"
@@ -16,3 +17,9 @@ const StatusNotPaid = "NOT_PAID"
 const StatusCancelled = "CANCELLED"
 const StatusYes = "YES"
 const StatusNo = "NO"
+const StatusInterviewScheduled = "INTERVIEW_SCHEDULED"
+const BillTypeNewApplication = "NEW_APPLICATION"
+const BillTypeContinuing = "CONTINUING"
+const StatusAdmitted = "ADMITTED"
+const StatementTypeIn = "IN"
+const StatementTypeOut = "OUT"

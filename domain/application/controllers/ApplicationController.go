@@ -1,16 +1,18 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	previousSchoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
-	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,26 +25,10 @@ func FetchApplication(c *gin.Context) {
 		return
 	}
 
-	var application = models.Application{}
-	var applicationNumber = c.Param("application_number")
-
-	if err := config.DB.Model(&models.Application{}).
-		Preload("Parent").Where("number = ?", applicationNumber).First(&application).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+	application, err := services.GetApplicationById(c.Param("application_number"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Application not found"+err.Error()))
 		return
-
-	}
-
-	var student = studentModel.Student{}
-	var previousSchools []previousSchoolModel.PreviousSchool
-
-	if err := config.DB.Preload("PreferredCampus").Where("application_number = ?", applicationNumber).First(&student).Error; err == nil {
-		application.Student = student
-	}
-
-	if err := config.DB.Preload("Classes").Where("application_number = ?", applicationNumber).Find(&previousSchools).Error; err == nil {
-		application.PreviousSchools = previousSchools
-
 	}
 
 	c.JSON(http.StatusOK, application)
@@ -66,7 +52,15 @@ func FetchApplications(c *gin.Context) {
 	//check for user account type and return applications accordingly
 	if user.Type == "User" {
 
-		if err := config.DB.Model(&models.Application{}).Where("user_number = ?", user.Number).Preload("Student").Preload("Parent").Preload("PreviousSchools").Find(&applications).Error; err != nil {
+		if err := config.DB.Model(&models.Application{}).
+			Scopes(
+				filters.ByStatus(c.Query("status")),
+				pagination.Paginate(c, &paginationResponse),
+			).
+			Where("user_number = ?", user.Number).
+			Preload("Student").Preload("Parent").
+			Preload("PreviousSchools").
+			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "application fetching failed",
 			})
@@ -74,6 +68,7 @@ func FetchApplications(c *gin.Context) {
 		}
 
 	} else {
+
 		if err := config.DB.Model(&models.Application{}).
 			Preload("Student").Preload("Parent").
 			Preload("PreviousSchools").
@@ -88,12 +83,12 @@ func FetchApplications(c *gin.Context) {
 			return
 		}
 
-		if applications != nil {
-			apps = applications
-		}
-		paginationResponse.Content = apps
-
 	}
+
+	if applications != nil {
+		apps = applications
+	}
+	paginationResponse.Content = apps
 
 	c.JSON(http.StatusOK, paginationResponse)
 }
@@ -181,4 +176,58 @@ func SubmitApplication(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully"))
+}
+func DeleteApplication(ctx *gin.Context) {
+	txn := config.DB.Begin()
+	applicationRepo := repository.NewApplicationRepositoryImpl(txn)
+	parentRepo := repositories.NewParentRepositoryImpl(txn)
+	studentRepo := repositories2.NewStudentRepositoryImpl(txn)
+
+	application, err := applicationRepo.FindApplicationByNumber(ctx.Param("application_number"))
+	if err != nil {
+		txn.Rollback()
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+		return
+	}
+
+	parent, err := parentRepo.GetParentByApplicationNumber(application.Number)
+
+	if err != nil {
+		txn.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete parent"})
+		return
+	}
+
+	if parent.Number != "" {
+		if err := parentRepo.Delete(parent.Number); err != nil {
+			txn.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete parent information"})
+			return
+		}
+	}
+
+	student, err := studentRepo.GetStudentByApplicationNumber(application.Number)
+	if err != nil {
+		txn.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete student information"})
+		return
+	}
+	if student.Number != "" {
+		if err := studentRepo.Delete(student.Number, txn); err != nil {
+			txn.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete student information"})
+			return
+		}
+	}
+
+	if err := applicationRepo.DeleteDraftApplication(application.Number, txn); err != nil {
+		txn.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete application"})
+		return
+	}
+
+	txn.Commit()
+
+	ctx.JSON(http.StatusOK, commons.Feedback("Application deleted successfully"))
+
 }

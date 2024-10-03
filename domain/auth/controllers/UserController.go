@@ -22,12 +22,14 @@ import (
 
 func FetchUsers(c *gin.Context) {
 
+	entityNumber, _ := commons.GetUserEntityNumber(c)
+
 	var paginatedResponse = pagination.PaginatedResponse{}
 	var users []models.User
 	if err := config.DB.Scopes(
 		filters.ByStatus(c.Query("status")),
 		pagination.Paginate(c, &paginatedResponse),
-		filters.ByAnyField("entity_users.entity_number", c.Query("entity_number")),
+		filters.ByAnyField("entity_users.entity_number", entityNumber),
 	).Joins("JOIN entity_users ON entity_users.user_number = users.number").Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch users"})
 		return
@@ -175,6 +177,20 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
+	// check if email or phone already exists
+
+	if err := tx.Where("contact = ?", user.Email).First(&models.Contact{}).Error; err == nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This Email was already used to create an account"})
+		return
+	}
+
+	if err := tx.Where("contact = ?", user.Phone).First(&models.Contact{}).Error; err == nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This Phone was already used to create an account"})
+		return
+	}
+
 	//after you need to save user email
 	saveEmailContact := models.Contact{
 		Contact:     user.Email,
@@ -201,10 +217,10 @@ func CreateUser(c *gin.Context) {
 
 	// append roles
 
-	var userRole permissionModels.UserRole
-
 	for _, role := range user.Roles {
-		if err := tx.Where("number = ?", role.RoleNumber).First(&userRole.Role).Error; err != nil {
+		var userRole permissionModels.UserRole
+		var roleModel permissionModels.Role
+		if err := tx.Where("number = ?", role.RoleNumber).First(&roleModel).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch role"})
 			return
@@ -212,10 +228,16 @@ func CreateUser(c *gin.Context) {
 
 		userRole.UserNumber = userObject.Number
 		userRole.RoleNumber = role.RoleNumber
+		if role.ExpiryDate == "" {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Expiry date is required"})
+			return
+
+		}
 		date, err := commons.ConvertStringToDate(role.ExpiryDate)
 		if err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to append role to user"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to append role to user" + err.Error()})
 			return
 		}
 		userRole.ExpiryDate = date
@@ -223,7 +245,7 @@ func CreateUser(c *gin.Context) {
 
 		if err := tx.Create(&userRole).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to append role to user"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create role to user"})
 			return
 
 		}
@@ -263,7 +285,9 @@ func CreateUser(c *gin.Context) {
 
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, commons.Feedback("Failed :"+err.Error()))
+	}
 
 	c.JSON(http.StatusCreated, commons.Feedback("User created successfully"))
 }

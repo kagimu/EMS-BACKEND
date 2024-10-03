@@ -1,0 +1,67 @@
+package services
+
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+)
+
+func CreateHeadTeacherComment(headTeacherCommentRequest requests.HeadTeacherCommentRequest, reportSettingNumber, userNumber string) error {
+	reportSummary, err := reporsitory.GetReportSettingByNumber(reportSettingNumber)
+	if err != nil {
+		return errors.New("Checking report settings error: " + err.Error())
+	}
+
+	if reportSummary.Number == "" {
+		return errors.New("Invalid report settings number ")
+	}
+
+	headTeacherComment := models.HeadTeacherComment{
+		MinAggregate:        headTeacherCommentRequest.MinAggregate,
+		MaxAggregate:        headTeacherCommentRequest.MaxAggregate,
+		ReportSettingNumber: reportSettingNumber,
+		Comment:             headTeacherCommentRequest.Comment,
+		UserNumber:          userNumber,
+	}
+
+	err = reporsitory.SaveHeadTeacherComment(headTeacherComment)
+	if err != nil {
+		return errors.New("failed to create head teacher comment")
+	}
+
+	return nil
+}
+
+func FetchHeadTeacherComments() ([]responses.HeadTeacherCommentResponse, error) {
+	headTeacherComments, err := reporsitory.FindHeadTeacherComments()
+	if err != nil {
+		return nil, err
+
+	}
+
+	var comments = make([]responses.HeadTeacherCommentResponse, 0)
+
+	for _, comment := range headTeacherComments {
+		comments = append(comments, BuildHeadTeacherResponse(comment))
+	}
+	return comments, nil
+}
+
+func BuildHeadTeacherResponse(comment models.HeadTeacherComment) responses.HeadTeacherCommentResponse {
+
+	studyPeriod, _ := repositories.GetStudyPeriodByNumber(comment.ReportSetting.StudyPeriodNumber)
+
+	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+
+	return responses.HeadTeacherCommentResponse{
+		MinAggregate: comment.MinAggregate,
+		MaxAggregate: comment.MaxAggregate,
+		Comment:      comment.Comment,
+		AcademicYear: comment.ReportSetting.AcademicYear.AcademicYearName,
+		StudyPeriod:  studyPeriodName.Name,
+		Class:        comment.ReportSetting.CampusClass.ClassName,
+	}
+}

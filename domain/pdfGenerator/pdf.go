@@ -46,12 +46,33 @@ func GeneratePdf(templateName string, data interface{}) (*wkhtmltopdf.PDFGenerat
 	if err != nil {
 		return nil, err
 	}
-
-	pdfg.AddPage(wkhtmltopdf.NewPageReader(&doc))
+	page := wkhtmltopdf.NewPageReader(bytes.NewReader(doc.Bytes()))
+	page.EnableLocalFileAccess.Set(true)
+	pdfg.AddPage(page)
 	err = pdfg.Create()
 	if err != nil {
 		return nil, err
 	}
 
 	return pdfg, nil
+}
+
+func GeneratePdfFromHtmlString(htmlString string) (*wkhtmltopdf.PDFGenerator, error) {
+	// convert html to pdf
+	pdfg, err := wkhtmltopdf.NewPDFGenerator()
+	if err != nil {
+		return nil, err
+	}
+
+	page := wkhtmltopdf.NewPageReader(bytes.NewReader([]byte(htmlString)))
+	page.EnableLocalFileAccess.Set(true)
+
+	pdfg.AddPage(page)
+	err = pdfg.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	return pdfg, nil
+
 }

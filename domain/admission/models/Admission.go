@@ -31,7 +31,7 @@ type Admission struct {
 	Stream             classModels.Stream             `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber         string                         `json:"user_number" gorm:"size:36;not null"`
 	User               authModels.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Status             string                         `json:"status" gorm:"size:20;default:'pending'"`
+	Status             string                         `json:"status" gorm:"size:20;default:'PENDING'"`
 	SchoolNumber       string                         `json:"school_number" gorm:"size:36;"`
 	School             schoolModels.School            `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

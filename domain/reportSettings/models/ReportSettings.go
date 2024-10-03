@@ -1,8 +1,11 @@
 package models
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	userModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"gorm.io/gorm"
+	"time"
 )
 import academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 import studyModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -10,7 +13,9 @@ import studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/stud
 import classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
 type ReportSetting struct {
-	gorm.Model
+	ID                 uint `json:"id" gorm:"primaryKey"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 	Number             string                         `json:"number" gorm:"size:36;unique;not null"`
 	Code               int64                          `json:"code" gorm:"type:bigint;"`
 	AcademicYearNumber string                         `json:"academic_year_number" gorm:"size:36;not null;"`
@@ -26,28 +31,31 @@ type ReportSetting struct {
 }
 
 type ReportColumn struct {
-	gorm.Model
+	ID                  uint `json:"id" gorm:"primaryKey"`
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 	Number              string          `json:"number" gorm:"size:36;unique;not null"`
 	Code                int64           `json:"code" gorm:"type:bigint; not null;"`
 	ReportSettingNumber string          `json:"report_setting_number" gorm:"size:36;not null;"`
 	Name                string          `json:"name" gorm:"type:text;not null;"`
 	PercentageShare     float64         `json:"percentage_share" gorm:"type:double precision;not null;"`
-	ReportSetting       ReportSetting   `gorm:"foreignKey:ReportSettingNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	ReportSetting       ReportSetting   `gorm:"foreignKey:ReportSettingNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	UserNumber          string          `json:"user_number" gorm:"size:36;not null;"`
 	User                userModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	ReportSettingName   string          `json:"report_setting_name" gorm:"-"`
 }
 
 type ReportColumnAssessment struct {
-	gorm.Model
-	Number                 string          `json:"number" gorm:"size:36;unique;not null"`
-	Code                   int64           `json:"code" gorm:"type:bigint;not null;"`
-	ReportColumnNumber     string          `json:"report_column_number" gorm:"size:36;not null;"`
-	AssessmentAreaNumber   string          `json:"assessment_number" gorm:"size:36;not null;"`
-	AssessmentMetricNumber string          `json:"assessment_metric_number" gorm:"size:36;not null;"`
-	ReportColumn           ReportColumn    `gorm:"foreignKey:ReportColumnNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	UserNumber             string          `json:"user_number" gorm:"size:36;not null;"`
-	User                   userModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	ID                     uint `gorm:"primaryKey"`
+	CreatedAt              time.Time
+	Number                 string                              `json:"number" gorm:"size:36;unique;not null"`
+	AssessmentAreaNumber   string                              `json:"assessment_area_number" gorm:"size:36;not null;"`
+	AssessmentArea         assessmentAreaModels.AssessmentArea `gorm:"foreignKey:AssessmentAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	AssessmentMetricNumber string                              `json:"assessment_metric_number" gorm:"size:36;not null;unique;"`
+	AssessmentMetric       models.AssessmentMetric             `gorm:"foreignKey:AssessmentMetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	ReportColumnNumber     string                              `json:"report_column_number" gorm:"size:36;not null;"`
+	ReportColumn           ReportColumn                        `gorm:"foreignKey:ReportColumnNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	UserNumber             string                              `json:"user_number" gorm:"size:36;not null;"`
+	User                   userModels.User                     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 type ReportSummary struct {
@@ -70,6 +78,9 @@ type ReportSummary struct {
 	User                userModels.User         `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StreamNumber        string                  `json:"stream_number" gorm:"size:36;"`
 	Stream              classModel.Stream       `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	TeacherComment      string                  `json:"teacher_comment" gorm:"size:100"`
+	HeadTeacherComment  string                  `json:"head_teacher_comment" gorm:"size:100"`
+	AggregateScaleUsed  string                  `json:"aggregate_scale_used" gorm:"size:100"`
 }
 
 type ReportScore struct {
@@ -83,6 +94,7 @@ type ReportScore struct {
 	AverageScore         float64         `json:"average_score" gorm:"type:double precision;not null;"`
 	Aggregate            float64         `json:"aggregate" gorm:"type:double precision;not null;"`
 	Grade                string          `json:"grade" gorm:"type:text;not null;"`
+	Remark               string          `json:"remark" gorm:"type:text;"`
 	UserNumber           string          `json:"user_number" gorm:"size:36;not null;"`
 	User                 userModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
@@ -99,25 +111,4 @@ type ReportScoreSummary struct {
 	Comment              string          `json:"comment" gorm:"type:text;not null;"`
 	UserNumber           string          `json:"user_number" gorm:"size:36;not null;"`
 	User                 userModels.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-}
-
-// AfterFind hook for ReportColumn
-
-func (r *ReportColumn) AfterFind(tx *gorm.DB) (err error) {
-	var reportSetting ReportSetting
-	if err := tx.Model(&ReportSetting{}).Preload("AcademicYear").Preload("CampusClass").Preload("StudyPeriod").Where("number = ?", r.ReportSettingNumber).First(&reportSetting).Error; err != nil {
-		return err
-	}
-	r.ReportSettingName = reportSetting.AcademicYear.AcademicYearName + " - " + reportSetting.CampusClass.ClassName + " - " + reportSetting.StudyPeriod.StudyPeriodName
-	return nil
-}
-
-// after find hook for ReportColumnAssessment
-
-func (r *ReportColumnAssessment) AfterFind(tx *gorm.DB) (err error) {
-	var reportColumn ReportColumn
-	if err := tx.Model(&ReportColumn{}).Preload("ReportSetting").Where("number = ?", r.ReportColumnNumber).First(&reportColumn).Error; err != nil {
-		return err
-	}
-	return nil
 }

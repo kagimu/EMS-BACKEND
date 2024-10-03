@@ -7,8 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func SaveMealCourseCount(mealCourseCount models.MealCourseCount) (models.MealCourseCount, error) {
+func SaveMealCourseCount(mealCourseCount models.MealCourseCount, tx ...*gorm.DB) (models.MealCourseCount, error) {
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Save(&mealCourseCount).Error; err != nil {
 		return models.MealCourseCount{}, err
@@ -17,9 +20,12 @@ func SaveMealCourseCount(mealCourseCount models.MealCourseCount) (models.MealCou
 	return mealCourseCount, nil
 }
 
-func GetMealCourseCountBySchoolNumber(schoolNumber string) (models.MealCourseCount, error) {
+func GetMealCourseCountBySchoolNumber(schoolNumber string, tx ...*gorm.DB) (models.MealCourseCount, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var mealCourseCount models.MealCourseCount
 

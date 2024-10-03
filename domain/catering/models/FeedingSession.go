@@ -10,7 +10,6 @@ type FeedingSession struct {
 	gorm.Model
 	Number       string             `json:"number" gorm:"size:36;unique;not null"`
 	Name         string             `json:"name" gorm:"size:100;not null"`
-	Code         uint64             `json:"code"`
 	Status       string             `json:"status" gorm:"size:50;not null"`
 	SchoolNumber string             `json:"school_number" gorm:"size:36;not null"`
 	School       schoolModel.School `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

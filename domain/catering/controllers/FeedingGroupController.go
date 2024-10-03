@@ -105,3 +105,69 @@ func DeleteFeedingGroup(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Feeding group has been removed"})
 }
+
+func ActivateFeedingGroupOnCalendars(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var payload requests.FeedingGroupCalendarRequest
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Check the provided body request."})
+		return
+	}
+
+	if err = payload.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.SaveFeedingGroupCalendar(payload, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, commons.Feedback("Groups activated on calendars"))
+}
+
+func FetchFeedingGroupOnCalendars(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide school number"))
+		return
+	}
+
+	entityNumber, _ := commons.GetUserEntityNumber(context)
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Set current entity"))
+		return
+	}
+
+	groupCalendarEventResponse, err := services.GetFeedingGroupCalendarEvent(schoolNumber, entityNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": groupCalendarEventResponse})
+}
+
+func FetchUserMeals(context *gin.Context) {
+	userNumber := context.Query("user_number")
+	if userNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide user number"))
+		return
+	}
+
+	userMeal, err := services.UserMeals(userNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": userMeal})
+}

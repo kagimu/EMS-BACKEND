@@ -11,12 +11,13 @@ type ServiceRequest struct {
 	Description     string   `json:"description"`
 	Cost            float64  `json:"cost"`
 	Name            string   `json:"name"`
-	Mandatory       bool     `json:"mandatory"`
 	SerialCode      string   `json:"serial_code"`
+	Mandatory       bool     `json:"mandatory"`
 	CampusNumbers   []string `json:"campus_numbers"`
 	OneTimePurchase bool     `json:"one_time_purchase"`
 	RepeatCycle     string   `json:"repeat_cycle"`
 	PaymentMode     string   `json:"payment_mode"`
+	SchoolNumber    string   `json:"school_number"`
 }
 
 func (s *ServiceRequest) Validate() error {
@@ -31,6 +32,9 @@ func (s *ServiceRequest) Validate() error {
 	}
 	if len(s.CampusNumbers) == 0 {
 		return errors.New("at least one campus is required")
+	}
+	if s.SchoolNumber == "" {
+		return errors.New("school number is required")
 	}
 
 	return nil

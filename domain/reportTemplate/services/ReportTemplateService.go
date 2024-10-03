@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
@@ -158,11 +159,20 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 		return "Invalid report template number", nil
 	}
 
-	selectedClasses := classReportTemplateRequest.CampusClasses
+	selectedClasses := classReportTemplateRequest.Classes
 
-	for _, campusClassNumber := range selectedClasses {
+	for _, classNumber := range selectedClasses {
 
-		if errorMessage := checkAndSaveClass(reportTemplate.Number, campusClassNumber, currentUserNumber); errorMessage != "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, classReportTemplateRequest.CampusNumber, classReportTemplateRequest.CurriculumNumber, classReportTemplateRequest.CampusCurriculumNumber)
+		if err != nil {
+			return "Error checking class and campus: " + err.Error(), nil
+		}
+
+		if campusClass.Number == "" {
+			return "Some of the selected class is not active on the selected campus", nil
+		}
+
+		if errorMessage := checkAndSaveClass(reportTemplate.Number, campusClass.Number, currentUserNumber); errorMessage != "" {
 			allError = append(allError, errorMessage)
 		}
 
@@ -177,7 +187,7 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 
 func checkAndSaveClass(reportTemplateNumber string, campusClassNumber string, currentUserNumber string) string {
 
-	campusClass, err := classRepositories.QueryCampusClassByNumber(campusClassNumber)
+	campusClass, err := classRepositories.GetCampusClassByNumber(campusClassNumber)
 
 	if err != nil {
 		return err.Error()
