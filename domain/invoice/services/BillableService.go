@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
@@ -146,8 +145,6 @@ func (billableService *billableService) GetBill(studentNumber, campusNumber, cla
 	if admission.Status == constants.StatusPending {
 		billType = constants.BillTypeNewApplication
 	}
-
-	fmt.Println("Getting for bill type: " + billType)
 
 	curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(campusCurriculumNumber, campusNumber)
 	if err != nil {
@@ -295,7 +292,7 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 		return errors.New("Invalid Curriculum on campus ")
 	}
 
-	billable, err := repositories.GetEnrollmentBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, constants.StatusActive, curriculum.Number)
+	billable, err := repositories.GetEnrollmentBill(billableRequest.StudyPeriodNumber, billableRequest.ClassNumber, billableRequest.CampusNumber, billableRequest.BillType, billableRequest.ModeOfStudyNumber, curriculum.Number, constants.StatusActive)
 	if err != nil {
 		return errors.New("Checking bill duplicates error at creation " + err.Error())
 	}

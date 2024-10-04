@@ -120,7 +120,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 			return errors.New("Invalid Curriculum on campus ")
 		}
 
-		billable, err = repositories4.GetEnrollmentBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, constants.StatusActive, curriculum.Number)
+		billable, err = repositories4.GetEnrollmentBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, curriculum.Number, constants.StatusActive)
 		if err != nil {
 			return errors.New("Checking billable error " + err.Error())
 		}
