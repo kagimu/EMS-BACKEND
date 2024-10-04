@@ -25,7 +25,7 @@ func FindReportColumnsByReportSettingsNumber(reportSettingsNumber string, tx ...
 		db = tx[0]
 	}
 
-	var reportColumns []reportSettings.ReportColumn
+	var reportColumns = make([]reportSettings.ReportColumn, 0)
 
 	if err := db.Where("report_setting_number = ?", reportSettingsNumber).
 		Order("code asc").
@@ -64,4 +64,8 @@ func DeleteReportColumn(reportColumn reportSettings.ReportColumn, tx ...*gorm.DB
 	}
 
 	return db.Delete(&reportColumn).Error
+}
+
+func DeleteReportColumnsByReportSettingNumber(number string, tx *gorm.DB) error {
+	return tx.Where("report_setting_number = ?", number).Unscoped().Delete(&reportSettings.ReportColumn{}).Error
 }

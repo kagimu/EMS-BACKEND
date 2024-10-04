@@ -93,6 +93,15 @@ func UpdateReportSettings(reportSettingsRequest requests.UpdateReportSettingsReq
 		return errors.New("Report settings for this class  already exists")
 	}
 
+	reportColums, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSettings.Number)
+	if err != nil {
+		return err
+	}
+
+	if (reportSettingsRequest.Columns < reportSettings.Columns) && (len(reportColums) > 0) {
+		return errors.New("please delete a column you dont need and adjust the percentages instead of trying to reduce the colum number")
+	}
+
 	reportSettings.StudyPeriodNumber = reportSettingsRequest.StudyPeriodNumber
 	reportSettings.AcademicYearNumber = reportSettingsRequest.AcademicYearNumber
 	reportSettings.CampusClassNumber = campusClass.Number
@@ -479,7 +488,7 @@ func GetProperAggregateScale(score float64, campusClassNumber string) (aggregate
 		}
 	}
 
-	return scale, errors.New(fmt.Sprintf("no matching aggregate scale found for %d", scale))
+	return scale, errors.New(fmt.Sprintf("no matching aggregate scale found for %d", scale.Number))
 }
 
 func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGradeScale, error) {
@@ -596,9 +605,27 @@ func DeleteReportColumn(reportColumnNumber string) error {
 		return errors.New("Invalid report column number ")
 	}
 
-	err = reporsitory.DeleteReportColumn(reportColumn)
+	tx := config.DB.Begin()
+	err = reporsitory.DeleteReportColumn(reportColumn, tx)
 	if err != nil {
 		return errors.New("failed to delete report column: " + err.Error())
+	}
+
+	// update report settings columns
+	reportSettings, err := reporsitory.GetReportSettingByNumber(reportColumn.ReportSettingNumber, tx)
+	if err != nil {
+		return errors.New("failed to fetch report settings by number: " + err.Error())
+	}
+
+	reportSettings.Columns = reportSettings.Columns - 1
+	err = reporsitory.SaveReportSettings(reportSettings, tx)
+	if err != nil {
+		return errors.New("failed to update report settings: " + err.Error())
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return errors.New("failed to commit transaction: " + err.Error())
 	}
 
 	return nil

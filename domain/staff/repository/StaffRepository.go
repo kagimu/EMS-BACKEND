@@ -10,12 +10,23 @@ import (
 
 type StaffRepository interface {
 	AttachStaffToStream(streamTeacher *models.StreamTeacher) error
-	DetachStaffFromStream(staffNumber string, streamNumber string) error
+	DetachStaffFromStream(streamTeacher *models.StreamTeacher) error
 	GetTeacherStreamDeployments(ctx *gin.Context, pagination *pagination.PaginatedResponse) ([]models.StreamTeacher, error)
+	GetTeacherByNumberAndStreamNumber(userNumber string, streamNumber string) (*models.StreamTeacher, error)
 }
 
 type StaffRepo struct {
 	DB *gorm.DB
+}
+
+func (s StaffRepo) GetTeacherByNumberAndStreamNumber(userNumber string, streamNumber string) (*models.StreamTeacher, error) {
+	var streamTeacher models.StreamTeacher
+	err := s.DB.Where("user_number = ? AND stream_number = ?", userNumber, streamNumber).First(&streamTeacher).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &streamTeacher, nil
 }
 
 func (s StaffRepo) GetTeacherStreamDeployments(ctx *gin.Context, pr *pagination.PaginatedResponse) ([]models.StreamTeacher, error) {
@@ -41,8 +52,8 @@ func (s StaffRepo) AttachStaffToStream(streamTeacher *models.StreamTeacher) erro
 	return s.DB.Create(&streamTeacher).Error
 }
 
-func (s StaffRepo) DetachStaffFromStream(staffNumber string, streamNumber string) error {
-	return s.DB.Where("user_number = ? AND stream_number = ?", staffNumber, streamNumber).Delete(&models.StreamTeacher{}).Error
+func (s StaffRepo) DetachStaffFromStream(streamTeacher *models.StreamTeacher) error {
+	return s.DB.Unscoped().Delete(streamTeacher).Error
 }
 
 func NewStaffRepository(db *gorm.DB) StaffRepository {

@@ -133,3 +133,16 @@ func BuildAppliedScaleResponse(scales []models4.AggregateScale) []responses.Appl
 
 	return response
 }
+
+func GetReportSummaryByReportSettingNumber(number string) (models.ReportSummary, error) {
+	var rs models.ReportSummary
+	if err := config.DB.Where("report_setting_number = ?", number).First(&rs).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.ReportSummary{}, nil
+		}
+		return rs, err
+	}
+
+	return rs, nil
+
+}

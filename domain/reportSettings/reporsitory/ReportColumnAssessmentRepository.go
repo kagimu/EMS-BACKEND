@@ -89,3 +89,41 @@ func AllReportColumnAssessments(reportColumnNumber, assessmentAreaNumber, assess
 
 	return reportColumnAssessments, nil
 }
+
+func DeleteReportColumnAssessmentsByReportColumnNumber(number string, tx *gorm.DB) error {
+
+	db := config.DB
+
+	if tx != nil {
+		db = tx
+	}
+
+	if err := db.Where("report_column_number = ?", number).Delete(&models.ReportColumnAssessment{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteReportColumnAssessment(reportColumnAssessment models.ReportColumnAssessment, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Delete(&reportColumnAssessment).Error
+}
+
+func GetReportColumnAssessmentByNumber(number string) (models.ReportColumnAssessment, error) {
+	db := config.DB
+
+	var reportColumnAssessment models.ReportColumnAssessment
+	if err := db.Where("number = ?", number).First(&reportColumnAssessment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportColumnAssessment, nil
+		}
+		return reportColumnAssessment, err
+	}
+	return reportColumnAssessment, nil
+}

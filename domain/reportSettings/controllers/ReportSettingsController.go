@@ -632,22 +632,49 @@ func UpdateReportSettings(context *gin.Context) {
 }
 
 func DeleteReportColumns(context *gin.Context) {
-	_, err := commons.GetUserFromHeader(context)
-	if err != nil {
-		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
-		return
-	}
 	reportColumnNumber := context.Param("report_column_number")
 	if reportColumnNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report column number"})
 		return
 	}
 
-	err = services3.DeleteReportColumn(reportColumnNumber)
+	err := services3.DeleteReportColumn(reportColumnNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Report column deleted successfully"})
+}
+
+func DeleteReportSetting(context *gin.Context) {
+	reportSettingNumber := context.Query("report_setting_number")
+	if reportSettingNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report setting number"})
+		return
+	}
+
+	err := services3.DeleteReportSetting(reportSettingNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report setting deleted successfully"})
+}
+
+func DeleteReportColumnAssessment(context *gin.Context) {
+	reportColumnAssessmentNumber := context.Query("report_column_assessment_number")
+	if reportColumnAssessmentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report column assessment number"})
+		return
+	}
+
+	err := services3.DeleteReportColumnAssessment(reportColumnAssessmentNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report column assessment deleted successfully"})
 }

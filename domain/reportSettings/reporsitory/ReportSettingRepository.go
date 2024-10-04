@@ -119,3 +119,7 @@ func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academ
 
 	return reportSettings, nil
 }
+
+func DeleteReportSetting(setting reportSettingsModel.ReportSetting, tx *gorm.DB) error {
+	return tx.Delete(&setting).Error
+}

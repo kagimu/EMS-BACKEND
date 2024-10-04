@@ -307,3 +307,87 @@ func CreateReportColumnAssessmentResponse(reportColumnAssessment models.ReportCo
 		AcademicYear:     ay.AcademicYearName,
 	}
 }
+
+func DeleteReportSetting(number string) error {
+
+	reportSetting, err := reporsitory.GetReportSettingByNumber(number)
+	if err != nil {
+		return errors.New("Error checking report setting by number: " + number)
+	}
+
+	if reportSetting.Number == "" {
+		return errors.New("invalid report setting number")
+	}
+
+	// find existing report summary by report setting number
+	reportSummary, err := reporsitory.GetReportSummaryByReportSettingNumber(reportSetting.Number)
+	if err != nil {
+		return errors.New("Error getting report summary: " + err.Error())
+	}
+
+	if reportSummary.Number != "" {
+		return errors.New("report setting has already been used in a report summary , setting cant be deleted")
+	}
+
+	reportColumns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number)
+	if err != nil {
+		return errors.New("Error getting report columns: " + err.Error())
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, reportColumn := range reportColumns {
+			err := reporsitory.DeleteReportColumnAssessmentsByReportColumnNumber(reportColumn.Number, tx)
+			if err != nil {
+				return errors.New("Error deleting report column assessments: " + err.Error())
+			}
+		}
+
+		err = reporsitory.DeleteReportColumnsByReportSettingNumber(reportSetting.Number, tx)
+		if err != nil {
+			return errors.New("Error deleting report columns: " + err.Error())
+		}
+
+		err = reporsitory.DeleteReportSetting(reportSetting, tx)
+		if err != nil {
+			return errors.New("Error deleting report setting: " + err.Error())
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func DeleteReportColumnAssessment(number string) error {
+
+	reportColumnAssessment, err := reporsitory.GetReportColumnAssessmentByNumber(number)
+	if err != nil {
+		return errors.New("Error checking report column assessment by number: " + number)
+	}
+
+	if reportColumnAssessment.Number == "" {
+		return errors.New("invalid report column assessment number")
+	}
+
+	// find existing report summary by report setting number
+	reportColumn, err := reporsitory.GetReportColumnByNumber(reportColumnAssessment.ReportColumnNumber)
+	if err != nil {
+		return errors.New("Error getting report column: " + err.Error())
+	}
+	reportSummary, err := reporsitory.GetReportSummaryByReportSettingNumber(reportColumn.ReportSettingNumber)
+
+	if err != nil {
+		return errors.New("Error getting report summary: " + err.Error())
+	}
+
+	if reportSummary.Number != "" {
+		return errors.New("report column assessment has already been used in an issued report card , this setting cant be deleted")
+	}
+	err = reporsitory.DeleteReportColumnAssessment(reportColumnAssessment)
+	if err != nil {
+		return errors.New("Error deleting report column assessment: " + err.Error())
+	}
+
+	return nil
+}

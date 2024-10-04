@@ -18,7 +18,11 @@ func AttachStaffToStream(streamTeacher *models.StreamTeacher) error {
 
 func DetachStaffFromStream(staffNumber string, streamNumber string) error {
 	var repo = repository.NewStaffRepository(config.DB)
-	return repo.DetachStaffFromStream(staffNumber, streamNumber)
+	streamTeacher, err := repo.GetTeacherByNumberAndStreamNumber(staffNumber, streamNumber)
+	if err != nil {
+		return err
+	}
+	return repo.DetachStaffFromStream(streamTeacher)
 }
 
 func GetStaffStreamsAndClasses(ctx *gin.Context) (*pagination.PaginatedResponse, error) {
