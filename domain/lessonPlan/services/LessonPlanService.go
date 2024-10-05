@@ -52,6 +52,10 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 		return nil, "", err
 	}
 
+	if len(concepts) == 0 {
+		return nil, "", errors.New(fmt.Sprintf("Sub-topic '%s' has no concepts for lesson planning", subTopic.Name))
+	}
+
 	sheetsHeaders := [][]string{
 		{"Code", "Step"},
 	}
@@ -62,8 +66,7 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 
 		defaultOpenSheet, err = fileTemplate.NewSheet(concept.Name)
 		if err != nil {
-			fmt.Println(fmt.Sprintf("Error '%s' creating sheet '%s'", err.Error(), concept.Name))
-			continue
+			return nil, "", errors.New(fmt.Sprintf("Error '%s' creating sheet '%s'", err.Error(), concept.Name))
 		}
 
 		for i, row := range sheetsHeaders {
