@@ -15,7 +15,9 @@ import (
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 	"mime/multipart"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -79,7 +81,17 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 	fileTemplate.SetActiveSheet(defaultOpenSheet)
 
 	unixTime := time.Now().Unix()
-	return fileTemplate, fmt.Sprintf("%s-%d.xlsx", subTopic.Name, unixTime), nil
+	return fileTemplate, fmt.Sprintf("%s-%d.xlsx", toFileName(subTopic.Name), unixTime), nil
+}
+
+func toFileName(subTopicName string) string {
+	lowercase := strings.ToLower(subTopicName)
+
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+
+	result := re.ReplaceAllString(lowercase, "-")
+
+	return strings.Trim(result, "-")
 }
 
 var lessonPlanRepository = repository.NewLessonPlanRepository()
