@@ -45,7 +45,7 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 		return nil, "", errors.New("Checking subtopic error " + err.Error())
 	}
 
-	concepts, err := resolveConcepts(subTopic.Number)
+	concepts, err := resolveConcepts(subTopic.Number, config.DB)
 	if err != nil {
 		return nil, "", err
 	}
@@ -101,7 +101,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 	}
 
 	conceptRepository.UseTx(config.DB)
-	concepts, err := resolveConcepts(schemeOfWorkSubTopic.SubTopicNumber)
+	concepts, err := resolveConcepts(schemeOfWorkSubTopic.SubTopicNumber, config.DB)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,8 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 	return err
 }
 
-func resolveConcepts(subTopicNumber string) ([]conceptModels.Concept, error) {
+func resolveConcepts(subTopicNumber string, Db *gorm.DB) ([]conceptModels.Concept, error) {
+	conceptRepository.UseTx(Db)
 	concepts, err := conceptRepository.FindConceptsBySubTopicNumber(subTopicNumber)
 	if err != nil {
 		return concepts, errors.New("Getting concepts error " + err.Error())
