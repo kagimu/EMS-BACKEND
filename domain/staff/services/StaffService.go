@@ -53,7 +53,7 @@ func GetStaffStreamsAndClasses(ctx *gin.Context) (*pagination.PaginatedResponse,
 
 func BuildStaffResponse(user userModel.User, streamTeacher models.StreamTeacher) responses.TeacherResponse {
 
-	curicullum, _ := models2.GetCurriculumByNumber(streamTeacher.CurriculumNumber)
+	curriculum, _ := models2.GetCurriculumByNumber(streamTeacher.CurriculumNumber)
 	campus, _ := repositories.GetCampusByNumber(streamTeacher.CampusNumber)
 	school, _ := repositories2.GetSchoolByNumber(streamTeacher.SchoolNumber)
 	stream, _ := repositories3.GetStreamByNumber(streamTeacher.StreamNumber)
@@ -69,7 +69,7 @@ func BuildStaffResponse(user userModel.User, streamTeacher models.StreamTeacher)
 		Type:                 user.Type,
 		Status:               user.Status,
 		CurriculumNumber:     streamTeacher.CurriculumNumber,
-		CurriculumName:       curicullum.Name,
+		CurriculumName:       curriculum.Name,
 		CampusNumber:         streamTeacher.CampusNumber,
 		CampusName:           campus.Name,
 		SchoolNumber:         streamTeacher.SchoolNumber,
