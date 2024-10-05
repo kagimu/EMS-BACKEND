@@ -180,6 +180,8 @@ func resolveConcepts(subTopicNumber string) ([]conceptModels.Concept, error) {
 
 func processConceptSteps(conceptSteps [][]string, concept conceptModels.Concept, lessonPlanConcept models.LessonPlanConcept) error {
 
+	var lessonPlanSteps = make([]models.ExtractedStep, 0)
+
 	for rowIndex, row := range conceptSteps[1:] /*Skip the header rwo*/ {
 		if len(row) < 2 {
 			fmt.Println(fmt.Sprintf("No code and step at row %d for concept %s", rowIndex, concept.Name))
@@ -193,29 +195,78 @@ func processConceptSteps(conceptSteps [][]string, concept conceptModels.Concept,
 		if err != nil {
 			return errors.New(fmt.Sprintf("Code error %s for step %s on concept %s", err.Error(), step, concept.Name))
 		}
-
 		code := int64(code_)
 
-		currentStep, err := lessonPlanRepository.FindConceptStepByCode(code, lessonPlanConcept.Number)
+		lessonPlanSteps = append(lessonPlanSteps, models.ExtractedStep{
+			Code: code,
+			Step: step,
+		})
+
+	}
+
+	err := checkStepDuplicates(lessonPlanSteps)
+	if err != nil {
+		return err
+	}
+
+	for _, extractedStep := range lessonPlanSteps {
+
+		currentStep, err := lessonPlanRepository.FindConceptStepByCode(extractedStep.Code, lessonPlanConcept.Number)
 		if err != nil {
 			return errors.New("Checking code duplicate error " + err.Error())
 		}
 
 		if currentStep.Number == "" {
-			currentStep = models.LessonPlanStep{
-				Number:                  uuid.NewV4().String(),
-				Step:                    step,
-				Code:                    code,
-				LessonPlanConceptNumber: lessonPlanConcept.Number,
+
+			currentStep, err = lessonPlanRepository.FindConceptStepByStep(extractedStep.Step, lessonPlanConcept.Number)
+			if err != nil {
+				return errors.New("Checking step duplicate error " + err.Error())
 			}
+
+			if currentStep.Number == "" {
+				currentStep = models.LessonPlanStep{
+					Number:                  uuid.NewV4().String(),
+					Step:                    extractedStep.Step,
+					Code:                    extractedStep.Code,
+					LessonPlanConceptNumber: lessonPlanConcept.Number,
+				}
+			} else {
+				currentStep.Code = extractedStep.Code
+			}
+
 		} else {
-			currentStep.Step = step
+			currentStep.Step = extractedStep.Step
 		}
 
 		err = lessonPlanRepository.SaveConceptStep(currentStep)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Error %s saving step %s on concept %s", err.Error(), step, concept.Name))
+			return errors.New(fmt.Sprintf("Error %s saving step %s on concept %s", err.Error(), extractedStep.Step, concept.Name))
 		}
+	}
+
+	return nil
+}
+
+func checkStepDuplicates(steps []models.ExtractedStep) error {
+	var cleanedSteps = make([]string, len(steps))
+	var cleanedCodes = make([]int64, len(steps))
+
+	for _, step := range steps {
+
+		for _, cleanedStep := range cleanedSteps {
+			if cleanedStep == step.Step {
+				return errors.New("Step '" + cleanedStep + "' already defined")
+			}
+		}
+		cleanedSteps = append(cleanedSteps, step.Step)
+
+		for _, cleanedCode := range cleanedCodes {
+			if cleanedCode == step.Code {
+				return errors.New(fmt.Sprintf("Code %d already used", cleanedCode))
+			}
+		}
+		cleanedCodes = append(cleanedCodes, step.Code)
+
 	}
 
 	return nil
