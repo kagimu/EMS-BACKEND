@@ -14,10 +14,26 @@ type LessonPlanRepository interface {
 	GetLessonPlanConcept(lessonPlanNumber, conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
 	SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error
 	SaveConceptStep(lessonPlanStep lessonPlanModel.LessonPlanStep) error
+	FindConceptStepByCode(code int64, lessonPlanConceptNumber string) (lessonPlanModel.LessonPlanStep, error)
 }
 
 type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanRepositoryImpl) FindConceptStepByCode(code int64, lessonPlanConceptNumber string) (lessonPlanModel.LessonPlanStep, error) {
+
+	var lessonPlanStep lessonPlanModel.LessonPlanStep
+	if err := l.Db.Where("code = ? AND lesson_plan_concept_number = ?", code, lessonPlanConceptNumber).First(&lessonPlanStep).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlanModel.LessonPlanStep{}, nil
+		}
+
+		return lessonPlanModel.LessonPlanStep{}, err
+	}
+
+	return lessonPlanStep, nil
 }
 
 func (l *lessonPlanRepositoryImpl) SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error {

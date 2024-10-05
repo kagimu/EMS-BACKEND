@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
@@ -15,14 +16,70 @@ import (
 	"gorm.io/gorm"
 	"mime/multipart"
 	"strconv"
+	"time"
 )
 
 type LessonPlanService interface {
 	ImportPlan(lessonPlanFile multipart.File, subTopicNumber, currentUserNumber string) error
+	ExportLessonPlanTemplate(schemeSubTopicNumber string) (*excelize.File, string, error)
 }
 
 type lessonPlanServiceImp struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber string) (*excelize.File, string, error) {
+	fileTemplate := excelize.NewFile()
+
+	schemeOfWorkSubTopic, err := repositories2.GetSchemeOfWorkSubTopicByNumber(schemeSubTopicNumber)
+	if err != nil {
+		return nil, "", errors.New("Checking scheme subtopic error: " + err.Error())
+	}
+
+	if schemeOfWorkSubTopic.Number == "" {
+		return nil, "", errors.New("Invalid scheme subtopic, we can not export anything ")
+	}
+
+	subTopic, err := repositories3.GetSubTopicByNumber(schemeOfWorkSubTopic.SubTopicNumber)
+	if err != nil {
+		return nil, "", errors.New("Checking subtopic error " + err.Error())
+	}
+
+	concepts, err := resolveConcepts(subTopic.Number)
+	if err != nil {
+		return nil, "", err
+	}
+
+	sheetsHeaders := [][]string{
+		{"Code", "Step"},
+	}
+
+	defaultOpenSheet := 0
+
+	for _, concept := range concepts {
+
+		defaultOpenSheet, err = fileTemplate.NewSheet(concept.Name)
+		if err != nil {
+			fmt.Println(fmt.Sprintf("Error '%s' creating sheet '%s'", err.Error(), concept.Name))
+			continue
+		}
+
+		for i, row := range sheetsHeaders {
+			for j, cell := range row {
+				cellRef, _ := excelize.CoordinatesToCellName(j+1, i+1)
+				err = fileTemplate.SetCellValue(concept.Name, cellRef, cell)
+				if err != nil {
+					return nil, "", errors.New(fmt.Sprintf("Error '%s' writing sheet '%s' headers", err.Error(), concept.Name))
+				}
+			}
+		}
+
+	}
+
+	fileTemplate.SetActiveSheet(defaultOpenSheet)
+
+	unixTime := time.Now().Unix()
+	return fileTemplate, fmt.Sprintf("%s-%d.xlsx", subTopic.Name, unixTime), nil
 }
 
 var lessonPlanRepository = repository.NewLessonPlanRepository()
@@ -44,13 +101,9 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 	}
 
 	conceptRepository.UseTx(config.DB)
-	concepts, err := conceptRepository.FindConceptsBySubTopicNumber(schemeOfWorkSubTopic.SubTopicNumber)
+	concepts, err := resolveConcepts(schemeOfWorkSubTopic.SubTopicNumber)
 	if err != nil {
-		return errors.New("Getting concepts error " + err.Error())
-	}
-
-	if len(concepts) == 0 {
-		return errors.New("The selected sub-topic has no concepts ")
+		return err
 	}
 
 	lessonPlanRepository.UseTx(config.DB)
@@ -112,6 +165,19 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 	return err
 }
 
+func resolveConcepts(subTopicNumber string) ([]conceptModels.Concept, error) {
+	concepts, err := conceptRepository.FindConceptsBySubTopicNumber(subTopicNumber)
+	if err != nil {
+		return concepts, errors.New("Getting concepts error " + err.Error())
+	}
+
+	if len(concepts) == 0 {
+		return concepts, errors.New("The selected sub-topic has no concepts ")
+	}
+
+	return concepts, nil
+}
+
 func processConceptSteps(conceptSteps [][]string, concept conceptModels.Concept, lessonPlanConcept models.LessonPlanConcept) error {
 
 	for rowIndex, row := range conceptSteps[1:] /*Skip the header rwo*/ {
@@ -120,21 +186,33 @@ func processConceptSteps(conceptSteps [][]string, concept conceptModels.Concept,
 			continue
 		}
 
-		code_ := row[0]
+		rowCode := row[0]
 		step := row[1]
-		code, err := strconv.Atoi(code_)
+		code_, err := strconv.Atoi(rowCode)
 
 		if err != nil {
 			return errors.New(fmt.Sprintf("Code error %s for step %s on concept %s", err.Error(), step, concept.Name))
 		}
 
-		err = lessonPlanRepository.SaveConceptStep(models.LessonPlanStep{
-			Number:                  uuid.NewV4().String(),
-			Step:                    step,
-			Code:                    int64(code),
-			LessonPlanConceptNumber: lessonPlanConcept.Number,
-		})
+		code := int64(code_)
 
+		currentStep, err := lessonPlanRepository.FindConceptStepByCode(code, lessonPlanConcept.Number)
+		if err != nil {
+			return errors.New("Checking code duplicate error " + err.Error())
+		}
+
+		if currentStep.Number == "" {
+			currentStep = models.LessonPlanStep{
+				Number:                  uuid.NewV4().String(),
+				Step:                    step,
+				Code:                    code,
+				LessonPlanConceptNumber: lessonPlanConcept.Number,
+			}
+		} else {
+			currentStep.Step = step
+		}
+
+		err = lessonPlanRepository.SaveConceptStep(currentStep)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error %s saving step %s on concept %s", err.Error(), step, concept.Name))
 		}
