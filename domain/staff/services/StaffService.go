@@ -4,7 +4,12 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/repository"
@@ -38,6 +43,7 @@ func GetStaffStreamsAndClasses(ctx *gin.Context) (*pagination.PaginatedResponse,
 		if err != nil {
 			return nil, err
 		}
+
 		cleanResponse = append(cleanResponse, BuildStaffResponse(user, val))
 	}
 	pr.Content = cleanResponse
@@ -47,25 +53,32 @@ func GetStaffStreamsAndClasses(ctx *gin.Context) (*pagination.PaginatedResponse,
 
 func BuildStaffResponse(user userModel.User, streamTeacher models.StreamTeacher) responses.TeacherResponse {
 
+	curicullum, _ := models2.GetCurriculumByNumber(streamTeacher.CurriculumNumber)
+	campus, _ := repositories.GetCampusByNumber(streamTeacher.CampusNumber)
+	school, _ := repositories2.GetSchoolByNumber(streamTeacher.SchoolNumber)
+	stream, _ := repositories3.GetStreamByNumber(streamTeacher.StreamNumber)
+	class, _ := repositories3.GetClassByCampusClassNumber(streamTeacher.CampusClassNumber)
+	assessmentArea, _ := repositories4.GetAssessmentAreaByNumber(streamTeacher.AssessmentAreaNumber)
+
 	return responses.TeacherResponse{
-		Number:           user.Number,
-		FirstName:        user.FirstName,
-		LastName:         user.LastName,
-		SecondName:       user.SecondName,
-		Gender:           user.Gender,
-		Type:             user.Type,
-		Status:           user.Status,
-		CurriculumNumber: streamTeacher.CurriculumNumber,
-		//CurriculumName:       streamTeacher.CurriculumName,
-		CampusNumber: streamTeacher.CampusNumber,
-		//CampusName:           streamTeacher.CampusName,
-		SchoolNumber: streamTeacher.SchoolNumber,
-		//SchoolName:           streamTeacher.SchoolName,
-		StreamNumber: streamTeacher.StreamNumber,
-		//StreamName:           streamTeacher.StreamName,
-		CampusClassNumber: streamTeacher.CampusClassNumber,
-		//CampusClassName:      streamTeacher.CampusClassName,
+		Number:               user.Number,
+		FirstName:            user.FirstName,
+		LastName:             user.LastName,
+		SecondName:           user.SecondName,
+		Gender:               user.Gender,
+		Type:                 user.Type,
+		Status:               user.Status,
+		CurriculumNumber:     streamTeacher.CurriculumNumber,
+		CurriculumName:       curicullum.Name,
+		CampusNumber:         streamTeacher.CampusNumber,
+		CampusName:           campus.Name,
+		SchoolNumber:         streamTeacher.SchoolNumber,
+		SchoolName:           school.Name,
+		StreamNumber:         streamTeacher.StreamNumber,
+		StreamName:           stream.Name,
+		CampusClassNumber:    streamTeacher.CampusClassNumber,
+		CampusClassName:      class.Name,
 		AssessmentAreaNumber: streamTeacher.AssessmentAreaNumber,
-		//AssessmentAreaName:   streamTeacher.AssessmentAreaName,
+		AssessmentAreaName:   assessmentArea.Name,
 	}
 }
