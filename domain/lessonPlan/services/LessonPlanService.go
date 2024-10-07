@@ -60,7 +60,9 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 
 	for _, concept := range concepts {
 
-		defaultOpenSheet, err = fileTemplate.NewSheet(fmt.Sprintf("Sheet-%d", concept.Code))
+		sheetName := fmt.Sprintf("Sheet-%d", concept.Code)
+
+		defaultOpenSheet, err = fileTemplate.NewSheet(sheetName)
 		if err != nil {
 			return nil, "", errors.New(fmt.Sprintf("Error '%s' creating sheet '%s'", err.Error(), concept.Name))
 		}
@@ -73,7 +75,7 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 		for i, row := range sheetsHeaders {
 			for j, cell := range row {
 				cellRef, _ := excelize.CoordinatesToCellName(j+1, i+1)
-				err = fileTemplate.SetCellValue(concept.Name, cellRef, cell)
+				err = fileTemplate.SetCellValue(sheetName, cellRef, cell)
 				if err != nil {
 					return nil, "", errors.New(fmt.Sprintf("Error '%s' writing sheet '%s' headers", err.Error(), concept.Name))
 				}
