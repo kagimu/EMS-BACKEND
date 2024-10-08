@@ -9,6 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
+	"github.com/gin-gonic/gin"
 )
 
 func FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.ClassResponse, error) {
@@ -41,7 +42,7 @@ func CreateClassResponse(class classModels.Class) responses.ClassResponse {
 	}
 }
 
-func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) (classModels.CampusClass, error) {
+func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber string, ctx *gin.Context) (classModels.CampusClass, error) {
 	campusClass, err := repositories.GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
 		return classModels.CampusClass{}, errors.New("Checking class on campus error " + err.Error())
@@ -69,7 +70,7 @@ func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurri
 	return campusClass[0], nil
 }
 
-func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber string) ([]responses2.StreamResponse, error) {
+func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
 
 	var streamResponses = make([]responses2.StreamResponse, 0)
 
@@ -85,7 +86,7 @@ func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumN
 		classLevelNumber = campusClass.Number
 	}
 
-	streams, err := repositories.FetchStreamByCampusClassNumber(campusClass.Number)
+	streams, err := repositories.FetchStreamByCampusClassNumber(campusClass.Number, ctx)
 	if err != nil {
 		return streamResponses, errors.New("Getting streams error " + err.Error())
 	}
@@ -103,4 +104,14 @@ func CreateStreamResponse(stream classModels.Stream) responses2.StreamResponse {
 		CampusClassNumber: stream.CampusClassNumber,
 		Name:              stream.Name,
 	}
+}
+
+func FetchCampusClasses(ctx *gin.Context) ([]classModels.CampusClass, error) {
+
+	campusClasses, err := repositories.FetchCampusClasses(ctx)
+	if err != nil {
+		return campusClasses, errors.New("Getting campus classes error " + err.Error())
+	}
+
+	return campusClasses, nil
 }
