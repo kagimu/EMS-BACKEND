@@ -1,9 +1,8 @@
-package repo
+package filters
 
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	"github.com/gin-gonic/gin"
 )
@@ -11,11 +10,9 @@ import (
 func GetUserScopedItems(ctx *gin.Context, category string) []string {
 	var items = make([]string, 0)
 	db := config.DB
-	user, _ := commons.GetUserFromHeader(ctx)
-	fmt.Println("User: ", user.FirstName)
 
 	var st []models.StreamTeacher
-	err := db.Where("user_number = ?", user.Number).First(&st).Error
+	err := db.Where("user_number = ?", ctx.Request.Header["User-Number"][0]).First(&st).Error
 
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Error: %s", err.Error()))
