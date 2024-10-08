@@ -5,7 +5,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
@@ -282,7 +281,7 @@ func FetchSchoolInfo(context *gin.Context) {
 	}
 
 	var schools schoolCurriculumModels.School
-	var curriculum_ []responses.SchoolCurriculumResponseInfo
+	var curriculum_ []responses.SchoolCurriculumResponse
 	if err := config.DB.
 		Where("number = ?", schoolNumber).
 		Preload("SchoolCurriculum.Curriculum").
@@ -293,7 +292,7 @@ func FetchSchoolInfo(context *gin.Context) {
 	}
 
 	for _, schoolCurr := range schools.SchoolCurriculum {
-		curriculum_ = append(curriculum_, responses.SchoolCurriculumResponseInfo{
+		curriculum_ = append(curriculum_, responses.SchoolCurriculumResponse{
 			Name:   schoolCurr.Curriculum.Name,
 			Number: schoolCurr.Curriculum.Number,
 		})
@@ -312,41 +311,20 @@ func FetchSchoolInfo(context *gin.Context) {
 
 func FetchSchools(context *gin.Context) {
 
-	entity, _ := commons.GetUserEntityNumber(context)
+	entity, err := commons.GetUserEntityNumber(context)
 
-	var schools []schoolCurriculumModels.School
-	var schools_ []responses.SchoolResponse
-	if err := config.DB.
-		Preload("SchoolCurriculum.Curriculum").
-		Preload("SchoolCurriculum").
-		Order("created_at desc").
-		Scopes(filters.ByEntityNumber(entity)).
-		Find(&schools).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Schools!"})
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	for _, item := range schools {
-
-		var curriculum_ []responses.SchoolCurriculumResponseInfo
-
-		for _, schoolCurr := range item.SchoolCurriculum {
-			curriculum_ = append(curriculum_, responses.SchoolCurriculumResponseInfo{
-				Name:   schoolCurr.Curriculum.Name,
-				Number: schoolCurr.Number,
-			})
-		}
-
-		schools_ = append(schools_, responses.SchoolResponse{
-			Number:           item.Number,
-			Name:             item.Name,
-			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
-			SchoolCurriculum: curriculum_,
-			Logo:             commons.GenerateDownloadPath(item.Logo, false),
-		})
+	schools, err := services.FetchSchoolsByEntityNumber(entity, context)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_, "message": "Schools fetched successfully!"})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools, "message": "Schools fetched successfully!"})
 }
 
 func UploadSchoolLogo(context *gin.Context) {

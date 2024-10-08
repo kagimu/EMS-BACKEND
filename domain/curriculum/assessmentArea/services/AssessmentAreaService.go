@@ -16,6 +16,7 @@ import (
 	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	subjectRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
+	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -221,11 +222,11 @@ func findAssessmentAreaAndGradingStandard(assessmentAreaNumber string, gradingSt
 	return assessmentArea, gradingStandard, nil
 }
 
-func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber string) ([]responses.AssessmentAreaResponse, error) {
+func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber string, ctx *gin.Context) ([]responses.AssessmentAreaResponse, error) {
 
 	var assessmentAreasResponse = make([]responses.AssessmentAreaResponse, 0)
 
-	all, err := repositories.FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber)
+	all, err := repositories.FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber, ctx)
 	if err != nil {
 		return assessmentAreasResponse, errors.New("Fetching assessment areas error: " + err.Error())
 	}

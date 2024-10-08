@@ -56,23 +56,26 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 		return nil, "", errors.New(fmt.Sprintf("Sub-topic '%s' has no concepts for lesson planning", subTopic.Name))
 	}
 
-	sheetsHeaders := [][]string{
-		{"Code", "Step"},
-	}
-
 	defaultOpenSheet := 0
 
 	for _, concept := range concepts {
 
-		defaultOpenSheet, err = fileTemplate.NewSheet(concept.Name)
+		sheetName := fmt.Sprintf("Sheet-%d", concept.Code)
+
+		defaultOpenSheet, err = fileTemplate.NewSheet(sheetName)
 		if err != nil {
 			return nil, "", errors.New(fmt.Sprintf("Error '%s' creating sheet '%s'", err.Error(), concept.Name))
+		}
+
+		sheetsHeaders := [][]string{
+			{"Concept name:", concept.Name},
+			{"Code", "Step"},
 		}
 
 		for i, row := range sheetsHeaders {
 			for j, cell := range row {
 				cellRef, _ := excelize.CoordinatesToCellName(j+1, i+1)
-				err = fileTemplate.SetCellValue(concept.Name, cellRef, cell)
+				err = fileTemplate.SetCellValue(sheetName, cellRef, cell)
 				if err != nil {
 					return nil, "", errors.New(fmt.Sprintf("Error '%s' writing sheet '%s' headers", err.Error(), concept.Name))
 				}
@@ -144,7 +147,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 		}
 
 		for _, concept := range concepts {
-			rows, err := excelFile.GetRows(concept.Name)
+			rows, err := excelFile.GetRows(fmt.Sprintf("Sheet-%d", concept.Code))
 			if err != nil {
 				return errors.New(fmt.Sprintf("Error %s extracting for %s", err.Error(), concept.Name))
 			}
@@ -198,7 +201,7 @@ func processConceptSteps(conceptSteps [][]string, concept conceptModels.Concept,
 
 	var lessonPlanSteps = make([]models.ExtractedStep, 0)
 
-	for rowIndex, row := range conceptSteps[1:] /*Skip the header rwo*/ {
+	for rowIndex, row := range conceptSteps[2:] /*Skip the header rwo*/ {
 		if len(row) < 2 {
 			fmt.Println(fmt.Sprintf("No code and step at row %d for concept %s", rowIndex, concept.Name))
 			continue

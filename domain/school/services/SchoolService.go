@@ -6,7 +6,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	"github.com/gin-gonic/gin"
@@ -109,4 +111,72 @@ func BuildLeanSchoolResponse(school *schoolModel.School) responses.LeanSchool {
 		Name:   school.Name,
 		Logo:   commons.GenerateDownloadPath(school.Logo, false),
 	}
+}
+
+func FetchSchoolsByEntityNumber(entityNumber string, ctx *gin.Context) ([]responses2.SchoolResponse, error) {
+
+	repo := repositories.NewSchoolRepositoryImpl(config.DB)
+	_, err := repo.FindSchoolsByEntityNumber(entityNumber, ctx)
+	if err != nil {
+		return nil, errors.New("getting schools by entity number: " + err.Error())
+	}
+
+	var schools []schoolModel.School
+	var schools_ []responses2.SchoolResponse
+	if err := config.DB.
+		Preload("SchoolCurriculum.Curriculum").
+		Preload("SchoolCurriculum").
+		Order("created_at desc").
+		Scopes(
+			filters.ByScopedItems("school", ctx),
+			filters.ByEntityNumber(entityNumber),
+		).
+		Find(&schools).Error; err != nil {
+		return nil, err
+	}
+
+	for _, item := range schools {
+
+		var curriculum_ []responses2.SchoolCurriculumResponse
+
+		for _, schoolCurr := range item.SchoolCurriculum {
+			curriculum_ = append(curriculum_, responses2.SchoolCurriculumResponse{
+				Name:   schoolCurr.Curriculum.Name,
+				Number: schoolCurr.Number,
+			})
+		}
+
+		schools_ = append(schools_, responses2.SchoolResponse{
+			Number:           item.Number,
+			Name:             item.Name,
+			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
+			SchoolCurriculum: curriculum_,
+			Logo:             commons.GenerateDownloadPath(item.Logo, false),
+		})
+	}
+
+	//var schools = make([]responses2.SchoolResponse, 0)
+	//
+	//for _, school := range schls {
+	//
+	//	var curriculum_ []responses2.SchoolCurriculumResponse
+	//	schoolCurriculums, err := repositories.FindSchoolCurriculumBySchoolNumber(school.Number)
+	//
+	//	for _, schoolCurr := range item.SchoolCurriculum {
+	//		curriculum_ = append(curriculum_, responses.SchoolCurriculumResponseInfo{
+	//			Name:   schoolCurr.Curriculum.Name,
+	//			Number: schoolCurr.Number,
+	//		})
+	//	}
+	//
+	//	schools = append(schools, responses2.SchoolResponse{
+	//		Number:           school.Number,
+	//		Name:             school.Name,
+	//		CommencementDate: school.CommencementDate,
+	//		SchoolCurriculum: nil,
+	//		Logo:             commons.GenerateDownloadPath(school.Logo, false),
+	//	})
+	//}
+
+	return schools_, nil
 }

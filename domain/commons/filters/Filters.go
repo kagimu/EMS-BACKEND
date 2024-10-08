@@ -1,6 +1,8 @@
 package filters
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/scopes/repo"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strings"
 	"time"
@@ -303,6 +305,16 @@ func ByEntityNumber(entityNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if entityNumber != "" {
 			return db.Where("entity_number = ?", entityNumber)
+		}
+		return db
+	}
+}
+
+func ByScopedItems(category string, ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		items := repo.GetUserScopedItems(ctx, category)
+		if len(items) > 0 {
+			return db.Scopes(ByValueIn("number", items))
 		}
 		return db
 	}

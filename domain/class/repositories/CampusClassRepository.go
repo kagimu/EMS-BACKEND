@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -91,7 +92,8 @@ func GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, curri
 			filters.ByAnyField("campus_levels.campus_curriculum_number", campusCurriculumNumber),
 			filters.ByAnyField("curriculum_classes.class_number", classNumber),
 			filters.ByAnyField("campus_classes.campus_number", campusNumber),
-			filters.ByAnyField("curriculum_levels.curriculum_number", curriculumNumber)).
+			filters.ByAnyField("curriculum_levels.curriculum_number", curriculumNumber),
+		).
 		Find(&campusClass).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -102,4 +104,22 @@ func GetCampusClassByClassNumberAndCampusNumber(classNumber, campusNumber, curri
 	}
 
 	return campusClass, nil
+}
+
+func FetchCampusClasses(ctx *gin.Context) ([]campusClassModel.CampusClass, error) {
+	var campusClasses = make([]campusClassModel.CampusClass, 0)
+
+	err := config.DB.
+		Scopes(
+			filters.ByScopedItems("campusClass", ctx),
+			filters.ByCampusNumber(ctx.Param("campus_number")),
+		).
+		Find(&campusClasses).Error
+
+	if err != nil {
+		return campusClasses, err
+	}
+
+	return campusClasses, nil
+
 }

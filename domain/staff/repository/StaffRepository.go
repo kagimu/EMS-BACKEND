@@ -53,7 +53,7 @@ func (s StaffRepo) AttachStaffToStream(streamTeacher *models.StreamTeacher) erro
 }
 
 func (s StaffRepo) DetachStaffFromStream(streamTeacher *models.StreamTeacher) error {
-	return s.DB.Unscoped().Delete(streamTeacher).Error
+	return s.DB.Delete(streamTeacher).Error
 }
 
 func NewStaffRepository(db *gorm.DB) StaffRepository {
