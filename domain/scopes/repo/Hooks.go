@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
@@ -11,32 +12,30 @@ func GetUserScopedItems(ctx *gin.Context, category string) []string {
 	var items = make([]string, 0)
 	db := config.DB
 	user, _ := commons.GetUserFromHeader(ctx)
+	fmt.Println("User: ", user.FirstName)
+
 	var st []models.StreamTeacher
-	err := db.Where("user_number = ?", user.Number).Find(&st).Error
+	err := db.Where("user_number = ?", user.Number).First(&st).Error
+
 	if err != nil {
+		fmt.Println(fmt.Sprintf("Error: %s", err.Error()))
 		return items
 	}
 
+	fmt.Println(fmt.Sprintf("length is %d", len(st)))
 	for _, streamTeacher := range st {
-		if category == "school" {
+		switch category {
+		case "school":
 			items = append(items, streamTeacher.SchoolNumber)
-		} else if category == "curriculum" {
+		case "curriculum":
 			items = append(items, streamTeacher.CurriculumNumber)
-		}
-
-		if category == "campus" {
+		case "campus":
 			items = append(items, streamTeacher.CampusNumber)
-		}
-
-		if category == "campusClass" {
+		case "campusClass":
 			items = append(items, streamTeacher.CampusClassNumber)
-		}
-
-		if category == "stream" {
+		case "stream":
 			items = append(items, streamTeacher.StreamNumber)
-		}
-
-		if category == "assessmentArea" {
+		case "assessmentArea":
 			items = append(items, streamTeacher.AssessmentAreaNumber)
 		}
 	}
