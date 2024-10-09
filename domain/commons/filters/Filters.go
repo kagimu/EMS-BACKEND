@@ -309,11 +309,15 @@ func ByEntityNumber(entityNumber string) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func ByScopedItems(category string, ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
+func ByScopedItems(category string, ctx *gin.Context, fieldName ...string) func(db *gorm.DB) *gorm.DB {
+	searchField := "number"
+	if len(fieldName) > 0 {
+		searchField = fieldName[0]
+	}
 	return func(db *gorm.DB) *gorm.DB {
 		items := GetUserScopedItems(ctx, category)
 		if len(items) > 0 {
-			return db.Scopes(ByValueIn("number", items))
+			return db.Scopes(ByValueIn(searchField, items))
 		}
 		return db
 	}
