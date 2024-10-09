@@ -1,7 +1,6 @@
 package filters
 
 import (
-	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	"github.com/gin-gonic/gin"
@@ -13,13 +12,10 @@ func GetUserScopedItems(ctx *gin.Context, category string) []string {
 
 	var st []models.StreamTeacher
 	err := db.Where("user_number = ?", ctx.Request.Header["User-Number"][0]).First(&st).Error
-	fmt.Println("User id is " + ctx.Request.Header["User-Number"][0])
 	if err != nil {
-		fmt.Println(fmt.Sprintf("Error: %s", err.Error()))
 		return items
 	}
 
-	fmt.Println(fmt.Sprintf("length is %d", len(st)))
 	for _, streamTeacher := range st {
 		switch category {
 		case "school":
@@ -34,6 +30,16 @@ func GetUserScopedItems(ctx *gin.Context, category string) []string {
 			items = append(items, streamTeacher.StreamNumber)
 		case "assessmentArea":
 			items = append(items, streamTeacher.AssessmentAreaNumber)
+		}
+	}
+
+	// remove duplicates from the items slice using range
+	for i := 0; i < len(items); i++ {
+		for j := i + 1; j < len(items); j++ {
+			if items[i] == items[j] {
+				items = append(items[:j], items[j+1:]...)
+				j--
+			}
 		}
 	}
 
