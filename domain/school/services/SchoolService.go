@@ -115,11 +115,11 @@ func BuildLeanSchoolResponse(school *schoolModel.School) responses.LeanSchool {
 
 func FetchSchoolsByEntityNumber(entityNumber string, ctx *gin.Context) ([]responses2.SchoolResponse, error) {
 
-	repo := repositories.NewSchoolRepositoryImpl(config.DB)
-	_, err := repo.FindSchoolsByEntityNumber(entityNumber, ctx)
-	if err != nil {
-		return nil, errors.New("getting schools by entity number: " + err.Error())
-	}
+	//repo := repositories.NewSchoolRepositoryImpl(config.DB)
+	//_, err := repo.FindSchoolsByEntityNumber(entityNumber, ctx)
+	//if err != nil {
+	//	return nil, errors.New("getting schools by entity number: " + err.Error())
+	//}
 
 	var schools []schoolModel.School
 	var schools_ []responses2.SchoolResponse

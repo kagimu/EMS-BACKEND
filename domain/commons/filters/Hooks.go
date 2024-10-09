@@ -13,7 +13,7 @@ func GetUserScopedItems(ctx *gin.Context, category string) []string {
 
 	var st []models.StreamTeacher
 	err := db.Where("user_number = ?", ctx.Request.Header["User-Number"][0]).First(&st).Error
-
+	fmt.Println("User id is " + ctx.Request.Header["User-Number"][0])
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Error: %s", err.Error()))
 		return items
