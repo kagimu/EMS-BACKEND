@@ -6,12 +6,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetUserScopedItems(ctx *gin.Context, category string) []string {
+func GetUserScopedItems(ctx *gin.Context, category string, userNumber ...string) []string {
 	var items = make([]string, 0)
 	db := config.DB
+	var uNumber string
+	if len(userNumber) > 0 {
+		uNumber = userNumber[0]
+	} else {
+		uNumber = ctx.Request.Header["User-Number"][0]
+	}
 
 	var st []models.StreamTeacher
-	err := db.Where("user_number = ?", ctx.Request.Header["User-Number"][0]).First(&st).Error
+	err := db.Where("user_number = ?", uNumber).First(&st).Error
 	if err != nil {
 		return items
 	}
@@ -33,13 +39,21 @@ func GetUserScopedItems(ctx *gin.Context, category string) []string {
 		}
 	}
 
-	// remove duplicates from the items slice using range
+	// remove duplicates from the items slice using
 	for i := 0; i < len(items); i++ {
 		for j := i + 1; j < len(items); j++ {
 			if items[i] == items[j] {
 				items = append(items[:j], items[j+1:]...)
 				j--
 			}
+		}
+	}
+
+	// remove empty strings item from the items slice
+	for i := 0; i < len(items); i++ {
+		if items[i] != "" {
+			items = append(items[:i], items[i+1:]...)
+			i--
 		}
 	}
 

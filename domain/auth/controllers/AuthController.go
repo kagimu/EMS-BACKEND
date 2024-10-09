@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	rolesResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	"net/http"
 	"regexp"
@@ -144,6 +145,8 @@ func Login(context *gin.Context) {
 
 	}
 
+	scopes := filters.GetUserScopedItems(context, "stream", userProfile.Number)
+
 	userView := responses.UserView{
 		Number:      userProfile.Number,
 		FirstName:   userProfile.FirstName,
@@ -153,6 +156,7 @@ func Login(context *gin.Context) {
 		Type:        userProfile.Type,
 		Roles:       userRolesList,
 		Permissions: permissions,
+		Scopes:      scopes,
 	}
 
 	//we generate jwt token

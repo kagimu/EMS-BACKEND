@@ -28,4 +28,5 @@ type UserView struct {
 	Contacts    []models.ContactList `json:"contacts"`
 	Roles       []responses.RoleView `json:"roles"`
 	Permissions []string             `json:"permissions"`
+	Scopes      []string             `json:"scopes"`
 }
