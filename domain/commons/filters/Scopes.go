@@ -50,12 +50,12 @@ func GetUserScopedItems(ctx *gin.Context, category string, userNumber ...string)
 	}
 
 	// remove empty strings item from the items slice
-	for i := 0; i < len(items); i++ {
-		if items[i] != "" {
-			items = append(items[:i], items[i+1:]...)
-			i--
-		}
-	}
+	//for i := 0; i < len(items); i++ {
+	//	if items[i] != "" {
+	//		items = append(items[:i], items[i+1:]...)
+	//		i--
+	//	}
+	//}
 
 	return items
 }

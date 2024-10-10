@@ -145,7 +145,7 @@ func Login(context *gin.Context) {
 
 	}
 
-	scopes := filters.GetUserScopedItems(context, "stream", userProfile.Number)
+	scopes := filters.GetUserScopedItems(context, "stream", userNumber)
 
 	userView := responses.UserView{
 		Number:      userProfile.Number,
