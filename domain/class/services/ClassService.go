@@ -98,6 +98,21 @@ func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumN
 	return streamResponses, nil
 }
 
+func FetchStreamsByCampusClassNumber(campusClassNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
+	var streamResponses = make([]responses2.StreamResponse, 0)
+
+	streams, err := repositories.FetchStreamByCampusClassNumber(ctx.Query("campus_class_number"), ctx)
+	if err != nil {
+		return streamResponses, errors.New("Getting streams error " + err.Error())
+	}
+
+	for _, stream := range streams {
+		streamResponses = append(streamResponses, CreateStreamResponse(stream))
+	}
+
+	return streamResponses, nil
+}
+
 func CreateStreamResponse(stream classModels.Stream) responses2.StreamResponse {
 	return responses2.StreamResponse{
 		StreamNumber:      stream.Number,

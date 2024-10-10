@@ -29,7 +29,8 @@ func FetchStreamByCampusClassNumber(campusClassNumber string, ctx *gin.Context, 
 
 	var streams []models.Stream
 
-	if err := db.Scopes(filters.ByScopedItems("stream", ctx)).Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
+	if err := db.Scopes(
+		filters.ByScopedItems("stream", ctx)).Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return streams, nil

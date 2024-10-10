@@ -1053,3 +1053,18 @@ func FetchClassesBySchoolNumber(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
 }
+
+func FetchStreamByCampusClassNumber(ctx *gin.Context) {
+	campusClassNumber := ctx.Param("campus_class_number")
+
+	if campusClassNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Campus Class is required"})
+		return
+	}
+	streams, err := services.FetchStreamsByCampusClassNumber(campusClassNumber, ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": streams})
+}
