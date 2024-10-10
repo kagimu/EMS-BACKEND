@@ -16,5 +16,9 @@ func (a *AssessmentRequest) Validate() error {
 	if a.StudentNumber == "" {
 		return errors.New("student number is required")
 	}
+
+	if a.ActualScore < 0 {
+		return errors.New("Score should be greater than zero or equal to zero ")
+	}
 	return nil
 }
