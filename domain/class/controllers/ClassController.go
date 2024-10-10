@@ -923,14 +923,15 @@ func AddClassStream(ctx *gin.Context) {
 
 }
 
-func FetchStreamsByClassLevelNumber(ctx *gin.Context) {
+func FetchStreams(ctx *gin.Context) {
 	classLevelNumber := ctx.Query("class_level_number")
 	classNumber := ctx.Query("class_number")
 	campusNumber := ctx.Query("campus_number")
 	curriculumNumber := ctx.Query("curriculum_number")
 	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
+	campusClassNumber := ctx.Query("campus_class_number")
 
-	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, ctx)
+	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, ctx)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -1052,19 +1053,4 @@ func FetchClassesBySchoolNumber(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
-}
-
-func FetchStreamByCampusClassNumber(ctx *gin.Context) {
-	campusClassNumber := ctx.Param("campus_class_number")
-
-	if campusClassNumber == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Campus Class is required"})
-		return
-	}
-	streams, err := services.FetchStreamsByCampusClassNumber(campusClassNumber, ctx)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"data": streams})
 }

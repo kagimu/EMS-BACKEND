@@ -70,27 +70,36 @@ func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurri
 	return campusClass[0], nil
 }
 
-func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
+func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
 
 	var streamResponses = make([]responses2.StreamResponse, 0)
-
-	campusClass, err := ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
-
-	if err != nil && classLevelNumber == "" {
-		return streamResponses, err
-	}
-
-	if campusClass.Number == "" && classLevelNumber == "" {
-		return streamResponses, errors.New("Selected class and curriculum are not on the selected campus ")
+	var streams []classModels.Stream
+	var err error
+	if campusClassNumber != "" {
+		streams, err = repositories.FetchStreamByCampusClassNumber(campusClassNumber, ctx)
+		if err != nil {
+			return streamResponses, errors.New("Getting streams error " + err.Error())
+		}
 	} else {
-		classLevelNumber = campusClass.Number
-	}
 
-	streams, err := repositories.FetchStreamByCampusClassNumber(campusClass.Number, ctx)
-	if err != nil {
-		return streamResponses, errors.New("Getting streams error " + err.Error())
-	}
+		campusClass, err := ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 
+		if err != nil && classLevelNumber == "" {
+			return streamResponses, err
+		}
+
+		if campusClass.Number == "" && classLevelNumber == "" {
+			return streamResponses, errors.New("Selected class and curriculum are not on the selected campus ")
+		} else {
+			classLevelNumber = campusClass.Number
+		}
+
+		streams, err = repositories.FetchStreamByCampusClassNumber(campusClass.Number, ctx)
+		if err != nil {
+			return streamResponses, errors.New("Getting streams error " + err.Error())
+		}
+
+	}
 	for _, stream := range streams {
 		streamResponses = append(streamResponses, CreateStreamResponse(stream))
 	}
