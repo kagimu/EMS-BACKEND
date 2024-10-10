@@ -150,7 +150,7 @@ func Login(context *gin.Context) {
 
 	scopes := filters.GetUserScopedItems(context, "stream", userNumber)
 
-	scopedCampuses := filters.GetUserScopedItems(context, "campus")
+	scopedCampuses := filters.GetUserScopedItems(context, "campus", userNumber)
 	campuses := make([]responses.AuthCampusResponse, 0)
 	for _, campus := range scopedCampuses {
 
