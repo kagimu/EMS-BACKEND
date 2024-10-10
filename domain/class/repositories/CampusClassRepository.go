@@ -123,3 +123,20 @@ func FetchCampusClasses(ctx *gin.Context) ([]campusClassModel.CampusClass, error
 	return campusClasses, nil
 
 }
+
+func FindCampusClassesByCampusNumber(campusNumber string) ([]campusClassModel.CampusClass, error) {
+	var campusClasses = make([]campusClassModel.CampusClass, 0)
+
+	err := config.DB.
+		Scopes(
+			filters.ByCampusNumber(campusNumber),
+		).
+		Find(&campusClasses).Error
+
+	if err != nil {
+		return campusClasses, err
+	}
+
+	return campusClasses, nil
+
+}

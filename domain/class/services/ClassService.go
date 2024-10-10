@@ -115,3 +115,13 @@ func FetchCampusClasses(ctx *gin.Context) ([]classModels.CampusClass, error) {
 
 	return campusClasses, nil
 }
+
+func FetchCampusClassesByCampusNumber(campusNumber string) ([]classModels.CampusClass, error) {
+
+	campusClasses, err := repositories.FindCampusClassesByCampusNumber(campusNumber)
+	if err != nil {
+		return campusClasses, errors.New("Getting campus classes error " + err.Error())
+	}
+
+	return campusClasses, nil
+}

@@ -3,6 +3,7 @@ package responses
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 )
 
 type GetUserList struct {
@@ -29,4 +30,10 @@ type UserView struct {
 	Roles       []responses.RoleView `json:"roles"`
 	Permissions []string             `json:"permissions"`
 	Scopes      []string             `json:"scopes"`
+	Campuses    []AuthCampusResponse
+}
+
+type AuthCampusResponse struct {
+	CampusName string `json:"campus_name"`
+	Classes    []responses2.ClassResponse
 }
