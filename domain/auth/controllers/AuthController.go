@@ -5,6 +5,7 @@ import (
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	rolesResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"net/http"
 	"regexp"
@@ -151,7 +152,22 @@ func Login(context *gin.Context) {
 	scopes := filters.GetUserScopedItems(context, "stream", userNumber)
 
 	scopedCampuses := filters.GetUserScopedItems(context, "campus", userNumber)
+	scopedSchools := filters.GetUserScopedItems(context, "school", userNumber)
 	campuses := make([]responses.AuthCampusResponse, 0)
+	schools := make([]responses.ModelResponse, 0)
+
+	for _, school := range scopedSchools {
+		var schoolResponse responses.ModelResponse
+		school, err := repositories2.GetSchoolByNumber(school)
+		if err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"message": "School not found"})
+			return
+		}
+		schoolResponse.Name = school.Name
+		schoolResponse.Number = school.Number
+		schools = append(schools, schoolResponse)
+	}
+
 	for _, campus := range scopedCampuses {
 
 		var campusResponse responses.AuthCampusResponse
@@ -188,6 +204,7 @@ func Login(context *gin.Context) {
 		Permissions: permissions,
 		Scopes:      scopes,
 		Campuses:    campuses,
+		Schools:     schools,
 	}
 
 	token, err := services.JWTAuthService().GenerateToken(user.Number)
