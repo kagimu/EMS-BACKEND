@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
@@ -50,16 +51,20 @@ func FindInvoiceByNumber(invoiceNumber string, tx ...*gorm.DB) (invoiceModel.Inv
 	return invoice, nil
 }
 
-func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string, startDate time.Time, endDate time.Time) ([]invoiceModel.Invoice, error) {
+func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string, startDate time.Time, endDate time.Time, parentUser *userModel.User) ([]invoiceModel.Invoice, error) {
 
 	db := config.DB
 
 	var invoices []invoiceModel.Invoice
 
 	if err := db.
-		Joins("JOIN statements ON statements.number =  invoices.statement_number").
-		Joins("JOIN invoice_items ON invoice_items.invoice_number =  invoices.number").
+		Joins("JOIN statements ON statements.number = invoices.statement_number").
+		Joins("JOIN invoice_items ON invoice_items.invoice_number = invoices.number").
+		Joins("JOIN users ON users.number = statements.user_number").
+		Joins("JOIN students ON students.user_number = users.number").
+		Joins("JOIN applications ON applications.number = students.application_number").
 		Scopes(
+			filters.ByParent("applications.user_number", parentUser),
 			filters.ByStatus(status),
 			filters.ByUserNumber(userNumber),
 			filters.BySchoolNumber(schoolNumber),

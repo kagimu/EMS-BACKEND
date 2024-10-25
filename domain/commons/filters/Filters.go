@@ -1,6 +1,7 @@
 package filters
 
 import (
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strings"
@@ -128,6 +129,22 @@ func ByAnyField(fieldName string, fieldValue string) func(db *gorm.DB) *gorm.DB 
 	return func(db *gorm.DB) *gorm.DB {
 		if fieldName != "" && fieldValue != "" {
 			return db.Where(fieldName+" = ?", fieldValue)
+		}
+		return db
+	}
+}
+
+func ByParent(fieldName string, user *userModel.User) func(db *gorm.DB) *gorm.DB {
+
+	if user == nil || user.Type == "Admin" {
+		return func(db *gorm.DB) *gorm.DB {
+			return db
+		}
+	}
+
+	return func(db *gorm.DB) *gorm.DB {
+		if fieldName != "" && user.Number != "" {
+			return db.Where(fieldName+" = ?", user)
 		}
 		return db
 	}

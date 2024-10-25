@@ -67,7 +67,7 @@ func UpdateInvoice(c *gin.Context) {
 
 func GetAllInvoices(context *gin.Context) {
 
-	_, err := commons.GetUserFromHeader(context)
+	user, err := commons.GetUserFromHeader(context)
 	if err != nil {
 		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
@@ -105,7 +105,7 @@ func GetAllInvoices(context *gin.Context) {
 		return
 	}
 
-	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber, itemNumbers, startDate, endDate)
+	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber, itemNumbers, startDate, endDate, user)
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get invoices, try again", "err": err.Error()})
