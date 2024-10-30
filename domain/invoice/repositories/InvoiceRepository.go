@@ -65,12 +65,12 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 		Joins("JOIN applications ON applications.number = students.application_number").
 		Scopes(
 			filters.ByParent("applications.user_number", parentUser),
-			filters.ByStatus(status),
-			filters.ByUserNumber(userNumber),
-			filters.BySchoolNumber(schoolNumber),
+			filters.ByAnyField("invoices.status", status),
+			filters.ByAnyField("statements.user_number", userNumber),
+			filters.ByAnyField("statements.school_number", schoolNumber),
 			filters.ByValueIn("invoice_items.item_number", invoiceItems),
 			filters.ByDateBetween("created_at", startDate, endDate),
-			filters.ByCampusNumber(campusNumber)).
+			filters.ByAnyField("statements.campus_number", campusNumber)).
 		Group("invoices.number").
 		Find(&invoices).Error; err != nil {
 
