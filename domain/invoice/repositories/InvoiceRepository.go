@@ -69,7 +69,7 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 			filters.ByAnyField("statements.user_number", userNumber),
 			filters.ByAnyField("statements.school_number", schoolNumber),
 			filters.ByValueIn("invoice_items.item_number", invoiceItems),
-			filters.ByDateBetween("created_at", startDate, endDate),
+			filters.ByDateBetween("statements.created_at", startDate, endDate),
 			filters.ByAnyField("statements.campus_number", campusNumber)).
 		Group("invoices.number").
 		Find(&invoices).Error; err != nil {
