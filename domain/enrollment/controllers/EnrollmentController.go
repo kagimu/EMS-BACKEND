@@ -3,12 +3,8 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/services"
-	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
-	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"gorm.io/gorm"
 	"net/http"
 
@@ -180,8 +176,13 @@ func CreateEnrollment(c *gin.Context) {
 
 func FetchEnrolledStudents(c *gin.Context) {
 
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
 	paginatedResponse := pagination.PaginatedResponse{}
-	students := make([]responses.Enrollment, 0)
 
 	schoolNumber := c.Query("school_number")
 	streamNumber := c.Query("stream_number")
@@ -190,51 +191,15 @@ func FetchEnrolledStudents(c *gin.Context) {
 	studyPeriodNumber := c.Query("study_period_number")
 	status := c.Query("status")
 
-	var enrolledStudents []models.Enrollment
-	if err := config.DB.
-		Scopes(
-			filters.BySchoolNumber(schoolNumber),
-			filters.ByStreamNumber(streamNumber),
-			filters.ByCampusNumber(campusNumber),
-			filters.ByCampusClassNumber(campusClassNumber),
-			filters.ByStudyPeriodNumber(studyPeriodNumber),
-			filters.ByStatus(status),
-			pagination.Paginate(c, &paginatedResponse),
-		).
-		Preload("School").Preload("CampusClass").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch enrolled students"})
+	page := pagination.Paginate(c, &paginatedResponse)
+
+	students_, err := enrolmentService.Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status, user, page)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	for _, enrollment := range enrolledStudents {
-
-		campusLevel, _ := repositories4.GetCampusLevelByNumber(enrollment.CampusClass.CampusLevelNumber)
-
-		curriculumLevel, _ := repositories4.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
-
-		studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
-
-		students = append(students, responses.Enrollment{
-			LevelNumber:            curriculumLevel.LevelNumber,
-			CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
-			StudentSurname:         enrollment.Student.Surname,
-			StudentSecondName:      enrollment.Student.SecondName,
-			StudentOtherName:       enrollment.Student.OtherName,
-			StudentNumber:          enrollment.Student.Number,
-			Photo:                  commons.GenerateDownloadPath(enrollment.Student.Photo, true),
-			Number:                 enrollment.Number,
-			School:                 enrollment.School.Name,
-			Campus:                 enrollment.Campus.Name,
-			StudyPeriod:            studyPeriodName.Name,
-			Status:                 enrollment.Status,
-			EnrollmentDate:         enrollment.EnrollmentDate,
-			ContinuingStudent:      enrollment.ContinuingStudent,
-			Class:                  enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")",
-			Adn:                    enrollment.Student.ADN,
-		})
-	}
-
-	paginatedResponse.Content = students
+	paginatedResponse.Content = students_
 
 	c.JSON(http.StatusOK, paginatedResponse)
 }
