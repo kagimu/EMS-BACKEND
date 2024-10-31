@@ -5,28 +5,74 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
 type EnrolmentService interface {
 	NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) error
+	Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
 }
 
 type enrolmentService struct {
+}
+
+func (enrolment *enrolmentService) Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error) {
+
+	paginatedResponse, err := enrolmentRepository.PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status, user, page)
+	students := make([]responses.Enrollment, 0)
+
+	if err != nil {
+		return students, err
+	}
+
+	for _, enrollment := range paginatedResponse {
+
+		campusLevel, _ := repositories6.GetCampusLevelByNumber(enrollment.CampusClass.CampusLevelNumber)
+
+		curriculumLevel, _ := repositories6.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
+
+		studyPeriodName, _ := repositories7.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
+
+		students = append(students, responses.Enrollment{
+			LevelNumber:            curriculumLevel.LevelNumber,
+			CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
+			StudentSurname:         enrollment.Student.Surname,
+			StudentSecondName:      enrollment.Student.SecondName,
+			StudentOtherName:       enrollment.Student.OtherName,
+			StudentNumber:          enrollment.Student.Number,
+			Photo:                  commons.GenerateDownloadPath(enrollment.Student.Photo, true),
+			Number:                 enrollment.Number,
+			School:                 enrollment.School.Name,
+			Campus:                 enrollment.Campus.Name,
+			StudyPeriod:            studyPeriodName.Name,
+			Status:                 enrollment.Status,
+			EnrollmentDate:         enrollment.EnrollmentDate,
+			ContinuingStudent:      enrollment.ContinuingStudent,
+			Class:                  enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")",
+			Adn:                    enrollment.Student.ADN,
+		})
+	}
+
+	return students, nil
 }
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
