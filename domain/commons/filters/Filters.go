@@ -1,7 +1,6 @@
 package filters
 
 import (
-	"fmt"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -143,15 +142,11 @@ func ByParent(fieldName string, user *userModel.User) func(db *gorm.DB) *gorm.DB
 		}
 	}
 
-	fmt.Println("Checking user type: " + user.Type)
-
 	if user.Type == "Admin" {
 		return func(db *gorm.DB) *gorm.DB {
 			return db
 		}
 	}
-
-	fmt.Println("Getting for Parent " + user.Number)
 
 	return func(db *gorm.DB) *gorm.DB {
 		if fieldName != "" && user.Number != "" {

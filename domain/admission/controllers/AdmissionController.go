@@ -178,7 +178,10 @@ func CreateAdmission(c *gin.Context) {
 }
 
 func FetchAdmissions(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
+
+	user, err := commons.GetUserFromHeader(c)
+
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "User not found",
 		})
@@ -187,7 +190,6 @@ func FetchAdmissions(c *gin.Context) {
 
 	paginatedResponse := pagination.PaginatedResponse{}
 	paginate := pagination.Paginate(c, &paginatedResponse)
-	//adms := make([]models.Admission, 0)
 
 	campusNumber := c.Query("campus_number")
 	studyPeriodNumber := c.Query("study_period_number")
@@ -196,28 +198,7 @@ func FetchAdmissions(c *gin.Context) {
 	schoolNumber := c.Query("school_number")
 	campusClassNumber := c.Query("campus_class_number")
 
-	/*var admissions []models.Admission
-
-	if err := config.DB.Scopes(
-		filters.ByStudyPeriodNumber(studyPeriodNumber),
-		filters.ByCampusNumber(campusNumber),
-		filters.ByStreamNumber(streamNumber),
-		filters.ByInterviewNumber(interviewNumber),
-		filters.BySchoolNumber(schoolNumber),
-		filters.ByCampusClassNumber(campusClassNumber),
-		pagination.Paginate(c, &paginatedResponse),
-	).Preload("Student").Preload("Campus").Preload("CampusClass").Preload("Stream").Preload("StudyPeriod").Preload("AcademicYear").Find(&admissions).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch admissions"})
-		return
-	}
-
-	if admissions != nil {
-		adms = admissions
-	}
-
-	paginatedResponse.Content = adms*/
-
-	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber, paginate)
+	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber, user, paginate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
