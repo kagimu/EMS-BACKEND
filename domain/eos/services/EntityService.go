@@ -103,6 +103,13 @@ func (entity *EntityService) UpdateEntity(updateEntityRequest requests.UpdateEnt
 	update.Address = updateEntityRequest.Address
 	update.Phone = updateEntityRequest.Phone
 	update.AddedBy = currentUserNumber
+	update.Email = updateEntityRequest.Email
+	update.Facebook = updateEntityRequest.Facebook
+	update.Instagram = updateEntityRequest.Instagram
+	update.Twitter = updateEntityRequest.Twitter
+	update.Website = updateEntityRequest.Website
+	update.Whatsapp = updateEntityRequest.Whatsapp
+	update.Linkedin = updateEntityRequest.Linkedin
 
 	err = repositories.SaveEntity(update)
 	if err != nil {
