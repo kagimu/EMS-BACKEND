@@ -56,11 +56,17 @@ func SaveCurrentEntity(entityNumber string, currentUserNumber string) (responses
 
 func createEntityResponse(details models.Entity) responses.EntityResponse {
 	return responses.EntityResponse{
-		Name:    details.Name,
-		Number:  details.Number,
-		Email:   details.Email,
-		Phone:   details.Phone,
-		Address: details.Address,
+		Name:      details.Name,
+		Number:    details.Number,
+		Email:     details.Email,
+		Phone:     details.Phone,
+		Address:   details.Address,
+		Facebook:  details.Facebook,
+		Instagram: details.Instagram,
+		Twitter:   details.Twitter,
+		Website:   details.Website,
+		Whatsapp:  details.Whatsapp,
+		Linkedin:  details.Linkedin,
 	}
 }
 
