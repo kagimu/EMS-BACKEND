@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/controller"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	controllers3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/controllers"
 	controllers2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/landingPage/controllers"
 	"time"
 
@@ -882,6 +883,11 @@ func SetupRoutes() *gin.Engine {
 		{
 			landingPage.POST("new", controllers2.CreateLandingPage)
 			landingPage.GET("all", controllers2.GetLandingPage)
+		}
+
+		curriculumDelivery := main.Group("curriculum-delivery")
+		{
+			curriculumDelivery.POST("add-session", controllers3.AddSession)
 		}
 
 	}

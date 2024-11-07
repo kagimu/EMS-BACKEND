@@ -23,6 +23,7 @@ import (
 	subjectClusterModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	currDelivery "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
@@ -210,6 +211,8 @@ func Init() error {
 		&models3.Attachment{},
 		&staffModel.StreamTeacher{},
 		&assessmentModel.ScriptMarkingGuide{},
+		&currDelivery.CurriculumDelivery{},
+		&currDelivery.StudentCurriculumDelivery{},
 	)
 
 	if err != nil {
