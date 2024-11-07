@@ -14,7 +14,7 @@ func AddSession(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&request)
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, commons.Feedback("Invalid request data"))
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Invalid request data "+err.Error()))
 		return
 	}
 
