@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/api/requests"
@@ -32,13 +33,37 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 			Comment:              req.Comment,
 		}
 
+		sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, val)
+		if err != nil {
+			return err
+		}
+
+		if len(sessions) > 0 {
+			db.Rollback()
+			return errors.New("session has already been recorded")
+		}
+
 		err = repo.SaveSession(&curriculumDelivery)
 		if err != nil {
+			db.Rollback()
 			return err
 		}
 
 		// Save student session
 		for _, student := range req.Students {
+
+			sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, val)
+
+			if len(sessions) > 0 {
+				db.Rollback()
+				return errors.New("session for this student has already been recorded")
+			}
+
+			if err != nil {
+				db.Rollback()
+				return err
+			}
+
 			studentCurriculumDelivery := models.StudentCurriculumDelivery{
 				StudentNumber:            student.StudentNumber,
 				CurriculumDeliveryNumber: curriculumDelivery.Number,
