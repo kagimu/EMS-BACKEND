@@ -15,7 +15,7 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 	db := config.DB.Begin()
 	repo := repository.NewCurriculumDeliveryRepositoryImpl(db)
 
-	for _, val := range req.LessonPlanStepNumbers {
+	for _, val := range req.StepNumbers {
 
 		date, err := commons.ConvertStringToDate(req.Date)
 		if err != nil {

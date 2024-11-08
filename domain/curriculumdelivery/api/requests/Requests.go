@@ -2,17 +2,16 @@ package requests
 
 import (
 	"errors"
-	"fmt"
 )
 
 type CurriculumDeliveryRequest struct {
-	LessonPlanStepNumbers []string                           `json:"lesson_plan_step_numbers"`
-	StreamNumber          string                             `json:"stream_number"`
-	Date                  string                             `json:"date"`
-	Time                  string                             `json:"time"`
-	TeacherNumber         string                             `json:"teacher_number"`
-	Comment               string                             `json:"comment"`
-	Students              []StudentCurriculumDeliveryRequest `json:"students"`
+	StepNumbers   []string                           `json:"step_numbers"`
+	StreamNumber  string                             `json:"stream_number"`
+	Date          string                             `json:"date"`
+	Time          string                             `json:"time"`
+	TeacherNumber string                             `json:"teacher_number"`
+	Comment       string                             `json:"comment"`
+	Students      []StudentCurriculumDeliveryRequest `json:"students"`
 }
 
 type StudentCurriculumDeliveryRequest struct {
@@ -41,9 +40,8 @@ func (cd *CurriculumDeliveryRequest) Validate() error {
 		return errors.New("please select the stream the lesson was delivered")
 	}
 
-	if len(cd.LessonPlanStepNumbers) == 0 {
-		fmt.Println("Lesson plan step numbers", len(cd.LessonPlanStepNumbers))
-		return errors.New("please select the lesson plan that was delivered")
+	if len(cd.StepNumbers) == 0 {
+		return errors.New("please select the steps that were delivered")
 	}
 
 	return nil
