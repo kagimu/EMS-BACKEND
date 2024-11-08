@@ -1,6 +1,9 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type CurriculumDeliveryRequest struct {
 	LessonPlanStepNumbers []string                           `json:"lesson_plan_step_numbers"`
@@ -38,7 +41,8 @@ func (cd *CurriculumDeliveryRequest) Validate() error {
 		return errors.New("please select the stream the lesson was delivered")
 	}
 
-	if len(cd.LessonPlanStepNumbers) < 1 {
+	if len(cd.LessonPlanStepNumbers) == 0 {
+		fmt.Println("Lesson plan step numbers", len(cd.LessonPlanStepNumbers))
 		return errors.New("please select the lesson plan that was delivered")
 	}
 
