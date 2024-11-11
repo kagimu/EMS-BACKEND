@@ -1,7 +1,10 @@
 package repository
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/models"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -10,10 +13,20 @@ type CurriculumDeliveryRepository interface {
 	SaveStudentSession(delivery *models.StudentCurriculumDelivery) error
 	FindCurriculumDeliveryByStreamNumberAndStepNumber(streamNumber string, stepNumber string) ([]*models.CurriculumDelivery, error)
 	FindCurriculumDeliveryByStudentNumberAndStepNumber(studentNumber string, stepNumber string) ([]*models.CurriculumDelivery, error)
+	FindCurriculumDeliveryByFilters(ctx *gin.Context, pagination *pagination.PaginatedResponse) ([]*models.CurriculumDelivery, error)
 }
 
 type CurriculumDeliveryRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByFilters(ctx *gin.Context, pr *pagination.PaginatedResponse) ([]*models.CurriculumDelivery, error) {
+	deliveries := make([]*models.CurriculumDelivery, 0)
+	err := c.DB.Scopes(
+		pagination.Paginate(ctx, pr),
+		filters.ByAnyField("stream_number", ctx.Query("stream_number")),
+		filters.ByAnyField("lesson_plan_step_number", ctx.Query("lesson_plan_step_number"))).Find(&deliveries).Error
+	return deliveries, err
 }
 
 func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByStreamNumberAndStepNumber(streamNumber string, stepNumber string) ([]*models.CurriculumDelivery, error) {

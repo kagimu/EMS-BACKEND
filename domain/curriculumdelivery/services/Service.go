@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/repository"
@@ -84,4 +85,10 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 	}
 
 	return nil
+}
+
+func GetCurriculumDeliveryByStreamNumberAndStepNumber(ctx *gin.Context, pr *pagination.PaginatedResponse) ([]*models.CurriculumDelivery, error) {
+	repo := repository.NewCurriculumDeliveryRepositoryImpl(config.DB)
+	return repo.FindCurriculumDeliveryByFilters(ctx, pr)
+
 }

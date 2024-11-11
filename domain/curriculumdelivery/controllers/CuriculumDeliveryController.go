@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/services"
 	"github.com/gin-gonic/gin"
@@ -30,4 +31,15 @@ func AddSession(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, commons.Feedback("Session added successfully"))
+}
+
+func GetSessions(ctx *gin.Context) {
+	paginatedResponse := pagination.PaginatedResponse{}
+	sessions, err := services.GetCurriculumDeliveryByStreamNumberAndStepNumber(ctx, &paginatedResponse)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to get sessions"))
+	}
+	paginatedResponse.Content = sessions
+
+	ctx.JSON(200, paginatedResponse)
 }
