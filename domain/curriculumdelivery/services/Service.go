@@ -130,6 +130,7 @@ func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses
 	cd.Class = class.Name
 	cd.Date = cds.Date.String()
 	cd.Time = cds.Time
+	cd.Comment = cds.Comment
 
 	teacher, err := repository2.GetUserByNumber(cds.TeacherNumber)
 	if err != nil {
