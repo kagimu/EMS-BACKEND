@@ -43,3 +43,14 @@ func GetSessions(ctx *gin.Context) {
 
 	ctx.JSON(200, paginatedResponse)
 }
+
+func GetStudentsBySession(context *gin.Context) {
+	paginatedResponse := pagination.PaginatedResponse{}
+	students, err := services.GetStudentsBySession(context, &paginatedResponse)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, commons.Feedback("Failed to get students"))
+	}
+	paginatedResponse.Content = students
+
+	context.JSON(200, paginatedResponse)
+}
