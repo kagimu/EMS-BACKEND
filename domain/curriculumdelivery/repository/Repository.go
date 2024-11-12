@@ -14,10 +14,17 @@ type CurriculumDeliveryRepository interface {
 	FindCurriculumDeliveryByStreamNumberAndStepNumber(streamNumber string, stepNumber string) ([]*models.CurriculumDelivery, error)
 	FindCurriculumDeliveryByStudentNumberAndStepNumber(studentNumber string, stepNumber string) ([]*models.CurriculumDelivery, error)
 	FindCurriculumDeliveryByFilters(ctx *gin.Context, pagination *pagination.PaginatedResponse) ([]*models.CurriculumDelivery, error)
+	FindStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse) ([]*models.StudentCurriculumDelivery, error)
 }
 
 type CurriculumDeliveryRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (c CurriculumDeliveryRepositoryImpl) FindStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse) ([]*models.StudentCurriculumDelivery, error) {
+	students := make([]*models.StudentCurriculumDelivery, 0)
+	err := c.DB.Where("curriculum_delivery_number = ? ", context.Param("curriculum_delivery_number")).Scopes(pagination.Paginate(context, p)).Find(&students).Error
+	return students, err
 }
 
 func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByFilters(ctx *gin.Context, pr *pagination.PaginatedResponse) ([]*models.CurriculumDelivery, error) {
