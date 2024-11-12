@@ -12,4 +12,5 @@ type CurriculumDeliveryResponse struct {
 	Time             string `json:"time"`
 	Teacher          string `json:"teacher"`
 	NumberOfStudents int    `json:"number_of_students"`
+	Comment          string `json:"comment"`
 }
