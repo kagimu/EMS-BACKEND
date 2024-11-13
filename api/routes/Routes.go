@@ -889,7 +889,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			curriculumDelivery.POST("add-session", controllers3.AddSession)
 			curriculumDelivery.GET("sessions", controllers3.GetSessions)
-			curriculum.GET("students/:curriculum_delivery_number", controllers3.GetStudentsBySession)
+			curriculumDelivery.GET("students/:curriculum_delivery_number", controllers3.GetStudentsBySession)
 		}
 
 	}
