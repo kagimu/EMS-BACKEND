@@ -11,6 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/repository"
+	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	"github.com/gin-gonic/gin"
@@ -115,6 +116,40 @@ func GetCurriculumDeliveryByStreamNumberAndStepNumber(ctx *gin.Context, pr *pagi
 func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses.CurriculumDeliveryResponse, error) {
 	var cd responses.CurriculumDeliveryResponse
 	cd.Number = cds.Number
+
+	repo := repository3.NewLessonPlanRepository()
+
+	lessonPlanStep, err := repo.GetLessonPlanStepByNumber(cds.LessonPlanStepNumber)
+	if err != nil {
+		return &cd, err
+	}
+
+	lessonPlanConcept, err := repo.GetLessonPlanConceptByNumber(lessonPlanStep.LessonPlanConceptNumber)
+	if err != nil {
+		return &cd, err
+	}
+
+	concept, err := repo.GetConceptByNumber(lessonPlanConcept.ConceptNumber)
+	if err != nil {
+		return &cd, err
+	}
+
+	subTopic, err := repo.GetSubTopicByNumber(concept.SubTopicNumber)
+
+	if err != nil {
+		return &cd, err
+	}
+
+	topic, err := repo.GetTopicByNumber(subTopic.TopicNumber)
+
+	if err != nil {
+		return &cd, err
+	}
+
+	cd.Topic = topic.Name
+	cd.SubTopic = subTopic.Name
+	cd.Concept = concept.Name
+	cd.Step = lessonPlanStep.Step
 
 	stream, err := repositories2.GetStreamByNumber(cds.StreamNumber)
 	if err != nil {
