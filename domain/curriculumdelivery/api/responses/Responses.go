@@ -6,6 +6,7 @@ type CurriculumDeliveryResponse struct {
 	Concept          string `json:"concept"`
 	Topic            string `json:"topic"`
 	Subject          string `json:"subject"`
+	SubTopic         string `json:"sub_topic"`
 	Stream           string `json:"stream"`
 	Class            string `json:"class"`
 	Date             string `json:"date"`
