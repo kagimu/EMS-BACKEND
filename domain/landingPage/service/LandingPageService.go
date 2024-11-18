@@ -30,8 +30,8 @@ func (l LandingPageService) GetLandingPage() (responses.LandingPageResponse, err
 	}
 
 	return responses.LandingPageResponse{
-		Logo:  landingPage.Image,
-		Title: landingPage.Title,
+		LogoAttachmentNumber: landingPage.Image,
+		Title:                landingPage.Title,
 	}, nil
 
 }
