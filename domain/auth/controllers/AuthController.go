@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	rolesResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
@@ -327,7 +328,7 @@ func Register(context *gin.Context) {
 
 	if userTypeChecker := config.DB.
 		First(&user).Error; userTypeChecker != nil {
-		userType = "Admin"
+		userType = constants.TypeAdmin
 	}
 
 	//creates a secure uuid user number

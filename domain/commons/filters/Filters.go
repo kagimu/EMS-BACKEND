@@ -2,6 +2,7 @@ package filters
 
 import (
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strings"
@@ -142,7 +143,7 @@ func ByParent(fieldName string, user *userModel.User) func(db *gorm.DB) *gorm.DB
 		}
 	}
 
-	if user.Type == "Admin" {
+	if user.Type == constants.TypeAdmin || user.Type == constants.TypeStaff {
 		return func(db *gorm.DB) *gorm.DB {
 			return db
 		}
