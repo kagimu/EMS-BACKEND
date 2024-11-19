@@ -5,13 +5,23 @@ import (
 )
 
 type CurriculumDeliveryRequest struct {
-	StepNumbers   []string                           `json:"step_numbers"`
+	StepNumbers   []LessonStep                       `json:"step_numbers"`
 	StreamNumber  string                             `json:"stream_number"`
 	Date          string                             `json:"date"`
 	Time          string                             `json:"time"`
 	TeacherNumber string                             `json:"teacher_number"`
 	Comment       string                             `json:"comment"`
 	Students      []StudentCurriculumDeliveryRequest `json:"students"`
+}
+type LessonStep struct {
+	StepNumber string `json:"step_number"`
+	Comment    string `json:"comment"`
+	Time       string `json:"time"`
+}
+
+type UpdateCurriculumDeliveryRequest struct {
+	Number string `json:"number"`
+	CurriculumDeliveryRequest
 }
 
 type StudentCurriculumDeliveryRequest struct {

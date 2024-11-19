@@ -213,6 +213,7 @@ func Init() error {
 		&assessmentModel.ScriptMarkingGuide{},
 		&currDelivery.CurriculumDelivery{},
 		&currDelivery.StudentCurriculumDelivery{},
+		&currDelivery.CurriculumDeliveryStep{},
 	)
 
 	if err != nil {

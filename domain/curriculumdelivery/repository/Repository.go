@@ -15,10 +15,30 @@ type CurriculumDeliveryRepository interface {
 	FindCurriculumDeliveryByStudentNumberAndStepNumber(studentNumber string, stepNumber string) ([]*models.CurriculumDelivery, error)
 	FindCurriculumDeliveryByFilters(ctx *gin.Context, pagination *pagination.PaginatedResponse) ([]*models.CurriculumDelivery, error)
 	FindStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse) ([]*models.StudentCurriculumDelivery, error)
+	DeleteStudentsBySession(sessionNumber string) error
+	DeleteCurriculumDeliverySession(number string) error
+	UpdateCurriculumDeliverySession(delivery *models.CurriculumDelivery) error
+	SaveCurriculumDeliveryStep(m *models.CurriculumDeliveryStep) error
 }
 
 type CurriculumDeliveryRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (c CurriculumDeliveryRepositoryImpl) SaveCurriculumDeliveryStep(m *models.CurriculumDeliveryStep) error {
+	return c.DB.Create(m).Error
+}
+
+func (c CurriculumDeliveryRepositoryImpl) UpdateCurriculumDeliverySession(delivery *models.CurriculumDelivery) error {
+	return c.DB.Save(delivery).Error
+}
+
+func (c CurriculumDeliveryRepositoryImpl) DeleteCurriculumDeliverySession(number string) error {
+	return c.DB.Where("number = ?", number).Delete(&models.CurriculumDelivery{}).Error
+}
+
+func (c CurriculumDeliveryRepositoryImpl) DeleteStudentsBySession(sessionNumber string) error {
+	return c.DB.Where("curriculum_delivery_number = ?", sessionNumber).Delete(&models.StudentCurriculumDelivery{}).Error
 }
 
 func (c CurriculumDeliveryRepositoryImpl) FindStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse) ([]*models.StudentCurriculumDelivery, error) {
