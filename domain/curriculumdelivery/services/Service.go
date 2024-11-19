@@ -150,6 +150,9 @@ func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses
 	cd.SubTopic = subTopic.Name
 	cd.Concept = concept.Name
 	cd.Step = lessonPlanStep.Step
+	cd.StreamNumber = cds.StreamNumber
+	cd.TeacherNumber = cds.TeacherNumber
+	cd.LessonPlanStepNumber = cds.LessonPlanStepNumber
 
 	stream, err := repositories2.GetStreamByNumber(cds.StreamNumber)
 	if err != nil {
