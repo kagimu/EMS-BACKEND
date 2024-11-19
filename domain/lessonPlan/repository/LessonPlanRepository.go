@@ -3,6 +3,9 @@ package repository
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	conceptModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	subTopicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"gorm.io/gorm"
 )
@@ -14,10 +17,110 @@ type LessonPlanRepository interface {
 	GetLessonPlanConcept(lessonPlanNumber, conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
 	SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error
 	SaveConceptStep(lessonPlanStep lessonPlanModel.LessonPlanStep) error
+	FindConceptStepByCode(code int64, lessonPlanConceptNumber string) (lessonPlanModel.LessonPlanStep, error)
+	FindConceptStepByStep(step, lessonPlanConceptNumber string) (lessonPlanModel.LessonPlanStep, error)
+	GetLessonPlanStepByNumber(lessonPlanStepNumber string) (lessonPlanModel.LessonPlanStep, error)
+	GetConceptByNumber(conceptNumber string) (conceptModel.Concept, error)
+	GetLessonPlanConceptByNumber(conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
+	GetSubTopicByNumber(subTopicNumber string) (subTopicModel.SubTopic, error)
+	GetTopicByNumber(topicNumber string) (models.Topic, error)
 }
 
 type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanRepositoryImpl) GetConceptByNumber(conceptNumber string) (conceptModel.Concept, error) {
+	var concept conceptModel.Concept
+	err := l.Db.Where("number = ?", conceptNumber).First(&concept).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return conceptModel.Concept{}, nil
+		}
+		return conceptModel.Concept{}, err
+	}
+
+	return concept, nil
+}
+
+func (l *lessonPlanRepositoryImpl) GetLessonPlanConceptByNumber(number string) (lessonPlanModel.LessonPlanConcept, error) {
+	var lessonPlanConcept lessonPlanModel.LessonPlanConcept
+	err := l.Db.Where("number = ?", number).First(&lessonPlanConcept).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlanModel.LessonPlanConcept{}, nil
+		}
+		return lessonPlanModel.LessonPlanConcept{}, err
+	}
+
+	return lessonPlanConcept, nil
+}
+
+func (l *lessonPlanRepositoryImpl) GetSubTopicByNumber(subTopicNumber string) (subTopicModel.SubTopic, error) {
+	var subTopic subTopicModel.SubTopic
+	err := l.Db.Where("number = ?", subTopicNumber).First(&subTopic).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return subTopicModel.SubTopic{}, nil
+		}
+		return subTopicModel.SubTopic{}, err
+	}
+
+	return subTopic, nil
+}
+
+func (l *lessonPlanRepositoryImpl) GetTopicByNumber(topicNumber string) (models.Topic, error) {
+	var topic models.Topic
+	err := l.Db.Where("number = ?", topicNumber).First(&topic).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Topic{}, nil
+		}
+		return models.Topic{}, err
+	}
+
+	return topic, nil
+}
+
+func (l *lessonPlanRepositoryImpl) GetLessonPlanStepByNumber(lessonPlanStepNumber string) (lessonPlanModel.LessonPlanStep, error) {
+	var lp lessonPlanModel.LessonPlanStep
+	err := l.Db.Where("number = ?", lessonPlanStepNumber).First(&lp).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlanModel.LessonPlanStep{}, nil
+		}
+		return lessonPlanModel.LessonPlanStep{}, err
+	}
+	return lp, nil
+}
+
+func (l *lessonPlanRepositoryImpl) FindConceptStepByStep(step, lessonPlanConceptNumber string) (lessonPlanModel.LessonPlanStep, error) {
+	var lessonPlanStep lessonPlanModel.LessonPlanStep
+	if err := l.Db.Where("step = ? AND lesson_plan_concept_number = ?", step, lessonPlanConceptNumber).First(&lessonPlanStep).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlanModel.LessonPlanStep{}, nil
+		}
+
+		return lessonPlanModel.LessonPlanStep{}, err
+	}
+
+	return lessonPlanStep, nil
+}
+
+func (l *lessonPlanRepositoryImpl) FindConceptStepByCode(code int64, lessonPlanConceptNumber string) (lessonPlanModel.LessonPlanStep, error) {
+
+	var lessonPlanStep lessonPlanModel.LessonPlanStep
+	if err := l.Db.Where("code = ? AND lesson_plan_concept_number = ?", code, lessonPlanConceptNumber).First(&lessonPlanStep).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlanModel.LessonPlanStep{}, nil
+		}
+
+		return lessonPlanModel.LessonPlanStep{}, err
+	}
+
+	return lessonPlanStep, nil
 }
 
 func (l *lessonPlanRepositoryImpl) SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error {

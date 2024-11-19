@@ -26,7 +26,9 @@ func (conceptRepository *conceptRepositoryImp) FindConceptsBySubTopicNumber(subT
 
 	var concepts = make([]conceptModels.Concept, 0)
 
-	if err := db.Where("sub_topic_number = ?", subTopicNumber).Find(&concepts).Error; err != nil {
+	if err := db.Where("sub_topic_number = ?", subTopicNumber).
+		Order("code asc").
+		Find(&concepts).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return concepts, nil

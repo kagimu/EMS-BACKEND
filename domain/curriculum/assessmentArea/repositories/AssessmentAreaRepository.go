@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -103,7 +104,7 @@ func FindAssessmentAreasByCurriculumClassNumber(curriculumClassNumber string, tr
 	return assessmentAreas, nil
 }
 
-func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber string, trn ...*gorm.DB) ([]assessmentAreaModels.AssessmentArea, error) {
+func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber string, ctx *gin.Context, trn ...*gorm.DB) ([]assessmentAreaModels.AssessmentArea, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -113,6 +114,7 @@ func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber
 	var assessmentAreas []assessmentAreaModels.AssessmentArea
 
 	if err := db.
+		Scopes(filters.ByScopedItems("assessmentArea", ctx, "assessment_areas.number")).
 		Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number").
 		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
 		Scopes(filters.ByAnyField("curriculum_class_number", curriculumClassNumber), filters.ByAnyField("curriculum_classes.curriculum_level_number", curriculumLevelNumber), filters.ByAnyField("curriculum_levels.level_number", levelNumber), filters.ByAnyField("curriculum_classes.class_number", classNumber), filters.ByAnyField("curriculum_levels.curriculum_number", curriculumNumber)).

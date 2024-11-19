@@ -363,3 +363,29 @@ func ImportLessonPlan(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Concepts imported successfully"})
 }
+
+func ExportLessonPlanTemplate(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	schemeSubTopicNumber := context.Param("scheme_sub_topic_number")
+	if schemeSubTopicNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the scheme subtopic for this lesson plan"})
+		return
+	}
+
+	template, fileName, err := lessonPlanService.ExportLessonPlanTemplate(schemeSubTopicNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.Header("Content-Disposition", "attachment; filename="+fileName)
+	context.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if err := template.Write(context.Writer); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+}

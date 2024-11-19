@@ -23,7 +23,7 @@ func CreateGrade(userNumber string, request requests.GradeDataRequest) error {
 		return errors.New("grade code already used")
 	}
 
-	checkName, err := repository.FindGradeByName(request.Name)
+	checkName, err := repository.FindGradeByName(request.Name, request.SchoolNumber)
 	if err != nil {
 		return errors.New("error checking grade name: " + err.Error())
 	}

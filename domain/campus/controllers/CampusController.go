@@ -388,7 +388,10 @@ func FetchCampuses(context *gin.Context) {
 	var campuses []campusModel.Campus
 	var campuses_ []responses.CampusDataList
 	if err := config.DB.
-		Scopes(filters.BySchoolNumber(schoolNumber)).
+		Scopes(
+			filters.BySchoolNumber(schoolNumber),
+			filters.ByScopedItems("campus", context),
+		).
 		Order("created_at desc").
 		Find(&campuses).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus found"})

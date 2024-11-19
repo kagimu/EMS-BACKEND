@@ -163,7 +163,7 @@ func CreateStudent(c *gin.Context) {
 
 	if err := tx.Create(&savStudent).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": " Failed to save student"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Saving student error: " + err.Error()})
 		return
 	}
 

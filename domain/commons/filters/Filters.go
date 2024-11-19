@@ -1,6 +1,9 @@
 package filters
 
 import (
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strings"
 	"time"
@@ -127,6 +130,28 @@ func ByAnyField(fieldName string, fieldValue string) func(db *gorm.DB) *gorm.DB 
 	return func(db *gorm.DB) *gorm.DB {
 		if fieldName != "" && fieldValue != "" {
 			return db.Where(fieldName+" = ?", fieldValue)
+		}
+		return db
+	}
+}
+
+func ByParent(fieldName string, user *userModel.User) func(db *gorm.DB) *gorm.DB {
+
+	if user == nil {
+		return func(db *gorm.DB) *gorm.DB {
+			return db
+		}
+	}
+
+	if user.Type == constants.TypeAdmin || user.Type == constants.TypeStaff {
+		return func(db *gorm.DB) *gorm.DB {
+			return db
+		}
+	}
+
+	return func(db *gorm.DB) *gorm.DB {
+		if fieldName != "" && user.Number != "" {
+			return db.Where(fieldName+" = ?", user.Number)
 		}
 		return db
 	}
@@ -303,6 +328,20 @@ func ByEntityNumber(entityNumber string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if entityNumber != "" {
 			return db.Where("entity_number = ?", entityNumber)
+		}
+		return db
+	}
+}
+
+func ByScopedItems(category string, ctx *gin.Context, fieldName ...string) func(db *gorm.DB) *gorm.DB {
+	searchField := "number"
+	if len(fieldName) > 0 {
+		searchField = fieldName[0]
+	}
+	return func(db *gorm.DB) *gorm.DB {
+		items := GetUserScopedItems(ctx, category)
+		if len(items) > 0 {
+			return db.Scopes(ByValueIn(searchField, items))
 		}
 		return db
 	}

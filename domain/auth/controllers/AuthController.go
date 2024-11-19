@@ -1,7 +1,13 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	rolesResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"net/http"
 	"regexp"
 	"strings"
@@ -144,6 +150,50 @@ func Login(context *gin.Context) {
 
 	}
 
+	scopes := filters.GetUserScopedItems(context, "stream", userNumber)
+
+	scopedCampuses := filters.GetUserScopedItems(context, "campus", userNumber)
+	scopedSchools := filters.GetUserScopedItems(context, "school", userNumber)
+	campuses := make([]responses.AuthCampusResponse, 0)
+	schools := make([]responses.ModelResponse, 0)
+
+	for _, school := range scopedSchools {
+		var schoolResponse responses.ModelResponse
+		school, err := repositories2.GetSchoolByNumber(school)
+		if err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"message": "School not found"})
+			return
+		}
+		schoolResponse.Name = school.Name
+		schoolResponse.Number = school.Number
+		schools = append(schools, schoolResponse)
+	}
+
+	for _, campus := range scopedCampuses {
+
+		var campusResponse responses.AuthCampusResponse
+		campus, err := repositories.GetCampusByNumber(campus)
+		if err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"message": "Campus not found"})
+			return
+		}
+		campusResponse.CampusName = campus.Name
+		classes, err := services2.FetchCampusClassesByCampusNumber(campus.Number)
+		if err != nil {
+			context.JSON(http.StatusNotFound, gin.H{"message": "Classes not found"})
+			return
+		}
+		for _, class := range classes {
+			campusResponse.Classes = append(campusResponse.Classes, responses2.ClassResponse{
+				Name:   class.ClassName,
+				Number: class.Number,
+			})
+		}
+
+		campuses = append(campuses, campusResponse)
+
+	}
+
 	userView := responses.UserView{
 		Number:      userProfile.Number,
 		FirstName:   userProfile.FirstName,
@@ -153,21 +203,13 @@ func Login(context *gin.Context) {
 		Type:        userProfile.Type,
 		Roles:       userRolesList,
 		Permissions: permissions,
+		Scopes:      scopes,
+		Campuses:    campuses,
+		Schools:     schools,
 	}
-
-	//we generate jwt token
-	//serialized := user.Serialize()
-	/*date := time.Now().Add(time.Hour * 24 * 7)
-	token, err := hassPassTokenGen.GenerateToken(user)
-	if err != nil {
-		context.JSON(http.StatusUnprocessableEntity, err.Error())
-		return
-	}*/
 
 	token, err := services.JWTAuthService().GenerateToken(user.Number)
 
-	//context.SetCookie("token", token, 60*60*24*7, "/", "", false, true)
-	//context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "data": user, "expires_in": date, "token": token})
 	context.JSON(http.StatusOK, gin.H{"message": "Login Successful", "token": token, "data": userView})
 
 }
@@ -286,7 +328,7 @@ func Register(context *gin.Context) {
 
 	if userTypeChecker := config.DB.
 		First(&user).Error; userTypeChecker != nil {
-		userType = "Admin"
+		userType = constants.TypeAdmin
 	}
 
 	//creates a secure uuid user number
@@ -610,7 +652,6 @@ func UserPassword(context *gin.Context) {
 			return
 		}
 	} else {
-		//do save user passwords if its a new password
 		userPasswordData := models.UserPassword{
 			UserPassword: hashPassword,
 			UserNumber:   userNumber,

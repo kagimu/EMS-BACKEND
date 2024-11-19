@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/controller"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	controllers3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/controllers"
 	controllers2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/landingPage/controllers"
 	"time"
 
@@ -336,6 +337,7 @@ func SetupRoutes() *gin.Engine {
 			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
 			lessonPlan.POST("import", lessonPlanControllers.ImportLessonPlan)
+			lessonPlan.GET("export-template/:scheme_sub_topic_number", lessonPlanControllers.ExportLessonPlanTemplate)
 		}
 
 		studentDetails := main.Group("/student-details")
@@ -367,7 +369,7 @@ func SetupRoutes() *gin.Engine {
 		stream := main.Group("/stream")
 		{
 			stream.POST("new", classController.AddClassStream)
-			stream.GET("fetch", classController.FetchStreamsByClassLevelNumber)
+			stream.GET("fetch", classController.FetchStreams)
 
 		}
 
@@ -881,6 +883,13 @@ func SetupRoutes() *gin.Engine {
 		{
 			landingPage.POST("new", controllers2.CreateLandingPage)
 			landingPage.GET("all", controllers2.GetLandingPage)
+		}
+
+		curriculumDelivery := main.Group("curriculum-delivery")
+		{
+			curriculumDelivery.POST("add-session", controllers3.AddSession)
+			curriculumDelivery.GET("sessions", controllers3.GetSessions)
+			curriculumDelivery.GET("students/:curriculum_delivery_number", controllers3.GetStudentsBySession)
 		}
 
 	}

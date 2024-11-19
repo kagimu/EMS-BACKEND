@@ -3,6 +3,7 @@ package responses
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 )
 
 type GetUserList struct {
@@ -17,15 +18,30 @@ type GetUserList struct {
 	Contacts   []models.ContactList `json:"contacts"`
 }
 
+type ModelResponse struct {
+	Name   string `json:"name"`
+	Number string `json:"number"`
+}
+
 type UserView struct {
-	Number      string               `json:"number"`
-	FirstName   string               `json:"first_name"`
-	SecondName  string               `json:"second_name"`
-	LastName    string               `json:"last_name"`
-	Gender      string               `json:"gender"`
-	Type        string               `json:"type"`
-	Status      string               `json:"status"`
-	Contacts    []models.ContactList `json:"contacts"`
-	Roles       []responses.RoleView `json:"roles"`
-	Permissions []string             `json:"permissions"`
+	Number              string               `json:"number"`
+	FirstName           string               `json:"first_name"`
+	SecondName          string               `json:"second_name"`
+	LastName            string               `json:"last_name"`
+	Gender              string               `json:"gender"`
+	Type                string               `json:"type"`
+	Status              string               `json:"status"`
+	Contacts            []models.ContactList `json:"contacts"`
+	Roles               []responses.RoleView `json:"roles"`
+	Permissions         []string             `json:"permissions"`
+	Scopes              []string             `json:"scopes"`
+	Campuses            []AuthCampusResponse `json:"campuses"`
+	Schools             []ModelResponse
+	CurrentAcademicYear ModelResponse `json:"current_academic_year"`
+	CurrentStudyPeriod  ModelResponse `json:"current_study_period"`
+}
+
+type AuthCampusResponse struct {
+	CampusName string `json:"campus_name"`
+	Classes    []responses2.ClassResponse
 }

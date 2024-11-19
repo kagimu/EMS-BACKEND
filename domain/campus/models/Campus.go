@@ -12,7 +12,7 @@ type (
 	Campus struct {
 		gorm.Model
 		Number           string             `json:"number" gorm:"size:36;unique;not null"`
-		Name             string             `json:"name" form:"name" binding:"required" gorm:"size:200;unique;not null"`
+		Name             string             `json:"name" form:"name" binding:"required" gorm:"size:200;not null"`
 		Phone            string             `json:"phone" form:"phone" binding:"required" gorm:"size:17;not null"`
 		Email            string             `json:"email" form:"email" binding:"required" gorm:"size:50;not null"`
 		Location         string             `json:"location" form:"location" binding:"required" gorm:"size:200;not null"`

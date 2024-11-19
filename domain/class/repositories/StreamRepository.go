@@ -4,6 +4,8 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -18,7 +20,7 @@ func CreateStream(stream *models.Stream, trn ...*gorm.DB) error {
 	return nil
 }
 
-func FetchStreamByCampusClassNumber(campusClassNumber string, trn ...*gorm.DB) ([]models.Stream, error) {
+func FetchStreamByCampusClassNumber(campusClassNumber string, ctx *gin.Context, trn ...*gorm.DB) ([]models.Stream, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -27,7 +29,8 @@ func FetchStreamByCampusClassNumber(campusClassNumber string, trn ...*gorm.DB) (
 
 	var streams []models.Stream
 
-	if err := db.Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
+	if err := db.Scopes(
+		filters.ByScopedItems("stream", ctx)).Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return streams, nil

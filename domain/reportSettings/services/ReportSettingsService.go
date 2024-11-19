@@ -358,8 +358,10 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		var summation float64
 		for _, r := range rs {
 			summation += r.Score
+			fmt.Println(fmt.Sprintf("score %.1f", r.Score))
 		}
 
+		fmt.Println(fmt.Sprintf("summation %.1f", summation))
 		scale, err = GetProperAggregateScale(summation, campusClass.Number)
 		if err != nil {
 			tx.Rollback()
@@ -488,7 +490,7 @@ func GetProperAggregateScale(score float64, campusClassNumber string) (aggregate
 		}
 	}
 
-	return scale, errors.New(fmt.Sprintf("no matching aggregate scale found for %d", scale.Number))
+	return scale, errors.New(fmt.Sprintf("no matching aggregate scale found for %.1f and %s", score, campusClassNumber))
 }
 
 func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentGradeModel.AssessmentGradeScale, error) {

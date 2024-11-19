@@ -16,16 +16,15 @@ func AuthorizeJWT() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"message": "Authorization not set",
-			})
-			c.Abort()
-			return
+			asToken := c.Query("token")
+			if asToken != "" {
+				authHeader = BearerSchema + asToken
+			}
 		}
 
-		if len(c.Request.Header["User-Number"]) < 1 {
+		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"message": "Not Authenticated!",
+				"message": "Authorization not set",
 			})
 			c.Abort()
 			return

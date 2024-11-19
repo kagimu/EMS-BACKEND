@@ -9,6 +9,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
+	"github.com/gin-gonic/gin"
 )
 
 func FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.ClassResponse, error) {
@@ -69,23 +70,47 @@ func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurri
 	return campusClass[0], nil
 }
 
-func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber string) ([]responses2.StreamResponse, error) {
+func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
 
 	var streamResponses = make([]responses2.StreamResponse, 0)
-
-	campusClass, err := ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
-
-	if err != nil && classLevelNumber == "" {
-		return streamResponses, err
-	}
-
-	if campusClass.Number == "" && classLevelNumber == "" {
-		return streamResponses, errors.New("Selected class and curriculum are not on the selected campus ")
+	var streams []classModels.Stream
+	var err error
+	if campusClassNumber != "" {
+		streams, err = repositories.FetchStreamByCampusClassNumber(campusClassNumber, ctx)
+		if err != nil {
+			return streamResponses, errors.New("Getting streams error " + err.Error())
+		}
 	} else {
-		classLevelNumber = campusClass.Number
+
+		campusClass, err := ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+
+		if err != nil && classLevelNumber == "" {
+			return streamResponses, err
+		}
+
+		if campusClass.Number == "" && classLevelNumber == "" {
+			return streamResponses, errors.New("Selected class and curriculum are not on the selected campus ")
+		} else {
+			classLevelNumber = campusClass.Number
+		}
+
+		streams, err = repositories.FetchStreamByCampusClassNumber(campusClass.Number, ctx)
+		if err != nil {
+			return streamResponses, errors.New("Getting streams error " + err.Error())
+		}
+
+	}
+	for _, stream := range streams {
+		streamResponses = append(streamResponses, CreateStreamResponse(stream))
 	}
 
-	streams, err := repositories.FetchStreamByCampusClassNumber(campusClass.Number)
+	return streamResponses, nil
+}
+
+func FetchStreamsByCampusClassNumber(campusClassNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
+	var streamResponses = make([]responses2.StreamResponse, 0)
+
+	streams, err := repositories.FetchStreamByCampusClassNumber(ctx.Query("campus_class_number"), ctx)
 	if err != nil {
 		return streamResponses, errors.New("Getting streams error " + err.Error())
 	}
@@ -103,4 +128,24 @@ func CreateStreamResponse(stream classModels.Stream) responses2.StreamResponse {
 		CampusClassNumber: stream.CampusClassNumber,
 		Name:              stream.Name,
 	}
+}
+
+func FetchCampusClasses(ctx *gin.Context) ([]classModels.CampusClass, error) {
+
+	campusClasses, err := repositories.FetchCampusClasses(ctx)
+	if err != nil {
+		return campusClasses, errors.New("Getting campus classes error " + err.Error())
+	}
+
+	return campusClasses, nil
+}
+
+func FetchCampusClassesByCampusNumber(campusNumber string) ([]classModels.CampusClass, error) {
+
+	campusClasses, err := repositories.FindCampusClassesByCampusNumber(campusNumber)
+	if err != nil {
+		return campusClasses, errors.New("Getting campus classes error " + err.Error())
+	}
+
+	return campusClasses, nil
 }

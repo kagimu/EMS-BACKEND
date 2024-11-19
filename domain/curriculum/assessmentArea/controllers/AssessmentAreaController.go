@@ -86,7 +86,7 @@ func FetchAssessmentAreas(c *gin.Context) {
 		}
 	}*/
 
-	all, err := services.FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber)
+	all, err := services.FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber, levelNumber, curriculumLevelNumber, c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -141,7 +141,7 @@ func FetchAssessmentAreasByCampusClassNumber(c *gin.Context) {
 		return
 	}*/
 
-	all, err := services.FindAllAssessmentAreas(campusClassNumber, "", "", "", "")
+	all, err := services.FindAllAssessmentAreas(campusClassNumber, "", "", "", "", c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

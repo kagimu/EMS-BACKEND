@@ -8,12 +8,18 @@ import (
 
 type Entity struct {
 	gorm.Model
-	Number  string `json:"number" gorm:"size:36;unique;not null"`
-	Name    string `json:"name" gorm:"size:100;not null"`
-	Email   string `json:"email" gorm:"size:100"`
-	Phone   string `json:"phone" gorm:"size:100"`
-	Address string `json:"address" gorm:"size:100"`
-	AddedBy string `json:"added_by" gorm:"size:36;not null"`
+	Number    string `json:"number" gorm:"size:36;unique;not null"`
+	Name      string `json:"name" gorm:"size:100;not null"`
+	Email     string `json:"email" gorm:"size:100"`
+	Phone     string `json:"phone" gorm:"size:100"`
+	Address   string `json:"address" gorm:"size:100"`
+	AddedBy   string `json:"added_by" gorm:"size:36;not null"`
+	Facebook  string `json:"facebook" gorm:"size:100"`
+	Instagram string `json:"instagram" gorm:"size:100"`
+	Twitter   string `json:"twitter" gorm:"size:100"`
+	Website   string `json:"website" gorm:"size:100"`
+	Whatsapp  string `json:"whatsapp" gorm:"size:100"`
+	Linkedin  string `json:"linkedin" gorm:"size:100"`
 }
 
 type GeneralCalendar struct {

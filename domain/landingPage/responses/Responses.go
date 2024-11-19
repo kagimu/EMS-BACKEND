@@ -1,8 +1,6 @@
 package responses
 
 type LandingPageResponse struct {
-	ID          uint   `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Image       string `json:"image"`
+	Title                string `json:"title"`
+	LogoAttachmentNumber string `json:"logo_attachment_number"`
 }

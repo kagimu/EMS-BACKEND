@@ -20,5 +20,16 @@ func (s *StockingRequest) Validate() error {
 	if s.CampusNumber == "" {
 		return errors.New("campus number is required")
 	}
+
+	for _, item := range s.ItemPriceAndQuantity {
+		if item.Quantity <= 0 {
+			return errors.New("quantity is required ")
+		}
+
+		if item.UnitCost < 0 {
+			return errors.New("unit cost can not be negative")
+		}
+	}
+
 	return nil
 }

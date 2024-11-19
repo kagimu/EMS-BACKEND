@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/services"
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -18,7 +19,7 @@ import (
 )
 
 type AdmissionService interface {
-	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error)
+	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error)
 }
 
 type admissionService struct {
@@ -26,11 +27,11 @@ type admissionService struct {
 
 var admissionRepository = repositories.NewAdmissionRepository()
 
-func (admissionService *admissionService) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error) {
+func (admissionService *admissionService) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error) {
 
 	var admissionResponse = make([]responses.AdmissionResponse, 0)
 
-	admissions, err := admissionRepository.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber, paginateFunc)
+	admissions, err := admissionRepository.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber, user, paginateFunc)
 	if err != nil {
 		return admissionResponse, errors.New("Error getting admissions " + err.Error())
 	}

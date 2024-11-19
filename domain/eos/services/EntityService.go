@@ -56,11 +56,17 @@ func SaveCurrentEntity(entityNumber string, currentUserNumber string) (responses
 
 func createEntityResponse(details models.Entity) responses.EntityResponse {
 	return responses.EntityResponse{
-		Name:    details.Name,
-		Number:  details.Number,
-		Email:   details.Email,
-		Phone:   details.Phone,
-		Address: details.Address,
+		Name:      details.Name,
+		Number:    details.Number,
+		Email:     details.Email,
+		Phone:     details.Phone,
+		Address:   details.Address,
+		Facebook:  details.Facebook,
+		Instagram: details.Instagram,
+		Twitter:   details.Twitter,
+		Website:   details.Website,
+		Whatsapp:  details.Whatsapp,
+		Linkedin:  details.Linkedin,
 	}
 }
 
@@ -103,6 +109,13 @@ func (entity *EntityService) UpdateEntity(updateEntityRequest requests.UpdateEnt
 	update.Address = updateEntityRequest.Address
 	update.Phone = updateEntityRequest.Phone
 	update.AddedBy = currentUserNumber
+	update.Email = updateEntityRequest.Email
+	update.Facebook = updateEntityRequest.Facebook
+	update.Instagram = updateEntityRequest.Instagram
+	update.Twitter = updateEntityRequest.Twitter
+	update.Website = updateEntityRequest.Website
+	update.Whatsapp = updateEntityRequest.Whatsapp
+	update.Linkedin = updateEntityRequest.Linkedin
 
 	err = repositories.SaveEntity(update)
 	if err != nil {
