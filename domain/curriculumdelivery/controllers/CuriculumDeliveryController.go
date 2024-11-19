@@ -54,3 +54,26 @@ func GetStudentsBySession(context *gin.Context) {
 
 	context.JSON(200, paginatedResponse)
 }
+
+func UpdateSession(ctx *gin.Context) {
+	var request requests.UpdateCurriculumDeliveryRequest
+	err := ctx.ShouldBindJSON(&request)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Invalid request data "+err.Error()))
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	err = services.UpdateCurriculumDeliverySession(request)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to update session"))
+	}
+
+	ctx.JSON(200, commons.Feedback("Session updated successfully"))
+}

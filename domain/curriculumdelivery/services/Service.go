@@ -23,34 +23,48 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 	db := config.DB.Begin()
 	repo := repository.NewCurriculumDeliveryRepositoryImpl(db)
 
+	date, err := commons.ConvertStringToDate(req.Date)
+	if err != nil {
+		return err
+	}
+
+	// Save session
+	curriculumDelivery := models.CurriculumDelivery{
+		Number:        uuid.NewV4().String(),
+		StreamNumber:  req.StreamNumber,
+		Date:          date,
+		Time:          req.Time,
+		TeacherNumber: req.TeacherNumber,
+		Comment:       req.Comment,
+	}
+
+	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.StepNumbers[0].StepNumber)
+	if err != nil {
+		return err
+	}
+
+	if len(sessions) > 0 {
+		db.Rollback()
+		return errors.New("session has already been recorded")
+	}
+
+	err = repo.SaveSession(&curriculumDelivery)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+
 	for _, val := range req.StepNumbers {
 
-		date, err := commons.ConvertStringToDate(req.Date)
-		if err != nil {
-			return err
-		}
-		// Save session
-		curriculumDelivery := models.CurriculumDelivery{
-			Number:               uuid.NewV4().String(),
-			LessonPlanStepNumber: val,
-			StreamNumber:         req.StreamNumber,
-			Date:                 date,
-			Time:                 req.Time,
-			TeacherNumber:        req.TeacherNumber,
-			Comment:              req.Comment,
+		// Save curriculum delivery step
+		curriculumDeliveryStep := models.CurriculumDeliveryStep{
+			CurriculumDeliveryNumber: curriculumDelivery.Number,
+			LessonPlanStepNumber:     val.StepNumber,
+			Comment:                  val.Comment,
+			Time:                     val.Time,
 		}
 
-		sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, val)
-		if err != nil {
-			return err
-		}
-
-		if len(sessions) > 0 {
-			db.Rollback()
-			return errors.New("session has already been recorded")
-		}
-
-		err = repo.SaveSession(&curriculumDelivery)
+		err = repo.SaveCurriculumDeliveryStep(&curriculumDeliveryStep)
 		if err != nil {
 			db.Rollback()
 			return err
@@ -59,7 +73,7 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 		// Save student session
 		for _, student := range req.Students {
 
-			sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, val)
+			sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, val.StepNumber)
 
 			if len(sessions) > 0 {
 				db.Rollback()
@@ -75,6 +89,7 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 				StudentNumber:            student.StudentNumber,
 				CurriculumDeliveryNumber: curriculumDelivery.Number,
 				Comment:                  student.Comment,
+				LessonPlanStepNumber:     val.StepNumber,
 			}
 
 			err = repo.SaveStudentSession(&studentCurriculumDelivery)
@@ -115,44 +130,56 @@ func GetCurriculumDeliveryByStreamNumberAndStepNumber(ctx *gin.Context, pr *pagi
 
 func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses.CurriculumDeliveryResponse, error) {
 	var cd responses.CurriculumDeliveryResponse
+	steps := make([]responses.Step, 0)
 	cd.Number = cds.Number
 
 	repo := repository3.NewLessonPlanRepository()
 
-	lessonPlanStep, err := repo.GetLessonPlanStepByNumber(cds.LessonPlanStepNumber)
-	if err != nil {
-		return &cd, err
+	curriculumDeliverySteps, err := repo.FindCurriculumDeliveryStepsByCurriculumDeliveryNumber(cds.Number)
+
+	for _, step := range curriculumDeliverySteps {
+		var stepResponse responses.Step
+		lessonPlanStep, err := repo.GetLessonPlanStepByNumber(step.LessonPlanStepNumber)
+		if err != nil {
+			return &cd, err
+		}
+		stepResponse.Name = lessonPlanStep.Step
+
+		lessonPlanConcept, err := repo.GetLessonPlanConceptByNumber(lessonPlanStep.LessonPlanConceptNumber)
+		if err != nil {
+			return &cd, err
+		}
+
+		concept, err := repo.GetConceptByNumber(lessonPlanConcept.ConceptNumber)
+		if err != nil {
+			return &cd, err
+		}
+
+		subTopic, err := repo.GetSubTopicByNumber(concept.SubTopicNumber)
+
+		if err != nil {
+			return &cd, err
+		}
+
+		topic, err := repo.GetTopicByNumber(subTopic.TopicNumber)
+
+		if err != nil {
+			return &cd, err
+		}
+
+		stepResponse.Concept = concept.Name
+		stepResponse.SubTopic = subTopic.Name
+		stepResponse.Topic = topic.Name
+		stepResponse.Date = step.Time
+		stepResponse.Comment = step.Comment
+
+		steps = append(steps, stepResponse)
+
 	}
 
-	lessonPlanConcept, err := repo.GetLessonPlanConceptByNumber(lessonPlanStep.LessonPlanConceptNumber)
-	if err != nil {
-		return &cd, err
-	}
-
-	concept, err := repo.GetConceptByNumber(lessonPlanConcept.ConceptNumber)
-	if err != nil {
-		return &cd, err
-	}
-
-	subTopic, err := repo.GetSubTopicByNumber(concept.SubTopicNumber)
-
-	if err != nil {
-		return &cd, err
-	}
-
-	topic, err := repo.GetTopicByNumber(subTopic.TopicNumber)
-
-	if err != nil {
-		return &cd, err
-	}
-
-	cd.Topic = topic.Name
-	cd.SubTopic = subTopic.Name
-	cd.Concept = concept.Name
-	cd.Step = lessonPlanStep.Step
 	cd.StreamNumber = cds.StreamNumber
 	cd.TeacherNumber = cds.TeacherNumber
-	cd.LessonPlanStepNumber = cds.LessonPlanStepNumber
+	cd.Steps = steps
 
 	stream, err := repositories2.GetStreamByNumber(cds.StreamNumber)
 	if err != nil {
@@ -203,5 +230,77 @@ func GetStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse)
 	}
 
 	return stdts, nil
+
+}
+
+func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryRequest) error {
+	db := config.DB.Begin()
+	repo := repository.NewCurriculumDeliveryRepositoryImpl(db)
+
+	// remove all students from the session
+	err := repo.DeleteStudentsBySession(req.StepNumbers[0].StepNumber)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+
+	date, err := commons.ConvertStringToDate(req.Date)
+	if err != nil {
+		return err
+	}
+	// Save session
+	curriculumDelivery := models.CurriculumDelivery{
+		Number:        uuid.NewV4().String(),
+		StreamNumber:  req.StreamNumber,
+		Date:          date,
+		Time:          req.Time,
+		TeacherNumber: req.TeacherNumber,
+		Comment:       req.Comment,
+	}
+
+	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.StepNumbers[0].StepNumber)
+	if err != nil {
+		return err
+	}
+
+	if len(sessions) > 0 {
+		db.Rollback()
+		return errors.New("session has already been recorded")
+	}
+
+	err = repo.SaveSession(&curriculumDelivery)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+
+	// Save student session
+	for _, student := range req.Students {
+
+		sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, req.StepNumbers[0].StepNumber)
+
+		if len(sessions) > 0 {
+			db.Rollback()
+			return errors.New("session for this student has already been recorded")
+		}
+
+		if err != nil {
+			db.Rollback()
+			return err
+		}
+
+		studentCurriculumDelivery := models.StudentCurriculumDelivery{
+			StudentNumber:            student.StudentNumber,
+			CurriculumDeliveryNumber: curriculumDelivery.Number,
+			Comment:                  student.Comment,
+		}
+
+		err = repo.SaveStudentSession(&studentCurriculumDelivery)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 
 }

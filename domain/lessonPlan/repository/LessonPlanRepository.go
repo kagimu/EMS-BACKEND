@@ -6,6 +6,7 @@ import (
 	conceptModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	subTopicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	currDelivery "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"gorm.io/gorm"
 )
@@ -24,10 +25,27 @@ type LessonPlanRepository interface {
 	GetLessonPlanConceptByNumber(conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
 	GetSubTopicByNumber(subTopicNumber string) (subTopicModel.SubTopic, error)
 	GetTopicByNumber(topicNumber string) (models.Topic, error)
+	FindCurriculumDeliveryStepsByCurriculumDeliveryNumber(number string) ([]currDelivery.CurriculumDeliveryStep, error)
 }
 
 type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanRepositoryImpl) FindCurriculumDeliveryStepsByCurriculumDeliveryNumber(number string) ([]currDelivery.CurriculumDeliveryStep, error) {
+	steps := make([]currDelivery.CurriculumDeliveryStep, 0)
+	err := l.Db.Where("curriculum_delivery_number = ?", number).Find(&steps).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+
+			return steps, nil
+		}
+
+		return steps, err
+	}
+
+	return steps, err
+
 }
 
 func (l *lessonPlanRepositoryImpl) GetConceptByNumber(conceptNumber string) (conceptModel.Concept, error) {
