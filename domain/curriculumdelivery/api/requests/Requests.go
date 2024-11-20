@@ -5,7 +5,7 @@ import (
 )
 
 type CurriculumDeliveryRequest struct {
-	Session       []LessonStep `json:"session"`
+	Sessions      []LessonStep `json:"sessions"`
 	StreamNumber  string       `json:"stream_number"`
 	Date          string       `json:"date"`
 	Time          string       `json:"time"`
@@ -31,7 +31,7 @@ type StudentCurriculumDeliveryRequest struct {
 
 func (cd *CurriculumDeliveryRequest) Validate() error {
 
-	for _, step := range cd.Session {
+	for _, step := range cd.Sessions {
 		if step.StepNumber == "" {
 			return errors.New("please select a step")
 		}
@@ -61,7 +61,7 @@ func (cd *CurriculumDeliveryRequest) Validate() error {
 		return errors.New("please select the stream the lesson was delivered")
 	}
 
-	if len(cd.Session) == 0 {
+	if len(cd.Sessions) == 0 {
 		return errors.New("please select the steps that were delivered")
 	}
 
