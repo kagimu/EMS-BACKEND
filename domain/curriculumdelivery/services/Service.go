@@ -38,7 +38,7 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 		Comment:       req.Comment,
 	}
 
-	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.Session[0].StepNumber)
+	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.Sessions[0].StepNumber)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 		return err
 	}
 
-	for _, val := range req.Session {
+	for _, val := range req.Sessions {
 
 		// Save curriculum delivery step
 		curriculumDeliveryStep := models.CurriculumDeliveryStep{
@@ -238,7 +238,7 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 	repo := repository.NewCurriculumDeliveryRepositoryImpl(db)
 
 	// remove all students from the session
-	err := repo.DeleteStudentsBySession(req.Session[0].StepNumber)
+	err := repo.DeleteStudentsBySession(req.Sessions[0].StepNumber)
 	if err != nil {
 		db.Rollback()
 		return err
@@ -258,7 +258,7 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 		Comment:       req.Comment,
 	}
 
-	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.Session[0].StepNumber)
+	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.Sessions[0].StepNumber)
 	if err != nil {
 		return err
 	}
@@ -274,7 +274,7 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 		return err
 	}
 
-	for _, val := range req.Session {
+	for _, val := range req.Sessions {
 		// Save curriculum delivery step
 		curriculumDeliveryStep := models.CurriculumDeliveryStep{
 			CurriculumDeliveryNumber: curriculumDelivery.Number,
@@ -292,7 +292,7 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 		// Save student session
 		for _, student := range val.Students {
 
-			sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, req.Session[0].StepNumber)
+			sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, req.Sessions[0].StepNumber)
 
 			if len(sessions) > 0 {
 				db.Rollback()

@@ -30,7 +30,7 @@ func AddSession(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add session"))
 	}
 
-	ctx.JSON(200, commons.Feedback("Session added successfully"))
+	ctx.JSON(200, commons.Feedback("Sessions added successfully"))
 }
 
 func GetSessions(ctx *gin.Context) {
@@ -75,5 +75,5 @@ func UpdateSession(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to update session"))
 	}
 
-	ctx.JSON(200, commons.Feedback("Session updated successfully"))
+	ctx.JSON(200, commons.Feedback("Sessions updated successfully"))
 }
