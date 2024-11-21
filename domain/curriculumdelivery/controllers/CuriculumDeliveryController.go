@@ -27,7 +27,8 @@ func AddSession(ctx *gin.Context) {
 
 	err = services.SaveCurriculumDeliverySession(ctx, request)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add session"))
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add session"+err.Error()))
+		return
 	}
 
 	ctx.JSON(200, commons.Feedback("Sessions added successfully"))
