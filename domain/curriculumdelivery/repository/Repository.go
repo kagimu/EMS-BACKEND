@@ -58,7 +58,7 @@ func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByFilters(ctx *g
 
 func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByStreamNumberAndStepNumber(streamNumber string, stepNumber string) ([]*models.CurriculumDelivery, error) {
 	deliveries := make([]*models.CurriculumDelivery, 0)
-	err := c.DB.Where("stream_number = ? AND lesson_plan_step_number = ?", streamNumber, stepNumber).Find(&deliveries).Error
+	err := c.DB.Joins("JOIN curriculum_delivery_steps ON curriculum_deliveries.number = curriculum_delivery_steps.curriculum_delivery_number ").Where("stream_number = ? AND curriculum_delivery_steps.lesson_plan_step_number = ?", streamNumber, stepNumber).Find(&deliveries).Error
 	return deliveries, err
 }
 
@@ -66,7 +66,8 @@ func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByStudentNumberA
 	deliveries := make([]*models.CurriculumDelivery, 0)
 	err := c.DB.Table("curriculum_deliveries").
 		Joins("JOIN student_curriculum_deliveries ON curriculum_deliveries.number = student_curriculum_deliveries.curriculum_delivery_number").
-		Where("student_curriculum_deliveries.student_number = ? AND curriculum_deliveries.lesson_plan_step_number = ?", studentNumber, stepNumber).
+		Joins("JOIN curriculum_delivery_steps ON curriculum_deliveries.number = curriculum_delivery_steps.curriculum_delivery_number").
+		Where("student_curriculum_deliveries.student_number = ? AND curriculum_delivery_steps.lesson_plan_step_number = ?", studentNumber, stepNumber).
 		Find(&deliveries).Error
 	return deliveries, err
 }
