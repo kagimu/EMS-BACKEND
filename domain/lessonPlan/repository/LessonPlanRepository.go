@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	conceptModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	subTopicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	currDelivery "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/models"
@@ -26,10 +27,63 @@ type LessonPlanRepository interface {
 	GetSubTopicByNumber(subTopicNumber string) (subTopicModel.SubTopic, error)
 	GetTopicByNumber(topicNumber string) (models.Topic, error)
 	FindCurriculumDeliveryStepsByCurriculumDeliveryNumber(number string) ([]currDelivery.CurriculumDeliveryStep, error)
+	CountCurriculumsDeliveryStepsByStreamNumber(streamNumber string) (int64, error)
+	CountStepsByCurriculumNumber(number string) (int64, error)
+	GetCurriculumByStreamNumber(lessonPlanStepNumber string) (models2.Curriculum, error)
 }
 
 type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanRepositoryImpl) CountCurriculumsDeliveryStepsByStreamNumber(streamNumber string) (int64, error) {
+	var count int64
+	err := l.Db.Model(&currDelivery.CurriculumDelivery{}).Where("stream_number = ?", streamNumber).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (l *lessonPlanRepositoryImpl) CountStepsByCurriculumNumber(number string) (int64, error) {
+	var count int64
+	err := l.Db.Model(&lessonPlanModel.LessonPlanStep{}).
+		Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number ").
+		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND ").Where("concepts.curriculum_number = ?", number).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (l *lessonPlanRepositoryImpl) GetCurriculumByStreamNumber(StreamNumber string) (models2.Curriculum, error) {
+	var concept conceptModel.Concept
+	var curriculum models2.Curriculum
+	var LessonPlanStep lessonPlanModel.LessonPlanStep
+	var cd currDelivery.CurriculumDelivery
+	err := l.Db.Joins("JOIN curriculum_delivery_steps ON curriculum_delivery_steps.curriculum_delivery_number = curriculum_deliveries.number AND curriculum_deliveries.stream_number = ?", StreamNumber).First(&cd).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return curriculum, nil
+		}
+		return curriculum, err
+	}
+
+	err = l.Db.Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number").Where("lesson_plan_steps.number = ?", LessonPlanStep.Number).Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number").First(&concept).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return curriculum, nil
+		}
+
+		return curriculum, err
+	}
+
+	err = l.Db.Where("number = ?", concept.CurriculumNumber).First(&curriculum).Error
+	return curriculum, nil
+
 }
 
 func (l *lessonPlanRepositoryImpl) FindCurriculumDeliveryStepsByCurriculumDeliveryNumber(number string) ([]currDelivery.CurriculumDeliveryStep, error) {

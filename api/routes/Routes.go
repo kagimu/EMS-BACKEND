@@ -891,7 +891,7 @@ func SetupRoutes() *gin.Engine {
 			curriculumDelivery.GET("sessions", controllers3.GetSessions)
 			curriculumDelivery.GET("students/:curriculum_delivery_number", controllers3.GetStudentsBySession)
 			curriculum.PUT("update-session", controllers3.UpdateSession)
-			curriculum.GET("by-stream/:stream_number", controllers3.GetCurriculumDeliveryProgressByStream)
+			curriculum.GET("percentage-by-stream/:stream_number", controllers3.GetCurriculumDeliveryProgressByStream)
 		}
 
 	}

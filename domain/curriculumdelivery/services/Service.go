@@ -322,12 +322,34 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 
 func GetCurriculumDeliveryProgressByStream(stream string) ([]responses.CurriculumDeliveryProgress, error) {
 	arr := make([]responses.CurriculumDeliveryProgress, 0)
+	repo := repository3.NewLessonPlanRepository()
+	curriculum, err := repo.GetCurriculumByStreamNumber(stream)
+	if err != nil {
+		return arr, err
+	}
+
+	deliveredSteps, err := repo.CountCurriculumsDeliveryStepsByStreamNumber(stream)
+	if err != nil {
+		return arr, err
+	}
+
+	totalSteps, err := repo.CountStepsByCurriculumNumber(curriculum.Number)
+	if err != nil {
+		return arr, err
+	}
+
+	var percentage float64
+	if totalSteps > 0 {
+		percentage = float64(deliveredSteps) / float64(totalSteps) * 100
+	}
+
+	progress := responses.CurriculumDeliveryProgress{
+		Progress:   int(percentage),
+		Scale:      "%",
+		Curriculum: curriculum.Name,
+	}
+
+	arr = append(arr, progress)
 
 	return arr, nil
-}
-
-func BuildCurriculumDeliverProgressResponse(cds *models.CurriculumDelivery) (*responses.CurriculumDeliveryProgress, error) {
-	var cd responses.CurriculumDeliveryProgress
-
-	return &cd, nil
 }
