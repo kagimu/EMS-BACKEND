@@ -319,3 +319,15 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 	return nil
 
 }
+
+func GetCurriculumDeliveryProgressByStream(stream string) ([]responses.CurriculumDeliveryProgress, error) {
+	arr := make([]responses.CurriculumDeliveryProgress, 0)
+
+	return arr, nil
+}
+
+func BuildCurriculumDeliverProgressResponse(cds *models.CurriculumDelivery) (*responses.CurriculumDeliveryProgress, error) {
+	var cd responses.CurriculumDeliveryProgress
+
+	return &cd, nil
+}
