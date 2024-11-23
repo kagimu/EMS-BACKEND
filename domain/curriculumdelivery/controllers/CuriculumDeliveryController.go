@@ -88,7 +88,8 @@ func GetCurriculumDeliveryProgressByStream(context *gin.Context) {
 	}
 	progress, err := services.GetCurriculumDeliveryProgressByStream(stream)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, commons.Feedback("Failed to get curriculum delivery progress"))
+		context.JSON(http.StatusInternalServerError, commons.Feedback("Failed to get curriculum delivery progress"+err.Error()))
+		return
 	}
 
 	context.JSON(200, progress)
