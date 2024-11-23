@@ -18,7 +18,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeliveryRequest) error {
+func SaveCurriculumDeliverySession(req requests.CurriculumDeliveryRequest) error {
 
 	db := config.DB.Begin()
 	repo := repository.NewCurriculumDeliveryRepositoryImpl(db)
