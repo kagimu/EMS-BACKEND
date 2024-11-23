@@ -40,7 +40,7 @@ func (l *lessonPlanRepositoryImpl) CountCurriculumsDeliveryStepsByStreamNumber(s
 	var count int64
 	err := l.Db.Model(&currDelivery.CurriculumDelivery{}).Where("stream_number = ?", streamNumber).Count(&count).Error
 	if err != nil {
-		return 0, err
+		return 0, errors.New("error counting curriculum delivery steps " + err.Error())
 	}
 
 	return count, nil
@@ -52,7 +52,7 @@ func (l *lessonPlanRepositoryImpl) CountStepsByCurriculumNumber(number string) (
 		Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number ").
 		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND concepts.curriculum_number = ?", number).Count(&count).Error
 	if err != nil {
-		return 0, err
+		return 0, errors.New("error counting steps" + err.Error())
 	}
 
 	return count, nil
@@ -68,7 +68,7 @@ func (l *lessonPlanRepositoryImpl) GetCurriculumByStreamNumber(StreamNumber stri
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return curriculum, nil
 		}
-		return curriculum, err
+		return curriculum, errors.New("error getting curriculum by stream number " + err.Error())
 	}
 
 	err = l.Db.Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number").Where("lesson_plan_steps.number = ?", LessonPlanStep.Number).Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number").First(&concept).Error
@@ -78,7 +78,7 @@ func (l *lessonPlanRepositoryImpl) GetCurriculumByStreamNumber(StreamNumber stri
 			return curriculum, nil
 		}
 
-		return curriculum, err
+		return curriculum, errors.New("error getting curriculum by stream number " + err.Error())
 	}
 
 	err = l.Db.Where("number = ?", concept.CurriculumNumber).First(&curriculum).Error
