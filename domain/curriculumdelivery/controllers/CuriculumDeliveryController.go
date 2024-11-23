@@ -78,3 +78,19 @@ func UpdateSession(ctx *gin.Context) {
 
 	ctx.JSON(200, commons.Feedback("Sessions updated successfully"))
 }
+
+func GetCurriculumDeliveryProgressByStream(context *gin.Context) {
+
+	stream := context.Param("stream_number")
+	if stream == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Please provide stream number"))
+		return
+	}
+	progress, err := services.GetCurriculumDeliveryProgressByStream(stream)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, commons.Feedback("Failed to get curriculum delivery progress"))
+	}
+
+	context.JSON(200, progress)
+
+}

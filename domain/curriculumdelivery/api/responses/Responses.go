@@ -25,3 +25,10 @@ type Step struct {
 	Time     string `json:"time"`
 	Comment  string `json:"comment"`
 }
+
+type CurriculumDeliveryProgress struct {
+	Curriculum string `json:"curriculum"`
+	Stream     string `json:"stream"`
+	Progress   int    `json:"progress"`
+	Scale      string `json:"scale"`
+}
