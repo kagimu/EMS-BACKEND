@@ -50,7 +50,7 @@ func (l *lessonPlanRepositoryImpl) CountStepsByCurriculumNumber(number string) (
 	var count int64
 	err := l.Db.Model(&lessonPlanModel.LessonPlanStep{}).
 		Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number ").
-		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND ").Where("concepts.curriculum_number = ?", number).Count(&count).Error
+		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND concepts.curriculum_number = ?", number).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}
