@@ -71,7 +71,7 @@ func (l *lessonPlanRepositoryImpl) GetCurriculumByStreamNumber(StreamNumber stri
 		return curriculum, errors.New("error getting curriculum by stream number " + err.Error())
 	}
 
-	err = l.Db.Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number").Where("lesson_plan_steps.number = ?", LessonPlanStep.Number).Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number").First(&concept).Error
+	err = l.Db.Joins("JOIN lesson_plan_steps ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number").Joins("JOIN lesson_plan_concepts ON lesson_plan_concepts.concept_number = concepts.number").Where("lesson_plan_steps.number = ?", LessonPlanStep.Number).First(&concept).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
