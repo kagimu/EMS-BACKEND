@@ -73,7 +73,7 @@ func (l *lessonPlanRepositoryImpl) GetCurriculumByStreamNumber(StreamNumber stri
 
 	err = l.Db.
 		Joins("JOIN lesson_plan_concepts ON lesson_plan_concepts.number = lesson_plan_steps.lesson_plan_concept_number").
-		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number").
+		Joins("JOIN concepts c ON lesson_plan_concepts.concept_number = c.number").
 		Where("lesson_plan_steps.number = ?", LessonPlanStep.Number).
 		First(&concept).Error
 
