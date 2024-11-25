@@ -143,3 +143,17 @@ func RemoveTemplateFromClass(context *gin.Context) {
 
 	context.JSON(http.StatusOK, commons.Feedback("Report template removed successfully from class"))
 }
+
+func DeleteTemplate(context *gin.Context) {
+	id := context.Param("id")
+
+	err := services.DeleteReportTemplate(id)
+
+	if err != nil {
+		context.JSON(400, commons.Feedback("Error "+err.Error()))
+		return
+	}
+
+	context.JSON(200, commons.Feedback("Successfully deleted the template"))
+
+}

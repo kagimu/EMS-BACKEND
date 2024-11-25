@@ -136,6 +136,7 @@ func SetupRoutes() *gin.Engine {
 				template.GET("/by-class", reportTemplate.ClassReportTemplates)
 				template.POST("/add-to-classes", reportTemplate.AddTemplateToClass)
 				template.POST("/remove-template", reportTemplate.RemoveTemplateFromClass)
+				template.DELETE("/delete/:id", reportTemplate.DeleteTemplate)
 			}
 
 			modeOfStudy := school.Group("mode-of-study")
