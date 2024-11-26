@@ -173,6 +173,7 @@ func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses
 		stepResponse.Time = step.Time
 		stepResponse.Date = cds.Date.String()
 		stepResponse.Comment = step.Comment
+		stepResponse.Number = step.LessonPlanStepNumber
 
 		steps = append(steps, stepResponse)
 
