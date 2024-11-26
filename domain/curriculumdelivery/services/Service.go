@@ -239,13 +239,6 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 	db := config.DB.Begin()
 	repo := repository.NewCurriculumDeliveryRepositoryImpl(db)
 
-	// remove all students from the session
-	err := repo.DeleteStudentsBySession(req.Sessions[0].StepNumber)
-	if err != nil {
-		db.Rollback()
-		return err
-	}
-
 	date, err := commons.ConvertStringToDate(req.Date)
 	if err != nil {
 		return err
