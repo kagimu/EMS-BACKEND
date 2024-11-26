@@ -170,7 +170,8 @@ func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses
 		stepResponse.Concept = concept.Name
 		stepResponse.SubTopic = subTopic.Name
 		stepResponse.Topic = topic.Name
-		stepResponse.Date = step.Time
+		stepResponse.Time = step.Time
+		stepResponse.Date = cds.Date.String()
 		stepResponse.Comment = step.Comment
 
 		steps = append(steps, stepResponse)
@@ -320,20 +321,26 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 
 }
 
-func GetCurriculumDeliveryProgressByStream(stream string) ([]responses.CurriculumDeliveryProgress, error) {
+func GetCurriculumDeliveryProgressByStream(streamNumber string) ([]responses.CurriculumDeliveryProgress, error) {
 	arr := make([]responses.CurriculumDeliveryProgress, 0)
 	repo := repository3.NewLessonPlanRepository()
-	curriculum, err := repo.GetCurriculumByStreamNumber(stream)
+	curriculum, err := repo.GetCurriculumByStreamNumber(streamNumber)
 	if err != nil {
 		return arr, err
 	}
 
-	deliveredSteps, err := repo.CountCurriculumsDeliveryStepsByStreamNumber(stream)
+	deliveredSteps, err := repo.CountCurriculumsDeliveryStepsByStreamNumber(streamNumber)
 	if err != nil {
 		return arr, err
 	}
 
 	totalSteps, err := repo.CountStepsByCurriculumNumber(curriculum.Number)
+	if err != nil {
+		return arr, err
+	}
+
+	stream, err := repositories2.GetStreamByNumber(streamNumber)
+
 	if err != nil {
 		return arr, err
 	}
@@ -344,9 +351,10 @@ func GetCurriculumDeliveryProgressByStream(stream string) ([]responses.Curriculu
 	}
 
 	progress := responses.CurriculumDeliveryProgress{
-		Progress:   int(percentage),
+		Progress:   commons.RoundFloat(percentage, 2),
 		Scale:      "%",
 		Curriculum: curriculum.Name,
+		Stream:     stream.Name,
 	}
 
 	arr = append(arr, progress)

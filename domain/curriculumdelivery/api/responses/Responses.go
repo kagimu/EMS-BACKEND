@@ -27,8 +27,8 @@ type Step struct {
 }
 
 type CurriculumDeliveryProgress struct {
-	Curriculum string `json:"curriculum"`
-	Stream     string `json:"stream"`
-	Progress   int    `json:"progress"`
-	Scale      string `json:"scale"`
+	Curriculum string  `json:"curriculum"`
+	Stream     string  `json:"stream"`
+	Progress   float64 `json:"progress"`
+	Scale      string  `json:"scale"`
 }
