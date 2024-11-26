@@ -72,8 +72,10 @@ func UpdateSession(ctx *gin.Context) {
 	}
 
 	err = services.UpdateCurriculumDeliverySession(request)
+
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to update session"))
+		return
 	}
 
 	ctx.JSON(200, commons.Feedback("Sessions updated successfully"))
