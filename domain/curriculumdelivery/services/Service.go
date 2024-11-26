@@ -251,26 +251,35 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 		return err
 	}
 	// Save session
-	curriculumDelivery := models.CurriculumDelivery{
-		Number:        uuid.NewV4().String(),
-		StreamNumber:  req.StreamNumber,
-		Date:          date,
-		Time:          req.Time,
-		TeacherNumber: req.TeacherNumber,
-		Comment:       req.Comment,
-	}
-
-	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.Sessions[0].StepNumber)
+	curriculumDelivery, err := repo.GetCurriculumDeliveryByNumber(req.Number)
 	if err != nil {
+		db.Rollback()
 		return err
 	}
 
-	if len(sessions) > 0 {
+	curriculumDelivery.Date = date
+	curriculumDelivery.Time = req.Time
+	curriculumDelivery.Comment = req.Comment
+	curriculumDelivery.StreamNumber = req.StreamNumber
+	curriculumDelivery.TeacherNumber = req.TeacherNumber
+
+	err = repo.UpdateCurriculumDeliverySession(curriculumDelivery)
+	if err != nil {
 		db.Rollback()
-		return errors.New("session has already been recorded")
+
+		return err
 	}
 
-	err = repo.SaveSession(&curriculumDelivery)
+	// delete student sessions
+
+	err = repo.DeleteCurriculumDeliveryStep(req.Number)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+
+	err = repo.DeleteStudentsBySession(req.Number)
+
 	if err != nil {
 		db.Rollback()
 		return err
@@ -314,10 +323,17 @@ func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryReques
 
 			err = repo.SaveStudentSession(&studentCurriculumDelivery)
 			if err != nil {
+				db.Rollback()
 				return err
 			}
 		}
 	}
+
+	if err := db.Commit().Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
 	return nil
 
 }

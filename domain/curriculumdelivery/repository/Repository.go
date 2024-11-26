@@ -17,12 +17,24 @@ type CurriculumDeliveryRepository interface {
 	FindStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse) ([]*models.StudentCurriculumDelivery, error)
 	DeleteStudentsBySession(sessionNumber string) error
 	DeleteCurriculumDeliverySession(number string) error
+	DeleteCurriculumDeliveryStep(number string) error
 	UpdateCurriculumDeliverySession(delivery *models.CurriculumDelivery) error
 	SaveCurriculumDeliveryStep(m *models.CurriculumDeliveryStep) error
+	GetCurriculumDeliveryByNumber(number string) (*models.CurriculumDelivery, error)
 }
 
 type CurriculumDeliveryRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (c CurriculumDeliveryRepositoryImpl) GetCurriculumDeliveryByNumber(number string) (*models.CurriculumDelivery, error) {
+	delivery := &models.CurriculumDelivery{}
+	err := c.DB.Where("number = ?", number).First(delivery).Error
+	return delivery, err
+}
+
+func (c CurriculumDeliveryRepositoryImpl) DeleteCurriculumDeliveryStep(number string) error {
+	return c.DB.Where("curriculum_delivery_number = ?", number).Delete(&models.CurriculumDeliveryStep{}).Error
 }
 
 func (c CurriculumDeliveryRepositoryImpl) SaveCurriculumDeliveryStep(m *models.CurriculumDeliveryStep) error {
