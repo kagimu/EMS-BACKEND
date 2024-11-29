@@ -3,11 +3,11 @@ package requests
 import "errors"
 
 type GradeDataRequest struct {
-	Name             string `json:"name"`
-	Code             int64  `json:"code"`
-	ShortName        string `json:"short_name"`
-	SchoolNumber     string `json:"school_number"`
-	GradeGroupNumber string `json:"grade_group_number"`
+	Name         string `json:"name"`
+	Code         int64  `json:"code"`
+	ShortName    string `json:"short_name"`
+	SchoolNumber string `json:"school_number"`
+	//GradeGroupNumber string `json:"grade_group_number"`
 }
 
 type CreateGradeGroupRequest struct {
@@ -40,9 +40,9 @@ func (g *GradeDataRequest) Validate() error {
 		return errors.New("school number is required")
 
 	}
-	if g.GradeGroupNumber == "" {
+	/*if g.GradeGroupNumber == "" {
 		return errors.New("grade group number is required")
-	}
+	}*/
 
 	return nil
 }
