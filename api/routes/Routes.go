@@ -136,6 +136,7 @@ func SetupRoutes() *gin.Engine {
 				template.GET("/by-class", reportTemplate.ClassReportTemplates)
 				template.POST("/add-to-classes", reportTemplate.AddTemplateToClass)
 				template.POST("/remove-template", reportTemplate.RemoveTemplateFromClass)
+				template.DELETE("/delete/:id", reportTemplate.DeleteTemplate)
 			}
 
 			modeOfStudy := school.Group("mode-of-study")
@@ -890,6 +891,8 @@ func SetupRoutes() *gin.Engine {
 			curriculumDelivery.POST("add-session", controllers3.AddSession)
 			curriculumDelivery.GET("sessions", controllers3.GetSessions)
 			curriculumDelivery.GET("students/:curriculum_delivery_number", controllers3.GetStudentsBySession)
+			curriculumDelivery.PUT("update-session", controllers3.UpdateSession)
+			curriculumDelivery.GET("percentage-by-stream/:stream_number", controllers3.GetCurriculumDeliveryProgressByStream)
 		}
 
 	}

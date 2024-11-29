@@ -5,13 +5,23 @@ import (
 )
 
 type CurriculumDeliveryRequest struct {
-	StepNumbers   []string                           `json:"step_numbers"`
-	StreamNumber  string                             `json:"stream_number"`
-	Date          string                             `json:"date"`
-	Time          string                             `json:"time"`
-	TeacherNumber string                             `json:"teacher_number"`
-	Comment       string                             `json:"comment"`
-	Students      []StudentCurriculumDeliveryRequest `json:"students"`
+	Sessions      []LessonStep `json:"sessions"`
+	StreamNumber  string       `json:"stream_number"`
+	Date          string       `json:"date"`
+	Time          string       `json:"time"`
+	TeacherNumber string       `json:"teacher_number"`
+	Comment       string       `json:"comment"`
+}
+type LessonStep struct {
+	StepNumber string                             `json:"step_number"`
+	Comment    string                             `json:"comment"`
+	Time       string                             `json:"time"`
+	Students   []StudentCurriculumDeliveryRequest `json:"students"`
+}
+
+type UpdateCurriculumDeliveryRequest struct {
+	Number string `json:"number"`
+	CurriculumDeliveryRequest
 }
 
 type StudentCurriculumDeliveryRequest struct {
@@ -20,8 +30,19 @@ type StudentCurriculumDeliveryRequest struct {
 }
 
 func (cd *CurriculumDeliveryRequest) Validate() error {
-	if len(cd.Students) == 0 {
-		return errors.New("please select at-least one students that attended the session")
+
+	for _, step := range cd.Sessions {
+		if step.StepNumber == "" {
+			return errors.New("please select a step")
+		}
+
+		if step.Time == "" {
+			return errors.New("please select a time")
+		}
+
+		if len(step.Students) == 0 {
+			return errors.New("please select students for the step")
+		}
 	}
 
 	if cd.Date == "" {
@@ -40,7 +61,7 @@ func (cd *CurriculumDeliveryRequest) Validate() error {
 		return errors.New("please select the stream the lesson was delivered")
 	}
 
-	if len(cd.StepNumbers) == 0 {
+	if len(cd.Sessions) == 0 {
 		return errors.New("please select the steps that were delivered")
 	}
 

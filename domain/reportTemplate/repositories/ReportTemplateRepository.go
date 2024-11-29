@@ -75,3 +75,7 @@ func QueryByReportTemplateNumber(reportTemplateNumber string) (models.ReportTemp
 
 	return reportTemplate, nil
 }
+
+func DeleteReportTemplate(template *models.ReportTemplate) error {
+	return config.DB.Delete(template).Error
+}

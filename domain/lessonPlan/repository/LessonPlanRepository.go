@@ -4,8 +4,10 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	conceptModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	subTopicModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
+	currDelivery "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/models"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"gorm.io/gorm"
 )
@@ -24,10 +26,82 @@ type LessonPlanRepository interface {
 	GetLessonPlanConceptByNumber(conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
 	GetSubTopicByNumber(subTopicNumber string) (subTopicModel.SubTopic, error)
 	GetTopicByNumber(topicNumber string) (models.Topic, error)
+	FindCurriculumDeliveryStepsByCurriculumDeliveryNumber(number string) ([]currDelivery.CurriculumDeliveryStep, error)
+	CountCurriculumsDeliveryStepsByStreamNumber(streamNumber string) (int64, error)
+	CountStepsByCurriculumNumber(number string) (int64, error)
+	GetCurriculumByStreamNumber(lessonPlanStepNumber string) (models2.Curriculum, error)
 }
 
 type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanRepositoryImpl) CountCurriculumsDeliveryStepsByStreamNumber(streamNumber string) (int64, error) {
+	var count int64
+	err := l.Db.Model(&currDelivery.CurriculumDelivery{}).Where("stream_number = ?", streamNumber).Count(&count).Error
+	if err != nil {
+		return 0, errors.New("error counting curriculum delivery steps " + err.Error())
+	}
+
+	return count, nil
+}
+
+func (l *lessonPlanRepositoryImpl) CountStepsByCurriculumNumber(number string) (int64, error) {
+	var count int64
+	err := l.Db.Model(&lessonPlanModel.LessonPlanStep{}).
+		Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number ").
+		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND concepts.curriculum_number = ?", number).Count(&count).Error
+	if err != nil {
+		return 0, errors.New("error counting steps" + err.Error())
+	}
+
+	return count, nil
+}
+
+func (l *lessonPlanRepositoryImpl) GetCurriculumByStreamNumber(StreamNumber string) (models2.Curriculum, error) {
+	var concept conceptModel.Concept
+	var curriculum models2.Curriculum
+	var LessonPlanStep lessonPlanModel.LessonPlanStep
+	var cd currDelivery.CurriculumDelivery
+	err := l.Db.Joins("JOIN curriculum_delivery_steps ON curriculum_delivery_steps.curriculum_delivery_number = curriculum_deliveries.number AND curriculum_deliveries.stream_number = ?", StreamNumber).First(&cd).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return curriculum, nil
+		}
+		return curriculum, errors.New("error getting curriculum by stream number " + err.Error())
+	}
+
+	var LessonPlanConcept lessonPlanModel.LessonPlanConcept
+	err = l.Db.Where("number = ?", LessonPlanStep.LessonPlanConceptNumber).First(&LessonPlanConcept).Error
+
+	if err != nil {
+		return curriculum, errors.New("error getting lesson plan concept " + err.Error())
+	}
+
+	err = l.Db.Where("number = ?", LessonPlanConcept.ConceptNumber).First(&concept).Error
+	if err != nil {
+		return curriculum, errors.New("error getting concept by number " + err.Error())
+	}
+
+	err = l.Db.Where("number = ?", concept.CurriculumNumber).First(&curriculum).Error
+	return curriculum, nil
+
+}
+
+func (l *lessonPlanRepositoryImpl) FindCurriculumDeliveryStepsByCurriculumDeliveryNumber(number string) ([]currDelivery.CurriculumDeliveryStep, error) {
+	steps := make([]currDelivery.CurriculumDeliveryStep, 0)
+	err := l.Db.Where("curriculum_delivery_number = ?", number).Find(&steps).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+
+			return steps, nil
+		}
+
+		return steps, err
+	}
+
+	return steps, err
+
 }
 
 func (l *lessonPlanRepositoryImpl) GetConceptByNumber(conceptNumber string) (conceptModel.Concept, error) {

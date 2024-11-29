@@ -260,3 +260,17 @@ func DetermineReportTemplateForClass(campusClassNumber string) (models.ReportTem
 	return reportTemplate, nil
 
 }
+
+func DeleteReportTemplate(templateNumber string) error {
+
+	template, err := repositories.QueryByReportTemplateNumber(templateNumber)
+
+	if err != nil {
+		return err
+	}
+
+	if err := repositories.DeleteReportTemplate(&template); err != nil {
+		return err
+	}
+	return nil
+}
