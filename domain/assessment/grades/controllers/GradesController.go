@@ -36,7 +36,7 @@ func FetchGrades(ctx *gin.Context) {
 
 	schoolNumber := ctx.Query("school_number")
 
-	grades, err := services.FetchGrades(schoolNumber, ctx)
+	grades, err := services.FetchGrades(schoolNumber)
 
 	if err != nil {
 		ctx.JSON(500, gin.H{"message": "Failed to fetch grades"})

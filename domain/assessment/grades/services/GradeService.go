@@ -8,7 +8,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -42,13 +41,12 @@ func CreateGrade(userNumber string, request requests.GradeDataRequest) error {
 	}
 
 	var grade = models.Grade{
-		Number:           uuid.NewV4().String(),
-		Name:             request.Name,
-		Code:             request.Code,
-		UserNumber:       userNumber,
-		ShortName:        request.ShortName,
-		SchoolNumber:     request.SchoolNumber,
-		GradeGroupNumber: request.GradeGroupNumber,
+		Number:       uuid.NewV4().String(),
+		Name:         request.Name,
+		Code:         request.Code,
+		UserNumber:   userNumber,
+		ShortName:    request.ShortName,
+		SchoolNumber: request.SchoolNumber,
 	}
 
 	if err := repository.SaveGrade(grade); err != nil {
@@ -58,9 +56,9 @@ func CreateGrade(userNumber string, request requests.GradeDataRequest) error {
 	return nil
 }
 
-func FetchGrades(schoolNumber string, ctx *gin.Context) ([]responses.NameOfAggregates, error) {
+func FetchGrades(schoolNumber string) ([]responses.NameOfAggregates, error) {
 	var grades []models.Grade
-	grades, err := repository.FindAllGrades(schoolNumber, ctx.Query("grade_group_number"))
+	grades, err := repository.FindAllGrades(schoolNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -69,13 +67,13 @@ func FetchGrades(schoolNumber string, ctx *gin.Context) ([]responses.NameOfAggre
 	for _, grade := range grades {
 
 		gradeNames = append(gradeNames, responses.NameOfAggregates{
-			Name:        grade.Name,
-			Number:      grade.Number,
-			ShortName:   grade.ShortName,
-			Code:        grade.Code,
-			GradeGroup:  grade.GradeGroup.Name,
-			Status:      grade.Status,
-			GroupNumber: grade.GradeGroup.Number,
+			Name:      grade.Name,
+			Number:    grade.Number,
+			ShortName: grade.ShortName,
+			Code:      grade.Code,
+			//GradeGroup:  grade.GradeGroup.Name,
+			Status: grade.Status,
+			//GroupNumber: grade.GradeGroup.Number,
 		})
 	}
 
@@ -115,7 +113,7 @@ func UpdateGrade(userNumber string, editGradeDataRequest requests.EditGradeDataR
 	grade.Code = editGradeDataRequest.Code
 	grade.ShortName = editGradeDataRequest.ShortName
 	grade.UserNumber = userNumber
-	grade.GradeGroupNumber = editGradeDataRequest.GradeGroupNumber
+	//grade.GradeGroupNumber = editGradeDataRequest.GradeGroupNumber
 
 	if err := repository.UpdateGrade(grade); err != nil {
 		return errors.New("error updating grade: " + err.Error())
