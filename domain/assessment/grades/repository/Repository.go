@@ -11,7 +11,7 @@ import (
 
 func FindAllGrades(schoolNumber string) ([]models.Grade, error) {
 	var grades []models.Grade
-	if err := config.DB.Preload("GradeGroup").Scopes(
+	if err := config.DB.Scopes(
 		filters.BySchoolNumber(schoolNumber),
 	).Find(&grades).Error; err != nil {
 		return nil, err
