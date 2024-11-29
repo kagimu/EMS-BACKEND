@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"html/template"
 	"log"
+	"os"
 
 	"gopkg.in/gomail.v2"
 )
@@ -17,10 +18,12 @@ type Info struct {
 	CurrentYear int
 	Type        string
 	Data        interface{}
+	BaseUrl     string
 }
 
 func (i Info) SendEmail() error {
 	templateUrl := ""
+	i.BaseUrl = os.Getenv("FRONT_END_BASE_URL")
 	if i.Type == "registration" {
 		templateUrl = "/fileRepo/templates/registrationTemplate.html"
 	} else if i.Type == "scheduled-interview" {
