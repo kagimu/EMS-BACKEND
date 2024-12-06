@@ -7,5 +7,5 @@ type PreviousSchoolClass struct {
 	Number               string `json:"number" gorm:"size:36;unique; not null"`
 	PreviousSchoolNumber string `json:"previous_school_number" gorm:"size:36;not null"`
 	Year                 string `json:"year" gorm:"size:10;not null"`
-	Class                string `json:"class" gorm:"size:10;not null"`
+	Class                string `json:"class" gorm:"size:50;not null"`
 }
