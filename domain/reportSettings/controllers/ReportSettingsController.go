@@ -17,7 +17,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
-	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
@@ -233,6 +232,16 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 func FetchReportSummaryDetails(ctx *gin.Context) {
 	reportSummaryNumber := ctx.Param("report_summary_number")
+
+	response, err := services3.GetReportSummary(reportSummaryNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
+func FetchReportSummaryDetailsCopy(ctx *gin.Context) {
+	reportSummaryNumber := ctx.Param("report_summary_number")
 	//htmlReportTemplate := ctx.DefaultQuery("html_report_template", "victorious-report-primary")
 
 	var reportSummary models.ReportSummary
@@ -326,10 +335,10 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 
 	}
 
-	var school schoolModel.School
+	/*var school schoolModel.School
 	if err := config.DB.Where("number = ?", campusClass.Campus.SchoolNumber).First(&school).Error; err != nil {
 
-	}
+	}*/
 	scalesUsed, err := reporsitory.GetAppliedScaleByScaleNumber(reportSummary.AggregateScaleUsed)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch scales used"})
