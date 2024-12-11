@@ -791,6 +791,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		HeadTeachersComment: reportSummary.HeadTeacherComment,
 		AggregateScale:      scales,
 		LevelName:           levelName.Name,
+		NextTermBegins:      "01-02-2025",
 	}
 
 	return response, nil
