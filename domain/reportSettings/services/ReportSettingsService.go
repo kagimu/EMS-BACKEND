@@ -771,11 +771,12 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 
 	response := responses.FullReportSummary{
 		Student: responses.LeanStudent{
-			Number:     student.Number,
-			Surname:    student.Surname,
-			SecondName: student.SecondName,
-			OtherName:  student.OtherName,
-			Gender:     student.Gender,
+			Number:      student.Number,
+			Surname:     student.Surname,
+			SecondName:  student.SecondName,
+			OtherName:   student.OtherName,
+			Gender:      student.Gender,
+			DateOfBirth: student.DateOfBirth,
 		},
 		Grade:               reportSummary.Grade,
 		LearningAreas:       la,
