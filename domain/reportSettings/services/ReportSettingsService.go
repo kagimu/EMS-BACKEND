@@ -29,6 +29,7 @@ import (
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
+	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -680,6 +681,16 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		return responses.FullReportSummary{}, errors.New("failed to fetch report settings by number: " + err.Error())
 	}
 
+	class, err := repositories.GetClassByNumber(campusClass.ClassNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find class error: " + err.Error())
+	}
+
+	levelName, err := repositories5.GetLevelByNumber(class.LevelNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find level error: " + err.Error())
+	}
+
 	var rcs []string
 
 	reportColumns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number)
@@ -741,19 +752,34 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 
 	//GetStudyPeriodNameByNumber
 
-	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
+	studyPeriod, err := repositories3.GetStudyPeriodByNumber(reportSummary.StudyPeriodNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find study period error: " + err.Error())
+	}
+
+	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+
+	student, err := repositories9.FindStudentByNumber(reportSummary.StudentNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find student error: " + err.Error())
+	}
+
+	stream, err := repositories.GetStreamByNumber(reportSummary.StreamNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find stream error: " + err.Error())
+	}
 
 	response := responses.FullReportSummary{
 		Student: responses.LeanStudent{
-			Number:     reportSummary.Student.Number,
-			Surname:    reportSummary.Student.Surname,
-			SecondName: reportSummary.Student.SecondName,
-			OtherName:  reportSummary.Student.OtherName,
-			Gender:     reportSummary.Student.Gender,
+			Number:     student.Number,
+			Surname:    student.Surname,
+			SecondName: student.SecondName,
+			OtherName:  student.OtherName,
+			Gender:     student.Gender,
 		},
 		Grade:               reportSummary.Grade,
 		LearningAreas:       la,
-		Stream:              "",
+		Stream:              stream.Name,
 		Class:               campusClass.ClassName,
 		ClassAbbreviation:   campusClass.ClassAbbreviation,
 		School:              services4.BuildLeanSchoolResponse(&school),
@@ -764,6 +790,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		TeacherComment:      reportSummary.TeacherComment,
 		HeadTeachersComment: reportSummary.HeadTeacherComment,
 		AggregateScale:      scales,
+		LevelName:           levelName.Name,
 	}
 
 	return response, nil
