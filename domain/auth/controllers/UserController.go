@@ -38,6 +38,7 @@ func FetchUsers(c *gin.Context) {
 	type roleObject struct {
 		RoleName   string `json:"role_name"`
 		RoleNumber string `json:"role_number"`
+		ExpiryDate string `json:"expiry_date"`
 	}
 
 	type CLeanUser struct {
@@ -58,7 +59,7 @@ func FetchUsers(c *gin.Context) {
 
 		for _, userRole := range userRoles {
 			roles = append(roles, roleObject{RoleName: userRole.Role.Name,
-				RoleNumber: userRole.Role.Number})
+				RoleNumber: userRole.Role.Number, ExpiryDate: userRole.ExpiryDate.Format("2006-01-02")})
 		}
 
 		cleanUsers = append(cleanUsers, CLeanUser{User: user, Roles: roles})
