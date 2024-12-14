@@ -11,11 +11,14 @@ import (
 	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	classService "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	assessmentAreaRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
@@ -23,6 +26,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
+	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -631,4 +638,162 @@ func DeleteReportColumn(reportColumnNumber string) error {
 	}
 
 	return nil
+}
+
+func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, error) {
+	reportSummary, err := reporsitory.FindReportSummaryByNumber(reportSummaryNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find report summary error: " + err.Error())
+	}
+
+	campusClass, err := repositories.GetCampusClassByNumber(reportSummary.CampusClassNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find campus classes error: " + err.Error())
+	}
+
+	curriculumClass, err := repositories.GetCurriculumClass(campusClass.CurriculumClassNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find curriculum classes error: " + err.Error())
+	}
+
+	curriculumLevel, err := repositories5.GetCurriculumLevelByNumber(curriculumClass.CurriculumLevelNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find curriculum level error: " + err.Error())
+	}
+
+	campus, err := repositories6.GetCampusByNumber(campusClass.CampusNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find campus error: " + err.Error())
+	}
+
+	school, err := repositories7.GetSchoolByNumber(campus.SchoolNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find school error: " + err.Error())
+	}
+
+	learningAreas, err := repositories8.FindLearningAreasByCurriculumNumber(curriculumLevel.CurriculumNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find learning areas error: " + err.Error())
+	}
+
+	reportSetting, err := reporsitory.GetReportSettingByNumber(reportSummary.ReportSettingNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to fetch report settings by number: " + err.Error())
+	}
+
+	class, err := repositories.GetClassByNumber(campusClass.ClassNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find class error: " + err.Error())
+	}
+
+	levelName, err := repositories5.GetLevelByNumber(class.LevelNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find level error: " + err.Error())
+	}
+
+	var rcs []string
+
+	reportColumns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number)
+
+	for _, reportColumn := range reportColumns {
+		rcs = append(rcs, reportColumn.Name)
+	}
+
+	var la []responses.LearningArea
+
+	for _, learningArea := range learningAreas {
+		assessments := make([]responses.Assessments, 0)
+
+		assessmentAreas, err := assessmentAreaRepositories.FindAllAssessmentAreasBySubjectCluster(campusClass.CurriculumClassNumber, curriculumLevel.CurriculumNumber, learningArea.Number)
+		if err != nil {
+			return responses.FullReportSummary{}, errors.New("failed to find assessment areas error: " + err.Error() + " for " + learningArea.Name)
+		}
+
+		for _, assessmentArea := range assessmentAreas {
+
+			reportScoreSummary, err := reporsitory.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummaryNumber, assessmentArea.Number)
+			if err != nil {
+				return responses.FullReportSummary{}, errors.New("failed to find report score summary error: " + err.Error())
+			}
+
+			reportScores, err := reporsitory.FindAllReportScore(reportSummaryNumber, assessmentArea.Number)
+
+			if len(reportScores) < len(rcs) {
+				//  get the difference and add dummy report scores to the report scores
+				var diff = len(rcs) - len(reportScores)
+				for i := 0; i < diff; i++ {
+					reportScores = append(reportScores, models.ReportScore{
+						Score: -1,
+					})
+				}
+
+			}
+
+			assessments = append(assessments, responses.Assessments{
+				Name:               assessmentArea.Name,
+				ReportScores:       reportScores,
+				ReportScoreSummary: reportScoreSummary,
+			})
+		}
+
+		la = append(la, responses.LearningArea{
+			Name:        learningArea.Name,
+			Assessments: assessments,
+		})
+
+	}
+
+	scalesUsed, err := reporsitory.GetAppliedScaleByScaleNumber(reportSummary.AggregateScaleUsed)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to fetch scale error: " + err.Error())
+	}
+
+	scales := reporsitory.BuildAppliedScaleResponse(scalesUsed)
+
+	//GetStudyPeriodNameByNumber
+
+	studyPeriod, err := repositories3.GetStudyPeriodByNumber(reportSummary.StudyPeriodNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find study period error: " + err.Error())
+	}
+
+	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+
+	student, err := repositories9.FindStudentByNumber(reportSummary.StudentNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find student error: " + err.Error())
+	}
+
+	stream, err := repositories.GetStreamByNumber(reportSummary.StreamNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find stream error: " + err.Error())
+	}
+
+	response := responses.FullReportSummary{
+		Student: responses.LeanStudent{
+			Number:      student.Number,
+			Surname:     student.Surname,
+			SecondName:  student.SecondName,
+			OtherName:   student.OtherName,
+			Gender:      student.Gender,
+			DateOfBirth: student.DateOfBirth,
+		},
+		Grade:               reportSummary.Grade,
+		LearningAreas:       la,
+		Stream:              stream.Name,
+		Class:               campusClass.ClassName,
+		ClassAbbreviation:   campusClass.ClassAbbreviation,
+		School:              services4.BuildLeanSchoolResponse(&school),
+		Campus:              campus,
+		StudyPeriod:         studyPeriodName.Name,
+		ReportColumns:       rcs,
+		ReportTemplateName:  reportSummary.ReportTemplateName,
+		TeacherComment:      reportSummary.TeacherComment,
+		HeadTeachersComment: reportSummary.HeadTeacherComment,
+		AggregateScale:      scales,
+		LevelName:           levelName.Name,
+		NextTermBegins:      "01-02-2025",
+	}
+
+	return response, nil
 }
