@@ -151,3 +151,22 @@ func FetchAssessmentAreasByCampusClassNumber(c *gin.Context) {
 }
 
 //prepare Scope for assessment area
+
+func DeleteAssessmentArea(context *gin.Context) {
+	assessmentAreaNumber := context.Param("assessment_area_number")
+
+	if assessmentAreaNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Assessment area number is required"})
+		return
+	}
+
+	err := services.DeleteAssessmentArea(assessmentAreaNumber)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to delete assessment area: %s", err.Error())})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Assessment area deleted successfully"})
+
+}
