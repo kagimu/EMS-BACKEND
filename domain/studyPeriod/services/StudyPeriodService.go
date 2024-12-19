@@ -409,17 +409,27 @@ func (studyPeriodService *studyPeriodService) FindAllStudyPeriodNames(schoolNumb
 	}
 
 	for _, studyPeriodName := range allNames {
-		response = append(response, createNameResponse(studyPeriodName))
+		response = append(response, CreateNameResponse(studyPeriodName))
 	}
 
 	return response, nil
 }
 
-func createNameResponse(studyPeriodName studyModels.StudyPeriodName) responses.StudyPeriodNameResponse {
+func CreateNameResponse(studyPeriodName studyModels.StudyPeriodName) responses.StudyPeriodNameResponse {
 	return responses.StudyPeriodNameResponse{
 		DateAdded:             studyPeriodName.CreatedAt.Format(time.DateTime),
 		StudyPeriodNameNumber: studyPeriodName.Number,
 		Name:                  studyPeriodName.Name,
+	}
+}
+
+func CreateStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) responses.StudyPeriodResponse {
+
+	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+
+	return responses.StudyPeriodResponse{
+		CreateNameResponse(studyPeriodName),
+		studyPeriod.Number,
 	}
 }
 
