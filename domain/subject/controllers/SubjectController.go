@@ -112,7 +112,7 @@ func NewSubject(context *gin.Context) {
 	}
 
 	config.DB.Save(&saveSubject)
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Campus Added Successfully!", "data": saveSubject})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Subject Added Successfully!", "data": saveSubject})
 }
 
 func FetchSubject(context *gin.Context) {

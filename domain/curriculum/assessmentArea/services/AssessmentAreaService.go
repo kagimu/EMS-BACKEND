@@ -263,3 +263,10 @@ func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber
 
 	return assessmentAreasResponse, nil
 }
+func DeleteAssessmentArea(assessmentAreaNumber string) error {
+	err := repositories.DeleteAssessmentArea(assessmentAreaNumber)
+	if err != nil {
+		return errors.New("failed to delete assessment area" + err.Error())
+	}
+	return nil
+}

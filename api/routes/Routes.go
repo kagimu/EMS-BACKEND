@@ -551,6 +551,7 @@ func SetupRoutes() *gin.Engine {
 			assessmentArea.GET("", assessmentAreaController.FetchAssessmentAreas)
 			assessmentArea.GET("by-campus-class-number/:campus_class_number", assessmentAreaController.FetchAssessmentAreasByCampusClassNumber)
 			assessmentArea.PUT("", assessmentAreaController.EditAssessmentArea)
+			assessmentArea.DELETE("/:assessment_area_number", assessmentAreaController.DeleteAssessmentArea)
 		}
 
 		assessment := main.Group("/assessments")
