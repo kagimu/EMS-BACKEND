@@ -52,9 +52,23 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 
 	var runsToEnd, startsAtZero bool
 
-	for count, grade := range aggregateScale.AggregateScales {
+	scales := aggregateScale.AggregateScales
+
+	for count, grade := range scales {
 
 		var gradeIndex = count + 1
+
+		if count == 0 {
+			if grade.MinValue != 0 {
+				return errors.New(fmt.Sprintf("the minimum value for the grade at count %d should be zero", gradeIndex))
+			}
+		}
+
+		if gradeIndex == len(scales) {
+			if grade.MaxValue != 100 {
+				return errors.New(fmt.Sprintf("the maximum value for the grade at count %d should be 100", gradeIndex))
+			}
+		}
 
 		if grade.Weight <= 0 {
 			return errors.New(fmt.Sprintf("please set the weight for the grade at count %d", gradeIndex))
@@ -88,8 +102,15 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 			return errors.New(fmt.Sprintf("maximum value should not be greater than 100 for the grade at count %d", gradeIndex))
 		}
 
-		if grade.MaxValue < grade.MinValue {
+		if grade.MaxValue <= grade.MinValue {
 			return errors.New(fmt.Sprintf("maximum value must be greater than minimum value for the grade at count %d", gradeIndex))
+		}
+
+		if count > 0 {
+			err := checkPrevRow(scales[count-1], grade, gradeIndex)
+			if err != nil {
+				return err
+			}
 		}
 
 		if grade.MaxValue >= 100 {
@@ -144,6 +165,14 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 			return errors.New("code is required")
 		}
 
+	}
+
+	return nil
+}
+
+func checkPrevRow(prevItem, currentItem AggregateScaleItem, currentIndex int) error {
+	if currentItem.MinValue >= prevItem.MinValue {
+		return errors.New(fmt.Sprintf("The minimum score at grade count %d should be greator than the maximum score at grade count %d", currentIndex, currentIndex-1))
 	}
 
 	return nil
