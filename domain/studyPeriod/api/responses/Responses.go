@@ -23,6 +23,11 @@ type (
 		StudyPeriodNameNumber string `json:"study_period_name_number"`
 	}
 
+	StudyPeriodResponse struct {
+		StudyPeriodNameResponse
+		StudyPeriodNumber string `json:"study_period_number"`
+	}
+
 	StudyPeriodListDetail struct {
 		StudyPeriodList
 		Classes []responses.ClassResponse `json:"classes"`

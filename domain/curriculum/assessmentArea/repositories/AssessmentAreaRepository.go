@@ -151,3 +151,17 @@ func FindAllAssessmentAreasBySubjectCluster(curriculumClassNumber, curriculumNum
 
 	return assessmentAreas, nil
 }
+
+func DeleteAssessmentArea(assessmentAreaNumber string, trn ...*gorm.DB) error {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Where("number = ?", assessmentAreaNumber).Delete(&assessmentAreaModels.AssessmentArea{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

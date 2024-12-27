@@ -67,9 +67,9 @@ func FetchStudyPeriods(c *gin.Context) {
 		return
 	}
 
-	var response []responses.StudyPeriodResponse
+	var response []responses.StudyingTimeTablePeriodResponse
 	for _, studyingPeriod := range studyingPeriods {
-		response = append(response, responses.StudyPeriodResponse{
+		response = append(response, responses.StudyingTimeTablePeriodResponse{
 			Number:                     studyingPeriod.Number,
 			UserName:                   studyingPeriod.User.FirstName + " " + studyingPeriod.User.SecondName + " " + studyingPeriod.User.LastName,
 			LessonPlanStepName:         studyingPeriod.LessonPlanStep.Step,

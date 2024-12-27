@@ -45,7 +45,7 @@ type StudyingTimeTableResponse struct {
 	EndTime                    time.Time `json:"end_time"`
 }
 
-type StudyPeriodResponse struct {
+type StudyingTimeTablePeriodResponse struct {
 	Number                     string    `json:"number"`
 	StudyingTimeTableNumber    string    `json:"studying_time_table_number"`
 	UserName                   string    `json:"user_name"`
