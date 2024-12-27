@@ -2,6 +2,7 @@ package requests
 
 import (
 	"errors"
+	"fmt"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
 )
 
@@ -51,42 +52,44 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 
 	var runsToEnd, startsAtZero bool
 
-	for _, grade := range aggregateScale.AggregateScales {
+	for count, grade := range aggregateScale.AggregateScales {
+
+		var gradeIndex = count + 1
 
 		if grade.Weight <= 0 {
-			return errors.New("set the weight for this score")
+			return errors.New(fmt.Sprintf("please set the weight for the grade at count %d", gradeIndex))
 		}
 
 		if grade.Remark == "" {
-			return errors.New("set the remark for this score")
+			return errors.New(fmt.Sprintf("please set the remark for the grade at count %d", gradeIndex))
 		}
 
 		if grade.GradeNumber == "" {
-			return errors.New("choose the assessment grade")
+			return errors.New(fmt.Sprintf("please choose the assessment grade at count %d", gradeIndex))
 		}
 
 		if grade.Code <= 0 {
-			return errors.New("code is required")
+			return errors.New(fmt.Sprintf("please set the code for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MinValue < 0 {
-			return errors.New("minimum value must be greater than 0 or equal to zero")
+			return errors.New(fmt.Sprintf("minimum value must be greater than 0 or equal to zero for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MinValue >= 100 {
-			return errors.New("minimum value should be less than 100")
+			return errors.New(fmt.Sprintf("minimum value should be less than 100 for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MaxValue <= 0 {
-			return errors.New("maximum value must be greater than 0")
+			return errors.New(fmt.Sprintf("maximum value must be greater than 0 for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MaxValue > 100 {
-			return errors.New("maximum value should not be greater than 100")
+			return errors.New(fmt.Sprintf("maximum value should not be greater than 100 for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MaxValue < grade.MinValue {
-			return errors.New("maximum value must be greater than minimum value")
+			return errors.New(fmt.Sprintf("maximum value must be greater than minimum value for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MaxValue >= 100 {
