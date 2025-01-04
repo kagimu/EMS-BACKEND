@@ -16,7 +16,7 @@ func FindAllPromotionSettings(studyPeriodNumber, nextCampusClassNumber, settings
 		filters.ByAnyField("type", settingsType),
 		filters.ByAnyField("next_campus_class_number", nextCampusClassNumber),
 		filters.ByAnyField("study_period_number", studyPeriodNumber),
-	).Find(promotionSettings).Error; err != nil {
+	).Find(&promotionSettings).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return []models.PromotionSetting{}, nil
