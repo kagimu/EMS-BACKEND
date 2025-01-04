@@ -13,9 +13,11 @@ import (
 	gradeRepository "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
@@ -1273,4 +1275,30 @@ func ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, sca
 	}
 
 	return classGradingStandardResponse, nil
+}
+
+func UploadAggregateScaleIllustration(aggregateScaleNumber string, ctx *gin.Context) error {
+
+	scale, err := repositories.GetAggregateScaleByNumber(aggregateScaleNumber)
+	if err != nil {
+		return errors.New("checking aggregate scale number error: " + err.Error())
+	}
+
+	if scale.Number == "" {
+		return errors.New("invalid scale number")
+	}
+
+	illustration, err := services2.UploadAttachment(ctx, "photo")
+	if err != nil {
+		return err
+	}
+
+	scale.Illustration = illustration
+
+	err = repositories.SaveAggregateScale(scale)
+	if err != nil {
+		return errors.New("saving illustration error: " + err.Error())
+	}
+
+	return nil
 }
