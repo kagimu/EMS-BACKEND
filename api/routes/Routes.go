@@ -573,6 +573,7 @@ func SetupRoutes() *gin.Engine {
 				aggregateScale.GET("all", aggregateScaleController.FetchAllDetailedScales)
 				aggregateScale.POST("update", aggregateScaleController.UpdateAggregateScale)
 				aggregateScale.POST("remove/:scale_number", aggregateScaleController.RemoveAggregateScale)
+				aggregateScale.POST("upload-illustration", aggregateScaleController.UploadAggregateScaleIllustration)
 			}
 
 			assessmentGrade := assessment.Group("/assessment-grades")
