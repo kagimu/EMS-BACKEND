@@ -7,12 +7,15 @@ import (
 )
 
 type PromotionSettingRequest struct {
-	Name                  string `json:"name"`
-	Status                string `json:"status"`
-	Type                  string `json:"type"`
-	NextClassNumber       string `json:"next_class_number"`
-	PreviousClassNumber   string `json:"previous_class_number"`
-	AssessmentGradeNumber string `json:"assessment_grade_number"`
+	Name                   string `json:"name"`
+	Status                 string `json:"status"`
+	Type                   string `json:"type"`
+	NextClassNumber        string `json:"next_class_number"`
+	PreviousClassNumber    string `json:"previous_class_number"`
+	StudyPeriodNumber      string `json:"study_period_number"`
+	CampusNumber           string `json:"campus_number"`
+	CurriculumNumber       string `json:"curriculum_number"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number"`
 }
 
 func (p *PromotionSettingRequest) Prepare() {
@@ -32,6 +35,9 @@ func (p *PromotionSettingRequest) Validate() error {
 	}
 	if p.Type == "" {
 		return errors.New("type is required")
+	}
+	if p.StudyPeriodNumber == "" {
+		return errors.New("choose the promotional study period")
 	}
 	if p.NextClassNumber == "" {
 		return errors.New("next class number is required")
