@@ -181,3 +181,23 @@ func GetAggregateScaleByNumber(number string, trn ...*gorm.DB) (models.Aggregate
 
 	return aggregateScales, nil
 }
+func GetAggregateScaleByIllustration(illustration string, trn ...*gorm.DB) (models.AggregateScale, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var aggregateScales models.AggregateScale
+
+	if err := db.Where("illustration = ?", illustration).First(&aggregateScales).Error; err != nil {
+
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return aggregateScales, nil
+		}
+
+		return aggregateScales, err
+	}
+
+	return aggregateScales, nil
+}

@@ -3,12 +3,14 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -64,4 +66,37 @@ func GetAttachmentByNumber(number string) (responses.AttachmentResponse, error) 
 	resp.FileName = attachment.AttachmentName
 
 	return resp, nil
+}
+
+func DeleteAttachment(name string, category string) error {
+	tx := config.DB.Begin()
+	repo := repository.NewAttachmentRepositoryImpl(tx)
+
+	err := repo.DeleteAttachmentByNumber(name)
+	aggregateScale, err := repositories.GetAggregateScaleByIllustration(name, tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if category == "aggregate_scale" {
+		aggregateScale.Illustration = ""
+		err = repositories.SaveAggregateScale(aggregateScale, tx)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	// unlink file from file system
+	filePath := "/fileRepo/attachments/" + name
+	//delete file
+	err = os.Remove(filePath)
+	if err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+
 }
