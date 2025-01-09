@@ -310,6 +310,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				reportScore.AverageScore = commons.RoundFloat(scoreAverage, 2)
 				reportScore.Aggregate = scale.Weight
 				reportScore.Grade = grade.Name
+				reportScore.Illustration = scale.Illustration
 				reportScore.UserNumber = userNumber
 				reportScore.Remark = scale.Description
 
