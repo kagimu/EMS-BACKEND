@@ -72,7 +72,12 @@ func DeleteAttachment(name string, category string) error {
 	tx := config.DB.Begin()
 	repo := repository.NewAttachmentRepositoryImpl(tx)
 
-	err := repo.DeleteAttachmentByNumber(name)
+	attachment, err := repo.GetAttachmentByNumber(name)
+	if err != nil {
+		tx.Rollback()
+		return errors.New("attachment not found")
+	}
+
 	aggregateScale, err := repositories.GetAggregateScaleByIllustration(name, tx)
 	if err != nil {
 		tx.Rollback()
@@ -88,10 +93,17 @@ func DeleteAttachment(name string, category string) error {
 		}
 	}
 	// unlink file from file system
-	filePath := "/fileRepo/attachments/" + name
+	filePath := "/fileRepo/attachments/" + attachment.Number + attachment.AttachmentType
 	//delete file
 	err = os.Remove(filePath)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = repo.DeleteAttachmentByNumber(name)
+	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
