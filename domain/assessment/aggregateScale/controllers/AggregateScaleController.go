@@ -116,10 +116,10 @@ func UploadAggregateScaleIllustration(c *gin.Context) {
 	aggregateScaleNumber := c.PostForm("aggregate_scale_number")
 
 	if err := services.UploadAggregateScaleIllustration(aggregateScaleNumber, c); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload student photo" + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload aggregate scale photo" + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student photo uploaded successfully"})
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Aggregate scale photo uploaded successfully"})
 
 }
