@@ -411,6 +411,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				Summation:            commons.RoundFloat(summation, 0),
 				UserNumber:           userNumber,
 				Comment:              scale.Description,
+				Illustration:         scale.Illustration,
 			}
 
 			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {

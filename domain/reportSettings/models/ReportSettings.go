@@ -108,6 +108,7 @@ type ReportScoreSummary struct {
 	AssessmentAreaNumber string          `json:"assessment_area_number" gorm:"size:36;not null;"`
 	Aggregate            float64         `json:"aggregate" gorm:"type:double precision;not null;"`
 	Grade                string          `json:"grade" gorm:"type:text;not null;"`
+	Illustration         string          `json:"illustration" gorm:"size36"`
 	Summation            float64         `json:"summation" gorm:"type:double precision;not null;"`
 	Comment              string          `json:"comment" gorm:"type:text;not null;"`
 	UserNumber           string          `json:"user_number" gorm:"size:36;not null;"`
