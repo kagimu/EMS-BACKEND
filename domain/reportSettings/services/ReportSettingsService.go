@@ -394,6 +394,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			reportScoreSummary.Summation = commons.RoundFloat(summation, 0)
 			reportScoreSummary.UserNumber = userNumber
 			reportScoreSummary.Comment = scale.Description
+			reportScoreSummary.Illustration = scale.Illustration
 
 			if err := reporsitory.SaveReportScoreSummary(reportScoreSummary, tx); err != nil {
 				tx.Rollback()
