@@ -25,5 +25,6 @@ type (
 		User                  models.User                     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 		AcademicYear          academicYearModels.AcademicYear `gorm:"foreignKey:AcademicYearNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 		CalendarEvent         eosModels.CalendarEvent         `gorm:"foreignKey:CalendarEventNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+		NextTermBeginsOn      time.Time                       `json:"next_term_begins_on"`
 	}
 )
