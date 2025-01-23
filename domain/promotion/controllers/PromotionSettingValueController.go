@@ -30,13 +30,13 @@ func CreatePromotionSettingValue(c *gin.Context) {
 		return
 	}
 
-	savePromotionSettings := models.PromotionSettingsValue{
-		Number:                 uuid.NewV4().String(),
-		Type:                   payload.Type,
-		Score:                  payload.Score,
-		PromotionSettingNumber: payload.PromotionSettingNumber,
-		GradingStandardNumber:  payload.GradingStandardNumber,
-		UserNumber:             user.Number,
+	savePromotionSettings := models.PromotionSettingValue{
+		Number:                     uuid.NewV4().String(),
+		Score:                      payload.Score,
+		PromotionSettingNumber:     payload.PromotionSettingNumber,
+		AssessmentGradeScaleNumber: payload.GradingStandardNumber,
+		MinimumPoints:              payload.Score,
+		UserNumber:                 user.Number,
 	}
 
 	if err := config.DB.Create(&savePromotionSettings).Error; err != nil {
@@ -54,7 +54,7 @@ func FetchPromotionSettingsValues(c *gin.Context) {
 		return
 	}
 
-	var promotionSettingsValues []models.PromotionSettingsValue
+	var promotionSettingsValues []models.PromotionSettingValue
 	err := config.DB.Preload("PromotionSetting").Find(&promotionSettingsValues).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotion settings values"})

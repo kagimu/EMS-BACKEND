@@ -23,7 +23,7 @@ func (p *PromotionSettingValue) Validate() error {
 		return errors.New("type is required")
 	}
 	if p.PromotionSettingNumber == "" {
-		return errors.New("promotion_setting_number is required")
+		return errors.New("promotion setting number is required")
 	}
 
 	return nil
