@@ -20,12 +20,12 @@ import (
 type PromotionService interface {
 	AllPromotionSettings(studyPeriodNumber, nextCampusClassNumber, settingsType string) ([]responses.PromotionResponse, error)
 	NewPromotionSetting(promotionSettingsRequest requests.PromotionSettingRequest, user *models.User) error
-	SavePromotionSettingValue(payload requests.PromotionSettingValue, user *models.User) error
+	SavePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
 }
 
 type promotionService struct{}
 
-func (p *promotionService) SavePromotionSettingValue(payload requests.PromotionSettingValue, user *models.User) error {
+func (p *promotionService) SavePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error {
 	savePromotionSettings := models2.PromotionSettingValue{
 		Number:                     uuid.NewV4().String(),
 		Score:                      payload.Score,

@@ -20,7 +20,7 @@ func CreatePromotionSettingValue(c *gin.Context) {
 		return
 	}
 
-	var payload requests.PromotionSettingValue
+	var payload requests.PromotionSettingValueRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

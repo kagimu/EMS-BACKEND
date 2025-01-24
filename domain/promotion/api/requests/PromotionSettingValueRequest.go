@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type PromotionSettingValue struct {
+type PromotionSettingValueRequest struct {
 	Score                      float64                       `json:"score"`
 	MinimumPoints              float64                       `json:"minimum_points"`
 	PromotionSettingNumber     string                        `json:"promotion_setting_number"`
@@ -19,12 +19,12 @@ type AssessmentAreaRequestValues struct {
 	AssessmentAreaNumber string `json:"assessment_area_number"`
 }
 
-func (p *PromotionSettingValue) Prepare() {
+func (p *PromotionSettingValueRequest) Prepare() {
 	p.AssessmentGradeScaleNumber = html.EscapeString(strings.TrimSpace(p.AssessmentGradeScaleNumber))
 	p.PromotionSettingNumber = html.EscapeString(strings.TrimSpace(p.PromotionSettingNumber))
 }
 
-func (p *PromotionSettingValue) Validate() error {
+func (p *PromotionSettingValueRequest) Validate() error {
 	if p.AssessmentGradeScaleNumber == "" {
 		return errors.New("Choose assessment grade scale number ")
 	}
