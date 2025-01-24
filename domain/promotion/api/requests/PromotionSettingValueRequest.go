@@ -2,6 +2,7 @@ package requests
 
 import (
 	"errors"
+	"fmt"
 	"html"
 	"strings"
 )
@@ -38,6 +39,17 @@ func (p *PromotionSettingValueRequest) Validate() error {
 
 	if p.MinimumPoints < 0 {
 		return errors.New("Invalid minimum aggregate ")
+	}
+
+	for index, area := range p.AssessmentAreas {
+
+		if area.GradeNumber == "" {
+			return errors.New(fmt.Sprintf("Choose grade at index %d", index+1))
+		}
+
+		if area.AssessmentAreaNumber == p.PromotionSettingNumber {
+			return errors.New(fmt.Sprintf("Choose assessment area at index %d", index+1))
+		}
 	}
 
 	return nil
