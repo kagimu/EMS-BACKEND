@@ -20,6 +20,8 @@ import (
 	assessmentAreaRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
+	repositories10 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -435,6 +437,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	} else {
 		fmt.Println("assessmentGrade", assessmentGrade.Name)
 		reportSummary.Grade = assessmentGrade.Name
+		reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 	}
 
 	reportSummary.Aggregate = totalAggregates
@@ -798,5 +801,113 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		NextTermBegins:      studyPeriod.NextTermBeginsOn.String(),
 	}
 
+	finalStatus, err := checkStatus(campusClass.Number, studyPeriod.Number, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate)
+	if err != nil {
+		return responses.FullReportSummary{}, err
+	}
+
+	if finalStatus.Number != "" {
+		fmt.Println("Final learner status: " + finalStatus.Type)
+	}
+
 	return response, nil
+}
+
+func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber string, totalAggregate, totalScore float64) (models2.PromotionSetting, error) {
+
+	finalStatus, err := checkIfPromoted(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
+	finalStatus, err = checkIfRepeat(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
+	return models2.PromotionSetting{}, errors.New("Failed to find promotion/demotion/repeat configuration criteria, error: " + err.Error())
+}
+
+func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string) (models2.PromotionSetting, error) {
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	//Check promotion
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "promotion")
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
+	}
+
+	if promotion.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number != "" {
+		return models2.PromotionSetting{}, errors.New("Promotion value not set for " + promotion.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	fmt.Println("Minimum assessment grade: ", minimumAssessmentGrade.Name)
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return promotion, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
+
+func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string) (models2.PromotionSetting, error) {
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	//Check promotion
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat")
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
+	}
+
+	if promotion.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number != "" {
+		return models2.PromotionSetting{}, errors.New("Promotion value not set for " + promotion.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return promotion, nil
+	}
+
+	return models2.PromotionSetting{}, nil
 }
