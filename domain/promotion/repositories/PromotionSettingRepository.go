@@ -9,6 +9,42 @@ import (
 	"gorm.io/gorm"
 )
 
+func FindPromotionSettingsByStudyPeriod(studyPeriodNumber, currentCampusClassNumber, checkType string) (models.PromotionSetting, error) {
+	var promotionSettings models.PromotionSetting
+	db := config.DB
+
+	if err := db.Where("study_period_number = ? AND previous_campus_class_number = ? AND type = ? AND status = ?", studyPeriodNumber, currentCampusClassNumber, checkType, constants.StatusActive).Find(&promotionSettings).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.PromotionSetting{}, nil
+		}
+
+		return models.PromotionSetting{}, err
+	}
+
+	return promotionSettings, nil
+}
+
+func FindPromotionSettingValueBySettingNumber(promotionSettingNumber string, trn ...*gorm.DB) (models.PromotionSettingValue, error) {
+	var promotionSettings models.PromotionSettingValue
+	db := config.DB
+
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Where("promotion_setting_number = ?", promotionSettingNumber).Find(&promotionSettings).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.PromotionSettingValue{}, nil
+		}
+
+		return models.PromotionSettingValue{}, err
+	}
+
+	return promotionSettings, nil
+}
+
 func FindAllPromotionSettings(studyPeriodNumber, nextCampusClassNumber, settingsType string) ([]models.PromotionSetting, error) {
 	var promotionSettings []models.PromotionSetting
 	db := config.DB
@@ -29,33 +65,56 @@ func FindAllPromotionSettings(studyPeriodNumber, nextCampusClassNumber, settings
 	return promotionSettings, nil
 }
 
-func FindPromotionSettingsByStudyPeriod(studyPeriodNumber, currentCampusClassNumber, checkType string) (models.PromotionSetting, error) {
-	var promotionSettings models.PromotionSetting
+func SavePromotionSettings(promotionSettings models.PromotionSetting) error {
 	db := config.DB
 
-	if err := db.Where("study_period_number = ? AND previous_campus_class_number = ? AND type = ? AND status = ?", studyPeriodNumber, currentCampusClassNumber, checkType, constants.StatusActive).Find(&promotionSettings).Error; err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.PromotionSetting{}, nil
-		}
-
-		return models.PromotionSetting{}, err
+	if err := db.Save(&promotionSettings).Error; err != nil {
+		return err
 	}
 
-	return promotionSettings, nil
+	return nil
 }
 
-func FindPromotionSettingValueBySettingNumber(promotionSettingNumber string) (models.PromotionSettingValue, error) {
-	var promotionSettings models.PromotionSettingValue
+func SavePromotionSettingValue(promotionSettingValue models.PromotionSettingValue, trn ...*gorm.DB) error {
 	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
 
-	if err := db.Where("promotion_setting_number = ?", promotionSettingNumber).Find(&promotionSettings).Error; err != nil {
+	if err := db.Save(&promotionSettingValue).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func SavePromotionAssessmentAreaValue(promotionAssessmentAreaValue models.PromotionAssessmentAreaValue, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Save(&promotionAssessmentAreaValue).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func FindPromotionAssessmentAreaValueBySettingsNumberAndAssessmentAreaNumber(promotionSettingNumber, assessmentAreaNumber string, trn ...*gorm.DB) (models.PromotionAssessmentAreaValue, error) {
+	var promotionSettings models.PromotionAssessmentAreaValue
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Where("promotion_setting_number = ? AND assessment_area_number", promotionSettingNumber, assessmentAreaNumber).Find(&promotionSettings).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.PromotionSettingValue{}, nil
+			return models.PromotionAssessmentAreaValue{}, nil
 		}
 
-		return models.PromotionSettingValue{}, err
+		return models.PromotionAssessmentAreaValue{}, err
 	}
 
 	return promotionSettings, nil
