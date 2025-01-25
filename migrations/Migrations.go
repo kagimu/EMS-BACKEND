@@ -157,7 +157,7 @@ func Init() error {
 		&assessmentAreaModel.AssessmentAreaGradingStandard{},
 		&promotionModels.Promotion{},
 		&promotionModels.PromotionSetting{},
-		&promotionModels.PromotionSettingsValue{},
+		&promotionModels.PromotionSettingValue{},
 		&previousSchoolResultsModels.PreviousSchoolResults{},
 		&staffModel.Staff{},
 		&cateringModels.FeedingGroup{},

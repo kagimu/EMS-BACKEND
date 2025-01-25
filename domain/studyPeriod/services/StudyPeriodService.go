@@ -435,8 +435,8 @@ func CreateStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) responses.St
 	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	return responses.StudyPeriodResponse{
-		CreateNameResponse(studyPeriodName),
-		studyPeriod.Number,
+		StudyPeriodNameResponse: CreateNameResponse(studyPeriodName),
+		StudyPeriodNumber:       studyPeriod.Number,
 	}
 }
 
