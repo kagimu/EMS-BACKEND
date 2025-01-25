@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	CurriculumInfo struct {
+	CurriculumResponse struct {
 		Name             string `json:"name"`
 		CurriculumNumber string `json:"curriculum_number"`
 	}
@@ -18,11 +18,11 @@ type (
 	}
 )
 
-func (p *CurriculumInfo) Prepare() {
+func (p *CurriculumResponse) Prepare() {
 	p.Name = html.EscapeString(strings.TrimSpace(p.Name))
 }
 
-func (p *CurriculumInfo) Validate() error {
+func (p *CurriculumResponse) Validate() error {
 
 	if p.Name == "" {
 		return errors.New("name is required")
