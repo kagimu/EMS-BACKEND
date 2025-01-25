@@ -57,3 +57,20 @@ func FetchPromotionSettings(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": promotionSettings})
 }
+
+func FetchPromotionSettingDetails(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	promotionSettingNumber := c.Query("promotion_setting_number")
+
+	promotionSettings, err := promotionService.PromotionSettingDetails(promotionSettingNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Error fetching promotion setting details error: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": promotionSettings})
+}
