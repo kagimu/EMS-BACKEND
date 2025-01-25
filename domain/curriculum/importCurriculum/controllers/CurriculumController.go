@@ -35,7 +35,7 @@ import (
 
 func NewCurriculum(context *gin.Context) {
 
-	var curriculumInfo responses.CurriculumInfo
+	var curriculumInfo responses.CurriculumResponse
 	err := context.BindJSON(&curriculumInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -771,7 +771,7 @@ func CurriculumInfo(context *gin.Context) {
 
 func CurriculumEdit(context *gin.Context) {
 
-	var curriculumInfo responses.CurriculumInfo
+	var curriculumInfo responses.CurriculumResponse
 	err := context.BindJSON(&curriculumInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})

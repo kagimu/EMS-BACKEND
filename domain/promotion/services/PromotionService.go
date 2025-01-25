@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
@@ -21,9 +25,30 @@ type PromotionService interface {
 	AllPromotionSettings(studyPeriodNumber, nextCampusClassNumber, settingsType string) ([]responses.PromotionResponse, error)
 	NewPromotionSetting(promotionSettingsRequest requests.PromotionSettingRequest, user *models.User) error
 	SavePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
+	PromotionSettingDetails(promotionSettingNumber string) (responses.PromotionDetailedResponse, error)
 }
 
 type promotionService struct{}
+
+func (p *promotionService) PromotionSettingDetails(promotionSettingNumber string) (responses.PromotionDetailedResponse, error) {
+	promotionSetting, err := repositories.FindPromotionSettingByNumber(promotionSettingNumber)
+	if err != nil {
+		return responses.PromotionDetailedResponse{}, errors.New(fmt.Sprintf("Error '%s' finding promotion setting by number", err.Error()))
+	}
+
+	if promotionSetting.Number == "" {
+		return responses.PromotionDetailedResponse{}, errors.New("Invalid promotion setting number ")
+	}
+
+	detailedResponse := responses.PromotionDetailedResponse{
+		PromotionResponse: createPromotionResponse(promotionSetting),
+	}
+
+	detailedResponse.NextCampusClassNumber = promotionSetting.NextCampusClassNumber
+	detailedResponse.PreviousCampusClassNumber = promotionSetting.PreviousCampusClassNumber
+
+	return detailedResponse, nil
+}
 
 func (p *promotionService) SavePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error {
 	savePromotionSettings := models2.PromotionSettingValue{
@@ -144,22 +169,35 @@ func (p *promotionService) AllPromotionSettings(studyPeriodNumber, nextCampusCla
 	}
 
 	for _, promotionSetting := range promotionSettings {
-		nextClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.NextCampusClassNumber)
-		prevClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
-		studyPeriod, _ := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
-
-		promotionResponses = append(promotionResponses, responses.PromotionResponse{
-			Name:                    promotionSetting.Name,
-			PromotionSettingsNumber: promotionSetting.Number,
-			NextClass:               services.CreateClassResponse(nextClass),
-			PreviousClass:           services.CreateClassResponse(prevClass),
-			Type:                    promotionSetting.Type,
-			Status:                  promotionSetting.Status,
-			StudyPeriod:             services2.CreateStudyPeriodResponse(studyPeriod),
-		})
+		promotionResponses = append(promotionResponses, createPromotionResponse(promotionSetting))
 	}
 
 	return promotionResponses, nil
+}
+
+func createPromotionResponse(promotionSetting models2.PromotionSetting) responses.PromotionResponse {
+
+	nextClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.NextCampusClassNumber)
+	prevClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
+
+	curriculum, _ := repositories4.FindCurriculumByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+	campus, _ := repositories5.GetCampusByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+
+	return responses.PromotionResponse{
+		Name:                    promotionSetting.Name,
+		PromotionSettingsNumber: promotionSetting.Number,
+		NextClass:               services.CreateClassResponse(nextClass),
+		PreviousClass:           services.CreateClassResponse(prevClass),
+		Type:                    promotionSetting.Type,
+		Status:                  promotionSetting.Status,
+		StudyPeriod:             services2.CreateStudyPeriodResponse(studyPeriod),
+		Curriculum: responses2.CurriculumResponse{
+			CurriculumNumber: curriculum.Number,
+			Name:             curriculum.Name,
+		},
+		Campus: services3.CreateCampusResponse(campus),
+	}
 }
 
 func NewPromotionService() PromotionService {
