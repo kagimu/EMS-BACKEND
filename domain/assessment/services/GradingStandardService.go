@@ -1030,19 +1030,23 @@ func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.Assessm
 	var assessmentGradeItemResponses = make([]assessmentGradeResponses.AssessmentGradeItemResponse, 0)
 
 	for _, assessmentGradeItem := range assessmentGradeScales {
-		assessmentGradeItemResponses = append(assessmentGradeItemResponses, assessmentGradeResponses.AssessmentGradeItemResponse{
-			Name:          assessmentGradeItem.Name,
-			Abbreviation:  assessmentGradeItem.Abbreviation,
-			MaximumPoints: assessmentGradeItem.MaximumPoints,
-			MinimumPoints: assessmentGradeItem.MinimumPoints,
-			Code:          assessmentGradeItem.Code,
-			Description:   assessmentGradeItem.Description,
-			Remarks:       assessmentGradeItem.Remark,
-		})
+		assessmentGradeItemResponses = append(assessmentGradeItemResponses, CreateAssessmentItemResponse(assessmentGradeItem))
 	}
 
 	assessmentGradeResponse.AssessmentGrades = assessmentGradeItemResponses
 	return assessmentGradeResponse
+}
+
+func CreateAssessmentItemResponse(assessmentGradeItem assessmentGradeModels.AssessmentGradeScale) assessmentGradeResponses.AssessmentGradeItemResponse {
+	return assessmentGradeResponses.AssessmentGradeItemResponse{
+		Name:          assessmentGradeItem.Name,
+		Abbreviation:  assessmentGradeItem.Abbreviation,
+		MaximumPoints: assessmentGradeItem.MaximumPoints,
+		MinimumPoints: assessmentGradeItem.MinimumPoints,
+		Code:          assessmentGradeItem.Code,
+		Description:   assessmentGradeItem.Description,
+		Remarks:       assessmentGradeItem.Remark,
+	}
 }
 
 func UpdateGradingStandardStatus(updateStatusRequest requests.UpdateGradingStatusStandardRequest, currentUserNumber string) error {

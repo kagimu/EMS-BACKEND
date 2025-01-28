@@ -4,11 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	services5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
@@ -17,6 +22,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/services"
+	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -26,9 +32,60 @@ type PromotionService interface {
 	NewPromotionSetting(promotionSettingsRequest requests.PromotionSettingRequest, user *models.User) error
 	SavePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
 	PromotionSettingDetails(promotionSettingNumber string) (responses.PromotionDetailedResponse, error)
+	PromotionSettingGrades(promotionSettingNumber string, c *gin.Context) (responses.PromotionSettingGradeResponse, error)
 }
 
 type promotionService struct{}
+
+func (p *promotionService) PromotionSettingGrades(promotionSettingNumber string, c *gin.Context) (responses.PromotionSettingGradeResponse, error) {
+
+	response := responses.PromotionSettingGradeResponse{}
+
+	promotionSetting, err := repositories.FindPromotionSettingByNumber(promotionSettingNumber)
+	if err != nil {
+		return response, errors.New("Error checking promotion setting " + err.Error())
+	}
+
+	if promotionSetting.Number == "" {
+		return response, errors.New("Invalid promotion setting number ")
+	}
+
+	class, err := repositories2.GetClassByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+	if err != nil {
+		return response, err
+	}
+
+	classAssessmentGrade, err := repositories6.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
+	if err != nil {
+		return response, err
+	}
+
+	if classAssessmentGrade.Number == "" {
+		return response, errors.New(class.Name + " does not have assessment grade set")
+	}
+
+	assessmentGrades, err := repositories6.FindAssessmentGradeScaleByGradeNumber(classAssessmentGrade.Number)
+	if err != nil {
+		return response, errors.New("getting assessments grade scale error: " + err.Error())
+	}
+
+	curriculum, _ := repositories4.FindCurriculumByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+
+	assessmentAreas, err := services4.FindAllAssessmentAreas("", class.Number, curriculum.Number, "", "", c)
+	if err != nil {
+		return response, errors.New("getting assessments area for class error: " + err.Error())
+	}
+
+	var assessmentGradeItemResponses = make([]assessmentGradeResponses.AssessmentGradeItemResponse, 0)
+	for _, assessmentGradeItem := range assessmentGrades {
+		assessmentGradeItemResponses = append(assessmentGradeItemResponses, services5.CreateAssessmentItemResponse(assessmentGradeItem))
+	}
+
+	response.GradeScales = assessmentGradeItemResponses
+	response.AssessmentAreas = assessmentAreas
+
+	return response, nil
+}
 
 func (p *promotionService) PromotionSettingDetails(promotionSettingNumber string) (responses.PromotionDetailedResponse, error) {
 	promotionSetting, err := repositories.FindPromotionSettingByNumber(promotionSettingNumber)
