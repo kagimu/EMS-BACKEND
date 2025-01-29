@@ -138,3 +138,35 @@ func FindPromotionSettingByNumber(promotionSettingNumber string, trn ...*gorm.DB
 
 	return promotionSettings, nil
 }
+
+func SavePromotion(promotion models.Promotion, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Save(&promotion).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func FindPromotionByReportSummaryNumber(reportSummaryNumber string, trn ...*gorm.DB) (models.Promotion, error) {
+	var promotion models.Promotion
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Where("report_summary_number = ?", reportSummaryNumber).Find(&promotion).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Promotion{}, nil
+		}
+
+		return models.Promotion{}, err
+	}
+
+	return promotion, nil
+}

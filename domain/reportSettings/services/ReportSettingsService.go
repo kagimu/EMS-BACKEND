@@ -808,7 +808,29 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 
 	if finalStatus.Number != "" {
 		fmt.Println("Final learner status: " + finalStatus.Type)
+		//FindPromotionByReportSummaryNumber
+		currentPromotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
+		if err != nil {
+			return responses.FullReportSummary{}, errors.New("failed to check promotion error: " + err.Error())
+		}
+
+		promotion := models2.Promotion{
+			Number:                 uuid.NewV4().String(),
+			ReportSummaryNumber:    reportSummaryNumber,
+			PromotionSettingNumber: finalStatus.Number,
+			Status:                 finalStatus.Type,
+			UserNumber:             finalStatus.UserNumber,
+			PromotionType:          "Auto",
+		}
+
+		if currentPromotion.Number != "" {
+			promotion.Number = currentPromotion.Number
+		}
+
+		err = repositories10.SavePromotion(promotion)
 	}
+
+	response.PromotionStatus = finalStatus.Type
 
 	return response, nil
 }
