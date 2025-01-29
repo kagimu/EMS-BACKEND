@@ -11,7 +11,7 @@ type Promotion struct {
 	UpdatedAt              time.Time
 	Number                 string                `json:"number" gorm:"size:36;primarykey;not null"`
 	ReportSummaryNumber    string                `json:"report_summary_number" gorm:"size:36;not null"`
-	ReportSummary          models2.ReportSummary `gorm:"foreignKey:CurrentAcademicYearNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	ReportSummary          models2.ReportSummary `gorm:"foreignKey:ReportSummaryNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Status                 string                `json:"status" gorm:"size:30;"`
 	PromotionType          string                `json:"promotion_type" gorm:"size:30;"`
 	PromotionSettingNumber string                `json:"promotion_setting_number" gorm:"size:36;not null"`
