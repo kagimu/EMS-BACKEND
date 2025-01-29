@@ -1046,6 +1046,7 @@ func CreateAssessmentItemResponse(assessmentGradeItem assessmentGradeModels.Asse
 		Code:          assessmentGradeItem.Code,
 		Description:   assessmentGradeItem.Description,
 		Remarks:       assessmentGradeItem.Remark,
+		Number:        assessmentGradeItem.Number,
 	}
 }
 

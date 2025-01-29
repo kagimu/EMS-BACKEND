@@ -109,6 +109,7 @@ type FullReportSummary struct {
 	HeadTeachersComment string         `json:"head_teachers_comment"`
 	AggregateScale      []AppliedScale `json:"aggregate_scale"`
 	NextTermBegins      string         `json:"next_term_begins"`
+	PromotionStatus     string         `json:"promotion_status"`
 }
 
 type LeanSchool struct {
