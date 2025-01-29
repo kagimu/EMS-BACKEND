@@ -52,14 +52,15 @@ type SummarizedFinalReportResponse struct {
 }
 
 type LeanReportSummary struct {
-	Number        string `json:"number"`
-	StudentName   string `json:"student_name"`
-	StudentNumber string `json:"student_number"`
-	Photo         string `json:"photo"`
-	Grade         string `json:"grade"`
-	StudyPeriod   string `json:"study_period"`
-	Stream        string `json:"stream"`
-	Class         string `json:"class"`
+	Number          string `json:"number"`
+	StudentName     string `json:"student_name"`
+	StudentNumber   string `json:"student_number"`
+	Photo           string `json:"photo"`
+	Grade           string `json:"grade"`
+	StudyPeriod     string `json:"study_period"`
+	Stream          string `json:"stream"`
+	Class           string `json:"class"`
+	PromotionStatus string `json:"promotion_status"`
 }
 
 type LeanStudent struct {

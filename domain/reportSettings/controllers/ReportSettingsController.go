@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -12,6 +13,7 @@ import (
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -213,15 +215,25 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
 
+		promotionStatus := ""
+
+		promotion, err := repositories2.FindPromotionByReportSummaryNumber(reportSummary.Number)
+		if err == nil {
+			promotionStatus = promotion.Status
+		} else {
+			fmt.Println(fmt.Sprintf("Checking promotion status error %s", err.Error()))
+		}
+
 		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
-			Number:        reportSummary.Number,
-			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
-			StudentNumber: reportSummary.StudentNumber,
-			Photo:         commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
-			Grade:         reportSummary.Grade,
-			Stream:        reportSummary.Stream.Name,
-			StudyPeriod:   studyPeriodName.Name,
-			Class:         reportSummary.CampusClass.ClassName,
+			Number:          reportSummary.Number,
+			StudentName:     reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
+			StudentNumber:   reportSummary.StudentNumber,
+			Photo:           commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
+			Grade:           reportSummary.Grade,
+			Stream:          reportSummary.Stream.Name,
+			StudyPeriod:     studyPeriodName.Name,
+			Class:           reportSummary.CampusClass.ClassName,
+			PromotionStatus: promotionStatus,
 		})
 	}
 	paginatedResponse.Content = cleanReportSummary
