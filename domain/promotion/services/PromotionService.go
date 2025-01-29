@@ -15,11 +15,13 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/services"
 	"github.com/gin-gonic/gin"
@@ -238,10 +240,7 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 	prevClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
 
-	curriculum, _ := repositories4.FindCurriculumByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
-	campus, _ := repositories5.GetCampusByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
-
-	return responses.PromotionResponse{
+	promo := responses.PromotionResponse{
 		Name:                    promotionSetting.Name,
 		PromotionSettingsNumber: promotionSetting.Number,
 		NextClass:               services.CreateClassResponse(nextClass),
@@ -249,12 +248,45 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 		Type:                    promotionSetting.Type,
 		Status:                  promotionSetting.Status,
 		StudyPeriod:             services2.CreateStudyPeriodResponse(studyPeriod),
-		Curriculum: responses2.CurriculumResponse{
+	}
+
+	campusClass, err := repositories2.GetCampusClassByNumber(promotionSetting.PreviousCampusClassNumber)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Campus class error: %s", err.Error()))
+		return promo
+	}
+
+	campus, err := repositories5.GetCampusByNumber(campusClass.CampusNumber)
+	if err == nil {
+		promo.Campus = services3.CreateCampusResponse(campus)
+	} else {
+		fmt.Println(fmt.Sprintf("Campus error: %s", err.Error()))
+		return promo
+	}
+
+	curriculumClass, err := repositories2.GetCurriculumClass(campusClass.CurriculumClassNumber)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Curriculum classs error: %s", err.Error()))
+		return promo
+	}
+
+	curriculumLevel, err := repositories7.GetCurriculumLevelByNumber(curriculumClass.CurriculumLevelNumber)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Curriculum level error: %s", err.Error()))
+		return promo
+	}
+
+	curriculum, err := models3.GetCurriculumByNumber(curriculumLevel.CurriculumNumber)
+	if err == nil {
+		promo.Curriculum = responses2.CurriculumResponse{
 			CurriculumNumber: curriculum.Number,
 			Name:             curriculum.Name,
-		},
-		Campus: services3.CreateCampusResponse(campus),
+		}
+	} else {
+		fmt.Println(fmt.Sprintf("Curriculum error: %s", err.Error()))
 	}
+
+	return promo
 }
 
 func NewPromotionService() PromotionService {
