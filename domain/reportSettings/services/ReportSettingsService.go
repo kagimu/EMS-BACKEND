@@ -36,6 +36,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
+	"time"
 )
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
@@ -827,6 +828,8 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 			Status:                 finalStatus.Type,
 			UserNumber:             finalStatus.UserNumber,
 			PromotionType:          "Auto",
+			CreatedAt:              time.Now(),
+			UpdatedAt:              time.Now(),
 		}
 
 		if currentPromotion.Number != "" {
