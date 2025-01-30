@@ -36,6 +36,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
+	"time"
 )
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
@@ -807,26 +808,42 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		ReportTemplate:      reportTemplate.Name,
 	}
 
-	finalStatus, err := checkStatus(campusClass.Number, studyPeriod.Number, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate)
+	return response, nil
+}
+
+func FetchPromotionStatus(reportSummaryNumber string) (string, error) {
+	reportSummary, err := reporsitory.FindReportSummaryByNumber(reportSummaryNumber)
 	if err != nil {
-		return responses.FullReportSummary{}, err
+		return "", errors.New("failed to find report summary error: " + err.Error())
+	}
+
+	studyPeriod, err := repositories3.GetStudyPeriodByNumber(reportSummary.StudyPeriodNumber)
+	if err != nil {
+		return "", errors.New("failed to find study period error: " + err.Error())
+	}
+
+	finalStatus, err := checkStatus(reportSummary.CampusClassNumber, studyPeriod.Number, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate)
+	if err != nil {
+		return "", err
 	}
 
 	if finalStatus.Number != "" {
 		fmt.Println("Final learner status: " + finalStatus.Type)
 		//FindPromotionByReportSummaryNumber
-		currentPromotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
+		currentPromotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummary.Number)
 		if err != nil {
-			return responses.FullReportSummary{}, errors.New("failed to check promotion error: " + err.Error())
+			return "", errors.New("failed to check promotion error: " + err.Error())
 		}
 
 		promotion := models2.Promotion{
 			Number:                 uuid.NewV4().String(),
-			ReportSummaryNumber:    reportSummaryNumber,
+			ReportSummaryNumber:    reportSummary.Number,
 			PromotionSettingNumber: finalStatus.Number,
 			Status:                 finalStatus.Type,
 			UserNumber:             finalStatus.UserNumber,
 			PromotionType:          "Auto",
+			CreatedAt:              time.Now(),
+			UpdatedAt:              time.Now(),
 		}
 
 		if currentPromotion.Number != "" {
@@ -836,10 +853,20 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		err = repositories10.SavePromotion(promotion)
 	}
 
-	response.PromotionStatus = finalStatus.Type
-
-	return response, nil
+	return finalStatus.Type, nil
 }
+
+//	promotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
+//	if err != nil {
+//		return "", errors.New("failed to find promotion error: " + err.Error())
+//	}
+//
+//	if promotion.Number != "" {
+//		return promotion.Status, nil
+//	}
+//
+//	return "", nil
+//}
 
 func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber string, totalAggregate, totalScore float64) (models2.PromotionSetting, error) {
 

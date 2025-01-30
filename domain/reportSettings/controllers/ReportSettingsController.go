@@ -551,3 +551,14 @@ func DeleteReportColumnAssessment(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Report column assessment deleted successfully"})
 }
+
+func FetchReportPromotionDetails(ctx *gin.Context) {
+	reportSummaryNumber := ctx.Param("report_summary_number")
+
+	response, err := services3.FetchPromotionStatus(reportSummaryNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
