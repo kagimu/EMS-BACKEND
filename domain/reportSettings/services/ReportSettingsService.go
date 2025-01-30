@@ -809,7 +809,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 
 	finalStatus, err := checkStatus(campusClass.Number, studyPeriod.Number, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate)
 	if err != nil {
-		return responses.FullReportSummary{}, err
+		return response, err
 	}
 
 	if finalStatus.Number != "" {
