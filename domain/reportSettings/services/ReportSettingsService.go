@@ -775,6 +775,11 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		return responses.FullReportSummary{}, errors.New("failed to find stream error: " + err.Error())
 	}
 
+	reportTemplate, err := services.DetermineReportTemplateForClass(campusClass.Number)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find report template error: " + err.Error())
+	}
+
 	response := responses.FullReportSummary{
 		Student: responses.LeanStudent{
 			Number:      student.Number,
@@ -799,6 +804,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		AggregateScale:      scales,
 		LevelName:           levelName.Name,
 		NextTermBegins:      studyPeriod.NextTermBeginsOn.String(),
+		ReportTemplate:      reportTemplate.Name,
 	}
 
 	finalStatus, err := checkStatus(campusClass.Number, studyPeriod.Number, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate)
