@@ -861,7 +861,7 @@ func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumbe
 		return finalStatus, nil
 	}
 
-	return models2.PromotionSetting{}, errors.New("Failed to find promotion/demotion/repeat configuration criteria, error: " + err.Error())
+	return models2.PromotionSetting{}, errors.New("Failed to find promotion/demotion/repeat configuration criteria, error: ")
 }
 
 func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string) (models2.PromotionSetting, error) {
