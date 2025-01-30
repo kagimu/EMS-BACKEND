@@ -119,7 +119,6 @@ func SetupRoutes() *gin.Engine {
 			curriculum.GET("data", curriculumController.FetchCurriculumInfo)
 		}
 
-		//manage School
 		school := main.Group("/school")
 		{
 			school.GET("/all", schoolController.FetchSchools)
@@ -149,7 +148,6 @@ func SetupRoutes() *gin.Engine {
 
 		}
 
-		//manage campus
 		campus := main.Group("/campus")
 		{
 			campus.GET("/all", controllers.FetchCampuses)
@@ -175,13 +173,11 @@ func SetupRoutes() *gin.Engine {
 		main.GET("campus-level", controllers.FetchCampusLevel)
 		main.GET("fetch-campus-level", controllers.FetchCampusLevelList)
 
-		//level
 		main.POST("new-level", learningLevelControllers.NewLevel)
 		main.POST("new-curriculum-level", learningLevelControllers.NewCurriculumLevel)
 		main.GET("fetch-level", learningLevelControllers.FetchLearningLevel)
 		main.GET("fetch-curriculum-level", learningLevelControllers.FetchCurriculumLevel)
 
-		//	manage class
 		class := main.Group("/class")
 		{
 			class.GET("/info", classController.ClassInfo)
@@ -577,6 +573,7 @@ func SetupRoutes() *gin.Engine {
 				aggregateScale.GET("all", aggregateScaleController.FetchAllDetailedScales)
 				aggregateScale.POST("update", aggregateScaleController.UpdateAggregateScale)
 				aggregateScale.POST("remove/:scale_number", aggregateScaleController.RemoveAggregateScale)
+				aggregateScale.POST("upload-illustration", aggregateScaleController.UploadAggregateScaleIllustration)
 			}
 
 			assessmentGrade := assessment.Group("/assessment-grades")
@@ -739,6 +736,8 @@ func SetupRoutes() *gin.Engine {
 			{
 				promotionSettings.POST("", promotionController.CreatePromotionSettings)
 				promotionSettings.GET("", promotionController.FetchPromotionSettings)
+				promotionSettings.GET("details", promotionController.FetchPromotionSettingDetails)
+				promotionSettings.GET("grades", promotionController.FetchPromotionSettingGrades)
 			}
 
 			promotionSettingsValues := promotions.Group("settings-values")
@@ -900,6 +899,7 @@ func SetupRoutes() *gin.Engine {
 	attachments := router.Group("attachments")
 	{
 		attachments.GET("download/:attachment_number", controller.DownloadAttachment)
+		attachments.POST("delete", controller.DeleteAttachment)
 	}
 
 	return router

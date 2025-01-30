@@ -7,6 +7,7 @@ type AssessmentGradeResponse struct {
 }
 
 type AssessmentGradeItemResponse struct {
+	Number        string  `json:"number"`
 	Code          int64   `json:"code"`
 	Description   string  `json:"description"`
 	MinimumPoints float64 `json:"minimum_points"`

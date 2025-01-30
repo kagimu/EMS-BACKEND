@@ -52,14 +52,15 @@ type SummarizedFinalReportResponse struct {
 }
 
 type LeanReportSummary struct {
-	Number        string `json:"number"`
-	StudentName   string `json:"student_name"`
-	StudentNumber string `json:"student_number"`
-	Photo         string `json:"photo"`
-	Grade         string `json:"grade"`
-	StudyPeriod   string `json:"study_period"`
-	Stream        string `json:"stream"`
-	Class         string `json:"class"`
+	Number          string `json:"number"`
+	StudentName     string `json:"student_name"`
+	StudentNumber   string `json:"student_number"`
+	Photo           string `json:"photo"`
+	Grade           string `json:"grade"`
+	StudyPeriod     string `json:"study_period"`
+	Stream          string `json:"stream"`
+	Class           string `json:"class"`
+	PromotionStatus string `json:"promotion_status"`
 }
 
 type LeanStudent struct {
@@ -83,10 +84,11 @@ type LearningArea struct {
 }
 
 type AppliedScale struct {
-	ShortName string  `json:"short_name"`
-	Name      string  `json:"name"`
-	Min       float64 `json:"min"`
-	Max       float64 `json:"max"`
+	ShortName    string  `json:"short_name"`
+	Name         string  `json:"name"`
+	Min          float64 `json:"min"`
+	Max          float64 `json:"max"`
+	Illustration string  `json:"illustration"`
 }
 type FullReportSummary struct {
 	Student             LeanStudent    `json:"student"`
@@ -108,6 +110,7 @@ type FullReportSummary struct {
 	HeadTeachersComment string         `json:"head_teachers_comment"`
 	AggregateScale      []AppliedScale `json:"aggregate_scale"`
 	NextTermBegins      string         `json:"next_term_begins"`
+	PromotionStatus     string         `json:"promotion_status"`
 }
 
 type LeanSchool struct {

@@ -1,6 +1,10 @@
 package responses
 
 import (
+	responses6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
+	responses4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
+	responses5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/responses"
+	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 )
@@ -13,4 +17,17 @@ type PromotionResponse struct {
 	StudyPeriod             responses2.StudyPeriodResponse `json:"study_period"`
 	Status                  string                         `json:"status"`
 	Type                    string                         `json:"type"`
+	Curriculum              responses3.CurriculumResponse  `json:"curriculum"`
+	Campus                  responses4.CampusResponse      `json:"campus"`
+}
+
+type PromotionDetailedResponse struct {
+	PromotionResponse
+	NextCampusClassNumber     string `json:"next_campus_class_number"`
+	PreviousCampusClassNumber string `json:"previous_campus_class_number"`
+}
+
+type PromotionSettingGradeResponse struct {
+	AssessmentAreas []responses5.AssessmentAreaResponse      `json:"assessment_areas"`
+	GradeScales     []responses6.AssessmentGradeItemResponse `json:"grade_scales"`
 }

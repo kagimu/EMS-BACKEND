@@ -13,9 +13,11 @@ import (
 	gradeRepository "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	classRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"strconv"
@@ -561,7 +563,8 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 			MinValue:     aggregateScale.MinValue,
 			MaxValue:     aggregateScale.MaxValue,
 			Description:  aggregateScale.Description,
-			Illustration: "",
+			Illustration: aggregateScale.Illustration,
+			Number:       aggregateScale.Number,
 			Weight:       aggregateScale.Weight,
 			Name:         grade.Name,
 			ShortName:    grade.ShortName,
@@ -1027,19 +1030,24 @@ func createAssessmentGradeResponse(assessmentGrade assessmentGradeModels.Assessm
 	var assessmentGradeItemResponses = make([]assessmentGradeResponses.AssessmentGradeItemResponse, 0)
 
 	for _, assessmentGradeItem := range assessmentGradeScales {
-		assessmentGradeItemResponses = append(assessmentGradeItemResponses, assessmentGradeResponses.AssessmentGradeItemResponse{
-			Name:          assessmentGradeItem.Name,
-			Abbreviation:  assessmentGradeItem.Abbreviation,
-			MaximumPoints: assessmentGradeItem.MaximumPoints,
-			MinimumPoints: assessmentGradeItem.MinimumPoints,
-			Code:          assessmentGradeItem.Code,
-			Description:   assessmentGradeItem.Description,
-			Remarks:       assessmentGradeItem.Remark,
-		})
+		assessmentGradeItemResponses = append(assessmentGradeItemResponses, CreateAssessmentItemResponse(assessmentGradeItem))
 	}
 
 	assessmentGradeResponse.AssessmentGrades = assessmentGradeItemResponses
 	return assessmentGradeResponse
+}
+
+func CreateAssessmentItemResponse(assessmentGradeItem assessmentGradeModels.AssessmentGradeScale) assessmentGradeResponses.AssessmentGradeItemResponse {
+	return assessmentGradeResponses.AssessmentGradeItemResponse{
+		Name:          assessmentGradeItem.Name,
+		Abbreviation:  assessmentGradeItem.Abbreviation,
+		MaximumPoints: assessmentGradeItem.MaximumPoints,
+		MinimumPoints: assessmentGradeItem.MinimumPoints,
+		Code:          assessmentGradeItem.Code,
+		Description:   assessmentGradeItem.Description,
+		Remarks:       assessmentGradeItem.Remark,
+		Number:        assessmentGradeItem.Number,
+	}
 }
 
 func UpdateGradingStandardStatus(updateStatusRequest requests.UpdateGradingStatusStandardRequest, currentUserNumber string) error {
@@ -1273,4 +1281,30 @@ func ClassGradingStandards(schoolNumber, gradingStandardNumber, classNumber, sca
 	}
 
 	return classGradingStandardResponse, nil
+}
+
+func UploadAggregateScaleIllustration(aggregateScaleNumber string, ctx *gin.Context) error {
+
+	scale, err := repositories.GetAggregateScaleByNumber(aggregateScaleNumber)
+	if err != nil {
+		return errors.New("checking aggregate scale number error: " + err.Error())
+	}
+
+	if scale.Number == "" {
+		return errors.New("invalid scale number")
+	}
+
+	illustration, err := services2.UploadAttachment(ctx, "photo")
+	if err != nil {
+		return err
+	}
+
+	scale.Illustration = illustration
+
+	err = repositories.SaveAggregateScale(scale)
+	if err != nil {
+		return errors.New("saving illustration error: " + err.Error())
+	}
+
+	return nil
 }
