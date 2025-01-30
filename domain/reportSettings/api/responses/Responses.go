@@ -111,6 +111,7 @@ type FullReportSummary struct {
 	AggregateScale      []AppliedScale `json:"aggregate_scale"`
 	NextTermBegins      string         `json:"next_term_begins"`
 	PromotionStatus     string         `json:"promotion_status"`
+	ReportTemplate      string         `json:"report_template"`
 }
 
 type LeanSchool struct {
