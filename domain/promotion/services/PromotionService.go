@@ -27,6 +27,7 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"time"
 )
 
 type PromotionService interface {
@@ -117,6 +118,8 @@ func (p *promotionService) SavePromotionSettingValue(payload requests.PromotionS
 		AssessmentGradeScaleNumber: payload.AssessmentGradeScaleNumber,
 		MinimumPoints:              payload.MinimumPoints,
 		UserNumber:                 user.Number,
+		UpdatedAt:                  time.Now(),
+		CreatedAt:                  time.Now(),
 	}
 
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
@@ -163,6 +166,8 @@ func handleAssessmentAreas(promotionSettingsNumber string, assessments []request
 			GradeNumber:            assessment.GradeNumber,
 			Number:                 uuid.NewV4().String(),
 			UserNumber:             user.Number,
+			CreatedAt:              time.Now(),
+			UpdatedAt:              time.Now(),
 		}
 
 		if checkDuplicates.Number != "" {
