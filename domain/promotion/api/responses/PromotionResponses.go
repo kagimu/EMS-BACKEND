@@ -1,6 +1,7 @@
 package responses
 
 import (
+	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	responses6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
 	responses4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
 	responses5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/responses"
@@ -30,4 +31,5 @@ type PromotionDetailedResponse struct {
 type PromotionSettingGradeResponse struct {
 	AssessmentAreas []responses5.AssessmentAreaResponse      `json:"assessment_areas"`
 	GradeScales     []responses6.AssessmentGradeItemResponse `json:"grade_scales"`
+	AggregateScales []responses7.AggregateScaleResponse      `json:"aggregate_scales"`
 }
