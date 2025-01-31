@@ -549,29 +549,7 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 	var grades = make([]responses.AggregateScaleResponse, 0)
 
 	for _, aggregateScale := range aggregateScales {
-
-		grade, err := gradeRepository.FindGradeByNumber(aggregateScale.GradeNumber)
-		if err != nil {
-			return response, errors.New("error fetching aggregate scales : " + err.Error())
-		}
-
-		if grade.Number == "" {
-			return response, errors.New("could not get grade by number: " + aggregateScale.GradeNumber)
-		}
-
-		grades = append(grades, responses.AggregateScaleResponse{
-			MinValue:     aggregateScale.MinValue,
-			MaxValue:     aggregateScale.MaxValue,
-			Description:  aggregateScale.Description,
-			Illustration: aggregateScale.Illustration,
-			Number:       aggregateScale.Number,
-			Weight:       aggregateScale.Weight,
-			Name:         grade.Name,
-			ShortName:    grade.ShortName,
-			Status:       grade.Status,
-			GradeNumber:  grade.Number,
-			Code:         aggregateScale.Code,
-		})
+		grades = append(grades, CreateAggregateScaleResponse(aggregateScale))
 	}
 
 	response.AggregateScaleItems = grades
@@ -593,6 +571,25 @@ func createScaleResponse(scale models.Scale, aggregateScales []models.AggregateS
 	response.AssessmentGrade = createAssessmentGradeResponse(assessmentGrade, assessmentGradeScales)
 
 	return response, nil
+}
+
+func CreateAggregateScaleResponse(aggregateScale models.AggregateScale) responses.AggregateScaleResponse {
+
+	grade, _ := gradeRepository.FindGradeByNumber(aggregateScale.GradeNumber)
+
+	return responses.AggregateScaleResponse{
+		MinValue:     aggregateScale.MinValue,
+		MaxValue:     aggregateScale.MaxValue,
+		Description:  aggregateScale.Description,
+		Illustration: aggregateScale.Illustration,
+		Number:       aggregateScale.Number,
+		Weight:       aggregateScale.Weight,
+		Name:         grade.Name,
+		ShortName:    grade.ShortName,
+		Status:       grade.Status,
+		GradeNumber:  grade.Number,
+		Code:         aggregateScale.Code,
+	}
 }
 
 func createMinResponse(scale models.Scale) responses.ScaleResponse {

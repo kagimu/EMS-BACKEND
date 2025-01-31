@@ -464,6 +464,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 func GetProperAggregateScale(score float64, campusClassNumber string) (aggregateSaceltModel.AggregateScale, error) {
 	var scale aggregateSaceltModel.AggregateScale
+
 	var aggregateScales []aggregateSaceltModel.AggregateScale
 
 	score = commons.RoundFloat(score, 0)
