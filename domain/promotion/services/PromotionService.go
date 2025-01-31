@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	services5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
@@ -16,11 +17,11 @@ import (
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
-	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/services"
@@ -53,10 +54,39 @@ func (p *promotionService) PromotionSettingGrades(promotionSettingNumber string,
 		return response, errors.New("Invalid promotion setting number ")
 	}
 
-	class, err := repositories2.GetClassByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+	promotionDetails := createPromotionResponse(promotionSetting)
+	class := promotionDetails.NextClass
+
+	classGradingStandard, err := repositories6.GetDefaultGradingStandardClassScaleByClassNumber(class.Number)
+	if err != nil {
+		return response, errors.New("Checking for default grading standard error " + err.Error())
+	}
+
+	if classGradingStandard.GradingStandardNumber == "" {
+		return response, errors.New(fmt.Sprintf("%s has no grading standard set", class.Name))
+	}
+
+	scaleNumber, err := reporsitory.GetScaleNumberByGradingStandardNumberAndClassNumber(classGradingStandard.GradingStandardNumber, class.Number)
+	if err != nil {
+		return response, errors.New("failed to fetch grading standard number")
+	}
+
+	if scaleNumber == "" {
+		gradingStandard, _ := repositories6.GetGradingStandardByNumber(classGradingStandard.GradingStandardNumber)
+		return response, errors.New(fmt.Sprintf("There is no scale configured for %s and class %s ", gradingStandard.Name, class.Name))
+	}
+
+	aggregateScales, err := repositories6.FindAggregateScaleByScaleNumber(scaleNumber)
 	if err != nil {
 		return response, err
 	}
+
+	aggregateScalesResponse := make([]responses7.AggregateScaleResponse, 0)
+	for _, aggregateScale := range aggregateScales {
+		aggregateScalesResponse = append(aggregateScalesResponse, services5.CreateAggregateScaleResponse(aggregateScale))
+	}
+
+	response.AggregateScales = aggregateScalesResponse
 
 	classAssessmentGrade, err := repositories6.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
 	if err != nil {
@@ -72,9 +102,8 @@ func (p *promotionService) PromotionSettingGrades(promotionSettingNumber string,
 		return response, errors.New("getting assessments grade scale error: " + err.Error())
 	}
 
-	curriculum, _ := repositories4.FindCurriculumByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
-
-	assessmentAreas, err := services4.FindAllAssessmentAreas("", class.Number, curriculum.Number, "", "", c)
+	curriculum := promotionDetails.Curriculum
+	assessmentAreas, err := services4.FindAllAssessmentAreas("", class.Number, curriculum.CurriculumNumber, "", "", c)
 	if err != nil {
 		return response, errors.New("getting assessments area for class error: " + err.Error())
 	}
