@@ -192,7 +192,7 @@ func handleAssessmentAreas(promotionSettingsNumber string, assessments []request
 		newValue := models2.PromotionAssessmentAreaValue{
 			AssessmentAreaNumber:   assessment.AssessmentAreaNumber,
 			PromotionSettingNumber: promotionSettingsNumber,
-			GradeNumber:            assessment.GradeNumber,
+			AggregateScaleNumber:   assessment.GradeNumber,
 			Number:                 uuid.NewV4().String(),
 			UserNumber:             user.Number,
 			CreatedAt:              time.Now(),
