@@ -33,3 +33,18 @@ type PromotionSettingGradeResponse struct {
 	GradeScales     []responses6.AssessmentGradeItemResponse `json:"grade_scales"`
 	AggregateScales []responses7.AggregateScaleResponse      `json:"aggregate_scales"`
 }
+
+type PromotionSettingValueResponse struct {
+	PromotionDetailedResponse
+	AssessmentAreas       []PromotionAssessmentAreaValueResponse `json:"assessment_areas"`
+	AssessmentGradeName   string                                 `json:"assessment_grade_name"`
+	AssessmentGradeNumber string                                 `json:"assessment_grade_number"`
+	MinimumAggregates     float64                                `json:"minimum_aggregates"`
+	MinimumScore          float64                                `json:"minimum_score"`
+}
+
+type PromotionAssessmentAreaValueResponse struct {
+	AssessmentArea string `json:"assessment_area"`
+	AggregateScale string `json:"aggregate_scale"`
+	Number         string `json:"number"`
+}

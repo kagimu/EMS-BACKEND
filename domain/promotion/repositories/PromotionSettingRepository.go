@@ -120,6 +120,25 @@ func FindPromotionAssessmentAreaValueBySettingsNumberAndAssessmentAreaNumber(pro
 	return promotionSettings, nil
 }
 
+func FindAllPromotionAssessmentAreaValueBySettingNumber(promotionSettingNumber string, trn ...*gorm.DB) ([]models.PromotionAssessmentAreaValue, error) {
+	var promotionSettings []models.PromotionAssessmentAreaValue
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Where("promotion_setting_number = ?", promotionSettingNumber).Find(&promotionSettings).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return promotionSettings, nil
+		}
+
+		return promotionSettings, err
+	}
+
+	return promotionSettings, nil
+}
+
 func FindPromotionSettingByNumber(promotionSettingNumber string, trn ...*gorm.DB) (models.PromotionSetting, error) {
 	var promotionSettings models.PromotionSetting
 	db := config.DB

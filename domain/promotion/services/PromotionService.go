@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	services5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -14,6 +15,7 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
@@ -37,9 +39,71 @@ type PromotionService interface {
 	SavePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
 	PromotionSettingDetails(promotionSettingNumber string) (responses.PromotionDetailedResponse, error)
 	PromotionSettingGrades(promotionSettingNumber string, c *gin.Context) (responses.PromotionSettingGradeResponse, error)
+	PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error)
 }
 
 type promotionService struct{}
+
+func (p *promotionService) PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error) {
+	details, err := p.PromotionSettingDetails(promotionSettingNumber)
+	if err != nil {
+		return responses.PromotionSettingValueResponse{}, err
+	}
+
+	promotionValue := responses.PromotionSettingValueResponse{
+		PromotionDetailedResponse: details,
+	}
+
+	promotionAssessmentAreas, err := repositories.FindAllPromotionAssessmentAreaValueBySettingNumber(promotionSettingNumber)
+	if err != nil {
+		return promotionValue, errors.New("promotion settings error: " + err.Error())
+	}
+
+	gradeValue, err := repositories.FindPromotionSettingValueBySettingNumber(promotionSettingNumber)
+	if err != nil {
+		return promotionValue, errors.New("promotion grade value error: " + err.Error())
+	}
+
+	promotionValue.MinimumScore = gradeValue.Score
+	promotionValue.MinimumAggregates = gradeValue.MinimumPoints
+
+	assessmentGrade, err := repositories6.FindAssessmentGradeScaleByNumber(gradeValue.AssessmentGradeScaleNumber)
+	if err != nil {
+		return promotionValue, errors.New("promotion assessment grade scale error: " + err.Error())
+	}
+
+	promotionValue.AssessmentGradeName = assessmentGrade.Name
+	promotionValue.AssessmentGradeNumber = gradeValue.AssessmentGradeScaleNumber
+
+	assessmentAres := make([]responses.PromotionAssessmentAreaValueResponse, 0)
+
+	for _, promotionAssessmentArea := range promotionAssessmentAreas {
+		area, err := repositories4.GetAssessmentAreaByNumber(promotionAssessmentArea.AssessmentAreaNumber)
+		if err != nil {
+			return promotionValue, errors.New("promotion assessment area error: " + err.Error())
+		}
+
+		aggregateScale, err := repositories6.GetAggregateScaleByNumber(promotionAssessmentArea.AggregateScaleNumber)
+		if err != nil {
+			return promotionValue, errors.New("promotion aggregate scale error: " + err.Error())
+		}
+
+		grade, err := repository.FindGradeByNumber(aggregateScale.GradeNumber)
+		if err != nil {
+			return promotionValue, errors.New("promotion grade error: " + err.Error())
+		}
+
+		assessmentAres = append(assessmentAres, responses.PromotionAssessmentAreaValueResponse{
+			AssessmentArea: area.Name,
+			AggregateScale: grade.Name,
+			Number:         promotionAssessmentArea.Number,
+		})
+	}
+
+	promotionValue.AssessmentAreas = assessmentAres
+
+	return promotionValue, nil
+}
 
 func (p *promotionService) PromotionSettingGrades(promotionSettingNumber string, c *gin.Context) (responses.PromotionSettingGradeResponse, error) {
 
