@@ -4,10 +4,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/services"
 	"net/http"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -49,11 +47,16 @@ func FetchPromotionSettingsValues(c *gin.Context) {
 		return
 	}
 
-	var promotionSettingsValues []models.PromotionSettingValue
-	err := config.DB.Preload("PromotionSetting").Find(&promotionSettingsValues).Error
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotion settings values"})
+	promotionSettingNumber := c.Query("promotion_setting_number")
+	if promotionSettingNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "promotion setting number is required"})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": promotionSettingsValues})
+	data, err := promotionValueService.PromotionSettingValue(promotionSettingNumber)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": data})
 }
