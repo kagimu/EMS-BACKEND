@@ -108,7 +108,7 @@ func FindPromotionAssessmentAreaValueBySettingsNumberAndAssessmentAreaNumber(pro
 		db = trn[0]
 	}
 
-	if err := db.Where("promotion_setting_number = ? AND assessment_area_number", promotionSettingNumber, assessmentAreaNumber).Find(&promotionSettings).Error; err != nil {
+	if err := db.Where("promotion_setting_number = ? AND assessment_area_number = ?", promotionSettingNumber, assessmentAreaNumber).Find(&promotionSettings).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.PromotionAssessmentAreaValue{}, nil
