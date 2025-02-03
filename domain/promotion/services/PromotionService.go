@@ -95,9 +95,11 @@ func (p *promotionService) PromotionSettingValue(promotionSettingNumber string) 
 		}
 
 		assessmentAres = append(assessmentAres, responses.PromotionAssessmentAreaValueResponse{
-			AssessmentArea: area.Name,
-			AggregateScale: grade.Name,
-			Number:         promotionAssessmentArea.Number,
+			AssessmentArea:       area.Name,
+			AggregateScale:       grade.Name,
+			Number:               promotionAssessmentArea.Number,
+			AggregateScaleNumber: promotionAssessmentArea.AggregateScaleNumber,
+			AssessmentAreaNumber: promotionAssessmentArea.AssessmentAreaNumber,
 		})
 	}
 
