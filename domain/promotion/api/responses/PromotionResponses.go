@@ -20,6 +20,8 @@ type PromotionResponse struct {
 	Type                    string                         `json:"type"`
 	Curriculum              responses3.CurriculumResponse  `json:"curriculum"`
 	Campus                  responses4.CampusResponse      `json:"campus"`
+	SchoolName              string                         `json:"school_name"`
+	SchoolNumber            string                         `json:"school_number"`
 }
 
 type PromotionDetailedResponse struct {

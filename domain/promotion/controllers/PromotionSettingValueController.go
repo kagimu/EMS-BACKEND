@@ -55,7 +55,7 @@ func FetchPromotionSettingsValues(c *gin.Context) {
 
 	data, err := promotionValueService.PromotionSettingValue(promotionSettingNumber)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": data})

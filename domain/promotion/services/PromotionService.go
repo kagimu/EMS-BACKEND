@@ -24,6 +24,7 @@ import (
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/services"
@@ -357,6 +358,11 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 	campus, err := repositories5.GetCampusByNumber(campusClass.CampusNumber)
 	if err == nil {
 		promo.Campus = services3.CreateCampusResponse(campus)
+
+		school, _ := repositories8.GetSchoolByNumber(campus.SchoolNumber)
+		promo.SchoolName = school.Name
+		promo.SchoolNumber = school.Number
+
 	} else {
 		fmt.Println(fmt.Sprintf("Campus error: %s", err.Error()))
 		return promo
