@@ -46,7 +46,9 @@ type PromotionSettingValueResponse struct {
 }
 
 type PromotionAssessmentAreaValueResponse struct {
-	AssessmentArea string `json:"assessment_area"`
-	AggregateScale string `json:"aggregate_scale"`
-	Number         string `json:"number"`
+	AssessmentArea       string `json:"assessment_area"`
+	AggregateScale       string `json:"aggregate_scale"`
+	Number               string `json:"number"`
+	AssessmentAreaNumber string `json:"assessment_area_number"`
+	AggregateScaleNumber string `json:"aggregate_scale_number"`
 }
