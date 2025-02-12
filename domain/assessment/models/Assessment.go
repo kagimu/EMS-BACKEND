@@ -12,7 +12,7 @@ type Assessment struct {
 	AssessmentMetricNumber string               `json:"assessment_metric_number" gorm:"size:36;"`
 	AssessmentMetric       AssessmentMetric     `gorm:"foreignKey:AssessmentMetricNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudentNumber          string               `json:"student_number" gorm:"size:36;index;not null"`
-	Student                studentModel.Student `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;" json:"student"`
+	Student                studentModel.Student `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;" json:"student"`
 	Comment                string               `json:"comment" gorm:"size:250"`
 	ActualScore            float64              `json:"actual_score"`
 	Score                  float64              `json:"score"`

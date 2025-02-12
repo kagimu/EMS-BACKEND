@@ -14,7 +14,7 @@ type Enrollment struct {
 	gorm.Model
 	Number            string                  `json:"number" gorm:"size:36;unique;not null"`
 	StudentNumber     string                  `json:"student_number" gorm:"size:36;not null"`
-	Student           models.Student          `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Student           models.Student          `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriodNumber string                  `json:"study_period_number" gorm:"size:36;not null;"`
 	StudyPeriod       studyPeriod.StudyPeriod `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber      string                  `json:"campus_number" gorm:"size:36;not null;"`

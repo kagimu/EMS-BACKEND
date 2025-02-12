@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	services5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -13,14 +15,16 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/services"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/responses"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
-	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/services"
@@ -36,9 +40,73 @@ type PromotionService interface {
 	SavePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
 	PromotionSettingDetails(promotionSettingNumber string) (responses.PromotionDetailedResponse, error)
 	PromotionSettingGrades(promotionSettingNumber string, c *gin.Context) (responses.PromotionSettingGradeResponse, error)
+	PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error)
 }
 
 type promotionService struct{}
+
+func (p *promotionService) PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error) {
+	details, err := p.PromotionSettingDetails(promotionSettingNumber)
+	if err != nil {
+		return responses.PromotionSettingValueResponse{}, err
+	}
+
+	promotionValue := responses.PromotionSettingValueResponse{
+		PromotionDetailedResponse: details,
+	}
+
+	promotionAssessmentAreas, err := repositories.FindAllPromotionAssessmentAreaValueBySettingNumber(promotionSettingNumber)
+	if err != nil {
+		return promotionValue, errors.New("promotion settings error: " + err.Error())
+	}
+
+	gradeValue, err := repositories.FindPromotionSettingValueBySettingNumber(promotionSettingNumber)
+	if err != nil {
+		return promotionValue, errors.New("promotion grade value error: " + err.Error())
+	}
+
+	promotionValue.MinimumScore = gradeValue.Score
+	promotionValue.MinimumAggregates = gradeValue.MinimumPoints
+
+	assessmentGrade, err := repositories6.FindAssessmentGradeScaleByNumber(gradeValue.AssessmentGradeScaleNumber)
+	if err != nil {
+		return promotionValue, errors.New("promotion assessment grade scale error: " + err.Error())
+	}
+
+	promotionValue.AssessmentGradeName = assessmentGrade.Name
+	promotionValue.AssessmentGradeNumber = gradeValue.AssessmentGradeScaleNumber
+
+	assessmentAres := make([]responses.PromotionAssessmentAreaValueResponse, 0)
+
+	for _, promotionAssessmentArea := range promotionAssessmentAreas {
+		area, err := repositories4.GetAssessmentAreaByNumber(promotionAssessmentArea.AssessmentAreaNumber)
+		if err != nil {
+			return promotionValue, errors.New("promotion assessment area error: " + err.Error())
+		}
+
+		aggregateScale, err := repositories6.GetAggregateScaleByNumber(promotionAssessmentArea.AggregateScaleNumber)
+		if err != nil {
+			return promotionValue, errors.New("promotion aggregate scale error: " + err.Error())
+		}
+
+		grade, err := repository.FindGradeByNumber(aggregateScale.GradeNumber)
+		if err != nil {
+			return promotionValue, errors.New("promotion grade error: " + err.Error())
+		}
+
+		assessmentAres = append(assessmentAres, responses.PromotionAssessmentAreaValueResponse{
+			AssessmentArea:       area.Name,
+			AggregateScale:       grade.Name,
+			Number:               promotionAssessmentArea.Number,
+			AggregateScaleNumber: promotionAssessmentArea.AggregateScaleNumber,
+			AssessmentAreaNumber: promotionAssessmentArea.AssessmentAreaNumber,
+		})
+	}
+
+	promotionValue.AssessmentAreas = assessmentAres
+
+	return promotionValue, nil
+}
 
 func (p *promotionService) PromotionSettingGrades(promotionSettingNumber string, c *gin.Context) (responses.PromotionSettingGradeResponse, error) {
 
@@ -53,10 +121,39 @@ func (p *promotionService) PromotionSettingGrades(promotionSettingNumber string,
 		return response, errors.New("Invalid promotion setting number ")
 	}
 
-	class, err := repositories2.GetClassByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+	promotionDetails := createPromotionResponse(promotionSetting)
+	class := promotionDetails.NextClass
+
+	classGradingStandard, err := repositories6.GetDefaultGradingStandardClassScaleByClassNumber(class.Number)
+	if err != nil {
+		return response, errors.New("Checking for default grading standard error " + err.Error())
+	}
+
+	if classGradingStandard.GradingStandardNumber == "" {
+		return response, errors.New(fmt.Sprintf("%s has no grading standard set", class.Name))
+	}
+
+	scaleNumber, err := reporsitory.GetScaleNumberByGradingStandardNumberAndClassNumber(classGradingStandard.GradingStandardNumber, class.Number)
+	if err != nil {
+		return response, errors.New("failed to fetch grading standard number")
+	}
+
+	if scaleNumber == "" {
+		gradingStandard, _ := repositories6.GetGradingStandardByNumber(classGradingStandard.GradingStandardNumber)
+		return response, errors.New(fmt.Sprintf("There is no scale configured for %s and class %s ", gradingStandard.Name, class.Name))
+	}
+
+	aggregateScales, err := repositories6.FindAggregateScaleByScaleNumber(scaleNumber)
 	if err != nil {
 		return response, err
 	}
+
+	aggregateScalesResponse := make([]responses7.AggregateScaleResponse, 0)
+	for _, aggregateScale := range aggregateScales {
+		aggregateScalesResponse = append(aggregateScalesResponse, services5.CreateAggregateScaleResponse(aggregateScale))
+	}
+
+	response.AggregateScales = aggregateScalesResponse
 
 	classAssessmentGrade, err := repositories6.GetAssessmentGradeByClassNumberAndStatus(class.Number, constants.StatusActive)
 	if err != nil {
@@ -72,9 +169,8 @@ func (p *promotionService) PromotionSettingGrades(promotionSettingNumber string,
 		return response, errors.New("getting assessments grade scale error: " + err.Error())
 	}
 
-	curriculum, _ := repositories4.FindCurriculumByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
-
-	assessmentAreas, err := services4.FindAllAssessmentAreas("", class.Number, curriculum.Number, "", "", c)
+	curriculum := promotionDetails.Curriculum
+	assessmentAreas, err := services4.FindAllAssessmentAreas("", class.Number, curriculum.CurriculumNumber, "", "", c)
 	if err != nil {
 		return response, errors.New("getting assessments area for class error: " + err.Error())
 	}
@@ -163,7 +259,7 @@ func handleAssessmentAreas(promotionSettingsNumber string, assessments []request
 		newValue := models2.PromotionAssessmentAreaValue{
 			AssessmentAreaNumber:   assessment.AssessmentAreaNumber,
 			PromotionSettingNumber: promotionSettingsNumber,
-			GradeNumber:            assessment.GradeNumber,
+			AggregateScaleNumber:   assessment.GradeNumber,
 			Number:                 uuid.NewV4().String(),
 			UserNumber:             user.Number,
 			CreatedAt:              time.Now(),
@@ -264,6 +360,11 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 	campus, err := repositories5.GetCampusByNumber(campusClass.CampusNumber)
 	if err == nil {
 		promo.Campus = services3.CreateCampusResponse(campus)
+
+		school, _ := repositories8.GetSchoolByNumber(campus.SchoolNumber)
+		promo.SchoolName = school.Name
+		promo.SchoolNumber = school.Number
+
 	} else {
 		fmt.Println(fmt.Sprintf("Campus error: %s", err.Error()))
 		return promo
