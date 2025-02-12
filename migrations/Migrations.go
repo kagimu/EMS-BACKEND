@@ -11,6 +11,7 @@ import (
 	gradesModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/models"
+	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	cateringModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -135,7 +136,7 @@ func Init() error {
 		&assessmentModel.Metric{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
-		&assessmentModel.Attendance{},
+		&models4.Attendance{},
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
 		&permissionModels.UserRole{},

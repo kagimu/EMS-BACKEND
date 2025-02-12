@@ -55,7 +55,7 @@ func PromoteStudent(c *gin.Context) {
 	/*savePromotion := models.Promotion{
 		Number:                    uuid.NewV4().String(),
 		PromotionSettingNumber:    payload.PromotionSettingNumber,
-		StudentNumber:             studentNumber,
+		UserNumber:             studentNumber,
 		Status:                    payload.Status,
 		Reason:                    payload.Reason,
 		CurrentAcademicYearNumber: payload.CurrentAcademicYearNumber,
@@ -127,7 +127,7 @@ func EditPromotion(c *gin.Context) {
 
 	/*updatedPromotion := models.Promotion{
 		PromotionSettingNumber:    payload.PromotionSettingNumber,
-		StudentNumber:             payload.StudentNumber,
+		UserNumber:             payload.UserNumber,
 		Status:                    payload.Status,
 		Reason:                    payload.Reason,
 		CurrentAcademicYearNumber: payload.CurrentAcademicYearNumber,
