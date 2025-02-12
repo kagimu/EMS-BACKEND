@@ -156,6 +156,7 @@ func Init() error {
 		&enrollmentModel.Enrollment{},
 		&assessmentAreaModel.AssessmentAreaGradingStandard{},
 		&promotionModels.PromotionSetting{},
+		&promotionModels.PromotionAssessmentAreaValue{},
 		&promotionModels.PromotionSettingValue{},
 		&promotionModels.Promotion{},
 		&previousSchoolResultsModels.PreviousSchoolResults{},
