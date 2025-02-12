@@ -553,12 +553,12 @@ func DeleteReportColumnAssessment(context *gin.Context) {
 }
 
 func FetchReportPromotionDetails(ctx *gin.Context) {
-	reportSummaryNumber := ctx.Param("report_summary_number")
+	//reportSummaryNumber := ctx.Param("report_summary_number")
+	//
+	//response, err := services3.FetchPromotionStatus(reportSummaryNumber)
+	//if err != nil {
+	//	ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	//}
 
-	response, err := services3.FetchPromotionStatus(reportSummaryNumber)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"data": response})
+	ctx.JSON(http.StatusOK, gin.H{"data": ""})
 }
