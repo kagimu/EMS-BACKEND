@@ -877,10 +877,6 @@ func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumbe
 }
 
 func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
-	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
-	if err != nil {
-		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
-	}
 
 	//Check promotion
 	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "promotion", db)
@@ -890,6 +886,11 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 
 	if promotion.Number == "" {
 		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
 	}
 
 	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number, db)
@@ -916,12 +917,8 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 }
 
 func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
-	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
-	if err != nil {
-		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
-	}
 
-	//Check promotion
+	//Check repeat
 	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat", db)
 	if err != nil {
 		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
@@ -929,6 +926,11 @@ func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmen
 
 	if promotion.Number == "" {
 		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
 	}
 
 	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number, db)
