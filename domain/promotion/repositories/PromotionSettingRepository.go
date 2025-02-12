@@ -9,9 +9,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindPromotionSettingsByStudyPeriod(studyPeriodNumber, currentCampusClassNumber, checkType string) (models.PromotionSetting, error) {
+func FindPromotionSettingsByStudyPeriod(studyPeriodNumber, currentCampusClassNumber, checkType string, tx ...*gorm.DB) (models.PromotionSetting, error) {
 	var promotionSettings models.PromotionSetting
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	if err := db.Where("study_period_number = ? AND previous_campus_class_number = ? AND type = ? AND status = ?", studyPeriodNumber, currentCampusClassNumber, checkType, constants.StatusActive).Find(&promotionSettings).Error; err != nil {
 
