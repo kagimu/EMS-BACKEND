@@ -19,6 +19,28 @@ type StreamRequest struct {
 	CampusClassNumber string `json:"campus_class_number"`
 }
 
+type UpdateStreamRequest struct {
+	StreamRequest
+	StreamNumber string `json:"stream_number"`
+}
+
+func (r UpdateStreamRequest) Validate() error {
+
+	if r.StreamNumber == "" {
+		return errors.New("choose stream to edit")
+	}
+
+	if r.Name == "" {
+		return errors.New("name is required")
+	}
+
+	if r.CampusClassNumber == "" {
+		return errors.New("campus class number is required")
+	}
+
+	return nil
+}
+
 type ClassDelRequest struct {
 	Number string `json:"number"`
 }

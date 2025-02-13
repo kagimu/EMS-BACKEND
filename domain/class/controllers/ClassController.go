@@ -294,7 +294,7 @@ func AddCampusClass(context *gin.Context) {
 		UserNumber:        userNumber,
 	}
 
-	err = repositories.CreateStream(&stream, trn)
+	err = repositories.SaveStream(&stream, trn)
 	if err != nil {
 		trn.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Failed to create stream!"})
@@ -1053,4 +1053,27 @@ func FetchClassesBySchoolNumber(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+}
+
+func UpdateClassStream(context *gin.Context) {
+
+	var streamRequest requests.UpdateStreamRequest
+
+	err := context.BindJSON(&streamRequest)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to serialize request error: " + err.Error()})
+		return
+	}
+
+	err = streamRequest.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	}
+
+	err = services.UpdateStream(streamRequest)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream updated successfully!"})
 }
