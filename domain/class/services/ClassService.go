@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -148,4 +149,34 @@ func FetchCampusClassesByCampusNumber(campusNumber string) ([]classModels.Campus
 	}
 
 	return campusClasses, nil
+}
+
+func UpdateStream(request requests.UpdateStreamRequest) error {
+	stream, err := repositories.GetStreamByNumber(request.StreamNumber)
+	if err != nil {
+		return errors.New("Getting stream error " + err.Error())
+	}
+
+	if stream.Number == "" {
+		return errors.New("Invalid Stream number ")
+	}
+
+	byName, err := repositories.GetStreamByNameAndCampusClassNumber(request.Name, stream.CampusClassNumber)
+	if err != nil {
+		return errors.New("Checking stream name error " + err.Error())
+	}
+
+	if byName.Number != "" && byName.Number != request.StreamNumber {
+		return errors.New("Stream name already in use ")
+	}
+
+	stream.CampusClassNumber = request.CampusClassNumber
+	stream.Name = request.Name
+
+	err = repositories.SaveStream(&stream)
+	if err != nil {
+		return errors.New("Updating stream error " + err.Error())
+	}
+
+	return nil
 }

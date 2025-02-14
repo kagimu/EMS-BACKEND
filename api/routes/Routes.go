@@ -367,6 +367,7 @@ func SetupRoutes() *gin.Engine {
 		stream := main.Group("/stream")
 		{
 			stream.POST("new", classController.AddClassStream)
+			stream.PATCH("update", classController.UpdateClassStream)
 			stream.GET("fetch", classController.FetchStreams)
 
 		}
