@@ -1,8 +1,8 @@
 package models
 
 import (
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assesmentGradeModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	"time"
@@ -32,6 +32,6 @@ type PromotionAssessmentAreaValue struct {
 	PromotionSetting       PromotionSetting                   `gorm:"foreignKey:PromotionSettingNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	AssessmentAreaNumber   string                             `json:"assessment_area_number" gorm:"column:assessment_area_number;size:36;not null"`
 	AssessmentArea         assessmentAreaModel.AssessmentArea `gorm:"foreignKey:AssessmentAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
-	GradeNumber            string                             `json:"grade_number" gorm:"column:grade_number;size:36;not null"`
-	Grade                  models.Grade                       `gorm:"foreignKey:GradeNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	AggregateScaleNumber   string                             `json:"aggregate_scale_number" gorm:"column:aggregate_scale_number;size:36;not null"`
+	AggregateScale         models2.AggregateScale             `gorm:"foreignKey:AggregateScaleNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }

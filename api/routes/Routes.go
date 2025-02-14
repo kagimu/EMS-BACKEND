@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/controller"
+	controllers4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	controllers3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/controllers"
 	controllers2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/landingPage/controllers"
@@ -366,6 +367,7 @@ func SetupRoutes() *gin.Engine {
 		stream := main.Group("/stream")
 		{
 			stream.POST("new", classController.AddClassStream)
+			stream.PATCH("update", classController.UpdateClassStream)
 			stream.GET("fetch", classController.FetchStreams)
 
 		}
@@ -604,9 +606,8 @@ func SetupRoutes() *gin.Engine {
 
 		attendance := main.Group("/attendances")
 		{
-			attendance.POST("", assessmentController.CreateAttendance)
-			attendance.GET("class", assessmentController.FetchAttendanceByClass)
-			attendance.GET("student", assessmentController.FetchStudentAttendance)
+			attendance.POST("", controllers4.CreateAttendance)
+			attendance.GET("", controllers4.FetchAttendance)
 		}
 
 		settings := main.Group("settings")

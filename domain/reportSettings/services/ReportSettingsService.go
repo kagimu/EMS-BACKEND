@@ -457,6 +457,46 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		return errors.New("failed to update edit summary" + err.Error())
 	}
 
+	reportSummaryNumber := reportSummary.Number
+
+	finalStatus, err := checkStatus(campusClass.Number, reportSummary.StudyPeriodNumber, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate, tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if finalStatus.Number != "" {
+		fmt.Println("Final learner status: " + finalStatus.Type)
+		//FindPromotionByReportSummaryNumber
+		currentPromotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber, tx)
+		if err != nil {
+			tx.Rollback()
+			return errors.New("failed to check promotion error: " + err.Error())
+		}
+
+		promotion := models2.Promotion{
+			Number:                 uuid.NewV4().String(),
+			ReportSummaryNumber:    reportSummaryNumber,
+			PromotionSettingNumber: finalStatus.Number,
+			Status:                 finalStatus.Type,
+			UserNumber:             finalStatus.UserNumber,
+			PromotionType:          "Auto",
+			CreatedAt:              time.Now(),
+			UpdatedAt:              time.Now(),
+		}
+
+		if currentPromotion.Number != "" {
+			promotion.Number = currentPromotion.Number
+		}
+
+		err = repositories10.SavePromotion(promotion, tx)
+		if err != nil {
+			tx.Rollback()
+			return errors.New("failed to save promotion " + err.Error())
+		}
+
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
 	}
@@ -466,6 +506,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 func GetProperAggregateScale(score float64, campusClassNumber string) (aggregateSaceltModel.AggregateScale, error) {
 	var scale aggregateSaceltModel.AggregateScale
+
 	var aggregateScales []aggregateSaceltModel.AggregateScale
 
 	score = commons.RoundFloat(score, 0)
@@ -808,69 +849,21 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		ReportTemplate:      reportTemplate.Name,
 	}
 
+	promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
+	}
+
+	if promo.Number != "" {
+		response.PromotionStatus = promo.Status
+	}
+
 	return response, nil
 }
 
-func FetchPromotionStatus(reportSummaryNumber string) (string, error) {
-	reportSummary, err := reporsitory.FindReportSummaryByNumber(reportSummaryNumber)
-	if err != nil {
-		return "", errors.New("failed to find report summary error: " + err.Error())
-	}
+func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber string, totalAggregate, totalScore float64, db *gorm.DB) (models2.PromotionSetting, error) {
 
-	studyPeriod, err := repositories3.GetStudyPeriodByNumber(reportSummary.StudyPeriodNumber)
-	if err != nil {
-		return "", errors.New("failed to find study period error: " + err.Error())
-	}
-
-	finalStatus, err := checkStatus(reportSummary.CampusClassNumber, studyPeriod.Number, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate)
-	if err != nil {
-		return "", err
-	}
-
-	if finalStatus.Number != "" {
-		fmt.Println("Final learner status: " + finalStatus.Type)
-		//FindPromotionByReportSummaryNumber
-		currentPromotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummary.Number)
-		if err != nil {
-			return "", errors.New("failed to check promotion error: " + err.Error())
-		}
-
-		promotion := models2.Promotion{
-			Number:                 uuid.NewV4().String(),
-			ReportSummaryNumber:    reportSummary.Number,
-			PromotionSettingNumber: finalStatus.Number,
-			Status:                 finalStatus.Type,
-			UserNumber:             finalStatus.UserNumber,
-			PromotionType:          "Auto",
-			CreatedAt:              time.Now(),
-			UpdatedAt:              time.Now(),
-		}
-
-		if currentPromotion.Number != "" {
-			promotion.Number = currentPromotion.Number
-		}
-
-		err = repositories10.SavePromotion(promotion)
-	}
-
-	return finalStatus.Type, nil
-}
-
-//	promotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
-//	if err != nil {
-//		return "", errors.New("failed to find promotion error: " + err.Error())
-//	}
-//
-//	if promotion.Number != "" {
-//		return promotion.Status, nil
-//	}
-//
-//	return "", nil
-//}
-
-func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber string, totalAggregate, totalScore float64) (models2.PromotionSetting, error) {
-
-	finalStatus, err := checkIfPromoted(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber)
+	finalStatus, err := checkIfPromoted(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
 	if err != nil {
 		return models2.PromotionSetting{}, err
 	}
@@ -879,7 +872,7 @@ func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumbe
 		return finalStatus, nil
 	}
 
-	finalStatus, err = checkIfRepeat(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber)
+	finalStatus, err = checkIfRepeat(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
 	if err != nil {
 		return models2.PromotionSetting{}, err
 	}
@@ -891,14 +884,10 @@ func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumbe
 	return models2.PromotionSetting{}, errors.New("Failed to find promotion/demotion/repeat configuration criteria, error: ")
 }
 
-func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string) (models2.PromotionSetting, error) {
-	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber)
-	if err != nil {
-		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
-	}
+func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
 
 	//Check promotion
-	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "promotion")
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "promotion", db)
 	if err != nil {
 		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
 	}
@@ -907,7 +896,12 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 		return models2.PromotionSetting{}, nil
 	}
 
-	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number)
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number, db)
 	if err != nil {
 		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
 	}
@@ -916,7 +910,7 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 		return models2.PromotionSetting{}, errors.New("Promotion value not set for " + promotion.Name)
 	}
 
-	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber)
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
 	if err != nil {
 		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
 	}
@@ -930,14 +924,10 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 	return models2.PromotionSetting{}, nil
 }
 
-func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string) (models2.PromotionSetting, error) {
-	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber)
-	if err != nil {
-		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
-	}
+func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
 
-	//Check promotion
-	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat")
+	//Check repeat
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat", db)
 	if err != nil {
 		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
 	}
@@ -946,7 +936,12 @@ func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmen
 		return models2.PromotionSetting{}, nil
 	}
 
-	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number)
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number, db)
 	if err != nil {
 		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
 	}
@@ -955,7 +950,7 @@ func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmen
 		return models2.PromotionSetting{}, errors.New("Promotion value not set for " + promotion.Name)
 	}
 
-	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber)
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
 	if err != nil {
 		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
 	}
