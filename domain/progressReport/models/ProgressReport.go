@@ -16,7 +16,7 @@ type ProgressReport struct {
 	SubjectTeacher    string                       `json:"subject_teacher" gorm:"type:text;"`
 	Comment           string                       `json:"comment" gorm:"type:text;"`
 	StudentNumber     string                       `json:"student_number" gorm:"size:36;"`
-	Student           studentModel.Student         `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Student           studentModel.Student         `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber        string                       `json:"user_number" gorm:"size:36;index;not null"`
 	User              authModel.User               `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
