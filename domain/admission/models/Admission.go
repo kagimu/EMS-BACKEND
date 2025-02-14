@@ -16,7 +16,7 @@ type Admission struct {
 	gorm.Model
 	Number             string                         `json:"number" gorm:"size:36;unique;not null"`
 	StudentNumber      string                         `json:"student_number" gorm:"size:36;unique;not null"`
-	Student            studentModel.Student           `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Student            studentModel.Student           `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusNumber       string                         `json:"campus_number" gorm:"size:36;"`
 	Campus             campusModels.Campus            `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	CampusClassNumber  string                         `json:"campus_class_number" gorm:"size:36;"`
