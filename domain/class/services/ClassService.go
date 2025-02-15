@@ -180,3 +180,21 @@ func UpdateStream(request requests.UpdateStreamRequest) error {
 
 	return nil
 }
+
+func DeleteStream(streamNumber string) error {
+	stream, err := repositories.GetStreamByNumber(streamNumber)
+	if err != nil {
+		return errors.New("Getting stream error " + err.Error())
+	}
+
+	if stream.Number == "" {
+		return errors.New("Invalid Stream number ")
+	}
+
+	err = repositories.DeleteStreamByNumber(stream.Number)
+	if err != nil {
+		return errors.New("Deleting stream error " + err.Error())
+	}
+
+	return nil
+}
