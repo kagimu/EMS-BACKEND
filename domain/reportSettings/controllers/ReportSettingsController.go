@@ -562,3 +562,19 @@ func FetchReportPromotionDetails(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": ""})
 }
+
+func DeleteHeadTeacherComment(ctx *gin.Context) {
+	commentNumber := ctx.Param("id")
+	if commentNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
+		return
+	}
+
+	err := services3.DeleteHeadTeacherComment(commentNumber)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Head teacher comment deleted successfully"})
+}
