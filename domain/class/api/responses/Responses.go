@@ -14,6 +14,7 @@ type (
 		StreamNumber      string `json:"stream_number"`
 		Name              string `json:"name"`
 		CampusClassNumber string `json:"campus_class_number"`
+		Status            string `json:"status"`
 	}
 
 	ClassDataList struct {

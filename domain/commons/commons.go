@@ -262,3 +262,12 @@ func GenerateDownloadPath(number string, persona bool) string {
 	}
 	return os.Getenv("BASE_URL") + "attachments/download/" + number
 }
+
+func StringContains(slice []string, value string) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
