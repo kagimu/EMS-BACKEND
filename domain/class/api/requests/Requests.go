@@ -2,6 +2,8 @@ package requests
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"html"
 	"strings"
 )
@@ -22,6 +24,7 @@ type StreamRequest struct {
 type UpdateStreamRequest struct {
 	StreamRequest
 	StreamNumber string `json:"stream_number"`
+	Status       string `json:"status"`
 }
 
 func (r UpdateStreamRequest) Validate() error {
@@ -36,6 +39,14 @@ func (r UpdateStreamRequest) Validate() error {
 
 	if r.CampusClassNumber == "" {
 		return errors.New("campus class number is required")
+	}
+
+	if r.Status == "" {
+		return errors.New("status is required")
+	}
+
+	if !commons.StringContains([]string{constants.StatusActive, constants.StatusInactive}, r.Status) {
+		return errors.New("invalid status")
 	}
 
 	return nil

@@ -3,15 +3,21 @@ package services
 import (
 	"errors"
 	"fmt"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+	"strings"
 )
+
+var admissionRepository = repositories4.NewAdmissionRepository()
 
 func FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.ClassResponse, error) {
 
@@ -71,13 +77,13 @@ func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurri
 	return campusClass[0], nil
 }
 
-func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
+func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, status string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
 
 	var streamResponses = make([]responses2.StreamResponse, 0)
 	var streams []classModels.Stream
 	var err error
 	if campusClassNumber != "" {
-		streams, err = repositories.FetchStreamByCampusClassNumber(campusClassNumber, ctx)
+		streams, err = repositories.FetchStreamByCampusClassNumber(campusClassNumber, status, ctx)
 		if err != nil {
 			return streamResponses, errors.New("Getting streams error " + err.Error())
 		}
@@ -95,7 +101,7 @@ func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumN
 			classLevelNumber = campusClass.Number
 		}
 
-		streams, err = repositories.FetchStreamByCampusClassNumber(campusClass.Number, ctx)
+		streams, err = repositories.FetchStreamByCampusClassNumber(campusClass.Number, status, ctx)
 		if err != nil {
 			return streamResponses, errors.New("Getting streams error " + err.Error())
 		}
@@ -108,26 +114,12 @@ func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumN
 	return streamResponses, nil
 }
 
-func FetchStreamsByCampusClassNumber(campusClassNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
-	var streamResponses = make([]responses2.StreamResponse, 0)
-
-	streams, err := repositories.FetchStreamByCampusClassNumber(ctx.Query("campus_class_number"), ctx)
-	if err != nil {
-		return streamResponses, errors.New("Getting streams error " + err.Error())
-	}
-
-	for _, stream := range streams {
-		streamResponses = append(streamResponses, CreateStreamResponse(stream))
-	}
-
-	return streamResponses, nil
-}
-
 func CreateStreamResponse(stream classModels.Stream) responses2.StreamResponse {
 	return responses2.StreamResponse{
 		StreamNumber:      stream.Number,
 		CampusClassNumber: stream.CampusClassNumber,
 		Name:              stream.Name,
+		Status:            stream.Status,
 	}
 }
 
@@ -170,12 +162,85 @@ func UpdateStream(request requests.UpdateStreamRequest) error {
 		return errors.New("Stream name already in use ")
 	}
 
+	status := stream.Status
+	if status == "" {
+		status = constants.StatusActive
+	}
+
+	if request.Status != "" {
+		status = request.Status
+	}
+
 	stream.CampusClassNumber = request.CampusClassNumber
 	stream.Name = request.Name
+	stream.Status = status
 
 	err = repositories.SaveStream(&stream)
 	if err != nil {
 		return errors.New("Updating stream error " + err.Error())
+	}
+
+	return nil
+}
+
+func DeleteStream(streamNumber string) error {
+	stream, err := repositories.GetStreamByNumber(streamNumber)
+	if err != nil {
+		return errors.New("Getting stream error " + err.Error())
+	}
+
+	if stream.Number == "" {
+		return errors.New("Invalid Stream number ")
+	}
+
+	admissions, err := admissionRepository.FindAdmissionsByStreamNumber(stream.Number)
+	if err != nil {
+		return errors.New("Checking admissions error " + err.Error())
+	}
+
+	admissionsCount := len(admissions)
+
+	if admissionsCount > 0 {
+		return errors.New(fmt.Sprintf("This stream has %d admissions, you can not delete it.", admissionsCount))
+	}
+
+	err = repositories.DeleteStreamByNumber(stream.Number)
+	if err != nil {
+		return errors.New("Deleting stream error " + err.Error())
+	}
+
+	return nil
+}
+
+func CreateStreams(streamRequest requests.StreamRequest, userNumber string) error {
+
+	streams := strings.Split(streamRequest.Name, ",")
+
+	//add streams to the class
+	if streams != nil {
+		for _, stream := range streams {
+
+			streamObj := classModels.Stream{
+				Number:            uuid.NewV4().String(),
+				Name:              stream,
+				CampusClassNumber: streamRequest.CampusClassNumber,
+				UserNumber:        userNumber,
+				Status:            constants.StatusActive,
+			}
+
+			byName, err := repositories.GetStreamByNameAndCampusClassNumber(stream, streamRequest.CampusClassNumber)
+			if err != nil {
+				return errors.New("Checking duplicate stream error " + err.Error())
+			}
+
+			if byName.Number == "" {
+				err := repositories.SaveStream(&streamObj)
+				if err != nil {
+					return errors.New("Creating stream error " + err.Error())
+				}
+			}
+
+		}
 	}
 
 	return nil

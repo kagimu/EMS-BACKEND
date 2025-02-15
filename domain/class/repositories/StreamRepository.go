@@ -20,7 +20,7 @@ func SaveStream(stream *models.Stream, trn ...*gorm.DB) error {
 	return nil
 }
 
-func FetchStreamByCampusClassNumber(campusClassNumber string, ctx *gin.Context, trn ...*gorm.DB) ([]models.Stream, error) {
+func FetchStreamByCampusClassNumber(campusClassNumber, status string, ctx *gin.Context, trn ...*gorm.DB) ([]models.Stream, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -30,7 +30,9 @@ func FetchStreamByCampusClassNumber(campusClassNumber string, ctx *gin.Context, 
 	var streams []models.Stream
 
 	if err := db.Scopes(
-		filters.ByScopedItems("stream", ctx)).Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
+		filters.ByAnyField("status", status),
+		filters.ByScopedItems("stream", ctx),
+	).Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return streams, nil
@@ -85,4 +87,17 @@ func GetStreamByNameAndCampusClassNumber(streamName, campusClassNumber string, t
 	}
 
 	return stream, nil
+}
+
+func DeleteStreamByNumber(streamNumber string, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Delete(&models.Stream{}, "number = ?", streamNumber).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
