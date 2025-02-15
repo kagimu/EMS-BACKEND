@@ -57,11 +57,15 @@ func BuildHeadTeacherResponse(comment models.HeadTeacherComment) responses.HeadT
 	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	return responses.HeadTeacherCommentResponse{
-		MinAggregate: comment.MinAggregate,
-		MaxAggregate: comment.MaxAggregate,
-		Comment:      comment.Comment,
-		AcademicYear: comment.ReportSetting.AcademicYear.AcademicYearName,
-		StudyPeriod:  studyPeriodName.Name,
-		Class:        comment.ReportSetting.CampusClass.ClassName,
+		MinAggregate:        comment.MinAggregate,
+		MaxAggregate:        comment.MaxAggregate,
+		Comment:             comment.Comment,
+		AcademicYear:        comment.ReportSetting.AcademicYear.AcademicYearName,
+		StudyPeriod:         studyPeriodName.Name,
+		Class:               comment.ReportSetting.CampusClass.ClassName,
+		StudyPeriodNumber:   comment.ReportSetting.StudyPeriodNumber,
+		ReportSettingNumber: comment.ReportSetting.Number,
+		AcademicYearNumber:  comment.ReportSetting.AcademicYearNumber,
+		CampusClassNumber:   comment.ReportSetting.CampusClassNumber,
 	}
 }
