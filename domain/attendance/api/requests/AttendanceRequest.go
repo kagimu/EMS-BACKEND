@@ -14,6 +14,7 @@ type AttendanceRequest struct {
 	SchoolNumber      string `json:"school_number"`
 	CampusNumber      string `json:"campus_number"`
 	AbsenceReason     string `json:"absence_reason"`
+	StudentNumber     string `json:"student_number"`
 }
 
 func (a *AttendanceRequest) Validate() error {
