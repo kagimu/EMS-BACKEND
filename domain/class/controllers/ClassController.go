@@ -1050,11 +1050,13 @@ func UpdateClassStream(context *gin.Context) {
 	err = streamRequest.Validate()
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	err = services.UpdateStream(streamRequest)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream updated successfully!"})
