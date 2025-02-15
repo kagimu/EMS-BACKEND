@@ -911,8 +911,9 @@ func FetchStreams(ctx *gin.Context) {
 	curriculumNumber := ctx.Query("curriculum_number")
 	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
 	campusClassNumber := ctx.Query("campus_class_number")
+	status := ctx.Query("status")
 
-	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, ctx)
+	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, status, ctx)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

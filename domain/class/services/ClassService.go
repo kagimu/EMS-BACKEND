@@ -77,13 +77,13 @@ func ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurri
 	return campusClass[0], nil
 }
 
-func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
+func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, status string, ctx *gin.Context) ([]responses2.StreamResponse, error) {
 
 	var streamResponses = make([]responses2.StreamResponse, 0)
 	var streams []classModels.Stream
 	var err error
 	if campusClassNumber != "" {
-		streams, err = repositories.FetchStreamByCampusClassNumber(campusClassNumber, ctx)
+		streams, err = repositories.FetchStreamByCampusClassNumber(campusClassNumber, status, ctx)
 		if err != nil {
 			return streamResponses, errors.New("Getting streams error " + err.Error())
 		}
@@ -101,7 +101,7 @@ func FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumN
 			classLevelNumber = campusClass.Number
 		}
 
-		streams, err = repositories.FetchStreamByCampusClassNumber(campusClass.Number, ctx)
+		streams, err = repositories.FetchStreamByCampusClassNumber(campusClass.Number, status, ctx)
 		if err != nil {
 			return streamResponses, errors.New("Getting streams error " + err.Error())
 		}
