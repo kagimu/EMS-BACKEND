@@ -57,6 +57,7 @@ func BuildHeadTeacherResponse(comment models.HeadTeacherComment) responses.HeadT
 	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	return responses.HeadTeacherCommentResponse{
+		ID:                  int64(comment.ID),
 		MinAggregate:        comment.MinAggregate,
 		MaxAggregate:        comment.MaxAggregate,
 		Comment:             comment.Comment,
@@ -68,4 +69,19 @@ func BuildHeadTeacherResponse(comment models.HeadTeacherComment) responses.HeadT
 		AcademicYearNumber:  comment.ReportSetting.AcademicYearNumber,
 		CampusClassNumber:   comment.ReportSetting.CampusClassNumber,
 	}
+}
+
+func DeleteHeadTeacherComment(commentNumber string) error {
+	comment, err := reporsitory.GetHeadTeacherCommentByNumber(commentNumber)
+
+	if err != nil {
+		return errors.New("failed to get head teacher comment")
+	}
+
+	err = reporsitory.DeleteHeadTeacherComment(comment.ID)
+	if err != nil {
+		return errors.New("failed to delete head teacher comment")
+	}
+
+	return nil
 }
