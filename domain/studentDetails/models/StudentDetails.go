@@ -29,7 +29,7 @@ type (
 		HomeParish         string                `json:"home_parish" form:"home_parish" binding:"required" gorm:"size:60;not null"`
 		NearestTown        string                `json:"nearest_town" form:"nearest_town" binding:"required" gorm:"size:60;not null"`
 		StudentNumber      string                `json:"student_number" gorm:"size:36;unique;not null"`
-		Student            studentModels.Student `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		Student            studentModels.Student `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		UserNumber         string                `json:"user_number" gorm:"size:36;not null"`
 		User               models.User           `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	}
