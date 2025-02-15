@@ -1077,3 +1077,19 @@ func UpdateClassStream(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream updated successfully!"})
 }
+
+func DeleteClassStream(context *gin.Context) {
+	streamNumber := context.Param("stream_number")
+	if streamNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Stream number is required!"})
+		return
+	}
+
+	err := services.DeleteStream(streamNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream deleted successfully!"})
+}

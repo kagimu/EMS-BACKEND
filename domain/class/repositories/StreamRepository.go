@@ -86,3 +86,16 @@ func GetStreamByNameAndCampusClassNumber(streamName, campusClassNumber string, t
 
 	return stream, nil
 }
+
+func DeleteStreamByNumber(streamNumber string, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Delete(&models.Stream{}, "number = ?", streamNumber).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
