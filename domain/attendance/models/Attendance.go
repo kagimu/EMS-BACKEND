@@ -11,8 +11,8 @@ type Attendance struct {
 	gorm.Model
 	Number            string         `json:"number" gorm:"size:36;unique;not null"`
 	Date              time.Time      `json:"date" gorm:"size:36;"`
-	CheckInTime       time.Time      `json:"check_in_time"`
-	CheckOutTime      time.Time      `json:"check_out_time"`
+	CheckInTime       string         `json:"check_in_time"`
+	CheckOutTime      string         `json:"check_out_time"`
 	Present           string         `json:"present"`
 	CampusClassNumber string         `json:"campus_class_number" gorm:"size:36;"`
 	SchoolNumber      string         `json:"school_number" gorm:"size:36;"`
