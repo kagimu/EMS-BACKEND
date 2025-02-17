@@ -245,3 +245,17 @@ func CreateStreams(streamRequest requests.StreamRequest, userNumber string) erro
 
 	return nil
 }
+
+func StreamDetails(streamNumber string) (responses2.StreamResponse, error) {
+
+	stream, err := repositories.GetStreamByNumber(streamNumber)
+	if err != nil {
+		return responses2.StreamResponse{}, errors.New("Getting stream error " + err.Error())
+	}
+
+	if stream.Number == "" {
+		return responses2.StreamResponse{}, errors.New("Invalid Stream number ")
+	}
+
+	return CreateStreamResponse(stream), nil
+}
