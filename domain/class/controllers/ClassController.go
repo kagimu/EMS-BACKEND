@@ -728,6 +728,7 @@ func FetchClassLevel(context *gin.Context) {
 					stream_ = append(stream_, responses.StreamResponse{
 						StreamNumber: list.Number,
 						Name:         list.Name,
+						Status:       list.Status,
 					})
 				}
 
@@ -1076,4 +1077,20 @@ func DeleteClassStream(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream deleted successfully!"})
+}
+
+func GetClassStream(context *gin.Context) {
+	streamNumber := context.Param("stream_number")
+	if streamNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Stream number is required!"})
+		return
+	}
+
+	data, err := services.StreamDetails(streamNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": data, "message": "Stream deleted successfully!"})
 }
