@@ -33,7 +33,9 @@ func CreateAttendance(c *gin.Context) {
 	if payload.CheckInTime == "" {
 		checkinTime = time.Now()
 	} else {
-		checkinTime, err = commons.ConvertStringToDate(payload.CheckInTime)
+		// concatenate the date and time to form a single string of date and time
+		checkin := payload.Date + " " + payload.CheckInTime + ":00"
+		checkinTime, err = commons.ConvertStringToDate(checkin)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to convert check in time"})
 			return
@@ -42,7 +44,8 @@ func CreateAttendance(c *gin.Context) {
 	if payload.CheckOutTime == "" {
 		checkOutTime = time.Now()
 	} else {
-		checkOutTime, err = commons.ConvertStringToDate(payload.CheckOutTime)
+		checkOut := payload.Date + " " + payload.CheckOutTime + ":00"
+		checkOutTime, err = commons.ConvertStringToDate(checkOut)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to convert check out time"})
 			return
@@ -65,6 +68,7 @@ func CreateAttendance(c *gin.Context) {
 		CampusClassNumber: payload.CampusClassNumber,
 		CampusNumber:      payload.CampusNumber,
 		AddedBy:           user.Number,
+		StudentNumber:     payload.StudentNumber,
 	}
 
 	if err := services.RecordAttendance(&saveAttendance); err != nil {

@@ -123,6 +123,7 @@ type LeanSchool struct {
 type LeanCampus interface{}
 
 type HeadTeacherCommentResponse struct {
+	ID                  int64   `json:"id"`
 	Comment             string  `json:"comment"`
 	AcademicYear        string  `json:"academic_year"`
 	MinAggregate        float64 `json:"min_aggregate"`
