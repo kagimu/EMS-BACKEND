@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
@@ -34,6 +35,7 @@ func CreateAttendance(c *gin.Context) {
 	}
 
 	saveAttendance := models.Attendance{
+		Number:            uuid.NewV4().String(),
 		Present:           payload.Present,
 		CheckInTime:       payload.CheckInTime,
 		CheckOutTime:      payload.CheckOutTime,
