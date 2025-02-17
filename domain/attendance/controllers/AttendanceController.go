@@ -47,7 +47,7 @@ func CreateAttendance(c *gin.Context) {
 	}
 
 	if err := services.RecordAttendance(&saveAttendance); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create attendance"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create attendance" + err.Error()})
 		return
 	}
 
