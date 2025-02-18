@@ -4,11 +4,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/services"
-	"net/http"
-	"time"
-
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+	"net/http"
 )
 
 func CreateAttendance(c *gin.Context) {
@@ -28,40 +27,18 @@ func CreateAttendance(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	var checkinTime, checkOutTime, date time.Time
 
-	if payload.CheckInTime == "" {
-		checkinTime = time.Now()
-	} else {
-		// concatenate the date and time to form a single string of date and time
-		checkin := payload.Date + " " + payload.CheckInTime + ":00"
-		checkinTime, err = commons.ConvertStringToDate(checkin)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to convert check in time"})
-			return
-		}
-	}
-	if payload.CheckOutTime == "" {
-		checkOutTime = time.Now()
-	} else {
-		checkOut := payload.Date + " " + payload.CheckOutTime + ":00"
-		checkOutTime, err = commons.ConvertStringToDate(checkOut)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to convert check out time"})
-			return
-		}
-	}
-
-	date, err = commons.ConvertStringToDate(payload.Date)
+	date, err := commons.ConvertStringToDate(payload.Date)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to convert date"})
 		return
 	}
 
 	saveAttendance := models.Attendance{
+		Number:            uuid.NewV4().String(),
 		Present:           payload.Present,
-		CheckInTime:       checkinTime,
-		CheckOutTime:      checkOutTime,
+		CheckInTime:       payload.CheckInTime,
+		CheckOutTime:      payload.CheckOutTime,
 		Date:              date,
 		SchoolNumber:      payload.SchoolNumber,
 		UserNumber:        user.Number,
@@ -72,7 +49,7 @@ func CreateAttendance(c *gin.Context) {
 	}
 
 	if err := services.RecordAttendance(&saveAttendance); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create attendance"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create attendance" + err.Error()})
 		return
 	}
 
