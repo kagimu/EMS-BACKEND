@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"strconv"
@@ -292,6 +293,7 @@ func AddCampusClass(context *gin.Context) {
 		Name:              saveClass.ClassName,
 		CampusClassNumber: number,
 		UserNumber:        userNumber,
+		Status:            constants.StatusActive,
 	}
 
 	err = repositories.SaveStream(&stream, trn)
@@ -721,10 +723,15 @@ func FetchClassLevel(context *gin.Context) {
 			var stream_ []responses.StreamResponse
 
 			for _, list := range lst.Streams {
-				stream_ = append(stream_, responses.StreamResponse{
-					StreamNumber: list.Number,
-					Name:         list.Name,
-				})
+
+				if list.Status == constants.StatusActive {
+					stream_ = append(stream_, responses.StreamResponse{
+						StreamNumber: list.Number,
+						Name:         list.Name,
+						Status:       list.Status,
+					})
+				}
+
 			}
 
 			classLevel_ = append(classLevel_, responses.CampusClassInfo{
@@ -888,38 +895,13 @@ func AddClassStream(ctx *gin.Context) {
 		return
 	}
 
-	streams := strings.Split(streamRequest.Name, ",")
-
-	//add streams to the class
-	if streams != nil {
-		for _, stream := range streams {
-			streamObj := classModel.Stream{
-				Number:            uuid.NewV4().String(),
-				Name:              stream,
-				CampusClassNumber: streamRequest.CampusClassNumber,
-				UserNumber:        ctx.GetHeader("User-Number"),
-			}
-
-			err = config.DB.Save(&streamObj).Error
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to add stream !"})
-				return
-			}
-
-		}
+	err = services.CreateStreams(streamRequest, ctx.GetHeader("User-Number"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
-	/*} else {
-		streamObj := models.Stream{
-			Number:      uuid.NewV4().String(),
-			Name:        saveClass.Name,
-			ClassNumber: saveClass.Number,
-			UserNumber:  userNumber,
-		}
 
-		tx.Save(&streamObj)
-	}*/
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Stream Added Successfully!"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Stream(s) Added Successfully!"})
 
 }
 
@@ -930,8 +912,9 @@ func FetchStreams(ctx *gin.Context) {
 	curriculumNumber := ctx.Query("curriculum_number")
 	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
 	campusClassNumber := ctx.Query("campus_class_number")
+	status := ctx.Query("status")
 
-	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, ctx)
+	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, status, ctx)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -1068,12 +1051,46 @@ func UpdateClassStream(context *gin.Context) {
 	err = streamRequest.Validate()
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	err = services.UpdateStream(streamRequest)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream updated successfully!"})
+}
+
+func DeleteClassStream(context *gin.Context) {
+	streamNumber := context.Param("stream_number")
+	if streamNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Stream number is required!"})
+		return
+	}
+
+	err := services.DeleteStream(streamNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream deleted successfully!"})
+}
+
+func GetClassStream(context *gin.Context) {
+	streamNumber := context.Param("stream_number")
+	if streamNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Stream number is required!"})
+		return
+	}
+
+	data, err := services.StreamDetails(streamNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": data, "message": "Stream deleted successfully!"})
 }

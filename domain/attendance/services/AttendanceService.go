@@ -70,8 +70,8 @@ func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
 		response = append(response, responses.AttendanceResponse{
 			Number:       attendance.Number,
 			Date:         attendance.Date.String(),
-			CheckInTime:  attendance.CheckInTime.String(),
-			CheckOutTime: attendance.CheckOutTime.String(),
+			CheckInTime:  attendance.CheckInTime,
+			CheckOutTime: attendance.CheckOutTime,
 			Present:      attendance.Present,
 			Class:        campusClass.ClassName,
 			School:       school.Name,

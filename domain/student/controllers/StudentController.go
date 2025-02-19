@@ -103,19 +103,42 @@ func CreateStudent(c *gin.Context) {
 			PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 			SecondName:                payload.SecondName,
 			PreferredCampusNumber:     payload.PreferredCampusNumber,
-			UserNumber:                userNumber,
 			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
 			ApplicationNumber:         applicationNumber,
 			CampusClassNumber:         campusClass.Number,
 			SchoolNumber:              payload.SchoolNumber,
 			Lin:                       payload.Lin,
 			ModeOfStudyNumber:         payload.ModeOfStudyNumber,
+			AddedBy:                   userNumber,
 		}
 
 		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  http.StatusInternalServerError,
 				"message": "failed to update student",
+			})
+			return
+		}
+
+		// update the user details
+		updateUser := authModel.User{
+			FirstName:  payload.SecondName,
+			LastName:   payload.Surname,
+			SecondName: payload.OtherName,
+		}
+
+		if err := tx.Where("number = ?", student.UserNumber).Updates(updateUser).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "failed to update user",
+			})
+			return
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "failed to commit transaction",
 			})
 			return
 		}

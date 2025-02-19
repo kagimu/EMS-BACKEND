@@ -13,6 +13,7 @@ type AdmissionRepository interface {
 	FindAdmissionByStudentNumber(studentNumber string, txn ...*gorm.DB) (admissionModel.Admission, error)
 	SaveAdmission(admission admissionModel.Admission, txn ...*gorm.DB) error
 	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error)
+	FindAdmissionsByStreamNumber(streamNumber string, txn ...*gorm.DB) ([]admissionModel.Admission, error)
 }
 
 type admissionRepository struct {
@@ -78,6 +79,24 @@ func (admissionRepository *admissionRepository) FindAdmissionByStudentNumber(stu
 	}
 
 	return admission, nil
+}
+
+func (admissionRepository *admissionRepository) FindAdmissionsByStreamNumber(streamNumber string, txn ...*gorm.DB) ([]admissionModel.Admission, error) {
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+
+	var admissions []admissionModel.Admission
+
+	if err := db.Where("stream_number = ?", streamNumber).Find(&admissions).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return admissions, nil
+		}
+		return admissions, err
+	}
+
+	return admissions, nil
 }
 
 func NewAdmissionRepository() AdmissionRepository {

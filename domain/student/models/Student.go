@@ -39,4 +39,5 @@ type Student struct {
 	SchoolNumber              string                  `json:"school_number" gorm:"size:36;"`
 	ModeOfStudyNumber         string                  `json:"mode_of_study_number" gorm:"size:36; not null"`
 	ModeOfStudy               models2.ModeOfStudy     `gorm:"foreignKey:ModeOfStudyNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	AddedBy                   string                  `json:"added_by" gorm:"size:36;"`
 }

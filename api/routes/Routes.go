@@ -368,6 +368,8 @@ func SetupRoutes() *gin.Engine {
 		{
 			stream.POST("new", classController.AddClassStream)
 			stream.PATCH("update", classController.UpdateClassStream)
+			stream.DELETE(":stream_number", classController.DeleteClassStream)
+			stream.GET(":stream_number", classController.GetClassStream)
 			stream.GET("fetch", classController.FetchStreams)
 
 		}
@@ -724,7 +726,13 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("add-head-teachers-comment/:report_setting_number", reportSettingsController.CreateHeadTeacherComment)
 			reportSettings.GET("head-teachers-comments", reportSettingsController.FetchHeadTeacherComments)
 			reportSettings.POST("add-teacher-comment", reportSettingsController.CreateTeachersComment)
-			reportSettings.GET("narrative", reportSettingsController.FetchNarrativeScore)
+			reportSettings.DELETE("head-teacher-comment/:id", reportSettingsController.CreateTeachersComment)
+
+			narrative := reportSettings.Group("narrative")
+			{
+				narrative.GET("", assessmentController.GetNarrative)
+				narrative.POST("", assessmentController.SaveNarrative)
+			}
 
 		}
 

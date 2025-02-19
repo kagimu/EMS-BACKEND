@@ -123,10 +123,15 @@ type LeanSchool struct {
 type LeanCampus interface{}
 
 type HeadTeacherCommentResponse struct {
-	Comment      string  `json:"comment"`
-	AcademicYear string  `json:"academic_year"`
-	MinAggregate float64 `json:"min_aggregate"`
-	MaxAggregate float64 `json:"max_aggregate"`
-	StudyPeriod  string  `json:"study_period"`
-	Class        string  `json:"class"`
+	ID                  int64   `json:"id"`
+	Comment             string  `json:"comment"`
+	AcademicYear        string  `json:"academic_year"`
+	MinAggregate        float64 `json:"min_aggregate"`
+	MaxAggregate        float64 `json:"max_aggregate"`
+	StudyPeriod         string  `json:"study_period"`
+	Class               string  `json:"class"`
+	AcademicYearNumber  string  `json:"academic_year_number"`
+	StudyPeriodNumber   string  `json:"study_period_number"`
+	CampusClassNumber   string  `json:"campus_class_number"`
+	ReportSettingNumber string  `json:"report_setting_number"`
 }

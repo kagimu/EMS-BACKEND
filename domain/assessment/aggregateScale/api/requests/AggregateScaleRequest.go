@@ -171,7 +171,7 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 }
 
 func checkPrevRow(prevItem, currentItem AggregateScaleItem, currentIndex int) error {
-	if currentItem.MinValue >= prevItem.MinValue {
+	if currentItem.MinValue <= prevItem.MaxValue {
 		return errors.New(fmt.Sprintf("The minimum score at grade count %d should be greator than the maximum score at grade count %d", currentIndex, currentIndex-1))
 	}
 
