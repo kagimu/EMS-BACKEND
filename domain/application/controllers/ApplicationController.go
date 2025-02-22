@@ -71,7 +71,7 @@ func FetchApplications(c *gin.Context) {
 		schoolNumber := c.Query("school_number")
 		if user.Type != constants.TypeClient {
 			if schoolNumber == "" {
-				c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view admissions for"})
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view applications for"})
 				return
 			}
 		}
