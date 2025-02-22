@@ -193,7 +193,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 
 	if user.Type != constants.TypeClient {
 		if schoolNumber == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view admissions for"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view enrollments for"})
 			return
 		}
 	}
