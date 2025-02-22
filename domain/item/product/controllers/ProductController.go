@@ -3,6 +3,8 @@ package controllers
 import (
 	"fmt"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"net/http"
@@ -145,8 +147,23 @@ func EditProduct(c *gin.Context) {
 
 func FetchProducts(c *gin.Context) {
 
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+
+	if user.Type != constants.TypeClient {
+		if schoolNumber == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view admissions for"})
+			return
+		}
+	}
+
 	var products []productModels.Product
-	if err := config.DB.Preload("Item").Find(&products).Error; err != nil {
+	if err := config.DB.Preload("Item").Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&products).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
 		return
 	}

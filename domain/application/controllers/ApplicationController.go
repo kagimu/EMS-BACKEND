@@ -68,12 +68,21 @@ func FetchApplications(c *gin.Context) {
 		}
 
 	} else {
+		schoolNumber := c.Query("school_number")
+		if user.Type != constants.TypeClient {
+			if schoolNumber == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view admissions for"})
+				return
+			}
+		}
 
 		if err := config.DB.Model(&models.Application{}).
 			Preload("Student").Preload("Parent").
 			Preload("PreviousSchools").
+			Joins("JOIN students ON students.application_number = applications.number").
 			Scopes(
 				filters.ByStatus(c.Query("status")),
+				filters.ByAnyField("students.school_number", schoolNumber),
 				pagination.Paginate(c, &paginationResponse),
 			).
 			Find(&applications).Error; err != nil {
