@@ -19,6 +19,16 @@ func SaveNarrative(narrative models.Narrative, tx ...*gorm.DB) error {
 	return db.Save(&narrative).Error
 }
 
+func SaveScheduledNarrative(scheduledNarrative models.ScheduledNarrative, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Save(&scheduledNarrative).Error
+}
+
 func FindAllNarratives(studentNumber, studyPeriodNumber, campusClassNumber, assessmentAreaNumber string, startDate, endDate time.Time, tx ...*gorm.DB) ([]models.Narrative, error) {
 
 	db := config.DB
@@ -33,6 +43,26 @@ func FindAllNarratives(studentNumber, studyPeriodNumber, campusClassNumber, asse
 		Find(&narratives).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return []models.Narrative{}, nil
+		}
+		return nil, err
+	}
+
+	return narratives, nil
+}
+func FindAllScheduledNarratives(studyPeriodNumber, campusClassNumber, assessmentAreaNumber string, startDate time.Time, tx ...*gorm.DB) ([]models.ScheduledNarrative, error) {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var narratives []models.ScheduledNarrative
+
+	if err := db.
+		Scopes(filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByDateAfter("scheduled_on", startDate), filters.ByAnyField("assessment_area_number", assessmentAreaNumber), filters.ByAnyField("campus_class_number", campusClassNumber)).
+		Find(&narratives).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []models.ScheduledNarrative{}, nil
 		}
 		return nil, err
 	}

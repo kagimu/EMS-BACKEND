@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	uuid "github.com/satori/go.uuid"
 	"time"
@@ -50,6 +51,52 @@ func (narrativeService NarrativeService) AllNarrative(request requests.Narrative
 	}
 
 	return narrativeResponse, nil
+}
+
+func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest requests.ScheduledNarrativeRequest, user *models2.User) error {
+	scheduledOn, err := time.Parse(time.DateOnly, scheduledNarrativeRequest.ScheduledOn)
+	if err != nil {
+		return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
+	}
+
+	schedule := models.ScheduledNarrative{
+		ScheduledOn:          scheduledOn,
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
+		CampusClassNumber:    scheduledNarrativeRequest.CampusClassNumber,
+		AssessmentAreaNumber: scheduledNarrativeRequest.AssessmentAreaNumber,
+		StudyPeriodNumber:    scheduledNarrativeRequest.StudyPeriodNumber,
+		UserNumber:           user.Number,
+	}
+
+	err = repositories.SaveScheduledNarrative(schedule)
+	if err != nil {
+		return errors.New(fmt.Sprint("Error saving scheduled narrative assessment: ", err))
+	}
+
+	return nil
+}
+
+func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, campusClassNumber, assessmentAreaNumber string) ([]responses.ScheduledNarrativeResponse, error) {
+
+	data, err := repositories.FindAllScheduledNarratives(studyPeriodNumber, campusClassNumber, assessmentAreaNumber, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	var scheduledNarratives = make([]responses.ScheduledNarrativeResponse, 0)
+
+	for _, narrative := range data {
+		scheduledNarratives = append(scheduledNarratives, responses.ScheduledNarrativeResponse{
+			Number:               narrative.Number,
+			ScheduledOn:          narrative.ScheduledOn.Format(time.DateOnly),
+			CampusClassNumber:    narrative.CampusClassNumber,
+			AssessmentAreaNumber: narrative.AssessmentAreaNumber,
+			StudyPeriodNumber:    narrative.StudyPeriodNumber,
+		})
+	}
+
+	return scheduledNarratives, nil
 }
 
 func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResponse {
