@@ -3,6 +3,8 @@ package controllers
 import (
 	"fmt"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
@@ -88,8 +90,23 @@ func CreateService(c *gin.Context) {
 
 func FetchServices(c *gin.Context) {
 
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+
+	if user.Type != constants.TypeClient {
+		if schoolNumber == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view admissions for"})
+			return
+		}
+	}
 	var services []models2.Service
-	if err := config.DB.Preload("Item").Find(&services).Error; err != nil {
+	if err := config.DB.Preload("Item").
+		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&services).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch services"})
 		return
 	}

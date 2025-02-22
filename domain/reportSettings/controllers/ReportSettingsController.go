@@ -192,6 +192,11 @@ func FetchReportSummaries(ctx *gin.Context) {
 	var cleanReportSummary = make([]responses.LeanReportSummary, 0)
 	var paginatedResponse = pagination.PaginatedResponse{}
 
+	if ctx.Query("campus_class_number") == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a class to view report summaries"})
+		return
+	}
+
 	var reportSummaries []models.ReportSummary
 	if err := config.DB.Scopes(
 		filters.ByStudyPeriodNumber(ctx.Query("study_period_number")),
