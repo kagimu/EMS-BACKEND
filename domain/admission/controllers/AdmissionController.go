@@ -198,6 +198,13 @@ func FetchAdmissions(c *gin.Context) {
 	schoolNumber := c.Query("school_number")
 	campusClassNumber := c.Query("campus_class_number")
 
+	if user.Type != constants.TypeClient {
+		if schoolNumber == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view admissions for"})
+			return
+		}
+	}
+
 	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber, user, paginate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})

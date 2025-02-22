@@ -9,7 +9,7 @@ import (
 type Role struct {
 	gorm.Model
 	Number       string           `json:"number" gorm:"size:36;unique;not null"`
-	Name         string           `json:"name" gorm:"size:20;not null"`
+	Name         string           `json:"name" gorm:"size:50;not null"`
 	EntityNumber string           `json:"entity_number" gorm:"size:36;not null"`
 	Description  string           `json:"description" gorm:"size:100"`
 	Status       string           `json:"status" gorm:"size:20;"`

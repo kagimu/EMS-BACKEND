@@ -76,6 +76,11 @@ func DetachStaffFromStream(c *gin.Context) {
 
 func GetStaffOnStream(c *gin.Context) {
 
+	if c.Query("school_number") == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school to view the list of teachers"})
+		return
+	}
+
 	staff, err := services.GetStaffStreamsAndClasses(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to get staff on stream"})
