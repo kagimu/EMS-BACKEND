@@ -14,6 +14,10 @@ var narrativeService = services.NewNarrativeService()
 func SaveNarrative(ctx *gin.Context) {
 
 	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
 
 	var request requests.NarrativeRequest
 	err = ctx.ShouldBindJSON(&request)
@@ -76,7 +80,74 @@ func GetNarrative(context *gin.Context) {
 	data, err := narrativeService.AllNarrative(narrative, startDate, endDate)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"data": data})
+}
+
+func SaveNarrativeSchedule(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	var request requests.ScheduledNarrativeRequest
+	err = context.ShouldBindJSON(&request)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = narrativeService.SaveSchedule(request, user)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Scheduled Narrative saved"})
+}
+
+func NarrativeSchedule(context *gin.Context) {
+	studyPeriodNumber := context.Query("study_period_number")
+	campusClassNumber := context.Query("campus_class_number")
+	assessmentAreaNumber := context.Query("assessment_area_number")
+
+	if campusClassNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "campus_class_number is required"})
+		return
+	}
+
+	if studyPeriodNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "study_period_number is required"})
+		return
+	}
+
+	data, err := narrativeService.AllSchedules(studyPeriodNumber, campusClassNumber, assessmentAreaNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": data})
+}
+
+func GetDetailedNarrative(context *gin.Context) {
+
+}
+
+func DeleteNarrative(context *gin.Context) {
+
+}
+
+func DeleteScheduledNarrative(context *gin.Context) {
+
 }
