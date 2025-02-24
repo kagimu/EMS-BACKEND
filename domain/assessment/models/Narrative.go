@@ -10,7 +10,7 @@ import (
 )
 
 type Narrative struct {
-	Number               string `gorm:"primarykey, not null, unique"`
+	Number               string `gorm:"primarykey;size:36; not null;unique"`
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	Description          string                       `gorm:"size:2500;index;not null"`
