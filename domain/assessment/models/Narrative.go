@@ -27,7 +27,7 @@ type Narrative struct {
 }
 
 type ScheduledNarrative struct {
-	Number               string `gorm:"primarykey, not null, unique"`
+	Number               string `gorm:"primarykey;not null;size:36;unique"`
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	ScheduledOn          time.Time
