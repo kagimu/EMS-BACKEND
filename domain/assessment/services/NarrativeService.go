@@ -10,6 +10,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"time"
@@ -19,6 +22,30 @@ type NarrativeService struct {
 }
 
 func (narrativeService NarrativeService) CreateNarrative(narrativeRequest requests.NarrativeRequest, userNumber string) error {
+
+	studyPeriod, err := repositories2.GetStudyPeriodByNumber(narrativeRequest.StudyPeriodNumber)
+	if err != nil {
+		return err
+	}
+	if studyPeriod.Number == "" {
+		return errors.New("Invalid study period number ")
+	}
+
+	assessmentArea, err := repositories3.GetAssessmentAreaByNumber(narrativeRequest.AssessmentAreaNumber)
+	if err != nil {
+		return err
+	}
+	if assessmentArea.Number == "" {
+		return errors.New("Invalid assessment area number ")
+	}
+
+	campusClass, err := repositories4.GetCampusClassByNumber(narrativeRequest.CampusClassNumber)
+	if err != nil {
+		return err
+	}
+	if campusClass.Number == "" {
+		return errors.New("Invalid campus class number ")
+	}
 
 	narrative := models.Narrative{
 		UserNumber:           userNumber,
