@@ -29,6 +29,7 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 		Number:               uuid.NewV4().String(),
 		CreatedAt:            time.Now(),
 		UpdatedAt:            time.Now(),
+		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
 	}
 
 	var scheduled models.ScheduledNarrative
