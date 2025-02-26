@@ -192,7 +192,23 @@ func FetchReportSummaries(ctx *gin.Context) {
 	var cleanReportSummary = make([]responses.LeanReportSummary, 0)
 	var paginatedResponse = pagination.PaginatedResponse{}
 
-	if ctx.Query("campus_class_number") == "" {
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+	curriculumNumber := ctx.Query("curriculum_number")
+
+	campusClassNumber := ctx.Query("campus_class_number")
+
+	if campusClassNumber == "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
+
+	if campusClassNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a class to view report summaries"})
 		return
 	}
@@ -203,7 +219,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 		filters.ByStudentNumber(ctx.Query("student_number")),
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
-		filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
+		filters.ByCampusClassNumber(campusClassNumber),
 		pagination.Paginate(ctx, &paginatedResponse),
 	).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
