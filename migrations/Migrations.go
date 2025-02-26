@@ -216,6 +216,9 @@ func Init() error {
 		&currDelivery.CurriculumDelivery{},
 		&currDelivery.StudentCurriculumDelivery{},
 		&currDelivery.CurriculumDeliveryStep{},
+		&assessmentModel.Narrative{},
+		&assessmentModel.ScheduledNarrative{},
+		&assessmentModel.NarrativeSchedule{},
 	)
 
 	if err != nil {

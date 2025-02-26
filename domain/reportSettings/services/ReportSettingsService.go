@@ -906,7 +906,7 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
 	}
 
-	if promotionValue.Number != "" {
+	if promotionValue.Number == "" {
 		return models2.PromotionSetting{}, errors.New("Promotion value not set for " + promotion.Name)
 	}
 
@@ -946,8 +946,8 @@ func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmen
 		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
 	}
 
-	if promotionValue.Number != "" {
-		return models2.PromotionSetting{}, errors.New("Promotion value not set for " + promotion.Name)
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Repeat value not set for " + promotion.Name)
 	}
 
 	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)

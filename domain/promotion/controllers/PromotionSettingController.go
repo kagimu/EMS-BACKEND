@@ -48,6 +48,10 @@ func FetchPromotionSettings(c *gin.Context) {
 	studyPeriodNumber := c.Query("study_period_number")
 	nextCampusClassNumber := c.Query("next_campus_class_number")
 	settingsType := c.Query("type")
+	if studyPeriodNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a study period"})
+		return
+	}
 
 	promotionSettings, err := promotionService.AllPromotionSettings(studyPeriodNumber, nextCampusClassNumber, settingsType)
 	if err != nil {

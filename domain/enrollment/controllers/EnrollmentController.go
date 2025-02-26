@@ -191,6 +191,13 @@ func FetchEnrolledStudents(c *gin.Context) {
 	studyPeriodNumber := c.Query("study_period_number")
 	status := c.Query("status")
 
+	if user.Type != constants.TypeClient {
+		if schoolNumber == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view enrollments for"})
+			return
+		}
+	}
+
 	page := pagination.Paginate(c, &paginatedResponse)
 
 	students_, err := enrolmentService.Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status, user, page)

@@ -19,6 +19,14 @@ func (req *NewRoleRequest) Validate() error {
 	if req.Name == "" {
 		return errors.New("name is required")
 	}
+	if len(req.Name) < 3 {
+		return errors.New("the name of the role must be at least 3 characters")
+	}
+
+	if len(req.Name) > 50 {
+		return errors.New("the name of the role must not exceed 50 characters")
+	}
+
 	if req.Description == "" {
 		return errors.New("description is required")
 	}
