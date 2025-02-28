@@ -79,7 +79,7 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 		scheduled = checkScheduled
 	}
 
-	err := config.DB.Transaction(func(tx *gorm.DB) error {
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 		err := repositories.SaveNarrative(narrative, tx)
 		if err != nil {
 			return err
