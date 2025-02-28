@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -9,6 +10,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+	"gorm.io/gorm"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -96,6 +98,8 @@ func FetchServices(c *gin.Context) {
 		return
 	}
 
+	var response []responses.ServiceResponse
+
 	schoolNumber := c.Query("school_number")
 
 	if user.Type != constants.TypeClient {
@@ -107,14 +111,20 @@ func FetchServices(c *gin.Context) {
 	var services []models2.Service
 	if err := config.DB.Preload("Item").
 		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&services).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch services"})
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, response)
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch services: " + err.Error()})
 		return
 	}
-	var response []responses.ServiceResponse
+
 	for _, service := range services {
 		var campusServices []models2.CampusItem
 		if err := config.DB.Where("item_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch campus services: " + err.Error()})
 			return
 		}
 
@@ -123,7 +133,7 @@ func FetchServices(c *gin.Context) {
 			//get campus name
 			var campus campusModel.Campus
 			if err := config.DB.Where("number = ?", campusService.CampusNumber).First(&campus).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus"})
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch campus: " + err.Error()})
 				return
 			}
 
