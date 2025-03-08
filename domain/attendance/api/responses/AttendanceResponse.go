@@ -2,7 +2,8 @@ package responses
 
 type AttendanceResponse struct {
 	Number        string `json:"number"`
-	Name          string `json:"user_number"`
+	Name          string `json:"name"`
+	UserNumber    string `json:"user_number"`
 	Date          string `json:"date"`
 	CheckInTime   string `json:"check_in_time"`
 	CheckOutTime  string `json:"check_out_time"`
