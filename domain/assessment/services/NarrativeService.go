@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
@@ -177,12 +178,22 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, campusC
 func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResponse {
 
 	user, _ := repository.GetUserByNumber(narrative.UserNumber)
+	studyPeriod, _ := repositories2.GetStudyPeriodByNumber(narrative.StudyPeriodNumber)
+	class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
+	academicYear, _ := repositories5.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
+	assessmentArea, _ := repositories3.GetAssessmentAreaByNumber(narrative.AssessmentAreaNumber)
+	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	return responses.NarrativeResponse{
 		Teacher:              user.FirstName + " " + user.LastName,
 		Number:               narrative.Number,
 		Date:                 narrative.CreatedAt.Format(time.DateTime),
 		AssessmentAreaNumber: narrative.AssessmentAreaNumber,
+		StudyPeriod:          spn.Name,
+		Class:                class.Name,
+		Narration:            narrative.Description,
+		AssessmentArea:       assessmentArea.Name,
+		AcademicYear:         academicYear.AcademicYearName,
 	}
 }
 
