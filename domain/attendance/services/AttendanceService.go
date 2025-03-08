@@ -79,8 +79,9 @@ func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
 			Name:         user.FirstName + " " + user.LastName,
 		})
 
-		paginatedResponse.Content = response
 	}
+
+	paginatedResponse.Content = response
 
 	return paginatedResponse, nil
 }
