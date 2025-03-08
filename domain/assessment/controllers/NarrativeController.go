@@ -46,27 +46,29 @@ func GetNarrative(context *gin.Context) {
 	_startDate := context.Query("start_date")
 	_endDate := context.Query("end_date")
 
-	currentDateTime := time.Now()
+	var startDate time.Time
+	var endDate time.Time
+	var err error
 
-	if _startDate == "" {
-		startOfMonth := time.Date(currentDateTime.Year(), currentDateTime.Month(), 1, 0, 0, 0, 0, currentDateTime.Location())
-		_startDate = startOfMonth.Format(time.DateOnly)
+	if _startDate != "" {
+		//startOfMonth := time.Date(currentDateTime.Year(), currentDateTime.Month(), 1, 0, 0, 0, 0, currentDateTime.Location())
+		//_startDate = startOfMonth.Format(time.DateOnly)
+
+		startDate, err = time.Parse(time.DateOnly, _startDate)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
+			return
+		}
 	}
 
-	startDate, err := time.Parse(time.DateOnly, _startDate)
-	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
-		return
-	}
+	if _endDate != "" {
+		//_endDate = currentDateTime.Format(time.DateOnly)
 
-	if _endDate == "" {
-		_endDate = currentDateTime.Format(time.DateOnly)
-	}
-
-	endDate, err := time.Parse(time.DateOnly, _endDate)
-	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
-		return
+		endDate, err = time.Parse(time.DateOnly, _endDate)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
+			return
+		}
 	}
 
 	narrative := requests.NarrativeRequest{
