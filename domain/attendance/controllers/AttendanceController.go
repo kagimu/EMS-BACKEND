@@ -41,7 +41,7 @@ func CreateAttendance(c *gin.Context) {
 		CheckOutTime:      payload.CheckOutTime,
 		Date:              date,
 		SchoolNumber:      payload.SchoolNumber,
-		UserNumber:        user.Number,
+		UserNumber:        payload.UserNumber,
 		CampusClassNumber: payload.CampusClassNumber,
 		CampusNumber:      payload.CampusNumber,
 		AddedBy:           user.Number,
