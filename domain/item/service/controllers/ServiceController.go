@@ -110,6 +110,7 @@ func FetchServices(c *gin.Context) {
 	}
 	var services []models2.Service
 	if err := config.DB.Preload("Item").
+		Joins("JOIN items on items.number = services.item_number").
 		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&services).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

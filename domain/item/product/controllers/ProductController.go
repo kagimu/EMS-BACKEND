@@ -163,7 +163,9 @@ func FetchProducts(c *gin.Context) {
 	}
 
 	var products []productModels.Product
-	if err := config.DB.Preload("Item").Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&products).Error; err != nil {
+	if err := config.DB.Preload("Item").
+		Joins("JOIN items on items.number = products.item_number").
+		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&products).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
 		return
 	}
