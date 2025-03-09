@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -35,7 +36,7 @@ func (a *AttendanceRepositoryImpl) FindByUserNumber(userNumber string) ([]models
 
 func (a *AttendanceRepositoryImpl) AllAttendance(context *gin.Context, p *pagination.PaginatedResponse) ([]models.Attendance, error) {
 	var attendances = make([]models.Attendance, 0)
-	if err := a.DB.Scopes(pagination.Paginate(context, p)).Find(&attendances).Error; err != nil {
+	if err := a.DB.Scopes(pagination.Paginate(context, p), filters.ByAnyField("user_number", context.Query("user_number"))).Find(&attendances).Error; err != nil {
 		return attendances, err
 	}
 	return attendances, nil

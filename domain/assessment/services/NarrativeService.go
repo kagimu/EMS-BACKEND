@@ -4,12 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"time"
@@ -19,6 +23,30 @@ type NarrativeService struct {
 }
 
 func (narrativeService NarrativeService) CreateNarrative(narrativeRequest requests.NarrativeRequest, userNumber string) error {
+
+	studyPeriod, err := repositories2.GetStudyPeriodByNumber(narrativeRequest.StudyPeriodNumber)
+	if err != nil {
+		return err
+	}
+	if studyPeriod.Number == "" {
+		return errors.New("Invalid study period number ")
+	}
+
+	assessmentArea, err := repositories3.GetAssessmentAreaByNumber(narrativeRequest.AssessmentAreaNumber)
+	if err != nil {
+		return err
+	}
+	if assessmentArea.Number == "" {
+		return errors.New("Invalid assessment area number ")
+	}
+
+	campusClass, err := repositories4.GetCampusClassByNumber(narrativeRequest.CampusClassNumber)
+	if err != nil {
+		return err
+	}
+	if campusClass.Number == "" {
+		return errors.New("Invalid campus class number ")
+	}
 
 	narrative := models.Narrative{
 		UserNumber:           userNumber,
@@ -52,7 +80,7 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 		scheduled = checkScheduled
 	}
 
-	err := config.DB.Transaction(func(tx *gorm.DB) error {
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 		err := repositories.SaveNarrative(narrative, tx)
 		if err != nil {
 			return err
@@ -150,12 +178,22 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, campusC
 func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResponse {
 
 	user, _ := repository.GetUserByNumber(narrative.UserNumber)
+	studyPeriod, _ := repositories2.GetStudyPeriodByNumber(narrative.StudyPeriodNumber)
+	class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
+	academicYear, _ := repositories5.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
+	assessmentArea, _ := repositories3.GetAssessmentAreaByNumber(narrative.AssessmentAreaNumber)
+	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	return responses.NarrativeResponse{
 		Teacher:              user.FirstName + " " + user.LastName,
 		Number:               narrative.Number,
 		Date:                 narrative.CreatedAt.Format(time.DateTime),
 		AssessmentAreaNumber: narrative.AssessmentAreaNumber,
+		StudyPeriod:          spn.Name,
+		Class:                class.Name,
+		Narration:            narrative.Description,
+		AssessmentArea:       assessmentArea.Name,
+		AcademicYear:         academicYear.AcademicYearName,
 	}
 }
 

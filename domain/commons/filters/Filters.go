@@ -290,7 +290,7 @@ func ByValueIn(fieldName string, fieldValues []string) func(db *gorm.DB) *gorm.D
 
 func ByDateBetween(dateField string, startDate time.Time, endDate time.Time) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if dateField != "" {
+		if !(startDate.IsZero() && endDate.IsZero()) {
 
 			if startDate.After(endDate) {
 				_startDate := startDate
@@ -302,8 +302,10 @@ func ByDateBetween(dateField string, startDate time.Time, endDate time.Time) fun
 
 			return db.Where("DATE( "+dateField+") BETWEEN ? AND ?", startDate, endDate)
 		}
+
 		return db
 	}
+
 }
 
 func ByDateAfter(dateField string, afterDate time.Time) func(db *gorm.DB) *gorm.DB {

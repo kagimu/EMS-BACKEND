@@ -57,14 +57,15 @@ func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
 		}
 
 		var campus campusModel.Campus
-
-		if attendance.CampusNumber != "" {
-			campus, err = repositories3.GetCampusByNumber(attendance.CampusNumber)
+		campus, err = repositories3.GetCampusByNumber(attendance.CampusNumber)
+		if err != nil {
+			campus = campusModel.Campus{}
 		}
 
 		var campusClass classModel.CampusClass
-		if attendance.CampusClassNumber != "" {
-			campusClass, err = repositories4.GetCampusClassByNumber(attendance.CampusClassNumber)
+		campusClass, err = repositories4.GetCampusClassByNumber(attendance.CampusClassNumber)
+		if err != nil {
+			campusClass = classModel.CampusClass{}
 		}
 
 		response = append(response, responses.AttendanceResponse{
@@ -79,8 +80,9 @@ func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
 			Name:         user.FirstName + " " + user.LastName,
 		})
 
-		paginatedResponse.Content = response
 	}
+
+	paginatedResponse.Content = response
 
 	return paginatedResponse, nil
 }
