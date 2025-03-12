@@ -9,6 +9,8 @@ type NarrativeRequest struct {
 	AssessmentAreaNumber    string `json:"assessment_area_number"`
 	StudyPeriodNumber       string `json:"study_period_number"`
 	CampusClassNumber       string `json:"campus_class_number"`
+	ReferenceDate           string `json:"reference_date"`
+	ReferenceTime           string `json:"reference_time"`
 }
 
 func (receiver NarrativeRequest) Validate() error {
@@ -30,6 +32,14 @@ func (receiver NarrativeRequest) Validate() error {
 
 	if receiver.CampusClassNumber == "" {
 		return errors.New("Choose the campus class ")
+	}
+
+	if receiver.ReferenceDate == "" {
+		return errors.New("Choose the date ")
+	}
+
+	if receiver.ReferenceTime == "" {
+		return errors.New("Choose the time ")
 	}
 
 	return nil

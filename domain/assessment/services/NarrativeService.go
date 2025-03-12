@@ -48,6 +48,21 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 		return errors.New("Invalid campus class number ")
 	}
 
+	dateTimeString := narrativeRequest.ReferenceDate + " " + narrativeRequest.ReferenceTime + ":00"
+	dateTime, err := time.Parse(time.DateTime, dateTimeString)
+	if err != nil {
+		return errors.New(fmt.Sprint("Passing reference date time error: ", err))
+	}
+
+	if dateTime.After(time.Now()) {
+		return errors.New("Date and time should not be in the future ")
+	}
+
+	referenceDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
+	if err != nil {
+		return errors.New(fmt.Sprint("Passing reference date error: ", err))
+	}
+
 	narrative := models.Narrative{
 		UserNumber:           userNumber,
 		StudentNumber:        narrativeRequest.StudentNumber,
@@ -58,6 +73,8 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 		CreatedAt:            time.Now(),
 		UpdatedAt:            time.Now(),
 		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
+		ReferenceDate:        referenceDate,
+		ReferenceTime:        narrativeRequest.ReferenceTime,
 	}
 
 	var scheduled models.ScheduledNarrative
@@ -187,13 +204,15 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 	return responses.NarrativeResponse{
 		Teacher:              user.FirstName + " " + user.LastName,
 		Number:               narrative.Number,
-		Date:                 narrative.CreatedAt.Format(time.DateTime),
+		CreatedAt:            narrative.CreatedAt.Format(time.DateTime),
 		AssessmentAreaNumber: narrative.AssessmentAreaNumber,
 		StudyPeriod:          spn.Name,
 		Class:                class.Name,
 		Narration:            narrative.Description,
 		AssessmentArea:       assessmentArea.Name,
 		AcademicYear:         academicYear.AcademicYearName,
+		ReferenceTime:        narrative.ReferenceTime,
+		ReferenceDate:        narrative.ReferenceDate.Format(time.DateOnly),
 	}
 }
 
