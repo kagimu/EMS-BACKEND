@@ -3,13 +3,12 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
 	"gorm.io/gorm"
 	"net/http"
 
@@ -18,6 +17,8 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+var itemService = services.NewItemService()
 
 func CreateService(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
@@ -98,7 +99,7 @@ func FetchServices(c *gin.Context) {
 		return
 	}
 
-	var response []responses.ServiceResponse
+	//var response []responses.ServiceResponse
 
 	schoolNumber := c.Query("school_number")
 
@@ -108,7 +109,7 @@ func FetchServices(c *gin.Context) {
 			return
 		}
 	}
-	var services []models2.Service
+	/*var services []models2.Service
 	if err := config.DB.Preload("Item").
 		Joins("JOIN items on items.number = services.item_number").
 		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&services).Error; err != nil {
@@ -120,9 +121,9 @@ func FetchServices(c *gin.Context) {
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch services: " + err.Error()})
 		return
-	}
+	}*/
 
-	for _, service := range services {
+	/*for _, service := range services {
 		var campusServices []models2.CampusItem
 		if err := config.DB.Where("item_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch campus services: " + err.Error()})
@@ -163,6 +164,12 @@ func FetchServices(c *gin.Context) {
 			},
 			Campuses: campusServiceResponse,
 		})
+	}*/
+
+	response, err := itemService.AllServiceItems(schoolNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, response)
