@@ -21,4 +21,6 @@ type Attendance struct {
 	User              authModel.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AddedBy           string         `json:"added_by" gorm:"size:36;"`
 	StudentNumber     string         `json:"student_number" gorm:"size:36;"`
+	StreamNumber      string         `json:"stream_number" gorm:"size:36"`
+	StudyPeriodNumber string         `json:"study_period_number" gorm:"size:36"`
 }
