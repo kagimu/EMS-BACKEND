@@ -8,10 +8,9 @@ import (
 
 type (
 	LessonPlan struct {
-		ID                   uint `gorm:"primaryKey"`
 		CreatedAt            time.Time
 		UpdatedAt            time.Time
-		Number               string                                 `json:"number" gorm:"size:36;unique;not null"`
+		Number               string                                 `json:"number" gorm:"size:36;primaryKey"`
 		SchemeSubTopicNumber string                                 `json:"scheme_sub_topic_number" form:"name" binding:"required" gorm:"size:36;not null;unique"`
 		Status               string                                 `json:"status" gorm:"size:10;not null"`
 		UserNumber           string                                 `json:"user_number" gorm:"size:36;not null"`
