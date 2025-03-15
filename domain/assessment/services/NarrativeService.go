@@ -84,6 +84,7 @@ func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest 
 		StudyPeriodNumber:    scheduledNarrativeRequest.StudyPeriodNumber,
 		UserNumber:           user.Number,
 		Description:          scheduledNarrativeRequest.Description,
+		Number:               uuid.NewV4().String(),
 	}
 
 	err = repositories.SaveScheduledNarrative(schedule)

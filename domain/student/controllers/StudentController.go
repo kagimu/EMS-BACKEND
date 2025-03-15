@@ -332,7 +332,7 @@ func FetchStudentByNumber(c *gin.Context) {
 	response.Campus = enrollment.Campus.Name
 	response.CampusNumber = enrollment.Campus.Number
 	response.StudyPeriod = studyPeriodName.Name
-	response.StudyPeriodNumber = studyPeriodName.Number
+	response.StudyPeriodNumber = enrollment.StudyPeriod.Number
 	response.CampusClassNumber = enrollment.CampusClass.Number
 	response.ContinuingStudent = enrollment.ContinuingStudent
 	response.AcademicYear = enrollment.StudyPeriod.AcademicYear.AcademicYearName

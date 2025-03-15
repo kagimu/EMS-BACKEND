@@ -33,6 +33,7 @@ type lessonPlanServiceImp struct {
 }
 
 func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanInfo, userNumber string) error {
+	lessonPlanRepository.UseTx(config.DB)
 	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber)
 	if err != nil {
 		return err
