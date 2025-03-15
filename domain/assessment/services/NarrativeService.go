@@ -49,6 +49,31 @@ func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest 
 		return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
 	}
 
+	if scheduledOn.After(time.Now()) {
+		return errors.New(fmt.Sprint("The scheduled on date should not be in the past date. "))
+	}
+
+	assessmentArea, err := repositories3.GetAssessmentAreaByNumber(scheduledNarrativeRequest.AssessmentAreaNumber)
+	if err != nil {
+		return err
+	}
+	if assessmentArea.Number == "" {
+		return errors.New("Invalid assessment area number ")
+	}
+
+	campusClass, err := repositories4.GetCampusClassByNumber(scheduledNarrativeRequest.CampusClassNumber)
+	if err != nil {
+		return err
+	}
+	if campusClass.Number == "" {
+		return errors.New("Invalid campus class number ")
+	}
+
+	studyPeriod, _ := repositories2.GetStudyPeriodByNumber(scheduledNarrativeRequest.StudyPeriodNumber)
+	if studyPeriod.Number == "" {
+		return errors.New("Invalid study period number ")
+	}
+
 	schedule := models.ScheduledNarrative{
 		ScheduledOn:          scheduledOn,
 		CreatedAt:            time.Now(),
