@@ -12,6 +12,7 @@ import (
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/araddon/dateparse"
@@ -61,7 +62,7 @@ func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest 
 		return errors.New("Invalid assessment area number ")
 	}
 
-	campusClass, err := repositories4.GetCampusClassByNumber(scheduledNarrativeRequest.CampusClassNumber)
+	campusClass, err := services.ResolveCampusClass(scheduledNarrativeRequest.ClassNumber, scheduledNarrativeRequest.CampusNumber, scheduledNarrativeRequest.CurriculumNumber, "")
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,7 @@ func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest 
 		ScheduledOn:          scheduledOn,
 		CreatedAt:            time.Now(),
 		UpdatedAt:            time.Now(),
-		CampusClassNumber:    scheduledNarrativeRequest.CampusClassNumber,
+		CampusClassNumber:    campusClass.Number,
 		AssessmentAreaNumber: scheduledNarrativeRequest.AssessmentAreaNumber,
 		StudyPeriodNumber:    scheduledNarrativeRequest.StudyPeriodNumber,
 		UserNumber:           user.Number,
