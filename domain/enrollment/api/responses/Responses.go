@@ -32,4 +32,9 @@ type Enrollment struct {
 	LevelNumber            string `json:"level_number"`
 	Photo                  string `json:"photo"`
 	UserNumber             string `json:"user_number"`
+	CampusClassNumber      string `json:"campus_class_number"`
+	CampusNumber           string `json:"campus_number"`
+	StudyPeriodNumber      string `json:"study_period_number"`
+	ClassNumber            string `json:"class_number"`
+	CurriculumNumber       string `json:"curriculum_number"`
 }
