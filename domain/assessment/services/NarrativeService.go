@@ -147,7 +147,7 @@ func (narrativeService NarrativeService) AllNarrative(request requests.Narrative
 }
 
 func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest requests.ScheduledNarrativeRequest, user *models2.User) error {
-	scheduledOn, err := time.Parse(time.DateOnly, scheduledNarrativeRequest.ScheduledOn)
+	scheduledOn, err := time.Parse(time.DateTime, scheduledNarrativeRequest.ScheduledOn)
 	if err != nil {
 		return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
 	}
