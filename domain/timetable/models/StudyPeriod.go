@@ -3,12 +3,13 @@ package models
 import (
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	lessonPlanStepModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
-	"gorm.io/gorm"
+	"time"
 )
 
 type StudyingPeriod struct {
-	gorm.Model
-	Number                  string                              `json:"number" gorm:"size:36;not null"`
+	CreatedAt               time.Time
+	UpdatedAt               time.Time
+	Number                  string                              `json:"number" gorm:"size:36;primaryKey"`
 	StudyingTimeTableNumber string                              `json:"studying_time_table_number" gorm:"size:36;not null"`
 	StudyingTimeTable       StudyingTimeTable                   `gorm:"foreignKey:StudyingTimeTableNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber              string                              `json:"user_number" gorm:"size:36;not null"`

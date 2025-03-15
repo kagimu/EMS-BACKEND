@@ -95,9 +95,18 @@ func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest 
 	return nil
 }
 
-func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, campusClassNumber, assessmentAreaNumber string) ([]responses.ScheduledNarrativeResponse, error) {
+func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNumber, campusNumber, curriculumNumber, assessmentAreaNumber string) ([]responses.ScheduledNarrativeResponse, error) {
 
-	data, err := repositories.FindAllScheduledNarratives(studyPeriodNumber, campusClassNumber, assessmentAreaNumber, time.Now())
+	campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if campusClass.Number == "" {
+		return nil, errors.New("Could not find campus class ")
+	}
+
+	data, err := repositories.FindAllScheduledNarratives(studyPeriodNumber, campusClass.Number, assessmentAreaNumber, time.Now())
 	if err != nil {
 		return nil, err
 	}

@@ -1,11 +1,14 @@
 package models
 
-import "gorm.io/gorm"
-import learningMaterialModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+import (
+	learningMaterialModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
+	"time"
+)
 
 type LessonPlanReference struct {
-	gorm.Model
-	Number                 string                                 `json:"number" gorm:"size:36;unique;not null;index"`
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
+	Number                 string                                 `json:"number" gorm:"size:36;primaryKey"`
 	Code                   int64                                  `json:"code" form:"code" binding:"required" gorm:"size:80;not null"`
 	Name                   string                                 `json:"name" form:"name" binding:"required" gorm:"size:80;not null"`
 	LessonPlanNumber       string                                 `json:"lesson_plan_number" gorm:"size:36;not null"`
