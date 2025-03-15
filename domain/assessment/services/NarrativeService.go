@@ -124,7 +124,14 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 
 	for _, narrative := range data {
 
-		studyPeriodName, _ := repositories2.GetStudyPeriodNameByStudyPeriodNumber(narrative.StudyPeriodNumber)
+		name := "Study Period"
+
+		studyPeriodName, err := repositories2.GetStudyPeriodNameByStudyPeriodNumber(narrative.StudyPeriodNumber)
+		if err != nil {
+			name = err.Error()
+		} else {
+			name = studyPeriodName.Name
+		}
 
 		assessmentArea, _ := repositories3.GetAssessmentAreaByNumber(narrative.AssessmentAreaNumber)
 
@@ -137,7 +144,7 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 			AssessmentAreaNumber: narrative.AssessmentAreaNumber,
 			StudyPeriodNumber:    narrative.StudyPeriodNumber,
 			Description:          narrative.Description,
-			StudyPeriod:          studyPeriodName.Name,
+			StudyPeriod:          name,
 			AssessmentArea:       assessmentArea.Name,
 			Class:                class.Name,
 		})
