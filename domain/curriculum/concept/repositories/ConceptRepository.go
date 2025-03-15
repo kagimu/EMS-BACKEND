@@ -19,7 +19,7 @@ type conceptRepositoryImp struct {
 }
 
 func (conceptRepository *conceptRepositoryImp) SaveConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error {
-	return conceptRepository.Db.Save(lessonPlanConcept).Error
+	return conceptRepository.Db.Save(&lessonPlanConcept).Error
 }
 
 func (conceptRepository *conceptRepositoryImp) UseTx(tx *gorm.DB) *gorm.DB {
