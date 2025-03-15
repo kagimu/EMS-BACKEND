@@ -14,6 +14,7 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+	"github.com/araddon/dateparse"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"time"
@@ -49,7 +50,7 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 	}
 
 	dateTimeString := narrativeRequest.ReferenceDate + " " + narrativeRequest.ReferenceTime + ":00"
-	dateTime, err := time.Parse(time.DateTime, dateTimeString)
+	dateTime, err := dateparse.ParseAny(dateTimeString)
 	if err != nil {
 		return errors.New(fmt.Sprint("Passing reference date time error: ", err))
 	}
@@ -58,10 +59,10 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 		return errors.New("Date and time should not be in the future ")
 	}
 
-	referenceDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
+	/*referenceDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
 	if err != nil {
 		return errors.New(fmt.Sprint("Passing reference date error: ", err))
-	}
+	}*/
 
 	narrative := models.Narrative{
 		UserNumber:           userNumber,
@@ -73,7 +74,7 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 		CreatedAt:            time.Now(),
 		UpdatedAt:            time.Now(),
 		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
-		ReferenceDate:        referenceDate,
+		ReferenceDate:        dateTime,
 		ReferenceTime:        narrativeRequest.ReferenceTime,
 	}
 
@@ -147,7 +148,7 @@ func (narrativeService NarrativeService) AllNarrative(request requests.Narrative
 }
 
 func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest requests.ScheduledNarrativeRequest, user *models2.User) error {
-	scheduledOn, err := time.Parse(time.DateTime, scheduledNarrativeRequest.ScheduledOn)
+	scheduledOn, err := dateparse.ParseAny(scheduledNarrativeRequest.ScheduledOn)
 	if err != nil {
 		return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
 	}

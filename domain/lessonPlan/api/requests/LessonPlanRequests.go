@@ -36,10 +36,6 @@ func (p *LessonPlanInfo) Validate() error {
 
 	for index, lessonInfo := range p.LessonPlanConceptInfo {
 		position := index + 1
-		if lessonInfo.Number == "" {
-			return errors.New(fmt.Sprintf("lesson_plan_concept_number is required, at position %d", position))
-		}
-
 		if lessonInfo.LessonPlanConceptNumber == "" {
 			return errors.New(fmt.Sprintf("lesson_plan_concept_number is required, at position %d", position))
 		}
