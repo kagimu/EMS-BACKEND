@@ -6,4 +6,5 @@ type ScheduledNarrativeResponse struct {
 	AssessmentAreaNumber string `json:"assessment_area_number"`
 	CampusClassNumber    string `json:"campus_class_number"`
 	StudyPeriodNumber    string `json:"study_period_number"`
+	Description          string `json:"description"`
 }

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
@@ -32,129 +31,11 @@ func NewLessonPlan(context *gin.Context) {
 		return
 	}
 
-	schemeSubTopicNumber := lessonPlanInfo.SchemeSubTopicNumber
-	lessonPlanNumber := lessonPlanInfo.LessonPlanNumber
-	lessonPlanConceptInfo := lessonPlanInfo.LessonPlanConceptInfo
-
 	userNumber := context.Request.Header["User-Number"][0]
 
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	var duplicateLessonPlan lessonPlanModel.LessonPlan
-	if duplicate := config.DB.
-		Where("scheme_sub_topic_number = ?", schemeSubTopicNumber).
-		Where("number != ?", lessonPlanNumber).
-		First(&duplicateLessonPlan).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Lesson plan already exists"})
-		return
-	}
-
-	// Begin the transaction
-	tx := config.DB.Begin()
-
-	number := uuid.NewV4().String()
-	///save lesson plan data
-	saveLessonPlan := lessonPlanModel.LessonPlan{
-		Number:               number,
-		SchemeSubTopicNumber: schemeSubTopicNumber,
-		Status:               "draft",
-		UserNumber:           userNumber,
-	}
-
-	if lessonPlanNumber == "" {
-		if err := tx.Create(&saveLessonPlan).Error; err != nil {
-			// If any error occurs, rollback the transaction
-			tx.Rollback()
-			// Handle or return the error as needed
-			//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save Lesson plan"})
-			return
-		}
-	}
-
-	for _, concept := range lessonPlanConceptInfo {
-
-		var duplicateLessonPlanConcept lessonPlanModel.LessonPlanConcept
-		if duplicate := tx.
-			Where("concept_number = ?", concept.LessonPlanConceptNumber).
-			Where("lesson_plan_number = ?", saveLessonPlan.Number).
-			First(&duplicateLessonPlanConcept).Error; duplicate == nil {
-			tx.Rollback()
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicates Concepts not allowed"})
-			return
-		}
-
-		saveLessonConcepts := lessonPlanModel.LessonPlanConcept{
-			Number:           uuid.NewV4().String(),
-			ConceptNumber:    concept.LessonPlanConceptNumber,
-			Code:             concept.Code,
-			LessonPlanNumber: saveLessonPlan.Number,
-			UserNumber:       userNumber,
-		}
-
-		//	adds new concepts when Concept number doesnt exists
-		if concept.Number == "" {
-			if err := tx.Create(&saveLessonConcepts).Error; err != nil {
-				// If any error occurs, rollback the transaction
-				tx.Rollback()
-				// Handle or return the error as needed
-				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save Lesson Plan Concepts!"})
-				return
-			}
-		}
-
-		var referenceDataInfo lessonPlanModel.LessonPlanStep
-		conceptNo := ""
-		if concept.Number == "" {
-			conceptNo = saveLessonConcepts.Number
-		} else {
-			conceptNo = concept.Number
-		}
-
-		tx.Unscoped().
-			Where("lesson_plan_concept_number = ?", conceptNo).
-			Delete(&referenceDataInfo)
-
-		lessonPlanSteps := concept.StepList
-		if len(lessonPlanSteps) > 0 {
-
-			for _, step := range lessonPlanSteps {
-				if step.Step != "" {
-					saveLearningSteps := lessonPlanModel.LessonPlanStep{
-						Number:                  uuid.NewV4().String(),
-						Code:                    step.Code,
-						Step:                    step.Step,
-						LessonPlanConceptNumber: conceptNo,
-					}
-
-					if err := tx.Create(&saveLearningSteps).Error; err != nil {
-						// If any error occurs, rollback the transaction
-						tx.Rollback()
-						// Handle or return the error as needed
-						context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save steps"})
-						return
-
-					}
-				}
-
-			}
-
-		}
-
-	}
-
-	// Commit the transaction if there is no error
-	if err := tx.Commit().Error; err != nil {
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
+	err = lessonPlanService.NewLessonPlan(lessonPlanInfo, userNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
