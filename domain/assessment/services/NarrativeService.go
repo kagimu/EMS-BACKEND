@@ -50,7 +50,7 @@ func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest 
 		return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
 	}
 
-	if scheduledOn.After(time.Now()) {
+	if scheduledOn.Before(time.Now()) {
 		return errors.New(fmt.Sprint("The scheduled on date should not be in the past date. "))
 	}
 
@@ -73,6 +73,10 @@ func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest 
 	studyPeriod, _ := repositories2.GetStudyPeriodByNumber(scheduledNarrativeRequest.StudyPeriodNumber)
 	if studyPeriod.Number == "" {
 		return errors.New("Invalid study period number ")
+	}
+
+	if scheduledOn.After(studyPeriod.StudyPeriodEndDate) {
+		return errors.New(fmt.Sprint(fmt.Sprintf("Schedule date exceeds the study period end date of '%s'", studyPeriod.StudyPeriodEndDate.Format(time.DateOnly))))
 	}
 
 	schedule := models.ScheduledNarrative{
@@ -106,7 +110,12 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 		return nil, errors.New("Could not find campus class ")
 	}
 
-	data, err := repositories.FindAllScheduledNarratives(studyPeriodNumber, campusClass.Number, assessmentAreaNumber, time.Now())
+	studyPeriod, err := repositories2.GetStudyPeriodByNumber(studyPeriodNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := repositories.FindAllScheduledNarratives(studyPeriodNumber, campusClass.Number, assessmentAreaNumber, studyPeriod.StudyPeriodStartDate, studyPeriod.StudyPeriodEndDate)
 	if err != nil {
 		return nil, err
 	}
