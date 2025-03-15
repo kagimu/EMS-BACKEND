@@ -120,11 +120,23 @@ func SaveNarrativeSchedule(context *gin.Context) {
 
 func NarrativeSchedule(context *gin.Context) {
 	studyPeriodNumber := context.Query("study_period_number")
-	campusClassNumber := context.Query("campus_class_number")
+	classNumber := context.Query("class_number")
+	campusNumber := context.Query("campus_number")
+	curriculumNumber := context.Query("curriculum_number")
 	assessmentAreaNumber := context.Query("assessment_area_number")
 
-	if campusClassNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"error": "campus_class_number is required"})
+	if classNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "choose class"})
+		return
+	}
+
+	if campusNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "choose campus"})
+		return
+	}
+
+	if curriculumNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "choose curriculum"})
 		return
 	}
 
@@ -133,7 +145,7 @@ func NarrativeSchedule(context *gin.Context) {
 		return
 	}
 
-	data, err := narrativeService.AllSchedules(studyPeriodNumber, campusClassNumber, assessmentAreaNumber)
+	data, err := narrativeService.AllSchedules(studyPeriodNumber, classNumber, campusNumber, curriculumNumber, assessmentAreaNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -143,13 +155,68 @@ func NarrativeSchedule(context *gin.Context) {
 }
 
 func GetDetailedNarrative(context *gin.Context) {
+	narrativeNumber := context.Query("narrative_number")
+	if narrativeNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "narrative number is required"})
+		return
+	}
 
+	data, err := narrativeService.NarrativeDetails(narrativeNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": data})
 }
 
 func DeleteNarrative(context *gin.Context) {
+	narrativeNumber := context.Query("narrative_number")
+	if narrativeNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "narrative number is required"})
+		return
+	}
+
+	err := narrativeService.DeleteNarrative(narrativeNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Removed successfully"})
+}
+
+func DeleteNarrativeSchedule(context *gin.Context) {
 
 }
 
-func DeleteScheduledNarrative(context *gin.Context) {
+func UpdateNarrative(ctx *gin.Context) {
+	narrativeNumber := ctx.Query("narrative_number")
 
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	var request requests.NarrativeRequest
+	err = ctx.ShouldBindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = narrativeService.UpdateNarrativeEntry(request, narrativeNumber, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Entry updated successfully"})
 }

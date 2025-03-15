@@ -12,8 +12,10 @@ import (
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+	"github.com/araddon/dateparse"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 	"time"
@@ -23,7 +25,139 @@ type NarrativeService struct {
 }
 
 func (narrativeService NarrativeService) CreateNarrative(narrativeRequest requests.NarrativeRequest, userNumber string) error {
+	return narrativeService.doCreateNarrative(narrativeRequest, "", userNumber)
+}
 
+func (narrativeService NarrativeService) AllNarrative(request requests.NarrativeRequest, startDate, endDate time.Time) ([]responses.NarrativeResponse, error) {
+
+	narrativeResponse := make([]responses.NarrativeResponse, 0)
+
+	narratives, err := repositories.FindAllNarratives(request.StudentNumber, request.StudyPeriodNumber, request.CampusClassNumber, request.AssessmentAreaNumber, startDate, endDate)
+	if err != nil {
+		return narrativeResponse, err
+	}
+
+	for _, narrative := range narratives {
+		narrativeResponse = append(narrativeResponse, CreateNarrativeResponse(narrative))
+	}
+
+	return narrativeResponse, nil
+}
+
+func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest requests.ScheduledNarrativeRequest, user *models2.User) error {
+	scheduledOn, err := dateparse.ParseAny(scheduledNarrativeRequest.ScheduledOn)
+	if err != nil {
+		return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
+	}
+
+	if scheduledOn.Before(time.Now()) {
+		return errors.New(fmt.Sprint("The scheduled on date should not be in the past date. "))
+	}
+
+	assessmentArea, err := repositories3.GetAssessmentAreaByNumber(scheduledNarrativeRequest.AssessmentAreaNumber)
+	if err != nil {
+		return err
+	}
+	if assessmentArea.Number == "" {
+		return errors.New("Invalid assessment area number ")
+	}
+
+	campusClass, err := services.ResolveCampusClass(scheduledNarrativeRequest.ClassNumber, scheduledNarrativeRequest.CampusNumber, scheduledNarrativeRequest.CurriculumNumber, "")
+	if err != nil {
+		return err
+	}
+	if campusClass.Number == "" {
+		return errors.New("Invalid campus class number ")
+	}
+
+	studyPeriod, _ := repositories2.GetStudyPeriodByNumber(scheduledNarrativeRequest.StudyPeriodNumber)
+	if studyPeriod.Number == "" {
+		return errors.New("Invalid study period number ")
+	}
+
+	if scheduledOn.After(studyPeriod.StudyPeriodEndDate) {
+		return errors.New(fmt.Sprint(fmt.Sprintf("Schedule date exceeds the study period end date of '%s'", studyPeriod.StudyPeriodEndDate.Format(time.DateOnly))))
+	}
+
+	schedule := models.ScheduledNarrative{
+		ScheduledOn:          scheduledOn,
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
+		CampusClassNumber:    campusClass.Number,
+		AssessmentAreaNumber: scheduledNarrativeRequest.AssessmentAreaNumber,
+		StudyPeriodNumber:    scheduledNarrativeRequest.StudyPeriodNumber,
+		UserNumber:           user.Number,
+		Description:          scheduledNarrativeRequest.Description,
+		Number:               uuid.NewV4().String(),
+	}
+
+	err = repositories.SaveScheduledNarrative(schedule)
+	if err != nil {
+		return errors.New(fmt.Sprint("Error saving scheduled narrative assessment: ", err))
+	}
+
+	return nil
+}
+
+func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNumber, campusNumber, curriculumNumber, assessmentAreaNumber string) ([]responses.ScheduledNarrativeResponse, error) {
+
+	campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if campusClass.Number == "" {
+		return nil, errors.New("Could not find campus class ")
+	}
+
+	studyPeriod, err := repositories2.GetStudyPeriodByNumber(studyPeriodNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := repositories.FindAllScheduledNarratives(studyPeriodNumber, campusClass.Number, assessmentAreaNumber, studyPeriod.StudyPeriodStartDate, studyPeriod.StudyPeriodEndDate)
+	if err != nil {
+		return nil, err
+	}
+
+	var scheduledNarratives = make([]responses.ScheduledNarrativeResponse, 0)
+
+	for _, narrative := range data {
+
+		name := "Study Period"
+
+		studyPeriodName, err := repositories2.GetStudyPeriodNameByStudyPeriodNumber(narrative.StudyPeriodNumber)
+		if err != nil {
+			name = err.Error()
+		} else {
+			name = studyPeriodName.Name
+		}
+
+		assessmentArea, _ := repositories3.GetAssessmentAreaByNumber(narrative.AssessmentAreaNumber)
+
+		class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
+
+		scheduledNarratives = append(scheduledNarratives, responses.ScheduledNarrativeResponse{
+			Number:               narrative.Number,
+			ScheduledOn:          narrative.ScheduledOn.Format(time.DateOnly),
+			CampusClassNumber:    narrative.CampusClassNumber,
+			AssessmentAreaNumber: narrative.AssessmentAreaNumber,
+			StudyPeriodNumber:    narrative.StudyPeriodNumber,
+			Description:          narrative.Description,
+			StudyPeriod:          name,
+			AssessmentArea:       assessmentArea.Name,
+			Class:                class.Name,
+		})
+	}
+
+	return scheduledNarratives, nil
+}
+
+func (narrativeService NarrativeService) UpdateNarrativeEntry(narrativeRequest requests.NarrativeRequest, narrativeNumber, userNumber string) error {
+	return narrativeService.doCreateNarrative(narrativeRequest, narrativeNumber, userNumber)
+}
+
+func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requests.NarrativeRequest, narrativeNumber string, userNumber string) error {
 	studyPeriod, err := repositories2.GetStudyPeriodByNumber(narrativeRequest.StudyPeriodNumber)
 	if err != nil {
 		return err
@@ -48,16 +182,50 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 		return errors.New("Invalid campus class number ")
 	}
 
+	dateTimeString := narrativeRequest.ReferenceDate + " " + narrativeRequest.ReferenceTime + ":00"
+	dateTime, err := dateparse.ParseAny(dateTimeString)
+	if err != nil {
+		return errors.New(fmt.Sprint("Passing reference date time error: ", err))
+	}
+
+	if dateTime.After(time.Now()) {
+		return errors.New("Date and time should not be in the future ")
+	}
+
+	/*referenceDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
+	if err != nil {
+		return errors.New(fmt.Sprint("Passing reference date error: ", err))
+	}*/
+
 	narrative := models.Narrative{
 		UserNumber:           userNumber,
 		StudentNumber:        narrativeRequest.StudentNumber,
 		CampusClassNumber:    narrativeRequest.CampusClassNumber,
 		AssessmentAreaNumber: narrativeRequest.AssessmentAreaNumber,
 		Description:          narrativeRequest.Description,
-		Number:               uuid.NewV4().String(),
-		CreatedAt:            time.Now(),
 		UpdatedAt:            time.Now(),
 		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
+		ReferenceDate:        dateTime,
+		ReferenceTime:        narrativeRequest.ReferenceTime,
+	}
+
+	createdAt := time.Now()
+
+	if narrativeNumber == "" {
+		narrative.Number = uuid.NewV4().String()
+		narrative.CreatedAt = createdAt
+	} else {
+		checkNarrative, err := repositories.FindNarrativeByNumber(narrativeNumber)
+		if err != nil {
+			return err
+		}
+
+		if checkNarrative.Number == "" {
+			return errors.New("Invalid narrative number ")
+		}
+
+		narrative.CreatedAt = checkNarrative.CreatedAt
+		narrative.Number = checkNarrative.Number
 	}
 
 	var scheduled models.ScheduledNarrative
@@ -88,12 +256,12 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 
 		if scheduled.Number != "" {
 
-			checkDueScheduled, err := repositories.FindNarrativeByScheduleNumberAndStudentNumber(scheduled.Number, narrative.StudentNumber)
+			duplicateScheduleNarrative, err := repositories.FindNarrativeByScheduleNarrativeNumberAndStudentNumber(scheduled.Number, narrative.StudentNumber)
 			if err != nil {
 				return err
 			}
 
-			if checkDueScheduled.Number != "" {
+			if duplicateScheduleNarrative.Number != "" && duplicateScheduleNarrative.Number != narrative.Number {
 				return errors.New("Assessment for this learner already entered ")
 			}
 
@@ -113,66 +281,31 @@ func (narrativeService NarrativeService) CreateNarrative(narrativeRequest reques
 	return nil
 }
 
-func (narrativeService NarrativeService) AllNarrative(request requests.NarrativeRequest, startDate, endDate time.Time) ([]responses.NarrativeResponse, error) {
-
-	narrativeResponse := make([]responses.NarrativeResponse, 0)
-
-	narratives, err := repositories.FindAllNarratives(request.StudentNumber, request.StudyPeriodNumber, request.CampusClassNumber, request.AssessmentAreaNumber, startDate, endDate)
+func (narrativeService NarrativeService) NarrativeDetails(narrativeNumber string) (responses.NarrativeResponse, error) {
+	narrative, err := repositories.FindNarrativeByNumber(narrativeNumber)
 	if err != nil {
-		return narrativeResponse, err
+		return responses.NarrativeResponse{}, errors.New(fmt.Sprint(fmt.Sprintf("Error getting narrative details: %s", err)))
 	}
 
-	for _, narrative := range narratives {
-		narrativeResponse = append(narrativeResponse, CreateNarrativeResponse(narrative))
+	if narrative.Number == "" {
+		return responses.NarrativeResponse{}, errors.New("Invalid narrative number ")
 	}
 
-	return narrativeResponse, nil
+	return CreateNarrativeResponse(narrative), nil
 }
 
-func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest requests.ScheduledNarrativeRequest, user *models2.User) error {
-	scheduledOn, err := time.Parse(time.DateOnly, scheduledNarrativeRequest.ScheduledOn)
+func (narrativeService NarrativeService) DeleteNarrative(narrativeNumber string) error {
+	narrative, err := repositories.FindNarrativeByNumber(narrativeNumber)
 	if err != nil {
-		return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
+		return err
 	}
 
-	schedule := models.ScheduledNarrative{
-		ScheduledOn:          scheduledOn,
-		CreatedAt:            time.Now(),
-		UpdatedAt:            time.Now(),
-		CampusClassNumber:    scheduledNarrativeRequest.CampusClassNumber,
-		AssessmentAreaNumber: scheduledNarrativeRequest.AssessmentAreaNumber,
-		StudyPeriodNumber:    scheduledNarrativeRequest.StudyPeriodNumber,
-		UserNumber:           user.Number,
-	}
-
-	err = repositories.SaveScheduledNarrative(schedule)
+	err = repositories.DeleteNarrative(narrative)
 	if err != nil {
-		return errors.New(fmt.Sprint("Error saving scheduled narrative assessment: ", err))
+		return errors.New(fmt.Sprint(fmt.Sprintf("Error deleting narrative details: %s", err.Error())))
 	}
 
 	return nil
-}
-
-func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, campusClassNumber, assessmentAreaNumber string) ([]responses.ScheduledNarrativeResponse, error) {
-
-	data, err := repositories.FindAllScheduledNarratives(studyPeriodNumber, campusClassNumber, assessmentAreaNumber, time.Now())
-	if err != nil {
-		return nil, err
-	}
-
-	var scheduledNarratives = make([]responses.ScheduledNarrativeResponse, 0)
-
-	for _, narrative := range data {
-		scheduledNarratives = append(scheduledNarratives, responses.ScheduledNarrativeResponse{
-			Number:               narrative.Number,
-			ScheduledOn:          narrative.ScheduledOn.Format(time.DateOnly),
-			CampusClassNumber:    narrative.CampusClassNumber,
-			AssessmentAreaNumber: narrative.AssessmentAreaNumber,
-			StudyPeriodNumber:    narrative.StudyPeriodNumber,
-		})
-	}
-
-	return scheduledNarratives, nil
 }
 
 func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResponse {
@@ -187,13 +320,15 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 	return responses.NarrativeResponse{
 		Teacher:              user.FirstName + " " + user.LastName,
 		Number:               narrative.Number,
-		Date:                 narrative.CreatedAt.Format(time.DateTime),
+		CreatedAt:            narrative.CreatedAt.Format(time.DateTime),
 		AssessmentAreaNumber: narrative.AssessmentAreaNumber,
 		StudyPeriod:          spn.Name,
 		Class:                class.Name,
 		Narration:            narrative.Description,
 		AssessmentArea:       assessmentArea.Name,
 		AcademicYear:         academicYear.AcademicYearName,
+		ReferenceTime:        narrative.ReferenceTime,
+		ReferenceDate:        narrative.ReferenceDate.Format(time.DateOnly),
 	}
 }
 
