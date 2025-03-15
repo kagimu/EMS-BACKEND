@@ -19,6 +19,16 @@ func SaveNarrative(narrative models.Narrative, tx ...*gorm.DB) error {
 	return db.Save(&narrative).Error
 }
 
+func DeleteNarrative(narrative models.Narrative, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Delete(&narrative).Error
+}
+
 func SaveScheduledNarrative(scheduledNarrative models.ScheduledNarrative, tx ...*gorm.DB) error {
 
 	db := config.DB

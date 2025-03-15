@@ -123,6 +123,13 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 	var scheduledNarratives = make([]responses.ScheduledNarrativeResponse, 0)
 
 	for _, narrative := range data {
+
+		studyPeriodName, _ := repositories2.GetStudyPeriodNameByStudyPeriodNumber(narrative.StudyPeriodNumber)
+
+		assessmentArea, _ := repositories3.GetAssessmentAreaByNumber(narrative.AssessmentAreaNumber)
+
+		class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
+
 		scheduledNarratives = append(scheduledNarratives, responses.ScheduledNarrativeResponse{
 			Number:               narrative.Number,
 			ScheduledOn:          narrative.ScheduledOn.Format(time.DateOnly),
@@ -130,6 +137,9 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 			AssessmentAreaNumber: narrative.AssessmentAreaNumber,
 			StudyPeriodNumber:    narrative.StudyPeriodNumber,
 			Description:          narrative.Description,
+			StudyPeriod:          studyPeriodName.Name,
+			AssessmentArea:       assessmentArea.Name,
+			Class:                class.Name,
 		})
 	}
 
@@ -259,6 +269,33 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 
 	if err != nil {
 		return errors.New(fmt.Sprint("Error saving narrative assessment: ", err))
+	}
+
+	return nil
+}
+
+func (narrativeService NarrativeService) NarrativeDetails(narrativeNumber string) (responses.NarrativeResponse, error) {
+	narrative, err := repositories.FindNarrativeByNumber(narrativeNumber)
+	if err != nil {
+		return responses.NarrativeResponse{}, errors.New(fmt.Sprint(fmt.Sprintf("Error getting narrative details: %s", err)))
+	}
+
+	if narrative.Number == "" {
+		return responses.NarrativeResponse{}, errors.New("Invalid narrative number ")
+	}
+
+	return CreateNarrativeResponse(narrative), nil
+}
+
+func (narrativeService NarrativeService) DeleteNarrative(narrativeNumber string) error {
+	narrative, err := repositories.FindNarrativeByNumber(narrativeNumber)
+	if err != nil {
+		return err
+	}
+
+	err = repositories.DeleteNarrative(narrative)
+	if err != nil {
+		return errors.New(fmt.Sprint(fmt.Sprintf("Error deleting narrative details: %s", err.Error())))
 	}
 
 	return nil
