@@ -13,6 +13,8 @@ type Narrative struct {
 	Number               string `gorm:"primarykey;size:36; not null;unique"`
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
+	ReferenceDate        time.Time
+	ReferenceTime        string                       `gorm:"size:8"`
 	Description          string                       `gorm:"size:2500;not null"`
 	StudentNumber        string                       `gorm:"size:36;index;not null;column:student_number"`
 	Student              studentModel.Student         `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
@@ -31,6 +33,7 @@ type ScheduledNarrative struct {
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	ScheduledOn          time.Time
+	Description          string                       `gorm:"size:2500"`
 	StudyPeriodNumber    string                       `gorm:"size:36;index;not null;column:study_period_number"`
 	StudyPeriod          studyPeriodModel.StudyPeriod `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	UserNumber           string                       `gorm:"size:36;index;not null;column:user_number"`

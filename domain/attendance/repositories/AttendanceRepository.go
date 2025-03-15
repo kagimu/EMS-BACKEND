@@ -36,7 +36,16 @@ func (a *AttendanceRepositoryImpl) FindByUserNumber(userNumber string) ([]models
 
 func (a *AttendanceRepositoryImpl) AllAttendance(context *gin.Context, p *pagination.PaginatedResponse) ([]models.Attendance, error) {
 	var attendances = make([]models.Attendance, 0)
-	if err := a.DB.Scopes(pagination.Paginate(context, p), filters.ByAnyField("user_number", context.Query("user_number"))).Find(&attendances).Error; err != nil {
+	if err := a.DB.Scopes(pagination.Paginate(context, p),
+		filters.ByAnyField("user_number", context.Query("user_number")),
+		filters.ByAnyField("campus_class_number", context.Query("campus_class_number")),
+		filters.ByAnyField("campus_number", context.Query("campus_number")),
+		filters.ByAnyField("school_number", context.Query("school_number")),
+		filters.ByAnyField("stream_number", context.Query("stream_number")),
+		filters.ByAnyField("campus_number", context.Query("campus_number")),
+		filters.ByAnyField("student_number", context.Query("student_number")),
+		filters.ByAnyField("study_period_number", context.Query("study_period_number")),
+	).Find(&attendances).Error; err != nil {
 		return attendances, err
 	}
 	return attendances, nil

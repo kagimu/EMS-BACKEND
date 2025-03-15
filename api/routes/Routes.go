@@ -731,6 +731,7 @@ func SetupRoutes() *gin.Engine {
 			narrative := reportSettings.Group("narrative")
 			{
 				narrative.GET("", assessmentController.GetNarrative)
+				narrative.PATCH(":narrative_number", assessmentController.UpdateNarrative)
 				narrative.GET(":narrative_number", assessmentController.GetDetailedNarrative)
 				narrative.DELETE(":narrative_number", assessmentController.DeleteNarrative)
 				narrative.POST("", assessmentController.SaveNarrative)
@@ -739,7 +740,7 @@ func SetupRoutes() *gin.Engine {
 				{
 					scheduled.POST("", assessmentController.SaveNarrativeSchedule)
 					scheduled.GET("", assessmentController.NarrativeSchedule)
-					scheduled.DELETE(":narrative_number", assessmentController.DeleteScheduledNarrative)
+					scheduled.DELETE(":schedule_number", assessmentController.DeleteNarrativeSchedule)
 				}
 
 			}

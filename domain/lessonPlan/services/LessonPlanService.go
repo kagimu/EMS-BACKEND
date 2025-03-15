@@ -8,6 +8,7 @@ import (
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
@@ -24,10 +25,109 @@ import (
 type LessonPlanService interface {
 	ImportPlan(lessonPlanFile multipart.File, subTopicNumber, currentUserNumber string) error
 	ExportLessonPlanTemplate(schemeSubTopicNumber string) (*excelize.File, string, error)
+	NewLessonPlan(lessonPlanInfo requests.LessonPlanInfo, userNumber string) error
 }
 
 type lessonPlanServiceImp struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanInfo, userNumber string) error {
+	lessonPlanRepository.UseTx(config.DB)
+	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber)
+	if err != nil {
+		return err
+	}
+
+	if checkDuplicate.Number != "" && checkDuplicate.Number != lessonPlanInfo.LessonPlanNumber {
+		return errors.New("lesson plan already exists")
+	}
+
+	lessonPlanNumber := lessonPlanInfo.LessonPlanNumber
+
+	if lessonPlanNumber == "" {
+		lessonPlanNumber = uuid.NewV4().String()
+	}
+
+	saveLessonPlan := models.LessonPlan{
+		Number:               lessonPlanNumber,
+		SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
+		Status:               "draft",
+		UserNumber:           userNumber,
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		lessonPlanRepository.UseTx(tx)
+		conceptRepository.UseTx(tx)
+
+		err = lessonPlanRepository.SaveLessonPlan(saveLessonPlan)
+		if err != nil {
+			return err
+		}
+
+		for _, concept := range lessonPlanInfo.LessonPlanConceptInfo {
+
+			duplicateLessonPlanConcept, err := lessonPlanRepository.GetLessonPlanConcept(lessonPlanNumber, concept.LessonPlanConceptNumber)
+			if err != nil {
+				return err
+			}
+
+			if duplicateLessonPlanConcept.Number != "" {
+				return errors.New("Duplicates Concepts not allowed ")
+			}
+
+			conceptNumber := concept.LessonPlanConceptNumber
+			if conceptNumber == "" {
+				conceptNumber = uuid.NewV4().String()
+			}
+
+			saveLessonConcepts := models.LessonPlanConcept{
+				Number:           conceptNumber,
+				ConceptNumber:    concept.LessonPlanConceptNumber,
+				Code:             concept.Code,
+				LessonPlanNumber: saveLessonPlan.Number,
+				UserNumber:       userNumber,
+			}
+
+			//	adds new concepts when Concept number doesnt exists
+			err = conceptRepository.SaveConcept(saveLessonConcepts)
+			if err != nil {
+				return errors.New("Failed to save concept " + err.Error())
+			}
+
+			lessonPlanSteps := concept.StepList
+
+			for _, step := range lessonPlanSteps {
+
+				stepNumber := step.Number
+				if stepNumber == "" {
+					stepNumber = uuid.NewV4().String()
+				}
+
+				if step.Step != "" {
+					saveLearningSteps := models.LessonPlanStep{
+						Number:                  stepNumber,
+						Code:                    step.Code,
+						Step:                    step.Step,
+						LessonPlanConceptNumber: conceptNumber,
+					}
+
+					err = lessonPlanRepository.SaveConceptStep(saveLearningSteps)
+
+					if err != nil {
+						return errors.New("Failed to save lesson plan step " + err.Error())
+					}
+				}
+
+			}
+
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber string) (*excelize.File, string, error) {
