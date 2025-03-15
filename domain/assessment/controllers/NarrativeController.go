@@ -150,6 +150,37 @@ func DeleteNarrative(context *gin.Context) {
 
 }
 
-func DeleteScheduledNarrative(context *gin.Context) {
+func DeleteNarrativeSchedule(context *gin.Context) {
 
+}
+
+func UpdateNarrative(ctx *gin.Context) {
+	narrativeNumber := ctx.Query("narrative_number")
+
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	var request requests.NarrativeRequest
+	err = ctx.ShouldBindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = narrativeService.UpdateNarrativeEntry(request, narrativeNumber, user.Number)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Entry updated successfully"})
 }

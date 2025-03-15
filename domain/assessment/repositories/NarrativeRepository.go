@@ -39,7 +39,7 @@ func SaveNarrativeAndSchedule(narrativeSchedule models.NarrativeSchedule, tx ...
 	return db.Save(&narrativeSchedule).Error
 }
 
-func FindNarrativeByScheduleNumberAndStudentNumber(scheduleNarrativeNumber, studentNumber string, tx ...*gorm.DB) (models.Narrative, error) {
+func FindNarrativeByScheduleNarrativeNumberAndStudentNumber(scheduleNarrativeNumber, studentNumber string, tx ...*gorm.DB) (models.Narrative, error) {
 
 	db := config.DB
 	if len(tx) > 0 {

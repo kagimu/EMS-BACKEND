@@ -24,111 +24,7 @@ type NarrativeService struct {
 }
 
 func (narrativeService NarrativeService) CreateNarrative(narrativeRequest requests.NarrativeRequest, userNumber string) error {
-
-	studyPeriod, err := repositories2.GetStudyPeriodByNumber(narrativeRequest.StudyPeriodNumber)
-	if err != nil {
-		return err
-	}
-	if studyPeriod.Number == "" {
-		return errors.New("Invalid study period number ")
-	}
-
-	assessmentArea, err := repositories3.GetAssessmentAreaByNumber(narrativeRequest.AssessmentAreaNumber)
-	if err != nil {
-		return err
-	}
-	if assessmentArea.Number == "" {
-		return errors.New("Invalid assessment area number ")
-	}
-
-	campusClass, err := repositories4.GetCampusClassByNumber(narrativeRequest.CampusClassNumber)
-	if err != nil {
-		return err
-	}
-	if campusClass.Number == "" {
-		return errors.New("Invalid campus class number ")
-	}
-
-	dateTimeString := narrativeRequest.ReferenceDate + " " + narrativeRequest.ReferenceTime + ":00"
-	dateTime, err := dateparse.ParseAny(dateTimeString)
-	if err != nil {
-		return errors.New(fmt.Sprint("Passing reference date time error: ", err))
-	}
-
-	if dateTime.After(time.Now()) {
-		return errors.New("Date and time should not be in the future ")
-	}
-
-	/*referenceDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
-	if err != nil {
-		return errors.New(fmt.Sprint("Passing reference date error: ", err))
-	}*/
-
-	narrative := models.Narrative{
-		UserNumber:           userNumber,
-		StudentNumber:        narrativeRequest.StudentNumber,
-		CampusClassNumber:    narrativeRequest.CampusClassNumber,
-		AssessmentAreaNumber: narrativeRequest.AssessmentAreaNumber,
-		Description:          narrativeRequest.Description,
-		Number:               uuid.NewV4().String(),
-		CreatedAt:            time.Now(),
-		UpdatedAt:            time.Now(),
-		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
-		ReferenceDate:        dateTime,
-		ReferenceTime:        narrativeRequest.ReferenceTime,
-	}
-
-	var scheduled models.ScheduledNarrative
-
-	if narrativeRequest.NarrativeScheduleNumber != "" {
-
-		checkScheduled, err := repositories.FindScheduledNarrativeByNumber(narrativeRequest.NarrativeScheduleNumber)
-		if err != nil {
-			return err
-		}
-
-		if checkScheduled.Number == "" {
-			return errors.New("Invalid schedule selected ")
-		}
-
-		if checkScheduled.ScheduledOn.Before(time.Now()) {
-			return errors.New("This schedule is not yet due ")
-		}
-
-		scheduled = checkScheduled
-	}
-
-	err = config.DB.Transaction(func(tx *gorm.DB) error {
-		err := repositories.SaveNarrative(narrative, tx)
-		if err != nil {
-			return err
-		}
-
-		if scheduled.Number != "" {
-
-			checkDueScheduled, err := repositories.FindNarrativeByScheduleNumberAndStudentNumber(scheduled.Number, narrative.StudentNumber)
-			if err != nil {
-				return err
-			}
-
-			if checkDueScheduled.Number != "" {
-				return errors.New("Assessment for this learner already entered ")
-			}
-
-			err = repositories.SaveNarrativeAndSchedule(models.NarrativeSchedule{ScheduledNarrativeNumber: scheduled.Number, NarrativeNumber: narrative.Number}, tx)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return errors.New(fmt.Sprint("Error saving narrative assessment: ", err))
-	}
-
-	return nil
+	return narrativeService.doCreateNarrative(narrativeRequest, "", userNumber)
 }
 
 func (narrativeService NarrativeService) AllNarrative(request requests.NarrativeRequest, startDate, endDate time.Time) ([]responses.NarrativeResponse, error) {
@@ -193,6 +89,134 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, campusC
 	}
 
 	return scheduledNarratives, nil
+}
+
+func (narrativeService NarrativeService) UpdateNarrativeEntry(narrativeRequest requests.NarrativeRequest, narrativeNumber, userNumber string) error {
+	return narrativeService.doCreateNarrative(narrativeRequest, narrativeNumber, userNumber)
+}
+
+func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requests.NarrativeRequest, narrativeNumber string, userNumber string) error {
+	studyPeriod, err := repositories2.GetStudyPeriodByNumber(narrativeRequest.StudyPeriodNumber)
+	if err != nil {
+		return err
+	}
+	if studyPeriod.Number == "" {
+		return errors.New("Invalid study period number ")
+	}
+
+	assessmentArea, err := repositories3.GetAssessmentAreaByNumber(narrativeRequest.AssessmentAreaNumber)
+	if err != nil {
+		return err
+	}
+	if assessmentArea.Number == "" {
+		return errors.New("Invalid assessment area number ")
+	}
+
+	campusClass, err := repositories4.GetCampusClassByNumber(narrativeRequest.CampusClassNumber)
+	if err != nil {
+		return err
+	}
+	if campusClass.Number == "" {
+		return errors.New("Invalid campus class number ")
+	}
+
+	dateTimeString := narrativeRequest.ReferenceDate + " " + narrativeRequest.ReferenceTime + ":00"
+	dateTime, err := dateparse.ParseAny(dateTimeString)
+	if err != nil {
+		return errors.New(fmt.Sprint("Passing reference date time error: ", err))
+	}
+
+	if dateTime.After(time.Now()) {
+		return errors.New("Date and time should not be in the future ")
+	}
+
+	/*referenceDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
+	if err != nil {
+		return errors.New(fmt.Sprint("Passing reference date error: ", err))
+	}*/
+
+	narrative := models.Narrative{
+		UserNumber:           userNumber,
+		StudentNumber:        narrativeRequest.StudentNumber,
+		CampusClassNumber:    narrativeRequest.CampusClassNumber,
+		AssessmentAreaNumber: narrativeRequest.AssessmentAreaNumber,
+		Description:          narrativeRequest.Description,
+		UpdatedAt:            time.Now(),
+		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
+		ReferenceDate:        dateTime,
+		ReferenceTime:        narrativeRequest.ReferenceTime,
+	}
+
+	createdAt := time.Now()
+
+	if narrativeNumber == "" {
+		narrative.Number = uuid.NewV4().String()
+		narrative.CreatedAt = createdAt
+	} else {
+		checkNarrative, err := repositories.FindNarrativeByNumber(narrativeNumber)
+		if err != nil {
+			return err
+		}
+
+		if checkNarrative.Number == "" {
+			return errors.New("Invalid narrative number ")
+		}
+
+		narrative.CreatedAt = checkNarrative.CreatedAt
+		narrative.Number = checkNarrative.Number
+	}
+
+	var scheduled models.ScheduledNarrative
+
+	if narrativeRequest.NarrativeScheduleNumber != "" {
+
+		checkScheduled, err := repositories.FindScheduledNarrativeByNumber(narrativeRequest.NarrativeScheduleNumber)
+		if err != nil {
+			return err
+		}
+
+		if checkScheduled.Number == "" {
+			return errors.New("Invalid schedule selected ")
+		}
+
+		if checkScheduled.ScheduledOn.Before(time.Now()) {
+			return errors.New("This schedule is not yet due ")
+		}
+
+		scheduled = checkScheduled
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		err := repositories.SaveNarrative(narrative, tx)
+		if err != nil {
+			return err
+		}
+
+		if scheduled.Number != "" {
+
+			duplicateScheduleNarrative, err := repositories.FindNarrativeByScheduleNarrativeNumberAndStudentNumber(scheduled.Number, narrative.StudentNumber)
+			if err != nil {
+				return err
+			}
+
+			if duplicateScheduleNarrative.Number != "" && duplicateScheduleNarrative.Number != narrative.Number {
+				return errors.New("Assessment for this learner already entered ")
+			}
+
+			err = repositories.SaveNarrativeAndSchedule(models.NarrativeSchedule{ScheduledNarrativeNumber: scheduled.Number, NarrativeNumber: narrative.Number}, tx)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.New(fmt.Sprint("Error saving narrative assessment: ", err))
+	}
+
+	return nil
 }
 
 func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResponse {
