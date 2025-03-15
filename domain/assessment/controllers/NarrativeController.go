@@ -155,11 +155,35 @@ func NarrativeSchedule(context *gin.Context) {
 }
 
 func GetDetailedNarrative(context *gin.Context) {
+	narrativeNumber := context.Query("narrative_number")
+	if narrativeNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "narrative number is required"})
+		return
+	}
 
+	data, err := narrativeService.NarrativeDetails(narrativeNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": data})
 }
 
 func DeleteNarrative(context *gin.Context) {
+	narrativeNumber := context.Query("narrative_number")
+	if narrativeNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "narrative number is required"})
+		return
+	}
 
+	err := narrativeService.DeleteNarrative(narrativeNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Removed successfully"})
 }
 
 func DeleteNarrativeSchedule(context *gin.Context) {
