@@ -50,6 +50,7 @@ type ScheduledNarrativeRequest struct {
 	AssessmentAreaNumber string `json:"assessment_area_number"`
 	StudyPeriodNumber    string `json:"study_period_number"`
 	CampusClassNumber    string `json:"campus_class_number"`
+	Description          string `json:"description"`
 }
 
 func (receiver ScheduledNarrativeRequest) Validate() error {
@@ -67,6 +68,14 @@ func (receiver ScheduledNarrativeRequest) Validate() error {
 
 	if receiver.CampusClassNumber == "" {
 		return errors.New("Provide the campus class ")
+	}
+
+	if receiver.Description == "" {
+		return errors.New("Provide the description ")
+	}
+
+	if len(receiver.Description) > 2500 {
+		return errors.New("Provide the description length less than 2500 ")
 	}
 
 	return nil

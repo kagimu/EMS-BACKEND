@@ -160,6 +160,7 @@ func (narrativeService NarrativeService) SaveSchedule(scheduledNarrativeRequest 
 		AssessmentAreaNumber: scheduledNarrativeRequest.AssessmentAreaNumber,
 		StudyPeriodNumber:    scheduledNarrativeRequest.StudyPeriodNumber,
 		UserNumber:           user.Number,
+		Description:          scheduledNarrativeRequest.Description,
 	}
 
 	err = repositories.SaveScheduledNarrative(schedule)
@@ -186,6 +187,7 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, campusC
 			CampusClassNumber:    narrative.CampusClassNumber,
 			AssessmentAreaNumber: narrative.AssessmentAreaNumber,
 			StudyPeriodNumber:    narrative.StudyPeriodNumber,
+			Description:          narrative.Description,
 		})
 	}
 
