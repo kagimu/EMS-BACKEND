@@ -60,7 +60,7 @@ func FindNarrativeByScheduleNarrativeNumberAndStudentNumber(scheduleNarrativeNum
 
 	if err := db.
 		Joins("JOIN narrative_schedules ON narratives.number = narrative_schedules.narrative_number").
-		Where("narrative_schedules.schedule_narrative_number = ? AND narratives.student_number = ?", scheduleNarrativeNumber, studentNumber).Find(&narrative).Error; err != nil {
+		Where("narrative_schedules.scheduled_narrative_number = ? AND narratives.student_number = ?", scheduleNarrativeNumber, studentNumber).Find(&narrative).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return narrative, nil
