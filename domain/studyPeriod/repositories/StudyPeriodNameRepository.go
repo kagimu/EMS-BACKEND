@@ -97,7 +97,7 @@ func GetStudyPeriodNameByStudyPeriodNumber(studyPeriodNumber string, trn ...*gor
 
 	if err := db.
 		Joins("JOIN study_periods ON study_periods.study_period_name_number = study_period_names.number").
-		Where("study_period_number = ?", studyPeriodNumber).First(&studyPeriodName).Error; err != nil {
+		Where("study_periods.number = ?", studyPeriodNumber).First(&studyPeriodName).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.StudyPeriodName{}, nil
