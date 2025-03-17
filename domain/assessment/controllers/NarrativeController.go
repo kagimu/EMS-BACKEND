@@ -51,9 +51,6 @@ func GetNarrative(context *gin.Context) {
 	var err error
 
 	if _startDate != "" {
-		//startOfMonth := time.Date(currentDateTime.Year(), currentDateTime.Month(), 1, 0, 0, 0, 0, currentDateTime.Location())
-		//_startDate = startOfMonth.Format(time.DateOnly)
-
 		startDate, err = time.Parse(time.DateOnly, _startDate)
 		if err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
@@ -62,8 +59,6 @@ func GetNarrative(context *gin.Context) {
 	}
 
 	if _endDate != "" {
-		//_endDate = currentDateTime.Format(time.DateOnly)
-
 		endDate, err = time.Parse(time.DateOnly, _endDate)
 		if err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
@@ -191,7 +186,12 @@ func DeleteNarrativeSchedule(context *gin.Context) {
 }
 
 func UpdateNarrative(ctx *gin.Context) {
-	narrativeNumber := ctx.Query("narrative_number")
+	narrativeNumber := ctx.Param("narrative_number")
+
+	if narrativeNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "narrative number is required"})
+		return
+	}
 
 	user, err := commons.GetUserFromHeader(ctx)
 	if err != nil {
