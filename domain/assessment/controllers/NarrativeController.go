@@ -182,7 +182,19 @@ func DeleteNarrative(context *gin.Context) {
 }
 
 func DeleteNarrativeSchedule(context *gin.Context) {
+	scheduleNumber := context.Param("schedule_number")
+	if scheduleNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "schedule number is required"})
+		return
+	}
 
+	err := narrativeService.DeleteNarrativeSchedule(scheduleNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Removed successfully"})
 }
 
 func UpdateNarrative(ctx *gin.Context) {
@@ -219,4 +231,40 @@ func UpdateNarrative(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Entry updated successfully"})
+}
+
+func UpdateNarrativeSchedule(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	scheduleNumber := context.Param("schedule_number")
+	if scheduleNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "schedule number is required"})
+		return
+	}
+
+	var request requests.ScheduledNarrativeRequest
+	err = context.ShouldBindJSON(&request)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = narrativeService.UpdateNarrativeSchedule(request, scheduleNumber, user)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Schedule updated successfully"})
 }

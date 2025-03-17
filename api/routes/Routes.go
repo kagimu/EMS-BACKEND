@@ -738,6 +738,7 @@ func SetupRoutes() *gin.Engine {
 
 				scheduled := narrative.Group("scheduled")
 				{
+					scheduled.PATCH(":schedule_number", assessmentController.UpdateNarrativeSchedule)
 					scheduled.POST("", assessmentController.SaveNarrativeSchedule)
 					scheduled.GET("", assessmentController.NarrativeSchedule)
 					scheduled.DELETE(":schedule_number", assessmentController.DeleteNarrativeSchedule)
