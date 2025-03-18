@@ -51,9 +51,6 @@ func GetNarrative(context *gin.Context) {
 	var err error
 
 	if _startDate != "" {
-		//startOfMonth := time.Date(currentDateTime.Year(), currentDateTime.Month(), 1, 0, 0, 0, 0, currentDateTime.Location())
-		//_startDate = startOfMonth.Format(time.DateOnly)
-
 		startDate, err = time.Parse(time.DateOnly, _startDate)
 		if err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
@@ -62,8 +59,6 @@ func GetNarrative(context *gin.Context) {
 	}
 
 	if _endDate != "" {
-		//_endDate = currentDateTime.Format(time.DateOnly)
-
 		endDate, err = time.Parse(time.DateOnly, _endDate)
 		if err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
@@ -187,11 +182,28 @@ func DeleteNarrative(context *gin.Context) {
 }
 
 func DeleteNarrativeSchedule(context *gin.Context) {
+	scheduleNumber := context.Param("schedule_number")
+	if scheduleNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "schedule number is required"})
+		return
+	}
 
+	err := narrativeService.DeleteNarrativeSchedule(scheduleNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Removed successfully"})
 }
 
 func UpdateNarrative(ctx *gin.Context) {
-	narrativeNumber := ctx.Query("narrative_number")
+	narrativeNumber := ctx.Param("narrative_number")
+
+	if narrativeNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "narrative number is required"})
+		return
+	}
 
 	user, err := commons.GetUserFromHeader(ctx)
 	if err != nil {
@@ -219,4 +231,40 @@ func UpdateNarrative(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Entry updated successfully"})
+}
+
+func UpdateNarrativeSchedule(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	scheduleNumber := context.Param("schedule_number")
+	if scheduleNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "schedule number is required"})
+		return
+	}
+
+	var request requests.ScheduledNarrativeRequest
+	err = context.ShouldBindJSON(&request)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = narrativeService.UpdateNarrativeSchedule(request, scheduleNumber, user)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Schedule updated successfully"})
 }

@@ -39,6 +39,37 @@ func SaveScheduledNarrative(scheduledNarrative models.ScheduledNarrative, tx ...
 	return db.Save(&scheduledNarrative).Error
 }
 
+func DeleteScheduledNarrative(scheduledNarrative models.ScheduledNarrative, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Delete(&scheduledNarrative).Error
+}
+
+func GetScheduledNarrative(scheduledNumber string, tx ...*gorm.DB) (models.ScheduledNarrative, error) {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var narrative models.ScheduledNarrative
+
+	if err := db.Where("number = ?", scheduledNumber).First(&narrative).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return narrative, nil
+		}
+
+		return narrative, err
+	}
+
+	return narrative, nil
+}
+
 func SaveNarrativeAndSchedule(narrativeSchedule models.NarrativeSchedule, tx ...*gorm.DB) error {
 
 	db := config.DB
@@ -60,7 +91,7 @@ func FindNarrativeByScheduleNarrativeNumberAndStudentNumber(scheduleNarrativeNum
 
 	if err := db.
 		Joins("JOIN narrative_schedules ON narratives.number = narrative_schedules.narrative_number").
-		Where("narrative_schedules.schedule_narrative_number = ? AND narratives.student_number = ?", scheduleNarrativeNumber, studentNumber).Find(&narrative).Error; err != nil {
+		Where("narrative_schedules.scheduled_narrative_number = ? AND narratives.student_number = ?", scheduleNarrativeNumber, studentNumber).Find(&narrative).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return narrative, nil
@@ -70,6 +101,29 @@ func FindNarrativeByScheduleNarrativeNumberAndStudentNumber(scheduleNarrativeNum
 	}
 
 	return narrative, nil
+}
+
+func FindAllScheduledNarrativeSubmissions(scheduleNarrativeNumber string, tx ...*gorm.DB) ([]models.Narrative, error) {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var narratives []models.Narrative
+
+	if err := db.
+		Joins("JOIN narrative_schedules ON narratives.number = narrative_schedules.narrative_number").
+		Where("narrative_schedules.scheduled_narrative_number = ?", scheduleNarrativeNumber).Find(&narratives).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return narratives, nil
+		}
+
+		return narratives, err
+	}
+
+	return narratives, nil
 }
 
 func FindNarrativeByNumber(narrativeNumber string, tx ...*gorm.DB) (models.Narrative, error) {
