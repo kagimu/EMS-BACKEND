@@ -23,4 +23,5 @@ type Attendance struct {
 	StudentNumber     string         `json:"student_number" gorm:"size:36;"`
 	StreamNumber      string         `json:"stream_number" gorm:"size:36"`
 	StudyPeriodNumber string         `json:"study_period_number" gorm:"size:36"`
+	Comment           string         `json:"comment"`
 }
