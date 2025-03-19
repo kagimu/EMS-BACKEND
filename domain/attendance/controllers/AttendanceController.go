@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
@@ -47,6 +49,8 @@ func CreateAttendance(c *gin.Context) {
 		AddedBy:           user.Number,
 		StudentNumber:     payload.StudentNumber,
 		Comment:           payload.AbsenceReason,
+		StreamNumber:      payload.StreamNumber,
+		StudyPeriodNumber: payload.StudyPeriodNumber,
 	}
 
 	if err := services.RecordAttendance(&saveAttendance); err != nil {
@@ -77,4 +81,43 @@ func FetchAttendance(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": attendance})
+}
+
+func CheckOut(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.CheckoutRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	if err := payload.ValidateCheckout(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	repo := repositories.NewAttendanceRepository(config.DB)
+	attendance, err := repo.GetAttendanceByNumber(payload.Number)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"message": "Failed to fetch attendance"})
+		return
+	}
+
+	attendance.CheckOutTime = payload.CheckoutTime
+	attendance.CheckedOutBy = user.Number
+	attendance.CheckoutComment = payload.Comment
+
+	err = services.RecordCheckout(&attendance)
+
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"message": "Failed to record  checkout" + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Checkout saved successfully"})
 }

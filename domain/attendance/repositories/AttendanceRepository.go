@@ -13,10 +13,21 @@ type AttendanceRepository interface {
 	FindByUserNumber(userNumber string) ([]models.Attendance, error)
 	AllAttendance(*gin.Context, *pagination.PaginatedResponse) ([]models.Attendance, error)
 	Update(attendance *models.Attendance) (*models.Attendance, error)
+	GetAttendanceByNumber(number string) (models.Attendance, error)
 }
 
 type AttendanceRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (a *AttendanceRepositoryImpl) GetAttendanceByNumber(number string) (models.Attendance, error) {
+	var attendance models.Attendance
+	err := a.DB.Where("number = ?", number).First(&attendance).Error
+	if err != nil {
+		return attendance, err
+	}
+
+	return attendance, nil
 }
 
 func (a *AttendanceRepositoryImpl) Update(attendance *models.Attendance) (*models.Attendance, error) {

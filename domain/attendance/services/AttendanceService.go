@@ -69,16 +69,25 @@ func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
 		}
 
 		response = append(response, responses.AttendanceResponse{
-			Number:        attendance.Number,
-			Date:          attendance.Date.String(),
-			CheckInTime:   attendance.CheckInTime,
-			CheckOutTime:  attendance.CheckOutTime,
-			Present:       attendance.Present,
-			Class:         campusClass.ClassName,
-			School:        school.Name,
-			Campus:        campus.Name,
-			Name:          user.FirstName + " " + user.LastName,
-			AbsenceReason: attendance.Comment,
+			Number:            attendance.Number,
+			Date:              attendance.Date.String(),
+			CheckInTime:       attendance.CheckInTime,
+			CheckOutTime:      attendance.CheckOutTime,
+			Present:           attendance.Present,
+			Class:             campusClass.ClassName,
+			School:            school.Name,
+			Campus:            campus.Name,
+			Name:              user.FirstName + " " + user.LastName,
+			AbsenceReason:     attendance.Comment,
+			UserNumber:        attendance.UserNumber,
+			StudentNumber:     attendance.StudentNumber,
+			StreamNumber:      attendance.StreamNumber,
+			CampusNumber:      attendance.CampusNumber,
+			CampusClassNumber: attendance.CampusClassNumber,
+			StudyPeriodNumber: attendance.StudyPeriodNumber,
+			SchoolNumber:      attendance.SchoolNumber,
+			CheckoutTime:      attendance.CheckOutTime,
+			CheckoutReason:    attendance.CheckoutComment,
 		})
 
 	}
@@ -86,4 +95,16 @@ func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
 	paginatedResponse.Content = response
 
 	return paginatedResponse, nil
+}
+
+func RecordCheckout(attendance *models.Attendance) error {
+
+	repo := repositories.NewAttendanceRepository(config.DB)
+
+	_, err := repo.Update(attendance)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

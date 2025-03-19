@@ -24,4 +24,6 @@ type Attendance struct {
 	StreamNumber      string         `json:"stream_number" gorm:"size:36"`
 	StudyPeriodNumber string         `json:"study_period_number" gorm:"size:36"`
 	Comment           string         `json:"comment"`
+	CheckoutComment   string         `json:"checkout_comment"`
+	CheckedOutBy      string         `json:"checked_out_by" gorm:"size:36;"`
 }
