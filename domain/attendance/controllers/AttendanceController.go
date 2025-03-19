@@ -118,4 +118,6 @@ func CheckOut(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Failed to record  checkout" + err.Error()})
 		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Checkout saved successfully"})
 }
