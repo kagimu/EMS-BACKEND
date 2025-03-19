@@ -610,6 +610,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			attendance.POST("", controllers4.CreateAttendance)
 			attendance.GET("", controllers4.FetchAttendance)
+			attendance.POST("checkout", controllers4.CheckOut)
 		}
 
 		settings := main.Group("settings")
