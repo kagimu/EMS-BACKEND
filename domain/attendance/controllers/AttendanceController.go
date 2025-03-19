@@ -47,6 +47,8 @@ func CreateAttendance(c *gin.Context) {
 		AddedBy:           user.Number,
 		StudentNumber:     payload.StudentNumber,
 		Comment:           payload.AbsenceReason,
+		StreamNumber:      payload.StreamNumber,
+		StudyPeriodNumber: payload.StudyPeriodNumber,
 	}
 
 	if err := services.RecordAttendance(&saveAttendance); err != nil {
