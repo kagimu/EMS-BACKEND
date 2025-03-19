@@ -46,6 +46,7 @@ func CreateAttendance(c *gin.Context) {
 		CampusNumber:      payload.CampusNumber,
 		AddedBy:           user.Number,
 		StudentNumber:     payload.StudentNumber,
+		Comment:           payload.AbsenceReason,
 	}
 
 	if err := services.RecordAttendance(&saveAttendance); err != nil {
