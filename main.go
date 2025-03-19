@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm/logger"
 	"log"
 	"os"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 
@@ -16,6 +17,15 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
+
+// Initialize the timezone globally
+func init() {
+	loc, err := time.LoadLocation("Africa/Kampala")
+	if err != nil {
+		panic(fmt.Sprintf("Failed to load timezone: %v", err))
+	}
+	time.Local = loc // Set the default local timezone
+}
 
 func main() {
 	err := godotenv.Load(".env")
