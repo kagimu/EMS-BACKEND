@@ -18,4 +18,6 @@ type AttendanceResponse struct {
 	StudyPeriodNumber string `json:"study_period_number"`
 	SchoolNumber      string `json:"school_number"`
 	StreamNumber      string `json:"stream_number"`
+	CheckoutTime      string `json:"checkout_time"`
+	CheckoutReason    string `json:"checkout_reason"`
 }

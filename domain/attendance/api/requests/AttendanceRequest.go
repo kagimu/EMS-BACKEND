@@ -4,6 +4,24 @@ import (
 	"errors"
 )
 
+type CheckoutRequest struct {
+	Number       string `json:"number"`
+	CheckoutTime string `json:"checkout_time"`
+	Comment      string `json:"comment"`
+}
+
+func (c *CheckoutRequest) ValidateCheckout() error {
+	if c.Number == "" {
+		return errors.New("please input checkout number")
+	}
+
+	if c.CheckoutTime == "" {
+		return errors.New("please input checkout time")
+	}
+
+	return nil
+}
+
 type AttendanceRequest struct {
 	Date              string `json:"date"`
 	CheckInTime       string `json:"check_in_time"`

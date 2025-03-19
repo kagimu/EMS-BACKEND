@@ -86,6 +86,8 @@ func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
 			CampusClassNumber: attendance.CampusClassNumber,
 			StudyPeriodNumber: attendance.StudyPeriodNumber,
 			SchoolNumber:      attendance.SchoolNumber,
+			CheckoutTime:      attendance.CheckOutTime,
+			CheckoutReason:    attendance.CheckoutComment,
 		})
 
 	}
@@ -93,4 +95,16 @@ func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
 	paginatedResponse.Content = response
 
 	return paginatedResponse, nil
+}
+
+func RecordCheckout(attendance *models.Attendance) error {
+
+	repo := repositories.NewAttendanceRepository(config.DB)
+
+	_, err := repo.Update(attendance)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
