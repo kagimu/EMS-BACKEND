@@ -137,7 +137,7 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 		return errors.New(fmt.Sprint("Passing reference date time error: ", err))
 	}
 
-	if dateTime.After(time.Now()) {
+	if dateTime.After(time.Now().UTC()) {
 		return errors.New("Date and time should not be in the future ")
 	}
 
