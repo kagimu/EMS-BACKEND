@@ -77,10 +77,11 @@ func FetchLessonPlanReferences(ctx *gin.Context) {
 
 	for _, reference := range references {
 		lessonPlanReferences = append(lessonPlanReferences, responses.LessonPlanReferenceResponse{
-			LessonPlanNumber:       reference.LessonPlanNumber,
-			LearningMaterialNumber: reference.LearningMaterialNumber,
-			Name:                   reference.Name,
-			Code:                   reference.Code,
+			LessonPlanNumber:          reference.LessonPlanNumber,
+			LearningMaterialNumber:    reference.LearningMaterialNumber,
+			Name:                      reference.Name,
+			Code:                      reference.Code,
+			LessonPlanReferenceNumber: reference.Number,
 		})
 	}
 
@@ -158,10 +159,11 @@ func FetchLessonPlan(context *gin.Context) {
 
 	for _, reference := range lessonPlanReferenceInfo {
 		lessonPlanReferenceInfo_ = append(lessonPlanReferenceInfo_, responses.LessonPlanReferenceResponse{
-			LessonPlanNumber:       reference.LessonPlanNumber,
-			LearningMaterialNumber: reference.LearningMaterialNumber,
-			Name:                   reference.Name,
-			Code:                   reference.Code,
+			LessonPlanNumber:          reference.LessonPlanNumber,
+			LearningMaterialNumber:    reference.LearningMaterialNumber,
+			Name:                      reference.Name,
+			Code:                      reference.Code,
+			LessonPlanReferenceNumber: reference.Number,
 		})
 	}
 
