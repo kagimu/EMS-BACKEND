@@ -14,6 +14,7 @@ import (
 	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -36,6 +37,7 @@ func SaveCurriculumDeliverySession(req requests.CurriculumDeliveryRequest) error
 		Time:          req.Time,
 		TeacherNumber: req.TeacherNumber,
 		Comment:       req.Comment,
+		SubjectNumber: req.SubjectNumber,
 	}
 
 	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.Sessions[0].StepNumber)
@@ -205,6 +207,12 @@ func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses
 	}
 	cd.Teacher = teacher.FirstName + "" + teacher.LastName
 
+	subject, err := repositories3.GetSubjectByNumber(cds.SubjectNumber)
+	if err != nil {
+		return &cd, err
+	}
+	cd.Subject = subject.Name
+
 	return &cd, nil
 
 }
@@ -370,4 +378,23 @@ func GetCurriculumDeliveryProgressByStream(streamNumber string) ([]responses.Cur
 	arr = append(arr, progress)
 
 	return arr, nil
+}
+
+func GetCurriculumDeliveryLessons(ctx *gin.Context, p *pagination.PaginatedResponse) (*[]responses.CurriculumDeliveryResponse, error) {
+	repo := repository.NewCurriculumDeliveryRepositoryImpl(config.DB)
+	sessions, err := repo.FindCurriculumDeliveryByFilters(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	var cds []responses.CurriculumDeliveryResponse
+	for _, session := range sessions {
+		cd, err := BuildCurriculumDeliveryResponse(session)
+		if err != nil {
+			return nil, err
+		}
+		cds = append(cds, *cd)
+	}
+
+	return &cds, nil
 }

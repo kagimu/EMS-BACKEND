@@ -5,6 +5,7 @@ type CurriculumDeliveryResponse struct {
 	Steps            []Step `json:"steps"`
 	Stream           string `json:"stream"`
 	Class            string `json:"class"`
+	Subject          string `json:"subject"`
 	Date             string `json:"date"`
 	Time             string `json:"time"`
 	Teacher          string `json:"teacher"`

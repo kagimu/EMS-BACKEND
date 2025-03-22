@@ -28,9 +28,10 @@ type (
 	}
 
 	LessonPlanReferenceResponse struct {
-		LessonPlanNumber       string `json:"lesson_plan_number"`
-		LearningMaterialNumber string `json:"learning_material_number"`
-		Name                   string `json:"name"`
-		Code                   int64  `json:"code"`
+		LessonPlanNumber          string `json:"lesson_plan_number"`
+		LearningMaterialNumber    string `json:"learning_material_number"`
+		Name                      string `json:"name"`
+		Code                      int64  `json:"code"`
+		LessonPlanReferenceNumber string `json:"lesson_plan_reference_number"`
 	}
 )
