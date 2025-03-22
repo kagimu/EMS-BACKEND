@@ -328,7 +328,9 @@ func FetchStudentByNumber(c *gin.Context) {
 	response.ClassNumber = enrollment.CampusClass.ClassNumber
 	response.Status = enrollment.Status
 	response.Stream = enrollment.Stream.Name
+	response.StreamNumber = enrollment.Stream.Number
 	response.School = enrollment.School.Name
+	response.SchoolNumber = enrollment.School.Number
 	response.Campus = enrollment.Campus.Name
 	response.CampusNumber = enrollment.Campus.Number
 	response.StudyPeriod = studyPeriodName.Name
