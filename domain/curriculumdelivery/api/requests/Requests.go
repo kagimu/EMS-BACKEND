@@ -11,6 +11,7 @@ type CurriculumDeliveryRequest struct {
 	Time          string       `json:"time"`
 	TeacherNumber string       `json:"teacher_number"`
 	Comment       string       `json:"comment"`
+	SubjectNumber string       `json:"subject_number"`
 }
 type LessonStep struct {
 	StepNumber string                             `json:"step_number"`
@@ -63,6 +64,10 @@ func (cd *CurriculumDeliveryRequest) Validate() error {
 
 	if len(cd.Sessions) == 0 {
 		return errors.New("please select the steps that were delivered")
+	}
+
+	if cd.SubjectNumber == "" {
+		return errors.New("please set the subject number for  the subject you are delivering")
 	}
 
 	return nil

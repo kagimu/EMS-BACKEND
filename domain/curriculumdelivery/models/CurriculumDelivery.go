@@ -13,6 +13,7 @@ type CurriculumDelivery struct {
 	ID            uint      `json:"id" gorm:"primaryKey"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
+	SubjectNumber string    `json:"subject_number" gorm:"size:36;not null"`
 }
 
 type CurriculumDeliveryStep struct {

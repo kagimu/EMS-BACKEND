@@ -14,6 +14,7 @@ import (
 	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -204,6 +205,12 @@ func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses
 		return &cd, err
 	}
 	cd.Teacher = teacher.FirstName + "" + teacher.LastName
+
+	subject, err := repositories3.GetSubjectByNumber(cds.SubjectNumber)
+	if err != nil {
+		return &cd, err
+	}
+	cd.Subject = subject.Name
 
 	return &cd, nil
 
