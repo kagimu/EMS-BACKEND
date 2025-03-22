@@ -74,7 +74,7 @@ func (l *lessonPlanServiceImp) UpdateLessonPlanReference(material requests.Mater
 	if err != nil {
 		return errors.New("Updating lesson plan reference failed : " + err.Error())
 	}
-	
+
 	return nil
 }
 
@@ -183,8 +183,19 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 	saveLessonPlan := models.LessonPlan{
 		Number:               lessonPlanNumber,
 		SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
-		Status:               "draft",
+		Status:               constants.StatusDraft,
 		UserNumber:           userNumber,
+		UpdatedAt:            time.Now(),
+	}
+
+	oldLessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanNumber)
+	if err != nil {
+		return errors.New("Checking old lesson plan existence failed : " + err.Error())
+	}
+
+	if oldLessonPlan.Number != "" {
+		saveLessonPlan.CreatedAt = oldLessonPlan.CreatedAt
+		saveLessonPlan.Status = oldLessonPlan.Status
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
