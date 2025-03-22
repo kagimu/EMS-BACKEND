@@ -253,7 +253,7 @@ func UpdateLessonPlanReference(context *gin.Context) {
 		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
 	}
 
-	referenceNumber := context.Param("reference_number")
+	referenceNumber := context.Param("referenceNumber")
 	if referenceNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the reference number to update"})
 		return
@@ -288,7 +288,7 @@ func DeleteLessonPlanReference(context *gin.Context) {
 		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
 	}
 
-	referenceNumber := context.Param("reference_number")
+	referenceNumber := context.Param("referenceNumber")
 	if referenceNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the reference number to delete"})
 		return
