@@ -1279,7 +1279,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 	return nil
 }
 
-func UserStatement(userNumber string, startDate time.Time, endDate time.Time) ([]responses.StatementResponse, error) {
+func UserStatement(userNumber string, startDate, endDate time.Time) ([]responses.StatementResponse, error) {
 
 	var statementResponse = make([]responses.StatementResponse, 0)
 
