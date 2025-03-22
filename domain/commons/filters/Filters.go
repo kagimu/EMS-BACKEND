@@ -288,8 +288,14 @@ func ByValueIn(fieldName string, fieldValues []string) func(db *gorm.DB) *gorm.D
 	}
 }
 
+// ByDateBetween Will determine if all dates are set, between will be used else, greater or less than will be used depending on which date is set
 func ByDateBetween(dateField string, startDate time.Time, endDate time.Time) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
+
+		if dateField == "" {
+			return db
+		}
+
 		if !(startDate.IsZero() && endDate.IsZero()) {
 
 			if startDate.After(endDate) {
@@ -303,6 +309,14 @@ func ByDateBetween(dateField string, startDate time.Time, endDate time.Time) fun
 			return db.Where("DATE( "+dateField+") BETWEEN ? AND ?", startDate, endDate)
 		}
 
+		if !endDate.IsZero() {
+			return db.Where("DATE( "+dateField+") <= ?", endDate)
+		}
+
+		if !startDate.IsZero() {
+			return db.Where("DATE( "+dateField+") >= ?", startDate)
+		}
+
 		return db
 	}
 
@@ -310,7 +324,7 @@ func ByDateBetween(dateField string, startDate time.Time, endDate time.Time) fun
 
 func ByDateAfter(dateField string, afterDate time.Time) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if dateField != "" {
+		if dateField != "" && !afterDate.IsZero() {
 			return db.Where("DATE( "+dateField+") >= ?", afterDate)
 		}
 		return db
@@ -319,7 +333,7 @@ func ByDateAfter(dateField string, afterDate time.Time) func(db *gorm.DB) *gorm.
 
 func ByDateBefore(dateField string, beforeDate time.Time) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if dateField != "" {
+		if dateField != "" && !beforeDate.IsZero() {
 			return db.Where("DATE( "+dateField+") < ?", beforeDate)
 		}
 		return db
