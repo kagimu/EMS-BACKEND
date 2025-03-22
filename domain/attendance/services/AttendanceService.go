@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/models"
@@ -19,7 +20,18 @@ import (
 func RecordAttendance(attendance *models.Attendance) error {
 
 	repo := repositories.NewAttendanceRepository(config.DB)
-	_, err := repo.Save(attendance)
+
+	exists, err := repo.CheckIfAttendanceByUserNumberAndCampusNumberAndDateExists(attendance.UserNumber, attendance.CampusNumber, attendance.Date.String())
+
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return errors.New("attendance check in record  already exists for this user")
+	}
+
+	_, err = repo.Save(attendance)
 	if err != nil {
 		return err
 	}
@@ -101,7 +113,17 @@ func RecordCheckout(attendance *models.Attendance) error {
 
 	repo := repositories.NewAttendanceRepository(config.DB)
 
-	_, err := repo.Update(attendance)
+	exists, err := repo.CheckIfCheckoutByUserNumberAndCampusNumberAndDateExists(attendance.UserNumber, attendance.CampusNumber, attendance.Date.String())
+
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return errors.New("you can not record a  check out without a prior  check in record for this day")
+	}
+
+	_, err = repo.Update(attendance)
 	if err != nil {
 		return err
 	}
