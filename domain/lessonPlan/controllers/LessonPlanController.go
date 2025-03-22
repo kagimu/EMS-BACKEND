@@ -8,10 +8,8 @@ import (
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/services"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"mime/multipart"
 	"net/http"
-	"strconv"
 )
 
 var lessonPlanService = services.NewLessonPlanService()
@@ -59,38 +57,13 @@ func AddLessonPlanReference(ctx *gin.Context) {
 		return
 	}
 
-	tx := config.DB.Begin()
-
-	for _, material := range lessonPlanReferenceRequest.References {
-
-		code, err := strconv.Atoi(material.Code)
-
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
-
-			return
-		}
-
-		var lessonPlanReference = lessonPlanModel.LessonPlanReference{
-			LessonPlanNumber:       lessonPlanReferenceRequest.LessonPlanNumber,
-			LearningMaterialNumber: material.LearningMaterialNumber,
-			Name:                   material.Name,
-			Code:                   int64(code),
-			UserNumber:             ctx.GetHeader("User-Number"),
-			Number:                 uuid.NewV4().String(),
-		}
-
-		if tx.Create(&lessonPlanReference).Error != nil {
-			tx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add lesson plan reference"))
-			return
-		}
+	err = lessonPlanService.AddLessonPlanReferences(lessonPlanReferenceRequest, ctx.GetHeader("User-Number"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
 	}
 
-	tx.Commit()
-
 	ctx.JSON(http.StatusOK, commons.Feedback("Lesson plan reference added successfully!"))
-
 }
 
 func FetchLessonPlanReferences(ctx *gin.Context) {
@@ -179,7 +152,7 @@ func FetchLessonPlan(context *gin.Context) {
 	}
 
 	var lessonPlanReferenceInfo []lessonPlanModel.LessonPlanReference
-	config.DB.Where("lesson_plan_number = ?", lessonPlanInfo.Number).Find(&lessonPlanReferenceInfo)
+	config.DB.Where("lesson_plan_number = ?", lessonPlanInfo.Number).Order("code asc").Find(&lessonPlanReferenceInfo)
 
 	var lessonPlanReferenceInfo_ []responses.LessonPlanReferenceResponse
 
@@ -269,4 +242,61 @@ func ExportLessonPlanTemplate(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+}
+
+func UpdateLessonPlanReference(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	referenceNumber := context.Param("reference_number")
+	if referenceNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the reference number to update"})
+		return
+	}
+
+	var referenceRequest requests.Material
+
+	err = context.BindJSON(&referenceRequest)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = referenceRequest.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = lessonPlanService.UpdateLessonPlanReference(referenceRequest, referenceNumber, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference updated successfully"})
+}
+
+func DeleteLessonPlanReference(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	referenceNumber := context.Param("reference_number")
+	if referenceNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the reference number to delete"})
+		return
+	}
+
+	err = lessonPlanService.DeleteLessonPlanReference(referenceNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference deleted successfully"})
 }

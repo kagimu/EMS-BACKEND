@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
@@ -26,10 +27,140 @@ type LessonPlanService interface {
 	ImportPlan(lessonPlanFile multipart.File, subTopicNumber, currentUserNumber string) error
 	ExportLessonPlanTemplate(schemeSubTopicNumber string) (*excelize.File, string, error)
 	NewLessonPlan(lessonPlanInfo requests.LessonPlanInfo, userNumber string) error
+	AddLessonPlanReferences(lessonPlanReferenceRequest requests.LessonPlanReferenceRequest, userNumber string) error
+	UpdateLessonPlanReference(lessonPlanReferenceRequest requests.Material, referenceNumber, userNumber string) error
+	DeleteLessonPlanReference(referenceNumber string) error
 }
 
 type lessonPlanServiceImp struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanServiceImp) UpdateLessonPlanReference(material requests.Material, referenceNumber, userNumber string) error {
+	lessonPlanRepository.UseTx(config.DB)
+	lessonPlanReference, err := lessonPlanRepository.FindLessonPlanReferenceByNumber(referenceNumber)
+	if err != nil {
+		return errors.New("Checking lesson plan reference failed: " + err.Error())
+	}
+
+	if lessonPlanReference.Number == "" {
+		return errors.New("Invalid Lesson plan reference number ")
+	}
+
+	duplicateByCode, err := lessonPlanRepository.FindLessonPlanReferenceByCode(lessonPlanReference.LessonPlanNumber, material.LearningMaterialNumber, material.Code)
+	if err != nil {
+		return errors.New("Checking duplicate reference code failed : " + err.Error())
+	}
+
+	if duplicateByCode.Number != "" && duplicateByCode.Number != referenceNumber {
+		return errors.New("Code already used ")
+	}
+
+	duplicateByName, err := lessonPlanRepository.FindLessonPlanReferenceByName(lessonPlanReference.LessonPlanNumber, material.LearningMaterialNumber, material.Name)
+	if err != nil {
+		return errors.New("Checking duplicate reference name failed : " + err.Error())
+	}
+
+	if duplicateByName.Number != "" && duplicateByCode.Number != referenceNumber {
+		return errors.New("Name already added ")
+	}
+
+	lessonPlanReference.LearningMaterialNumber = material.LearningMaterialNumber
+	lessonPlanReference.Name = material.Name
+	lessonPlanReference.Code = material.Code
+	lessonPlanReference.UserNumber = userNumber
+
+	err = lessonPlanRepository.SaveLessonPlanReference(lessonPlanReference)
+	if err != nil {
+		return errors.New("Updating lesson plan reference failed : " + err.Error())
+	}
+	
+	return nil
+}
+
+func (l *lessonPlanServiceImp) DeleteLessonPlanReference(referenceNumber string) error {
+	lessonPlanRepository.UseTx(config.DB)
+	reference, err := lessonPlanRepository.FindLessonPlanReferenceByNumber(referenceNumber)
+	if err != nil {
+		return errors.New("Checking reference number failed: " + err.Error())
+	}
+
+	if reference.Number == "" {
+		return errors.New("lesson plan reference not found ")
+	}
+
+	err = lessonPlanRepository.DeleteLessonPlanReference(reference)
+	if err != nil {
+		return errors.New("Removing lesson plan reference error: " + err.Error())
+	}
+
+	return nil
+}
+
+func (l *lessonPlanServiceImp) AddLessonPlanReferences(lessonPlanReferenceRequest requests.LessonPlanReferenceRequest, userNumber string) error {
+
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+
+		lessonPlanRepository.UseTx(tx)
+
+		lessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanReferenceRequest.LessonPlanNumber)
+		if err != nil {
+			return errors.New("Checking lesson plan existence failed : " + err.Error())
+		}
+
+		if lessonPlan.Number == "" {
+			return errors.New("Invalid lesson plan number ")
+		}
+
+		for _, reference := range lessonPlanReferenceRequest.References {
+
+			learningMaterial, err := repositories4.FindLearningMaterialByNumber(reference.LearningMaterialNumber, tx)
+			if err != nil {
+				return errors.New("Checking learningMaterial existence failed : " + err.Error())
+			}
+
+			if learningMaterial.Number == "" {
+				return errors.New("Invalid learningMaterial number ")
+			}
+
+			duplicateByCode, err := lessonPlanRepository.FindLessonPlanReferenceByCode(lessonPlan.Number, learningMaterial.Number, reference.Code)
+			if err != nil {
+				return errors.New("Checking duplicate reference code failed : " + err.Error())
+			}
+
+			if duplicateByCode.Number != "" {
+				return errors.New("Code already used ")
+			}
+
+			duplicateByName, err := lessonPlanRepository.FindLessonPlanReferenceByName(lessonPlan.Number, learningMaterial.Number, reference.Name)
+			if err != nil {
+				return errors.New("Checking duplicate reference name failed : " + err.Error())
+			}
+
+			if duplicateByName.Number != "" {
+				return errors.New("Name already added ")
+			}
+
+			LessonPlanReference := models.LessonPlanReference{
+				LessonPlanNumber:       lessonPlan.Number,
+				LearningMaterialNumber: learningMaterial.Number,
+				Name:                   reference.Name,
+				Code:                   reference.Code,
+				UserNumber:             userNumber,
+				Number:                 uuid.NewV4().String(),
+			}
+
+			err = lessonPlanRepository.SaveLessonPlanReference(LessonPlanReference)
+			if err != nil {
+				return errors.New("Saving lesson plan reference failed : " + err.Error())
+			}
+
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanInfo, userNumber string) error {
