@@ -10,7 +10,7 @@ import (
 type Attendance struct {
 	gorm.Model
 	Number            string         `json:"number" gorm:"size:36;unique;not null"`
-	Date              time.Time      `json:"date" gorm:"size:36;"`
+	Date              time.Time      `json:"date" gorm:"type:date;"`
 	CheckInTime       string         `json:"check_in_time"`
 	CheckOutTime      string         `json:"check_out_time"`
 	Present           string         `json:"present"`
