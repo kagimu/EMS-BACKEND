@@ -332,6 +332,8 @@ func SetupRoutes() *gin.Engine {
 		{
 			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
 			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
+			lessonPlan.PATCH("/update-reference/:referenceNumber", lessonPlanControllers.UpdateLessonPlanReference)
+			lessonPlan.DELETE("/delete-reference/:referenceNumber", lessonPlanControllers.DeleteLessonPlanReference)
 			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
 			lessonPlan.POST("import", lessonPlanControllers.ImportLessonPlan)

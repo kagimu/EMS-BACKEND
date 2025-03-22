@@ -21,7 +21,24 @@ type LessonPlanReferenceRequest struct {
 type Material struct {
 	LearningMaterialNumber string `json:"learning_material_number"`
 	Name                   string `json:"name"`
-	Code                   string `json:"code"`
+	Code                   int64  `json:"code"`
+}
+
+func (m *Material) Validate() error {
+
+	if m.Code <= 0 {
+		return errors.New("please enter the code")
+	}
+
+	if m.LearningMaterialNumber == "" {
+		return errors.New("please select a learning material to continue")
+	}
+
+	if m.Name == "" {
+		return errors.New("reference name is required")
+	}
+
+	return nil
 }
 
 func (lpr *LessonPlanReferenceRequest) Validate() error {
@@ -29,20 +46,15 @@ func (lpr *LessonPlanReferenceRequest) Validate() error {
 		return errors.New("please select at-least one material")
 	}
 
-	/*if lpr.Code == "" {
-		return errors.New("please enter the code")
-	}
-
-	if lpr.LearningMaterialNumber == "" {
-		return errors.New("please select a learning material to continue")
-	}
-
-	if lpr.Name == "" {
-		return errors.New("reference name is required")
-	}
-	*/
 	if lpr.LessonPlanNumber == "" {
 		return errors.New("please select a lesson plan to add a reference")
+	}
+
+	for _, ref := range lpr.References {
+		err := ref.Validate()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
