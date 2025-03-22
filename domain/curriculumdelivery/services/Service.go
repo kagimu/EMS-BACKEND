@@ -37,6 +37,7 @@ func SaveCurriculumDeliverySession(req requests.CurriculumDeliveryRequest) error
 		Time:          req.Time,
 		TeacherNumber: req.TeacherNumber,
 		Comment:       req.Comment,
+		SubjectNumber: req.SubjectNumber,
 	}
 
 	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.Sessions[0].StepNumber)
