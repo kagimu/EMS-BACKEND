@@ -187,6 +187,18 @@ func ByName(search string) func(*gorm.DB) *gorm.DB {
 	}
 }
 
+func ByUserNamesLike(search string) func(*gorm.DB) *gorm.DB {
+
+	return func(db *gorm.DB) *gorm.DB {
+
+		if search != "" {
+			return db.Where("first_name like ?", "%"+search+"%").Or("second_name like ?", "%"+search+"%").Or("last_name like ?", "%"+search+"%")
+		}
+
+		return db
+	}
+}
+
 func ByReportTemplateNumber(templateNumber string) func(*gorm.DB) *gorm.DB {
 
 	return func(db *gorm.DB) *gorm.DB {

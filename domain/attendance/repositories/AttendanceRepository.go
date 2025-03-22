@@ -58,6 +58,7 @@ func (a *AttendanceRepositoryImpl) AllAttendance(context *gin.Context, p *pagina
 		filters.ByAnyField("attendances.student_number", context.Query("student_number")),
 		filters.ByAnyField("attendances.study_period_number", context.Query("study_period_number")),
 		filters.ByAnyField("attendances.date", context.Query("date")),
+		filters.ByUserNamesLike(context.Query("date")),
 	).Joins("JOIN users ON users.number = attendances.user_number").Where("users.type =?", accountType).Find(&attendances).Error; err != nil {
 		return attendances, err
 	}
