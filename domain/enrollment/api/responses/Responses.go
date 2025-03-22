@@ -37,4 +37,6 @@ type Enrollment struct {
 	StudyPeriodNumber      string `json:"study_period_number"`
 	ClassNumber            string `json:"class_number"`
 	CurriculumNumber       string `json:"curriculum_number"`
+	SchoolNumber           string `json:"school_number"`
+	StreamNumber           string `json:"stream_number"`
 }
