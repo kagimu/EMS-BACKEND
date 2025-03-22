@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
@@ -14,10 +15,40 @@ type AttendanceRepository interface {
 	AllAttendance(*gin.Context, *pagination.PaginatedResponse) ([]models.Attendance, error)
 	Update(attendance *models.Attendance) (*models.Attendance, error)
 	GetAttendanceByNumber(number string) (models.Attendance, error)
+	CheckIfAttendanceByUserNumberAndCampusNumberAndDateExists(userNumber, campusNumber, date string) (bool, error)
+	CheckIfCheckoutByUserNumberAndCampusNumberAndDateExists(userNumber, campusNumber, date string) (bool, error)
 }
 
 type AttendanceRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (a *AttendanceRepositoryImpl) CheckIfCheckoutByUserNumberAndCampusNumberAndDateExists(userNumber, campusNumber, date string) (bool, error) {
+	var attendance models.Attendance
+	err := a.DB.Where("user_number = ? AND campus_number = ? AND date = ? AND check_out_time = ?", userNumber, campusNumber, date, "").First(&attendance).Error
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+
+		return false, err
+	}
+	return true, nil
+}
+
+func (a *AttendanceRepositoryImpl) CheckIfAttendanceByUserNumberAndCampusNumberAndDateExists(userNumber, campusNumber, date string) (bool, error) {
+	var attendance models.Attendance
+	err := a.DB.Where("user_number = ? AND campus_number = ? AND date = ? AND check_out_time = ?", userNumber, campusNumber, date, "").First(&attendance).Error
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+
+		return false, err
+	}
+	return true, nil
 }
 
 func (a *AttendanceRepositoryImpl) GetAttendanceByNumber(number string) (models.Attendance, error) {

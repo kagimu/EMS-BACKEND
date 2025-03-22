@@ -371,3 +371,22 @@ func GetCurriculumDeliveryProgressByStream(streamNumber string) ([]responses.Cur
 
 	return arr, nil
 }
+
+func GetCurriculumDeliveryLessons(ctx *gin.Context, p *pagination.PaginatedResponse) (*[]responses.CurriculumDeliveryResponse, error) {
+	repo := repository.NewCurriculumDeliveryRepositoryImpl(config.DB)
+	sessions, err := repo.FindCurriculumDeliveryByFilters(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	var cds []responses.CurriculumDeliveryResponse
+	for _, session := range sessions {
+		cd, err := BuildCurriculumDeliveryResponse(session)
+		if err != nil {
+			return nil, err
+		}
+		cds = append(cds, *cd)
+	}
+
+	return &cds, nil
+}
