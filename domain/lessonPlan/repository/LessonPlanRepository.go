@@ -30,10 +30,89 @@ type LessonPlanRepository interface {
 	CountCurriculumsDeliveryStepsByStreamNumber(streamNumber string) (int64, error)
 	CountStepsByCurriculumNumber(number string) (int64, error)
 	GetCurriculumByStreamNumber(lessonPlanStepNumber string) (models2.Curriculum, error)
+	FindLessonPlanByNumber(lessonPlanNumber string) (lessonPlanModel.LessonPlan, error)
+	FindLessonPlanReferenceByCode(lessonPlanNumber, learningMaterialNumber string, code int64) (lessonPlanModel.LessonPlanReference, error)
+	FindLessonPlanReferenceByName(lessonPlanNumber, learningMaterialNumber, name string) (lessonPlanModel.LessonPlanReference, error)
+	SaveLessonPlanReference(lessonPlanReference lessonPlanModel.LessonPlanReference) error
+	FindLessonPlanReferenceByNumber(referenceNumber string) (lessonPlanModel.LessonPlanReference, error)
+	DeleteLessonPlanReference(lessonPlanReference lessonPlanModel.LessonPlanReference) error
 }
 
 type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanRepositoryImpl) FindLessonPlanReferenceByNumber(lessonPlanReferenceNumber string) (lessonPlanModel.LessonPlanReference, error) {
+	var lessonPlanReference lessonPlanModel.LessonPlanReference
+
+	err := l.Db.Where("number = ?", lessonPlanReferenceNumber).First(&lessonPlanReference).Error
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlanReference, nil
+		}
+
+		return lessonPlanReference, err
+	}
+
+	return lessonPlanReference, nil
+}
+
+func (l *lessonPlanRepositoryImpl) DeleteLessonPlanReference(lessonPlanReference lessonPlanModel.LessonPlanReference) error {
+	return l.Db.Delete(&lessonPlanReference).Error
+}
+
+func (l *lessonPlanRepositoryImpl) SaveLessonPlanReference(lessonPlanReference lessonPlanModel.LessonPlanReference) error {
+	return l.Db.Save(&lessonPlanReference).Error
+}
+
+func (l *lessonPlanRepositoryImpl) FindLessonPlanReferenceByName(lessonPlanNumber, learningMaterialNumber, name string) (lessonPlanModel.LessonPlanReference, error) {
+	var lessonPlanReference lessonPlanModel.LessonPlanReference
+
+	err := l.Db.Where("lesson_plan_number = ? AND learning_material_number = ? AND name = ?", lessonPlanNumber, learningMaterialNumber, name).First(&lessonPlanReference).Error
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlanReference, nil
+		}
+
+		return lessonPlanReference, err
+	}
+
+	return lessonPlanReference, nil
+}
+
+func (l *lessonPlanRepositoryImpl) FindLessonPlanByNumber(lessonPlanNumber string) (lessonPlanModel.LessonPlan, error) {
+	var lessonPlan lessonPlanModel.LessonPlan
+
+	err := l.Db.Where("number = ?", lessonPlanNumber).First(&lessonPlan).Error
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlan, nil
+		}
+
+		return lessonPlan, err
+	}
+
+	return lessonPlan, nil
+
+}
+
+func (l *lessonPlanRepositoryImpl) FindLessonPlanReferenceByCode(lessonPlanNumber, learningMaterialNumber string, code int64) (lessonPlanModel.LessonPlanReference, error) {
+	var lessonPlanReference lessonPlanModel.LessonPlanReference
+
+	err := l.Db.Where("lesson_plan_number = ? AND learning_material_number = ? AND code = ?", lessonPlanNumber, learningMaterialNumber, code).First(&lessonPlanReference).Error
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlanReference, nil
+		}
+
+		return lessonPlanReference, err
+	}
+
+	return lessonPlanReference, nil
 }
 
 func (l *lessonPlanRepositoryImpl) CountCurriculumsDeliveryStepsByStreamNumber(streamNumber string) (int64, error) {
