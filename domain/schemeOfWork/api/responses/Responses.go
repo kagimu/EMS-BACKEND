@@ -27,6 +27,10 @@ type (
 		AcademicYearNumber       string                     `json:"academic_year_number"`
 		AcademicYearName         string                     `json:"academic_year_name"`
 		SchemeOfWorkSubtopicInfo []SchemeOfWorkSubtopicInfo `json:"subtopic"`
+		SchoolName               string                     `json:"school_name"`
+		SchoolBadge              string                     `json:"school_badge"`
+		CampusName               string                     `json:"campus_name"`
+		LevelName                string                     `json:"level_name"`
 	}
 )
 
