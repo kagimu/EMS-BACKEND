@@ -284,6 +284,8 @@ func FetchSchemeOfWork(context *gin.Context) {
 		Preload("CampusClass.CurriculumClass.Class").
 		Preload("CampusClass.CurriculumClass").
 		Preload("CampusClass").
+		Preload("CampusClass.Campus").
+		Preload("CampusClass.Campus.School").
 		Preload("Subject").
 		Order("created_at desc").
 		First(&schemeOfWrkInfo).Error; err != nil {
@@ -339,6 +341,9 @@ func FetchSchemeOfWork(context *gin.Context) {
 		AcademicYearNumber:       schemeOfWrkInfo.AcademicYearNumber,
 		AcademicYearName:         schemeOfWrkInfo.AcademicYear.AcademicYearName,
 		SchemeOfWorkSubtopicInfo: schemeOfWrkSubTopicInfo_,
+		SchoolBadge:              schemeOfWrkInfo.CampusClass.Campus.School.Logo,
+		SchoolName:               schemeOfWrkInfo.CampusClass.Campus.School.Name,
+		CampusName:               schemeOfWrkInfo.CampusClass.Campus.Name,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schemeOfWrk_})
