@@ -344,6 +344,9 @@ func FetchSchemeOfWork(context *gin.Context) {
 		SchoolBadge:              schemeOfWrkInfo.CampusClass.Campus.School.Logo,
 		SchoolName:               schemeOfWrkInfo.CampusClass.Campus.School.Name,
 		CampusName:               schemeOfWrkInfo.CampusClass.Campus.Name,
+		CampusEmail:              schemeOfWrkInfo.CampusClass.Campus.Email,
+		CampusPhone:              schemeOfWrkInfo.CampusClass.Campus.Phone,
+		CampusLocation:           schemeOfWrkInfo.CampusClass.Campus.Location,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schemeOfWrk_})

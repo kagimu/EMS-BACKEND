@@ -30,6 +30,9 @@ type (
 		SchoolName               string                     `json:"school_name"`
 		SchoolBadge              string                     `json:"school_badge"`
 		CampusName               string                     `json:"campus_name"`
+		CampusPhone              string                     `json:"campus-phone"`
+		CampusEmail              string                     `json:"campus_email"`
+		CampusLocation           string                     `json:"campus_location"`
 		LevelName                string                     `json:"level_name"`
 	}
 )
