@@ -136,7 +136,7 @@ func PermissionGroups() []PermissionGroup {
 		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
 		{"SETUP": []string{"view_school", "add_school", "edit_school", "delete_school", "create_campus", "edit_campus", "delete_campus", "create_academic-year", "view_academic-year", "update_academic-year",
 			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream", "view_campus_settings", "view_aggregate", "view_grading", "view_assessment_schedule", "view_report_card_settings", "view_student_score", "view_study_period", "view_study_period_group_names", "view_academic_year", "view_classes", "view_levels"}},
-		{"USERS": []string{"create_user", "view_users", "view_roles", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
+		{"USERS": []string{"create_user", "view_users", "view_roles", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details", "can_serve_as_teacher_and_admin"}},
 		{"PERMISSIONS": []string{"create_permission", "view_permission", "view_scopes", "delete_permission", "update_permission"}},
 		{"STUDENT APPLICATION": []string{"view_applications", "view_application_list"}},
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
@@ -280,6 +280,6 @@ func CleanPromotionStatus(status string) string {
 	if status == "repeat" {
 		return "Repeat"
 	}
-	
+
 	return status
 }
