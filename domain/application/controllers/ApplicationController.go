@@ -62,7 +62,7 @@ func FetchApplications(c *gin.Context) {
 			Preload("PreviousSchools").
 			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "application fetching failed",
+				"message": "please contact support to fetch applications",
 			})
 			return
 		}
@@ -81,7 +81,7 @@ func FetchApplications(c *gin.Context) {
 			Preload("PreviousSchools").
 			Joins("JOIN students ON students.application_number = applications.number").
 			Scopes(
-				filters.ByStatus(c.Query("status")),
+				filters.ByStatus(c.Query("applications.status")),
 				filters.ByAnyField("students.school_number", schoolNumber),
 				pagination.Paginate(c, &paginationResponse),
 			).
