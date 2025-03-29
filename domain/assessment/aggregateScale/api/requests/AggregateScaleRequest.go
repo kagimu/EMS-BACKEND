@@ -58,13 +58,13 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 
 		var gradeIndex = count + 1
 
-		if count == 0 {
+		if gradeIndex == len(scales) {
 			if grade.MinValue != 0 {
 				return errors.New(fmt.Sprintf("the minimum value for the grade at count %d should be zero", gradeIndex))
 			}
 		}
 
-		if gradeIndex == len(scales) {
+		if count == 0 {
 			if grade.MaxValue != 100 {
 				return errors.New(fmt.Sprintf("the maximum value for the grade at count %d should be 100", gradeIndex))
 			}
