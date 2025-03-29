@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"net/http"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/hassPassTokenGen"
 	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
 	uuid "github.com/satori/go.uuid"
 
@@ -253,22 +254,22 @@ func CreateUser(c *gin.Context) {
 	}
 
 	// set password
-	hashPassword, hashErr := hassPassTokenGen.Hash(user.Password)
-	if hashErr != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to encrypt password"})
-		return
-	}
-
-	var userPassword = models.UserPassword{
-		UserNumber:   userObject.Number,
-		UserPassword: hashPassword,
-	}
-
-	if err := tx.Create(&userPassword).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user" + err.Error()})
-		return
-	}
+	//hashPassword, hashErr := hassPassTokenGen.Hash(user.Password)
+	//if hashErr != nil {
+	//	c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to encrypt password"})
+	//	return
+	//}
+	//
+	//var userPassword = models.UserPassword{
+	//	UserNumber:   userObject.Number,
+	//	UserPassword: hashPassword,
+	//}
+	//
+	//if err := tx.Create(&userPassword).Error; err != nil {
+	//	tx.Rollback()
+	//	c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user" + err.Error()})
+	//	return
+	//}
 
 	// attach user to this entity
 	if user.EntityNumber != "" {
@@ -284,6 +285,37 @@ func CreateUser(c *gin.Context) {
 			return
 		}
 
+	}
+
+	//create / generate a token for the user to reset their password
+	//userToken := tokenGenerator()
+	userToken := uuid.NewV4().String()
+	saveUserPasswordToken := models.PasswordReset{
+		Number:     uuid.NewV4().String(),
+		UserNumber: userObject.Number,
+		Token:      userToken,
+		Status:     "Inactive",
+	}
+
+	if err := tx.Create(&saveUserPasswordToken).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to create token"})
+		return
+	}
+	//email sender
+	Token := userToken
+	d := emailSender.Info{Email: user.Email, Token: Token, MailType: "WholesomeEd: User Account Confirmation", UserName: userObject.SecondName, CurrentYear: time.Now().Year(), Type: "registration"}
+	err := d.SendEmail()
+	if err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		//fmt.Println(fmt.Printf("Sending mail error %s\n", err.Error()))
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email\n" + err.Error()})
+		return
+		//fmt.Printf("Sending mail error %s\n", err.Error())
 	}
 
 	if err := tx.Commit().Error; err != nil {
