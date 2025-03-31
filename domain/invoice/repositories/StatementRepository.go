@@ -51,7 +51,7 @@ func GetRecentStatementByUserNumber(userNumber string, tx ...*gorm.DB) (models.S
 
 	var statement models.Statement
 
-	if err := db.Where("user_number = ?", userNumber).First(&statement).Error; err != nil {
+	if err := db.Where("user_number = ?", userNumber).Order("created_at desc").First(&statement).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.Statement{}, nil
 		}
