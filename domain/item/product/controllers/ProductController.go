@@ -163,70 +163,12 @@ func FetchProducts(c *gin.Context) {
 			return
 		}
 	}
-	/*var services []models2.Service
-	if err := config.DB.Preload("Item").
-		Joins("JOIN items on items.number = services.item_number").
-		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&services).Error; err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, response)
-			return
-		}
-
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch services: " + err.Error()})
-		return
-	}*/
-
-	/*for _, service := range services {
-		var campusServices []models2.CampusItem
-		if err := config.DB.Where("item_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch campus services: " + err.Error()})
-			return
-		}
-
-		var campusServiceResponse []responses.CampusServiceResponse
-		for _, campusService := range campusServices {
-			//get campus name
-			var campus campusModel.Campus
-			if err := config.DB.Where("number = ?", campusService.CampusNumber).First(&campus).Error; err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch campus: " + err.Error()})
-				return
-			}
-
-			campusServiceResponse = append(campusServiceResponse, responses.CampusServiceResponse{
-				Number:       campusService.Number,
-				CampusNumber: campusService.CampusNumber,
-				Name:         campus.Name,
-			})
-		}
-
-		response = append(response, responses.ServiceResponse{
-			ItemNumber: service.ItemNumber,
-			Item: responses.ItemResponse{
-				Number:          service.Item.Number,
-				Name:            service.Item.Name,
-				Description:     service.Item.Description,
-				Type:            service.Item.Type,
-				Cost:            service.Item.Cost,
-				SerialCode:      service.Item.SerialCode,
-				PaymentMode:     service.Item.PaymentMode,
-				Mandatory:       service.Item.Mandatory,
-				SchoolNumber:    service.Item.SchoolNumber,
-				UserNumber:      service.Item.UserNumber,
-				RepeatCycle:     service.Item.RepeatCycle,
-				OneTimePurchase: service.Item.OneTimePurchase,
-			},
-			Campuses: campusServiceResponse,
-		})
-	}*/
 
 	response, err := itemService.AllProductItems(schoolNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, response)
 
 	c.JSON(http.StatusOK, response)
 }
