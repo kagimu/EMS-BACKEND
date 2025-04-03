@@ -179,7 +179,7 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 	}
 
 	if len(allError) == len(selectedClasses) {
-		return "No class added to the template, try again", allError
+		return "Class already assigned to another report try another class", allError
 	}
 
 	return "", allError

@@ -50,6 +50,25 @@ func FetchAllServiceItems(schoolNumber string, tx ...*gorm.DB) ([]itemModels.Ite
 	return items, nil
 }
 
+func FetchAllProductItems(schoolNumber string, tx ...*gorm.DB) ([]itemModels.Item, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var items []itemModels.Item
+	if err := db.
+		Joins("JOIN products pd ON items.number = pd.item_number").
+		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&items).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []itemModels.Item{}, nil
+		}
+		return []itemModels.Item{}, err
+	}
+
+	return items, nil
+}
+
 func FetchAllCampusItems(itemNumber string, tx ...*gorm.DB) ([]campusModel.Campus, error) {
 	db := config.DB
 	if len(tx) > 0 {
