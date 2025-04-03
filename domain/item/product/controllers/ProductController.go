@@ -2,11 +2,9 @@ package controllers
 
 import (
 	"fmt"
-	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
@@ -18,6 +16,8 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+var itemService = services.NewItemProduct()
 
 func CreateProduct(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
@@ -153,63 +153,80 @@ func FetchProducts(c *gin.Context) {
 		return
 	}
 
+	//var response []responses.ServiceResponse
+
 	schoolNumber := c.Query("school_number")
 
 	if user.Type != constants.TypeClient {
 		if schoolNumber == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view products for"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view services for"})
 			return
 		}
 	}
-
-	var products []productModels.Product
+	/*var services []models2.Service
 	if err := config.DB.Preload("Item").
-		Joins("JOIN items on items.number = products.item_number").
-		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&products).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
-		return
-	}
-	var response []responses.ServiceResponse
+		Joins("JOIN items on items.number = services.item_number").
+		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&services).Error; err != nil {
 
-	for _, product := range products {
-		var campusServices []models2.CampusItem
-		if err := config.DB.Where("item_number = ?", product.Item.Number).Find(&campusServices).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, response)
 			return
 		}
-		var campuses []responses.CampusServiceResponse
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch services: " + err.Error()})
+		return
+	}*/
+
+	/*for _, service := range services {
+		var campusServices []models2.CampusItem
+		if err := config.DB.Where("item_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch campus services: " + err.Error()})
+			return
+		}
+
+		var campusServiceResponse []responses.CampusServiceResponse
 		for _, campusService := range campusServices {
+			//get campus name
 			var campus campusModel.Campus
-			if err := config.DB.First(&campus, "number = ?", campusService.CampusNumber).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus"})
+			if err := config.DB.Where("number = ?", campusService.CampusNumber).First(&campus).Error; err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch campus: " + err.Error()})
 				return
 			}
-			campuses = append(campuses, responses.CampusServiceResponse{
+
+			campusServiceResponse = append(campusServiceResponse, responses.CampusServiceResponse{
 				Number:       campusService.Number,
 				CampusNumber: campusService.CampusNumber,
 				Name:         campus.Name,
 			})
 		}
+
 		response = append(response, responses.ServiceResponse{
-			ItemNumber: product.ItemNumber,
+			ItemNumber: service.ItemNumber,
 			Item: responses.ItemResponse{
-				Number:          product.Item.Number,
-				Name:            product.Item.Name,
-				Description:     product.Item.Description,
-				Type:            product.Item.Type,
-				Cost:            product.Item.Cost,
-				SerialCode:      product.Item.SerialCode,
-				Prefix:          product.Item.Prefix,
-				PaymentMode:     product.Item.PaymentMode,
-				Mandatory:       product.Item.Mandatory,
-				SchoolNumber:    product.Item.SchoolNumber,
-				UserNumber:      product.Item.UserNumber,
-				RepeatCycle:     product.Item.RepeatCycle,
-				OneTimePurchase: product.Item.OneTimePurchase,
+				Number:          service.Item.Number,
+				Name:            service.Item.Name,
+				Description:     service.Item.Description,
+				Type:            service.Item.Type,
+				Cost:            service.Item.Cost,
+				SerialCode:      service.Item.SerialCode,
+				PaymentMode:     service.Item.PaymentMode,
+				Mandatory:       service.Item.Mandatory,
+				SchoolNumber:    service.Item.SchoolNumber,
+				UserNumber:      service.Item.UserNumber,
+				RepeatCycle:     service.Item.RepeatCycle,
+				OneTimePurchase: service.Item.OneTimePurchase,
 			},
-			Campuses: campuses,
+			Campuses: campusServiceResponse,
 		})
+	}*/
+
+	response, err := itemService.AllProductItems(schoolNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
+
+	c.JSON(http.StatusOK, response)
 
 	c.JSON(http.StatusOK, response)
 }
