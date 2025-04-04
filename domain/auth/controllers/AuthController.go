@@ -130,7 +130,7 @@ func Login(context *gin.Context) {
 	var userRolesList []rolesResponses.RoleView
 	var permissions []string
 
-	config.DB.Where("user_number = ?", userNumber).Find(&userRoles)
+	config.DB.Where("user_number = ? AND DATE(expiry_date) >= ?", userNumber, time.Now()).Find(&userRoles)
 
 	for _, item := range userRoles {
 
