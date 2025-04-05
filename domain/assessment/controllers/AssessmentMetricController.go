@@ -151,3 +151,21 @@ func GetScriptMarkingGuide(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": documents})
 }
+
+func DeleteAssessmentMetric(context *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	assessmentMetricNumber := context.Param("assessment_metric_number")
+	err = services.RemoveAssessmentMetric(assessmentMetricNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Removed successfully"})
+}
