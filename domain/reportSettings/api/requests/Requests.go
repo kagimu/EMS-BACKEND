@@ -44,7 +44,7 @@ type ReportColumnAssessmentUpdateRequest struct {
 	Code                   int64  `json:"code"`
 	ReportColumnNumber     string `json:"report_column_number"`
 	AssessmentAreaNumber   string `json:"assessment_area_number"`
-	AssessmentMetricNumber string `json:"Assessment_metric_number"`
+	AssessmentMetricNumber string `json:"assessment_metric_number"`
 }
 
 func (reportColumnAssessment ReportColumnAssessmentUpdateRequest) ValidateReportColumnAssessment() error {
@@ -56,12 +56,12 @@ func (reportColumnAssessment ReportColumnAssessmentUpdateRequest) ValidateReport
 		return errors.New("choose assessment area ")
 	}
 	if reportColumnAssessment.AssessmentMetricNumber == "" {
-		return errors.New("Choose the assessment schedules ")
+		return errors.New("Choose the assessment schedule ")
 	}
 
-	if reportColumnAssessment.Code == 0 {
+	/*if reportColumnAssessment.Code == 0 {
 		return errors.New("code is required")
-	}
+	}*/
 
 	return nil
 }
