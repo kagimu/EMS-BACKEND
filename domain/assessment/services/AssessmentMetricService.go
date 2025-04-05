@@ -280,3 +280,31 @@ func GetScriptMarkingGuides(assessmentMetricNumber string) ([]responses.ScriptMa
 
 	return scriptMarkingGuideResponses, nil
 }
+
+func RemoveAssessmentMetric(assessmentMetricNumber string) error {
+	assessmentMetric, err := assessmentRepository.FindAssessmentMetricByNumber(assessmentMetricNumber)
+	if err != nil {
+		return errors.New("error getting assessment metric details: " + err.Error())
+	}
+
+	if assessmentMetric.Number == "" {
+		return errors.New("invalid assessment metric number")
+	}
+
+	checkScores, err := repositories.FindAssessmentByStudentNumberAndAssessmentMetricNumber("", assessmentMetricNumber)
+	if err != nil {
+		return errors.New("checking student assessments error: " + err.Error())
+	}
+
+	if len(checkScores) > 0 {
+		return errors.New("You can not remove when you already have learner's scores entered ")
+	}
+
+	err = assessmentRepository.DeleteAssessmentMetric(assessmentMetric)
+
+	if err != nil {
+		return errors.New("deleting assessment metric error: " + err.Error())
+	}
+
+	return nil
+}
