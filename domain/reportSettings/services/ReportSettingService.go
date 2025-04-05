@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
@@ -387,6 +388,48 @@ func DeleteReportColumnAssessment(number string) error {
 	err = reporsitory.DeleteReportColumnAssessment(reportColumnAssessment)
 	if err != nil {
 		return errors.New("Error deleting report column assessment: " + err.Error())
+	}
+
+	return nil
+}
+
+func UpdateReportColumnAssessment(reportColumnAssessmentRequest requests.ReportColumnAssessmentUpdateRequest, reportColumnAssessmentNumber string, currentUser *authModel.User) error {
+
+	reportColumnAssessment, err := reporsitory.GetReportColumnAssessmentByNumber(reportColumnAssessmentNumber)
+	if err != nil {
+		return errors.New("Error checking report column assessment by number: " + err.Error())
+	}
+
+	if reportColumnAssessment.Number == "" {
+		return errors.New("invalid report column assessment number")
+	}
+
+	reportColumn, err := reporsitory.GetReportColumnByNumber(reportColumnAssessmentRequest.ReportColumnNumber)
+	if err != nil {
+		return errors.New("Error checking report column by number: " + reportColumnAssessmentRequest.ReportColumnNumber)
+	}
+
+	if reportColumn.Number == "" {
+		return errors.New("invalid report column number")
+	}
+
+	assessmentMetric, err := reporsitory.GetReportColumnAssessmentByAssessmentMetricNumber(reportColumnAssessmentRequest.AssessmentMetricNumber)
+	if err != nil {
+		return errors.New("Error checking assessment metric number: " + err.Error())
+	}
+
+	if assessmentMetric.Number != "" && assessmentMetric.Number != reportColumnAssessment.Number {
+		return errors.New("The assessment metric number is already used: ")
+	}
+
+	reportColumnAssessment.ReportColumnNumber = reportColumn.Number
+	reportColumnAssessment.UserNumber = currentUser.Number
+	reportColumnAssessment.AssessmentMetricNumber = reportColumnAssessmentRequest.AssessmentMetricNumber
+	reportColumnAssessment.AssessmentAreaNumber = reportColumnAssessmentRequest.AssessmentAreaNumber
+
+	err = reporsitory.SaveReportColumnAssessment(reportColumnAssessment)
+	if err != nil {
+		return errors.New("Error saving report column assessment: " + err.Error())
 	}
 
 	return nil

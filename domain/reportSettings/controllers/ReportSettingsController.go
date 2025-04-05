@@ -599,3 +599,37 @@ func DeleteHeadTeacherComment(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Head teacher comment deleted successfully"})
 }
+
+func UpdateReportColumnAssessment(context *gin.Context) {
+	reportColumnAssessmentNumber := context.Param("report_column_assessment_number")
+	if reportColumnAssessmentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report column assessment number"})
+		return
+	}
+
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ReportColumnAssessmentUpdateRequest
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	err = payload.ValidateReportColumnAssessment()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services3.UpdateReportColumnAssessment(payload, reportColumnAssessmentNumber, currentUser)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report column assessment updated successfully"})
+}
