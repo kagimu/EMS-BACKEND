@@ -40,6 +40,32 @@ type ReportColumnAssessmentRequest struct {
 	AssessmentMetrics    []string `json:"assessment_schedule"`
 }
 
+type ReportColumnAssessmentUpdateRequest struct {
+	Code                   int64  `json:"code"`
+	ReportColumnNumber     string `json:"report_column_number"`
+	AssessmentAreaNumber   string `json:"assessment_area_number"`
+	AssessmentMetricNumber string `json:"assessment_metric_number"`
+}
+
+func (reportColumnAssessment ReportColumnAssessmentUpdateRequest) ValidateReportColumnAssessment() error {
+
+	if reportColumnAssessment.ReportColumnNumber == "" {
+		return errors.New("choose report column ")
+	}
+	if reportColumnAssessment.AssessmentAreaNumber == "" {
+		return errors.New("choose assessment area ")
+	}
+	if reportColumnAssessment.AssessmentMetricNumber == "" {
+		return errors.New("Choose the assessment schedule ")
+	}
+
+	/*if reportColumnAssessment.Code == 0 {
+		return errors.New("code is required")
+	}*/
+
+	return nil
+}
+
 type ReportSummaryRequest struct {
 	Code                int64   `json:"code"`
 	ReportSettingNumber string  `json:"report_setting_number"`

@@ -562,6 +562,7 @@ func SetupRoutes() *gin.Engine {
 			assessment.GET("", assessmentController.FetchAssessmentByStudent)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
+			assessment.DELETE("assessment-metrics/:assessment_metric_number", assessmentController.DeleteAssessmentMetric)
 			assessment.POST("update", assessmentController.UpdateAssessmentMetric)
 			assessment.GET("assessment-metrics", assessmentController.FetchAssessmentMetrics)
 			assessment.POST("script-marking-guide", assessmentController.ScriptMarkingGuide)
@@ -717,6 +718,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("columns", reportSettingsController.FetchReportColumns)
 			reportSettings.DELETE("columns/:report_column_number", reportSettingsController.DeleteReportColumns)
 			reportSettings.POST("report-column-assessment", reportSettingsController.CreateReportColumnAssessment)
+			reportSettings.PUT("report-column-assessment/:report_column_assessment_number", reportSettingsController.UpdateReportColumnAssessment)
 			reportSettings.DELETE("report-column-assessment", reportSettingsController.DeleteReportColumnAssessment)
 			reportSettings.GET("report-column-assessment", reportSettingsController.AllReportColumnAssessments)
 			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
