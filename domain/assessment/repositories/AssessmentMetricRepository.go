@@ -14,9 +14,20 @@ type AssessmentMetricRepository interface {
 	AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, paginated func(db *gorm.DB) *gorm.DB) ([]assessmenModels.AssessmentMetric, error)
 	AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
 	SaveAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error
+	DeleteAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error
 }
 
 type repository struct {
+}
+
+func (a *repository) DeleteAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) != 0 {
+		db = tx[0]
+	}
+
+	return db.Unscoped().Delete(&assessmentMetric).Error
 }
 
 func (a *repository) AllAssessmentMetricPaginated(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, paginated func(db *gorm.DB) *gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
