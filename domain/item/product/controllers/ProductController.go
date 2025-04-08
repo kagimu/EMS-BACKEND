@@ -41,14 +41,18 @@ func CreateProduct(c *gin.Context) {
 
 	itemNumber := uuid.NewV4().String()
 	saveProductItem := models.Item{
-		Number:      itemNumber,
-		Name:        payload.Name,
-		Cost:        payload.Cost,
-		SerialCode:  payload.SerialCode,
-		Description: payload.Description,
-		UserNumber:  user.Number,
-		Mandatory:   payload.Mandatory,
-		Type:        "Product",
+		Number:          itemNumber,
+		Cost:            payload.Cost,
+		Description:     payload.Description,
+		OneTimePurchase: payload.OneTimePurchase,
+		UserNumber:      user.Number,
+		SerialCode:      payload.SerialCode,
+		Mandatory:       payload.Mandatory,
+		RepeatCycle:     payload.RepeatCycle,
+		PaymentMode:     payload.PaymentMode,
+		Name:            payload.Name,
+		SchoolNumber:    payload.SchoolNumber,
+		Type:            "Product",
 	}
 
 	if err := tx.Create(&saveProductItem).Error; err != nil {
