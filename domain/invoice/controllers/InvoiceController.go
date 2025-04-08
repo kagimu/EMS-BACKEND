@@ -199,6 +199,7 @@ func CancelInvoice(context *gin.Context) {
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Invoice cancelled successfully"))
