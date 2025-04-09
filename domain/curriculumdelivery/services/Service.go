@@ -369,7 +369,7 @@ func GetCurriculumDeliveryProgressByStream(streamNumber string) ([]responses.Cur
 	}
 
 	progress := responses.CurriculumDeliveryProgress{
-		Progress:   commons.RoundFloat(percentage, 2),
+		Progress:   commons.RoundFloat(percentage, 3),
 		Scale:      "%",
 		Curriculum: curriculum.Name,
 		Stream:     stream.Name,
