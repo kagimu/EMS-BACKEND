@@ -53,6 +53,7 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 	var runsToEnd, startsAtZero bool
 
 	scales := aggregateScale.AggregateScales
+	// sor the slice by code
 
 	for count, grade := range scales {
 
@@ -171,8 +172,8 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 }
 
 func checkPrevRow(prevItem, currentItem AggregateScaleItem, currentIndex int) error {
-	if currentItem.MinValue <= prevItem.MaxValue {
-		return errors.New(fmt.Sprintf("The minimum score at grade count %d should be greator than the maximum score at grade count %d", currentIndex, currentIndex-1))
+	if currentItem.MaxValue >= prevItem.MinValue {
+		return errors.New(fmt.Sprintf("The maximum score at grade count %d should be lesser than the minimum score at grade count %d", currentIndex, currentIndex-1))
 	}
 
 	return nil
