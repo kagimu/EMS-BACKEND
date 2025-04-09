@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -194,4 +195,48 @@ func TransactionCredits(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"data": statementResponses})
+}
+
+func GeneralStatement(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	userNumber := context.Query("user_number")
+	minAmount_ := context.Query("min_amount")
+	maxAmount_ := context.Query("max_amount")
+
+	minAmount, err := parseFloat64Ptr(minAmount_)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error parsing min_amount to float: " + err.Error()})
+		return
+	}
+
+	maxAmount, err := parseFloat64Ptr(maxAmount_)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error parsing max_amount to float: " + err.Error()})
+		return
+	}
+
+	statementResponses, err := services.GeneralStatement(userNumber, minAmount, maxAmount)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get general statements, try again", "err": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": statementResponses})
+}
+
+func parseFloat64Ptr(val string) (float64, error) {
+	if val == "" {
+		return -1, nil
+	}
+	f, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return -1, err
+	}
+	return f, nil
 }
