@@ -107,3 +107,29 @@ func FindAllStatements(userNumber string, startDate, endDate time.Time) ([]model
 
 	return statements, nil
 }
+
+func FindAllGeneralStatements(userNumber string, minAmount, maxAmount float64) ([]models.Statement, error) {
+	var statements []models.Statement
+
+	db := config.DB
+
+	subQuery := db.Model(&models.Statement{}).
+		Select("MAX(created_at)").
+		Where("user_number = s.user_number")
+
+	err := db.Table("statements AS s").
+		Scopes(filters.ByUserNumber(userNumber), filters.ByAnyAmountField("balance", ">=", minAmount), filters.ByAnyAmountField("balance", "<=", maxAmount)).
+		Where("s.created_at = (?)", subQuery).
+		Find(&statements).Error
+
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return statements, nil
+		}
+
+		return statements, err
+	}
+
+	return statements, nil
+}
