@@ -50,6 +50,23 @@ func FetchAllServiceItems(schoolNumber string, tx ...*gorm.DB) ([]itemModels.Ite
 	return items, nil
 }
 
+func FetchAllItems(schoolNumber, itemType string, tx ...*gorm.DB) ([]itemModels.Item, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var items []itemModels.Item
+	if err := db.Scopes(filters.ByAnyField("school_number", schoolNumber), filters.ByAnyField("type", itemType)).Find(&items).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []itemModels.Item{}, nil
+		}
+		return []itemModels.Item{}, err
+	}
+
+	return items, nil
+}
+
 func FetchAllProductItems(schoolNumber string, tx ...*gorm.DB) ([]itemModels.Item, error) {
 	db := config.DB
 	if len(tx) > 0 {
