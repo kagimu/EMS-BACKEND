@@ -50,7 +50,7 @@ func GetMenuItemParts(menuItemNumber string) ([]responses.Part, error) {
 			Code:                      secondaryItem.Code,
 			Number:                    secondaryItem.Number,
 			UnitOfMeasureAbbreviation: unitOfMeasure.Abbreviation,
-			UnitCost:                  commons.RoundFloat(determineUnitCost(secondaryItem), 2),
+			UnitCost:                  commons.RoundFloat(determineUnitCost(secondaryItem), 6),
 		}
 
 		parts = append(parts, part)
@@ -269,7 +269,7 @@ func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate tim
 
 	projectionCalenderResponse.ItemsSummary = summary
 
-	projectionCalenderResponse.TotalCost = commons.RoundFloat(totalCost, 2)
+	projectionCalenderResponse.TotalCost = commons.RoundFloat(totalCost, 6)
 
 	return projectionCalenderResponse, nil
 }
@@ -372,7 +372,7 @@ func createProjectionMenuItem(menuItem models.MenuItem, totalQuantity float64) r
 		RateToPurchaseUnit: menuItem.ConversionToPurchaseUnit,
 		PurchaseQuantity:   totalQuantity * menuItem.ConversionToPurchaseUnit,
 		MenuItemNumber:     menuItem.Number,
-		TotalCost:          commons.RoundFloat(totalQuantity*determineUnitCost(menuItem), 2),
+		TotalCost:          commons.RoundFloat(totalQuantity*determineUnitCost(menuItem), 6),
 	}
 
 	unitOfMeasure, err := repositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
@@ -599,7 +599,7 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		PurchaseUnitOfMeasureNumber: purchaseUnitOfMeasure.Number,
 		PurchaseUnitOfMeasureName:   purchaseUnitOfMeasure.Name,
 		Parts:                       parts,
-		UnitCost:                    commons.RoundFloat(determineUnitCost(menuItem), 2),
+		UnitCost:                    commons.RoundFloat(determineUnitCost(menuItem), 6),
 		ConversionToPurchaseUnit:    menuItem.ConversionToPurchaseUnit,
 	}, nil
 }

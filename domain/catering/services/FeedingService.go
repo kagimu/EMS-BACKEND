@@ -791,7 +791,7 @@ func BuildFeedingSessionResponse(session models.FeedingSession) responses.Feedin
 	}
 
 	response.PackItems = packItems
-	response.PackCost = commons.RoundFloat(packCost, 2)
+	response.PackCost = commons.RoundFloat(packCost, 6)
 
 	return response
 }
