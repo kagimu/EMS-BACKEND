@@ -102,8 +102,8 @@ func GetBillableByInvoiceNumber(invoiceNumber string, trn ...*gorm.DB) (models.B
 	var billable models.Billable
 
 	if err := db.
-		Joins("JOIN billable_invoices On billable_invoices.invoice_number = invoices.number").
-		Where("invoice_number = ?", invoiceNumber).First(&billable).Error; err != nil {
+		Joins("JOIN billable_invoices On billable_invoices.billable_number = billables.number").
+		Where("billable_invoices.invoice_number = ?", invoiceNumber).First(&billable).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return billable, nil

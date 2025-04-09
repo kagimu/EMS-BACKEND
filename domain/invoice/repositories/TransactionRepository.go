@@ -98,9 +98,9 @@ func SumAllUserPayments(userNumber string) (float64, error) {
 
 	if err := db.Model(&invoiceModels.Statement{}).
 		Joins("JOIN transactions ON transactions.statement_number = statements.number").
-		Where("statement.user_number = ? ", userNumber).
+		Where("statements.user_number = ? ", userNumber).
 		Where("transactions.status = ? ", constants.StatusActive).
-		Select("COALESCE(sum(statement.amount),0)").
+		Select("COALESCE(sum(statements.amount),0)").
 		Scan(&totalAmount).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
