@@ -62,6 +62,39 @@ func (receiver ItemService) CreateServiceResponse(item itemModels.Item, campusSe
 	}
 }
 
+func (receiver ItemService) AllItems(schoolNumber, itemType string) ([]responses.ItemResponse, error) {
+	itemResponses := make([]responses.ItemResponse, 0)
+
+	items, err := repositories.FetchAllItems(schoolNumber, itemType)
+	if err != nil {
+		return itemResponses, errors.New(fmt.Sprintf("Error %s fetching items", err.Error()))
+	}
+
+	for _, item := range items {
+		itemResponses = append(itemResponses, receiver.createItemResponse(item))
+	}
+
+	return itemResponses, nil
+}
+
+func (receiver ItemService) createItemResponse(item itemModels.Item) responses.ItemResponse {
+	return responses.ItemResponse{
+		Number:          item.Number,
+		Name:            item.Name,
+		Description:     item.Description,
+		Type:            item.Type,
+		Cost:            item.Cost,
+		SerialCode:      item.SerialCode,
+		PaymentMode:     item.PaymentMode,
+		Mandatory:       item.Mandatory,
+		SchoolNumber:    item.SchoolNumber,
+		UserNumber:      item.UserNumber,
+		RepeatCycle:     item.RepeatCycle,
+		OneTimePurchase: item.OneTimePurchase,
+		Prefix:          item.Prefix,
+	}
+}
+
 func NewItemService() ItemService {
 	return ItemService{}
 }
