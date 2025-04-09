@@ -1,15 +1,12 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
-	"gorm.io/gorm"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -185,24 +182,13 @@ func FetchAllItems(c *gin.Context) {
 
 	itemType := c.Query("type")
 
-	var items = make([]models.Item, 0)
-	var item []models.Item
-	if err := config.DB.Scopes(filters.ByAnyField("school_number", schoolNumber), filters.ByAnyField("type", itemType)).Find(&item).Error; err != nil {
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, items)
-			return
-		}
-
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch items: " + err.Error()})
+	response, err := itemService.AllItems(schoolNumber, itemType)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	for _, service := range item {
-		items = append(items, service)
-	}
-	c.JSON(http.StatusOK, items)
-	return
+	c.JSON(http.StatusOK, response)
 }
 
 func EditService(c *gin.Context) {
