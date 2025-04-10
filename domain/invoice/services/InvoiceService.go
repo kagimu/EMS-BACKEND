@@ -1344,3 +1344,31 @@ func GetTransactionCredit(transactionNumber string) (models.Transaction, error) 
 
 	return transaction, nil
 }
+
+func GeneralStatement(userNumber string, minAmount, maxAmount float64) ([]responses.StatementResponse, error) {
+	var statementResponse = make([]responses.StatementResponse, 0)
+
+	allStatements, err := invoiceRepositories.FindAllGeneralStatements(userNumber, minAmount, maxAmount)
+	if err != nil {
+		return statementResponse, errors.New("Error getting statements " + err.Error())
+	}
+
+	for _, statement := range allStatements {
+
+		receivedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
+		learner, _ := repository.GetUserByNumber(statement.UserNumber)
+
+		statementResponse = append(statementResponse, responses.StatementResponse{
+			Amount:            statement.Amount,
+			Balance:           statement.Balance,
+			Type:              statement.Type,
+			Description:       statement.Description,
+			DateReceived:      statement.CreatedAt.Format(time.DateTime),
+			ReceivedBy:        receivedBy.FirstName,
+			LearnerName:       fmt.Sprintf("%s %s", learner.FirstName, learner.LastName),
+			LearnerUserNumber: statement.UserNumber,
+		})
+	}
+
+	return statementResponse, nil
+}

@@ -135,6 +135,17 @@ func ByAnyField(fieldName string, fieldValue string) func(db *gorm.DB) *gorm.DB 
 	}
 }
 
+func ByAnyAmountField(fieldName, comparator string, fieldValue float64) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+
+		if fieldName != "" && fieldValue != -1 {
+			return db.Where(fieldName+" "+comparator+" ?", fieldValue)
+		}
+
+		return db
+	}
+}
+
 func ByParent(fieldName string, user *userModel.User) func(db *gorm.DB) *gorm.DB {
 
 	if user == nil {

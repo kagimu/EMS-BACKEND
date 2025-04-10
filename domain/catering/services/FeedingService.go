@@ -775,7 +775,7 @@ func BuildFeedingSessionResponse(session models.FeedingSession) responses.Feedin
 	for _, sessionItem := range sessionItems {
 		menuItem, _ := cateringRepositories.GetMenuItemByNumber(sessionItem.MenuItemNumber)
 		unitOfUse, _ := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
-		packCost = packCost + menuItem.BaseUnitCost*sessionItem.Quantity
+		packCost = packCost + commons.RoundFloat(determineUnitCost(menuItem), 9)*sessionItem.Quantity
 		packItems = append(packItems, responses.PackItem{
 			ItemNumber: menuItem.Number,
 			Name:       menuItem.Name,
@@ -791,7 +791,7 @@ func BuildFeedingSessionResponse(session models.FeedingSession) responses.Feedin
 	}
 
 	response.PackItems = packItems
-	response.PackCost = commons.RoundFloat(packCost, 2)
+	response.PackCost = commons.RoundFloat(packCost, 6)
 
 	return response
 }
