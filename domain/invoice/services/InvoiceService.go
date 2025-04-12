@@ -1357,6 +1357,10 @@ func GeneralStatement(userNumber string, minAmount, maxAmount float64) ([]respon
 
 		receivedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
 		learner, _ := repository.GetUserByNumber(statement.UserNumber)
+		student, err := repositories.FindStudentByUserNumber(statement.UserNumber)
+		if err != nil {
+			return statementResponse, errors.New("Error getting student from user number " + statement.UserNumber)
+		}
 
 		statementResponse = append(statementResponse, responses.StatementResponse{
 			Amount:            statement.Amount,
@@ -1365,8 +1369,9 @@ func GeneralStatement(userNumber string, minAmount, maxAmount float64) ([]respon
 			Description:       statement.Description,
 			DateReceived:      statement.CreatedAt.Format(time.DateTime),
 			ReceivedBy:        receivedBy.FirstName,
-			LearnerName:       fmt.Sprintf("%s %s", learner.FirstName, learner.LastName),
+			LearnerName:       fmt.Sprintf("%s %s %s", learner.FirstName, learner.SecondName, learner.LastName),
 			LearnerUserNumber: statement.UserNumber,
+			StudentNumber:     student.Number,
 		})
 	}
 
