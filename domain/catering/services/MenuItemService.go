@@ -586,6 +586,13 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		}
 	}
 
+	userUnitCost := determineUnitCost(menuItem)
+
+	var purchaseQty float64
+
+	purchaseQty = currentQuantity / menuItem.ConversionToPurchaseUnit
+	purchaseUnitCost := userUnitCost * menuItem.ConversionToPurchaseUnit
+
 	return responses.MenuItemResponse{
 		Number:                      menuItem.Number,
 		Name:                        menuItem.Name,
@@ -599,8 +606,10 @@ func createMenuItemResponse(menuItem models.MenuItem) (responses.MenuItemRespons
 		PurchaseUnitOfMeasureNumber: purchaseUnitOfMeasure.Number,
 		PurchaseUnitOfMeasureName:   purchaseUnitOfMeasure.Name,
 		Parts:                       parts,
-		UnitCost:                    commons.RoundFloat(determineUnitCost(menuItem), 6),
+		UnitCost:                    commons.RoundFloat(userUnitCost, 6),
 		ConversionToPurchaseUnit:    menuItem.ConversionToPurchaseUnit,
+		PurchaseCurrentQuantity:     commons.RoundFloat(purchaseQty, 6),
+		PurchaseUnitCost:            commons.RoundFloat(purchaseUnitCost, 6),
 	}, nil
 }
 
