@@ -42,8 +42,8 @@ func (r *MenuItemRequest) Validate() error {
 		return errors.New("provide base item unit price")
 	}
 
-	if r.ConversionToPurchaseUnit < 0 {
-		return errors.New("conversion to purchase uni can not be negative")
+	if r.ConversionToPurchaseUnit <= 0 {
+		return errors.New("conversion to purchase unit can not be less or equal to 0")
 	}
 
 	if r.PurchaseUnitOfMeasureNumber == "" && r.ConversionToPurchaseUnit > 0 {

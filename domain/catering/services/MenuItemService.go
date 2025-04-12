@@ -482,6 +482,8 @@ func SaveMenuItem(itemType string, payload requests.MenuItemRequest, currentUser
 		return models.MenuItem{}, errors.New("item code already used")
 	}
 
+	userUnitCost := payload.BasePrice / payload.ConversionToPurchaseUnit
+
 	saveMenuItem := models.MenuItem{
 		Number:                      uuid.NewV4().String(),
 		Name:                        payload.Name,
@@ -490,7 +492,7 @@ func SaveMenuItem(itemType string, payload requests.MenuItemRequest, currentUser
 		SchoolNumber:                school.Number,
 		UnitOfMeasureNumber:         payload.UnitOfMeasureNumber,
 		UserNumber:                  currentUserNumber,
-		BaseUnitCost:                payload.BasePrice,
+		BaseUnitCost:                userUnitCost, //Per user unit of measure.
 		Status:                      constants.StatusActive,
 		PurchaseUnitOfMeasureNumber: payload.PurchaseUnitOfMeasureNumber,
 		ConversionToPurchaseUnit:    payload.ConversionToPurchaseUnit,

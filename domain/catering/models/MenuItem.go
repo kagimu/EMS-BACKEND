@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// MenuItem The BaseUnitCost price stored is per user unit of measure
 type MenuItem struct {
 	gorm.Model
 	Number                      string          `json:"number" gorm:"size:36;unique;not null"`
