@@ -542,6 +542,7 @@ func SetupRoutes() *gin.Engine {
 		admission := main.Group("/admissions")
 		{
 			admission.POST("", admissionController.CreateAdmission)
+			admission.POST("existing-admission", admissionController.CreateExistingAdmission)
 			admission.GET("", admissionController.FetchAdmissions)
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 			admission.GET("items/:admission_number", admissionController.FetchItemsAddedOnAdmission)
