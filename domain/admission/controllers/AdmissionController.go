@@ -263,3 +263,137 @@ func FetchItemsAddedOnAdmission(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": filteredItems})
 }
+
+func CreateExistingAdmission(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	var payload requests.ExistingAdmissionRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	payload.Prepare()
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input %s:", err.Error())})
+		return
+	}
+
+	var campusClass campusClassModels.CampusClass
+	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No campus class not found"})
+		return
+	}
+
+	var campus campusModels.Campus
+	if err := config.DB.First(&campus, "number = ?", payload.CampusNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Campus not found"})
+		return
+	}
+
+	var stream campusClassModels.Stream
+	if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Stream not found"})
+		return
+	}
+
+	var studyPeriod studyPeriodModel.StudyPeriod
+	if err := config.DB.First(&studyPeriod, "number = ?", payload.StudyPeriodNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Study period not found"})
+		return
+	}
+
+	//var interview interviewModel.Interview
+	//if err := config.DB.First(&interview, "number = ?", payload.InterviewNumber).Error; err != nil {
+	//	c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Interview not found"})
+	//	return
+	//}
+
+	var academicYear academicYearModel.AcademicYear
+	if err := config.DB.First(&academicYear, "number = ?", payload.AcademicYearNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Academic year not found"})
+		return
+	}
+
+	var student studentModels.Student
+	if err := config.DB.First(&student, "number = ?", payload.StudentNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Student not found"})
+		return
+	}
+
+	//validate if student has been admitted before on the same academic year and study period
+	var admission models.Admission
+	if err := config.DB.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ?", payload.StudentNumber, payload.AcademicYearNumber, payload.StudyPeriodNumber).First(&admission).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student has already been admitted for the selected academic year and study period"})
+		return
+	}
+
+	// validate if student has been admitted before on the same academic year and study period and campus class
+
+	if err := config.DB.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ? AND campus_class_number = ?", payload.StudentNumber, payload.AcademicYearNumber, payload.StudyPeriodNumber, payload.CampusClassNumber).First(&admission).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Student has already been admitted for the selected academic year, study period and campus class"})
+		return
+	}
+
+	// Update the application status
+	applicationNumber := student.ApplicationNumber
+	application, err := applicationController.FetchApplicationByNumber(c, applicationNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred while fetching application"})
+		return
+	}
+	application.Status = constants.StatusAdmitted
+
+	tx := config.DB.Begin()
+	//generateADN, err := studentControllers.CreateADN(student.APNStatus, tx)
+	//if err != nil {
+	//	tx.Rollback()
+	//	c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create ADN"})
+	//	return
+	//}
+
+	student.APNStatus = "Archive"
+	//student.ADN = payload.ADN
+	student.Lin = uuid.NewV4().String()
+	// Update the student status
+	student.Status = constants.StatusAdmitted
+	if err := tx.Save(&student).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
+		return
+	}
+
+	if err := tx.Save(&application).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
+		return
+	}
+
+	saveAdmission := models.Admission{
+		Number:             uuid.NewV4().String(),
+		StudyPeriodNumber:  payload.StudyPeriodNumber,
+		InterviewNumber:    payload.InterviewNumber,
+		StudentNumber:      payload.StudentNumber,
+		CampusClassNumber:  payload.CampusClassNumber,
+		CampusNumber:       payload.CampusNumber,
+		StreamNumber:       payload.StreamNumber,
+		UserNumber:         user.Number,
+		SchoolNumber:       payload.SchoolNumber,
+		AcademicYearNumber: payload.AcademicYearNumber,
+	}
+
+	if err := tx.Create(&saveAdmission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
+		tx.Rollback()
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction"})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Admission created successfully"})
+
+}

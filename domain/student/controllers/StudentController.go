@@ -110,6 +110,7 @@ func CreateStudent(c *gin.Context) {
 			Lin:                       payload.Lin,
 			ModeOfStudyNumber:         payload.ModeOfStudyNumber,
 			AddedBy:                   userNumber,
+			ADN:                       payload.ADN,
 		}
 
 		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
