@@ -64,9 +64,9 @@ func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber
 
 	db := config.DB
 
-	err := db.Transaction(func(transaction *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 
-		err := doRunOnTransaction(transaction, stockingRequest, currentUserNumber)
+		err := doRunOnTransaction(tx, stockingRequest, currentUserNumber)
 
 		if err != nil {
 			return err
@@ -82,11 +82,11 @@ func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber
 	return nil
 }
 
-func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingRequest, currentUserNumber string) error {
+func doRunOnTransaction(tx *gorm.DB, stockingRequest requests.StockingRequest, currentUserNumber string) error {
 
 	for _, stock := range stockingRequest.ItemPriceAndQuantity {
 
-		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber, transaction)
+		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber, tx)
 
 		if err != nil {
 			return errors.New("getting menu item by number error: " + err.Error())
@@ -96,17 +96,24 @@ func doRunOnTransaction(transaction *gorm.DB, stockingRequest requests.StockingR
 			return errors.New("invalid menu item ID")
 		}
 
-		if menuItem.ConversionToPurchaseUnit > 0 {
-			totalCost := stock.Quantity * stock.UnitCost
-			usageQty := stock.Quantity / menuItem.ConversionToPurchaseUnit //Convert to usage quantity
-			stock.Quantity = usageQty
-			stock.UnitCost = totalCost / usageQty //Convert to usage unit cost
+		//Convert cost and stock to user unit
+		purchaseUnitCost := stock.PurchaseUnitCost
+		conversion := menuItem.ConversionToPurchaseUnit
+
+		if conversion <= 0 {
+			conversion = 1
 		}
 
+		userUnitStock := conversion * stock.Quantity
+		userUnitCost := purchaseUnitCost / conversion
+
+		stock.Quantity = userUnitStock
+		stock.PurchaseUnitCost = userUnitCost //Convert to usage unit cost
+
 		if menuItem.Type == constants.TypeAssembled {
-			err = assembleItem(transaction, currentUserNumber, stock, stockingRequest.CampusNumber)
+			err = assembleItem(tx, currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
-			_, err = saveNonAssembled(transaction, stockingRequest.CampusNumber, stock.UnitCost, menuItem.Number, stock.Quantity, menuItem.ConversionToPurchaseUnit, currentUserNumber, menuItem.UnitOfMeasureNumber)
+			_, err = saveNonAssembled(tx, stockingRequest.CampusNumber, stock.PurchaseUnitCost, menuItem.Number, stock.Quantity, conversion, currentUserNumber, menuItem.UnitOfMeasureNumber)
 		}
 
 		return err
@@ -665,12 +672,14 @@ func UpdateMenuItem(payload requests.UpdateMenuItemRequest, currentUserNumber st
 		return errors.New("item code already used")
 	}
 
+	userUnitCost := payload.BasePrice / payload.ConversionToPurchaseUnit
+
 	menuItem.Status = payload.Status
 	menuItem.Name = payload.Name
 	menuItem.Code = payload.Code
 	menuItem.UnitOfMeasureNumber = payload.UnitOfMeasureNumber
 	menuItem.UserNumber = currentUserNumber
-	menuItem.BaseUnitCost = payload.BasePrice
+	menuItem.BaseUnitCost = userUnitCost
 	menuItem.PurchaseUnitOfMeasureNumber = payload.PurchaseUnitOfMeasureNumber
 	menuItem.ConversionToPurchaseUnit = payload.ConversionToPurchaseUnit
 
@@ -824,16 +833,34 @@ func createStockResponse(stocking models.Stocking) responses.StockingResponse {
 
 	menuItem, _ := repositories.GetMenuItemByNumber(stocking.MenuItemNumber)
 
+	purchaseQty := stocking.Quantity / stocking.ConversionToPurchase
+	purchaseUnitCost := stocking.ConversionToPurchase * stocking.UnitCost
+	userUOM, err := repositories.GetUnitOfMeasureByNumber(stocking.UnitOfMeasureNumber)
+	if err != nil {
+		fmt.Println("getting unit of measure error: " + err.Error())
+		userUOM = models.UnitOfMeasure{}
+	}
+
+	purchaseUOM, err := repositories.GetUnitOfMeasureByNumber(stocking.PurchaseUnitOfMeasureNumber)
+	if err != nil {
+		fmt.Println("getting purchase unit of measure error: " + err.Error())
+		purchaseUOM = models.UnitOfMeasure{}
+	}
+
 	return responses.StockingResponse{
-		Number:         stocking.Number,
-		Quantity:       stocking.Quantity,
-		UnitCost:       stocking.UnitCost,
-		MenuItemNumber: stocking.MenuItemNumber,
-		CampusNumber:   stocking.CampusNumber,
-		CampusName:     campus.Name,
-		MenuItemName:   menuItem.Name,
-		MenuItemType:   menuItem.Type,
-		DateTime:       stocking.CreatedAt.Format(time.DateTime),
+		Number:           stocking.Number,
+		Quantity:         stocking.Quantity,
+		UnitCost:         stocking.UnitCost,
+		MenuItemNumber:   stocking.MenuItemNumber,
+		CampusNumber:     stocking.CampusNumber,
+		CampusName:       campus.Name,
+		MenuItemName:     menuItem.Name,
+		MenuItemType:     menuItem.Type,
+		DateTime:         stocking.CreatedAt.Format(time.DateTime),
+		PurchaseQuantity: purchaseQty,
+		PurchaseUnitCost: purchaseUnitCost,
+		UserUnitName:     userUOM.Name,
+		PurchaseUnitName: purchaseUOM.Name,
 	}
 }
 
