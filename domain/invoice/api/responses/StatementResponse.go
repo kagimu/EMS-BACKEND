@@ -9,4 +9,5 @@ type StatementResponse struct {
 	Description       string  `json:"description"`
 	LearnerName       string  `json:"learner_name"`
 	LearnerUserNumber string  `json:"learner_user_number"`
+	StudentNumber     string  `json:"student_number"`
 }
