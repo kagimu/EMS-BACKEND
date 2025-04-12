@@ -113,7 +113,7 @@ func doRunOnTransaction(tx *gorm.DB, stockingRequest requests.StockingRequest, c
 		if menuItem.Type == constants.TypeAssembled {
 			err = assembleItem(tx, currentUserNumber, stock, stockingRequest.CampusNumber)
 		} else {
-			_, err = saveNonAssembled(tx, stockingRequest.CampusNumber, stock.PurchaseUnitCost, menuItem.Number, stock.Quantity, menuItem.ConversionToPurchaseUnit, currentUserNumber, menuItem.UnitOfMeasureNumber)
+			_, err = saveNonAssembled(tx, stockingRequest.CampusNumber, stock.PurchaseUnitCost, menuItem.Number, stock.Quantity, conversion, currentUserNumber, menuItem.UnitOfMeasureNumber)
 		}
 
 		return err
@@ -833,16 +833,34 @@ func createStockResponse(stocking models.Stocking) responses.StockingResponse {
 
 	menuItem, _ := repositories.GetMenuItemByNumber(stocking.MenuItemNumber)
 
+	purchaseQty := stocking.ConversionToPurchase * stocking.Quantity
+	purchaseUnitCost := stocking.ConversionToPurchase * stocking.UnitCost
+	userUOM, err := repositories.GetUnitOfMeasureByNumber(stocking.UnitOfMeasureNumber)
+	if err != nil {
+		fmt.Println("getting unit of measure error: " + err.Error())
+		userUOM = models.UnitOfMeasure{}
+	}
+
+	purchaseUOM, err := repositories.GetUnitOfMeasureByNumber(stocking.PurchaseUnitOfMeasureNumber)
+	if err != nil {
+		fmt.Println("getting purchase unit of measure error: " + err.Error())
+		purchaseUOM = models.UnitOfMeasure{}
+	}
+
 	return responses.StockingResponse{
-		Number:         stocking.Number,
-		Quantity:       stocking.Quantity,
-		UnitCost:       stocking.UnitCost,
-		MenuItemNumber: stocking.MenuItemNumber,
-		CampusNumber:   stocking.CampusNumber,
-		CampusName:     campus.Name,
-		MenuItemName:   menuItem.Name,
-		MenuItemType:   menuItem.Type,
-		DateTime:       stocking.CreatedAt.Format(time.DateTime),
+		Number:           stocking.Number,
+		Quantity:         stocking.Quantity,
+		UnitCost:         stocking.UnitCost,
+		MenuItemNumber:   stocking.MenuItemNumber,
+		CampusNumber:     stocking.CampusNumber,
+		CampusName:       campus.Name,
+		MenuItemName:     menuItem.Name,
+		MenuItemType:     menuItem.Type,
+		DateTime:         stocking.CreatedAt.Format(time.DateTime),
+		PurchaseQuantity: purchaseQty,
+		PurchaseUnitCost: purchaseUnitCost,
+		UserUnitName:     userUOM.Name,
+		PurchaseUnitName: purchaseUOM.Name,
 	}
 }
 
