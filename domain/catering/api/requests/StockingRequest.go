@@ -8,9 +8,9 @@ type StockingRequest struct {
 }
 
 type ItemPriceAndQuantity struct {
-	Quantity       float64 `json:"quantity"`
-	UnitCost       float64 `json:"unit_cost"`
-	MenuItemNumber string  `json:"menu_item_number"`
+	Quantity         float64 `json:"quantity"`
+	PurchaseUnitCost float64 `json:"unit_cost"`
+	MenuItemNumber   string  `json:"menu_item_number"`
 }
 
 func (s *StockingRequest) Validate() error {
@@ -26,8 +26,8 @@ func (s *StockingRequest) Validate() error {
 			return errors.New("quantity is required ")
 		}
 
-		if item.UnitCost < 0 {
-			return errors.New("unit cost can not be negative")
+		if item.PurchaseUnitCost < 0 {
+			return errors.New("purchase unit cost can not be negative")
 		}
 	}
 
