@@ -114,7 +114,7 @@ func processGradingStandardClass(gradingStandardClassRequest requests.GradingSta
 	}
 
 	if checkClassAndScale.ClassNumber != "" && checkClassAndScale.GradingStandardNumber != gradingStandardNumber {
-		return errors.New(classNewScale.Name + " is already set to " + class.Name)
+		return errors.New(class.Name + " is already set to " + classNewScale.Name + " on another grading standard ")
 	}
 
 	checkClassAndScale, err = repositories.GetGradingStandardClassScaleByClassNumberAndScaleNumber(class.Number, "", trn)
