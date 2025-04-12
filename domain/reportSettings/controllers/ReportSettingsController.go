@@ -590,8 +590,9 @@ func DeleteHeadTeacherComment(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
 		return
 	}
+	commentNumberInt, err := strconv.Atoi(commentNumber)
 
-	err := services3.DeleteHeadTeacherComment(commentNumber)
+	err = services3.DeleteHeadTeacherComment(uint(commentNumberInt))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
