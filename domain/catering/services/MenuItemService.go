@@ -672,12 +672,14 @@ func UpdateMenuItem(payload requests.UpdateMenuItemRequest, currentUserNumber st
 		return errors.New("item code already used")
 	}
 
+	userUnitCost := payload.BasePrice / payload.ConversionToPurchaseUnit
+
 	menuItem.Status = payload.Status
 	menuItem.Name = payload.Name
 	menuItem.Code = payload.Code
 	menuItem.UnitOfMeasureNumber = payload.UnitOfMeasureNumber
 	menuItem.UserNumber = currentUserNumber
-	menuItem.BaseUnitCost = payload.BasePrice
+	menuItem.BaseUnitCost = userUnitCost
 	menuItem.PurchaseUnitOfMeasureNumber = payload.PurchaseUnitOfMeasureNumber
 	menuItem.ConversionToPurchaseUnit = payload.ConversionToPurchaseUnit
 
