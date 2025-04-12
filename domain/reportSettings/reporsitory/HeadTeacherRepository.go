@@ -1,8 +1,10 @@
 package reporsitory
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
+	"gorm.io/gorm"
 )
 
 func SaveHeadTeacherComment(headTeacherComment models.HeadTeacherComment) error {
@@ -12,10 +14,15 @@ func SaveHeadTeacherComment(headTeacherComment models.HeadTeacherComment) error 
 	return nil
 }
 
-func GetHeadTeacherCommentByNumber(number string) (models.HeadTeacherComment, error) {
+func GetHeadTeacherCommentByNumber(number uint) (models.HeadTeacherComment, error) {
 	var headTeacherComment models.HeadTeacherComment
-	if err := config.DB.Where("number = ?", number).First(&headTeacherComment).Error; err != nil {
-		return headTeacherComment, err
+	if err := config.DB.Where("id = ?", number).First(&headTeacherComment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return headTeacherComment, nil
+		} else {
+			return headTeacherComment, err
+		}
+
 	}
 	return headTeacherComment, nil
 }

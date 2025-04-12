@@ -18,13 +18,33 @@ func CreateHeadTeacherComment(headTeacherCommentRequest requests.HeadTeacherComm
 	if reportSummary.Number == "" {
 		return errors.New("Invalid report settings number ")
 	}
+	var headTeacherComment models.HeadTeacherComment
+	if headTeacherCommentRequest.Number != 0 {
+		headTeacherComment, err = reporsitory.GetHeadTeacherCommentByNumber(headTeacherCommentRequest.Number)
 
-	headTeacherComment := models.HeadTeacherComment{
-		MinAggregate:        headTeacherCommentRequest.MinAggregate,
-		MaxAggregate:        headTeacherCommentRequest.MaxAggregate,
-		ReportSettingNumber: reportSettingNumber,
-		Comment:             headTeacherCommentRequest.Comment,
-		UserNumber:          userNumber,
+		if err != nil {
+			return errors.New("failed to get head teacher comment")
+		}
+
+		if headTeacherComment.ID == 0 {
+			return errors.New("head teacher comment not found")
+		}
+
+		headTeacherComment.MinAggregate = headTeacherCommentRequest.MinAggregate
+		headTeacherComment.MaxAggregate = headTeacherCommentRequest.MaxAggregate
+		headTeacherComment.Comment = headTeacherCommentRequest.Comment
+		headTeacherComment.ReportSettingNumber = reportSettingNumber
+		headTeacherComment.UserNumber = userNumber
+
+	} else {
+		headTeacherComment = models.HeadTeacherComment{
+			MinAggregate:        headTeacherCommentRequest.MinAggregate,
+			MaxAggregate:        headTeacherCommentRequest.MaxAggregate,
+			ReportSettingNumber: reportSettingNumber,
+			Comment:             headTeacherCommentRequest.Comment,
+			UserNumber:          userNumber,
+		}
+
 	}
 
 	err = reporsitory.SaveHeadTeacherComment(headTeacherComment)
@@ -71,7 +91,7 @@ func BuildHeadTeacherResponse(comment models.HeadTeacherComment) responses.HeadT
 	}
 }
 
-func DeleteHeadTeacherComment(commentNumber string) error {
+func DeleteHeadTeacherComment(commentNumber uint) error {
 	comment, err := reporsitory.GetHeadTeacherCommentByNumber(commentNumber)
 
 	if err != nil {
