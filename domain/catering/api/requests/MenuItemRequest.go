@@ -50,6 +50,10 @@ func (r *BasicMenuItemRequest) Validate() error {
 		return errors.New("set purchase unit of measure")
 	}
 
+	if r.PurchaseUnitOfMeasureNumber == r.UnitOfMeasureNumber {
+		r.ConversionToPurchaseUnit = 1
+	}
+
 	return nil
 }
 
