@@ -833,7 +833,7 @@ func createStockResponse(stocking models.Stocking) responses.StockingResponse {
 
 	menuItem, _ := repositories.GetMenuItemByNumber(stocking.MenuItemNumber)
 
-	purchaseQty := stocking.ConversionToPurchase * stocking.Quantity
+	purchaseQty := stocking.Quantity / stocking.ConversionToPurchase
 	purchaseUnitCost := stocking.ConversionToPurchase * stocking.UnitCost
 	userUOM, err := repositories.GetUnitOfMeasureByNumber(stocking.UnitOfMeasureNumber)
 	if err != nil {
