@@ -46,18 +46,18 @@ func (receiver NarrativeRequest) Validate() error {
 }
 
 type ScheduledNarrativeRequest struct {
-	ScheduledOn          string `json:"scheduled_on"`
-	AssessmentAreaNumber string `json:"assessment_area_number"`
-	StudyPeriodNumber    string `json:"study_period_number"`
-	CampusNumber         string `json:"campus_number"`
-	ClassNumber          string `json:"class_number"`
-	CurriculumNumber     string `json:"curriculum_number"`
-	Description          string `json:"description"`
+	ScheduledOn          []string `json:"scheduled_on"`
+	AssessmentAreaNumber string   `json:"assessment_area_number"`
+	StudyPeriodNumber    string   `json:"study_period_number"`
+	CampusNumber         string   `json:"campus_number"`
+	ClassNumber          string   `json:"class_number"`
+	CurriculumNumber     string   `json:"curriculum_number"`
+	Description          string   `json:"description"`
 }
 
 func (receiver ScheduledNarrativeRequest) Validate() error {
-	if receiver.ScheduledOn == "" {
-		return errors.New("Provide the scheduled on date ")
+	if len(receiver.ScheduledOn) == 0 {
+		return errors.New("Provide the scheduled on dates ")
 	}
 
 	if receiver.AssessmentAreaNumber == "" {

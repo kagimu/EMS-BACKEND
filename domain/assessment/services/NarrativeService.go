@@ -292,15 +292,6 @@ func (narrativeService NarrativeService) UpdateNarrativeSchedule(scheduledNarrat
 
 func (narrativeService NarrativeService) doSaveSchedule(scheduledNarrativeRequest requests.ScheduledNarrativeRequest, user *models2.User, scheduleNumber string) error {
 
-	scheduledOn, err := dateparse.ParseAny(scheduledNarrativeRequest.ScheduledOn)
-	if err != nil {
-		return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
-	}
-
-	if scheduledOn.Before(time.Now()) {
-		return errors.New(fmt.Sprint("The scheduled on date should not be in the past date. "))
-	}
-
 	assessmentArea, err := repositories3.GetAssessmentAreaByNumber(scheduledNarrativeRequest.AssessmentAreaNumber)
 	if err != nil {
 		return err
@@ -322,42 +313,62 @@ func (narrativeService NarrativeService) doSaveSchedule(scheduledNarrativeReques
 		return errors.New("Invalid study period number ")
 	}
 
-	if scheduledOn.After(studyPeriod.StudyPeriodEndDate) {
-		return errors.New(fmt.Sprint(fmt.Sprintf("Schedule date exceeds the study period end date of '%s'", studyPeriod.StudyPeriodEndDate.Format(time.DateOnly))))
-	}
+	createdAt := time.Now()
 
-	schedule := models.ScheduledNarrative{
-		ScheduledOn:          scheduledOn,
-		CreatedAt:            time.Now(),
-		UpdatedAt:            time.Now(),
-		CampusClassNumber:    campusClass.Number,
-		AssessmentAreaNumber: scheduledNarrativeRequest.AssessmentAreaNumber,
-		StudyPeriodNumber:    scheduledNarrativeRequest.StudyPeriodNumber,
-		UserNumber:           user.Number,
-		Description:          scheduledNarrativeRequest.Description,
-		Number:               uuid.NewV4().String(),
-	}
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
-	if scheduleNumber != "" {
-		oldSchedule, err := repositories.FindScheduledNarrativeByNumber(scheduleNumber)
-		if err != nil {
-			return err
+		for _, scheduledOn := range scheduledNarrativeRequest.ScheduledOn {
+
+			scheduledOn, err := dateparse.ParseAny(scheduledOn)
+			if err != nil {
+				return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
+			}
+
+			if scheduledOn.Before(time.Now()) {
+				return errors.New(fmt.Sprint("The scheduled on date should not be in the past date. "))
+			}
+
+			if scheduledOn.After(studyPeriod.StudyPeriodEndDate) {
+				return errors.New(fmt.Sprint(fmt.Sprintf("Schedule date exceeds the study period end date of '%s'", studyPeriod.StudyPeriodEndDate.Format(time.DateOnly))))
+			}
+
+			schedule := models.ScheduledNarrative{
+				ScheduledOn:          scheduledOn,
+				CreatedAt:            createdAt,
+				UpdatedAt:            createdAt,
+				CampusClassNumber:    campusClass.Number,
+				AssessmentAreaNumber: scheduledNarrativeRequest.AssessmentAreaNumber,
+				StudyPeriodNumber:    scheduledNarrativeRequest.StudyPeriodNumber,
+				UserNumber:           user.Number,
+				Description:          scheduledNarrativeRequest.Description,
+				Number:               uuid.NewV4().String(),
+			}
+
+			if scheduleNumber != "" {
+				oldSchedule, err := repositories.FindScheduledNarrativeByNumber(scheduleNumber, tx)
+				if err != nil {
+					return err
+				}
+
+				if oldSchedule.Number == "" {
+					return errors.New("Invalid narrative schedule number ")
+				}
+
+				schedule.Number = oldSchedule.Number
+				schedule.CreatedAt = oldSchedule.CreatedAt
+			}
+
+			err = repositories.SaveScheduledNarrative(schedule, tx)
+			if err != nil {
+				return errors.New(fmt.Sprint("Error saving scheduled narrative assessment: ", err))
+			}
+
 		}
 
-		if oldSchedule.Number == "" {
-			return errors.New("Invalid narrative schedule number ")
-		}
+		return err
+	})
 
-		schedule.Number = oldSchedule.Number
-		schedule.CreatedAt = oldSchedule.CreatedAt
-	}
-
-	err = repositories.SaveScheduledNarrative(schedule)
-	if err != nil {
-		return errors.New(fmt.Sprint("Error saving scheduled narrative assessment: ", err))
-	}
-
-	return nil
+	return err
 }
 
 func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResponse {

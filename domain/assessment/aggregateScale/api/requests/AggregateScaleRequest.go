@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
+	"sort"
 )
 
 type AggregateScaleRequest struct {
@@ -53,7 +54,11 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 	var runsToEnd, startsAtZero bool
 
 	scales := aggregateScale.AggregateScales
-	// sor the slice by code
+
+	// sort the slice by code
+	sort.Slice(scales, func(i, j int) bool {
+		return scales[i].Code < scales[j].Code
+	})
 
 	for count, grade := range scales {
 
