@@ -92,6 +92,7 @@ func CreateStudent(c *gin.Context) {
 
 	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
 	if student.Number != "" {
+
 		// update student details
 		updateStudent := models.Student{
 			Surname:                   payload.Surname,
@@ -110,7 +111,10 @@ func CreateStudent(c *gin.Context) {
 			Lin:                       payload.Lin,
 			ModeOfStudyNumber:         payload.ModeOfStudyNumber,
 			AddedBy:                   userNumber,
-			ADN:                       payload.ADN,
+		}
+
+		if payload.ADN != "" {
+			updateStudent.ADN = payload.ADN
 		}
 
 		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
@@ -183,6 +187,10 @@ func CreateStudent(c *gin.Context) {
 		SchoolNumber:              payload.SchoolNumber,
 		Lin:                       payload.Lin,
 		ModeOfStudyNumber:         payload.ModeOfStudyNumber,
+	}
+
+	if payload.ADN != "" {
+		savStudent.ADN = payload.ADN
 	}
 
 	if err := tx.Create(&savStudent).Error; err != nil {
