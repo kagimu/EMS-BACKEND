@@ -1,6 +1,8 @@
 package responses
 
 type EnrolledStudent struct {
+	APN               string  `json:"apn"`
+	ADN               string  `json:"adn"`
 	Number            string  `json:"number"`
 	StudentSurname    string  `json:"student_surname"`
 	StudentSecondName string  `json:"student_second_name"`

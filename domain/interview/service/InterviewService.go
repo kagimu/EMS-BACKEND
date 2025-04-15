@@ -485,6 +485,8 @@ func InterviewStudents(assessmentMetricNumber, interviewNumber string) ([]respon
 				ActualScore:       assessment.ActualScore,
 				Comment:           assessment.Comment,
 				Status:            student.Status,
+				ADN:               student.ADN,
+				APN:               student.APN,
 			},
 			Assessments: asts,
 		})
