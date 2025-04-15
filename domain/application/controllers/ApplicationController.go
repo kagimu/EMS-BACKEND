@@ -78,6 +78,8 @@ func FetchApplications(c *gin.Context) {
 
 		if err := config.DB.Model(&models.Application{}).
 			Preload("Student").Preload("Parent").
+			Preload("Student.CampusClass").
+			Preload("Student.PreferredCampus").
 			Preload("PreviousSchools").
 			Joins("JOIN students ON students.application_number = applications.number").
 			Scopes(
