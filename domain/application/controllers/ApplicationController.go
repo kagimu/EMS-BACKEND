@@ -55,6 +55,8 @@ func FetchApplications(c *gin.Context) {
 		if err := config.DB.Model(&models.Application{}).
 			Scopes(
 				filters.ByStatus(c.Query("status")),
+				filters.BySchoolNumber(c.Query("school_number")),
+				filters.ByCampusNumber(c.Query("campus_number")),
 				pagination.Paginate(c, &paginationResponse),
 			).
 			Where("user_number = ?", user.Number).
