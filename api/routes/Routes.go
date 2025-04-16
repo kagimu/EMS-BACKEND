@@ -786,6 +786,9 @@ func SetupRoutes() *gin.Engine {
 		students := main.Group("students")
 		{
 			students.GET("/by-assessment-metric/:assessment_metric_number", studentController.FetchStudentsByAssessmentMetricNumber)
+			students.POST("medical-records", studentController.CreateMedicalRecord)
+			students.POST("family-structure", studentController.CreateFamilyStructure)
+			students.POST("emergency-information", studentController.CreateEmergencyInformation)
 		}
 
 		catering := main.Group("catering")

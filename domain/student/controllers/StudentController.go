@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
 
@@ -440,4 +441,50 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": students})
+}
+
+func CreateMedicalRecord(context *gin.Context) {
+	var payload request.MedicalRecordRequest
+	err := context.BindJSON(&payload)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		return
+	}
+
+	err = payload.Validate()
+
+	err = services2.CreateMedicalRecord(payload)
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student created"})
+}
+
+func CreateFamilyStructure(context *gin.Context) {
+	var payload request.FamilyStructureRequest
+	err := context.BindJSON(&payload)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		return
+	}
+
+	err = payload.Validate()
+
+	err = services2.CreateFamilyStructure(payload)
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student created"})
+}
+
+func CreateEmergencyInformation(context *gin.Context) {
+
+	var payload request.EmergencyInformationRequest
+	err := context.BindJSON(&payload)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		return
+	}
+
+	err = payload.Validate()
+
+	err = services2.CreateEmergencyInformation(payload)
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student created"})
+
 }
