@@ -67,6 +67,8 @@ func createAdmissionResponse(admission models.Admission) responses.AdmissionResp
 
 	curriculum, _ := models3.GetCurriculumByNumber(curriculumLevel.CurriculumNumber)
 
+	campusLevel, _ := repositories7.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
+
 	admissionResponse.Class = services.CreateClassResponse(class)
 	admissionResponse.CampusResponse = services2.CreateCampusResponse(campus)
 	admissionResponse.StudyPeriod = services3.CreateStudyPeriod(studyPeriod)
@@ -80,6 +82,7 @@ func createAdmissionResponse(admission models.Admission) responses.AdmissionResp
 	admissionResponse.StudyPeriodNumber = admission.StudyPeriodNumber
 	admissionResponse.CampusClassNumber = admission.CampusClassNumber
 	admissionResponse.StreamNumber = admission.StreamNumber
+	admissionResponse.CampusCurriculumNumber = campusLevel.CampusCurriculumNumber
 
 	return admissionResponse
 }
