@@ -219,6 +219,9 @@ func Init() error {
 		&assessmentModel.Narrative{},
 		&assessmentModel.ScheduledNarrative{},
 		&assessmentModel.NarrativeSchedule{},
+		&studentModels.MedicalRecord{},
+		&studentModels.FamilyMember{},
+		&studentModels.FamilyMemberContact{},
 	)
 
 	if err != nil {
