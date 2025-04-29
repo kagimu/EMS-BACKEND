@@ -1,27 +1,37 @@
 package request
 
-import "errors"
+import (
+	"errors"
+)
 
 type FamilyStructureRequest struct {
 	StudentNumber string         `json:"student_number" gorm:"size:36;not null"`
-	FamilyMembers []FamilyMember `json:"family_members" gorm:"foreignkey:StudentNumber"`
+	FamilyMembers []FamilyMember `json:"family_members" `
+	Languages     []string       `json:"languages"`
 }
 
 func (req *FamilyStructureRequest) Validate() error {
 	if req.StudentNumber == "" {
 		return errors.New("student number is required")
 	}
+
+	if len(req.FamilyMembers) == 0 {
+		return errors.New("family members(father/mother/guardian) is required")
+	}
 	return nil
 }
 
 type FamilyMember struct {
-	Number                 string `json:"number" gorm:"size:36;not null"`
-	StudentNumber          string `json:"student_number" gorm:"size:36;not null"`
-	Surname                string `json:"surname" gorm:"size:50;not null"`
-	OtherName              string `json:"other_name" gorm:"size:50;not null"`
-	PlaceOfEmployment      string `json:"place_of_employment" gorm:"size:50;not null"`
-	PhysicalContactAddress string `json:"physical_contact_address" gorm:"size:50;not null"`
+	Number                 string   `json:"number"`
+	StudentNumber          string   `json:"student_number"`
+	Surname                string   `json:"surname"`
+	OtherName              string   `json:"other_name"`
+	PlaceOfEmployment      string   `json:"place_of_employment"`
+	PhysicalContactAddress string   `json:"physical_contact_address"`
+	Contacts               []string `json:"contacts"`
 }
 
 type FamilyMemberContacts struct {
+	FamilyMemberNumber string `json:"family_member_number" gorm:"size:36;not null"`
+	Contact            string `json:"contact" gorm:"size:50;not null"`
 }
