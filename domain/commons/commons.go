@@ -152,7 +152,7 @@ func PermissionGroups() []PermissionGroup {
 			"edit_menu_item", "remove_menu_item", "delete_menu_pack", "edit_menu_pack", "create_menu_pack", "delete_feeding_group", "edit_feeding_group", "view_feeding_group_list",
 			"create_meal_course", "edit_meal_course", "delete_meal_course", "create_meal_course_menu_pack", "edit_meal_course_menu_pack", "delete_meal_course_menu_pack", "create_daily_group_courses", "activate_groups_on_calendar", "activate_meal_course", "serve_meal"}},
 		{"PRODUCTS & SERVICES": []string{"create_product", "create_service", "edit_product", "edit_service", "view_services", "view_products"}},
-		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype", "add_assessment_schedule", "delete_assessment_schedule", "edit_assessment_schedule"}},
+		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype", "add_assessment_schedule", "delete_assessment_schedule", "edit_assessment_schedule", "generate_report", "view_report_summary", "add_score", "create_names_of_aggregate", "create_aggregate_scale"}},
 		{"ADMISSION": []string{"admit_student", "view_admissions", "cancel_admission", "view_offer_admission", "view_interview_score"}},
 		{"ENROLLMENT": []string{"enroll_student", "view_enrollments", "terminate_enrollment", "re-instate_enrollment"}},
 		{"SETTINGS": []string{"access_settings_menu", "view_learning_area", "update_learning_area",
