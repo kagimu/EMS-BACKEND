@@ -17,3 +17,9 @@ type FamilyMemberContact struct {
 	Contact            string `json:"contact" gorm:"size:50;not null"`
 	Code               uint   `json:"code" gorm:"size:50;not null"`
 }
+
+type StudentLanguage struct {
+	StudentNumber string `json:"student_number" gorm:"size:36;not null"`
+	Code          uint   `json:"code"`
+	Name          string `json:"name"`
+}

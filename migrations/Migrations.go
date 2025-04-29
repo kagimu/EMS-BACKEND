@@ -222,6 +222,7 @@ func Init() error {
 		&studentModels.MedicalRecord{},
 		&studentModels.FamilyMember{},
 		&studentModels.FamilyMemberContact{},
+		&studentModels.StudentLanguage{},
 	)
 
 	if err != nil {

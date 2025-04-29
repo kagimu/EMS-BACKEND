@@ -1,6 +1,8 @@
 package request
 
-import "errors"
+import (
+	"errors"
+)
 
 type FamilyStructureRequest struct {
 	StudentNumber string         `json:"student_number" gorm:"size:36;not null"`
@@ -32,9 +34,4 @@ type FamilyMember struct {
 type FamilyMemberContacts struct {
 	FamilyMemberNumber string `json:"family_member_number" gorm:"size:36;not null"`
 	Contact            string `json:"contact" gorm:"size:50;not null"`
-}
-
-type StudentLanguage struct {
-	Code uint   `json:"code"`
-	Name string `json:"name"`
 }
