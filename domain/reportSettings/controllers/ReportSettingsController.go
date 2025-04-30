@@ -264,6 +264,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 	response, err := services3.GetReportSummary(reportSummaryNumber)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
