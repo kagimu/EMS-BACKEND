@@ -862,13 +862,17 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		ReportTemplate:      reportTemplate.Name,
 	}
 
-	promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
-	if err != nil {
-		return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
-	}
+	if len(scalesUsed) > 0 {
+		promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
+		if err != nil {
+			return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
+		}
 
-	if promo.Number != "" {
-		response.PromotionStatus = commons.CleanPromotionStatus(promo.Status)
+		if promo.Number != "" {
+			response.PromotionStatus = commons.CleanPromotionStatus(promo.Status)
+		}
+	} else {
+		response.PromotionStatus = "N/A"
 	}
 
 	return response, nil
