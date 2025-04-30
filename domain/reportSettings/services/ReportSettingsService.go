@@ -35,7 +35,6 @@ import (
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"strconv"
 	"time"
 )
 
@@ -440,14 +439,17 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	if err != nil {
 		tx.Rollback()
-		reportSummary.Grade = "N/A"
 		return err
-
-	} else {
-		fmt.Println("assessmentGrade", assessmentGrade.Name)
-		reportSummary.Grade = assessmentGrade.Name
-		reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 	}
+
+	if assessmentGrade.Number == "" {
+		reportSummary.Grade = "N/A"
+		assessmentGrade.Name = "N/A"
+	}
+
+	//fmt.Println("assessmentGrade", assessmentGrade.Name)
+	reportSummary.Grade = assessmentGrade.Name
+	reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 
 	reportSummary.Aggregate = totalAggregates
 
@@ -594,7 +596,7 @@ func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentG
 		}
 	}
 
-	return matchedAssessmentGradeScale, errors.New(fmt.Sprintf("%s points dont match any grading category for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
+	return matchedAssessmentGradeScale, nil //errors.New(fmt.Sprintf("%s points dont match any grading category for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
 
 }
 
