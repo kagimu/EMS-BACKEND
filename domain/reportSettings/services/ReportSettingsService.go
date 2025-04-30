@@ -586,7 +586,7 @@ func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentG
 		}
 	}
 
-	return matchedAssessmentGradeScale, errors.New(fmt.Sprintf("%s points dont macth any grading category for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
+	return matchedAssessmentGradeScale, errors.New(fmt.Sprintf("%s points dont match any grading category for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
 
 }
 
