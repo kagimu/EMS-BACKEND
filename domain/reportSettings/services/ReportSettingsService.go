@@ -264,6 +264,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					continue
+				} else {
+					return err
 				}
 			}
 
@@ -803,7 +805,8 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 
 	scalesUsed, err := reporsitory.GetAppliedScaleByScaleNumber(reportSummary.AggregateScaleUsed)
 	if err != nil {
-		return responses.FullReportSummary{}, errors.New("failed to fetch scale error: " + err.Error())
+		//return responses.FullReportSummary{}, errors.New("failed to fetch scale error: " + err.Error())
+		scalesUsed = make([]aggregateSaceltModel.AggregateScale, 0)
 	}
 
 	scales := reporsitory.BuildAppliedScaleResponse(scalesUsed)
