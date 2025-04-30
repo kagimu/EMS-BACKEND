@@ -380,16 +380,22 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			return err
 		}
 
-		totalAggregates += scale.Weight //Sum here
-
-		fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
-
 		grade, err := repository2.FindGradeByNumber(scale.GradeNumber)
-
 		if err != nil {
 			tx.Rollback()
 			return errors.New("failed to fetch grade for this scale")
 		}
+
+		if len(rs) > 0 {
+			totalAggregates += scale.Weight //Sum here
+			finalAggregateScale = scale
+		} else {
+			grade = gradesModels.Grade{
+				ShortName: "N/A",
+			}
+		}
+
+		fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
 
 		//check if the report score summary already exists with the same report summary number and assessment area number
 		var reportScoreSummary models.ReportScoreSummary
@@ -427,8 +433,6 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			}
 
 		}
-
-		finalAggregateScale = scale
 
 	}
 
