@@ -294,6 +294,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
 
 				scale, err = GetProperAggregateScale(scoreAverage, campusClass.Number)
+
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -379,7 +380,9 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			return err
 		}
 
-		totalAggregates += scale.Weight
+		totalAggregates += scale.Weight //Sum here
+
+		fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
 
 		grade, err := repository2.FindGradeByNumber(scale.GradeNumber)
 
@@ -428,6 +431,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		finalAggregateScale = scale
 
 	}
+
 	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
 
 	if err != nil {
