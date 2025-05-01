@@ -4,6 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	userModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	"gorm.io/gorm"
 	"time"
 )
@@ -119,4 +120,17 @@ type ReportScoreSummary struct {
 	Comment              string                              `json:"comment" gorm:"type:text;not null;"`
 	UserNumber           string                              `json:"user_number" gorm:"size:36;not null;"`
 	User                 userModels.User                     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+}
+
+type LearningAreaReportComment struct {
+	Number              string `json:"number" gorm:"size:36;primaryKey"`
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	LearningAreaNumber  string                         `json:"learning_area_number" gorm:"size:36;not null;"`
+	LearningArea        learningAreaModel.LearningArea `gorm:"foreignKey:LearningAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	UserNumber          string                         `json:"user_number" gorm:"size:36;not null;"`
+	User                userModels.User                `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	ReportSummaryNumber string                         `json:"report_summary_number" gorm:"size:36;not null;"`
+	ReportSummary       ReportSummary                  `gorm:"foreignKey:ReportSummaryNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	Comment             string                         `json:"comment" gorm:"type:text;not null;"`
 }

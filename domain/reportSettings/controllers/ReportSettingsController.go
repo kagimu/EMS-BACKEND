@@ -635,3 +635,33 @@ func UpdateReportColumnAssessment(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Report column assessment updated successfully"})
 }
+
+func CreateLearningAreaComment(context *gin.Context) {
+
+	var payload requests.LearningAreaReportCommentRequest
+
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body"})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	err = services3.SaveLearningArea(payload, currentUser)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Learning area comment updated successfully"})
+}
