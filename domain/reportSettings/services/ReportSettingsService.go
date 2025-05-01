@@ -633,13 +633,13 @@ func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academ
 	}
 
 	for _, reportSetting := range all {
-		reportSettingsResponse = append(reportSettingsResponse, createReportSettingsResponse(reportSetting))
+		reportSettingsResponse = append(reportSettingsResponse, CreateReportSettingsResponse(reportSetting))
 	}
 
 	return reportSettingsResponse, nil
 }
 
-func createReportSettingsResponse(reportSetting models.ReportSetting) responses.ReportSettingsResponse {
+func CreateReportSettingsResponse(reportSetting models.ReportSetting) responses.ReportSettingsResponse {
 
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(reportSetting.StudyPeriodNumber)
 

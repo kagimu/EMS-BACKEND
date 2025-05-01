@@ -169,7 +169,15 @@ func addAssessmentToReportColumn(assessmentMetricNumber string, reportColumn mod
 	}
 
 	if assessmentMetric.Number != "" {
-		return errors.New("The assessment metric number is already used: " + assessmentAreaNumber)
+		checkColumn, err := reporsitory.GetReportColumnByNumber(assessmentMetric.ReportColumnNumber)
+		if err != nil {
+			return errors.New("Error checking report column by number: " + err.Error())
+		}
+
+		reportSettings, _ := reporsitory.GetReportSettingByNumber(checkColumn.ReportSettingNumber)
+		reportSettingDetails := CreateReportSettingsResponse(reportSettings)
+
+		return errors.New(fmt.Sprintf("Schedule already used on column %s for report setting %s", checkColumn.Name, reportSettingDetails.Name))
 	}
 
 	reportColumnAssessment := models.ReportColumnAssessment{
