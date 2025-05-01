@@ -85,7 +85,7 @@ type ReportSummary struct {
 type ReportScore struct {
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
-	Number               string                              `json:"number" gorm:"size:36;unique;not null"`
+	Number               string                              `json:"number" gorm:"size:36;unique;not null;primaryKey"`
 	Code                 int64                               `json:"code" gorm:"type:bigint;not null;"`
 	ReportSummaryNumber  string                              `json:"report_summary_number" gorm:"size:36;not null;"`
 	ReportSummary        ReportSummary                       `gorm:"foreignKey:ReportSummaryNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
