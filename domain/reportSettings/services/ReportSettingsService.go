@@ -344,6 +344,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 					Grade:                grade.Name,
 					UserNumber:           userNumber,
 					Remark:               scale.Description,
+					CreatedAt:            time.Now(),
 				}
 
 				if score > 0 {
@@ -427,6 +428,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				UserNumber:           userNumber,
 				Comment:              scale.Description,
 				Illustration:         scale.Illustration,
+				CreatedAt:            time.Now(),
 			}
 
 			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {
