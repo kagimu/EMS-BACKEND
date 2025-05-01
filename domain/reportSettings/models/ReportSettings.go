@@ -4,7 +4,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	userModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
-	"gorm.io/gorm"
 	"time"
 )
 import academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
@@ -13,10 +12,9 @@ import studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/stud
 import classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 
 type ReportSetting struct {
-	ID                 uint `json:"id" gorm:"primaryKey"`
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
-	Number             string                         `json:"number" gorm:"size:36;unique;not null"`
+	Number             string                         `json:"number" gorm:"size:36;unique;not null;primaryKey"`
 	Code               int64                          `json:"code" gorm:"type:bigint;"`
 	AcademicYearNumber string                         `json:"academic_year_number" gorm:"size:36;not null;"`
 	StudyPeriodNumber  string                         `json:"study_period_number" gorm:"size:36;not null;"`
@@ -31,10 +29,9 @@ type ReportSetting struct {
 }
 
 type ReportColumn struct {
-	ID                  uint `json:"id" gorm:"primaryKey"`
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
-	Number              string          `json:"number" gorm:"size:36;unique;not null"`
+	Number              string          `json:"number" gorm:"size:36;unique;not null;primaryKey"`
 	Code                int64           `json:"code" gorm:"type:bigint; not null;"`
 	ReportSettingNumber string          `json:"report_setting_number" gorm:"size:36;not null;"`
 	Name                string          `json:"name" gorm:"type:text;not null;"`
@@ -45,9 +42,8 @@ type ReportColumn struct {
 }
 
 type ReportColumnAssessment struct {
-	ID                     uint `gorm:"primaryKey"`
 	CreatedAt              time.Time
-	Number                 string                              `json:"number" gorm:"size:36;unique;not null"`
+	Number                 string                              `json:"number" gorm:"size:36;unique;not null;primaryKey"`
 	AssessmentAreaNumber   string                              `json:"assessment_area_number" gorm:"size:36;not null;"`
 	AssessmentArea         assessmentAreaModels.AssessmentArea `gorm:"foreignKey:AssessmentAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	AssessmentMetricNumber string                              `json:"assessment_metric_number" gorm:"size:36;not null;unique;"`
@@ -59,8 +55,9 @@ type ReportColumnAssessment struct {
 }
 
 type ReportSummary struct {
-	gorm.Model
-	Number                     string                  `json:"number" gorm:"size:36;unique;not null"`
+	CreatedAt                  time.Time
+	UpdatedAt                  time.Time
+	Number                     string                  `json:"number" gorm:"size:36;unique;not null;primaryKey"`
 	Code                       int64                   `json:"code" gorm:"type:bigint;not null;"`
 	ReportSettingNumber        string                  `json:"report_setting_number" gorm:"size:36;not null;"`
 	StudentNumber              string                  `json:"student_number" gorm:"size:36;not null;"`
@@ -85,7 +82,8 @@ type ReportSummary struct {
 }
 
 type ReportScore struct {
-	gorm.Model
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 	Number               string                              `json:"number" gorm:"size:36;unique;not null"`
 	Code                 int64                               `json:"code" gorm:"type:bigint;not null;"`
 	ReportSummaryNumber  string                              `json:"report_summary_number" gorm:"size:36;not null;"`
@@ -105,8 +103,9 @@ type ReportScore struct {
 }
 
 type ReportScoreSummary struct {
-	gorm.Model
-	Number               string                              `json:"number" gorm:"size:36;unique;not null"`
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	Number               string                              `json:"number" gorm:"size:36;unique;not null;primaryKey"`
 	Code                 int64                               `json:"code" gorm:"type:bigint;not null;"`
 	ReportSummaryNumber  string                              `json:"report_summary_number" gorm:"size:36;not null;"`
 	ReportSummary        ReportSummary                       `gorm:"foreignKey:ReportSummaryNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
