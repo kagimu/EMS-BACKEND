@@ -240,9 +240,11 @@ func FetchReportSummaries(ctx *gin.Context) {
 			fmt.Println(fmt.Sprintf("Checking promotion status error %s", err.Error()))
 		}
 
+		leanStudent := services3.CreateLeanStudent(reportSummary.Student)
+
 		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
 			Number:          reportSummary.Number,
-			StudentName:     reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
+			StudentName:     leanStudent.Surname + " " + leanStudent.SecondName + " " + leanStudent.OtherName,
 			StudentNumber:   reportSummary.StudentNumber,
 			Photo:           commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
 			Grade:           reportSummary.Grade,
@@ -354,15 +356,18 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 	}
 
 	for _, enrollment := range enrollments {
+
+		student := services3.CreateLeanStudent(enrollment.Student)
+
 		var reportSummary models.ReportSummary
 		if err := config.DB.Where("student_number = ? AND study_period_number = ? AND campus_class_number = ?", enrollment.StudentNumber, enrollment.StudyPeriodNumber, enrollment.CampusClassNumber).First(&reportSummary).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				response = append(response, responses.SummarizedFinalReportResponse{
-					Student:           enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+					Student:           student.Surname + " " + student.SecondName,
 					Grade:             "N/A",
 					Aggregate:         "N/A",
 					Class:             enrollment.CampusClass.ClassName,
-					StudentNumber:     enrollment.Student.Number,
+					StudentNumber:     student.Number,
 					EnrollmentNumber:  enrollment.Number,
 					CampusClassNumber: enrollment.CampusClassNumber,
 				})
@@ -372,11 +377,11 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 		} else {
 
 			response = append(response, responses.SummarizedFinalReportResponse{
-				Student:           enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+				Student:           student.Surname + " " + student.SecondName,
 				Grade:             reportSummary.Grade,
 				Aggregate:         strconv.Itoa(int(reportSummary.Aggregate)),
 				Class:             enrollment.CampusClass.ClassName,
-				StudentNumber:     enrollment.Student.Number,
+				StudentNumber:     student.Number,
 				EnrollmentNumber:  enrollment.Number,
 				CampusClassNumber: enrollment.CampusClassNumber,
 			})

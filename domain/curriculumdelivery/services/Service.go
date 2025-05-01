@@ -13,6 +13,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/repository"
 	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	"github.com/gin-gonic/gin"
@@ -230,13 +231,7 @@ func GetStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse)
 		if err != nil {
 			return stdts, err
 		}
-		stdts = append(stdts, responses2.LeanStudent{
-			Number:     student.StudentNumber,
-			Surname:    st.Surname,
-			Gender:     st.Gender,
-			SecondName: st.SecondName,
-			OtherName:  st.OtherName,
-		})
+		stdts = append(stdts, services.CreateLeanStudent(st))
 	}
 
 	return stdts, nil
