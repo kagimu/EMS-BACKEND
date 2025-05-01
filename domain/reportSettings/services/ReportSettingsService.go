@@ -229,6 +229,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			StreamNumber:        enrollment.StreamNumber,
 			ReportTemplateName:  reportTemplate.Name,
 			HeadTeacherComment:  headTeacherComment.Comment,
+			CreatedAt:           time.Now(),
 		}
 
 		if err := reporsitory.CreateReportSummary(reportSummary, tx); err != nil {
