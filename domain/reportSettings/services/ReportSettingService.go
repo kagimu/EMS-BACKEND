@@ -163,25 +163,30 @@ func SaveAssessmentToReportColumn(reportColumnAssessmentRequest requests.ReportC
 
 func addAssessmentToReportColumn(assessmentMetricNumber string, reportColumn models.ReportColumn, assessmentAreaNumber string, currentUser string, trn *gorm.DB) error {
 
-	assessmentMetric, err := reporsitory.GetReportColumnAssessmentByAssessmentMetricNumber(assessmentMetricNumber)
+	assessmentMetric, _ := assessmentRepository.FindAssessmentMetricByNumber(assessmentMetricNumber)
+	if assessmentMetric.AssessmentAreaNumber != assessmentAreaNumber {
+		return errors.New("Assessment area number does not match with the selected schedule ")
+	}
+
+	reportColumnAssessment, err := reporsitory.GetReportColumnAssessmentByAssessmentMetricNumber(assessmentMetricNumber)
 	if err != nil {
 		return errors.New("Error checking assessment metric number: " + err.Error())
 	}
 
-	if assessmentMetric.Number != "" {
-		checkColumn, err := reporsitory.GetReportColumnByNumber(assessmentMetric.ReportColumnNumber)
+	if reportColumnAssessment.Number != "" {
+		checkColumn, err := reporsitory.GetReportColumnByNumber(reportColumnAssessment.ReportColumnNumber)
 		if err != nil {
 			return errors.New("Error checking report column by number: " + err.Error())
 		}
 
 		reportSettings, _ := reporsitory.GetReportSettingByNumber(checkColumn.ReportSettingNumber)
 		reportSettingDetails := CreateReportSettingsResponse(reportSettings)
-		assessmentArea, _ := repositories.GetAssessmentAreaByNumber(assessmentMetric.AssessmentAreaNumber)
+		assessmentArea, _ := repositories.GetAssessmentAreaByNumber(reportColumnAssessment.AssessmentAreaNumber)
 
 		return errors.New(fmt.Sprintf("Schedule already used on column %s for report setting %s", checkColumn.Name+" ("+assessmentArea.Name+")", reportSettingDetails.Name))
 	}
 
-	reportColumnAssessment := models.ReportColumnAssessment{
+	reportColumnAssessment = models.ReportColumnAssessment{
 		Number:                 uuid.NewV4().String(),
 		ReportColumnNumber:     reportColumn.Number,
 		AssessmentAreaNumber:   assessmentAreaNumber,
@@ -261,7 +266,7 @@ func GetReportColumns(reportSettingNumber string) ([]responses.ReportColumnRespo
 			reportColumnAssessmentResponse = append(reportColumnAssessmentResponse, responses.ReportColumnAssessmentResponse{
 				Number:           reportColumnAssessment.Number,
 				AssessmentArea:   assessmentArea.Name,
-				AssessmentMetric: metric.Name + "(" + metricAssessmentArea.Name + ")",
+				AssessmentMetric: metric.Name + " (" + metricAssessmentArea.Name + ")",
 				ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateOnly),
 			})
 		}
@@ -313,7 +318,7 @@ func CreateReportColumnAssessmentResponse(reportColumnAssessment models.ReportCo
 	return responses.ReportColumnAssessmentResponse{
 		Number:           reportColumnAssessment.Number,
 		AssessmentArea:   assessmentArea.Name,
-		AssessmentMetric: metric.Name + "(" + metricAssessmentArea.Name + ")",
+		AssessmentMetric: metric.Name + " (" + metricAssessmentArea.Name + ")",
 		ReportColumn:     reportColumn.Name,
 		ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateTime),
 		Class:            class.Name,
