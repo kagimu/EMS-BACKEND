@@ -35,7 +35,6 @@ import (
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"strconv"
 	"time"
 )
 
@@ -232,11 +231,11 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			HeadTeacherComment:  headTeacherComment.Comment,
 		}
 
-		//if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
-		//	tx.Rollback()
-		//	return errors.New("failed to create report summary")
-		//
-		//}
+		if err := reporsitory.CreateReportSummary(reportSummary, tx); err != nil {
+			tx.Rollback()
+			return errors.New("failed to create report summary")
+
+		}
 	}
 
 	campusClass, err := repositories.GetCampusClassByNumber(payload.CampusClassNumber)
@@ -265,6 +264,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					continue
+				} else {
+					return err
 				}
 			}
 
@@ -380,16 +381,22 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			return err
 		}
 
-		totalAggregates += scale.Weight //Sum here
-
-		fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
-
 		grade, err := repository2.FindGradeByNumber(scale.GradeNumber)
-
 		if err != nil {
 			tx.Rollback()
 			return errors.New("failed to fetch grade for this scale")
 		}
+
+		if len(rs) > 0 {
+			totalAggregates += scale.Weight //Sum here
+			finalAggregateScale = scale
+		} else {
+			grade = gradesModels.Grade{
+				ShortName: "N/A",
+			}
+		}
+
+		fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
 
 		//check if the report score summary already exists with the same report summary number and assessment area number
 		var reportScoreSummary models.ReportScoreSummary
@@ -428,22 +435,23 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 		}
 
-		finalAggregateScale = scale
-
 	}
 
 	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
 
 	if err != nil {
 		tx.Rollback()
-		reportSummary.Grade = "N/A"
 		return err
-
-	} else {
-		fmt.Println("assessmentGrade", assessmentGrade.Name)
-		reportSummary.Grade = assessmentGrade.Name
-		reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 	}
+
+	if assessmentGrade.Number == "" {
+		reportSummary.Grade = "N/A"
+		assessmentGrade.Name = "N/A"
+	}
+
+	//fmt.Println("assessmentGrade", assessmentGrade.Name)
+	reportSummary.Grade = assessmentGrade.Name
+	reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 
 	reportSummary.Aggregate = totalAggregates
 
@@ -590,7 +598,7 @@ func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentG
 		}
 	}
 
-	return matchedAssessmentGradeScale, errors.New(fmt.Sprintf("%s points dont match any grading category for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
+	return matchedAssessmentGradeScale, nil //errors.New(fmt.Sprintf("%s points dont match any grading category for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
 
 }
 
@@ -797,7 +805,8 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 
 	scalesUsed, err := reporsitory.GetAppliedScaleByScaleNumber(reportSummary.AggregateScaleUsed)
 	if err != nil {
-		return responses.FullReportSummary{}, errors.New("failed to fetch scale error: " + err.Error())
+		//return responses.FullReportSummary{}, errors.New("failed to fetch scale error: " + err.Error())
+		scalesUsed = make([]aggregateSaceltModel.AggregateScale, 0)
 	}
 
 	scales := reporsitory.BuildAppliedScaleResponse(scalesUsed)
@@ -853,13 +862,17 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		ReportTemplate:      reportTemplate.Name,
 	}
 
-	promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
-	if err != nil {
-		return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
-	}
+	if len(scalesUsed) > 0 {
+		promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
+		if err != nil {
+			return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
+		}
 
-	if promo.Number != "" {
-		response.PromotionStatus = commons.CleanPromotionStatus(promo.Status)
+		if promo.Number != "" {
+			response.PromotionStatus = commons.CleanPromotionStatus(promo.Status)
+		}
+	} else {
+		response.PromotionStatus = "N/A"
 	}
 
 	return response, nil

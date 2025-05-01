@@ -64,6 +64,16 @@ func SaveReportSummary(summary models.ReportSummary, trn ...*gorm.DB) error {
 	return db.Save(&summary).Error
 }
 
+func CreateReportSummary(summary models.ReportSummary, trn ...*gorm.DB) error {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	return db.Create(&summary).Error
+}
+
 func FindDuplicateReportSummary(studentNumber, studyPeriodNumber, campusClassNumber string, trn ...*gorm.DB) (models.ReportSummary, error) {
 
 	db := config.DB
