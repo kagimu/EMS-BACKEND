@@ -461,6 +461,7 @@ func SaveLearningArea(learningAreaReportCommentRequest requests.LearningAreaRepo
 				UserNumber:          currentUser.Number,
 				LearningAreaNumber:  comment.LearningAreaNumber,
 				ReportSummaryNumber: reportNumber,
+				Comment:             comment.Comment,
 			}
 
 			if check.Number != "" {
