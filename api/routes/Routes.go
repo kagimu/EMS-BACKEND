@@ -733,6 +733,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("add-head-teachers-comment/:report_setting_number", reportSettingsController.CreateHeadTeacherComment)
 			reportSettings.GET("head-teachers-comments", reportSettingsController.FetchHeadTeacherComments)
 			reportSettings.POST("add-teacher-comment", reportSettingsController.CreateTeachersComment)
+			reportSettings.POST("learning-area-comments", reportSettingsController.CreateLearningAreaComment)
 			reportSettings.DELETE("head-teacher-comment/:id", reportSettingsController.DeleteHeadTeacherComment)
 
 			narrative := reportSettings.Group("narrative")

@@ -219,6 +219,7 @@ func Init() error {
 		&assessmentModel.Narrative{},
 		&assessmentModel.ScheduledNarrative{},
 		&assessmentModel.NarrativeSchedule{},
+		&reportSettings.LearningAreaReportComment{},
 		//&studentModels.MedicalRecord{},
 		//&studentModels.FamilyMember{},
 		//&studentModels.FamilyMemberContact{},

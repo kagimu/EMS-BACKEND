@@ -434,3 +434,43 @@ func UpdateReportColumnAssessment(reportColumnAssessmentRequest requests.ReportC
 
 	return nil
 }
+
+func SaveLearningArea(learningAreaReportCommentRequest requests.LearningAreaReportCommentRequest, currentUser *authModel.User) error {
+
+	reportNumber := learningAreaReportCommentRequest.ReportSummaryNumber
+	comments := learningAreaReportCommentRequest.LearningAreaComments
+
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, comment := range comments {
+			check, err := reporsitory.FindLearningAreaReportComment(reportNumber, comment.LearningAreaNumber, tx)
+			if err != nil {
+				return errors.New("Error checking report column assessment by number: " + err.Error())
+			}
+
+			learningAreaComment := models.LearningAreaReportComment{
+				Number:              uuid.NewV4().String(),
+				UserNumber:          currentUser.Number,
+				LearningAreaNumber:  comment.LearningAreaNumber,
+				ReportSummaryNumber: reportNumber,
+			}
+
+			if check.Number != "" {
+				learningAreaComment.Number = check.Number
+				learningAreaComment.UpdatedAt = time.Now()
+				learningAreaComment.CreatedAt = check.CreatedAt
+			} else {
+				learningAreaComment.CreatedAt = time.Now()
+			}
+
+			results := reporsitory.SaveLearningAreaReportComment(learningAreaComment, tx)
+			if results != nil {
+				return errors.New("Error saving learning area comment: " + err.Error())
+			}
+		}
+
+		return nil
+	})
+
+	return err
+}
