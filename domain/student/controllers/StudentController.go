@@ -244,6 +244,7 @@ func EditStudent(c *gin.Context) {
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		CampusClassNumber:         payload.CampusClassNumber,
 		SchoolNumber:              payload.SchoolNumber,
+		Gender:                    payload.Gender,
 	}
 
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
