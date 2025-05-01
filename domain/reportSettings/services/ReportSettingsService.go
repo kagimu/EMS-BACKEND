@@ -511,7 +511,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			Number:                 uuid.NewV4().String(),
 			ReportSummaryNumber:    reportSummaryNumber,
 			PromotionSettingNumber: finalStatus.Number,
-			Status:                 finalStatus.Type,
+			Status:                 finalStatus.Status,
 			UserNumber:             finalStatus.UserNumber,
 			PromotionType:          "Auto",
 			CreatedAt:              time.Now(),
