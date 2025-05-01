@@ -101,6 +101,7 @@ type ReportScore struct {
 	Remark               string                              `json:"remark" gorm:"type:text;"`
 	UserNumber           string                              `json:"user_number" gorm:"size:36;not null;"`
 	User                 userModels.User                     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	TeacherInitial       string                              `json:"teacher_initial" gorm:"size:16;"`
 }
 
 type ReportScoreSummary struct {
