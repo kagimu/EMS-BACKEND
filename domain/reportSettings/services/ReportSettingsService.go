@@ -319,6 +319,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				reportScore.Illustration = scale.Illustration
 				reportScore.UserNumber = userNumber
 				reportScore.Remark = scale.Description
+				reportScore.TeacherInitial = commons.GetInitialsDot(assessmentArea.Name)
 
 				//kkk
 
@@ -345,6 +346,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 					UserNumber:           userNumber,
 					Remark:               scale.Description,
 					CreatedAt:            time.Now(),
+					TeacherInitial:       commons.GetInitialsDot(assessmentArea.Name),
 				}
 
 				if score > 0 {
