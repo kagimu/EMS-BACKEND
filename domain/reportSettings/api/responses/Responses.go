@@ -106,6 +106,7 @@ type FullReportSummary struct {
 	School              LeanSchool     `json:"school"`
 	Campus              LeanCampus     `json:"campus"`
 	StudyPeriod         string         `json:"study_period"`
+	StudyPeriodEndDate  string         `json:"study_period_end_date"`
 	AcademicYear        string         `json:"academic_year"`
 	ReportColumns       []string       `json:"report_columns"`
 	ReportTemplateName  string         `json:"report_template_name"`
