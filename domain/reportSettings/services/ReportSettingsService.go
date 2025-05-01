@@ -870,7 +870,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		HeadTeachersComment: reportSummary.HeadTeacherComment,
 		AggregateScale:      scales,
 		LevelName:           levelName.Name,
-		NextTermBegins:      studyPeriod.NextTermBeginsOn.String(),
+		NextTermBegins:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
 		ReportTemplate:      reportTemplate.Name,
 	}
 
