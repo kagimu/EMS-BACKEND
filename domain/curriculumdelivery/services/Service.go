@@ -205,7 +205,7 @@ func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses
 	if err != nil {
 		return &cd, err
 	}
-	cd.Teacher = teacher.FirstName + "" + teacher.LastName
+	cd.Teacher = teacher.FirstName + " " + teacher.LastName
 
 	subject, err := repositories3.GetSubjectByNumber(cds.SubjectNumber)
 	if err != nil {
