@@ -235,11 +235,16 @@ func EditStudent(c *gin.Context) {
 	}
 
 	savedStudent := models.Student{
-		Surname:     payload.Surname,
-		OtherName:   payload.OtherName,
-		SecondName:  payload.SecondName,
-		DateOfBirth: payload.DateOfBirth,
-		Gender:      payload.Gender,
+		Surname:                   payload.Surname,
+		OtherName:                 payload.OtherName,
+		SecondName:                payload.SecondName,
+		APNStatus:                 payload.APNStatus,
+		DateOfBirth:               payload.DateOfBirth,
+		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
+		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+		CampusClassNumber:         payload.CampusClassNumber,
+		SchoolNumber:              payload.SchoolNumber,
+		Gender:                    payload.Gender,
 	}
 
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
