@@ -176,8 +176,9 @@ func addAssessmentToReportColumn(assessmentMetricNumber string, reportColumn mod
 
 		reportSettings, _ := reporsitory.GetReportSettingByNumber(checkColumn.ReportSettingNumber)
 		reportSettingDetails := CreateReportSettingsResponse(reportSettings)
+		assessmentArea, _ := repositories.GetAssessmentAreaByNumber(assessmentMetric.AssessmentAreaNumber)
 
-		return errors.New(fmt.Sprintf("Schedule already used on column %s for report setting %s", checkColumn.Name, reportSettingDetails.Name))
+		return errors.New(fmt.Sprintf("Schedule already used on column %s for report setting %s", checkColumn.Name+" ("+assessmentArea.Name+")", reportSettingDetails.Name))
 	}
 
 	reportColumnAssessment := models.ReportColumnAssessment{
