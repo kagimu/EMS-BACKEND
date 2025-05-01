@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
@@ -13,10 +15,29 @@ type StaffRepository interface {
 	DetachStaffFromStream(streamTeacher *models.StreamTeacher) error
 	GetTeacherStreamDeployments(ctx *gin.Context, pagination *pagination.PaginatedResponse) ([]models.StreamTeacher, error)
 	GetTeacherByNumberAndStreamNumber(userNumber string, streamNumber string) (*models.StreamTeacher, error)
+	GetDefaultAssessmentAreaStreamTeacher(assessmentAreaNumber, streamNumber string) (userModel.User, error)
 }
 
 type StaffRepo struct {
 	DB *gorm.DB
+}
+
+func (s StaffRepo) GetDefaultAssessmentAreaStreamTeacher(assessmentAreaNumber, streamNumber string) (userModel.User, error) {
+	var user userModel.User
+
+	err := s.DB.
+		Joins("JOIN stream_teachers ON users.number = stream_teachers.user_number").
+		Where("stream_teachers.assessment_area_number = ? AND stream_teachers.stream_number = ?", assessmentAreaNumber, streamNumber).
+		First(&user).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return user, nil
+		}
+		return user, err
+	}
+
+	return user, nil
 }
 
 func (s StaffRepo) GetTeacherByNumberAndStreamNumber(userNumber string, streamNumber string) (*models.StreamTeacher, error) {

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -282,4 +283,20 @@ func CleanPromotionStatus(status string) string {
 	}
 
 	return status
+}
+
+func GetInitialsDot(name string) string {
+	parts := strings.Fields(name)
+	var initials []string
+
+	for _, part := range parts {
+		for _, r := range part {
+			if unicode.IsLetter(r) {
+				initials = append(initials, strings.ToUpper(string(r)))
+				break
+			}
+		}
+	}
+
+	return strings.Join(initials, ".")
 }

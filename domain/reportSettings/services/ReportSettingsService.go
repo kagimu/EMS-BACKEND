@@ -31,6 +31,7 @@ import (
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
+	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/repository"
 	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
@@ -173,6 +174,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	tx := config.DB.Begin()
 
+	var staffRepository = repository3.NewStaffRepository(tx)
+
 	var reportTemplate reportTemplateModel.ReportTemplate
 
 	if reportTemplate, err = services.DetermineReportTemplateForClass(payload.CampusClassNumber); err != nil {
@@ -258,6 +261,18 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	for _, assessmentArea := range assessmentAreas {
 		var scale aggregateSaceltModel.AggregateScale
 		var grade gradesModels.Grade
+
+		teacherInitial := "-"
+
+		checkTeacherInitial, checkErr := staffRepository.GetDefaultAssessmentAreaStreamTeacher(assessmentArea.Number, enrollment.StreamNumber)
+		if checkErr != nil {
+			tx.Rollback()
+			return errors.New("failed to fetch default stream teacher")
+		}
+
+		if checkTeacherInitial.Number != "" {
+			teacherInitial = commons.GetInitialsDot(fmt.Sprintf("%s %s %s", checkTeacherInitial.FirstName, checkTeacherInitial.SecondName, checkTeacherInitial.LastName))
+		}
 
 		for _, reportColum := range reportColumns {
 
@@ -410,6 +425,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			reportScoreSummary.UserNumber = userNumber
 			reportScoreSummary.Comment = scale.Description
 			reportScoreSummary.Illustration = scale.Illustration
+			reportScoreSummary.TeacherInitial = teacherInitial
 
 			if err := reporsitory.SaveReportScoreSummary(reportScoreSummary, tx); err != nil {
 				tx.Rollback()
@@ -429,6 +445,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				Comment:              scale.Description,
 				Illustration:         scale.Illustration,
 				CreatedAt:            time.Now(),
+				TeacherInitial:       teacherInitial,
 			}
 
 			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {
