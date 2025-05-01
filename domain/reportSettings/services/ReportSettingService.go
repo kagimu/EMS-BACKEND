@@ -256,10 +256,12 @@ func GetReportColumns(reportSettingNumber string) ([]responses.ReportColumnRespo
 				return nil, errors.New("getting metric by number error: " + err.Error())
 			}
 
+			metricAssessmentArea, _ := repositories.GetAssessmentAreaByNumber(assessmentSchedule.AssessmentAreaNumber)
+
 			reportColumnAssessmentResponse = append(reportColumnAssessmentResponse, responses.ReportColumnAssessmentResponse{
 				Number:           reportColumnAssessment.Number,
 				AssessmentArea:   assessmentArea.Name,
-				AssessmentMetric: metric.Name,
+				AssessmentMetric: metric.Name + "(" + metricAssessmentArea.Name + ")",
 				ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateOnly),
 			})
 		}
@@ -306,10 +308,12 @@ func CreateReportColumnAssessmentResponse(reportColumnAssessment models.ReportCo
 	ay, _ := repositories5.GetAcademicYearByNumber(reportSetting.AcademicYearNumber)
 	spn, _ := repositories4.GetStudyPeriodNameByStudyPeriodNumber(sp.Number)
 
+	metricAssessmentArea, _ := repositories.GetAssessmentAreaByNumber(assessmentSchedule.AssessmentAreaNumber)
+
 	return responses.ReportColumnAssessmentResponse{
 		Number:           reportColumnAssessment.Number,
 		AssessmentArea:   assessmentArea.Name,
-		AssessmentMetric: metric.Name,
+		AssessmentMetric: metric.Name + "(" + metricAssessmentArea.Name + ")",
 		ReportColumn:     reportColumn.Name,
 		ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateTime),
 		Class:            class.Name,
