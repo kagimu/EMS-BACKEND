@@ -201,7 +201,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 	if campusClassNumber == "" {
 		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
 		if err != nil {
-			ctx.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
 		}
 
