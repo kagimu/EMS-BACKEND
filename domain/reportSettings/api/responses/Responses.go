@@ -79,8 +79,10 @@ type Assessments struct {
 }
 
 type LearningArea struct {
-	Name        string        `json:"name"`
-	Assessments []Assessments `json:"assessments"`
+	Name               string        `json:"name"`
+	Comment            string        `json:"comment"`
+	LearningAreaNumber string        `json:"learning_area_number"`
+	Assessments        []Assessments `json:"assessments"`
 }
 
 type AppliedScale struct {
@@ -91,6 +93,7 @@ type AppliedScale struct {
 	Illustration string  `json:"illustration"`
 }
 type FullReportSummary struct {
+	ReportSummaryNumber string         `json:"report_summary_number"`
 	Student             LeanStudent    `json:"student"`
 	Grade               string         `json:"grade"`
 	LearningAreas       []LearningArea `json:"learning_areas"`
@@ -103,6 +106,7 @@ type FullReportSummary struct {
 	School              LeanSchool     `json:"school"`
 	Campus              LeanCampus     `json:"campus"`
 	StudyPeriod         string         `json:"study_period"`
+	StudyPeriodEndDate  string         `json:"study_period_end_date"`
 	AcademicYear        string         `json:"academic_year"`
 	ReportColumns       []string       `json:"report_columns"`
 	ReportTemplateName  string         `json:"report_template_name"`

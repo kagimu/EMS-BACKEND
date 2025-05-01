@@ -163,16 +163,30 @@ func SaveAssessmentToReportColumn(reportColumnAssessmentRequest requests.ReportC
 
 func addAssessmentToReportColumn(assessmentMetricNumber string, reportColumn models.ReportColumn, assessmentAreaNumber string, currentUser string, trn *gorm.DB) error {
 
-	assessmentMetric, err := reporsitory.GetReportColumnAssessmentByAssessmentMetricNumber(assessmentMetricNumber)
+	assessmentMetric, _ := assessmentRepository.FindAssessmentMetricByNumber(assessmentMetricNumber)
+	if assessmentMetric.AssessmentAreaNumber != assessmentAreaNumber {
+		return errors.New("Assessment area number does not match with the selected schedule ")
+	}
+
+	reportColumnAssessment, err := reporsitory.GetReportColumnAssessmentByAssessmentMetricNumber(assessmentMetricNumber)
 	if err != nil {
 		return errors.New("Error checking assessment metric number: " + err.Error())
 	}
 
-	if assessmentMetric.Number != "" {
-		return errors.New("The assessment metric number is already used: " + assessmentAreaNumber)
+	if reportColumnAssessment.Number != "" {
+		checkColumn, err := reporsitory.GetReportColumnByNumber(reportColumnAssessment.ReportColumnNumber)
+		if err != nil {
+			return errors.New("Error checking report column by number: " + err.Error())
+		}
+
+		reportSettings, _ := reporsitory.GetReportSettingByNumber(checkColumn.ReportSettingNumber)
+		reportSettingDetails := CreateReportSettingsResponse(reportSettings)
+		assessmentArea, _ := repositories.GetAssessmentAreaByNumber(reportColumnAssessment.AssessmentAreaNumber)
+
+		return errors.New(fmt.Sprintf("Schedule already used on column %s for report setting %s", checkColumn.Name+" ("+assessmentArea.Name+")", reportSettingDetails.Name))
 	}
 
-	reportColumnAssessment := models.ReportColumnAssessment{
+	reportColumnAssessment = models.ReportColumnAssessment{
 		Number:                 uuid.NewV4().String(),
 		ReportColumnNumber:     reportColumn.Number,
 		AssessmentAreaNumber:   assessmentAreaNumber,
@@ -247,10 +261,12 @@ func GetReportColumns(reportSettingNumber string) ([]responses.ReportColumnRespo
 				return nil, errors.New("getting metric by number error: " + err.Error())
 			}
 
+			metricAssessmentArea, _ := repositories.GetAssessmentAreaByNumber(assessmentSchedule.AssessmentAreaNumber)
+
 			reportColumnAssessmentResponse = append(reportColumnAssessmentResponse, responses.ReportColumnAssessmentResponse{
 				Number:           reportColumnAssessment.Number,
 				AssessmentArea:   assessmentArea.Name,
-				AssessmentMetric: metric.Name,
+				AssessmentMetric: metric.Name + " (" + metricAssessmentArea.Name + ")",
 				ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateOnly),
 			})
 		}
@@ -297,10 +313,12 @@ func CreateReportColumnAssessmentResponse(reportColumnAssessment models.ReportCo
 	ay, _ := repositories5.GetAcademicYearByNumber(reportSetting.AcademicYearNumber)
 	spn, _ := repositories4.GetStudyPeriodNameByStudyPeriodNumber(sp.Number)
 
+	metricAssessmentArea, _ := repositories.GetAssessmentAreaByNumber(assessmentSchedule.AssessmentAreaNumber)
+
 	return responses.ReportColumnAssessmentResponse{
 		Number:           reportColumnAssessment.Number,
 		AssessmentArea:   assessmentArea.Name,
-		AssessmentMetric: metric.Name,
+		AssessmentMetric: metric.Name + " (" + metricAssessmentArea.Name + ")",
 		ReportColumn:     reportColumn.Name,
 		ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateTime),
 		Class:            class.Name,
@@ -433,4 +451,45 @@ func UpdateReportColumnAssessment(reportColumnAssessmentRequest requests.ReportC
 	}
 
 	return nil
+}
+
+func SaveLearningArea(learningAreaReportCommentRequest requests.LearningAreaReportCommentRequest, currentUser *authModel.User) error {
+
+	reportNumber := learningAreaReportCommentRequest.ReportSummaryNumber
+	comments := learningAreaReportCommentRequest.LearningAreaComments
+
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, comment := range comments {
+			check, err := reporsitory.FindLearningAreaReportComment(reportNumber, comment.LearningAreaNumber, tx)
+			if err != nil {
+				return errors.New("Error checking report column assessment by number: " + err.Error())
+			}
+
+			learningAreaComment := models.LearningAreaReportComment{
+				Number:              uuid.NewV4().String(),
+				UserNumber:          currentUser.Number,
+				LearningAreaNumber:  comment.LearningAreaNumber,
+				ReportSummaryNumber: reportNumber,
+				Comment:             comment.Comment,
+			}
+
+			if check.Number != "" {
+				learningAreaComment.Number = check.Number
+				learningAreaComment.UpdatedAt = time.Now()
+				learningAreaComment.CreatedAt = check.CreatedAt
+			} else {
+				learningAreaComment.CreatedAt = time.Now()
+			}
+
+			results := reporsitory.SaveLearningAreaReportComment(learningAreaComment, tx)
+			if results != nil {
+				return errors.New("Error saving learning area comment: " + err.Error())
+			}
+		}
+
+		return nil
+	})
+
+	return err
 }

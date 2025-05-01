@@ -633,13 +633,13 @@ func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academ
 	}
 
 	for _, reportSetting := range all {
-		reportSettingsResponse = append(reportSettingsResponse, createReportSettingsResponse(reportSetting))
+		reportSettingsResponse = append(reportSettingsResponse, CreateReportSettingsResponse(reportSetting))
 	}
 
 	return reportSettingsResponse, nil
 }
 
-func createReportSettingsResponse(reportSetting models.ReportSetting) responses.ReportSettingsResponse {
+func CreateReportSettingsResponse(reportSetting models.ReportSetting) responses.ReportSettingsResponse {
 
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(reportSetting.StudyPeriodNumber)
 
@@ -799,9 +799,16 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 			})
 		}
 
+		learningAreaComment, err := reporsitory.FindLearningAreaReportComment(reportSummaryNumber, learningArea.Number)
+		if err != nil {
+			return responses.FullReportSummary{}, errors.New("failed to find learning area comment error: " + err.Error())
+		}
+
 		la = append(la, responses.LearningArea{
-			Name:        learningArea.Name,
-			Assessments: assessments,
+			Name:               learningArea.Name,
+			LearningAreaNumber: learningArea.Number,
+			Assessments:        assessments,
+			Comment:            learningAreaComment.Comment,
 		})
 
 	}
@@ -839,6 +846,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 	}
 
 	response := responses.FullReportSummary{
+		ReportSummaryNumber: reportSummaryNumber,
 		Student: responses.LeanStudent{
 			Number:      student.Number,
 			Surname:     student.Surname,
@@ -855,13 +863,14 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		School:              services4.BuildLeanSchoolResponse(&school),
 		Campus:              campus,
 		StudyPeriod:         studyPeriodName.Name,
+		StudyPeriodEndDate:  studyPeriod.StudyPeriodEndDate.Format("02-01-2006"),
 		ReportColumns:       rcs,
 		ReportTemplateName:  reportSummary.ReportTemplateName,
 		TeacherComment:      reportSummary.TeacherComment,
 		HeadTeachersComment: reportSummary.HeadTeacherComment,
 		AggregateScale:      scales,
 		LevelName:           levelName.Name,
-		NextTermBegins:      studyPeriod.NextTermBeginsOn.String(),
+		NextTermBegins:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
 		ReportTemplate:      reportTemplate.Name,
 	}
 
