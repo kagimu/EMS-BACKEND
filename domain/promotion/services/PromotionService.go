@@ -41,9 +41,62 @@ type PromotionService interface {
 	PromotionSettingDetails(promotionSettingNumber string) (responses.PromotionDetailedResponse, error)
 	PromotionSettingGrades(promotionSettingNumber string, c *gin.Context) (responses.PromotionSettingGradeResponse, error)
 	PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error)
+	UpdatePromotionSetting(payload requests.PromotionSettingRequest, user *models.User, promotionSettingNumber string) error
 }
 
 type promotionService struct{}
+
+func (p *promotionService) UpdatePromotionSetting(promotionSettingsRequest requests.PromotionSettingRequest, user *models.User, promotionSettingNumber string) error {
+
+	promotionSetting, err := repositories.FindPromotionSettingByNumber(promotionSettingNumber)
+	if err != nil {
+		return errors.New("Error checking promotion setting error " + err.Error())
+	}
+
+	if promotionSetting.Number == "" {
+		return errors.New("Invalid promotion setting number ")
+	}
+
+	nextCampusClass, err := services.ResolveCampusClass(promotionSettingsRequest.NextClassNumber, promotionSettingsRequest.CampusNumber, promotionSettingsRequest.CurriculumNumber, promotionSettingsRequest.CampusCurriculumNumber)
+	if err != nil {
+		return err
+	}
+
+	prevCampusClass, err := services.ResolveCampusClass(promotionSettingsRequest.PreviousClassNumber, promotionSettingsRequest.CampusNumber, promotionSettingsRequest.CurriculumNumber, promotionSettingsRequest.CampusCurriculumNumber)
+	if err != nil {
+		return err
+	}
+
+	studyPeriod, err := repositories3.GetStudyPeriodByNumber(promotionSettingsRequest.StudyPeriodNumber)
+	if err != nil {
+		return err
+	}
+
+	if studyPeriod.Number == "" {
+		return errors.New("Invalid study period number ")
+	}
+
+	if !studyPeriod.StudyPeriodEndDate.Before(time.Now()) {
+		return errors.New("This study period has already ended ")
+	}
+
+	promotionSetting.Name = promotionSettingsRequest.Name
+	promotionSetting.Type = promotionSettingsRequest.Type
+	promotionSetting.Status = promotionSettingsRequest.Status
+	promotionSetting.NextCampusClassNumber = nextCampusClass.Number
+	promotionSetting.PreviousCampusClassNumber = prevCampusClass.Number
+	promotionSetting.UserNumber = user.Number
+	promotionSetting.StudyPeriodNumber = studyPeriod.Number
+	promotionSetting.UpdatedAt = time.Now()
+
+	err = repositories.SavePromotionSettings(promotionSetting)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
 
 func (p *promotionService) PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error) {
 	details, err := p.PromotionSettingDetails(promotionSettingNumber)
