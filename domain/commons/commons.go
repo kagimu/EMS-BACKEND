@@ -273,18 +273,6 @@ func StringContains(slice []string, value string) bool {
 	return false
 }
 
-func CleanPromotionStatus(status string) string {
-	if status == "promotion" {
-		return "Promoted"
-	}
-
-	if status == "repeat" {
-		return "Repeat"
-	}
-
-	return status
-}
-
 func GetInitialsDot(name string) string {
 	parts := strings.Fields(name)
 	var initials []string
