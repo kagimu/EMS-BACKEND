@@ -774,6 +774,7 @@ func SetupRoutes() *gin.Engine {
 			promotionSettingsValues := promotions.Group("settings-values")
 			{
 				promotionSettingsValues.POST("", promotionController.CreatePromotionSettingValue)
+				promotionSettingsValues.PUT("", promotionController.UpdatePromotionSettingValue)
 				promotionSettingsValues.GET("", promotionController.FetchPromotionSettingsValues)
 			}
 		}
