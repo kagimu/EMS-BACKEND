@@ -27,24 +27,24 @@ import (
 
 func NewClass(context *gin.Context) {
 
-	var classInfo requests.ClassInfo
-	err := context.BindJSON(&classInfo)
+	var classRequest requests.ClassInfo
+	err := context.BindJSON(&classRequest)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
-	classInfo.Prepare()
+	classRequest.Prepare()
 
-	if err := classInfo.Validate(); err != nil {
+	if err := classRequest.Validate(); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	code := classInfo.Code
-	name := classInfo.Name
-	abbreviation := strings.ToUpper(classInfo.Abbreviation)
-	level := classInfo.Level
+	code := classRequest.Code
+	name := classRequest.Name
+	abbreviation := strings.ToUpper(classRequest.Abbreviation)
+	level := classRequest.Level
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -103,6 +103,7 @@ func NewClass(context *gin.Context) {
 		UserNumber:   userNumber,
 		LevelNumber:  level,
 		Code:         codeNo,
+		EntityNumber: classRequest.EntityNumber,
 	}
 
 	if err := tx.Create(&saveClass).Error; err != nil {
@@ -398,7 +399,7 @@ func FetchClasses(context *gin.Context) {
 	var levels []levelModels.Level
 	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
-		Scopes(filters.ByPrimaryKey(level)).
+		Scopes(filters.ByPrimaryKey(level), filters.ByEntityNumber(context.Query("entity_number"))).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
