@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -586,6 +587,7 @@ func FetchCurriculum(context *gin.Context) {
 
 	var curriculum []models5.Curriculum
 	if err := config.DB.
+		Scopes(filters.ByEntityNumber(context.Query("entity_number"))).
 		Order("created_at desc").
 		Find(&curriculum).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})

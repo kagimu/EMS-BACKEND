@@ -32,6 +32,7 @@ import (
 	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/repository"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
@@ -510,7 +511,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			Number:                 uuid.NewV4().String(),
 			ReportSummaryNumber:    reportSummaryNumber,
 			PromotionSettingNumber: finalStatus.Number,
-			Status:                 finalStatus.Type,
+			Status:                 finalStatus.Status,
 			UserNumber:             finalStatus.UserNumber,
 			PromotionType:          "Auto",
 			CreatedAt:              time.Now(),
@@ -864,14 +865,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 
 	response := responses.FullReportSummary{
 		ReportSummaryNumber: reportSummaryNumber,
-		Student: responses.LeanStudent{
-			Number:      student.Number,
-			Surname:     student.Surname,
-			SecondName:  student.SecondName,
-			OtherName:   student.OtherName,
-			Gender:      student.Gender,
-			DateOfBirth: student.DateOfBirth,
-		},
+		Student:             CreateLeanStudent(student),
 		Grade:               reportSummary.Grade,
 		LearningAreas:       la,
 		Stream:              stream.Name,
@@ -898,13 +892,24 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		}
 
 		if promo.Number != "" {
-			response.PromotionStatus = commons.CleanPromotionStatus(promo.Status)
+			response.PromotionStatus = promo.Status
 		}
 	} else {
 		response.PromotionStatus = "N/A"
 	}
 
 	return response, nil
+}
+
+func CreateLeanStudent(student studentModel.Student) responses.LeanStudent {
+	return responses.LeanStudent{
+		Number:      student.Number,
+		Surname:     commons.CapitalizeFirst(student.Surname),
+		SecondName:  commons.CapitalizeFirst(student.SecondName),
+		OtherName:   commons.CapitalizeFirst(student.OtherName),
+		Gender:      student.Gender,
+		DateOfBirth: student.DateOfBirth,
+	}
 }
 
 func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber string, totalAggregate, totalScore float64, db *gorm.DB) (models2.PromotionSetting, error) {

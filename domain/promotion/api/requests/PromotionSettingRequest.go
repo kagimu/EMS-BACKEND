@@ -33,6 +33,11 @@ func (p *PromotionSettingRequest) Validate() error {
 	if p.Status == "" {
 		return errors.New("status is required")
 	}
+
+	if len(p.Status) > 20 {
+		return errors.New("The status should be 20 characters maximum ")
+	}
+
 	if p.Type == "" {
 		return errors.New("type is required")
 	}

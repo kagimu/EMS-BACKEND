@@ -273,18 +273,6 @@ func StringContains(slice []string, value string) bool {
 	return false
 }
 
-func CleanPromotionStatus(status string) string {
-	if status == "promotion" {
-		return "Promoted"
-	}
-
-	if status == "repeat" {
-		return "Repeat"
-	}
-
-	return status
-}
-
 func GetInitialsDot(name string) string {
 	parts := strings.Fields(name)
 	var initials []string
@@ -299,4 +287,14 @@ func GetInitialsDot(name string) string {
 	}
 
 	return strings.Join(initials, ".")
+}
+
+func CapitalizeFirst(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }
