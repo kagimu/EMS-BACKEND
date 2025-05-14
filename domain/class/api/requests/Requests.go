@@ -14,6 +14,7 @@ type ClassInfo struct {
 	Abbreviation string `json:"abbreviation"`
 	Level        string `json:"level"`
 	ClassNumber  string `json:"class_number"`
+	EntityNumber string `json:"entity_number"`
 }
 
 type StreamRequest struct {
@@ -77,6 +78,10 @@ func (p *ClassInfo) Validate() error {
 
 	if p.Level == "" {
 		return errors.New("level is required")
+	}
+
+	if p.EntityNumber == "" {
+		return errors.New("entity number is required")
 	}
 
 	return nil
