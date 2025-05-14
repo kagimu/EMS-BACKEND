@@ -95,3 +95,33 @@ func FetchPromotionSettingGrades(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": promotionSettings})
 }
+
+func UpdatePromotionSettings(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	promotionSettingNumber := c.Param("promotion_setting_number")
+
+	var payload requests.PromotionSettingRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	payload.Prepare()
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = promotionService.UpdatePromotionSetting(payload, user, promotionSettingNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update promotion settings"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Promotion settings updated successfully"})
+}

@@ -892,7 +892,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		}
 
 		if promo.Number != "" {
-			response.PromotionStatus = commons.CleanPromotionStatus(promo.Status)
+			response.PromotionStatus = promo.Status
 		}
 	} else {
 		response.PromotionStatus = "N/A"
