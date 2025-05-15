@@ -54,7 +54,7 @@ func NewLevel(context *gin.Context) {
 
 	var duplicateCode curriculumLevelModels.Level
 	if duplicate := config.DB.
-		Where("code = ?", code).
+		Where("code = ? entity_number = ?", code, levelRequest.EntityNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -62,7 +62,7 @@ func NewLevel(context *gin.Context) {
 
 	var duplicateLevel curriculumLevelModels.Level
 	if duplicate := config.DB.
-		Where("name = ?", name).
+		Where("name = ? AND entity_number = ?", name, levelRequest.EntityNumber).
 		First(&duplicateLevel).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
 		return

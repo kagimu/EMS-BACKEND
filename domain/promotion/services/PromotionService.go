@@ -42,9 +42,64 @@ type PromotionService interface {
 	PromotionSettingGrades(promotionSettingNumber string, c *gin.Context) (responses.PromotionSettingGradeResponse, error)
 	PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error)
 	UpdatePromotionSetting(payload requests.PromotionSettingRequest, user *models.User, promotionSettingNumber string) error
+	UpdatePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
 }
 
 type promotionService struct{}
+
+func (p *promotionService) UpdatePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error {
+
+	savePromotionSettings, err := repositories.FindPromotionSettingValueBySettingNumber(payload.PromotionSettingNumber)
+
+	if err != nil {
+		return errors.New("Error checking promotion setting value error " + err.Error())
+	}
+
+	if savePromotionSettings.Number == "" {
+		return errors.New("Promotion settings have no values yet ")
+	}
+
+	promotionSetting, err := repositories.FindPromotionSettingByNumber(payload.PromotionSettingNumber)
+	if err != nil {
+		return errors.New("Error checking promotion setting error " + err.Error())
+	}
+
+	studyPeriod, err := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
+	if err != nil {
+		return err
+	}
+
+	if studyPeriod.StudyPeriodEndDate.Before(time.Now()) {
+		return errors.New(fmt.Sprintf("This study period has already ended on %s, you can not update its values", studyPeriod.StudyPeriodEndDate.Format(time.DateOnly)))
+	}
+
+	savePromotionSettings.Score = payload.Score
+	savePromotionSettings.PromotionSettingNumber = payload.PromotionSettingNumber
+	savePromotionSettings.AssessmentGradeScaleNumber = payload.AssessmentGradeScaleNumber
+	savePromotionSettings.MinimumPoints = payload.MinimumPoints
+	savePromotionSettings.UserNumber = user.Number
+	savePromotionSettings.UpdatedAt = time.Now()
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		err = repositories.SavePromotionSettingValue(savePromotionSettings, tx)
+		if err != nil {
+			return errors.New(fmt.Sprintf("Error saving promotion setting value: %s", err.Error()))
+		}
+
+		assessments := payload.AssessmentAreas
+		if len(assessments) > 0 {
+			err = handleAssessmentAreas(payload.PromotionSettingNumber, assessments, user, tx)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return err
+}
 
 func (p *promotionService) UpdatePromotionSetting(promotionSettingsRequest requests.PromotionSettingRequest, user *models.User, promotionSettingNumber string) error {
 
@@ -76,8 +131,8 @@ func (p *promotionService) UpdatePromotionSetting(promotionSettingsRequest reque
 		return errors.New("Invalid study period number ")
 	}
 
-	if !studyPeriod.StudyPeriodEndDate.Before(time.Now()) {
-		return errors.New("This study period has already ended ")
+	if studyPeriod.StudyPeriodEndDate.Before(time.Now()) {
+		return errors.New(fmt.Sprintf("This study period has already ended on %s", studyPeriod.StudyPeriodEndDate.Format(time.DateOnly)))
 	}
 
 	promotionSetting.Name = promotionSettingsRequest.Name
@@ -260,6 +315,16 @@ func (p *promotionService) PromotionSettingDetails(promotionSettingNumber string
 }
 
 func (p *promotionService) SavePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error {
+
+	checkOld, err := repositories.FindPromotionSettingValueBySettingNumber(payload.PromotionSettingNumber)
+	if err != nil {
+		return errors.New("Checking old value error: " + err.Error())
+	}
+
+	if checkOld.Number != "" {
+		return errors.New("This promotion setting value already defined, you can choose to edit it instead ")
+	}
+
 	savePromotionSettings := models2.PromotionSettingValue{
 		Number:                     uuid.NewV4().String(),
 		Score:                      payload.Score,
@@ -271,16 +336,7 @@ func (p *promotionService) SavePromotionSettingValue(payload requests.PromotionS
 		CreatedAt:                  time.Now(),
 	}
 
-	err := config.DB.Transaction(func(tx *gorm.DB) error {
-
-		checkOld, err := repositories.FindPromotionSettingValueBySettingNumber(payload.PromotionSettingNumber, tx)
-		if err != nil {
-			return errors.New("Checking old value error: " + err.Error())
-		}
-
-		if checkOld.Number != "" {
-			savePromotionSettings.Number = checkOld.Number
-		}
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
 		err = repositories.SavePromotionSettingValue(savePromotionSettings, tx)
 		if err != nil {
@@ -321,6 +377,8 @@ func handleAssessmentAreas(promotionSettingsNumber string, assessments []request
 
 		if checkDuplicates.Number != "" {
 			newValue.Number = checkDuplicates.Number
+			newValue.UpdatedAt = time.Now()
+			newValue.CreatedAt = checkDuplicates.CreatedAt
 		}
 
 		err = repositories.SavePromotionAssessmentAreaValue(newValue, tr)
