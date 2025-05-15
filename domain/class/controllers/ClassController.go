@@ -71,7 +71,7 @@ func NewClass(context *gin.Context) {
 
 	var duplicateCode classModel.Class
 	if duplicate := config.DB.
-		Where("code = ?", codeNo).
+		Where("code = ? AND entity_number = ?", codeNo, classRequest.EntityNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists!"})
 		return
@@ -79,7 +79,7 @@ func NewClass(context *gin.Context) {
 
 	var duplicateClass classModel.Class
 	if duplicate := config.DB.
-		Where("name = ?", name).
+		Where("name = ? AND entity_number = ?", name, classRequest.EntityNumber).
 		First(&duplicateClass).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists!"})
 		return
@@ -87,7 +87,7 @@ func NewClass(context *gin.Context) {
 
 	var duplicateAbbreviation classModel.Class
 	if duplicate := config.DB.
-		Where("abbreviation = ?", abbreviation).
+		Where("abbreviation = ? AND entity_number = ?", abbreviation, classRequest.EntityNumber).
 		First(&duplicateAbbreviation).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation already exists!"})
 		return

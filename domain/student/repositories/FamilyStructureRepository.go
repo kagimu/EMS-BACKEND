@@ -5,52 +5,52 @@ import (
 	"gorm.io/gorm"
 )
 
-type FamilyStructureRepository interface {
-	FindAll() ([]models.FamilyStructure, error)
-	GetFamilyStructureByStudentNumber(studentNumber string) (models.FamilyStructure, error)
-	CreateFamilyStructure(familyStructure models.FamilyStructure) error
-	DeleteFamilyStructure(familyStructure models.FamilyStructure) error
-	UpdateFamilyStructure(familyStructure models.FamilyStructure) error
+type FamilyMemberRepository interface {
+	FindAll() ([]models.FamilyMember, error)
+	FindFamilyMembersByStudentNumber(studentNumber string) ([]models.FamilyMember, error)
+	CreateFamilyMember(FamilyMember models.FamilyMember) error
+	DeleteFamilyMember(FamilyMember models.FamilyMember) error
+	UpdateFamilyMember(FamilyMember models.FamilyMember) error
 }
 
-type FamilyStructureRepositoryImpl struct {
+type FamilyMemberRepositoryImpl struct {
 	DB *gorm.DB
 }
 
-func (f FamilyStructureRepositoryImpl) FindAll() ([]models.FamilyStructure, error) {
-	var familyStructures []models.FamilyStructure
+func (f FamilyMemberRepositoryImpl) FindAll() ([]models.FamilyMember, error) {
+	var FamilyMembers []models.FamilyMember
 
-	if err := f.DB.Find(&familyStructures).Error; err != nil {
+	if err := f.DB.Find(&FamilyMembers).Error; err != nil {
 		return nil, err
 	}
 
-	return familyStructures, nil
+	return FamilyMembers, nil
 }
 
-func (f FamilyStructureRepositoryImpl) GetFamilyStructureByStudentNumber(studentNumber string) (models.FamilyStructure, error) {
-	var familyStructure models.FamilyStructure
+func (f FamilyMemberRepositoryImpl) FindFamilyMembersByStudentNumber(studentNumber string) ([]models.FamilyMember, error) {
+	var FamilyMembers []models.FamilyMember
 
-	if err := f.DB.Where("student_number = ?", studentNumber).First(&familyStructure).Error; err != nil {
-		return models.FamilyStructure{}, err
+	if err := f.DB.Where("student_number = ?", studentNumber).Find(&FamilyMembers).Error; err != nil {
+		return FamilyMembers, err
 	}
 
-	return familyStructure, nil
+	return FamilyMembers, nil
 }
 
-func (f FamilyStructureRepositoryImpl) CreateFamilyStructure(familyStructure models.FamilyStructure) error {
-	return f.DB.Create(&familyStructure).Error
+func (f FamilyMemberRepositoryImpl) CreateFamilyMember(FamilyMember models.FamilyMember) error {
+	return f.DB.Create(&FamilyMember).Error
 }
 
-func (f FamilyStructureRepositoryImpl) DeleteFamilyStructure(familyStructure models.FamilyStructure) error {
-	return f.DB.Delete(&familyStructure).Error
+func (f FamilyMemberRepositoryImpl) DeleteFamilyMember(FamilyMember models.FamilyMember) error {
+	return f.DB.Delete(&FamilyMember).Error
 }
 
-func (f FamilyStructureRepositoryImpl) UpdateFamilyStructure(familyStructure models.FamilyStructure) error {
-	return f.DB.Save(&familyStructure).Error
+func (f FamilyMemberRepositoryImpl) UpdateFamilyMember(FamilyMember models.FamilyMember) error {
+	return f.DB.Save(&FamilyMember).Error
 }
 
-func NewFamilyStructureRepository(db *gorm.DB) FamilyStructureRepository {
-	return &FamilyStructureRepositoryImpl{
+func NewFamilyMemberRepository(db *gorm.DB) FamilyMemberRepository {
+	return &FamilyMemberRepositoryImpl{
 		DB: db,
 	}
 }

@@ -7,7 +7,10 @@ import (
 type FamilyStructureRequest struct {
 	StudentNumber string         `json:"student_number" gorm:"size:36;not null"`
 	FamilyMembers []FamilyMember `json:"family_members" `
-	Languages     []string       `json:"languages"`
+	Languages     []struct {
+		Name string
+		Code int64
+	} `json:"languages"`
 }
 
 func (req *FamilyStructureRequest) Validate() error {
@@ -29,6 +32,7 @@ type FamilyMember struct {
 	PlaceOfEmployment      string   `json:"place_of_employment"`
 	PhysicalContactAddress string   `json:"physical_contact_address"`
 	Contacts               []string `json:"contacts"`
+	Relationship           string   `json:"relationship"`
 }
 
 type FamilyMemberContacts struct {
