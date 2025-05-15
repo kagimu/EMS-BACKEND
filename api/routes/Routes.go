@@ -765,7 +765,7 @@ func SetupRoutes() *gin.Engine {
 			promotionSettings := promotions.Group("settings")
 			{
 				promotionSettings.POST("", promotionController.CreatePromotionSettings)
-				promotionSettings.PUT(":promotion_number", promotionController.UpdatePromotionSettings)
+				promotionSettings.PUT(":promotion_setting_number", promotionController.UpdatePromotionSettings)
 				promotionSettings.GET("", promotionController.FetchPromotionSettings)
 				promotionSettings.GET("details", promotionController.FetchPromotionSettingDetails)
 				promotionSettings.GET("grades", promotionController.FetchPromotionSettingGrades)
@@ -774,6 +774,7 @@ func SetupRoutes() *gin.Engine {
 			promotionSettingsValues := promotions.Group("settings-values")
 			{
 				promotionSettingsValues.POST("", promotionController.CreatePromotionSettingValue)
+				promotionSettingsValues.PUT("", promotionController.UpdatePromotionSettingValue)
 				promotionSettingsValues.GET("", promotionController.FetchPromotionSettingsValues)
 			}
 		}
