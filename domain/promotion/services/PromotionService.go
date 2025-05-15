@@ -56,7 +56,21 @@ func (p *promotionService) UpdatePromotionSettingValue(payload requests.Promotio
 	}
 
 	if savePromotionSettings.Number == "" {
-		return errors.New("Invalid promotion setting value number ")
+		return errors.New("Promotion settings have no values yet ")
+	}
+
+	promotionSetting, err := repositories.FindPromotionSettingByNumber(payload.PromotionSettingNumber)
+	if err != nil {
+		return errors.New("Error checking promotion setting error " + err.Error())
+	}
+
+	studyPeriod, err := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
+	if err != nil {
+		return err
+	}
+
+	if studyPeriod.StudyPeriodEndDate.Before(time.Now()) {
+		return errors.New(fmt.Sprintf("This study period has already ended on %s, you can not update its values", studyPeriod.StudyPeriodEndDate.Format(time.DateOnly)))
 	}
 
 	savePromotionSettings.Score = payload.Score
@@ -117,8 +131,8 @@ func (p *promotionService) UpdatePromotionSetting(promotionSettingsRequest reque
 		return errors.New("Invalid study period number ")
 	}
 
-	if !studyPeriod.StudyPeriodEndDate.Before(time.Now()) {
-		return errors.New("This study period has already ended ")
+	if studyPeriod.StudyPeriodEndDate.Before(time.Now()) {
+		return errors.New(fmt.Sprintf("This study period has already ended on %s", studyPeriod.StudyPeriodEndDate.Format(time.DateOnly)))
 	}
 
 	promotionSetting.Name = promotionSettingsRequest.Name
