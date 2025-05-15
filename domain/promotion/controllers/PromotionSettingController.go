@@ -104,6 +104,10 @@ func UpdatePromotionSettings(c *gin.Context) {
 	}
 
 	promotionSettingNumber := c.Param("promotion_setting_number")
+	if promotionSettingNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Promotion setting number is required"})
+		return
+	}
 
 	var payload requests.PromotionSettingRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
