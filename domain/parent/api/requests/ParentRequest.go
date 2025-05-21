@@ -21,6 +21,9 @@ func (p *ParentRequest) Validate() error {
 	if p.Surname == "" {
 		return errors.New("surname is required")
 	}
+	if p.ApplicationNumber == " " {
+		return errors.New("application number is required")
+	}
 	if p.SecondName == "" {
 		return errors.New("second name is required")
 	}
