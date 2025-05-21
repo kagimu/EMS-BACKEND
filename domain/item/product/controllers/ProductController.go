@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
 	"net/http"
@@ -134,6 +135,18 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found."})
 		return
 	}
+
+	checkSerial, err := repositories.GetItemBySerialCode(payload.SerialCode, payload.SchoolNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if checkSerial.Number != "" && checkSerial.Number != productNumber {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This serial code is already in use."})
+		return
+	}
+
 	txn := config.DB.Begin()
 
 	updateProduct := models.Item{
