@@ -43,6 +43,7 @@ func CreateParent(c *gin.Context) {
 	saveApplication := applicationModel.Application{
 		Number:     uuid.NewV4().String(),
 		UserNumber: user.Number,
+		Type:       parent.Type,
 	}
 
 	if err := tx.Create(&saveApplication).Error; err != nil {
@@ -144,8 +145,29 @@ func UpdateParent(c *gin.Context) {
 
 	var parent models.Parent
 
-	if err := config.DB.Where("application_number =? ", applicationNumber).First(&parent).Error; err != nil {
+	tx := config.DB.Begin()
+
+	if err := tx.Where("application_number =? ", applicationNumber).First(&parent).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "no parent found"})
+		return
+	}
+
+	// update the application
+
+	var application applicationModel.Application
+
+	if err := tx.Where("number =? ", applicationNumber).First(&application).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Application  not found"})
+		return
+	}
+
+	application.Type = parentRequest.Type
+
+	err := tx.Save(&application).Error
+
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusNotFound, gin.H{"message": "Error updating application"})
 		return
 	}
 
@@ -157,7 +179,7 @@ func UpdateParent(c *gin.Context) {
 	parent.Email = parentRequest.Email
 	parent.AlternativeEmail = parentRequest.AlternativeEmail
 
-	if err := config.DB.Save(&parent).Error; err != nil {
+	if err := tx.Save(&parent).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update parent"})
 		return
 	}

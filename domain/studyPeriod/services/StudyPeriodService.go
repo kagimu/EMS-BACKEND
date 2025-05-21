@@ -113,6 +113,7 @@ func CreateStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPerio
 		StudyPeriodStartDate:  studyPeriod.StudyPeriodStartDate.Format(time.DateTime),
 		StudyPeriodEndDate:    studyPeriod.StudyPeriodEndDate.Format(time.DateTime),
 		UserNumber:            studyPeriod.UserNumber,
+		NextTermBeginsOn:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
 	}
 }
 

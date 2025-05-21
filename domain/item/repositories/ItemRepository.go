@@ -6,6 +6,8 @@ import (
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"gorm.io/gorm"
 )
 
@@ -29,6 +31,61 @@ func GetItemByNumber(itemNumber string, tx ...*gorm.DB) (itemModels.Item, error)
 	}
 
 	return item, nil
+}
+
+func GetItemBySerialCode(serialCode, schoolNumber string, tx ...*gorm.DB) (itemModels.Item, error) {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var item itemModels.Item
+
+	if err := db.Where("serial_code = ? AND school_number = ?", serialCode, schoolNumber).First(&item).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return item, nil
+		}
+
+		return item, err
+	}
+
+	return item, nil
+}
+
+func SaveItem(newItem itemModels.Item, tx ...*gorm.DB) error {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Save(&newItem).Error
+}
+
+func SaveProductItem(newProductItem models.Product, tx ...*gorm.DB) error {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Save(&newProductItem).Error
+}
+
+func SaveCampusItem(newCampusItem models2.CampusItem, tx ...*gorm.DB) error {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Save(&newCampusItem).Error
 }
 
 func FetchAllServiceItems(schoolNumber string, tx ...*gorm.DB) ([]itemModels.Item, error) {

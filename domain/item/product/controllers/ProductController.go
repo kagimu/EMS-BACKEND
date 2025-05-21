@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
 	"net/http"
@@ -88,6 +89,33 @@ func CreateProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, saveProduct)
 }
 
+func SaveProduct(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ProductRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf(" %s", err.Error())})
+		return
+	}
+
+	err = itemService.SaveProduct(user, payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save product: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product added successfully"})
+}
+
 func EditProduct(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
@@ -107,6 +135,18 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found."})
 		return
 	}
+
+	checkSerial, err := repositories.GetItemBySerialCode(payload.SerialCode, payload.SchoolNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if checkSerial.Number != "" && checkSerial.Number != productNumber {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This serial code is already in use."})
+		return
+	}
+
 	txn := config.DB.Begin()
 
 	updateProduct := models.Item{
