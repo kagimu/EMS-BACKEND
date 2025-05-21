@@ -528,7 +528,7 @@ func SetupRoutes() *gin.Engine {
 
 		products := main.Group("/products")
 		{
-			products.POST("", productController.CreateProduct)
+			products.POST("", productController.SaveProduct)
 			products.PUT(":product_number", productController.EditProduct)
 			products.GET("", productController.FetchProducts)
 			products.DELETE(":product_number", productController.DeleteProduct)

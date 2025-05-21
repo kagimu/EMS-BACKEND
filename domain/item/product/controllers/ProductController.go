@@ -88,6 +88,33 @@ func CreateProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, saveProduct)
 }
 
+func SaveProduct(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ProductRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf(" %s", err.Error())})
+		return
+	}
+
+	err = itemService.SaveProduct(user, payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save product: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product added successfully"})
+}
+
 func EditProduct(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
