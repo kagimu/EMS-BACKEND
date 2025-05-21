@@ -3,9 +3,16 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/api/requests"
+	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 type ItemProduct struct {
@@ -60,6 +67,62 @@ func (receiver ItemProduct) CreateServiceResponse(item itemModels.Item, campusSe
 		},
 		Campuses: campusServiceResponse,
 	}
+}
+
+func (receiver ItemProduct) SaveProduct(user *models.User, payload requests.ProductRequest) error {
+
+	checkSerial, err := repositories.GetItemBySerialCode(payload.SerialCode, payload.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if checkSerial.Number != "" {
+		return errors.New("Item serial code already used ")
+	}
+
+	itemNumber := uuid.NewV4().String()
+	saveProductItem := itemModels.Item{
+		Number:          itemNumber,
+		Cost:            payload.Cost,
+		Description:     payload.Description,
+		OneTimePurchase: payload.OneTimePurchase,
+		UserNumber:      user.Number,
+		SerialCode:      payload.SerialCode,
+		Mandatory:       payload.Mandatory,
+		RepeatCycle:     payload.RepeatCycle,
+		PaymentMode:     payload.PaymentMode,
+		Name:            payload.Name,
+		SchoolNumber:    payload.SchoolNumber,
+		Type:            "Product",
+	}
+
+	saveProduct := productModels.Product{
+		ItemNumber: itemNumber,
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		err := repositories.SaveItem(saveProductItem, tx)
+
+		err = repositories.SaveProductItem(saveProduct, tx)
+
+		for _, campusNumber := range payload.CampusNumbers {
+			campusService := models2.CampusItem{
+				ItemNumber:   itemNumber,
+				CampusNumber: campusNumber,
+			}
+
+			err = repositories.SaveCampusItem(campusService, tx)
+		}
+
+		return err
+	})
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("Error %s saving product items", err.Error()))
+	}
+
+	return nil
 }
 
 func NewItemProduct() ItemProduct {

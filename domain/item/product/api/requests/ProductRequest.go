@@ -16,13 +16,13 @@ type ProductRequest struct {
 }
 
 func (p *ProductRequest) Validate() error {
-	if p.Name == " " {
+	if len(p.Name) == 0 {
 		return errors.New("name is required")
 	}
-	if p.Description == " " {
+	if len(p.Description) == 0 {
 		return errors.New("description is required")
 	}
-	if p.SerialCode == " " {
+	if len(p.SerialCode) == 0 {
 		return errors.New("serial code is required")
 	}
 	if p.Cost == 0 {
