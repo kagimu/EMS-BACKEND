@@ -40,20 +40,20 @@ func CreateParent(c *gin.Context) {
 	}
 
 	tx := config.DB.Begin()
-	saveApplication := applicationModel.Application{
-		Number:     uuid.NewV4().String(),
-		UserNumber: user.Number,
-		Type:       parent.Type,
-	}
-
-	if err := tx.Create(&saveApplication).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "failed to create application",
-			"details": err.Error(),
-		})
-		return
-	}
+	//saveApplication := applicationModel.Application{
+	//	Number:     uuid.NewV4().String(),
+	//	UserNumber: user.Number,
+	//	Type:       parent.Type,
+	//}
+	//
+	//if err := tx.Create(&saveApplication).Error; err != nil {
+	//	tx.Rollback()
+	//	c.JSON(http.StatusBadRequest, gin.H{
+	//		"message": "failed to create application",
+	//		"details": err.Error(),
+	//	})
+	//	return
+	//}
 
 	saveParent := models.Parent{
 		Number:                     uuid.NewV4().String(),
@@ -65,7 +65,7 @@ func CreateParent(c *gin.Context) {
 		Email:                      parent.Email,
 		AlternativeEmail:           parent.AlternativeEmail,
 		UserNumber:                 user.Number,
-		ApplicationNumber:          saveApplication.Number,
+		ApplicationNumber:          parent.ApplicationNumber,
 	}
 
 	if parent.AlternativeEmail == parent.Email {

@@ -31,6 +31,7 @@ type StudentRequest struct {
 	Lin                       string                  `json:"lin"`
 	ModeOfStudyNumber         string                  `json:"mode_of_study_number"`
 	ADN                       string                  `json:"adn"`
+	Type                      string                  `json:"type"`
 }
 
 func (s *StudentRequest) Validate() error {

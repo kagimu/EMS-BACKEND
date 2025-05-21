@@ -76,6 +76,22 @@ func CreateStudent(c *gin.Context) {
 	}*/
 
 	tx := config.DB.Begin()
+
+	saveApplication := applicationModel.Application{
+		Number:     uuid.NewV4().String(),
+		UserNumber: user.Number,
+		Type:       payload.Type,
+	}
+
+	if err := tx.Create(&saveApplication).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "failed to create application",
+			"details": err.Error(),
+		})
+		return
+	}
+
 	studentAPN, err := CreateAPN(tx)
 	if err != nil {
 		tx.Rollback()
