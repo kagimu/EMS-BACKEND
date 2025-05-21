@@ -14,6 +14,7 @@ type ParentRequest struct {
 	AlternativeTelephoneNumber string `json:"alternative_telephone_number"`
 	Email                      string `json:"email"`
 	AlternativeEmail           string `json:"alternative_email"`
+	ApplicationNumber          string `json:"application_number"`
 }
 
 func (p *ParentRequest) Validate() error {
