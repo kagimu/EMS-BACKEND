@@ -15,6 +15,7 @@ type (
 		AcademicYearName      string `json:"academic_year_name"`
 		LevelName             string `json:"level_name"`
 		CampusLevelNumber     string `json:"campus_level_number"`
+		NextTermBeginsOn      string `json:"next_term_begins_on"`
 	}
 
 	StudyPeriodNameResponse struct {
