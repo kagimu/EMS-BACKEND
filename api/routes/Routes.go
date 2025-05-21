@@ -320,8 +320,8 @@ func SetupRoutes() *gin.Engine {
 		{
 			schemeOfWork.GET("download-scheme-template", schemeOfWorkControllers.DownloadSchemeOfWork)
 			schemeOfWork.POST("upload-scheme-of-work", schemeOfWorkControllers.ImportSchemeOfWork)
-			schemeOfWork.PATCH("invalidate", schemeOfWorkControllers.InvalidateSchemeOfWork)
-			schemeOfWork.PATCH("activate", schemeOfWorkControllers.ActivateSchemeOfWork)
+			schemeOfWork.PATCH("invalidate/:scheme_of_work_number", schemeOfWorkControllers.InvalidateSchemeOfWork)
+			schemeOfWork.PATCH("activate/:scheme_of_work_number", schemeOfWorkControllers.ActivateSchemeOfWork)
 			schemeOfWork.GET("fetch-scheme-of-work-by-class-and-subject", schemeOfWorkControllers.FetchSchemeOfWork)
 		}
 		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
