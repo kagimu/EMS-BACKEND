@@ -21,7 +21,6 @@ type StudentRequest struct {
 	Gender                    string                  `json:"gender"`
 	ReasonForChoosingSchool   string                  `json:"reason_for_choosing_school"`
 	SourceOfSchoolInfo        string                  `json:"source_of_school_info"`
-	ApplicationNumber         string                  `json:"application_number"`
 	ParentNumber              string                  `json:"parent_number"`
 	ClassNumber               string                  `json:"class_number"`
 	CurriculumNumber          string                  `json:"curriculum_number"`
@@ -32,6 +31,7 @@ type StudentRequest struct {
 	ModeOfStudyNumber         string                  `json:"mode_of_study_number"`
 	ADN                       string                  `json:"adn"`
 	Type                      string                  `json:"type"`
+	ApplicationNumber         string                  `json:"application_number"`
 }
 
 func (s *StudentRequest) Validate() error {
@@ -55,10 +55,6 @@ func (s *StudentRequest) Validate() error {
 	}
 	if s.ReasonForChoosingSchool == "" {
 		return errors.New("reason is required")
-	}
-
-	if s.ApplicationNumber == " " {
-		return errors.New("application number is required")
 	}
 
 	if s.SourceOfSchoolInfo == "" {

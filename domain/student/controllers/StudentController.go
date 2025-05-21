@@ -47,13 +47,13 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	applicationNumber := payload.ApplicationNumber
-	var application applicationModel.Application
-	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Application not found"})
-		return
-	}
+	//applicationNumber := payload.ApplicationNumber
+	//var application applicationModel.Application
+	//if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
+	//	c.JSON(http.StatusBadRequest, gin.H{
+	//		"message": "Application not found"})
+	//	return
+	//}
 
 	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, payload.CampusCurriculumNumber)
 	if err != nil {
@@ -83,13 +83,16 @@ func CreateStudent(c *gin.Context) {
 		Type:       payload.Type,
 	}
 
-	if err := tx.Create(&saveApplication).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "failed to create application",
-			"details": err.Error(),
-		})
-		return
+	if payload.ApplicationNumber == "" {
+		if err := tx.Create(&saveApplication).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "failed to create application",
+				"details": err.Error(),
+			})
+			return
+		}
+
 	}
 
 	studentAPN, err := CreateAPN(tx)
@@ -105,7 +108,7 @@ func CreateStudent(c *gin.Context) {
 	// find Student by application number
 
 	var student models.Student
-	tx.Where("application_number = ?", applicationNumber).First(&student)
+	tx.Where("application_number = ?", saveApplication.Number).First(&student)
 
 	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
 	if student.Number != "" {
@@ -122,7 +125,7 @@ func CreateStudent(c *gin.Context) {
 			SecondName:                payload.SecondName,
 			PreferredCampusNumber:     payload.PreferredCampusNumber,
 			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
-			ApplicationNumber:         applicationNumber,
+			ApplicationNumber:         saveApplication.Number,
 			CampusClassNumber:         campusClass.Number,
 			SchoolNumber:              payload.SchoolNumber,
 			Lin:                       payload.Lin,
@@ -134,7 +137,7 @@ func CreateStudent(c *gin.Context) {
 			updateStudent.ADN = payload.ADN
 		}
 
-		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
+		if err := tx.Where("application_number = ?", payload.ApplicationNumber).Updates(updateStudent).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  http.StatusInternalServerError,
 				"message": "failed to update student",
@@ -199,7 +202,7 @@ func CreateStudent(c *gin.Context) {
 		PreferredCampusNumber:     payload.PreferredCampusNumber,
 		UserNumber:                createdUser.Number,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
-		ApplicationNumber:         applicationNumber,
+		ApplicationNumber:         saveApplication.Number,
 		CampusClassNumber:         campusClass.Number,
 		SchoolNumber:              payload.SchoolNumber,
 		Lin:                       payload.Lin,
