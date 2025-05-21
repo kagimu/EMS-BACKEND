@@ -100,7 +100,8 @@ func FetchStudyPeriodByAcademicYear(context *gin.Context) {
 			StudyPeriodEndDate:   (studyPeriodList.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
 			//AcademicYearNumber:   studyPeriodList.AcademicYearNumber,
 			//AcademicYearName:     studyPeriodList.AcademicYear.AcademicYearName,
-			UserNumber: studyPeriodList.UserNumber,
+			UserNumber:       studyPeriodList.UserNumber,
+			NextTermBeginsOn: studyPeriodList.NextTermBeginsOn.Format("02-01-2006"),
 		})
 	}
 
@@ -178,6 +179,7 @@ func FetchStudyPeriod(context *gin.Context) {
 				studyPeriodInfo_ = append(studyPeriodInfo_, responses2.StudyPeriodList{
 					StudyPeriodNumber:    studyPeriodList.Number,
 					Code:                 studyPeriodList.Code,
+					NextTermBeginsOn:     studyPeriodList.NextTermBeginsOn.Format("02-01-2006"),
 					StudyPeriodName:      "studyPeriodList.StudyPeriodName",
 					StudyPeriodStartDate: (studyPeriodList.StudyPeriodStartDate).Format("2-Jan-2006 15:04:05"),
 					StudyPeriodEndDate:   (studyPeriodList.StudyPeriodEndDate).Format("2-Jan-2006 15:04:05"),
