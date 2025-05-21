@@ -96,7 +96,7 @@ func NewSchemeOfWork(context *gin.Context) {
 	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
 		Number:             number,
 		Name:               name,
-		Status:             constants.StatusPending,
+		Status:             constants.StatusActive,
 		CampusClassNumber:  classNumber,
 		SubjectNumber:      subjectNumber,
 		AcademicYearNumber: academicYearNumber,
@@ -656,7 +656,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
 		Number:             uuid.NewV4().String(),
 		Name:               schemeName,
-		Status:             constants.StatusPending,
+		Status:             constants.StatusActive,
 		CampusClassNumber:  classNumber,
 		SubjectNumber:      subjectNumber,
 		AcademicYearNumber: academicYearNumber,

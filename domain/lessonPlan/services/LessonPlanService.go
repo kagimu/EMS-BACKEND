@@ -164,6 +164,20 @@ func (l *lessonPlanServiceImp) AddLessonPlanReferences(lessonPlanReferenceReques
 }
 
 func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanInfo, userNumber string) error {
+
+	schemeOfWork, err := repositories2.GetSchemeOfWorkBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber)
+	if err != nil {
+		return err
+	}
+
+	if schemeOfWork.Number == "" {
+		return errors.New("Invalid scheme of work sub topic number ")
+	}
+
+	if schemeOfWork.Status != constants.StatusActive {
+		return errors.New("The scheme is not active ")
+	}
+
 	lessonPlanRepository.UseTx(config.DB)
 	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber)
 	if err != nil {
