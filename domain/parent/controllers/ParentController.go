@@ -161,8 +161,6 @@ func UpdateParent(c *gin.Context) {
 		return
 	}
 
-	application.Type = parentRequest.Type
-
 	err := tx.Save(&application).Error
 
 	if err != nil {

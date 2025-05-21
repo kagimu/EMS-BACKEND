@@ -25,3 +25,35 @@ func GetSchemeOfWorkSubTopicByNumber(schemeOfWorkSubTopicNumber string, tx ...*g
 
 	return schemeOfWorkSubTopic, nil
 }
+
+func SaveSchemeOfWork(schemeOfWork models.SchemeOfWork, tx ...*gorm.DB) error {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Save(&schemeOfWork).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetSchemeOfWorkByNumber(schemeOfWorkNumber string, tx ...*gorm.DB) (models.SchemeOfWork, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var schemeOfWorkSubTopic models.SchemeOfWork
+
+	if err := db.Where("number = ?", schemeOfWorkNumber).First(&schemeOfWorkSubTopic).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.SchemeOfWork{}, nil
+		}
+
+		return models.SchemeOfWork{}, err
+	}
+
+	return schemeOfWorkSubTopic, nil
+}
