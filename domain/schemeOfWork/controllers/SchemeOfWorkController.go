@@ -5,12 +5,14 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/requests"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/responses"
 	schemeOfWorkModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/services"
 	subjectModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
@@ -21,6 +23,8 @@ import (
 	"strconv"
 	"time"
 )
+
+var schemeOfWorkService = services.InitSchemeOfWorkService()
 
 func NewSchemeOfWork(context *gin.Context) {
 
@@ -92,7 +96,7 @@ func NewSchemeOfWork(context *gin.Context) {
 	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
 		Number:             number,
 		Name:               name,
-		Status:             "Pending",
+		Status:             constants.StatusPending,
 		CampusClassNumber:  classNumber,
 		SubjectNumber:      subjectNumber,
 		AcademicYearNumber: academicYearNumber,
@@ -265,6 +269,11 @@ func FetchSchemeOfWork(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	subjectNumber := context.Query("subject_number")
 
+	if academicYearNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Academic year is required!"})
+		return
+	}
+
 	if classNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
 		return
@@ -277,7 +286,7 @@ func FetchSchemeOfWork(context *gin.Context) {
 
 	var schemeOfWrkInfo schemeOfWorkModel.SchemeOfWork
 	if err := config.DB.
-		Where("academic_year_number = ?", academicYearNumber).
+		Where("academic_year_number = ? AND status = ?", academicYearNumber, constants.StatusActive).
 		Where("campus_class_number = ?", classNumber).
 		Where("subject_number = ?", subjectNumber).
 		Preload("AcademicYear").
@@ -647,7 +656,7 @@ func ImportSchemeOfWork(context *gin.Context) {
 	saveSchemeOfWork := schemeOfWorkModel.SchemeOfWork{
 		Number:             uuid.NewV4().String(),
 		Name:               schemeName,
-		Status:             "Pending",
+		Status:             constants.StatusPending,
 		CampusClassNumber:  classNumber,
 		SubjectNumber:      subjectNumber,
 		AcademicYearNumber: academicYearNumber,
@@ -820,4 +829,40 @@ func getValueAtIndex(row []string, i int) string {
 	} else {
 		return ""
 	}
+}
+
+func InvalidateSchemeOfWork(context *gin.Context) {
+	schemeOfWorkNumber := context.Param("scheme_of_work_number")
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if userNumber == "" {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Could not determine user "})
+		return
+	}
+
+	err := schemeOfWorkService.InvalidateSchemeOfWork(schemeOfWorkNumber, userNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Scheme of work invalidated!"})
+}
+
+func ActivateSchemeOfWork(context *gin.Context) {
+	schemeOfWorkNumber := context.Param("scheme_of_work_number")
+	userNumber := context.Request.Header["User-Number"][0]
+
+	if userNumber == "" {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Could not determine user "})
+		return
+	}
+
+	err := schemeOfWorkService.ActivateSchemeOfWork(schemeOfWorkNumber, userNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Scheme of work activated!"})
 }
