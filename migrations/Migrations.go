@@ -220,10 +220,10 @@ func Init() error {
 		&assessmentModel.ScheduledNarrative{},
 		&assessmentModel.NarrativeSchedule{},
 		&reportSettings.LearningAreaReportComment{},
-		//&studentModels.MedicalRecord{},
-		//&studentModels.FamilyMember{},
-		//&studentModels.FamilyMemberContact{},
-		//&studentModels.StudentLanguage{},
+		&studentModels.MedicalRecord{},
+		&studentModels.FamilyMember{},
+		&studentModels.FamilyMemberContact{},
+		&studentModels.StudentLanguage{},
 	)
 
 	if err != nil {
