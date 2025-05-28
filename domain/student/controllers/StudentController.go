@@ -476,7 +476,7 @@ func CreateMedicalRecord(context *gin.Context) {
 	err = services2.CreateMedicalRecord(payload)
 
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Error failed to save " + err.Error()})
 		return
 	}
 
@@ -495,7 +495,7 @@ func CreateFamilyStructure(context *gin.Context) {
 
 	err = services2.CreateFamilyStructure(payload)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to save family structure" + err.Error()})
 		return
 	}
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student created"})
@@ -514,7 +514,7 @@ func CreateEmergencyInformation(context *gin.Context) {
 
 	err = services2.CreateEmergencyInformation(payload)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to save emergency info " + err.Error()})
 		return
 	}
 
