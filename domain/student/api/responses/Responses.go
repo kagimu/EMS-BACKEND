@@ -40,3 +40,37 @@ type SingleAssessment struct {
 	AssessmentScheduleNumber string `json:"assessment_schedule_number"`
 	AssessmentScheduleName   string `json:"assessment_schedule_name"`
 }
+
+type EmergencyInformationResponse struct {
+}
+
+type MedicalRecordResponse struct {
+	StudentNumber     string `json:"student_number"`
+	BloodTypeGroup    string `json:"blood_type_group"`
+	Allergies         string `json:"allergies" `
+	ExistingCondition string `json:"existing_condition"`
+	RegularMedication string `json:"regular_medication"`
+	DoctorName        string `json:"doctor_name"`
+	DoctorPhone       string `json:"doctor_phone"`
+}
+
+type FamilyMemberResponse struct {
+	Number                 string   `json:"number"`
+	Surname                string   `json:"surname"`
+	OtherName              string   `json:"other_name"`
+	PlaceOfEmployment      string   `json:"place_of_employment"`
+	PhysicalContactAddress string   `json:"physical_contact_address"`
+	Contacts               []string `json:"contacts"`
+	Relationship           string   `json:"relationship"`
+}
+
+type Language struct {
+	Name string
+	Code int64
+}
+
+type FamilyStructureResponse struct {
+	StudentNumber string                 `json:"student_number" gorm:"size:36;not null"`
+	FamilyMembers []FamilyMemberResponse `json:"family_members" `
+	Languages     []Language             `json:"languages"`
+}
