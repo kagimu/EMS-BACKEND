@@ -1,15 +1,15 @@
 package controllers
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/services"
 	"net/http"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
+
+var promotionValueService = services.NewPromotionService()
 
 func CreatePromotionSettingValue(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
@@ -18,7 +18,7 @@ func CreatePromotionSettingValue(c *gin.Context) {
 		return
 	}
 
-	var payload requests.PromotionSettingValue
+	var payload requests.PromotionSettingValueRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -30,17 +30,10 @@ func CreatePromotionSettingValue(c *gin.Context) {
 		return
 	}
 
-	savePromotionSettings := models.PromotionSettingsValue{
-		Number:                 uuid.NewV4().String(),
-		Type:                   payload.Type,
-		Score:                  payload.Score,
-		PromotionSettingNumber: payload.PromotionSettingNumber,
-		GradingStandardNumber:  payload.GradingStandardNumber,
-		UserNumber:             user.Number,
-	}
+	err = promotionValueService.SavePromotionSettingValue(payload, user)
 
-	if err := config.DB.Create(&savePromotionSettings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create promotion setting value"})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -54,11 +47,46 @@ func FetchPromotionSettingsValues(c *gin.Context) {
 		return
 	}
 
-	var promotionSettingsValues []models.PromotionSettingsValue
-	err := config.DB.Preload("PromotionSetting").Find(&promotionSettingsValues).Error
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotion settings values"})
+	promotionSettingNumber := c.Query("promotion_setting_number")
+	if promotionSettingNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "promotion setting number is required"})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": promotionSettingsValues})
+	data, err := promotionValueService.PromotionSettingValue(promotionSettingNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": data})
+}
+
+func UpdatePromotionSettingValue(c *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	var payload requests.PromotionSettingValueRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	payload.Prepare()
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = promotionValueService.UpdatePromotionSettingValue(payload, user)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Promotion setting value updated successfully"})
 }

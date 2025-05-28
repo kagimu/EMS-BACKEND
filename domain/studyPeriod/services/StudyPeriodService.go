@@ -113,6 +113,7 @@ func CreateStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPerio
 		StudyPeriodStartDate:  studyPeriod.StudyPeriodStartDate.Format(time.DateTime),
 		StudyPeriodEndDate:    studyPeriod.StudyPeriodEndDate.Format(time.DateTime),
 		UserNumber:            studyPeriod.UserNumber,
+		NextTermBeginsOn:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
 	}
 }
 
@@ -137,6 +138,8 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 	if errorDate != nil {
 		return errorDate
 	}
+
+	nextTermBeginsOn, errorDate := time.Parse(layout, studyPeriodRequest.NextTermBeginsOn)
 
 	checkDuplicate, err := repositories.GetStudyPeriodByCode(studyPeriodRequest.AcademicYearNumber, studyPeriodRequest.Code)
 	if err != nil {
@@ -179,6 +182,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 			StudyPeriodStartDate:  startDate,
 			StudyPeriodEndDate:    endDate,
 			StudyPeriodNameNumber: studyPeriodRequest.StudyPeriodNameNumber,
+			NextTermBeginsOn:      nextTermBeginsOn,
 		}, tx)
 
 		if err != nil {
@@ -266,6 +270,9 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 	}
 
 	endDate, errorDate := time.Parse(layout, studyPeriodRequest.StudyPeriodEndDate)
+
+	nextTermBeginsOn, errorDate := time.Parse(layout, studyPeriodRequest.NextTermBeginsOn)
+
 	if errorDate != nil {
 		return errorDate
 	}
@@ -276,6 +283,7 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 	studyPeriod.StudyPeriodStartDate = startDate
 	studyPeriod.StudyPeriodEndDate = endDate
 	studyPeriod.StudyPeriodNameNumber = studyPeriodRequest.StudyPeriodNameNumber
+	studyPeriod.NextTermBeginsOn = nextTermBeginsOn
 
 	calendarEvent, err := repositories2.GetCalendarEventByNumber(studyPeriod.CalendarEventNumber)
 	if err != nil {
@@ -409,17 +417,27 @@ func (studyPeriodService *studyPeriodService) FindAllStudyPeriodNames(schoolNumb
 	}
 
 	for _, studyPeriodName := range allNames {
-		response = append(response, createNameResponse(studyPeriodName))
+		response = append(response, CreateNameResponse(studyPeriodName))
 	}
 
 	return response, nil
 }
 
-func createNameResponse(studyPeriodName studyModels.StudyPeriodName) responses.StudyPeriodNameResponse {
+func CreateNameResponse(studyPeriodName studyModels.StudyPeriodName) responses.StudyPeriodNameResponse {
 	return responses.StudyPeriodNameResponse{
 		DateAdded:             studyPeriodName.CreatedAt.Format(time.DateTime),
 		StudyPeriodNameNumber: studyPeriodName.Number,
 		Name:                  studyPeriodName.Name,
+	}
+}
+
+func CreateStudyPeriodResponse(studyPeriod studyModels.StudyPeriod) responses.StudyPeriodResponse {
+
+	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+
+	return responses.StudyPeriodResponse{
+		StudyPeriodNameResponse: CreateNameResponse(studyPeriodName),
+		StudyPeriodNumber:       studyPeriod.Number,
 	}
 }
 

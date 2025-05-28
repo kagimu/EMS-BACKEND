@@ -213,7 +213,7 @@ func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeRes
 	studyPeriodName, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	return responses.NarrativeResponse{
-		Date:           assessment.CreatedAt.Format(time.DateOnly),
+		CreatedAt:      assessment.CreatedAt.Format(time.DateOnly),
 		Number:         assessment.Number,
 		Narration:      assessment.Comment,
 		Teacher:        user.FirstName + " " + user.LastName,
@@ -221,5 +221,7 @@ func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeRes
 		Class:          class.ClassName,
 		StudyPeriod:    studyPeriodName.Name,
 		AcademicYear:   academicYear.AcademicYearName,
+		ReferenceTime:  assessment.CreatedAt.Format(time.TimeOnly),
+		ReferenceDate:  assessment.CreatedAt.Format(time.DateOnly),
 	}
 }

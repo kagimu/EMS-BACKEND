@@ -2,7 +2,9 @@ package requests
 
 import (
 	"errors"
+	"fmt"
 	requests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/request"
+	"sort"
 )
 
 type AggregateScaleRequest struct {
@@ -51,42 +53,70 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 
 	var runsToEnd, startsAtZero bool
 
-	for _, grade := range aggregateScale.AggregateScales {
+	scales := aggregateScale.AggregateScales
+
+	// sort the slice by code
+	sort.Slice(scales, func(i, j int) bool {
+		return scales[i].Code < scales[j].Code
+	})
+
+	for count, grade := range scales {
+
+		var gradeIndex = count + 1
+
+		if gradeIndex == len(scales) {
+			if grade.MinValue != 0 {
+				return errors.New(fmt.Sprintf("the minimum value for the grade at count %d should be zero", gradeIndex))
+			}
+		}
+
+		if count == 0 {
+			if grade.MaxValue != 100 {
+				return errors.New(fmt.Sprintf("the maximum value for the grade at count %d should be 100", gradeIndex))
+			}
+		}
 
 		if grade.Weight <= 0 {
-			return errors.New("set the weight for this score")
+			return errors.New(fmt.Sprintf("please set the weight for the grade at count %d", gradeIndex))
 		}
 
 		if grade.Remark == "" {
-			return errors.New("set the remark for this score")
+			return errors.New(fmt.Sprintf("please set the remark for the grade at count %d", gradeIndex))
 		}
 
 		if grade.GradeNumber == "" {
-			return errors.New("choose the assessment grade")
+			return errors.New(fmt.Sprintf("please choose the assessment grade at count %d", gradeIndex))
 		}
 
 		if grade.Code <= 0 {
-			return errors.New("code is required")
+			return errors.New(fmt.Sprintf("please set the code for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MinValue < 0 {
-			return errors.New("minimum value must be greater than 0 or equal to zero")
+			return errors.New(fmt.Sprintf("minimum value must be greater than 0 or equal to zero for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MinValue >= 100 {
-			return errors.New("minimum value should be less than 100")
+			return errors.New(fmt.Sprintf("minimum value should be less than 100 for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MaxValue <= 0 {
-			return errors.New("maximum value must be greater than 0")
+			return errors.New(fmt.Sprintf("maximum value must be greater than 0 for the grade at count %d", gradeIndex))
 		}
 
 		if grade.MaxValue > 100 {
-			return errors.New("maximum value should not be greater than 100")
+			return errors.New(fmt.Sprintf("maximum value should not be greater than 100 for the grade at count %d", gradeIndex))
 		}
 
-		if grade.MaxValue < grade.MinValue {
-			return errors.New("maximum value must be greater than minimum value")
+		if grade.MaxValue <= grade.MinValue {
+			return errors.New(fmt.Sprintf("maximum value must be greater than minimum value for the grade at count %d", gradeIndex))
+		}
+
+		if count > 0 {
+			err := checkPrevRow(scales[count-1], grade, gradeIndex)
+			if err != nil {
+				return err
+			}
 		}
 
 		if grade.MaxValue >= 100 {
@@ -141,6 +171,14 @@ func (aggregateScale *AggregateScaleRequest) Validate() error {
 			return errors.New("code is required")
 		}
 
+	}
+
+	return nil
+}
+
+func checkPrevRow(prevItem, currentItem AggregateScaleItem, currentIndex int) error {
+	if currentItem.MaxValue >= prevItem.MinValue {
+		return errors.New(fmt.Sprintf("The maximum score at grade count %d should be lesser than the minimum score at grade count %d", currentIndex, currentIndex-1))
 	}
 
 	return nil

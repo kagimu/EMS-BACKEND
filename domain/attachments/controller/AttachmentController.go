@@ -38,3 +38,23 @@ func DownloadAttachment(context *gin.Context) {
 
 	context.Data(http.StatusOK, contentType, byteFile)
 }
+
+func DeleteAttachment(context *gin.Context) {
+	type DeletionRequest struct {
+		AttachmentNumber string `json:"attachment_number"`
+		Category         string `json:"category"`
+	}
+
+	var deletionRequest DeletionRequest
+	if err := context.ShouldBindJSON(&deletionRequest); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request"})
+		return
+	}
+
+	err := services.DeleteAttachment(deletionRequest.AttachmentNumber, deletionRequest.Category)
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "File not found " + err.Error()})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
+}

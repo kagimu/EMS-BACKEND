@@ -1,6 +1,8 @@
 package responses
 
 type EnrolledStudent struct {
+	APN               string  `json:"apn"`
+	ADN               string  `json:"adn"`
 	Number            string  `json:"number"`
 	StudentSurname    string  `json:"student_surname"`
 	StudentSecondName string  `json:"student_second_name"`
@@ -31,4 +33,12 @@ type Enrollment struct {
 	CampusCurriculumNumber string `json:"campus_curriculum_number"`
 	LevelNumber            string `json:"level_number"`
 	Photo                  string `json:"photo"`
+	UserNumber             string `json:"user_number"`
+	CampusClassNumber      string `json:"campus_class_number"`
+	CampusNumber           string `json:"campus_number"`
+	StudyPeriodNumber      string `json:"study_period_number"`
+	ClassNumber            string `json:"class_number"`
+	CurriculumNumber       string `json:"curriculum_number"`
+	SchoolNumber           string `json:"school_number"`
+	StreamNumber           string `json:"stream_number"`
 }

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -8,6 +9,7 @@ import (
 	rolesResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
+	"gorm.io/gorm"
 	"net/http"
 	"regexp"
 	"strings"
@@ -126,11 +128,18 @@ func Login(context *gin.Context) {
 
 	//prepare roles and permissions
 	//get user roles
-	var userRoles []permissionModels.UserRole
+	var userRoles = make([]permissionModels.UserRole, 0)
 	var userRolesList []rolesResponses.RoleView
 	var permissions []string
 
-	config.DB.Where("user_number = ?", userNumber).Find(&userRoles)
+	err = config.DB.Where("user_number = ? AND DATE(expiry_date) >= ?", userNumber, time.Now()).Find(&userRoles).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+
+		} else {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error!"})
+		}
+	}
 
 	for _, item := range userRoles {
 

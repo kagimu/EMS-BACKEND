@@ -2,17 +2,14 @@ package controllers
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/services"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"mime/multipart"
 	"net/http"
-	"strconv"
 )
 
 var lessonPlanService = services.NewLessonPlanService()
@@ -32,129 +29,11 @@ func NewLessonPlan(context *gin.Context) {
 		return
 	}
 
-	schemeSubTopicNumber := lessonPlanInfo.SchemeSubTopicNumber
-	lessonPlanNumber := lessonPlanInfo.LessonPlanNumber
-	lessonPlanConceptInfo := lessonPlanInfo.LessonPlanConceptInfo
-
 	userNumber := context.Request.Header["User-Number"][0]
 
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	var duplicateLessonPlan lessonPlanModel.LessonPlan
-	if duplicate := config.DB.
-		Where("scheme_sub_topic_number = ?", schemeSubTopicNumber).
-		Where("number != ?", lessonPlanNumber).
-		First(&duplicateLessonPlan).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Lesson plan already exists"})
-		return
-	}
-
-	// Begin the transaction
-	tx := config.DB.Begin()
-
-	number := uuid.NewV4().String()
-	///save lesson plan data
-	saveLessonPlan := lessonPlanModel.LessonPlan{
-		Number:               number,
-		SchemeSubTopicNumber: schemeSubTopicNumber,
-		Status:               "draft",
-		UserNumber:           userNumber,
-	}
-
-	if lessonPlanNumber == "" {
-		if err := tx.Create(&saveLessonPlan).Error; err != nil {
-			// If any error occurs, rollback the transaction
-			tx.Rollback()
-			// Handle or return the error as needed
-			//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save Lesson plan"})
-			return
-		}
-	}
-
-	for _, concept := range lessonPlanConceptInfo {
-
-		var duplicateLessonPlanConcept lessonPlanModel.LessonPlanConcept
-		if duplicate := tx.
-			Where("concept_number = ?", concept.LessonPlanConceptNumber).
-			Where("lesson_plan_number = ?", saveLessonPlan.Number).
-			First(&duplicateLessonPlanConcept).Error; duplicate == nil {
-			tx.Rollback()
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicates Concepts not allowed"})
-			return
-		}
-
-		saveLessonConcepts := lessonPlanModel.LessonPlanConcept{
-			Number:           uuid.NewV4().String(),
-			ConceptNumber:    concept.LessonPlanConceptNumber,
-			Code:             concept.Code,
-			LessonPlanNumber: saveLessonPlan.Number,
-			UserNumber:       userNumber,
-		}
-
-		//	adds new concepts when Concept number doesnt exists
-		if concept.Number == "" {
-			if err := tx.Create(&saveLessonConcepts).Error; err != nil {
-				// If any error occurs, rollback the transaction
-				tx.Rollback()
-				// Handle or return the error as needed
-				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save Lesson Plan Concepts!"})
-				return
-			}
-		}
-
-		var referenceDataInfo lessonPlanModel.LessonPlanStep
-		conceptNo := ""
-		if concept.Number == "" {
-			conceptNo = saveLessonConcepts.Number
-		} else {
-			conceptNo = concept.Number
-		}
-
-		tx.Unscoped().
-			Where("lesson_plan_concept_number = ?", conceptNo).
-			Delete(&referenceDataInfo)
-
-		lessonPlanSteps := concept.StepList
-		if len(lessonPlanSteps) > 0 {
-
-			for _, step := range lessonPlanSteps {
-				if step.Step != "" {
-					saveLearningSteps := lessonPlanModel.LessonPlanStep{
-						Number:                  uuid.NewV4().String(),
-						Code:                    step.Code,
-						Step:                    step.Step,
-						LessonPlanConceptNumber: conceptNo,
-					}
-
-					if err := tx.Create(&saveLearningSteps).Error; err != nil {
-						// If any error occurs, rollback the transaction
-						tx.Rollback()
-						// Handle or return the error as needed
-						context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save steps"})
-						return
-
-					}
-				}
-
-			}
-
-		}
-
-	}
-
-	// Commit the transaction if there is no error
-	if err := tx.Commit().Error; err != nil {
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
+	err = lessonPlanService.NewLessonPlan(lessonPlanInfo, userNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -178,38 +57,13 @@ func AddLessonPlanReference(ctx *gin.Context) {
 		return
 	}
 
-	tx := config.DB.Begin()
-
-	for _, material := range lessonPlanReferenceRequest.References {
-
-		code, err := strconv.Atoi(material.Code)
-
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
-
-			return
-		}
-
-		var lessonPlanReference = lessonPlanModel.LessonPlanReference{
-			LessonPlanNumber:       lessonPlanReferenceRequest.LessonPlanNumber,
-			LearningMaterialNumber: material.LearningMaterialNumber,
-			Name:                   material.Name,
-			Code:                   int64(code),
-			UserNumber:             ctx.GetHeader("User-Number"),
-			Number:                 uuid.NewV4().String(),
-		}
-
-		if tx.Create(&lessonPlanReference).Error != nil {
-			tx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add lesson plan reference"))
-			return
-		}
+	err = lessonPlanService.AddLessonPlanReferences(lessonPlanReferenceRequest, ctx.GetHeader("User-Number"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
 	}
 
-	tx.Commit()
-
 	ctx.JSON(http.StatusOK, commons.Feedback("Lesson plan reference added successfully!"))
-
 }
 
 func FetchLessonPlanReferences(ctx *gin.Context) {
@@ -223,10 +77,11 @@ func FetchLessonPlanReferences(ctx *gin.Context) {
 
 	for _, reference := range references {
 		lessonPlanReferences = append(lessonPlanReferences, responses.LessonPlanReferenceResponse{
-			LessonPlanNumber:       reference.LessonPlanNumber,
-			LearningMaterialNumber: reference.LearningMaterialNumber,
-			Name:                   reference.Name,
-			Code:                   reference.Code,
+			LessonPlanNumber:          reference.LessonPlanNumber,
+			LearningMaterialNumber:    reference.LearningMaterialNumber,
+			Name:                      reference.Name,
+			Code:                      reference.Code,
+			LessonPlanReferenceNumber: reference.Number,
 		})
 	}
 
@@ -298,16 +153,17 @@ func FetchLessonPlan(context *gin.Context) {
 	}
 
 	var lessonPlanReferenceInfo []lessonPlanModel.LessonPlanReference
-	config.DB.Where("lesson_plan_number = ?", lessonPlanInfo.Number).Find(&lessonPlanReferenceInfo)
+	config.DB.Where("lesson_plan_number = ?", lessonPlanInfo.Number).Order("code asc").Find(&lessonPlanReferenceInfo)
 
 	var lessonPlanReferenceInfo_ []responses.LessonPlanReferenceResponse
 
 	for _, reference := range lessonPlanReferenceInfo {
 		lessonPlanReferenceInfo_ = append(lessonPlanReferenceInfo_, responses.LessonPlanReferenceResponse{
-			LessonPlanNumber:       reference.LessonPlanNumber,
-			LearningMaterialNumber: reference.LearningMaterialNumber,
-			Name:                   reference.Name,
-			Code:                   reference.Code,
+			LessonPlanNumber:          reference.LessonPlanNumber,
+			LearningMaterialNumber:    reference.LearningMaterialNumber,
+			Name:                      reference.Name,
+			Code:                      reference.Code,
+			LessonPlanReferenceNumber: reference.Number,
 		})
 	}
 
@@ -388,4 +244,61 @@ func ExportLessonPlanTemplate(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+}
+
+func UpdateLessonPlanReference(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	referenceNumber := context.Param("referenceNumber")
+	if referenceNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the reference number to update"})
+		return
+	}
+
+	var referenceRequest requests.Material
+
+	err = context.BindJSON(&referenceRequest)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = referenceRequest.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = lessonPlanService.UpdateLessonPlanReference(referenceRequest, referenceNumber, user.Number)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference updated successfully"})
+}
+
+func DeleteLessonPlanReference(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	referenceNumber := context.Param("referenceNumber")
+	if referenceNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the reference number to delete"})
+		return
+	}
+
+	err = lessonPlanService.DeleteLessonPlanReference(referenceNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference deleted successfully"})
 }

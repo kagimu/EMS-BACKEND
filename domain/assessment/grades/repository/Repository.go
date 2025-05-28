@@ -9,11 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func FindAllGrades(schoolNumber string, gradeGroupNumber ...string) ([]models.Grade, error) {
+func FindAllGrades(schoolNumber string) ([]models.Grade, error) {
 	var grades []models.Grade
-	if err := config.DB.Preload("GradeGroup").Scopes(
+	if err := config.DB.Scopes(
 		filters.BySchoolNumber(schoolNumber),
-		filters.ByAnyField("grade_group_number", gradeGroupNumber[0]),
 	).Find(&grades).Error; err != nil {
 		return nil, err
 	}

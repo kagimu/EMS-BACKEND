@@ -12,6 +12,8 @@ import (
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/services"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/services"
@@ -57,11 +59,30 @@ func createAdmissionResponse(admission models.Admission) responses.AdmissionResp
 	student, _ := studentRepository.GetStudentByNumber(admission.StudentNumber)
 	stream, _ := repositories2.GetStreamByNumber(admission.StreamNumber)
 
+	campusClass, _ := repositories2.GetCampusClassByNumber(admission.CampusClassNumber)
+
+	curriculumClass, _ := repositories2.GetCurriculumClass(campusClass.CurriculumClassNumber)
+
+	curriculumLevel, _ := repositories7.GetCurriculumLevelByNumber(curriculumClass.CurriculumLevelNumber)
+
+	curriculum, _ := models3.GetCurriculumByNumber(curriculumLevel.CurriculumNumber)
+
+	campusLevel, _ := repositories7.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
+
 	admissionResponse.Class = services.CreateClassResponse(class)
 	admissionResponse.CampusResponse = services2.CreateCampusResponse(campus)
 	admissionResponse.StudyPeriod = services3.CreateStudyPeriod(studyPeriod)
 	admissionResponse.Student = services4.CreateStudentResponse(&student)
 	admissionResponse.Stream = services.CreateStreamResponse(stream)
+	admissionResponse.SchoolNumber = admission.SchoolNumber
+	admissionResponse.CampusNumber = admission.CampusNumber
+	admissionResponse.CurriculumNumber = curriculum.Number
+	admissionResponse.LevelNumber = class.LevelNumber
+	admissionResponse.AcademicYearNumber = admission.AcademicYearNumber
+	admissionResponse.StudyPeriodNumber = admission.StudyPeriodNumber
+	admissionResponse.CampusClassNumber = admission.CampusClassNumber
+	admissionResponse.StreamNumber = admission.StreamNumber
+	admissionResponse.CampusCurriculumNumber = campusLevel.CampusCurriculumNumber
 
 	return admissionResponse
 }

@@ -25,17 +25,29 @@ func AddSession(ctx *gin.Context) {
 		return
 	}
 
-	err = services.SaveCurriculumDeliverySession(ctx, request)
+	err = services.SaveCurriculumDeliverySession(request)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add session"))
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to add session"+err.Error()))
+		return
 	}
 
-	ctx.JSON(200, commons.Feedback("Session added successfully"))
+	ctx.JSON(200, commons.Feedback("Sessions added successfully"))
 }
 
 func GetSessions(ctx *gin.Context) {
 	paginatedResponse := pagination.PaginatedResponse{}
 	sessions, err := services.GetCurriculumDeliveryByStreamNumberAndStepNumber(ctx, &paginatedResponse)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to get sessions"))
+	}
+	paginatedResponse.Content = sessions
+
+	ctx.JSON(200, paginatedResponse)
+}
+
+func GetLessons(ctx *gin.Context) {
+	paginatedResponse := pagination.PaginatedResponse{}
+	sessions, err := services.GetCurriculumDeliveryLessons(ctx, &paginatedResponse)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to get sessions"))
 	}
@@ -53,4 +65,46 @@ func GetStudentsBySession(context *gin.Context) {
 	paginatedResponse.Content = students
 
 	context.JSON(200, paginatedResponse)
+}
+
+func UpdateSession(ctx *gin.Context) {
+	var request requests.UpdateCurriculumDeliveryRequest
+	err := ctx.ShouldBindJSON(&request)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Invalid request data "+err.Error()))
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	err = services.UpdateCurriculumDeliverySession(request)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, commons.Feedback("Failed to update session"+err.Error()))
+		return
+	}
+
+	ctx.JSON(200, commons.Feedback("Sessions updated successfully"))
+}
+
+func GetCurriculumDeliveryProgressByStream(context *gin.Context) {
+
+	stream := context.Param("stream_number")
+	if stream == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Please provide stream number"))
+		return
+	}
+	progress, err := services.GetCurriculumDeliveryProgressByStream(stream)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, commons.Feedback("Failed to get curriculum delivery progress"+err.Error()))
+		return
+	}
+
+	context.JSON(200, progress)
+
 }

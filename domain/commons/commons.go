@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -136,7 +137,7 @@ func PermissionGroups() []PermissionGroup {
 		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
 		{"SETUP": []string{"view_school", "add_school", "edit_school", "delete_school", "create_campus", "edit_campus", "delete_campus", "create_academic-year", "view_academic-year", "update_academic-year",
 			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream", "view_campus_settings", "view_aggregate", "view_grading", "view_assessment_schedule", "view_report_card_settings", "view_student_score", "view_study_period", "view_study_period_group_names", "view_academic_year", "view_classes", "view_levels"}},
-		{"USERS": []string{"create_user", "view_users", "view_roles", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details"}},
+		{"USERS": []string{"create_user", "view_users", "view_roles", "update_user_details", "delete_user", "view_account-management", "view_user-management", "add_timetable", "view_timetable-details", "can_serve_as_teacher_and_admin"}},
 		{"PERMISSIONS": []string{"create_permission", "view_permission", "view_scopes", "delete_permission", "update_permission"}},
 		{"STUDENT APPLICATION": []string{"view_applications", "view_application_list"}},
 		{"STUDENTS": []string{"view_students", "update_student_details"}},
@@ -152,8 +153,8 @@ func PermissionGroups() []PermissionGroup {
 			"edit_menu_item", "remove_menu_item", "delete_menu_pack", "edit_menu_pack", "create_menu_pack", "delete_feeding_group", "edit_feeding_group", "view_feeding_group_list",
 			"create_meal_course", "edit_meal_course", "delete_meal_course", "create_meal_course_menu_pack", "edit_meal_course_menu_pack", "delete_meal_course_menu_pack", "create_daily_group_courses", "activate_groups_on_calendar", "activate_meal_course", "serve_meal"}},
 		{"PRODUCTS & SERVICES": []string{"create_product", "create_service", "edit_product", "edit_service", "view_services", "view_products"}},
-		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype", "add_assessment_schedule", "delete_assessment_schedule", "edit_assessment_schedule"}},
-		{"ADMISSION": []string{"admit_student", "view_admissions", "cancel_admission"}},
+		{"ASSESSMENT": []string{"view_grade-scale", "view_grade-standard", "view_assessment-list", "view_examtype", "add_assessment_schedule", "delete_assessment_schedule", "edit_assessment_schedule", "generate_report", "view_report_summary", "add_score", "create_names_of_aggregate", "create_aggregate_scale"}},
+		{"ADMISSION": []string{"admit_student", "view_admissions", "cancel_admission", "view_offer_admission", "view_interview_score"}},
 		{"ENROLLMENT": []string{"enroll_student", "view_enrollments", "terminate_enrollment", "re-instate_enrollment"}},
 		{"SETTINGS": []string{"access_settings_menu", "view_learning_area", "update_learning_area",
 			"create_study_period_group_name", "view_study_period_group_name",
@@ -261,4 +262,39 @@ func GenerateDownloadPath(number string, persona bool) string {
 		return "https://www.oddscreenprinting.com.au/wp-content/uploads/2017/04/placeholder.png"
 	}
 	return os.Getenv("BASE_URL") + "attachments/download/" + number
+}
+
+func StringContains(slice []string, value string) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
+func GetInitialsDot(name string) string {
+	parts := strings.Fields(name)
+	var initials []string
+
+	for _, part := range parts {
+		for _, r := range part {
+			if unicode.IsLetter(r) {
+				initials = append(initials, strings.ToUpper(string(r)))
+				break
+			}
+		}
+	}
+
+	return strings.Join(initials, ".")
+}
+
+func CapitalizeFirst(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }

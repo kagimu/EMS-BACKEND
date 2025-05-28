@@ -51,7 +51,7 @@ func GetRecentStatementByUserNumber(userNumber string, tx ...*gorm.DB) (models.S
 
 	var statement models.Statement
 
-	if err := db.Where("user_number = ?", userNumber).First(&statement).Error; err != nil {
+	if err := db.Where("user_number = ?", userNumber).Order("created_at desc").First(&statement).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.Statement{}, nil
 		}
@@ -97,6 +97,32 @@ func FindAllStatements(userNumber string, startDate, endDate time.Time) ([]model
 			filters.ByDateBetween("created_at", startDate, endDate)).
 		Order("created_at asc").
 		Find(&statements).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return statements, nil
+		}
+
+		return statements, err
+	}
+
+	return statements, nil
+}
+
+func FindAllGeneralStatements(userNumber string, minAmount, maxAmount float64) ([]models.Statement, error) {
+	var statements []models.Statement
+
+	db := config.DB
+
+	subQuery := db.Model(&models.Statement{}).
+		Select("MAX(created_at)").
+		Where("user_number = s.user_number")
+
+	err := db.Table("statements AS s").
+		Scopes(filters.ByUserNumber(userNumber), filters.ByAnyAmountField("balance", ">=", minAmount), filters.ByAnyAmountField("balance", "<=", maxAmount)).
+		Where("s.created_at = (?)", subQuery).
+		Find(&statements).Error
+
+	if err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return statements, nil

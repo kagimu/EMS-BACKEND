@@ -18,6 +18,7 @@ type (
 		LevelNumber  string           `json:"level_number" gorm:"size:36;not null"`
 		Level        levelModel.Level `gorm:"foreignKey:LevelNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		User         models.User      `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+		EntityNumber string           `json:"entity_number" gorm:"size:36"`
 	}
 
 	ClassInfo struct {

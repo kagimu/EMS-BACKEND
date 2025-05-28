@@ -15,12 +15,18 @@ type (
 		AcademicYearName      string `json:"academic_year_name"`
 		LevelName             string `json:"level_name"`
 		CampusLevelNumber     string `json:"campus_level_number"`
+		NextTermBeginsOn      string `json:"next_term_begins"`
 	}
 
 	StudyPeriodNameResponse struct {
 		DateAdded             string `json:"date_added"`
 		Name                  string `json:"name"`
 		StudyPeriodNameNumber string `json:"study_period_name_number"`
+	}
+
+	StudyPeriodResponse struct {
+		StudyPeriodNameResponse
+		StudyPeriodNumber string `json:"study_period_number"`
 	}
 
 	StudyPeriodListDetail struct {

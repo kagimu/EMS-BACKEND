@@ -1,14 +1,17 @@
 package responses
 
 type NarrativeResponse struct {
-	Number         string `json:"number"`
-	Date           string `json:"date"`
-	Teacher        string `json:"teacher"`
-	AcademicYear   string `json:"academic_year"`
-	StudyPeriod    string `json:"study_period"`
-	Class          string `json:"class"`
-	Narration      string `json:"narration"`
-	AssessmentArea string `json:"assessment_area"`
+	Number               string `json:"number"`
+	CreatedAt            string `json:"created_at"`
+	Teacher              string `json:"teacher"`
+	AcademicYear         string `json:"academic_year"`
+	StudyPeriod          string `json:"study_period"`
+	Class                string `json:"class"`
+	Narration            string `json:"narration"`
+	AssessmentArea       string `json:"assessment_area"`
+	AssessmentAreaNumber string `json:"assessment_area_number"`
+	ReferenceDate        string `json:"reference_date"`
+	ReferenceTime        string `json:"reference_time"`
 }
 
 type AssessmentResponse struct {

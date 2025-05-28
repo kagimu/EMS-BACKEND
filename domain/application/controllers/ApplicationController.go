@@ -55,6 +55,8 @@ func FetchApplications(c *gin.Context) {
 		if err := config.DB.Model(&models.Application{}).
 			Scopes(
 				filters.ByStatus(c.Query("status")),
+				filters.BySchoolNumber(c.Query("school_number")),
+				filters.ByCampusNumber(c.Query("campus_number")),
 				pagination.Paginate(c, &paginationResponse),
 			).
 			Where("user_number = ?", user.Number).
@@ -62,20 +64,32 @@ func FetchApplications(c *gin.Context) {
 			Preload("PreviousSchools").
 			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "application fetching failed",
+				"message": "please contact support to fetch applications",
 			})
 			return
 		}
 
 	} else {
+		schoolNumber := c.Query("school_number")
+		//if user.Type != constants.TypeClient {
+		//	if schoolNumber == "" {
+		//		c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view applications for"})
+		//		return
+		//	}
+		//}
 
 		if err := config.DB.Model(&models.Application{}).
-			Preload("Student").Preload("Parent").
-			Preload("PreviousSchools").
 			Scopes(
-				filters.ByStatus(c.Query("status")),
+				filters.ByAnyField("applications.status", c.Query("status")),
+				filters.ByAnyField("students.preferred_campus_number", c.Query("campus_number")),
+				filters.ByAnyField("students.school_number", schoolNumber),
 				pagination.Paginate(c, &paginationResponse),
 			).
+			Preload("Student").Preload("Parent").
+			Preload("Student.CampusClass").
+			Preload("Student.PreferredCampus").
+			Preload("PreviousSchools").
+			Joins("JOIN students ON students.application_number = applications.number").
 			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "application fetching failed",

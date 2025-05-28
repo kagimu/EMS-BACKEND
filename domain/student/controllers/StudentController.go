@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"net/http"
 
@@ -46,13 +47,13 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	applicationNumber := payload.ApplicationNumber
-	var application applicationModel.Application
-	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Application not found"})
-		return
-	}
+	//applicationNumber := payload.ApplicationNumber
+	//var application applicationModel.Application
+	//if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
+	//	c.JSON(http.StatusBadRequest, gin.H{
+	//		"message": "Application not found"})
+	//	return
+	//}
 
 	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, payload.CampusCurriculumNumber)
 	if err != nil {
@@ -75,6 +76,25 @@ func CreateStudent(c *gin.Context) {
 	}*/
 
 	tx := config.DB.Begin()
+
+	saveApplication := applicationModel.Application{
+		Number:     uuid.NewV4().String(),
+		UserNumber: user.Number,
+		Type:       payload.Type,
+	}
+
+	if payload.ApplicationNumber == "" {
+		if err := tx.Create(&saveApplication).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "failed to create application",
+				"details": err.Error(),
+			})
+			return
+		}
+
+	}
+
 	studentAPN, err := CreateAPN(tx)
 	if err != nil {
 		tx.Rollback()
@@ -88,10 +108,11 @@ func CreateStudent(c *gin.Context) {
 	// find Student by application number
 
 	var student models.Student
-	tx.Where("application_number = ?", applicationNumber).First(&student)
+	tx.Where("application_number = ?", saveApplication.Number).First(&student)
 
 	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
 	if student.Number != "" {
+
 		// update student details
 		updateStudent := models.Student{
 			Surname:                   payload.Surname,
@@ -103,19 +124,46 @@ func CreateStudent(c *gin.Context) {
 			PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 			SecondName:                payload.SecondName,
 			PreferredCampusNumber:     payload.PreferredCampusNumber,
-			UserNumber:                userNumber,
 			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
-			ApplicationNumber:         applicationNumber,
+			ApplicationNumber:         saveApplication.Number,
 			CampusClassNumber:         campusClass.Number,
 			SchoolNumber:              payload.SchoolNumber,
 			Lin:                       payload.Lin,
 			ModeOfStudyNumber:         payload.ModeOfStudyNumber,
+			AddedBy:                   userNumber,
 		}
 
-		if err := tx.Where("application_number = ?", applicationNumber).Updates(updateStudent).Error; err != nil {
+		if payload.ADN != "" {
+			updateStudent.ADN = payload.ADN
+		}
+
+		if err := tx.Where("application_number = ?", payload.ApplicationNumber).Updates(updateStudent).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status":  http.StatusInternalServerError,
 				"message": "failed to update student",
+			})
+			return
+		}
+
+		// update the user details
+		updateUser := authModel.User{
+			FirstName:  payload.SecondName,
+			LastName:   payload.Surname,
+			SecondName: payload.OtherName,
+		}
+
+		if err := tx.Where("number = ?", student.UserNumber).Updates(updateUser).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "failed to update user",
+			})
+			return
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "failed to commit transaction",
 			})
 			return
 		}
@@ -154,11 +202,15 @@ func CreateStudent(c *gin.Context) {
 		PreferredCampusNumber:     payload.PreferredCampusNumber,
 		UserNumber:                createdUser.Number,
 		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
-		ApplicationNumber:         applicationNumber,
+		ApplicationNumber:         saveApplication.Number,
 		CampusClassNumber:         campusClass.Number,
 		SchoolNumber:              payload.SchoolNumber,
 		Lin:                       payload.Lin,
 		ModeOfStudyNumber:         payload.ModeOfStudyNumber,
+	}
+
+	if payload.ADN != "" {
+		savStudent.ADN = payload.ADN
 	}
 
 	if err := tx.Create(&savStudent).Error; err != nil {
@@ -211,6 +263,7 @@ func EditStudent(c *gin.Context) {
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
 		CampusClassNumber:         payload.CampusClassNumber,
 		SchoolNumber:              payload.SchoolNumber,
+		Gender:                    payload.Gender,
 	}
 
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
@@ -298,17 +351,23 @@ func FetchStudentByNumber(c *gin.Context) {
 	var response = enrollmentResponse.Enrollment{}
 	response.LevelNumber = curriculumLevel.LevelNumber
 	response.CampusCurriculumNumber = campusLevel.CampusCurriculumNumber
+	response.CurriculumNumber = curriculumLevel.CurriculumNumber
 	response.StudentNumber = enrollment.StudentNumber
 	response.EnrollmentDate = enrollment.EnrollmentDate
 	response.Class = enrollment.CampusClass.ClassName
+	response.ClassNumber = enrollment.CampusClass.ClassNumber
 	response.Status = enrollment.Status
 	response.Stream = enrollment.Stream.Name
+	response.StreamNumber = enrollment.Stream.Number
 	response.School = enrollment.School.Name
+	response.SchoolNumber = enrollment.School.Number
 	response.Campus = enrollment.Campus.Name
+	response.CampusNumber = enrollment.Campus.Number
 	response.StudyPeriod = studyPeriodName.Name
+	response.StudyPeriodNumber = enrollment.StudyPeriod.Number
+	response.CampusClassNumber = enrollment.CampusClass.Number
 	response.ContinuingStudent = enrollment.ContinuingStudent
 	response.AcademicYear = enrollment.StudyPeriod.AcademicYear.AcademicYearName
-
 	detailedStudent.CurrentEnrollment = response
 	//enrollmentResponse.Stream =
 
@@ -402,4 +461,63 @@ func FetchStudentsByAssessmentMetricNumber(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": students})
+}
+
+func CreateMedicalRecord(context *gin.Context) {
+	var payload request.MedicalRecordRequest
+	err := context.BindJSON(&payload)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		return
+	}
+
+	err = payload.Validate()
+
+	err = services2.CreateMedicalRecord(payload)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Error failed to save " + err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student medical record created"})
+}
+
+func CreateFamilyStructure(context *gin.Context) {
+	var payload request.FamilyStructureRequest
+	err := context.BindJSON(&payload)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		return
+	}
+
+	err = payload.Validate()
+
+	err = services2.CreateFamilyStructure(payload)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to save family structure" + err.Error()})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student family structure created"})
+}
+
+func CreateEmergencyInformation(context *gin.Context) {
+
+	var payload request.EmergencyInformationRequest
+	err := context.BindJSON(&payload)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		return
+	}
+
+	err = payload.Validate()
+
+	err = services2.CreateEmergencyInformation(payload)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to save emergency info " + err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student emergency information created"})
+
 }

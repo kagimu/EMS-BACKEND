@@ -45,6 +45,7 @@ type (
 	}
 
 	CampusResponse struct {
+		Number           string    `json:"number"`
 		Name             string    `json:"name"`
 		Phone            string    `json:"phone"`
 		Email            string    `json:"email"`

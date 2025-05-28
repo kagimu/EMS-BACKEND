@@ -177,17 +177,32 @@ func AssignRolesToAUser(c *gin.Context) {
 		// validate if the role and user exists
 
 		var userRole models.UserRole
-		if err := config.DB.Preload("Role").Where("user_number = ?", payload.UserNumber).Where("role_number = ?", role.RoleNumber).First(&userRole).Error; err == nil {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": "User already has the role " + userRole.Role.Name})
-			return
-		}
+		err = config.DB.Preload("Role").Where("user_number = ?", payload.UserNumber).Where("role_number = ?", role.RoleNumber).First(&userRole).Error
 
-		if err := tx.Create(&saveRole).Error; err != nil {
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user" + err.Error()})
 			return
 		}
+
+		if err == nil {
+			// if the role exists update the expiry date
+			userRole.ExpiryDate = date
+			if err := tx.Save(&userRole).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update role assignment"})
+				return
+			}
+
+		} else {
+
+			if err := tx.Create(&saveRole).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign a role to the specified user" + err.Error()})
+				return
+			}
+		}
+
 	}
 
 	if err := tx.Commit().Error; err != nil {

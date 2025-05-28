@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"fmt"
-	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+var itemService = services.NewItemService()
 
 func CreateService(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
@@ -88,72 +90,47 @@ func CreateService(c *gin.Context) {
 
 func FetchServices(c *gin.Context) {
 
-	var services []models2.Service
-	if err := config.DB.Preload("Item").Find(&services).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch services"})
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
-	var response []responses.ServiceResponse
-	for _, service := range services {
-		var campusServices []models2.CampusItem
-		if err := config.DB.Where("item_number = ?", service.ItemNumber).Find(&campusServices).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
+
+	schoolNumber := c.Query("school_number")
+
+	if user.Type != constants.TypeClient {
+		if schoolNumber == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view services for"})
 			return
 		}
+	}
 
-		var campusServiceResponse []responses.CampusServiceResponse
-		for _, campusService := range campusServices {
-			//get campus name
-			var campus campusModel.Campus
-			if err := config.DB.Where("number = ?", campusService.CampusNumber).First(&campus).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus"})
-				return
-			}
-
-			campusServiceResponse = append(campusServiceResponse, responses.CampusServiceResponse{
-				Number:       campusService.Number,
-				CampusNumber: campusService.CampusNumber,
-				Name:         campus.Name,
-			})
-		}
-
-		response = append(response, responses.ServiceResponse{
-			ItemNumber: service.ItemNumber,
-			Item: responses.ItemResponse{
-				Number:          service.Item.Number,
-				Name:            service.Item.Name,
-				Description:     service.Item.Description,
-				Type:            service.Item.Type,
-				Cost:            service.Item.Cost,
-				SerialCode:      service.Item.SerialCode,
-				PaymentMode:     service.Item.PaymentMode,
-				Mandatory:       service.Item.Mandatory,
-				SchoolNumber:    service.Item.SchoolNumber,
-				UserNumber:      service.Item.UserNumber,
-				RepeatCycle:     service.Item.RepeatCycle,
-				OneTimePurchase: service.Item.OneTimePurchase,
-			},
-			Campuses: campusServiceResponse,
-		})
+	response, err := itemService.AllServiceItems(schoolNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, response)
 }
 
 func FetchAllItems(c *gin.Context) {
-	var items = make([]models.Item, 0)
 
-	var item []models.Item
-	if err := config.DB.Find(&item).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch items"})
+	schoolNumber := c.Query("school_number")
+	if schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide school number"})
 		return
 	}
 
-	for _, service := range item {
-		items = append(items, service)
+	itemType := c.Query("type")
+
+	response, err := itemService.AllItems(schoolNumber, itemType)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, items)
-	return
+
+	c.JSON(http.StatusOK, response)
 }
 
 func EditService(c *gin.Context) {
@@ -194,13 +171,13 @@ func EditService(c *gin.Context) {
 	}
 
 	if err := config.DB.Model(&service).Where("number = ?", serviceNumber).Updates(updateService).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update service item"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update service item"})
 		return
 	}
 
 	// synchronize campus services by deleting all and adding them again
 	if err := config.DB.Where("item_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus services"})
 		return
 
 	}
@@ -240,19 +217,19 @@ func DeleteService(c *gin.Context) {
 	//delete campus services
 	if err := tx.Where("item_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete campus services"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus services"})
 		return
 
 	}
 
 	if err := tx.Delete(&service).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete service"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete service"})
 		return
 	}
 	if err := tx.Where("number = ?", serviceNumber).Delete(&models.Item{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete service item"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete service item"})
 		return
 	}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -59,27 +60,20 @@ func GetAllPayments(context *gin.Context) {
 	_startDate := context.Query("start_date")
 	_endDate := context.Query("end_date")
 
-	currentDateTime := time.Now()
-
-	if _startDate == "" {
-		startOfMonth := time.Date(currentDateTime.Year(), currentDateTime.Month(), 1, 0, 0, 0, 0, currentDateTime.Location())
-		_startDate = startOfMonth.Format(time.DateOnly)
-	}
-
 	var startDate time.Time
-	if startDate, err = time.Parse(time.DateOnly, _startDate); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
-		return
-	}
-
-	if _endDate == "" {
-		_endDate = currentDateTime.Format(time.DateOnly)
+	if _startDate != "" {
+		if startDate, err = time.Parse(time.DateOnly, _startDate); err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
+			return
+		}
 	}
 
 	var endDate time.Time
-	if endDate, err = time.Parse(time.DateOnly, _endDate); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
-		return
+	if _endDate != "" {
+		if endDate, err = time.Parse(time.DateOnly, _endDate); err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
+			return
+		}
 	}
 
 	payments, err := services.GetAllPayments(userNumber, refNumber, schoolNumber, startDate, endDate)
@@ -154,27 +148,20 @@ func AllStatements(context *gin.Context) {
 	_startDate := context.Query("start_date")
 	_endDate := context.Query("end_date")
 
-	currentDateTime := time.Now()
-
-	if _startDate == "" {
-		startOfMonth := time.Date(currentDateTime.Year(), currentDateTime.Month(), 1, 0, 0, 0, 0, currentDateTime.Location())
-		_startDate = startOfMonth.Format(time.DateOnly)
-	}
-
 	var startDate time.Time
-	if startDate, err = time.Parse(time.DateOnly, _startDate); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
-		return
-	}
-
-	if _endDate == "" {
-		_endDate = currentDateTime.Format(time.DateOnly)
+	if _startDate != "" {
+		if startDate, err = time.Parse(time.DateOnly, _startDate); err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
+			return
+		}
 	}
 
 	var endDate time.Time
-	if endDate, err = time.Parse(time.DateOnly, _endDate); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
-		return
+	if _endDate != "" {
+		if endDate, err = time.Parse(time.DateOnly, _endDate); err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
+			return
+		}
 	}
 
 	statementResponses, err := services.UserStatement(userNumber, startDate, endDate)
@@ -208,4 +195,48 @@ func TransactionCredits(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"data": statementResponses})
+}
+
+func GeneralStatement(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	userNumber := context.Query("user_number")
+	minAmount_ := context.Query("min_amount")
+	maxAmount_ := context.Query("max_amount")
+
+	minAmount, err := parseFloat64Ptr(minAmount_)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error parsing min_amount to float: " + err.Error()})
+		return
+	}
+
+	maxAmount, err := parseFloat64Ptr(maxAmount_)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Error parsing max_amount to float: " + err.Error()})
+		return
+	}
+
+	statementResponses, err := services.GeneralStatement(userNumber, minAmount, maxAmount)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get general statements, try again", "err": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": statementResponses})
+}
+
+func parseFloat64Ptr(val string) (float64, error) {
+	if val == "" {
+		return -1, nil
+	}
+	f, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return -1, err
+	}
+	return f, nil
 }

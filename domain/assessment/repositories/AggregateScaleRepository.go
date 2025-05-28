@@ -28,7 +28,7 @@ func FindAggregateScaleByScaleNumber(scaleNumber string, trn ...*gorm.DB) ([]mod
 
 	var aggregateScales []models.AggregateScale
 
-	if err := db.Where("scale_number = ?", scaleNumber).Find(&aggregateScales).Error; err != nil {
+	if err := db.Where("scale_number = ?", scaleNumber).Order("code asc").Find(&aggregateScales).Error; err != nil {
 
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			return aggregateScales, nil
@@ -148,7 +148,49 @@ func FindAggregateScaleByClassNumberAndGradingStandardNumber(classNumber, gradin
 		Joins("join scales on scales.number = aggregate_scales.scale_number").
 		Joins("join grading_standard_class_scales on grading_standard_class_scales.scale_number = scales.number").
 		Scopes(filters.ByAnyField("grading_standard_class_scales.class_number", classNumber), filters.ByAnyField("grading_standard_class_scales.grading_standard_number", gradingStandardNumber)).
+		Order("aggregate_scales.code asc").
 		Find(&aggregateScales).Error; err != nil {
+
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return aggregateScales, nil
+		}
+
+		return aggregateScales, err
+	}
+
+	return aggregateScales, nil
+}
+
+func GetAggregateScaleByNumber(number string, trn ...*gorm.DB) (models.AggregateScale, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var aggregateScales models.AggregateScale
+
+	if err := db.Where("number = ?", number).Find(&aggregateScales).Error; err != nil {
+
+		if errors.Is(gorm.ErrRecordNotFound, err) {
+			return aggregateScales, nil
+		}
+
+		return aggregateScales, err
+	}
+
+	return aggregateScales, nil
+}
+func GetAggregateScaleByIllustration(illustration string, trn ...*gorm.DB) (models.AggregateScale, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var aggregateScales models.AggregateScale
+
+	if err := db.Where("illustration = ?", illustration).First(&aggregateScales).Error; err != nil {
 
 		if errors.Is(gorm.ErrRecordNotFound, err) {
 			return aggregateScales, nil

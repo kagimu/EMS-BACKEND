@@ -1,0 +1,132 @@
+package services
+
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	"github.com/gin-gonic/gin"
+)
+
+func RecordAttendance(attendance *models.Attendance) error {
+
+	repo := repositories.NewAttendanceRepository(config.DB)
+
+	exists, err := repo.CheckIfAttendanceByUserNumberAndCampusNumberAndDateExists(attendance.UserNumber, attendance.CampusNumber, attendance.Date.String())
+
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return errors.New("attendance check in record  already exists for this user")
+	}
+
+	_, err = repo.Save(attendance)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func FetchAttendance(ctxt *gin.Context) (pagination.PaginatedResponse, error) {
+	repo := repositories.NewAttendanceRepository(config.DB)
+
+	response := make([]responses.AttendanceResponse, 0)
+
+	var paginatedResponse pagination.PaginatedResponse
+	paginatedResponse.Content = response
+
+	attendances, err := repo.AllAttendance(ctxt, &paginatedResponse)
+	if err != nil {
+		return pagination.PaginatedResponse{}, err
+	}
+
+	for _, attendance := range attendances {
+
+		user, err := repository.GetUserByNumber(attendance.UserNumber)
+
+		if err != nil {
+			return pagination.PaginatedResponse{}, err
+		}
+
+		var school schoolModels.School
+		if attendance.SchoolNumber != "" {
+			school, err = repositories2.GetSchoolByNumber(attendance.SchoolNumber)
+			if err != nil {
+				return pagination.PaginatedResponse{}, err
+			}
+		}
+
+		var campus campusModel.Campus
+		campus, err = repositories3.GetCampusByNumber(attendance.CampusNumber)
+		if err != nil {
+			campus = campusModel.Campus{}
+		}
+
+		var campusClass classModel.CampusClass
+		campusClass, err = repositories4.GetCampusClassByNumber(attendance.CampusClassNumber)
+		if err != nil {
+			campusClass = classModel.CampusClass{}
+		}
+
+		response = append(response, responses.AttendanceResponse{
+			Number:            attendance.Number,
+			Date:              attendance.Date.String(),
+			CheckInTime:       attendance.CheckInTime,
+			CheckOutTime:      attendance.CheckOutTime,
+			Present:           attendance.Present,
+			Class:             campusClass.ClassName,
+			School:            school.Name,
+			Campus:            campus.Name,
+			Name:              user.FirstName + " " + user.LastName,
+			AbsenceReason:     attendance.Comment,
+			UserNumber:        attendance.UserNumber,
+			StudentNumber:     attendance.StudentNumber,
+			StreamNumber:      attendance.StreamNumber,
+			CampusNumber:      attendance.CampusNumber,
+			CampusClassNumber: attendance.CampusClassNumber,
+			StudyPeriodNumber: attendance.StudyPeriodNumber,
+			SchoolNumber:      attendance.SchoolNumber,
+			CheckoutTime:      attendance.CheckOutTime,
+			CheckoutReason:    attendance.CheckoutComment,
+		})
+
+	}
+
+	paginatedResponse.Content = response
+
+	return paginatedResponse, nil
+}
+
+func RecordCheckout(attendance *models.Attendance) error {
+
+	repo := repositories.NewAttendanceRepository(config.DB)
+
+	exists, err := repo.CheckIfCheckoutByUserNumberAndCampusNumberAndDateExists(attendance.UserNumber, attendance.CampusNumber, attendance.Date.String())
+
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return errors.New("you can not record a  check out without a prior  check in record for this day")
+	}
+
+	_, err = repo.Update(attendance)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

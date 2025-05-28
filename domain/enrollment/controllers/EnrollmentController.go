@@ -40,20 +40,20 @@ func CreateEnrollment(c *gin.Context) {
 	// validate if student exists on the same campus and school and campus_class_number and study period and   is active
 	//var existingEnrollment models.Enrollment
 
-	/*if err := config.DB.Where("student_number = ? AND study_period_number = ? AND status = ?", payload.StudentNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
+	/*if err := config.DB.Where("student_number = ? AND study_period_number = ? AND status = ?", payload.UserNumber, payload.StudyPeriodNumber, "active").First(&existingEnrollment).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Student is already enrolled for this study period"})
 		return
 	}*/
 
 	/*var admission admissionModel.Admission
-	if err := config.DB.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
+	if err := config.DB.Where("student_number = ?", payload.UserNumber).First(&admission).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch the student admission details"})
 			return
 		}
 	}
 
-	student, err := repositories2.FindStudentByNumber(payload.StudentNumber)
+	student, err := repositories2.FindStudentByNumber(payload.UserNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch student details"})
 		return
@@ -61,7 +61,7 @@ func CreateEnrollment(c *gin.Context) {
 
 	/*saveEnrollment := models.Enrollment{
 		Number:            uuid.NewV4().String(),
-		StudentNumber:     payload.StudentNumber,
+		UserNumber:     payload.UserNumber,
 		StreamNumber:      payload.StreamNumber,
 		CampusNumber:      admission.CampusNumber,
 		SchoolNumber:      admission.SchoolNumber,
@@ -109,9 +109,9 @@ func CreateEnrollment(c *gin.Context) {
 		}
 	}*/
 
-	// update admission status to enrolled where student number is equal to payload.StudentNumber
+	// update admission status to enrolled where student number is equal to payload.UserNumber
 
-	/*if err := tx.Where("student_number = ?", payload.StudentNumber).First(&admission).Error; err != nil {
+	/*if err := tx.Where("student_number = ?", payload.UserNumber).First(&admission).Error; err != nil {
 		tx.Commit()
 		c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
 		return
@@ -128,7 +128,7 @@ func CreateEnrollment(c *gin.Context) {
 
 	// find all other enrollments for the student and set their status to inactive
 	/*var enrollments []models.Enrollment
-	if err := tx.Where("student_number = ? AND number != ? AND status = ? ", payload.StudentNumber, saveEnrollment.Number, constants.StatusActive).Find(&enrollments).Error; err != nil {
+	if err := tx.Where("student_number = ? AND number != ? AND status = ? ", payload.UserNumber, saveEnrollment.Number, constants.StatusActive).Find(&enrollments).Error; err != nil {
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			tx.Rollback()
@@ -190,6 +190,13 @@ func FetchEnrolledStudents(c *gin.Context) {
 	campusClassNumber := c.Query("campus_class_number")
 	studyPeriodNumber := c.Query("study_period_number")
 	status := c.Query("status")
+
+	if user.Type != constants.TypeClient {
+		if schoolNumber == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view enrollments for"})
+			return
+		}
+	}
 
 	page := pagination.Paginate(c, &paginatedResponse)
 

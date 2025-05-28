@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -35,7 +36,7 @@ import (
 
 func NewCurriculum(context *gin.Context) {
 
-	var curriculumInfo responses.CurriculumInfo
+	var curriculumInfo responses.CurriculumResponse
 	err := context.BindJSON(&curriculumInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -586,6 +587,7 @@ func FetchCurriculum(context *gin.Context) {
 
 	var curriculum []models5.Curriculum
 	if err := config.DB.
+		Scopes(filters.ByEntityNumber(context.Query("entity_number"))).
 		Order("created_at desc").
 		Find(&curriculum).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
@@ -771,7 +773,7 @@ func CurriculumInfo(context *gin.Context) {
 
 func CurriculumEdit(context *gin.Context) {
 
-	var curriculumInfo responses.CurriculumInfo
+	var curriculumInfo responses.CurriculumResponse
 	err := context.BindJSON(&curriculumInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})

@@ -179,7 +179,7 @@ func AddTemplateToClass(classReportTemplateRequest requests.ClassReportTemplateR
 	}
 
 	if len(allError) == len(selectedClasses) {
-		return "No class added to the template, try again", allError
+		return "Class already assigned to another report try another class", allError
 	}
 
 	return "", allError
@@ -259,4 +259,18 @@ func DetermineReportTemplateForClass(campusClassNumber string) (models.ReportTem
 
 	return reportTemplate, nil
 
+}
+
+func DeleteReportTemplate(templateNumber string) error {
+
+	template, err := repositories.QueryByReportTemplateNumber(templateNumber)
+
+	if err != nil {
+		return err
+	}
+
+	if err := repositories.DeleteReportTemplate(&template); err != nil {
+		return err
+	}
+	return nil
 }

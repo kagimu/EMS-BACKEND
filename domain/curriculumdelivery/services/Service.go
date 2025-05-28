@@ -13,53 +13,70 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/repository"
 	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
 
-func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeliveryRequest) error {
+func SaveCurriculumDeliverySession(req requests.CurriculumDeliveryRequest) error {
 
 	db := config.DB.Begin()
 	repo := repository.NewCurriculumDeliveryRepositoryImpl(db)
 
-	for _, val := range req.StepNumbers {
+	date, err := commons.ConvertStringToDate(req.Date)
+	if err != nil {
+		return err
+	}
 
-		date, err := commons.ConvertStringToDate(req.Date)
-		if err != nil {
-			return err
-		}
-		// Save session
-		curriculumDelivery := models.CurriculumDelivery{
-			Number:               uuid.NewV4().String(),
-			LessonPlanStepNumber: val,
-			StreamNumber:         req.StreamNumber,
-			Date:                 date,
-			Time:                 req.Time,
-			TeacherNumber:        req.TeacherNumber,
-			Comment:              req.Comment,
+	// Save session
+	curriculumDelivery := models.CurriculumDelivery{
+		Number:        uuid.NewV4().String(),
+		StreamNumber:  req.StreamNumber,
+		Date:          date,
+		Time:          req.Time,
+		TeacherNumber: req.TeacherNumber,
+		Comment:       req.Comment,
+		SubjectNumber: req.SubjectNumber,
+	}
+
+	sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, req.Sessions[0].StepNumber)
+	if err != nil {
+		return err
+	}
+
+	if len(sessions) > 0 {
+		db.Rollback()
+		return errors.New("session has already been recorded")
+	}
+
+	err = repo.SaveSession(&curriculumDelivery)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+
+	for _, val := range req.Sessions {
+
+		// Save curriculum delivery step
+		curriculumDeliveryStep := models.CurriculumDeliveryStep{
+			CurriculumDeliveryNumber: curriculumDelivery.Number,
+			LessonPlanStepNumber:     val.StepNumber,
+			Comment:                  val.Comment,
+			Time:                     val.Time,
 		}
 
-		sessions, err := repo.FindCurriculumDeliveryByStreamNumberAndStepNumber(req.StreamNumber, val)
-		if err != nil {
-			return err
-		}
-
-		if len(sessions) > 0 {
-			db.Rollback()
-			return errors.New("session has already been recorded")
-		}
-
-		err = repo.SaveSession(&curriculumDelivery)
+		err = repo.SaveCurriculumDeliveryStep(&curriculumDeliveryStep)
 		if err != nil {
 			db.Rollback()
 			return err
 		}
 
 		// Save student session
-		for _, student := range req.Students {
+		for _, student := range val.Students {
 
-			sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, val)
+			sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, val.StepNumber)
 
 			if len(sessions) > 0 {
 				db.Rollback()
@@ -75,6 +92,7 @@ func SaveCurriculumDeliverySession(ctx *gin.Context, req requests.CurriculumDeli
 				StudentNumber:            student.StudentNumber,
 				CurriculumDeliveryNumber: curriculumDelivery.Number,
 				Comment:                  student.Comment,
+				LessonPlanStepNumber:     val.StepNumber,
 			}
 
 			err = repo.SaveStudentSession(&studentCurriculumDelivery)
@@ -115,44 +133,58 @@ func GetCurriculumDeliveryByStreamNumberAndStepNumber(ctx *gin.Context, pr *pagi
 
 func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses.CurriculumDeliveryResponse, error) {
 	var cd responses.CurriculumDeliveryResponse
+	steps := make([]responses.Step, 0)
 	cd.Number = cds.Number
 
 	repo := repository3.NewLessonPlanRepository()
 
-	lessonPlanStep, err := repo.GetLessonPlanStepByNumber(cds.LessonPlanStepNumber)
-	if err != nil {
-		return &cd, err
+	curriculumDeliverySteps, err := repo.FindCurriculumDeliveryStepsByCurriculumDeliveryNumber(cds.Number)
+
+	for _, step := range curriculumDeliverySteps {
+		var stepResponse responses.Step
+		lessonPlanStep, err := repo.GetLessonPlanStepByNumber(step.LessonPlanStepNumber)
+		if err != nil {
+			return &cd, err
+		}
+		stepResponse.Name = lessonPlanStep.Step
+
+		lessonPlanConcept, err := repo.GetLessonPlanConceptByNumber(lessonPlanStep.LessonPlanConceptNumber)
+		if err != nil {
+			return &cd, err
+		}
+
+		concept, err := repo.GetConceptByNumber(lessonPlanConcept.ConceptNumber)
+		if err != nil {
+			return &cd, err
+		}
+
+		subTopic, err := repo.GetSubTopicByNumber(concept.SubTopicNumber)
+
+		if err != nil {
+			return &cd, err
+		}
+
+		topic, err := repo.GetTopicByNumber(subTopic.TopicNumber)
+
+		if err != nil {
+			return &cd, err
+		}
+
+		stepResponse.Concept = concept.Name
+		stepResponse.SubTopic = subTopic.Name
+		stepResponse.Topic = topic.Name
+		stepResponse.Time = step.Time
+		stepResponse.Date = cds.Date.String()
+		stepResponse.Comment = step.Comment
+		stepResponse.Number = step.LessonPlanStepNumber
+
+		steps = append(steps, stepResponse)
+
 	}
 
-	lessonPlanConcept, err := repo.GetLessonPlanConceptByNumber(lessonPlanStep.LessonPlanConceptNumber)
-	if err != nil {
-		return &cd, err
-	}
-
-	concept, err := repo.GetConceptByNumber(lessonPlanConcept.ConceptNumber)
-	if err != nil {
-		return &cd, err
-	}
-
-	subTopic, err := repo.GetSubTopicByNumber(concept.SubTopicNumber)
-
-	if err != nil {
-		return &cd, err
-	}
-
-	topic, err := repo.GetTopicByNumber(subTopic.TopicNumber)
-
-	if err != nil {
-		return &cd, err
-	}
-
-	cd.Topic = topic.Name
-	cd.SubTopic = subTopic.Name
-	cd.Concept = concept.Name
-	cd.Step = lessonPlanStep.Step
 	cd.StreamNumber = cds.StreamNumber
 	cd.TeacherNumber = cds.TeacherNumber
-	cd.LessonPlanStepNumber = cds.LessonPlanStepNumber
+	cd.Steps = steps
 
 	stream, err := repositories2.GetStreamByNumber(cds.StreamNumber)
 	if err != nil {
@@ -174,7 +206,13 @@ func BuildCurriculumDeliveryResponse(cds *models.CurriculumDelivery) (*responses
 	if err != nil {
 		return &cd, err
 	}
-	cd.Teacher = teacher.FirstName + "" + teacher.LastName
+	cd.Teacher = teacher.FirstName + " " + teacher.LastName
+
+	subject, err := repositories3.GetSubjectByNumber(cds.SubjectNumber)
+	if err != nil {
+		return &cd, err
+	}
+	cd.Subject = subject.Name
 
 	return &cd, nil
 
@@ -193,15 +231,165 @@ func GetStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse)
 		if err != nil {
 			return stdts, err
 		}
-		stdts = append(stdts, responses2.LeanStudent{
-			Number:     student.StudentNumber,
-			Surname:    st.Surname,
-			Gender:     st.Gender,
-			SecondName: st.SecondName,
-			OtherName:  st.OtherName,
-		})
+		stdts = append(stdts, services.CreateLeanStudent(st))
 	}
 
 	return stdts, nil
 
+}
+
+func UpdateCurriculumDeliverySession(req requests.UpdateCurriculumDeliveryRequest) error {
+	db := config.DB.Begin()
+	repo := repository.NewCurriculumDeliveryRepositoryImpl(db)
+
+	date, err := commons.ConvertStringToDate(req.Date)
+	if err != nil {
+		return err
+	}
+	// Save session
+	curriculumDelivery, err := repo.GetCurriculumDeliveryByNumber(req.Number)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+
+	curriculumDelivery.Date = date
+	curriculumDelivery.Time = req.Time
+	curriculumDelivery.Comment = req.Comment
+	curriculumDelivery.StreamNumber = req.StreamNumber
+	curriculumDelivery.TeacherNumber = req.TeacherNumber
+
+	err = repo.UpdateCurriculumDeliverySession(curriculumDelivery)
+	if err != nil {
+		db.Rollback()
+
+		return err
+	}
+
+	// delete student sessions
+
+	err = repo.DeleteCurriculumDeliveryStep(req.Number)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+
+	err = repo.DeleteStudentsBySession(req.Number)
+
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+
+	for _, val := range req.Sessions {
+		// Save curriculum delivery step
+		curriculumDeliveryStep := models.CurriculumDeliveryStep{
+			CurriculumDeliveryNumber: curriculumDelivery.Number,
+			LessonPlanStepNumber:     val.StepNumber,
+			Comment:                  val.Comment,
+			Time:                     val.Time,
+		}
+
+		err = repo.SaveCurriculumDeliveryStep(&curriculumDeliveryStep)
+		if err != nil {
+			db.Rollback()
+			return err
+		}
+
+		// Save student session
+		for _, student := range val.Students {
+
+			sessions, err := repo.FindCurriculumDeliveryByStudentNumberAndStepNumber(student.StudentNumber, req.Sessions[0].StepNumber)
+
+			if len(sessions) > 0 {
+				db.Rollback()
+				return errors.New("session for this student has already been recorded")
+			}
+
+			if err != nil {
+				db.Rollback()
+				return err
+			}
+
+			studentCurriculumDelivery := models.StudentCurriculumDelivery{
+				StudentNumber:            student.StudentNumber,
+				CurriculumDeliveryNumber: curriculumDelivery.Number,
+				Comment:                  student.Comment,
+			}
+
+			err = repo.SaveStudentSession(&studentCurriculumDelivery)
+			if err != nil {
+				db.Rollback()
+				return err
+			}
+		}
+	}
+
+	if err := db.Commit().Error; err != nil {
+		db.Rollback()
+		return err
+	}
+
+	return nil
+
+}
+
+func GetCurriculumDeliveryProgressByStream(streamNumber string) ([]responses.CurriculumDeliveryProgress, error) {
+	arr := make([]responses.CurriculumDeliveryProgress, 0)
+	repo := repository3.NewLessonPlanRepository()
+	curriculum, err := repo.GetCurriculumByStreamNumber(streamNumber)
+	if err != nil {
+		return arr, err
+	}
+
+	deliveredSteps, err := repo.CountCurriculumsDeliveryStepsByStreamNumber(streamNumber)
+	if err != nil {
+		return arr, err
+	}
+
+	totalSteps, err := repo.CountStepsByCurriculumNumber(curriculum.Number)
+	if err != nil {
+		return arr, err
+	}
+
+	stream, err := repositories2.GetStreamByNumber(streamNumber)
+
+	if err != nil {
+		return arr, err
+	}
+
+	var percentage float64
+	if totalSteps > 0 {
+		percentage = float64(deliveredSteps) / float64(totalSteps) * 100
+	}
+
+	progress := responses.CurriculumDeliveryProgress{
+		Progress:   commons.RoundFloat(percentage, 3),
+		Scale:      "%",
+		Curriculum: curriculum.Name,
+		Stream:     stream.Name,
+	}
+
+	arr = append(arr, progress)
+
+	return arr, nil
+}
+
+func GetCurriculumDeliveryLessons(ctx *gin.Context, p *pagination.PaginatedResponse) (*[]responses.CurriculumDeliveryResponse, error) {
+	repo := repository.NewCurriculumDeliveryRepositoryImpl(config.DB)
+	sessions, err := repo.FindCurriculumDeliveryByFilters(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	var cds []responses.CurriculumDeliveryResponse
+	for _, session := range sessions {
+		cd, err := BuildCurriculumDeliveryResponse(session)
+		if err != nil {
+			return nil, err
+		}
+		cds = append(cds, *cd)
+	}
+
+	return &cds, nil
 }

@@ -18,13 +18,33 @@ func CreateHeadTeacherComment(headTeacherCommentRequest requests.HeadTeacherComm
 	if reportSummary.Number == "" {
 		return errors.New("Invalid report settings number ")
 	}
+	var headTeacherComment models.HeadTeacherComment
+	if headTeacherCommentRequest.Number != 0 {
+		headTeacherComment, err = reporsitory.GetHeadTeacherCommentByNumber(headTeacherCommentRequest.Number)
 
-	headTeacherComment := models.HeadTeacherComment{
-		MinAggregate:        headTeacherCommentRequest.MinAggregate,
-		MaxAggregate:        headTeacherCommentRequest.MaxAggregate,
-		ReportSettingNumber: reportSettingNumber,
-		Comment:             headTeacherCommentRequest.Comment,
-		UserNumber:          userNumber,
+		if err != nil {
+			return errors.New("failed to get head teacher comment")
+		}
+
+		if headTeacherComment.ID == 0 {
+			return errors.New("head teacher comment not found")
+		}
+
+		headTeacherComment.MinAggregate = headTeacherCommentRequest.MinAggregate
+		headTeacherComment.MaxAggregate = headTeacherCommentRequest.MaxAggregate
+		headTeacherComment.Comment = headTeacherCommentRequest.Comment
+		headTeacherComment.ReportSettingNumber = reportSettingNumber
+		headTeacherComment.UserNumber = userNumber
+
+	} else {
+		headTeacherComment = models.HeadTeacherComment{
+			MinAggregate:        headTeacherCommentRequest.MinAggregate,
+			MaxAggregate:        headTeacherCommentRequest.MaxAggregate,
+			ReportSettingNumber: reportSettingNumber,
+			Comment:             headTeacherCommentRequest.Comment,
+			UserNumber:          userNumber,
+		}
+
 	}
 
 	err = reporsitory.SaveHeadTeacherComment(headTeacherComment)
@@ -57,11 +77,31 @@ func BuildHeadTeacherResponse(comment models.HeadTeacherComment) responses.HeadT
 	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	return responses.HeadTeacherCommentResponse{
-		MinAggregate: comment.MinAggregate,
-		MaxAggregate: comment.MaxAggregate,
-		Comment:      comment.Comment,
-		AcademicYear: comment.ReportSetting.AcademicYear.AcademicYearName,
-		StudyPeriod:  studyPeriodName.Name,
-		Class:        comment.ReportSetting.CampusClass.ClassName,
+		ID:                  int64(comment.ID),
+		MinAggregate:        comment.MinAggregate,
+		MaxAggregate:        comment.MaxAggregate,
+		Comment:             comment.Comment,
+		AcademicYear:        comment.ReportSetting.AcademicYear.AcademicYearName,
+		StudyPeriod:         studyPeriodName.Name,
+		Class:               comment.ReportSetting.CampusClass.ClassName,
+		StudyPeriodNumber:   comment.ReportSetting.StudyPeriodNumber,
+		ReportSettingNumber: comment.ReportSetting.Number,
+		AcademicYearNumber:  comment.ReportSetting.AcademicYearNumber,
+		CampusClassNumber:   comment.ReportSetting.CampusClassNumber,
 	}
+}
+
+func DeleteHeadTeacherComment(commentNumber uint) error {
+	comment, err := reporsitory.GetHeadTeacherCommentByNumber(commentNumber)
+
+	if err != nil {
+		return errors.New("failed to get head teacher comment")
+	}
+
+	err = reporsitory.DeleteHeadTeacherComment(comment.ID)
+	if err != nil {
+		return errors.New("failed to delete head teacher comment")
+	}
+
+	return nil
 }

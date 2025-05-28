@@ -11,22 +11,33 @@ import (
 	repository2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
 	assesmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	classService "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	assessmentAreaRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
+	repositories10 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/services"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
+	repository3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/repository"
+	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"strconv"
+	"time"
 )
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
@@ -164,6 +175,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	tx := config.DB.Begin()
 
+	var staffRepository = repository3.NewStaffRepository(tx)
+
 	var reportTemplate reportTemplateModel.ReportTemplate
 
 	if reportTemplate, err = services.DetermineReportTemplateForClass(payload.CampusClassNumber); err != nil {
@@ -220,13 +233,14 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			StreamNumber:        enrollment.StreamNumber,
 			ReportTemplateName:  reportTemplate.Name,
 			HeadTeacherComment:  headTeacherComment.Comment,
+			CreatedAt:           time.Now(),
 		}
 
-		//if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
-		//	tx.Rollback()
-		//	return errors.New("failed to create report summary")
-		//
-		//}
+		if err := reporsitory.CreateReportSummary(reportSummary, tx); err != nil {
+			tx.Rollback()
+			return errors.New("failed to create report summary")
+
+		}
 	}
 
 	campusClass, err := repositories.GetCampusClassByNumber(payload.CampusClassNumber)
@@ -249,12 +263,26 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		var scale aggregateSaceltModel.AggregateScale
 		var grade gradesModels.Grade
 
+		teacherInitial := "-"
+
+		checkTeacherInitial, checkErr := staffRepository.GetDefaultAssessmentAreaStreamTeacher(assessmentArea.Number, enrollment.StreamNumber)
+		if checkErr != nil {
+			tx.Rollback()
+			return errors.New("failed to fetch default stream teacher")
+		}
+
+		if checkTeacherInitial.Number != "" {
+			teacherInitial = commons.GetInitialsDot(fmt.Sprintf("%s %s %s", checkTeacherInitial.FirstName, checkTeacherInitial.SecondName, checkTeacherInitial.LastName))
+		}
+
 		for _, reportColum := range reportColumns {
 
 			rcas, err := reporsitory.FindReportColumnAssessmentByReportColumnNumberAndAssessmentAreaNumber(reportColum.Number, assessmentArea.Number)
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					continue
+				} else {
+					return err
 				}
 			}
 
@@ -284,6 +312,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				percentageScore = (scoreAverage / 100) * reportColum.PercentageShare
 
 				scale, err = GetProperAggregateScale(scoreAverage, campusClass.Number)
+
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -303,6 +332,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				reportScore.AverageScore = commons.RoundFloat(scoreAverage, 2)
 				reportScore.Aggregate = scale.Weight
 				reportScore.Grade = grade.Name
+				reportScore.Illustration = scale.Illustration
 				reportScore.UserNumber = userNumber
 				reportScore.Remark = scale.Description
 
@@ -330,6 +360,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 					Grade:                grade.Name,
 					UserNumber:           userNumber,
 					Remark:               scale.Description,
+					CreatedAt:            time.Now(),
 				}
 
 				if score > 0 {
@@ -368,14 +399,22 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			return err
 		}
 
-		totalAggregates += scale.Weight
-
 		grade, err := repository2.FindGradeByNumber(scale.GradeNumber)
-
 		if err != nil {
 			tx.Rollback()
 			return errors.New("failed to fetch grade for this scale")
 		}
+
+		if len(rs) > 0 {
+			totalAggregates += scale.Weight //Sum here
+			finalAggregateScale = scale
+		} else {
+			grade = gradesModels.Grade{
+				ShortName: "N/A",
+			}
+		}
+
+		fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
 
 		//check if the report score summary already exists with the same report summary number and assessment area number
 		var reportScoreSummary models.ReportScoreSummary
@@ -386,6 +425,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			reportScoreSummary.Summation = commons.RoundFloat(summation, 0)
 			reportScoreSummary.UserNumber = userNumber
 			reportScoreSummary.Comment = scale.Description
+			reportScoreSummary.Illustration = scale.Illustration
+			reportScoreSummary.TeacherInitial = teacherInitial
 
 			if err := reporsitory.SaveReportScoreSummary(reportScoreSummary, tx); err != nil {
 				tx.Rollback()
@@ -403,6 +444,9 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				Summation:            commons.RoundFloat(summation, 0),
 				UserNumber:           userNumber,
 				Comment:              scale.Description,
+				Illustration:         scale.Illustration,
+				CreatedAt:            time.Now(),
+				TeacherInitial:       teacherInitial,
 			}
 
 			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {
@@ -412,20 +456,23 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 		}
 
-		finalAggregateScale = scale
-
 	}
+
 	assessmentGrade, err := GetReportSummaryGrade(totalAggregates, payload.CampusClassNumber)
 
 	if err != nil {
 		tx.Rollback()
-		reportSummary.Grade = "N/A"
 		return err
-
-	} else {
-		fmt.Println("assessmentGrade", assessmentGrade.Name)
-		reportSummary.Grade = assessmentGrade.Name
 	}
+
+	if assessmentGrade.Number == "" {
+		reportSummary.Grade = "N/A"
+		assessmentGrade.Name = "N/A"
+	}
+
+	//fmt.Println("assessmentGrade", assessmentGrade.Name)
+	reportSummary.Grade = assessmentGrade.Name
+	reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 
 	reportSummary.Aggregate = totalAggregates
 
@@ -443,6 +490,46 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		return errors.New("failed to update edit summary" + err.Error())
 	}
 
+	reportSummaryNumber := reportSummary.Number
+
+	finalStatus, err := checkStatus(campusClass.Number, reportSummary.StudyPeriodNumber, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate, tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if finalStatus.Number != "" {
+		fmt.Println("Final learner status: " + finalStatus.Type)
+		//FindPromotionByReportSummaryNumber
+		currentPromotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber, tx)
+		if err != nil {
+			tx.Rollback()
+			return errors.New("failed to check promotion error: " + err.Error())
+		}
+
+		promotion := models2.Promotion{
+			Number:                 uuid.NewV4().String(),
+			ReportSummaryNumber:    reportSummaryNumber,
+			PromotionSettingNumber: finalStatus.Number,
+			Status:                 finalStatus.Status,
+			UserNumber:             finalStatus.UserNumber,
+			PromotionType:          "Auto",
+			CreatedAt:              time.Now(),
+			UpdatedAt:              time.Now(),
+		}
+
+		if currentPromotion.Number != "" {
+			promotion.Number = currentPromotion.Number
+		}
+
+		err = repositories10.SavePromotion(promotion, tx)
+		if err != nil {
+			tx.Rollback()
+			return errors.New("failed to save promotion " + err.Error())
+		}
+
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
 	}
@@ -452,6 +539,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 func GetProperAggregateScale(score float64, campusClassNumber string) (aggregateSaceltModel.AggregateScale, error) {
 	var scale aggregateSaceltModel.AggregateScale
+
 	var aggregateScales []aggregateSaceltModel.AggregateScale
 
 	score = commons.RoundFloat(score, 0)
@@ -531,7 +619,7 @@ func GetReportSummaryGrade(points float64, campusClassNumber string) (assesmentG
 		}
 	}
 
-	return matchedAssessmentGradeScale, errors.New(fmt.Sprintf("%s points dont macth any grading catery for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
+	return matchedAssessmentGradeScale, nil //errors.New(fmt.Sprintf("%s points dont match any grading category for %s", strconv.FormatFloat(points, 'f', -1, 64), class.Name))
 
 }
 
@@ -563,13 +651,13 @@ func FetchAllReportSettings(campusNumber, classNumber, campusClassNumber, academ
 	}
 
 	for _, reportSetting := range all {
-		reportSettingsResponse = append(reportSettingsResponse, createReportSettingsResponse(reportSetting))
+		reportSettingsResponse = append(reportSettingsResponse, CreateReportSettingsResponse(reportSetting))
 	}
 
 	return reportSettingsResponse, nil
 }
 
-func createReportSettingsResponse(reportSetting models.ReportSetting) responses.ReportSettingsResponse {
+func CreateReportSettingsResponse(reportSetting models.ReportSetting) responses.ReportSettingsResponse {
 
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(reportSetting.StudyPeriodNumber)
 
@@ -631,4 +719,296 @@ func DeleteReportColumn(reportColumnNumber string) error {
 	}
 
 	return nil
+}
+
+func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, error) {
+	reportSummary, err := reporsitory.FindReportSummaryByNumber(reportSummaryNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find report summary error: " + err.Error())
+	}
+
+	campusClass, err := repositories.GetCampusClassByNumber(reportSummary.CampusClassNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find campus classes error: " + err.Error())
+	}
+
+	curriculumClass, err := repositories.GetCurriculumClass(campusClass.CurriculumClassNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find curriculum classes error: " + err.Error())
+	}
+
+	curriculumLevel, err := repositories5.GetCurriculumLevelByNumber(curriculumClass.CurriculumLevelNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find curriculum level error: " + err.Error())
+	}
+
+	campus, err := repositories6.GetCampusByNumber(campusClass.CampusNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find campus error: " + err.Error())
+	}
+
+	school, err := repositories7.GetSchoolByNumber(campus.SchoolNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find school error: " + err.Error())
+	}
+
+	learningAreas, err := repositories8.FindLearningAreasByCurriculumNumber(curriculumLevel.CurriculumNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find learning areas error: " + err.Error())
+	}
+
+	reportSetting, err := reporsitory.GetReportSettingByNumber(reportSummary.ReportSettingNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to fetch report settings by number: " + err.Error())
+	}
+
+	class, err := repositories.GetClassByNumber(campusClass.ClassNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find class error: " + err.Error())
+	}
+
+	levelName, err := repositories5.GetLevelByNumber(class.LevelNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find level error: " + err.Error())
+	}
+
+	var rcs []string
+
+	reportColumns, err := reporsitory.FindReportColumnsByReportSettingsNumber(reportSetting.Number)
+
+	for _, reportColumn := range reportColumns {
+		rcs = append(rcs, reportColumn.Name)
+	}
+
+	var la []responses.LearningArea
+
+	for _, learningArea := range learningAreas {
+		assessments := make([]responses.Assessments, 0)
+
+		assessmentAreas, err := assessmentAreaRepositories.FindAllAssessmentAreasBySubjectCluster(campusClass.CurriculumClassNumber, curriculumLevel.CurriculumNumber, learningArea.Number)
+		if err != nil {
+			return responses.FullReportSummary{}, errors.New("failed to find assessment areas error: " + err.Error() + " for " + learningArea.Name)
+		}
+
+		for _, assessmentArea := range assessmentAreas {
+
+			reportScoreSummary, err := reporsitory.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummaryNumber, assessmentArea.Number)
+			if err != nil {
+				return responses.FullReportSummary{}, errors.New("failed to find report score summary error: " + err.Error())
+			}
+
+			reportScores, err := reporsitory.FindAllReportScore(reportSummaryNumber, assessmentArea.Number)
+
+			if len(reportScores) < len(rcs) {
+				//  get the difference and add dummy report scores to the report scores
+				var diff = len(rcs) - len(reportScores)
+				for i := 0; i < diff; i++ {
+					reportScores = append(reportScores, models.ReportScore{
+						Score: -1,
+					})
+				}
+
+			}
+
+			assessments = append(assessments, responses.Assessments{
+				Name:               assessmentArea.Name,
+				ReportScores:       reportScores,
+				ReportScoreSummary: reportScoreSummary,
+			})
+		}
+
+		learningAreaComment, err := reporsitory.FindLearningAreaReportComment(reportSummaryNumber, learningArea.Number)
+		if err != nil {
+			return responses.FullReportSummary{}, errors.New("failed to find learning area comment error: " + err.Error())
+		}
+
+		la = append(la, responses.LearningArea{
+			Name:               learningArea.Name,
+			LearningAreaNumber: learningArea.Number,
+			Assessments:        assessments,
+			Comment:            learningAreaComment.Comment,
+		})
+
+	}
+
+	scalesUsed, err := reporsitory.GetAppliedScaleByScaleNumber(reportSummary.AggregateScaleUsed)
+	if err != nil {
+		//return responses.FullReportSummary{}, errors.New("failed to fetch scale error: " + err.Error())
+		scalesUsed = make([]aggregateSaceltModel.AggregateScale, 0)
+	}
+
+	scales := reporsitory.BuildAppliedScaleResponse(scalesUsed)
+
+	//GetStudyPeriodNameByNumber
+
+	studyPeriod, err := repositories3.GetStudyPeriodByNumber(reportSummary.StudyPeriodNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find study period error: " + err.Error())
+	}
+
+	studyPeriodName, _ := repositories3.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+
+	student, err := repositories9.FindStudentByNumber(reportSummary.StudentNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find student error: " + err.Error())
+	}
+
+	stream, err := repositories.GetStreamByNumber(reportSummary.StreamNumber)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find stream error: " + err.Error())
+	}
+
+	reportTemplate, err := services.DetermineReportTemplateForClass(campusClass.Number)
+	if err != nil {
+		return responses.FullReportSummary{}, errors.New("failed to find report template error: " + err.Error())
+	}
+
+	response := responses.FullReportSummary{
+		ReportSummaryNumber: reportSummaryNumber,
+		Student:             CreateLeanStudent(student),
+		Grade:               reportSummary.Grade,
+		LearningAreas:       la,
+		Stream:              stream.Name,
+		Class:               campusClass.ClassName,
+		ClassAbbreviation:   campusClass.ClassAbbreviation,
+		School:              services4.BuildLeanSchoolResponse(&school),
+		Campus:              campus,
+		StudyPeriod:         studyPeriodName.Name,
+		StudyPeriodEndDate:  studyPeriod.StudyPeriodEndDate.Format("02-01-2006"),
+		ReportColumns:       rcs,
+		ReportTemplateName:  reportSummary.ReportTemplateName,
+		TeacherComment:      reportSummary.TeacherComment,
+		HeadTeachersComment: reportSummary.HeadTeacherComment,
+		AggregateScale:      scales,
+		LevelName:           levelName.Name,
+		NextTermBegins:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
+		ReportTemplate:      reportTemplate.Name,
+	}
+
+	if len(scalesUsed) > 0 {
+		promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
+		if err != nil {
+			return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
+		}
+
+		if promo.Number != "" {
+			response.PromotionStatus = promo.Status
+		}
+	} else {
+		response.PromotionStatus = "N/A"
+	}
+
+	return response, nil
+}
+
+func CreateLeanStudent(student studentModel.Student) responses.LeanStudent {
+	return responses.LeanStudent{
+		Number:      student.Number,
+		Surname:     commons.CapitalizeFirst(student.Surname),
+		SecondName:  commons.CapitalizeFirst(student.SecondName),
+		OtherName:   commons.CapitalizeFirst(student.OtherName),
+		Gender:      student.Gender,
+		DateOfBirth: student.DateOfBirth,
+	}
+}
+
+func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber string, totalAggregate, totalScore float64, db *gorm.DB) (models2.PromotionSetting, error) {
+
+	finalStatus, err := checkIfPromoted(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
+	finalStatus, err = checkIfRepeat(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
+	return models2.PromotionSetting{}, errors.New("Failed to find promotion/demotion/repeat configuration criteria, error: ")
+}
+
+func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
+
+	//Check promotion
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "promotion", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
+	}
+
+	if promotion.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Promotion value not set for " + promotion.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	fmt.Println("Minimum assessment grade: ", minimumAssessmentGrade.Name)
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return promotion, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
+
+func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
+
+	//Check repeat
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
+	}
+
+	if promotion.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Repeat value not set for " + promotion.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return promotion, nil
+	}
+
+	return models2.PromotionSetting{}, nil
 }

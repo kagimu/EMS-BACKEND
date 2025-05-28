@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"strconv"
@@ -26,24 +27,24 @@ import (
 
 func NewClass(context *gin.Context) {
 
-	var classInfo requests.ClassInfo
-	err := context.BindJSON(&classInfo)
+	var classRequest requests.ClassInfo
+	err := context.BindJSON(&classRequest)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
-	classInfo.Prepare()
+	classRequest.Prepare()
 
-	if err := classInfo.Validate(); err != nil {
+	if err := classRequest.Validate(); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	code := classInfo.Code
-	name := classInfo.Name
-	abbreviation := strings.ToUpper(classInfo.Abbreviation)
-	level := classInfo.Level
+	code := classRequest.Code
+	name := classRequest.Name
+	abbreviation := strings.ToUpper(classRequest.Abbreviation)
+	level := classRequest.Level
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -70,7 +71,7 @@ func NewClass(context *gin.Context) {
 
 	var duplicateCode classModel.Class
 	if duplicate := config.DB.
-		Where("code = ?", codeNo).
+		Where("code = ? AND entity_number = ?", codeNo, classRequest.EntityNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists!"})
 		return
@@ -78,7 +79,7 @@ func NewClass(context *gin.Context) {
 
 	var duplicateClass classModel.Class
 	if duplicate := config.DB.
-		Where("name = ?", name).
+		Where("name = ? AND entity_number = ?", name, classRequest.EntityNumber).
 		First(&duplicateClass).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists!"})
 		return
@@ -86,7 +87,7 @@ func NewClass(context *gin.Context) {
 
 	var duplicateAbbreviation classModel.Class
 	if duplicate := config.DB.
-		Where("abbreviation = ?", abbreviation).
+		Where("abbreviation = ? AND entity_number = ?", abbreviation, classRequest.EntityNumber).
 		First(&duplicateAbbreviation).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation already exists!"})
 		return
@@ -102,6 +103,7 @@ func NewClass(context *gin.Context) {
 		UserNumber:   userNumber,
 		LevelNumber:  level,
 		Code:         codeNo,
+		EntityNumber: classRequest.EntityNumber,
 	}
 
 	if err := tx.Create(&saveClass).Error; err != nil {
@@ -292,9 +294,10 @@ func AddCampusClass(context *gin.Context) {
 		Name:              saveClass.ClassName,
 		CampusClassNumber: number,
 		UserNumber:        userNumber,
+		Status:            constants.StatusActive,
 	}
 
-	err = repositories.CreateStream(&stream, trn)
+	err = repositories.SaveStream(&stream, trn)
 	if err != nil {
 		trn.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Failed to create stream!"})
@@ -396,7 +399,7 @@ func FetchClasses(context *gin.Context) {
 	var levels []levelModels.Level
 	var levels_ []responses2.ClassLevelList
 	if err := config.DB.
-		Scopes(filters.ByPrimaryKey(level)).
+		Scopes(filters.ByPrimaryKey(level), filters.ByEntityNumber(context.Query("entity_number"))).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})
@@ -721,10 +724,15 @@ func FetchClassLevel(context *gin.Context) {
 			var stream_ []responses.StreamResponse
 
 			for _, list := range lst.Streams {
-				stream_ = append(stream_, responses.StreamResponse{
-					StreamNumber: list.Number,
-					Name:         list.Name,
-				})
+
+				if list.Status == constants.StatusActive {
+					stream_ = append(stream_, responses.StreamResponse{
+						StreamNumber: list.Number,
+						Name:         list.Name,
+						Status:       list.Status,
+					})
+				}
+
 			}
 
 			classLevel_ = append(classLevel_, responses.CampusClassInfo{
@@ -888,38 +896,13 @@ func AddClassStream(ctx *gin.Context) {
 		return
 	}
 
-	streams := strings.Split(streamRequest.Name, ",")
-
-	//add streams to the class
-	if streams != nil {
-		for _, stream := range streams {
-			streamObj := classModel.Stream{
-				Number:            uuid.NewV4().String(),
-				Name:              stream,
-				CampusClassNumber: streamRequest.CampusClassNumber,
-				UserNumber:        ctx.GetHeader("User-Number"),
-			}
-
-			err = config.DB.Save(&streamObj).Error
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to add stream !"})
-				return
-			}
-
-		}
+	err = services.CreateStreams(streamRequest, ctx.GetHeader("User-Number"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
-	/*} else {
-		streamObj := models.Stream{
-			Number:      uuid.NewV4().String(),
-			Name:        saveClass.Name,
-			ClassNumber: saveClass.Number,
-			UserNumber:  userNumber,
-		}
 
-		tx.Save(&streamObj)
-	}*/
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Stream Added Successfully!"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Stream(s) Added Successfully!"})
 
 }
 
@@ -930,8 +913,9 @@ func FetchStreams(ctx *gin.Context) {
 	curriculumNumber := ctx.Query("curriculum_number")
 	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
 	campusClassNumber := ctx.Query("campus_class_number")
+	status := ctx.Query("status")
 
-	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, ctx)
+	streams, err := services.FetchStreams(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber, classLevelNumber, campusClassNumber, status, ctx)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -1053,4 +1037,61 @@ func FetchClassesBySchoolNumber(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": classes})
+}
+
+func UpdateClassStream(context *gin.Context) {
+
+	var streamRequest requests.UpdateStreamRequest
+
+	err := context.BindJSON(&streamRequest)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to serialize request error: " + err.Error()})
+		return
+	}
+
+	err = streamRequest.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.UpdateStream(streamRequest)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream updated successfully!"})
+}
+
+func DeleteClassStream(context *gin.Context) {
+	streamNumber := context.Param("stream_number")
+	if streamNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Stream number is required!"})
+		return
+	}
+
+	err := services.DeleteStream(streamNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Stream deleted successfully!"})
+}
+
+func GetClassStream(context *gin.Context) {
+	streamNumber := context.Param("stream_number")
+	if streamNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Stream number is required!"})
+		return
+	}
+
+	data, err := services.StreamDetails(streamNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": data, "message": "Stream deleted successfully!"})
 }

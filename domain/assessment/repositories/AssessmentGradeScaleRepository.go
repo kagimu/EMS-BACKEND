@@ -86,3 +86,23 @@ func GetAssessmentGradeScaleByNameAndGradeNumber(name, assessmentGradeNumber str
 
 	return assessmentGrade, nil
 }
+
+func FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber string, trn ...*gorm.DB) (models.AssessmentGradeScale, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentGrade models.AssessmentGradeScale
+
+	if err := db.Where("number = ?", assessmentGradeScaleNumber).First(&assessmentGrade).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentGrade, nil
+		}
+
+		return assessmentGrade, err
+	}
+
+	return assessmentGrade, nil
+}

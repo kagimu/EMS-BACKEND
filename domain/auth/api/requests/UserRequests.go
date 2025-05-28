@@ -61,16 +61,16 @@ type RoleAssignment struct {
 }
 
 type StaffAccountRequest struct {
-	FirstName       string           `json:"first_name"`
-	SecondName      string           `json:"second_name"`
-	LastName        string           `json:"last_name"`
-	Gender          string           `json:"gender"`
-	Email           string           `json:"email"`
-	Phone           string           `json:"phone"`
-	Roles           []RoleAssignment `json:"roles"`
-	Password        string           `json:"password"`
-	ConfirmPassword string           `json:"confirm_password"`
-	EntityNumber    string           `json:"entity_number"`
+	FirstName  string           `json:"first_name"`
+	SecondName string           `json:"second_name"`
+	LastName   string           `json:"last_name"`
+	Gender     string           `json:"gender"`
+	Email      string           `json:"email"`
+	Phone      string           `json:"phone"`
+	Roles      []RoleAssignment `json:"roles"`
+	//Password        string           `json:"password"`
+	//ConfirmPassword string           `json:"confirm_password"`
+	EntityNumber string `json:"entity_number"`
 }
 
 func (sr *StaffAccountRequest) ValidateStaffAccountRequest() error {
@@ -95,16 +95,16 @@ func (sr *StaffAccountRequest) ValidateStaffAccountRequest() error {
 	if len(sr.Roles) < 1 {
 		return errors.New("please select at least one role")
 	}
-
-	if sr.Password == "" {
-		return errors.New("password is required")
-	}
-	if sr.ConfirmPassword == "" {
-		return errors.New("confirm password is required")
-	}
-	if sr.Password != sr.ConfirmPassword {
-		return errors.New("passwords do not match")
-	}
+	//
+	//if sr.Password == "" {
+	//	return errors.New("password is required")
+	//}
+	//if sr.ConfirmPassword == "" {
+	//	return errors.New("confirm password is required")
+	//}
+	//if sr.Password != sr.ConfirmPassword {
+	//	return errors.New("passwords do not match")
+	//}
 	if sr.EntityNumber == "" {
 		return errors.New("entity number is required")
 	}

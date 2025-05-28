@@ -6,6 +6,7 @@ type HeadTeacherCommentRequest struct {
 	Comment      string  `json:"comment"`
 	MinAggregate float64 `json:"min_aggregate"`
 	MaxAggregate float64 `json:"max_aggregate"`
+	Number       uint    `json:"number"`
 }
 
 func (r *HeadTeacherCommentRequest) Validate() error {

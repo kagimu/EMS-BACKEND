@@ -4,16 +4,22 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
+	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"gorm.io/gorm"
 )
 
 type ConceptRepository interface {
 	FindConceptsBySubTopicNumber(subTopicNumber string) ([]conceptModels.Concept, error)
 	UseTx(tx *gorm.DB) *gorm.DB
+	SaveConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error
 }
 
 type conceptRepositoryImp struct {
 	Db *gorm.DB
+}
+
+func (conceptRepository *conceptRepositoryImp) SaveConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error {
+	return conceptRepository.Db.Save(&lessonPlanConcept).Error
 }
 
 func (conceptRepository *conceptRepositoryImp) UseTx(tx *gorm.DB) *gorm.DB {

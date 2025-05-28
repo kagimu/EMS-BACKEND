@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"strconv"
 
@@ -24,21 +25,21 @@ func NewLevel(context *gin.Context) {
 		return
 	}
 
-	var levelInfo requests2.LevelInfo
-	if err := context.BindJSON(&levelInfo); err != nil {
+	var levelRequest requests2.LevelInfo
+	if err := context.BindJSON(&levelRequest); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
 	}
 
-	levelInfo.Prepare()
+	levelRequest.Prepare()
 
-	if err := levelInfo.Validate(); err != nil {
+	if err := levelRequest.Validate(); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	code := levelInfo.Code
-	name := levelInfo.Name
+	code := levelRequest.Code
+	name := levelRequest.Name
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
@@ -53,7 +54,7 @@ func NewLevel(context *gin.Context) {
 
 	var duplicateCode curriculumLevelModels.Level
 	if duplicate := config.DB.
-		Where("code = ?", code).
+		Where("code = ? entity_number = ?", code, levelRequest.EntityNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -61,7 +62,7 @@ func NewLevel(context *gin.Context) {
 
 	var duplicateLevel curriculumLevelModels.Level
 	if duplicate := config.DB.
-		Where("name = ?", name).
+		Where("name = ? AND entity_number = ?", name, levelRequest.EntityNumber).
 		First(&duplicateLevel).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
 		return
@@ -71,10 +72,11 @@ func NewLevel(context *gin.Context) {
 	tx := config.DB.Begin()
 	///save user data
 	saveLevel := curriculumLevelModels.Level{
-		Number:     uuid.NewV4().String(),
-		Name:       name,
-		Code:       codeNo,
-		UserNumber: user.Number,
+		Number:       uuid.NewV4().String(),
+		Name:         name,
+		Code:         codeNo,
+		UserNumber:   user.Number,
+		EntityNumber: levelRequest.EntityNumber,
 	}
 
 	if err := tx.Create(&saveLevel).Error; err != nil {
@@ -199,6 +201,7 @@ func FetchLearningLevel(context *gin.Context) {
 	var levels []curriculumLevelModels.Level
 	var levels_ []responses2.LevelList
 	if err := config.DB.
+		Scopes(filters.ByEntityNumber(context.Query("entity_number"))).
 		Order("code asc").
 		Find(&levels).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Level!"})

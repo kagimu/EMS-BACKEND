@@ -69,6 +69,9 @@ func (enrolment *enrolmentService) Enrolments(schoolNumber, streamNumber, campus
 			ContinuingStudent:      enrollment.ContinuingStudent,
 			Class:                  enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")",
 			Adn:                    enrollment.Student.ADN,
+			UserNumber:             enrollment.Student.UserNumber,
+			CampusClassNumber:      enrollment.CampusClassNumber,
+			CampusNumber:           enrollment.CampusNumber,
 		})
 	}
 

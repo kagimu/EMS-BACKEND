@@ -2,23 +2,19 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
-	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
-	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
-	learningAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	services3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
-	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
-	services4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -196,13 +192,34 @@ func FetchReportSummaries(ctx *gin.Context) {
 	var cleanReportSummary = make([]responses.LeanReportSummary, 0)
 	var paginatedResponse = pagination.PaginatedResponse{}
 
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+	curriculumNumber := ctx.Query("curriculum_number")
+
+	campusClassNumber := ctx.Query("campus_class_number")
+
+	if campusClassNumber == "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
+
+	if campusClassNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a class to view report summaries"})
+		return
+	}
+
 	var reportSummaries []models.ReportSummary
 	if err := config.DB.Scopes(
 		filters.ByStudyPeriodNumber(ctx.Query("study_period_number")),
 		filters.ByStudentNumber(ctx.Query("student_number")),
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
-		filters.ByCampusClassNumber(ctx.Query("campus_class_number")),
+		filters.ByCampusClassNumber(campusClassNumber),
 		pagination.Paginate(ctx, &paginatedResponse),
 	).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
@@ -214,15 +231,27 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
 
+		promotionStatus := ""
+
+		promotion, err := repositories2.FindPromotionByReportSummaryNumber(reportSummary.Number)
+		if err == nil {
+			promotionStatus = promotion.Status
+		} else {
+			fmt.Println(fmt.Sprintf("Checking promotion status error %s", err.Error()))
+		}
+
+		leanStudent := services3.CreateLeanStudent(reportSummary.Student)
+
 		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
-			Number:        reportSummary.Number,
-			StudentName:   reportSummary.Student.Surname + " " + reportSummary.Student.SecondName + " " + reportSummary.Student.OtherName,
-			StudentNumber: reportSummary.StudentNumber,
-			Photo:         commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
-			Grade:         reportSummary.Grade,
-			Stream:        reportSummary.Stream.Name,
-			StudyPeriod:   studyPeriodName.Name,
-			Class:         reportSummary.CampusClass.ClassName,
+			Number:          reportSummary.Number,
+			StudentName:     leanStudent.Surname + " " + leanStudent.SecondName + " " + leanStudent.OtherName,
+			StudentNumber:   reportSummary.StudentNumber,
+			Photo:           commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
+			Grade:           reportSummary.Grade,
+			Stream:          reportSummary.Stream.Name,
+			StudyPeriod:     studyPeriodName.Name,
+			Class:           reportSummary.CampusClass.ClassName,
+			PromotionStatus: promotionStatus,
 		})
 	}
 	paginatedResponse.Content = cleanReportSummary
@@ -233,146 +262,14 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 func FetchReportSummaryDetails(ctx *gin.Context) {
 	reportSummaryNumber := ctx.Param("report_summary_number")
-	//htmlReportTemplate := ctx.DefaultQuery("html_report_template", "victorious-report-primary")
 
-	var reportSummary models.ReportSummary
-	if err := config.DB.Where("number = ?", reportSummaryNumber).Preload("Student").Preload("StudyPeriod").First(&reportSummary).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summary"})
-		return
-	}
-
-	var campusClass classModel.CampusClass
-	if err := config.DB.Preload("CurriculumClass.CurriculumLevel").Preload("Campus").Preload("Campus.School").Where("number = ?", reportSummary.CampusClassNumber).First(&campusClass).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus class"})
-		return
-	}
-
-	var learningAreas []learningAreaModel.LearningArea
-	if err := config.DB.Where("curriculum_number = ?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).Find(&learningAreas).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch learning areas"})
-		return
-	}
-
-	// find the latest report settings for the class
-	var reportSetting models.ReportSetting
-	if err := config.DB.Where("number = ?", reportSummary.ReportSettingNumber).First(&reportSetting).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report settings"})
-		return
-
-	}
-
-	var rcs []string
-
-	var reportColumns []models.ReportColumn
-	if err := config.DB.Where("report_setting_number = ?", reportSetting.Number).Find(&reportColumns).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report columns"})
-		return
-
-	}
-
-	for _, reportColumn := range reportColumns {
-		rcs = append(rcs, reportColumn.Name)
-	}
-
-	var la []responses.LearningArea
-	for _, learningArea := range learningAreas {
-		assessments := make([]responses.Assessments, 0)
-
-		var assessmentAreas []assessmentAreaModel.AssessmentArea
-		if err := config.DB.Where("assessment_areas.curriculum_class_number = ?", campusClass.CurriculumClassNumber).
-			Joins("JOIN subjects on subjects.number = assessment_areas.subject_number AND subjects.curriculum_number=?", campusClass.CurriculumClass.CurriculumLevel.CurriculumNumber).
-			Joins("JOIN subject_clusters on subject_clusters.number = subjects.subject_cluster_number AND subject_clusters.learning_area_number =?", learningArea.Number).
-			Find(&assessmentAreas).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch assessment areas"})
-			return
-		}
-
-		for _, assessmentArea := range assessmentAreas {
-
-			var reportScoreSummary models.ReportScoreSummary
-			if err := config.DB.Where("report_summary_number = ? AND assessment_area_number =? ", reportSummaryNumber, assessmentArea.Number).First(&reportScoreSummary).Error; err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report score summaries"})
-				return
-			}
-
-			var reportScores []models.ReportScore
-			if err := config.DB.Where("report_summary_number = ? AND assessment_area_number = ? ", reportSummaryNumber, assessmentArea.Number).Find(&reportScores).Error; err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report scores"})
-				return
-			}
-
-			if len(reportScores) < len(rcs) {
-				//  get the difference and add dummy report scores to the report scores
-				var diff = len(rcs) - len(reportScores)
-				for i := 0; i < diff; i++ {
-					reportScores = append(reportScores, models.ReportScore{
-						Score: -1,
-					})
-				}
-
-			}
-
-			assessments = append(assessments, responses.Assessments{
-				Name:               assessmentArea.Name,
-				ReportScores:       reportScores,
-				ReportScoreSummary: reportScoreSummary,
-			})
-		}
-
-		la = append(la, responses.LearningArea{
-			Name:        learningArea.Name,
-			Assessments: assessments,
-		})
-
-	}
-
-	var school schoolModel.School
-	if err := config.DB.Where("number = ?", campusClass.Campus.SchoolNumber).First(&school).Error; err != nil {
-
-	}
-	scalesUsed, err := reporsitory.GetAppliedScaleByScaleNumber(reportSummary.AggregateScaleUsed)
+	response, err := services3.GetReportSummary(reportSummaryNumber)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch scales used"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
-
 	}
-	scales := reporsitory.BuildAppliedScaleResponse(scalesUsed)
 
-	studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
-
-	response := responses.FullReportSummary{
-		Student: responses.LeanStudent{
-			Number:     reportSummary.Student.Number,
-			Surname:    reportSummary.Student.Surname,
-			SecondName: reportSummary.Student.SecondName,
-			OtherName:  reportSummary.Student.OtherName,
-			Gender:     reportSummary.Student.Gender,
-		},
-		Grade:               reportSummary.Grade,
-		LearningAreas:       la,
-		Stream:              "",
-		Class:               campusClass.ClassName,
-		ClassAbbreviation:   campusClass.ClassAbbreviation,
-		School:              services4.BuildLeanSchoolResponse(&campusClass.Campus.School),
-		Campus:              campusClass.Campus,
-		StudyPeriod:         studyPeriodName.Name,
-		ReportColumns:       rcs,
-		ReportTemplateName:  reportSummary.ReportTemplateName,
-		TeacherComment:      reportSummary.TeacherComment,
-		HeadTeachersComment: reportSummary.HeadTeacherComment,
-		AggregateScale:      scales,
-	}
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
-
-	/*//pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, response)
-	pdfObject, err := pdfGenerator.GeneratePdf(htmlReportTemplate, nil)
-	if err != nil {
-		ctx.JSON(500, gin.H{"message": "Failed to generate pdf" + err.Error()})
-		return
-	}
-
-	//err = pdfObject.WriteFile("output.pdf")
-	ctx.JSON(http.StatusOK, gin.H{"data": base64.StdEncoding.EncodeToString(pdfObject.Bytes())})*/
 }
 
 func CreateReportScore(ctx *gin.Context) {
@@ -459,15 +356,18 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 	}
 
 	for _, enrollment := range enrollments {
+
+		student := services3.CreateLeanStudent(enrollment.Student)
+
 		var reportSummary models.ReportSummary
 		if err := config.DB.Where("student_number = ? AND study_period_number = ? AND campus_class_number = ?", enrollment.StudentNumber, enrollment.StudyPeriodNumber, enrollment.CampusClassNumber).First(&reportSummary).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				response = append(response, responses.SummarizedFinalReportResponse{
-					Student:           enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+					Student:           student.Surname + " " + student.SecondName,
 					Grade:             "N/A",
 					Aggregate:         "N/A",
 					Class:             enrollment.CampusClass.ClassName,
-					StudentNumber:     enrollment.Student.Number,
+					StudentNumber:     student.Number,
 					EnrollmentNumber:  enrollment.Number,
 					CampusClassNumber: enrollment.CampusClassNumber,
 				})
@@ -477,11 +377,11 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 		} else {
 
 			response = append(response, responses.SummarizedFinalReportResponse{
-				Student:           enrollment.Student.Surname + " " + enrollment.Student.SecondName,
+				Student:           student.Surname + " " + student.SecondName,
 				Grade:             reportSummary.Grade,
 				Aggregate:         strconv.Itoa(int(reportSummary.Aggregate)),
 				Class:             enrollment.CampusClass.ClassName,
-				StudentNumber:     enrollment.Student.Number,
+				StudentNumber:     student.Number,
 				EnrollmentNumber:  enrollment.Number,
 				CampusClassNumber: enrollment.CampusClassNumber,
 			})
@@ -677,4 +577,96 @@ func DeleteReportColumnAssessment(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Report column assessment deleted successfully"})
+}
+
+func FetchReportPromotionDetails(ctx *gin.Context) {
+	//reportSummaryNumber := ctx.Param("report_summary_number")
+	//
+	//response, err := services3.FetchPromotionStatus(reportSummaryNumber)
+	//if err != nil {
+	//	ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+	//}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": ""})
+}
+
+func DeleteHeadTeacherComment(ctx *gin.Context) {
+	commentNumber := ctx.Param("id")
+	if commentNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
+		return
+	}
+	commentNumberInt, err := strconv.Atoi(commentNumber)
+
+	err = services3.DeleteHeadTeacherComment(uint(commentNumberInt))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Head teacher comment deleted successfully"})
+}
+
+func UpdateReportColumnAssessment(context *gin.Context) {
+	reportColumnAssessmentNumber := context.Param("report_column_assessment_number")
+	if reportColumnAssessmentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide report column assessment number"})
+		return
+	}
+
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ReportColumnAssessmentUpdateRequest
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	err = payload.ValidateReportColumnAssessment()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services3.UpdateReportColumnAssessment(payload, reportColumnAssessmentNumber, currentUser)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Report column assessment updated successfully"})
+}
+
+func CreateLearningAreaComment(context *gin.Context) {
+
+	var payload requests.LearningAreaReportCommentRequest
+
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body"})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	err = services3.SaveLearningArea(payload, currentUser)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Learning area comment updated successfully"})
 }

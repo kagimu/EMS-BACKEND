@@ -130,3 +130,38 @@ func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber
 
 	return assessmentAreas, nil
 }
+
+func FindAllAssessmentAreasBySubjectCluster(curriculumClassNumber, curriculumNumber, learningAreaNumber string, trn ...*gorm.DB) ([]assessmentAreaModels.AssessmentArea, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var assessmentAreas []assessmentAreaModels.AssessmentArea
+
+	if err := db.Where("assessment_areas.curriculum_class_number = ?", curriculumClassNumber).
+		Joins("JOIN subjects on subjects.number = assessment_areas.subject_number AND subjects.curriculum_number=?", curriculumNumber).
+		Joins("JOIN subject_clusters on subject_clusters.number = subjects.subject_cluster_number AND subject_clusters.learning_area_number =?", learningAreaNumber).
+		Find(&assessmentAreas).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentAreas, nil
+		}
+		return assessmentAreas, err
+	}
+
+	return assessmentAreas, nil
+}
+
+func DeleteAssessmentArea(assessmentAreaNumber string, trn ...*gorm.DB) error {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Where("number = ?", assessmentAreaNumber).Delete(&assessmentAreaModels.AssessmentArea{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

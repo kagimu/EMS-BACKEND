@@ -52,22 +52,24 @@ type SummarizedFinalReportResponse struct {
 }
 
 type LeanReportSummary struct {
-	Number        string `json:"number"`
-	StudentName   string `json:"student_name"`
-	StudentNumber string `json:"student_number"`
-	Photo         string `json:"photo"`
-	Grade         string `json:"grade"`
-	StudyPeriod   string `json:"study_period"`
-	Stream        string `json:"stream"`
-	Class         string `json:"class"`
+	Number          string `json:"number"`
+	StudentName     string `json:"student_name"`
+	StudentNumber   string `json:"student_number"`
+	Photo           string `json:"photo"`
+	Grade           string `json:"grade"`
+	StudyPeriod     string `json:"study_period"`
+	Stream          string `json:"stream"`
+	Class           string `json:"class"`
+	PromotionStatus string `json:"promotion_status"`
 }
 
 type LeanStudent struct {
-	Number     string `json:"number"`
-	Surname    string `json:"surname"`
-	SecondName string `json:"second_name"`
-	OtherName  string `json:"other_name"`
-	Gender     string `json:"gender"`
+	Number      string `json:"number"`
+	Surname     string `json:"surname"`
+	SecondName  string `json:"second_name"`
+	OtherName   string `json:"other_name"`
+	Gender      string `json:"gender"`
+	DateOfBirth string `json:"date_of_birth"`
 }
 
 type Assessments struct {
@@ -77,17 +79,21 @@ type Assessments struct {
 }
 
 type LearningArea struct {
-	Name        string        `json:"name"`
-	Assessments []Assessments `json:"assessments"`
+	Name               string        `json:"name"`
+	Comment            string        `json:"comment"`
+	LearningAreaNumber string        `json:"learning_area_number"`
+	Assessments        []Assessments `json:"assessments"`
 }
 
 type AppliedScale struct {
-	ShortName string  `json:"short_name"`
-	Name      string  `json:"name"`
-	Min       float64 `json:"min"`
-	Max       float64 `json:"max"`
+	ShortName    string  `json:"short_name"`
+	Name         string  `json:"name"`
+	Min          float64 `json:"min"`
+	Max          float64 `json:"max"`
+	Illustration string  `json:"illustration"`
 }
 type FullReportSummary struct {
+	ReportSummaryNumber string         `json:"report_summary_number"`
 	Student             LeanStudent    `json:"student"`
 	Grade               string         `json:"grade"`
 	LearningAreas       []LearningArea `json:"learning_areas"`
@@ -100,12 +106,16 @@ type FullReportSummary struct {
 	School              LeanSchool     `json:"school"`
 	Campus              LeanCampus     `json:"campus"`
 	StudyPeriod         string         `json:"study_period"`
+	StudyPeriodEndDate  string         `json:"study_period_end_date"`
 	AcademicYear        string         `json:"academic_year"`
 	ReportColumns       []string       `json:"report_columns"`
 	ReportTemplateName  string         `json:"report_template_name"`
 	TeacherComment      string         `json:"teacher_comment"`
 	HeadTeachersComment string         `json:"head_teachers_comment"`
 	AggregateScale      []AppliedScale `json:"aggregate_scale"`
+	NextTermBegins      string         `json:"next_term_begins"`
+	PromotionStatus     string         `json:"promotion_status"`
+	ReportTemplate      string         `json:"report_template"`
 }
 
 type LeanSchool struct {
@@ -117,10 +127,15 @@ type LeanSchool struct {
 type LeanCampus interface{}
 
 type HeadTeacherCommentResponse struct {
-	Comment      string  `json:"comment"`
-	AcademicYear string  `json:"academic_year"`
-	MinAggregate float64 `json:"min_aggregate"`
-	MaxAggregate float64 `json:"max_aggregate"`
-	StudyPeriod  string  `json:"study_period"`
-	Class        string  `json:"class"`
+	ID                  int64   `json:"id"`
+	Comment             string  `json:"comment"`
+	AcademicYear        string  `json:"academic_year"`
+	MinAggregate        float64 `json:"min_aggregate"`
+	MaxAggregate        float64 `json:"max_aggregate"`
+	StudyPeriod         string  `json:"study_period"`
+	Class               string  `json:"class"`
+	AcademicYearNumber  string  `json:"academic_year_number"`
+	StudyPeriodNumber   string  `json:"study_period_number"`
+	CampusClassNumber   string  `json:"campus_class_number"`
+	ReportSettingNumber string  `json:"report_setting_number"`
 }

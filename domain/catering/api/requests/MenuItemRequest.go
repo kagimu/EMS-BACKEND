@@ -24,7 +24,7 @@ type BasicMenuItemRequest struct {
 	Status                      string  `json:"status"`
 }
 
-func (r *MenuItemRequest) Validate() error {
+func (r *BasicMenuItemRequest) Validate() error {
 
 	if r.SchoolNumber == "" {
 		return errors.New("choose the school")
@@ -42,33 +42,34 @@ func (r *MenuItemRequest) Validate() error {
 		return errors.New("provide base item unit price")
 	}
 
-	if r.ConversionToPurchaseUnit < 0 {
-		return errors.New("conversion to purchase uni can not be negative")
+	if r.ConversionToPurchaseUnit <= 0 {
+		return errors.New("conversion to purchase unit can not be less or equal to 0")
 	}
 
 	if r.PurchaseUnitOfMeasureNumber == "" && r.ConversionToPurchaseUnit > 0 {
 		return errors.New("set purchase unit of measure")
 	}
 
+	if r.PurchaseUnitOfMeasureNumber == r.UnitOfMeasureNumber {
+		r.ConversionToPurchaseUnit = 1
+	}
+
 	return nil
+}
+
+func (r *MenuItemRequest) Validate() error {
+	return r.BasicMenuItemRequest.Validate()
 }
 
 func (r *UpdateMenuItemRequest) Validate() error {
 
-	if r.SchoolNumber == "" {
-		return errors.New("choose the school")
-	}
-
-	if r.Name == "" {
-		return errors.New("provide item name")
-	}
-
-	if r.Code <= 0 {
-		return errors.New("sorting code is required")
-	}
-
 	if r.MenuItemNumber == "" {
-		return errors.New("set the menu_item number to update")
+		return errors.New("set the menu item number to update")
+	}
+
+	err := r.BasicMenuItemRequest.Validate()
+	if err != nil {
+		return err
 	}
 
 	return nil

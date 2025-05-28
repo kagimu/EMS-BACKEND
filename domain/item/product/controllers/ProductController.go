@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"fmt"
-	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
@@ -16,6 +17,8 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+var itemService = services.NewItemProduct()
 
 func CreateProduct(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
@@ -39,14 +42,18 @@ func CreateProduct(c *gin.Context) {
 
 	itemNumber := uuid.NewV4().String()
 	saveProductItem := models.Item{
-		Number:      itemNumber,
-		Name:        payload.Name,
-		Cost:        payload.Cost,
-		SerialCode:  payload.SerialCode,
-		Description: payload.Description,
-		UserNumber:  user.Number,
-		Mandatory:   payload.Mandatory,
-		Type:        "Product",
+		Number:          itemNumber,
+		Cost:            payload.Cost,
+		Description:     payload.Description,
+		OneTimePurchase: payload.OneTimePurchase,
+		UserNumber:      user.Number,
+		SerialCode:      payload.SerialCode,
+		Mandatory:       payload.Mandatory,
+		RepeatCycle:     payload.RepeatCycle,
+		PaymentMode:     payload.PaymentMode,
+		Name:            payload.Name,
+		SchoolNumber:    payload.SchoolNumber,
+		Type:            "Product",
 	}
 
 	if err := tx.Create(&saveProductItem).Error; err != nil {
@@ -82,6 +89,33 @@ func CreateProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, saveProduct)
 }
 
+func SaveProduct(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.ProductRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf(" %s", err.Error())})
+		return
+	}
+
+	err = itemService.SaveProduct(user, payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save product: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product added successfully"})
+}
+
 func EditProduct(c *gin.Context) {
 	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
@@ -101,6 +135,18 @@ func EditProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found."})
 		return
 	}
+
+	checkSerial, err := repositories.GetItemBySerialCode(payload.SerialCode, payload.SchoolNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if checkSerial.Number != "" && checkSerial.Number != productNumber {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "This serial code is already in use."})
+		return
+	}
+
 	txn := config.DB.Begin()
 
 	updateProduct := models.Item{
@@ -145,51 +191,27 @@ func EditProduct(c *gin.Context) {
 
 func FetchProducts(c *gin.Context) {
 
-	var products []productModels.Product
-	if err := config.DB.Preload("Item").Find(&products).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch products"})
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
-	var response []responses.ServiceResponse
 
-	for _, product := range products {
-		var campusServices []models2.CampusItem
-		if err := config.DB.Where("item_number = ?", product.Item.Number).Find(&campusServices).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus services"})
+	//var response []responses.ServiceResponse
+
+	schoolNumber := c.Query("school_number")
+
+	if user.Type != constants.TypeClient {
+		if schoolNumber == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view services for"})
 			return
 		}
-		var campuses []responses.CampusServiceResponse
-		for _, campusService := range campusServices {
-			var campus campusModel.Campus
-			if err := config.DB.First(&campus, "number = ?", campusService.CampusNumber).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch campus"})
-				return
-			}
-			campuses = append(campuses, responses.CampusServiceResponse{
-				Number:       campusService.Number,
-				CampusNumber: campusService.CampusNumber,
-				Name:         campus.Name,
-			})
-		}
-		response = append(response, responses.ServiceResponse{
-			ItemNumber: product.ItemNumber,
-			Item: responses.ItemResponse{
-				Number:          product.Item.Number,
-				Name:            product.Item.Name,
-				Description:     product.Item.Description,
-				Type:            product.Item.Type,
-				Cost:            product.Item.Cost,
-				SerialCode:      product.Item.SerialCode,
-				Prefix:          product.Item.Prefix,
-				PaymentMode:     product.Item.PaymentMode,
-				Mandatory:       product.Item.Mandatory,
-				SchoolNumber:    product.Item.SchoolNumber,
-				UserNumber:      product.Item.UserNumber,
-				RepeatCycle:     product.Item.RepeatCycle,
-				OneTimePurchase: product.Item.OneTimePurchase,
-			},
-			Campuses: campuses,
-		})
+	}
+
+	response, err := itemService.AllProductItems(schoolNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, response)

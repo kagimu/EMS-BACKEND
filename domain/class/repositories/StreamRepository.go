@@ -9,18 +9,18 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateStream(stream *models.Stream, trn ...*gorm.DB) error {
+func SaveStream(stream *models.Stream, trn ...*gorm.DB) error {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
 	}
-	if err := db.Create(&stream).Error; err != nil {
+	if err := db.Save(&stream).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func FetchStreamByCampusClassNumber(campusClassNumber string, ctx *gin.Context, trn ...*gorm.DB) ([]models.Stream, error) {
+func FetchStreamByCampusClassNumber(campusClassNumber, status string, ctx *gin.Context, trn ...*gorm.DB) ([]models.Stream, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
@@ -30,7 +30,9 @@ func FetchStreamByCampusClassNumber(campusClassNumber string, ctx *gin.Context, 
 	var streams []models.Stream
 
 	if err := db.Scopes(
-		filters.ByScopedItems("stream", ctx)).Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
+		filters.ByAnyField("status", status),
+		filters.ByScopedItems("stream", ctx),
+	).Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return streams, nil
@@ -63,4 +65,39 @@ func GetStreamByNumber(streamNumber string, trn ...*gorm.DB) (models.Stream, err
 	}
 
 	return stream, nil
+}
+
+func GetStreamByNameAndCampusClassNumber(streamName, campusClassNumber string, trn ...*gorm.DB) (models.Stream, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var stream models.Stream
+
+	if err := db.Where("name = ? AND campus_class_number = ?", streamName, campusClassNumber).Find(&stream).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return stream, nil
+		}
+
+		return stream, err
+
+	}
+
+	return stream, nil
+}
+
+func DeleteStreamByNumber(streamNumber string, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Delete(&models.Stream{}, "number = ?", streamNumber).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

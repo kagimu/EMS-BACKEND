@@ -57,7 +57,9 @@ type MenuItemResponse struct {
 	PurchaseUnitOfMeasureName   string  `json:"purchase_unit_of_measure_name"`
 	Parts                       []Part  `json:"parts"`
 	CurrentQuantity             float64 `json:"current_quantity"`
+	PurchaseCurrentQuantity     float64 `json:"purchase_current_quantity"`
 	UnitCost                    float64 `json:"unit_cost"`
+	PurchaseUnitCost            float64 `json:"purchase_unit_cost"`
 	ConversionToPurchaseUnit    float64 `json:"conversion_to_purchase_unit"`
 }
 
@@ -71,15 +73,19 @@ type Part struct {
 }
 
 type StockingResponse struct {
-	Number         string  `json:"name"`
-	Quantity       float64 `json:"quantity"`
-	UnitCost       float64 `json:"unit_cost"`
-	MenuItemNumber string  `json:"menu_item_number"`
-	MenuItemName   string  `json:"menu_item_name"`
-	CampusNumber   string  `json:"campus_number"`
-	CampusName     string  `json:"campus_name"`
-	MenuItemType   string  `json:"menu_item_type"`
-	DateTime       string  `json:"date_time"`
+	Number           string  `json:"name"`
+	Quantity         float64 `json:"quantity"`
+	PurchaseQuantity float64 `json:"purchase_quantity"`
+	PurchaseUnitName string  `json:"purchase_unit_name"`
+	UserUnitName     string  `json:"user_unit_name"`
+	UnitCost         float64 `json:"unit_cost"`
+	PurchaseUnitCost float64 `json:"purchase_unit_cost"`
+	MenuItemNumber   string  `json:"menu_item_number"`
+	MenuItemName     string  `json:"menu_item_name"`
+	CampusNumber     string  `json:"campus_number"`
+	CampusName       string  `json:"campus_name"`
+	MenuItemType     string  `json:"menu_item_type"`
+	DateTime         string  `json:"date_time"`
 }
 
 type FeedingGroupSessionResponse struct {

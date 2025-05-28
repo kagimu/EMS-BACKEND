@@ -33,14 +33,25 @@ func GetReportSummaryByStudentNumberAndStudyPeriodNumberAndCampusClassNumber(stu
 	return reportSummary, nil
 }
 
-func CreateReportSummary(summary models.ReportSummary, trn ...*gorm.DB) error {
+func FindReportSummaryByNumber(reportSummaryNumber string, trn ...*gorm.DB) (models.ReportSummary, error) {
 
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
 	}
 
-	return db.Create(&summary).Error
+	var reportSummary models.ReportSummary
+
+	if err := db.Where("number = ?", reportSummaryNumber).First(&reportSummary).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportSummary, nil
+		}
+
+		return reportSummary, err
+	}
+
+	return reportSummary, nil
 }
 
 func SaveReportSummary(summary models.ReportSummary, trn ...*gorm.DB) error {
@@ -51,6 +62,16 @@ func SaveReportSummary(summary models.ReportSummary, trn ...*gorm.DB) error {
 	}
 
 	return db.Save(&summary).Error
+}
+
+func CreateReportSummary(summary models.ReportSummary, trn ...*gorm.DB) error {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	return db.Create(&summary).Error
 }
 
 func FindDuplicateReportSummary(studentNumber, studyPeriodNumber, campusClassNumber string, trn ...*gorm.DB) (models.ReportSummary, error) {
@@ -124,10 +145,11 @@ func BuildAppliedScaleResponse(scales []models4.AggregateScale) []responses.Appl
 	response := make([]responses.AppliedScale, 0)
 	for _, scale := range scales {
 		response = append(response, responses.AppliedScale{
-			Name:      scale.Grade.Name,
-			ShortName: scale.Grade.ShortName,
-			Min:       scale.MinValue,
-			Max:       scale.MaxValue,
+			Name:         scale.Grade.Name,
+			ShortName:    scale.Grade.ShortName,
+			Min:          scale.MinValue,
+			Max:          scale.MaxValue,
+			Illustration: scale.Illustration,
 		})
 	}
 

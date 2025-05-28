@@ -1,6 +1,8 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+)
 
 type StudyPeriodDelRequest struct {
 	Number string `json:"number"`
@@ -13,6 +15,7 @@ type StudyPeriodRequest struct {
 	StudyPeriodEndDate    string   `json:"study_period_end_date"`
 	StudyPeriodNameNumber string   `json:"study_period_name_number"`
 	Classes               []string `json:"classes"`
+	NextTermBeginsOn      string   `json:"next_term_begins_on"`
 }
 
 func (studyPeriodRequest *StudyPeriodRequest) Validate() error {
@@ -35,6 +38,9 @@ func (studyPeriodRequest *StudyPeriodRequest) Validate() error {
 
 	if studyPeriodRequest.StudyPeriodNameNumber == "" {
 		return errors.New("Choose the academic year ")
+	}
+	if studyPeriodRequest.NextTermBeginsOn == "" {
+		return errors.New("please choose the date on which next term/study period begins ")
 	}
 
 	if len(studyPeriodRequest.Classes) == 0 {

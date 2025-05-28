@@ -7,9 +7,10 @@ import (
 )
 
 type LevelInfo struct {
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	LevelNumber string `json:"level_number"`
+	Code         string `json:"code"`
+	Name         string `json:"name"`
+	LevelNumber  string `json:"level_number"`
+	EntityNumber string `json:"entity_number"`
 }
 
 type LevelDelRequest struct {
@@ -32,6 +33,10 @@ func (p *LevelInfo) Validate() error {
 
 	if p.Code == "0" {
 		return errors.New("code must be greater than zero")
+	}
+
+	if p.EntityNumber == "" {
+		return errors.New("entity number is required")
 	}
 
 	return nil

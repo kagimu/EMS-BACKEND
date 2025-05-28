@@ -11,6 +11,7 @@ import (
 	gradesModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/models"
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/models"
+	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/models"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	cateringModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -135,7 +136,7 @@ func Init() error {
 		&assessmentModel.Metric{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
-		&assessmentModel.Attendance{},
+		&models4.Attendance{},
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
 		&permissionModels.UserRole{},
@@ -155,9 +156,10 @@ func Init() error {
 		&reportSettings.ReportScoreSummary{},
 		&enrollmentModel.Enrollment{},
 		&assessmentAreaModel.AssessmentAreaGradingStandard{},
-		&promotionModels.Promotion{},
 		&promotionModels.PromotionSetting{},
-		&promotionModels.PromotionSettingsValue{},
+		&promotionModels.PromotionAssessmentAreaValue{},
+		&promotionModels.PromotionSettingValue{},
+		&promotionModels.Promotion{},
 		&previousSchoolResultsModels.PreviousSchoolResults{},
 		&staffModel.Staff{},
 		&cateringModels.FeedingGroup{},
@@ -213,6 +215,16 @@ func Init() error {
 		&assessmentModel.ScriptMarkingGuide{},
 		&currDelivery.CurriculumDelivery{},
 		&currDelivery.StudentCurriculumDelivery{},
+		&currDelivery.CurriculumDeliveryStep{},
+		&assessmentModel.Narrative{},
+		&assessmentModel.ScheduledNarrative{},
+		&assessmentModel.NarrativeSchedule{},
+		&reportSettings.LearningAreaReportComment{},
+		&studentModels.MedicalRecord{},
+		&studentModels.FamilyMember{},
+		&studentModels.FamilyMemberContact{},
+		&studentModels.StudentLanguage{},
+		&studentModels.EmergencyInformation{},
 	)
 
 	if err != nil {

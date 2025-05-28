@@ -942,11 +942,6 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 		return errors.New("Checking amount error " + err.Error())
 	}
 
-	invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions(invoiceNumber, "")
-	if err != nil {
-		return errors.New("Checking payments error " + err.Error())
-	}
-
 	invoiceStatement, err := invoiceRepositories.GetStatementByNumber(invoice.StatementNumber)
 	if err != nil {
 		return errors.New("Checking statement error " + err.Error())
@@ -976,6 +971,11 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 
 		invoiceTransactionRepository.UseTx(tx)
 
+		invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions(invoiceNumber, "")
+		if err != nil {
+			return errors.New("Checking payments error " + err.Error())
+		}
+
 		for _, invoiceTransaction := range invoiceTransactions {
 			err := invoiceTransactionRepository.DeleteTransaction(invoiceTransaction)
 			if err != nil {
@@ -984,13 +984,14 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 
 			transaction, _ := invoiceRepositories.GetTransactionByNumber(invoiceTransaction.TransactionNumber, tx)
 			transaction.AmountInCredit = transaction.AmountInCredit + invoiceTransaction.AmountPaidOff
+
 			_, err = invoiceRepositories.SaveTransaction(transaction, tx)
 			if err != nil {
 				return errors.New("Updating credit error " + err.Error())
 			}
 		}
 
-		err := invoiceRepositories.UpdateInvoice(invoice, tx)
+		err = invoiceRepositories.UpdateInvoice(invoice, tx)
 		if err != nil {
 			return errors.New("updating invoice failed : " + err.Error())
 		}
@@ -1279,7 +1280,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 	return nil
 }
 
-func UserStatement(userNumber string, startDate time.Time, endDate time.Time) ([]responses.StatementResponse, error) {
+func UserStatement(userNumber string, startDate, endDate time.Time) ([]responses.StatementResponse, error) {
 
 	var statementResponse = make([]responses.StatementResponse, 0)
 
@@ -1342,4 +1343,37 @@ func GetTransactionCredit(transactionNumber string) (models.Transaction, error) 
 	transaction.AmountInCredit = statement.Amount - creditsUsed
 
 	return transaction, nil
+}
+
+func GeneralStatement(userNumber string, minAmount, maxAmount float64) ([]responses.StatementResponse, error) {
+	var statementResponse = make([]responses.StatementResponse, 0)
+
+	allStatements, err := invoiceRepositories.FindAllGeneralStatements(userNumber, minAmount, maxAmount)
+	if err != nil {
+		return statementResponse, errors.New("Error getting statements " + err.Error())
+	}
+
+	for _, statement := range allStatements {
+
+		receivedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
+		learner, _ := repository.GetUserByNumber(statement.UserNumber)
+		student, err := repositories.FindStudentByUserNumber(statement.UserNumber)
+		if err != nil {
+			return statementResponse, errors.New("Error getting student from user number " + statement.UserNumber)
+		}
+
+		statementResponse = append(statementResponse, responses.StatementResponse{
+			Amount:            statement.Amount,
+			Balance:           statement.Balance,
+			Type:              statement.Type,
+			Description:       statement.Description,
+			DateReceived:      statement.CreatedAt.Format(time.DateTime),
+			ReceivedBy:        receivedBy.FirstName,
+			LearnerName:       fmt.Sprintf("%s %s %s", learner.FirstName, learner.SecondName, learner.LastName),
+			LearnerUserNumber: statement.UserNumber,
+			StudentNumber:     student.Number,
+		})
+	}
+
+	return statementResponse, nil
 }

@@ -9,13 +9,12 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/gin-gonic/gin"
 )
 
 func PromoteStudent(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
@@ -53,10 +52,10 @@ func PromoteStudent(c *gin.Context) {
 		return
 	}
 
-	savePromotion := models.Promotion{
+	/*savePromotion := models.Promotion{
 		Number:                    uuid.NewV4().String(),
 		PromotionSettingNumber:    payload.PromotionSettingNumber,
-		StudentNumber:             studentNumber,
+		UserNumber:             studentNumber,
 		Status:                    payload.Status,
 		Reason:                    payload.Reason,
 		CurrentAcademicYearNumber: payload.CurrentAcademicYearNumber,
@@ -66,7 +65,7 @@ func PromoteStudent(c *gin.Context) {
 	if err := config.DB.Create(&savePromotion).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create promotion"})
 		return
-	}
+	}*/
 
 	c.JSON(http.StatusOK, gin.H{"message": "Promotion created successfully"})
 }
@@ -105,7 +104,7 @@ func FetchPromotionsByAcademicYear(c *gin.Context) {
 }
 
 func EditPromotion(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Unauthorized"})
 		return
@@ -126,9 +125,9 @@ func EditPromotion(c *gin.Context) {
 		return
 	}
 
-	updatedPromotion := models.Promotion{
+	/*updatedPromotion := models.Promotion{
 		PromotionSettingNumber:    payload.PromotionSettingNumber,
-		StudentNumber:             payload.StudentNumber,
+		UserNumber:             payload.UserNumber,
 		Status:                    payload.Status,
 		Reason:                    payload.Reason,
 		CurrentAcademicYearNumber: payload.CurrentAcademicYearNumber,
@@ -138,7 +137,7 @@ func EditPromotion(c *gin.Context) {
 	if err := config.DB.Model(&promotion).Where("number = ?", promotionNumber).Updates(updatedPromotion).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update promotion"})
 		return
-	}
+	}*/
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": promotion})
 }

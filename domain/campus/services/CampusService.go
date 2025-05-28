@@ -7,6 +7,7 @@ import (
 
 func CreateCampusResponse(campus campusModel.Campus) responses.CampusResponse {
 	return responses.CampusResponse{
+		Number:           campus.Number,
 		Name:             campus.Name,
 		Phone:            campus.Phone,
 		Email:            campus.Email,

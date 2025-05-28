@@ -2,6 +2,8 @@ package requests
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"html"
 	"strings"
 )
@@ -12,11 +14,43 @@ type ClassInfo struct {
 	Abbreviation string `json:"abbreviation"`
 	Level        string `json:"level"`
 	ClassNumber  string `json:"class_number"`
+	EntityNumber string `json:"entity_number"`
 }
 
 type StreamRequest struct {
 	Name              string `json:"name"`
 	CampusClassNumber string `json:"campus_class_number"`
+}
+
+type UpdateStreamRequest struct {
+	StreamRequest
+	StreamNumber string `json:"stream_number"`
+	Status       string `json:"status"`
+}
+
+func (r UpdateStreamRequest) Validate() error {
+
+	if r.StreamNumber == "" {
+		return errors.New("choose stream to edit")
+	}
+
+	if r.Name == "" {
+		return errors.New("name is required")
+	}
+
+	if r.CampusClassNumber == "" {
+		return errors.New("campus class number is required")
+	}
+
+	if r.Status == "" {
+		return errors.New("status is required")
+	}
+
+	if !commons.StringContains([]string{constants.StatusActive, constants.StatusInactive}, r.Status) {
+		return errors.New("invalid status")
+	}
+
+	return nil
 }
 
 type ClassDelRequest struct {
@@ -44,6 +78,10 @@ func (p *ClassInfo) Validate() error {
 
 	if p.Level == "" {
 		return errors.New("level is required")
+	}
+
+	if p.EntityNumber == "" {
+		return errors.New("entity number is required")
 	}
 
 	return nil

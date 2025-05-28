@@ -15,10 +15,42 @@ type CurriculumDeliveryRepository interface {
 	FindCurriculumDeliveryByStudentNumberAndStepNumber(studentNumber string, stepNumber string) ([]*models.CurriculumDelivery, error)
 	FindCurriculumDeliveryByFilters(ctx *gin.Context, pagination *pagination.PaginatedResponse) ([]*models.CurriculumDelivery, error)
 	FindStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse) ([]*models.StudentCurriculumDelivery, error)
+	DeleteStudentsBySession(sessionNumber string) error
+	DeleteCurriculumDeliverySession(number string) error
+	DeleteCurriculumDeliveryStep(number string) error
+	UpdateCurriculumDeliverySession(delivery *models.CurriculumDelivery) error
+	SaveCurriculumDeliveryStep(m *models.CurriculumDeliveryStep) error
+	GetCurriculumDeliveryByNumber(number string) (*models.CurriculumDelivery, error)
 }
 
 type CurriculumDeliveryRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (c CurriculumDeliveryRepositoryImpl) GetCurriculumDeliveryByNumber(number string) (*models.CurriculumDelivery, error) {
+	delivery := &models.CurriculumDelivery{}
+	err := c.DB.Where("number = ?", number).First(delivery).Error
+	return delivery, err
+}
+
+func (c CurriculumDeliveryRepositoryImpl) DeleteCurriculumDeliveryStep(number string) error {
+	return c.DB.Where("curriculum_delivery_number = ?", number).Delete(&models.CurriculumDeliveryStep{}).Error
+}
+
+func (c CurriculumDeliveryRepositoryImpl) SaveCurriculumDeliveryStep(m *models.CurriculumDeliveryStep) error {
+	return c.DB.Create(m).Error
+}
+
+func (c CurriculumDeliveryRepositoryImpl) UpdateCurriculumDeliverySession(delivery *models.CurriculumDelivery) error {
+	return c.DB.Save(delivery).Error
+}
+
+func (c CurriculumDeliveryRepositoryImpl) DeleteCurriculumDeliverySession(number string) error {
+	return c.DB.Where("number = ?", number).Delete(&models.CurriculumDelivery{}).Error
+}
+
+func (c CurriculumDeliveryRepositoryImpl) DeleteStudentsBySession(sessionNumber string) error {
+	return c.DB.Where("curriculum_delivery_number = ?", sessionNumber).Delete(&models.StudentCurriculumDelivery{}).Error
 }
 
 func (c CurriculumDeliveryRepositoryImpl) FindStudentsBySession(context *gin.Context, p *pagination.PaginatedResponse) ([]*models.StudentCurriculumDelivery, error) {
@@ -38,7 +70,7 @@ func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByFilters(ctx *g
 
 func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByStreamNumberAndStepNumber(streamNumber string, stepNumber string) ([]*models.CurriculumDelivery, error) {
 	deliveries := make([]*models.CurriculumDelivery, 0)
-	err := c.DB.Where("stream_number = ? AND lesson_plan_step_number = ?", streamNumber, stepNumber).Find(&deliveries).Error
+	err := c.DB.Joins("JOIN curriculum_delivery_steps ON curriculum_deliveries.number = curriculum_delivery_steps.curriculum_delivery_number ").Where("stream_number = ? AND curriculum_delivery_steps.lesson_plan_step_number = ?", streamNumber, stepNumber).Find(&deliveries).Error
 	return deliveries, err
 }
 
@@ -46,7 +78,8 @@ func (c CurriculumDeliveryRepositoryImpl) FindCurriculumDeliveryByStudentNumberA
 	deliveries := make([]*models.CurriculumDelivery, 0)
 	err := c.DB.Table("curriculum_deliveries").
 		Joins("JOIN student_curriculum_deliveries ON curriculum_deliveries.number = student_curriculum_deliveries.curriculum_delivery_number").
-		Where("student_curriculum_deliveries.student_number = ? AND curriculum_deliveries.lesson_plan_step_number = ?", studentNumber, stepNumber).
+		Joins("JOIN curriculum_delivery_steps ON curriculum_deliveries.number = curriculum_delivery_steps.curriculum_delivery_number").
+		Where("student_curriculum_deliveries.student_number = ? AND curriculum_delivery_steps.lesson_plan_step_number = ?", studentNumber, stepNumber).
 		Find(&deliveries).Error
 	return deliveries, err
 }
