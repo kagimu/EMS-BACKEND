@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
@@ -64,4 +65,74 @@ func CreateEmergencyInformation(payload request.EmergencyInformationRequest) err
 		return err
 	}
 	return nil
+}
+
+func FetchEmergencyInformation(studentNumber string) (responses.EmergencyInformationResponse, error) {
+
+	return responses.EmergencyInformationResponse{}, nil
+}
+
+func FetchMedicalRecord(studentNumber string) (responses.MedicalRecordResponse, error) {
+	medicalRecordRepository := repositories.NewMedicalRecordRepository(config.DB)
+	medicalRecord, err := medicalRecordRepository.GetMedicalRecordByStudentNumber(studentNumber)
+	var medicalRecordResponse responses.MedicalRecordResponse
+	if err != nil {
+		return medicalRecordResponse, err
+	}
+	medicalRecordResponse = responses.MedicalRecordResponse{
+		StudentNumber:     medicalRecord.StudentNumber,
+		Allergies:         medicalRecord.Allergies,
+		DoctorName:        medicalRecord.DoctorName,
+		DoctorPhone:       medicalRecord.DoctorPhone,
+		RegularMedication: medicalRecord.RegularMedication,
+		ExistingCondition: medicalRecord.ExistingCondition,
+		BloodTypeGroup:    medicalRecord.BloodTypeGroup,
+	}
+	return medicalRecordResponse, nil
+}
+
+func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureResponse, error) {
+
+	familyMemberRepository := repositories.NewFamilyMemberRepository(config.DB)
+	familyMembers, err := familyMemberRepository.FindFamilyMembersByStudentNumber(studentNumber)
+	if err != nil {
+		return responses.FamilyStructureResponse{}, err
+	}
+	var familyMemberResponses []responses.FamilyMemberResponse
+	for _, member := range familyMembers {
+		var familyMemberResponse responses.FamilyMemberResponse
+		familyMemberResponse.Number = member.Number
+		familyMemberResponse.Surname = member.Surname
+		familyMemberResponse.OtherName = member.OtherName
+		familyMemberResponse.PlaceOfEmployment = member.PlaceOfEmployment
+		familyMemberResponse.PhysicalContactAddress = member.PhysicalContactAddress
+		//familyMemberResponse.Contacts = member.Contacts
+		familyMemberResponse.Relationship = member.Relationship
+
+		familyMemberResponses = append(familyMemberResponses, familyMemberResponse)
+	}
+
+	languageRepository := repositories.NewLanguageRepository(config.DB)
+	languages, err := languageRepository.FindLanguagesByStudentNumber(studentNumber)
+
+	if err != nil {
+		return responses.FamilyStructureResponse{}, err
+	}
+
+	var languageResponses []responses.Language
+
+	for _, lang := range languages {
+		languageResponses = append(languageResponses, responses.Language{
+			Name: lang.Name,
+			Code: lang.Code,
+		})
+	}
+
+	response := responses.FamilyStructureResponse{
+		StudentNumber: studentNumber,
+		FamilyMembers: familyMemberResponses,
+		Languages:     languageResponses,
+	}
+
+	return response, nil
 }

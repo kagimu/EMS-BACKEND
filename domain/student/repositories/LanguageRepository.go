@@ -7,7 +7,7 @@ import (
 
 type LanguageRepository interface {
 	FindAll() ([]models.StudentLanguage, error)
-	FindLanguageByStudentNumber(studentNumber string) ([]models.StudentLanguage, error)
+	FindLanguagesByStudentNumber(studentNumber string) ([]models.StudentLanguage, error)
 	CreateLanguage(language models.StudentLanguage) error
 	DeleteLanguage(language models.StudentLanguage) error
 	UpdateLanguage(language models.StudentLanguage) error
@@ -27,7 +27,7 @@ func (l LanguageRepositoryImpl) FindAll() ([]models.StudentLanguage, error) {
 	return languages, nil
 }
 
-func (l LanguageRepositoryImpl) FindLanguageByStudentNumber(studentNumber string) ([]models.StudentLanguage, error) {
+func (l LanguageRepositoryImpl) FindLanguagesByStudentNumber(studentNumber string) ([]models.StudentLanguage, error) {
 	var languages []models.StudentLanguage
 
 	if err := l.DB.Where("student_number = ?", studentNumber).Find(&languages).Error; err != nil {

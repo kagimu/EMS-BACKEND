@@ -521,3 +521,54 @@ func CreateEmergencyInformation(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student emergency information created"})
 
 }
+
+func FetchFamilyStructure(context *gin.Context) {
+	studentNumber := context.Param("student_number")
+
+	if studentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Student number is required"})
+		return
+	}
+
+	familyMembers, err := services2.FetchFamilyStructure(studentNumber)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to fetch family structure: " + err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": familyMembers})
+}
+
+func FetchEmergencyInformation(context *gin.Context) {
+	studentNumber := context.Param("student_number")
+
+	if studentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Student number is required"})
+		return
+	}
+
+	emergencyInfo, err := services2.FetchEmergencyInformation(studentNumber)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to fetch emergency information: " + err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": emergencyInfo})
+}
+
+func FetchMedicalRecord(context *gin.Context) {
+	studentNumber := context.Param("student_number")
+
+	if studentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Student number is required"})
+		return
+	}
+
+	medicalRecord, err := services2.FetchMedicalRecord(studentNumber)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Failed to fetch medical record: " + err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": medicalRecord})
+}
