@@ -480,7 +480,7 @@ func CreateMedicalRecord(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student created"})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student medical record created"})
 }
 
 func CreateFamilyStructure(context *gin.Context) {
@@ -498,7 +498,7 @@ func CreateFamilyStructure(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to save family structure" + err.Error()})
 		return
 	}
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student created"})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student family structure created"})
 }
 
 func CreateEmergencyInformation(context *gin.Context) {
@@ -518,6 +518,6 @@ func CreateEmergencyInformation(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student created"})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Student emergency information created"})
 
 }
