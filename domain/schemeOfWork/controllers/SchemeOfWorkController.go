@@ -138,7 +138,7 @@ func NewSchemeOfWork(context *gin.Context) {
 			// If any error occurs, rollback the transaction
 			tx.Rollback()
 			// Handle or return the error as needed
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme"})
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme " + "sub topic " + err.Error()})
 			return
 		}
 	}

@@ -124,7 +124,7 @@ func CreateAdmission(c *gin.Context) {
 		student.Status = constants.StatusAdmitted
 		if err := tx.Save(&student).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student details"})
 			return
 		}
 
@@ -362,12 +362,13 @@ func CreateExistingAdmission(c *gin.Context) {
 	student.Status = constants.StatusAdmitted
 	if err := tx.Save(&student).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update student " + err.Error()})
 		return
 	}
 
 	if err := tx.Save(&application).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application"})
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update the application " + err.Error()})
 		return
 	}
 
@@ -385,13 +386,16 @@ func CreateExistingAdmission(c *gin.Context) {
 	}
 
 	if err := tx.Create(&saveAdmission).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
 		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
+
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Admission created successfully"})
