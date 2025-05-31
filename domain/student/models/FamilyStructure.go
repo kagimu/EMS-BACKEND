@@ -19,5 +19,5 @@ type FamilyMemberContact struct {
 type StudentLanguage struct {
 	StudentNumber string `json:"student_number" gorm:"size:36;not null"`
 	Code          int64  `json:"code"`
-	Name          string `json:"name"`
+	Name          string `json:"name" gorm:"size:50;not null"`
 }
