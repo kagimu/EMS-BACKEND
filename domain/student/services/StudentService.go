@@ -10,10 +10,20 @@ import (
 )
 
 func CreateMedicalRecord(req request.MedicalRecordRequest) error {
-	medicalRecordRepository := repositories.NewMedicalRecordRepository(config.DB)
+	db := config.DB.Begin()
+	medicalRecordRepository := repositories.NewMedicalRecordRepository(db)
+	err := medicalRecordRepository.DeleteMedicalRecordByStudentNumber(req.StudentNumber)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
 	medicalRecord := req.ToModel()
 	if err := medicalRecordRepository.CreateMedicalRecord(medicalRecord); err != nil {
+		db.Rollback()
 		return err
+	}
+	if err := db.Commit().Error; err != nil {
+		db.Rollback()
 	}
 	return nil
 }
@@ -23,6 +33,18 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 	tx := config.DB.Begin()
 	familyStructureRepository := repositories.NewFamilyMemberRepository(tx)
 	languageRepository := repositories.NewLanguageRepository(tx)
+
+	err := familyStructureRepository.DeleteFamilyMemberByStudentNumber(payload.StudentNumber)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = languageRepository.DeleteLanguageByStudentNumber(payload.StudentNumber)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
 	for _, familyMember := range payload.FamilyMembers {
 		var familyMemberModel models.FamilyMember
@@ -59,9 +81,14 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 }
 
 func CreateEmergencyInformation(payload request.EmergencyInformationRequest) error {
-	emergencyInformationRepository := repositories.NewEmergencyInformationRepository(config.DB)
+	tx := config.DB.Begin()
+	emergencyInformationRepository := repositories.NewEmergencyInformationRepository(tx)
 	emergencyInformation := payload.ToModel()
+	if err := emergencyInformationRepository.DeleteEmergencyInformationByStudentNumber(payload.StudentNumber); err != nil {
+		tx.Rollback()
+	}
 	if err := emergencyInformationRepository.CreateEmergencyInformation(emergencyInformation); err != nil {
+		tx.Rollback()
 		return err
 	}
 	return nil

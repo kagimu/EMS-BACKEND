@@ -302,3 +302,24 @@ func DeleteLessonPlanReference(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference deleted successfully"})
 }
+
+func InvalidateLessonPlan(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	lessonPlanNumber := context.Param("lessonPlanNumber")
+	if lessonPlanNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the lesson plan to invalidate"})
+		return
+	}
+
+	err = lessonPlanService.Invalidate(lessonPlanNumber, user)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Lesson plan invalidated successfully"})
+}
