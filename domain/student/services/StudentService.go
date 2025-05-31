@@ -24,6 +24,8 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 	familyStructureRepository := repositories.NewFamilyMemberRepository(tx)
 	languageRepository := repositories.NewLanguageRepository(tx)
 
+	familyStructureRepository.DeleteFamilyMember()
+
 	for _, familyMember := range payload.FamilyMembers {
 		var familyMemberModel models.FamilyMember
 		familyMemberModel.Number = uuid.NewV4().String()

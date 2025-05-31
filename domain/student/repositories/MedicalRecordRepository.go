@@ -10,11 +10,20 @@ type MedicalRecordRepository interface {
 	GetMedicalRecordByStudentNumber(studentNumber string) (models.MedicalRecord, error)
 	CreateMedicalRecord(medicalRecord models.MedicalRecord) error
 	DeleteMedicalRecord(medicalRecord models.MedicalRecord) error
+	DeleteMedicalRecordByStudentNumber(studentNumber string) error
 	UpdateMedicalRecord(medicalRecord models.MedicalRecord) error
 }
 
 type MedicalRecordRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (m MedicalRecordRepositoryImpl) DeleteMedicalRecordByStudentNumber(studentNumber string) error {
+	var medicalRecord models.MedicalRecord
+	if err := m.DB.Where("student_number = ?", studentNumber).Delete(&medicalRecord).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m MedicalRecordRepositoryImpl) UpdateMedicalRecord(medicalRecord models.MedicalRecord) error {

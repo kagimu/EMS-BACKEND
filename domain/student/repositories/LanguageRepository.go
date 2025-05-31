@@ -10,11 +10,21 @@ type LanguageRepository interface {
 	FindLanguagesByStudentNumber(studentNumber string) ([]models.StudentLanguage, error)
 	CreateLanguage(language models.StudentLanguage) error
 	DeleteLanguage(language models.StudentLanguage) error
+	DeleteLanguageByStudentNumber(studentNumber string) error
 	UpdateLanguage(language models.StudentLanguage) error
 }
 
 type LanguageRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (l LanguageRepositoryImpl) DeleteLanguageByStudentNumber(studentNumber string) error {
+	var language models.StudentLanguage
+
+	if err := l.DB.Where("student_number = ?", studentNumber).Delete(&language).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func (l LanguageRepositoryImpl) FindAll() ([]models.StudentLanguage, error) {
