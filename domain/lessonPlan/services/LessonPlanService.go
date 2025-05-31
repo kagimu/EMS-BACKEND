@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/repositories"
@@ -30,10 +31,38 @@ type LessonPlanService interface {
 	AddLessonPlanReferences(lessonPlanReferenceRequest requests.LessonPlanReferenceRequest, userNumber string) error
 	UpdateLessonPlanReference(lessonPlanReferenceRequest requests.Material, referenceNumber, userNumber string) error
 	DeleteLessonPlanReference(referenceNumber string) error
+	Invalidate(lessonPlanNumber string, user *authModel.User) error
 }
 
 type lessonPlanServiceImp struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanServiceImp) Invalidate(lessonPlanNumber string, user *authModel.User) error {
+	lessonPlanRepository.UseTx(config.DB)
+
+	lessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanNumber)
+	if err != nil {
+		return err
+	}
+
+	if lessonPlan.Number == "" {
+		return errors.New("Invalid lesson plan number ")
+	}
+
+	if lessonPlan.Status == constants.StatusInactive {
+		return errors.New("Lesson plan already in invalidated ")
+	}
+
+	lessonPlan.Status = constants.StatusInactive
+	lessonPlan.UserNumber = user.Number
+
+	err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (l *lessonPlanServiceImp) UpdateLessonPlanReference(material requests.Material, referenceNumber, userNumber string) error {
@@ -197,7 +226,7 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 	saveLessonPlan := models.LessonPlan{
 		Number:               lessonPlanNumber,
 		SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
-		Status:               constants.StatusDraft,
+		Status:               constants.StatusActive,
 		UserNumber:           userNumber,
 		UpdatedAt:            time.Now(),
 	}
