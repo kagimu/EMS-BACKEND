@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
@@ -27,6 +28,7 @@ func (s SchemeOfWorkService) InvalidateSchemeOfWork(schemeOfWorkNumber, userNumb
 	}
 
 	//Find active lesson plan
+	repo.UseTx(config.DB)
 	lessonPlane, err := repo.FindLessonPlanBySchemeOfWorkNumber(schemeOfWork.Number)
 	if err != nil {
 		return err
