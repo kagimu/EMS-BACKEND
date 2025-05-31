@@ -3,11 +3,14 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
 )
 
 type SchemeOfWorkService struct {
 }
+
+var repo = repository.NewLessonPlanRepository()
 
 func (s SchemeOfWorkService) InvalidateSchemeOfWork(schemeOfWorkNumber, userNumber string) error {
 	schemeOfWork, err := repositories.GetSchemeOfWorkByNumber(schemeOfWorkNumber)
@@ -21,6 +24,16 @@ func (s SchemeOfWorkService) InvalidateSchemeOfWork(schemeOfWorkNumber, userNumb
 
 	if schemeOfWork.Status == constants.StatusInactive {
 		return errors.New("This scheme is already invalidated ")
+	}
+
+	//Find active lesson plan
+	lessonPlane, err := repo.FindLessonPlanBySchemeOfWorkNumber(schemeOfWork.Number)
+	if err != nil {
+		return err
+	}
+
+	if lessonPlane.Number != "" && lessonPlane.Status != constants.StatusInactive {
+		return errors.New("This scheme of work already have a lesson plan ")
 	}
 
 	schemeOfWork.Status = constants.StatusInactive

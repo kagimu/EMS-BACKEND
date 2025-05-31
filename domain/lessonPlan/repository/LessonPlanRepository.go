@@ -36,10 +36,28 @@ type LessonPlanRepository interface {
 	SaveLessonPlanReference(lessonPlanReference lessonPlanModel.LessonPlanReference) error
 	FindLessonPlanReferenceByNumber(referenceNumber string) (lessonPlanModel.LessonPlanReference, error)
 	DeleteLessonPlanReference(lessonPlanReference lessonPlanModel.LessonPlanReference) error
+	FindLessonPlanBySchemeOfWorkNumber(schemeOfWorkNumber string) (lessonPlanModel.LessonPlan, error)
 }
 
 type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanRepositoryImpl) FindLessonPlanBySchemeOfWorkNumber(schemeOfWorkNumber string) (lessonPlanModel.LessonPlan, error) {
+	var lessonPlan lessonPlanModel.LessonPlan
+	err := l.Db.
+		Joins("JOIN scheme_of_work_sub_topics ON lesson_plans.scheme_sub_topic_number = scheme_of_work_sub_topics.number").
+		Where("scheme_of_work_sub_topics.scheme_of_work_number = ?", schemeOfWorkNumber).First(&lessonPlan).Error
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlan, nil
+		}
+
+		return lessonPlan, err
+	}
+
+	return lessonPlan, nil
 }
 
 func (l *lessonPlanRepositoryImpl) FindLessonPlanReferenceByNumber(lessonPlanReferenceNumber string) (lessonPlanModel.LessonPlanReference, error) {
@@ -129,7 +147,8 @@ func (l *lessonPlanRepositoryImpl) CountStepsByCurriculumNumber(number string) (
 	var count int64
 	err := l.Db.Model(&lessonPlanModel.LessonPlanStep{}).
 		Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number ").
-		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND concepts.curriculum_number = ?", number).Count(&count).Error
+		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND concepts.curriculum_number = ?", number).
+		Count(&count).Error
 	if err != nil {
 		return 0, errors.New("error counting steps" + err.Error())
 	}
