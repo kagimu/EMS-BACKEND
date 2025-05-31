@@ -95,8 +95,21 @@ func CreateEmergencyInformation(payload request.EmergencyInformationRequest) err
 }
 
 func FetchEmergencyInformation(studentNumber string) (responses.EmergencyInformationResponse, error) {
-
-	return responses.EmergencyInformationResponse{}, nil
+	emergencyInformationRepository := repositories.NewEmergencyInformationRepository(config.DB)
+	emergencyInformation, err := emergencyInformationRepository.GetEmergencyInformationByStudentNumber(studentNumber)
+	if err != nil {
+		return responses.EmergencyInformationResponse{}, err
+	}
+	resp := responses.EmergencyInformationResponse{
+		StudentNumber:                 emergencyInformation.StudentNumber,
+		ContactPerson:                 emergencyInformation.ContactPerson,
+		ContactPersonPhone:            emergencyInformation.ContactPersonPhone,
+		ContactPersonAlternative:      emergencyInformation.ContactPersonAlternative,
+		ContactPersonAlternativePhone: emergencyInformation.ContactPersonAlternativePhone,
+		ContactDoctorName:             emergencyInformation.ContactDoctorName,
+		ContactDoctorPhone:            emergencyInformation.ContactDoctorPhone,
+	}
+	return resp, nil
 }
 
 func FetchMedicalRecord(studentNumber string) (responses.MedicalRecordResponse, error) {
@@ -125,7 +138,7 @@ func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureRespon
 	if err != nil {
 		return responses.FamilyStructureResponse{}, err
 	}
-	var familyMemberResponses []responses.FamilyMemberResponse
+	familyMemberResponses := make([]responses.FamilyMemberResponse, 0)
 	for _, member := range familyMembers {
 		var familyMemberResponse responses.FamilyMemberResponse
 		familyMemberResponse.Number = member.Number
@@ -146,7 +159,7 @@ func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureRespon
 		return responses.FamilyStructureResponse{}, err
 	}
 
-	var languageResponses []responses.Language
+	languageResponses := make([]responses.Language, 0)
 
 	for _, lang := range languages {
 		languageResponses = append(languageResponses, responses.Language{
