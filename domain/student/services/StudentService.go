@@ -18,7 +18,7 @@ func CreateMedicalRecord(req request.MedicalRecordRequest) error {
 		return err
 	}
 	medicalRecord := req.ToModel()
-	if err := medicalRecordRepository.CreateMedicalRecord(medicalRecord); err != nil {
+	if err = medicalRecordRepository.CreateMedicalRecord(medicalRecord); err != nil {
 		db.Rollback()
 		return err
 	}
@@ -86,8 +86,16 @@ func CreateEmergencyInformation(payload request.EmergencyInformationRequest) err
 	emergencyInformation := payload.ToModel()
 	if err := emergencyInformationRepository.DeleteEmergencyInformationByStudentNumber(payload.StudentNumber); err != nil {
 		tx.Rollback()
+		return err
 	}
 	if err := emergencyInformationRepository.CreateEmergencyInformation(emergencyInformation); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err := tx.Commit().Error
+
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
