@@ -117,6 +117,8 @@ func NewSchemeOfWork(context *gin.Context) {
 		if duplicate := tx.
 			Where("code = ?", schemeList.SortCode).
 			Where("scheme_of_work_number = ?", saveSchemeOfWork.Number).
+			Where("scheme_of_works.status = ?", constants.StatusActive).
+			Joins("JOIN scheme_of_works ON scheme_of_work_number = scheme_of_works.number").
 			First(&duplicateSchemeCode).Error; duplicate == nil {
 			tx.Rollback()
 			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate codes are not allowed!!!, Code: " + strconv.FormatInt(schemeList.SortCode, 10)})
