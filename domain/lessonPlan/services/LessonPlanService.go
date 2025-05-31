@@ -229,6 +229,7 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 		Status:               constants.StatusActive,
 		UserNumber:           userNumber,
 		UpdatedAt:            time.Now(),
+		CreatedAt:            time.Now(),
 	}
 
 	oldLessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanNumber)
@@ -273,6 +274,8 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 				Code:             concept.Code,
 				LessonPlanNumber: saveLessonPlan.Number,
 				UserNumber:       userNumber,
+				UpdatedAt:        time.Now(),
+				CreatedAt:        time.Now(),
 			}
 
 			//	adds new concepts when Concept number doesnt exists
@@ -296,6 +299,8 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 						Code:                    step.Code,
 						Step:                    step.Step,
 						LessonPlanConceptNumber: conceptNumber,
+						UpdatedAt:               time.Now(),
+						CreatedAt:               time.Now(),
 					}
 
 					err = lessonPlanRepository.SaveConceptStep(saveLearningSteps)
