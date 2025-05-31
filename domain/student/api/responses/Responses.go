@@ -42,6 +42,13 @@ type SingleAssessment struct {
 }
 
 type EmergencyInformationResponse struct {
+	StudentNumber                 string `json:"student_number" `
+	ContactPerson                 string `json:"contact_person" `
+	ContactPersonPhone            string `json:"contact_person_phone" `
+	ContactPersonAlternative      string `json:"contact_person_alternative" `
+	ContactPersonAlternativePhone string `json:"contact_person_alternative_phone" `
+	ContactDoctorName             string `json:"contact_doctor_name" `
+	ContactDoctorPhone            string `json:"contact_doctor_phone" `
 }
 
 type MedicalRecordResponse struct {
