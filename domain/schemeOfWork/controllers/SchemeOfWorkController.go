@@ -115,23 +115,23 @@ func NewSchemeOfWork(context *gin.Context) {
 
 		var duplicateSchemeCode schemeOfWorkModel.SchemeOfWorkSubTopic
 		if duplicate := tx.
-			Where("code = ?", schemeList.SortCode).
+			Where("code = ?", schemeList.Code).
 			Where("scheme_of_work_number = ?", saveSchemeOfWork.Number).
 			Where("scheme_of_works.status = ?", constants.StatusActive).
 			Joins("JOIN scheme_of_works ON scheme_of_work_number = scheme_of_works.number").
 			First(&duplicateSchemeCode).Error; duplicate == nil {
 			tx.Rollback()
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate codes are not allowed!!!, Code: " + strconv.FormatInt(schemeList.SortCode, 10)})
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate codes are not allowed!!!, Code: " + strconv.FormatInt(schemeList.Code, 10)})
 			return
 		}
 
 		schemeNo := uuid.NewV4().String()
 		saveSchemeOfWorkSubtopic := schemeOfWorkModel.SchemeOfWorkSubTopic{
 			Number:             schemeNo,
-			Code:               schemeList.SortCode,
+			Code:               schemeList.Code,
 			EstimatedTime:      schemeList.EstimatedTime,
 			SchemeOfWorkNumber: saveSchemeOfWork.Number,
-			SubTopicNumber:     schemeList.Number,
+			SubTopicNumber:     schemeList.SubTopicNumber,
 			UserNumber:         userNumber,
 		}
 		if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {
@@ -162,107 +162,25 @@ func UpdateSchemeOfWork(context *gin.Context) {
 		return
 	}
 
-	name := schemeOfWorkInfo.Name
-	schemeNumber := schemeOfWorkInfo.SchemeNumber
-	classNumber := schemeOfWorkInfo.ClassNumber
-	subjectNumber := schemeOfWorkInfo.SubjectNumber
-	subtopicList := schemeOfWorkInfo.SubtopicList
+	err = schemeOfWorkInfo.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
 	userNumber := context.Request.Header["User-Number"][0]
-
-	if name == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Name is required!"})
+	if userNumber == "" {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Can not determine user"})
 		return
 	}
 
-	if schemeNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme number is required!"})
+	err = schemeOfWorkService.Update(schemeOfWorkInfo, userNumber)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	if classNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
-		return
-	}
-
-	if subjectNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Subject is required!"})
-		return
-	}
-
-	if len(subtopicList) == 0 {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Sub topic list is required!"})
-		return
-	}
-
-	var userData models.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	var duplicateScheme schemeOfWorkModel.SchemeOfWork
-	if duplicate := config.DB.
-		Where("number != ?", schemeNumber).
-		Where("name = ?", name).
-		Where("class_number = ?", classNumber).
-		Where("subject_number = ?", subjectNumber).
-		First(&duplicateScheme).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Scheme already exists"})
-		return
-	}
-
-	tx := config.DB.Begin()
-	var schemeUpdate schemeOfWorkModel.SchemeOfWork
-	updateScheme := tx.Model(&schemeUpdate).
-		Where("number = ?", schemeNumber).
-		Updates(schemeOfWorkModel.SchemeOfWork{Name: name})
-	if updateScheme.Error != nil {
-		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
-		return
-	}
-
-	for _, schemeList := range subtopicList {
-		codeNo, err := strconv.ParseInt(strconv.Itoa(int(schemeList.SortCode)), 10, 64)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
-		}
-
-		var duplicateSchemeCode schemeOfWorkModel.SchemeOfWorkSubTopic
-		if duplicate := tx.
-			Where("code = ?", codeNo).
-			Where("scheme_of_work_number = ?", schemeNumber).
-			Where("number != ?", schemeList.Number).
-			First(&duplicateSchemeCode).Error; duplicate == nil {
-			tx.Rollback()
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate codes are not allowed!!!, Code: " + strconv.FormatInt(codeNo, 10)})
-			return
-		}
-
-		var schemeSubtopicUpdate schemeOfWorkModel.SchemeOfWorkSubTopic
-		updateScheme := tx.Model(&schemeSubtopicUpdate).
-			Where("scheme_of_work_number = ?", schemeNumber).
-			Where("number = ?", schemeList.Number).
-			Updates(schemeOfWorkModel.SchemeOfWorkSubTopic{Code: codeNo, EstimatedTime: schemeList.EstimatedTime})
-		if updateScheme.Error != nil {
-			tx.Rollback()
-			context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
-			return
-		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to commit!"})
-		return
-	}
-
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": subtopicList})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Scheme Updated Successfully!"})
 }
 
 func FetchSchemeOfWork(context *gin.Context) {
