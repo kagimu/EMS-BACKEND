@@ -3,18 +3,16 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
 	"os"
 	"time"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
-
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 // Initialize the timezone globally
