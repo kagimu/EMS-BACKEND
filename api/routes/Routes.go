@@ -323,9 +323,9 @@ func SetupRoutes() *gin.Engine {
 			schemeOfWork.PATCH("invalidate/:scheme_of_work_number", schemeOfWorkControllers.InvalidateSchemeOfWork)
 			schemeOfWork.PATCH("activate/:scheme_of_work_number", schemeOfWorkControllers.ActivateSchemeOfWork)
 			schemeOfWork.GET("fetch-scheme-of-work-by-class-and-subject", schemeOfWorkControllers.FetchSchemeOfWork)
+			schemeOfWork.POST("", schemeOfWorkControllers.NewSchemeOfWork)
+			schemeOfWork.PUT("", schemeOfWorkControllers.UpdateSchemeOfWork)
 		}
-		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
-		main.POST("update-scheme-of-work", schemeOfWorkControllers.UpdateSchemeOfWork)
 
 		//lesson notes
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
