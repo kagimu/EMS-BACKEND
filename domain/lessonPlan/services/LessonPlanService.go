@@ -254,15 +254,6 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 
 		for _, concept := range lessonPlanInfo.LessonPlanConceptInfo {
 
-			/*duplicateLessonPlanConcept, err := lessonPlanRepository.GetLessonPlanConcept(lessonPlanNumber, concept.LessonPlanConceptNumber)
-			if err != nil {
-				return err
-			}
-
-			if duplicateLessonPlanConcept.Number != "" {
-				return errors.New("Duplicates Concepts not allowed ")
-			}*/
-
 			conceptNumber := concept.LessonPlanConceptNumber
 			if conceptNumber == "" {
 				conceptNumber = uuid.NewV4().String()
@@ -279,7 +270,7 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 			}
 
 			//	adds new concepts when Concept number doesnt exists
-			err = conceptRepository.SaveConcept(saveLessonConcepts)
+			err = lessonPlanRepository.SaveLessonPlanConcept(saveLessonConcepts)
 			if err != nil {
 				return errors.New("Failed to save concept " + err.Error())
 			}
