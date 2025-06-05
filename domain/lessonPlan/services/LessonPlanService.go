@@ -213,7 +213,7 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 		return err
 	}
 
-	if checkDuplicate.Number != "" && checkDuplicate.Number != lessonPlanInfo.LessonPlanNumber {
+	if checkDuplicate.Number != "" && checkDuplicate.Number != lessonPlanInfo.LessonPlanNumber && checkDuplicate.Status == constants.StatusActive {
 		return errors.New("lesson plan already exists")
 	}
 
@@ -254,14 +254,14 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 
 		for _, concept := range lessonPlanInfo.LessonPlanConceptInfo {
 
-			duplicateLessonPlanConcept, err := lessonPlanRepository.GetLessonPlanConcept(lessonPlanNumber, concept.LessonPlanConceptNumber)
+			/*duplicateLessonPlanConcept, err := lessonPlanRepository.GetLessonPlanConcept(lessonPlanNumber, concept.LessonPlanConceptNumber)
 			if err != nil {
 				return err
 			}
 
 			if duplicateLessonPlanConcept.Number != "" {
 				return errors.New("Duplicates Concepts not allowed ")
-			}
+			}*/
 
 			conceptNumber := concept.LessonPlanConceptNumber
 			if conceptNumber == "" {

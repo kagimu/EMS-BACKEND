@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
@@ -99,7 +100,7 @@ func FetchLessonPlan(context *gin.Context) {
 
 	var lessonPlanInfo lessonPlanModel.LessonPlan
 	if err := config.DB.
-		Where("scheme_sub_topic_number = ?", subTopicNumber).
+		Where("scheme_sub_topic_number = ? AND status = ?", subTopicNumber, constants.StatusActive).
 		//Preload("SchemeOfWork").
 		Order("created_at desc").
 		First(&lessonPlanInfo).Error; err != nil {
