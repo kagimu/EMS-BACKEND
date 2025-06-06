@@ -57,7 +57,7 @@ func (l *lessonPlanServiceImp) Invalidate(lessonPlanNumber string, user *authMod
 	lessonPlan.Status = constants.StatusInactive
 	lessonPlan.UserNumber = user.Number
 
-	err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
+	_, err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
 	if err != nil {
 		return err
 	}
@@ -240,6 +240,7 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 	if oldLessonPlan.Number != "" {
 		saveLessonPlan.CreatedAt = oldLessonPlan.CreatedAt
 		saveLessonPlan.Status = oldLessonPlan.Status
+		saveLessonPlan.UpdatedAt = time.Now()
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
@@ -247,10 +248,12 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 		lessonPlanRepository.UseTx(tx)
 		conceptRepository.UseTx(tx)
 
-		err = lessonPlanRepository.SaveLessonPlan(saveLessonPlan)
+		saveLessonPlan, err = lessonPlanRepository.SaveLessonPlan(saveLessonPlan)
 		if err != nil {
 			return err
 		}
+
+		fmt.Println("Saved lesson plan ", saveLessonPlan.Number)
 
 		for _, concept := range lessonPlanInfo.LessonPlanConceptInfo {
 
@@ -421,7 +424,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 				UserNumber:           currentUserNumber,
 				SchemeSubTopicNumber: schemeSubTopicNumber,
 			}
-			err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
+			lessonPlan, err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
 			if err != nil {
 				return errors.New("Creating lesson plan error " + err.Error())
 			}

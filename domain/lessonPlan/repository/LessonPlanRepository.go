@@ -15,7 +15,7 @@ import (
 type LessonPlanRepository interface {
 	UseTx(tx *gorm.DB) *gorm.DB
 	GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeOfWorkSubTopicNumber string) (lessonPlanModel.LessonPlan, error)
-	SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) error
+	SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) (lessonPlanModel.LessonPlan, error)
 	GetLessonPlanConcept(lessonPlanNumber, conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
 	SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error
 	SaveConceptStep(lessonPlanStep lessonPlanModel.LessonPlanStep) error
@@ -317,8 +317,8 @@ func (l *lessonPlanRepositoryImpl) GetLessonPlanConcept(lessonPlanNumber, concep
 	return lessonPlanConcept, nil
 }
 
-func (l *lessonPlanRepositoryImpl) SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) error {
-	return l.Db.Save(&lessonPlan).Error
+func (l *lessonPlanRepositoryImpl) SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) (lessonPlanModel.LessonPlan, error) {
+	return lessonPlan, l.Db.Save(&lessonPlan).Error
 }
 
 func (l *lessonPlanRepositoryImpl) GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber string) (lessonPlanModel.LessonPlan, error) {
