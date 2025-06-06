@@ -208,12 +208,12 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 	}
 
 	lessonPlanRepository.UseTx(config.DB)
-	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber)
+	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber, constants.StatusActive)
 	if err != nil {
 		return err
 	}
 
-	if checkDuplicate.Number != "" && checkDuplicate.Number != lessonPlanInfo.LessonPlanNumber && checkDuplicate.Status == constants.StatusActive {
+	if checkDuplicate.Number != "" && checkDuplicate.Number != lessonPlanInfo.LessonPlanNumber {
 		return errors.New("lesson plan already exists")
 	}
 
@@ -232,25 +232,33 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 		CreatedAt:            time.Now(),
 	}
 
-	oldLessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanNumber)
-	if err != nil {
-		return errors.New("Checking old lesson plan existence failed : " + err.Error())
-	}
-
-	if oldLessonPlan.Number != "" {
-		saveLessonPlan.CreatedAt = oldLessonPlan.CreatedAt
-		saveLessonPlan.Status = oldLessonPlan.Status
-		saveLessonPlan.UpdatedAt = time.Now()
-	}
-
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
 		lessonPlanRepository.UseTx(tx)
-		conceptRepository.UseTx(tx)
+
+		oldLessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanNumber)
+		if err != nil {
+			return errors.New("Checking old lesson plan existence failed : " + err.Error())
+		}
+
+		if oldLessonPlan.Number != "" {
+			saveLessonPlan.CreatedAt = oldLessonPlan.CreatedAt
+			saveLessonPlan.Status = oldLessonPlan.Status
+			saveLessonPlan.UpdatedAt = time.Now()
+		}
 
 		saveLessonPlan, err = lessonPlanRepository.SaveLessonPlan(saveLessonPlan)
 		if err != nil {
 			return err
+		}
+
+		saveLessonPlan, err = lessonPlanRepository.FindLessonPlanByNumber(saveLessonPlan.Number)
+		if err != nil {
+			return errors.New("Confirming lesson plan error: " + err.Error())
+		}
+
+		if saveLessonPlan.Number == "" {
+			return errors.New("Lesson plan not saved! ")
 		}
 
 		fmt.Println("Saved lesson plan ", saveLessonPlan.Number)
@@ -258,7 +266,12 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 		for _, concept := range lessonPlanInfo.LessonPlanConceptInfo {
 
 			conceptNumber := concept.LessonPlanConceptNumber
-			if conceptNumber == "" {
+			oldLessonPlanConcept, err := lessonPlanRepository.GetLessonPlanConceptByNumber(conceptNumber)
+			if err != nil {
+				return err
+			}
+
+			if oldLessonPlanConcept.Number != "" && oldLessonPlanConcept.LessonPlanNumber != saveLessonPlan.Number {
 				conceptNumber = uuid.NewV4().String()
 			}
 
@@ -272,7 +285,7 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 				CreatedAt:        time.Now(),
 			}
 
-			//	adds new concepts when Concept number doesnt exists
+			//	adds new concepts when Concept number does not exist
 			err = lessonPlanRepository.SaveLessonPlanConcept(saveLessonConcepts)
 			if err != nil {
 				return errors.New("Failed to save concept " + err.Error())
@@ -385,6 +398,7 @@ func toFileName(subTopicName string) string {
 }
 
 var lessonPlanRepository = repository.NewLessonPlanRepository()
+
 var conceptRepository = repositories.NewConceptRepository()
 
 func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeSubTopicNumber, currentUserNumber string) error {
@@ -402,14 +416,14 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 		return errors.New("Invalid scheme subtopic ")
 	}
 
-	conceptRepository.UseTx(config.DB)
+	//conceptRepository.UseTx(config.DB)
 	concepts, err := resolveConcepts(schemeOfWorkSubTopic.SubTopicNumber, config.DB)
 	if err != nil {
 		return err
 	}
 
 	lessonPlanRepository.UseTx(config.DB)
-	lessonPlan, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber)
+	lessonPlan, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber, constants.StatusActive)
 	if err != nil {
 		return errors.New("Checking lesson plan error " + err.Error())
 	}
