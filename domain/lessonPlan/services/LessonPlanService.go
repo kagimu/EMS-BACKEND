@@ -208,12 +208,12 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 	}
 
 	lessonPlanRepository.UseTx(config.DB)
-	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber)
+	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber, constants.StatusActive)
 	if err != nil {
 		return err
 	}
 
-	if checkDuplicate.Number != "" && checkDuplicate.Number != lessonPlanInfo.LessonPlanNumber && checkDuplicate.Status == constants.StatusActive {
+	if checkDuplicate.Number != "" && checkDuplicate.Number != lessonPlanInfo.LessonPlanNumber {
 		return errors.New("lesson plan already exists")
 	}
 
@@ -404,7 +404,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 	}
 
 	lessonPlanRepository.UseTx(config.DB)
-	lessonPlan, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber)
+	lessonPlan, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber, constants.StatusActive)
 	if err != nil {
 		return errors.New("Checking lesson plan error " + err.Error())
 	}

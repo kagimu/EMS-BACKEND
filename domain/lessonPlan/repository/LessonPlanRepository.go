@@ -14,7 +14,7 @@ import (
 
 type LessonPlanRepository interface {
 	UseTx(tx *gorm.DB) *gorm.DB
-	GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeOfWorkSubTopicNumber string) (lessonPlanModel.LessonPlan, error)
+	GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeOfWorkSubTopicNumber, status string) (lessonPlanModel.LessonPlan, error)
 	SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) (lessonPlanModel.LessonPlan, error)
 	GetLessonPlanConcept(lessonPlanNumber, conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
 	SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error
@@ -321,11 +321,12 @@ func (l *lessonPlanRepositoryImpl) SaveLessonPlan(lessonPlan lessonPlanModel.Les
 	return lessonPlan, l.Db.Save(&lessonPlan).Error
 }
 
-func (l *lessonPlanRepositoryImpl) GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber string) (lessonPlanModel.LessonPlan, error) {
+func (l *lessonPlanRepositoryImpl) GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber, status string) (lessonPlanModel.LessonPlan, error) {
 
 	var lessonPlan lessonPlanModel.LessonPlan
 
-	if err := l.Db.Where("scheme_sub_topic_number = ?", schemeSubTopicNumber).Find(&lessonPlan).Error; err != nil {
+	if err := l.Db.Where("scheme_sub_topic_number = ? AND status = ?", schemeSubTopicNumber, status).Find(&lessonPlan).Error; err != nil {
+
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return lessonPlanModel.LessonPlan{}, nil
 		}
