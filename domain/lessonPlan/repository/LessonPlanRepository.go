@@ -318,7 +318,23 @@ func (l *lessonPlanRepositoryImpl) GetLessonPlanConcept(lessonPlanNumber, concep
 }
 
 func (l *lessonPlanRepositoryImpl) SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) (lessonPlanModel.LessonPlan, error) {
-	return lessonPlan, l.Db.Save(&lessonPlan).Error
+	var existing lessonPlanModel.LessonPlan
+
+	err := l.Db.
+		Where("number = ?", lessonPlan.Number).
+		First(&existing).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Insert
+			return lessonPlan, l.Db.Create(&lessonPlan).Error
+		}
+		// Other error
+		return lessonPlan, err
+	}
+
+	// Update
+	return lessonPlan, l.Db.Model(&existing).Updates(lessonPlan).Error
 }
 
 func (l *lessonPlanRepositoryImpl) GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber, status string) (lessonPlanModel.LessonPlan, error) {

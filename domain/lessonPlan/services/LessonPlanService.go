@@ -219,18 +219,6 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 
 	lessonPlanNumber := lessonPlanInfo.LessonPlanNumber
 
-	if lessonPlanNumber == "" {
-		lessonPlanNumber = uuid.NewV4().String()
-	}
-
-	saveLessonPlan := models.LessonPlan{
-		Number:               lessonPlanNumber,
-		SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
-		Status:               constants.StatusActive,
-		UserNumber:           userNumber,
-		UpdatedAt:            time.Now(),
-	}
-
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
 		lessonPlanRepository.UseTx(tx)
@@ -241,12 +229,21 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 		}
 
 		if oldLessonPlan.Number != "" {
-			saveLessonPlan.CreatedAt = oldLessonPlan.CreatedAt
-			saveLessonPlan.Status = oldLessonPlan.Status
-			saveLessonPlan.UpdatedAt = time.Now()
+			oldLessonPlan.SchemeSubTopicNumber = lessonPlanInfo.SchemeSubTopicNumber
+			oldLessonPlan.UserNumber = userNumber
+			oldLessonPlan.UpdatedAt = time.Now()
+		} else {
+			oldLessonPlan = models.LessonPlan{
+				Number:               uuid.NewV4().String(),
+				SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
+				Status:               constants.StatusActive,
+				UserNumber:           userNumber,
+				UpdatedAt:            time.Now(),
+				CreatedAt:            time.Now(),
+			}
 		}
 
-		saveLessonPlan, err = lessonPlanRepository.SaveLessonPlan(saveLessonPlan)
+		saveLessonPlan, err := lessonPlanRepository.SaveLessonPlan(oldLessonPlan)
 		if err != nil {
 			return err
 		}
