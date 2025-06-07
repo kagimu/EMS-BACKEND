@@ -348,6 +348,7 @@ func EditLevel(context *gin.Context) {
 	code := levelInfo.Code
 	name := levelInfo.Name
 	levelNumber := levelInfo.LevelNumber
+	entityNumber := levelInfo.EntityNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -366,6 +367,7 @@ func EditLevel(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("code = ?", code).
 		Where("number != ?", levelNumber).
+		Where("entity_number != ?", entityNumber).
 		First(&duplicateCode).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
 		return
@@ -375,6 +377,7 @@ func EditLevel(context *gin.Context) {
 	if duplicate := config.DB.
 		Where("name = ?", name).
 		Where("number != ?", levelNumber).
+		Where("entity_number != ?", entityNumber).
 		First(&duplicateLevel).Error; duplicate == nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
 		return
