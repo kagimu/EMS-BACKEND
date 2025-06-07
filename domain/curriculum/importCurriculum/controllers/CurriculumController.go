@@ -36,7 +36,7 @@ import (
 
 func NewCurriculum(context *gin.Context) {
 
-	var curriculumInfo responses.CurriculumResponse
+	var curriculumInfo requests.CurriculumCreateRequest
 	err := context.BindJSON(&curriculumInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -53,7 +53,7 @@ func NewCurriculum(context *gin.Context) {
 	name := curriculumInfo.Name
 
 	userNumber := context.Request.Header["User-Number"][0]
-
+	entityNumber, _ := commons.GetUserEntityNumber(context)
 	var userData models.User
 	//check if user is a valid user
 	if err := config.DB.Where("number = ?", userNumber).First(&userData).Error; err != nil {
@@ -68,16 +68,16 @@ func NewCurriculum(context *gin.Context) {
 	var duplicateSchool models5.Curriculum
 	if duplicate := config.DB.
 		Where("name = ?", name).
-		Where("user_number = ?", userNumber).
+		Where("entity_number = ?", entityNumber).
 		First(&duplicateSchool).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum already exists!!!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum with this name  already exists !!!"})
 		return
 	}
 
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
-	entityNumber, _ := commons.GetUserEntityNumber(context)
+
 	saveCurriculum := models5.Curriculum{
 		Number:       uuid.NewV4().String(),
 		Name:         name,
