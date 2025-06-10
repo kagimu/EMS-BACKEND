@@ -7,7 +7,7 @@ import (
 )
 
 type LevelInfo struct {
-	Code         string `json:"code"`
+	Code         int64  `json:"code"`
 	Name         string `json:"name"`
 	LevelNumber  string `json:"level_number"`
 	EntityNumber string `json:"entity_number"`
@@ -27,11 +27,7 @@ func (p *LevelInfo) Validate() error {
 		return errors.New("name is required")
 	}
 
-	if p.Code == "" {
-		return errors.New("code is required")
-	}
-
-	if p.Code == "0" {
+	if p.Code <= 0 {
 		return errors.New("code must be greater than zero")
 	}
 
