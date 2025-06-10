@@ -1,11 +1,13 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/services"
 	"net/http"
+	"strconv"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	requests2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/requests"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -15,8 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
-
-var levelService = services.NewLevelService()
 
 func NewLevel(context *gin.Context) {
 	user, err := commons.GetUserFromHeader(context)
@@ -38,9 +38,60 @@ func NewLevel(context *gin.Context) {
 		return
 	}
 
-	saveLevel, err := levelService.SaveLevel(user.Number, levelRequest)
+	code := levelRequest.Code
+	name := levelRequest.Name
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		fmt.Println("Error:", err)
+		return
+	}
+
+	if codeNo == 0 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
+	var duplicateCode curriculumLevelModels.Level
+	if duplicate := config.DB.
+		Where("code = ? entity_number = ?", code, levelRequest.EntityNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
+	var duplicateLevel curriculumLevelModels.Level
+	if duplicate := config.DB.
+		Where("name = ? AND entity_number = ?", name, levelRequest.EntityNumber).
+		First(&duplicateLevel).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
+		return
+	}
+
+	// Begin the transaction
+	tx := config.DB.Begin()
+	///save user data
+	saveLevel := curriculumLevelModels.Level{
+		Number:       uuid.NewV4().String(),
+		Name:         name,
+		Code:         codeNo,
+		UserNumber:   user.Number,
+		EntityNumber: levelRequest.EntityNumber,
+	}
+
+	if err := tx.Create(&saveLevel).Error; err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": err})
+		//context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create level"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add level"})
 		return
 	}
 
@@ -256,7 +307,7 @@ func LevelInfo(context *gin.Context) {
 	levelNumber := context.Query("level_number")
 
 	if levelNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Level Number is required!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "School Number is required!"})
 		return
 	}
 
@@ -280,14 +331,8 @@ func LevelInfo(context *gin.Context) {
 
 func EditLevel(context *gin.Context) {
 
-	user, err := commons.GetUserFromHeader(context)
-	if err != nil {
-		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
 	var levelInfo requests2.LevelInfo
-	err = context.BindJSON(&levelInfo)
+	err := context.BindJSON(&levelInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
 		return
@@ -300,11 +345,64 @@ func EditLevel(context *gin.Context) {
 		return
 	}
 
-	levelDataInfo, err := levelService.EditLevel(user.Number, levelInfo)
+	code := levelInfo.Code
+	name := levelInfo.Name
+	levelNumber := levelInfo.LevelNumber
+	entityNumber := levelInfo.EntityNumber
+
+	userNumber := context.Request.Header["User-Number"][0]
+
+	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		fmt.Println("Error:", err)
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level updated Successfully!", "data": levelDataInfo})
+	if codeNo == 0 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code must be greater than zero!"})
+		return
+	}
+
+	var duplicateCode curriculumLevelModels.Level
+	if duplicate := config.DB.
+		Where("code = ?", code).
+		Where("number != ?", levelNumber).
+		Where("entity_number != ?", entityNumber).
+		First(&duplicateCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists"})
+		return
+	}
+
+	var duplicateLevel curriculumLevelModels.Level
+	if duplicate := config.DB.
+		Where("name = ?", name).
+		Where("number != ?", levelNumber).
+		Where("entity_number != ?", entityNumber).
+		First(&duplicateLevel).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Level already exists"})
+		return
+	}
+
+	// Begin the transaction
+	tx := config.DB.Begin()
+
+	var levelDataInfo curriculumLevelModels.Level
+	updateLevel := tx.Model(&levelDataInfo).
+		Where("number = ?", levelNumber).
+		Updates(curriculumLevelModels.Level{Name: name, UserNumber: userNumber, Code: codeNo})
+	if updateLevel.Error != nil {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+
+	// Commit the transaction if there is no error
+	if err := tx.Commit().Error; err != nil {
+		// Handle or return the error as needed
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update level"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Level Added Successfully!", "data": levelDataInfo})
+
 }
