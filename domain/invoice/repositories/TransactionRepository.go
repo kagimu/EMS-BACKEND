@@ -26,25 +26,24 @@ func SaveTransaction(transaction invoiceModels.Transaction, tx ...*gorm.DB) (inv
 }
 
 func GetInvoicePaidAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error) {
-
 	db := config.DB
-
 	if len(tx) > 0 {
 		db = tx[0]
 	}
 
 	var totalAmount float64
 
-	if err := db.Model(&invoiceModels.InvoiceTransaction{}).
-		Where("invoice_number = ? ", invoiceNumber).
-		Select("COALESCE(sum(amount_paid_off),0)").
-		Scan(&totalAmount).Error; err != nil {
+	err := db.Table("invoice_transactions").
+		Joins("JOIN transactions ON transactions.number = invoice_transactions.transaction_number").
+		Where("invoice_transactions.invoice_number = ? AND transactions.status = ?", invoiceNumber, constants.StatusActive).
+		Select("COALESCE(SUM(invoice_transactions.amount_paid_off), 0)").
+		Scan(&totalAmount).Error
 
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, nil
 		}
-
-		return totalAmount, err
+		return 0, err
 	}
 
 	return totalAmount, nil
