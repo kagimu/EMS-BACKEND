@@ -20,6 +20,29 @@ type NarrativeResponseRow struct {
 	CurrentStatus string `json:"current_status"`
 }
 
+type NarrativeResponseData struct {
+	LearningArea          string                 `json:"learning_area"`
+	SubjectCluster        string                 `json:"subject_cluster"`
+	SubjectCode           string                 `json:"subject_code"`
+	AssessmentArea        string                 `json:"assessment_area"`
+	AssessmentAreaNumber  string                 `json:"assessment_area_number"`
+	NarrativeResponseRows []NarrativeResponseRow `json:"narrative_response_rows"`
+}
+
+type NarrativeResponsePrintPreview struct {
+	AcademicYear          string                  `json:"academic_year"`
+	StudyPeriod           string                  `json:"study_period"`
+	Class                 string                  `json:"class"`
+	RegistrationNumber    string                  `json:"registration_number"`
+	ChildFirstName        string                  `json:"child_first_name"`
+	ChildSecondName       string                  `json:"child_second_name"`
+	DateOfConference      string                  `json:"date_of_conference"`
+	Parent                string                  `json:"parent"`
+	School                string                  `json:"school"`
+	CurrentAdministrator  string                  `json:"current_administrator"`
+	NarrativeResponseData []NarrativeResponseData `json:"narrative_response_data"`
+}
+
 type AssessmentResponse struct {
 	AssessmentAreaName     string  `json:"assessment_area_name"`
 	Number                 string  `json:"number"`

@@ -13,10 +13,21 @@ type FamilyMemberRepository interface {
 	DeleteFamilyMemberByStudentNumber(studentNumber string) error
 	UpdateFamilyMember(FamilyMember models.FamilyMember) error
 	CreateFamilyMemberContact(model models.FamilyMemberContact) error
+	FindFamilyMemberContactsByFamilyMemberNumber(number string) ([]models.FamilyMemberContact, error)
 }
 
 type FamilyMemberRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (f FamilyMemberRepositoryImpl) FindFamilyMemberContactsByFamilyMemberNumber(number string) ([]models.FamilyMemberContact, error) {
+	var familyMemberContacts = make([]models.FamilyMemberContact, 0)
+
+	if err := f.DB.Where("family_member_number = ?", number).Find(&familyMemberContacts).Error; err != nil {
+		return nil, err
+	}
+
+	return familyMemberContacts, nil
 }
 
 func (f FamilyMemberRepositoryImpl) CreateFamilyMemberContact(model models.FamilyMemberContact) error {

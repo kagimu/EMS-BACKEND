@@ -268,3 +268,48 @@ func UpdateNarrativeSchedule(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Schedule updated successfully"})
 }
+
+func NarrativePrintPreview(context *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	_startDate := context.Query("start_date")
+	_endDate := context.Query("end_date")
+
+	var startDate time.Time
+	var endDate time.Time
+
+	if _startDate != "" {
+		startDate, err = time.Parse(time.DateOnly, _startDate)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading start date: " + err.Error()})
+			return
+		}
+	}
+
+	if _endDate != "" {
+		endDate, err = time.Parse(time.DateOnly, _endDate)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Error reading end date: " + err.Error()})
+			return
+		}
+	}
+
+	narrative := requests.NarrativeRequest{
+		StudentNumber:     context.Query("student_number"),
+		StudyPeriodNumber: context.Query("study_period_number"),
+		CampusClassNumber: context.Query("campus_class_number"),
+	}
+
+	data, err := narrativeService.NarrativeReportPrintPreview(narrative, startDate, endDate, user)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": data})
+}
