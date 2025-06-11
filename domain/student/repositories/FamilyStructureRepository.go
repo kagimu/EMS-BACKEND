@@ -12,10 +12,15 @@ type FamilyMemberRepository interface {
 	DeleteFamilyMember(FamilyMember models.FamilyMember) error
 	DeleteFamilyMemberByStudentNumber(studentNumber string) error
 	UpdateFamilyMember(FamilyMember models.FamilyMember) error
+	CreateFamilyMemberContact(model models.FamilyMemberContact) error
 }
 
 type FamilyMemberRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (f FamilyMemberRepositoryImpl) CreateFamilyMemberContact(model models.FamilyMemberContact) error {
+	return f.DB.Create(&model).Error
 }
 
 func (f FamilyMemberRepositoryImpl) DeleteFamilyMemberByStudentNumber(studentNumber string) error {

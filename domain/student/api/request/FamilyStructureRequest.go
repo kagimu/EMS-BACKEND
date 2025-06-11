@@ -2,15 +2,13 @@ package request
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 )
 
 type FamilyStructureRequest struct {
-	StudentNumber string         `json:"student_number" gorm:"size:36;not null"`
-	FamilyMembers []FamilyMember `json:"family_members" `
-	Languages     []struct {
-		Name string
-		Code int64
-	} `json:"languages"`
+	StudentNumber string               `json:"student_number"`
+	FamilyMembers []FamilyMember       `json:"family_members" `
+	Languages     []responses.Language `json:"languages"`
 }
 
 func (req *FamilyStructureRequest) Validate() error {
@@ -25,17 +23,17 @@ func (req *FamilyStructureRequest) Validate() error {
 }
 
 type FamilyMember struct {
-	Number                 string   `json:"number"`
-	StudentNumber          string   `json:"student_number"`
-	Surname                string   `json:"surname"`
-	OtherName              string   `json:"other_name"`
-	PlaceOfEmployment      string   `json:"place_of_employment"`
-	PhysicalContactAddress string   `json:"physical_contact_address"`
-	Contacts               []string `json:"contacts"`
-	Relationship           string   `json:"relationship"`
+	Number                 string                `json:"number"`
+	StudentNumber          string                `json:"student_number"`
+	Surname                string                `json:"surname"`
+	OtherName              string                `json:"other_name"`
+	PlaceOfEmployment      string                `json:"place_of_employment"`
+	PhysicalContactAddress string                `json:"physical_contact_address"`
+	Contacts               []FamilyMemberContact `json:"contacts"`
+	Relationship           string                `json:"relationship"`
 }
 
-type FamilyMemberContacts struct {
-	FamilyMemberNumber string `json:"family_member_number" gorm:"size:36;not null"`
-	Contact            string `json:"contact" gorm:"size:50;not null"`
+type FamilyMemberContact struct {
+	PhoneNumber string `json:"phone_number" gorm:"size:50;not null"`
+	Email       string `json:"email" gorm:"size:50;not null"`
 }

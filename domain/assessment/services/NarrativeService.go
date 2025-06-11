@@ -156,6 +156,8 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
 		ReferenceDate:        dateTime,
 		ReferenceTime:        narrativeRequest.ReferenceTime,
+		CurrentStatus:        narrativeRequest.CurrentStatus,
+		Status:               narrativeRequest.Status,
 	}
 
 	createdAt := time.Now()
@@ -380,18 +382,24 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 	assessmentArea, _ := repositories3.GetAssessmentAreaByNumber(narrative.AssessmentAreaNumber)
 	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
+	row := responses.NarrativeResponseRow{
+		Teacher:       user.FirstName + " " + user.LastName,
+		CreatedAt:     narrative.CreatedAt.Format(time.DateTime),
+		Narration:     narrative.Description,
+		ReferenceTime: narrative.ReferenceTime,
+		ReferenceDate: narrative.ReferenceDate.Format(time.DateOnly),
+		Status:        narrative.Status,
+		CurrentStatus: narrative.CurrentStatus,
+	}
+
 	return responses.NarrativeResponse{
-		Teacher:              user.FirstName + " " + user.LastName,
 		Number:               narrative.Number,
-		CreatedAt:            narrative.CreatedAt.Format(time.DateTime),
 		AssessmentAreaNumber: narrative.AssessmentAreaNumber,
 		StudyPeriod:          spn.Name,
 		Class:                class.Name,
-		Narration:            narrative.Description,
 		AssessmentArea:       assessmentArea.Name,
 		AcademicYear:         academicYear.AcademicYearName,
-		ReferenceTime:        narrative.ReferenceTime,
-		ReferenceDate:        narrative.ReferenceDate.Format(time.DateOnly),
+		NarrativeResponseRow: row,
 	}
 }
 
