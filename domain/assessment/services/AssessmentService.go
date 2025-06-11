@@ -212,16 +212,23 @@ func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeRes
 
 	studyPeriodName, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
+	row := responses.NarrativeResponseRow{
+		Teacher:       user.FirstName + " " + user.LastName,
+		CreatedAt:     assessment.CreatedAt.Format(time.DateOnly),
+		Narration:     assessment.Comment,
+		ReferenceTime: assessment.CreatedAt.Format(time.TimeOnly),
+		ReferenceDate: assessment.CreatedAt.Format(time.DateOnly),
+		Status:        "Unknown",
+		CurrentStatus: "Unknown",
+	}
+
 	return responses.NarrativeResponse{
-		CreatedAt:      assessment.CreatedAt.Format(time.DateOnly),
-		Number:         assessment.Number,
-		Narration:      assessment.Comment,
-		Teacher:        user.FirstName + " " + user.LastName,
-		AssessmentArea: assessmentArea.Name,
-		Class:          class.ClassName,
-		StudyPeriod:    studyPeriodName.Name,
-		AcademicYear:   academicYear.AcademicYearName,
-		ReferenceTime:  assessment.CreatedAt.Format(time.TimeOnly),
-		ReferenceDate:  assessment.CreatedAt.Format(time.DateOnly),
+		Number:               assessment.Number,
+		AssessmentAreaNumber: assessmentArea.Number,
+		StudyPeriod:          studyPeriodName.Name,
+		Class:                class.ClassName,
+		AssessmentArea:       assessmentArea.Name,
+		AcademicYear:         academicYear.AcademicYearName,
+		NarrativeResponseRow: row,
 	}
 }
