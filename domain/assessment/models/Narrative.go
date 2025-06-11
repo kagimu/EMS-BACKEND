@@ -16,6 +16,8 @@ type Narrative struct {
 	ReferenceDate        time.Time
 	ReferenceTime        string                       `gorm:"size:8"`
 	Description          string                       `gorm:"size:2500;not null"`
+	Status               string                       `gorm:"size:100"`
+	CurrentStatus        string                       `gorm:"size:100"`
 	StudentNumber        string                       `gorm:"size:36;index;not null;column:student_number"`
 	Student              studentModel.Student         `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	StudyPeriodNumber    string                       `gorm:"size:36;index;not null;column:study_period_number"`

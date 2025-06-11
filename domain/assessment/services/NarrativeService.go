@@ -156,6 +156,8 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
 		ReferenceDate:        dateTime,
 		ReferenceTime:        narrativeRequest.ReferenceTime,
+		CurrentStatus:        narrativeRequest.CurrentStatus,
+		Status:               narrativeRequest.Status,
 	}
 
 	createdAt := time.Now()
