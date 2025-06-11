@@ -59,6 +59,18 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 			tx.Rollback()
 			return err
 		}
+
+		for _, contact := range familyMember.Contacts {
+			var familyMemberContactModel models.FamilyMemberContact
+			familyMemberContactModel.PhoneNumber = contact.PhoneNumber
+			familyMemberContactModel.Email = contact.Email
+			familyMemberContactModel.FamilyMemberNumber = familyMemberModel.Number
+
+			if err := familyStructureRepository.CreateFamilyMemberContact(familyMemberContactModel); err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
 	}
 
 	for _, language := range payload.Languages {
