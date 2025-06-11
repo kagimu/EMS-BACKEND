@@ -14,6 +14,8 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/araddon/dateparse"
 	uuid "github.com/satori/go.uuid"
@@ -371,6 +373,37 @@ func (narrativeService NarrativeService) doSaveSchedule(scheduledNarrativeReques
 	})
 
 	return err
+}
+
+func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative requests.NarrativeRequest, startDate, endDate time.Time, user *models2.User) (responses.NarrativeResponsePrintPreview, error) {
+
+	student, err := repositories6.FindStudentByNumber(narrative.StudentNumber)
+	if err != nil {
+		return responses.NarrativeResponsePrintPreview{}, err
+	}
+
+	if student.Number == "" {
+		return responses.NarrativeResponsePrintPreview{}, errors.New("Invalid study number ")
+	}
+
+	studyPeriod, _ := repositories2.GetStudyPeriodByNumber(narrative.StudyPeriodNumber)
+	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+	class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
+
+	school, _ := repositories7.GetSchoolByNumber(spn.SchoolNumber)
+
+	response := responses.NarrativeResponsePrintPreview{
+		Class:                class.Name,
+		StudyPeriod:          spn.Name,
+		DateOfConference:     time.Now().Format("2006-01-02"),
+		CurrentAdministrator: user.FirstName + " " + user.LastName,
+		RegistrationNumber:   student.ADN,
+		ChildFirstName:       student.Surname,
+		ChildSecondName:      student.SecondName,
+		School:               school.Name,
+	}
+
+	return response, nil
 }
 
 func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResponse {
