@@ -4,6 +4,7 @@ import (
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	authResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 )
 
 type DetailedStudentProfile struct {
@@ -62,13 +63,13 @@ type MedicalRecordResponse struct {
 }
 
 type FamilyMemberResponse struct {
-	Number                 string   `json:"number"`
-	Surname                string   `json:"surname"`
-	OtherName              string   `json:"other_name"`
-	PlaceOfEmployment      string   `json:"place_of_employment"`
-	PhysicalContactAddress string   `json:"physical_contact_address"`
-	Contacts               []string `json:"contacts"`
-	Relationship           string   `json:"relationship"`
+	Number                 string                       `json:"number"`
+	Surname                string                       `json:"surname"`
+	OtherName              string                       `json:"other_name"`
+	PlaceOfEmployment      string                       `json:"place_of_employment"`
+	PhysicalContactAddress string                       `json:"physical_contact_address"`
+	Contacts               []models.FamilyMemberContact `json:"contacts"`
+	Relationship           string                       `json:"relationship"`
 }
 
 type Language struct {

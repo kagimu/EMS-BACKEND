@@ -176,6 +176,17 @@ func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureRespon
 		familyMemberResponse.PhysicalContactAddress = member.PhysicalContactAddress
 		//familyMemberResponse.Contacts = member.Contacts
 		familyMemberResponse.Relationship = member.Relationship
+		contacts, err := familyMemberRepository.FindFamilyMemberContactsByFamilyMemberNumber(member.Number)
+		if err != nil {
+			return responses.FamilyStructureResponse{}, err
+		}
+		familyMemberResponse.Contacts = make([]models.FamilyMemberContact, 0)
+		for _, contact := range contacts {
+			familyMemberResponse.Contacts = append(familyMemberResponse.Contacts, models.FamilyMemberContact{
+				PhoneNumber: contact.PhoneNumber,
+				Email:       contact.Email,
+			})
+		}
 
 		familyMemberResponses = append(familyMemberResponses, familyMemberResponse)
 	}
