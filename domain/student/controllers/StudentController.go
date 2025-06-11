@@ -506,7 +506,7 @@ func CreateEmergencyInformation(context *gin.Context) {
 	var payload request.EmergencyInformationRequest
 	err := context.BindJSON(&payload)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input"})
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to process input " + err.Error()})
 		return
 	}
 
