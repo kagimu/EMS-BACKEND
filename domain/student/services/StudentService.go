@@ -83,7 +83,15 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 func CreateEmergencyInformation(payload request.EmergencyInformationRequest) error {
 	tx := config.DB.Begin()
 	emergencyInformationRepository := repositories.NewEmergencyInformationRepository(tx)
-	emergencyInformation := payload.ToModel()
+	emergencyInformation := models.EmergencyInformation{
+		StudentNumber:                 payload.StudentNumber,
+		ContactPerson:                 payload.ContactPerson,
+		ContactPersonPhone:            payload.ContactPersonPhone,
+		ContactPersonAlternative:      payload.ContactPersonAlternative,
+		ContactPersonAlternativePhone: payload.ContactPersonAlternativePhone,
+		ContactDoctorName:             payload.ContactDoctorName,
+		ContactDoctorPhone:            payload.ContactDoctorPhone,
+	}
 	if err := emergencyInformationRepository.DeleteEmergencyInformationByStudentNumber(payload.StudentNumber); err != nil {
 		tx.Rollback()
 		return err
