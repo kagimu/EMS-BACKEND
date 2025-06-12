@@ -1035,6 +1035,10 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 		return errors.New("Checking transaction statement error " + err.Error())
 	}
 
+	if transactionStatement.Number == "" {
+		return errors.New("Transaction has no corresponding statement ")
+	}
+
 	invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
 	if err != nil {
 		return errors.New("Checking invoice transactions error " + err.Error())
