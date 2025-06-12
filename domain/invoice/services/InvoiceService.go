@@ -1039,11 +1039,6 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 		return errors.New("Transaction has no corresponding statement ")
 	}
 
-	invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
-	if err != nil {
-		return errors.New("Checking invoice transactions error " + err.Error())
-	}
-
 	nextBlc, err := ComputeNextBalance(transactionStatement.Amount, constants.StatementTypeOut, transactionStatement.UserNumber)
 	if err != nil {
 		return errors.New("Checking next user balance error " + err.Error())
@@ -1069,6 +1064,11 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 
 		invoiceTransactionRepository.UseTx(tx)
 
+		invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
+		if err != nil {
+			return errors.New("Checking invoice transactions error " + err.Error())
+		}
+
 		for _, invoiceTransaction := range invoiceTransactions {
 
 			paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoiceTransaction.InvoiceNumber, tx)
@@ -1092,7 +1092,7 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 			}
 		}
 
-		_, err := invoiceRepositories.SaveTransaction(transaction, tx)
+		_, err = invoiceRepositories.SaveTransaction(transaction, tx)
 		if err != nil {
 			return errors.New("Updating transaction failed : " + err.Error())
 		}
