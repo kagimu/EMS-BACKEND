@@ -857,14 +857,16 @@ func createTransactionResponse(transaction models.Transaction) responses.Transac
 	addedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
 	paidBy, _ := repository.GetUserByNumber(statement.UserNumber)
 	return responses.TransactionResponse{
-		Amount:         statement.Amount,
-		ReceiptNumber:  statement.RefNumber,
-		DateReceived:   statement.CreatedAt.Format(time.DateTime),
-		DatePaid:       transaction.Date.Format(time.DateOnly),
-		ReceivedBy:     addedBy.FirstName,
-		PaidBy:         paidBy.FirstName,
-		Description:    statement.Description,
-		AmountInCredit: transaction.AmountInCredit,
+		Amount:            statement.Amount,
+		ReceiptNumber:     statement.RefNumber,
+		DateReceived:      statement.CreatedAt.Format(time.DateTime),
+		DatePaid:          transaction.Date.Format(time.DateOnly),
+		ReceivedBy:        addedBy.FirstName,
+		PaidBy:            paidBy.FirstName,
+		Description:       statement.Description,
+		AmountInCredit:    transaction.AmountInCredit,
+		TransactionNumber: transaction.Number,
+		Status:            transaction.Status,
 	}
 }
 
