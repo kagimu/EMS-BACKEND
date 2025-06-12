@@ -196,7 +196,6 @@ func CancelInvoice(context *gin.Context) {
 	}
 
 	err = services.CancelInvoice(invoiceNumber, user.Number)
-
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return

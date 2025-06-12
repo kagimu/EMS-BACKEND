@@ -937,6 +937,10 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 		return errors.New("invalid invoice number")
 	}
 
+	if invoice.Status == constants.StatusCancelled {
+		return errors.New("This invoice is already cancelled ")
+	}
+
 	invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoice.Number)
 	if err != nil {
 		return errors.New("Checking amount error " + err.Error())
@@ -985,10 +989,12 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 			transaction, _ := invoiceRepositories.GetTransactionByNumber(invoiceTransaction.TransactionNumber, tx)
 			transaction.AmountInCredit = transaction.AmountInCredit + invoiceTransaction.AmountPaidOff
 
-			_, err = invoiceRepositories.SaveTransaction(transaction, tx)
+			updatedInvoice, err := invoiceRepositories.SaveTransaction(transaction, tx)
 			if err != nil {
 				return errors.New("Updating credit error " + err.Error())
 			}
+
+			fmt.Println("Invoice updated status to: " + updatedInvoice.Status)
 		}
 
 		err = invoiceRepositories.UpdateInvoice(invoice, tx)
