@@ -857,14 +857,16 @@ func createTransactionResponse(transaction models.Transaction) responses.Transac
 	addedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
 	paidBy, _ := repository.GetUserByNumber(statement.UserNumber)
 	return responses.TransactionResponse{
-		Amount:         statement.Amount,
-		ReceiptNumber:  statement.RefNumber,
-		DateReceived:   statement.CreatedAt.Format(time.DateTime),
-		DatePaid:       transaction.Date.Format(time.DateOnly),
-		ReceivedBy:     addedBy.FirstName,
-		PaidBy:         paidBy.FirstName,
-		Description:    statement.Description,
-		AmountInCredit: transaction.AmountInCredit,
+		Amount:            statement.Amount,
+		ReceiptNumber:     statement.RefNumber,
+		DateReceived:      statement.CreatedAt.Format(time.DateTime),
+		DatePaid:          transaction.Date.Format(time.DateOnly),
+		ReceivedBy:        addedBy.FirstName,
+		PaidBy:            paidBy.FirstName,
+		Description:       statement.Description,
+		AmountInCredit:    transaction.AmountInCredit,
+		TransactionNumber: transaction.Number,
+		Status:            transaction.Status,
 	}
 }
 
@@ -937,6 +939,10 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 		return errors.New("invalid invoice number")
 	}
 
+	if invoice.Status == constants.StatusCancelled {
+		return errors.New("This invoice is already cancelled ")
+	}
+
 	invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoice.Number)
 	if err != nil {
 		return errors.New("Checking amount error " + err.Error())
@@ -985,10 +991,12 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 			transaction, _ := invoiceRepositories.GetTransactionByNumber(invoiceTransaction.TransactionNumber, tx)
 			transaction.AmountInCredit = transaction.AmountInCredit + invoiceTransaction.AmountPaidOff
 
-			_, err = invoiceRepositories.SaveTransaction(transaction, tx)
+			updatedInvoice, err := invoiceRepositories.SaveTransaction(transaction, tx)
 			if err != nil {
 				return errors.New("Updating credit error " + err.Error())
 			}
+
+			fmt.Println("Invoice updated status to: " + updatedInvoice.Status)
 		}
 
 		err = invoiceRepositories.UpdateInvoice(invoice, tx)
@@ -1009,23 +1017,26 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 
 func CancelPayment(transactionNumber string, currentUser string) error {
 
-	invoicePayment, err := invoiceRepositories.GetTransactionByNumber(transactionNumber)
+	transaction, err := invoiceRepositories.GetTransactionByNumber(transactionNumber)
 	if err != nil {
 		return errors.New("checking payment number error: " + err.Error())
 	}
 
-	if invoicePayment.Number == "" {
+	if transaction.Number == "" {
 		return errors.New("invalid transaction number")
 	}
 
-	transactionStatement, err := invoiceRepositories.GetStatementByNumber(invoicePayment.StatementNumber)
+	if transaction.Status == constants.StatusCancelled {
+		return errors.New("This transaction was already cancelled ")
+	}
+
+	transactionStatement, err := invoiceRepositories.GetStatementByNumber(transaction.StatementNumber)
 	if err != nil {
 		return errors.New("Checking transaction statement error " + err.Error())
 	}
 
-	invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
-	if err != nil {
-		return errors.New("Checking invoice transactions error " + err.Error())
+	if transactionStatement.Number == "" {
+		return errors.New("Transaction has no corresponding statement ")
 	}
 
 	nextBlc, err := ComputeNextBalance(transactionStatement.Amount, constants.StatementTypeOut, transactionStatement.UserNumber)
@@ -1046,12 +1057,17 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 		Balance:       nextBlc,
 	}
 
-	invoicePayment.Status = constants.StatusCancelled
-	invoicePayment.AmountInCredit = transactionStatement.Amount
+	transaction.Status = constants.StatusCancelled
+	transaction.AmountInCredit = transactionStatement.Amount
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
 		invoiceTransactionRepository.UseTx(tx)
+
+		invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
+		if err != nil {
+			return errors.New("Checking invoice transactions error " + err.Error())
+		}
 
 		for _, invoiceTransaction := range invoiceTransactions {
 
@@ -1076,7 +1092,7 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 			}
 		}
 
-		_, err := invoiceRepositories.SaveTransaction(invoicePayment, tx)
+		_, err = invoiceRepositories.SaveTransaction(transaction, tx)
 		if err != nil {
 			return errors.New("Updating transaction failed : " + err.Error())
 		}
