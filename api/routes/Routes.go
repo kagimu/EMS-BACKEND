@@ -552,6 +552,13 @@ func SetupRoutes() *gin.Engine {
 
 		}
 
+		templates := main.Group("/templates")
+		{
+			templates.POST("new", admissionController.NewAdmissionTemplateController)
+			templates.GET("", admissionController.GetAdmissionTemplateController)
+			templates.DELETE(":template_number", admissionController.DeleteAdmissionTemplateController)
+		}
+
 		assessmentArea := main.Group("/assessment-areas")
 		{
 			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)

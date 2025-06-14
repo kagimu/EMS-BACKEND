@@ -1,6 +1,10 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	uuid "github.com/satori/go.uuid"
+)
 
 type AdmissionLetterTemplateRequest struct {
 	SchoolNumber string `json:"school_number" binding:"required"`
@@ -15,4 +19,12 @@ func (a *AdmissionLetterTemplateRequest) Validate() error {
 		return errors.New("phrase is required")
 	}
 	return nil
+}
+
+func (a *AdmissionLetterTemplateRequest) ToModel() models.AdmissionLetterTemplate {
+	return models.AdmissionLetterTemplate{
+		Number:       uuid.NewV4().String(),
+		SchoolNumber: a.SchoolNumber,
+		Phrase:       a.Phrase,
+	}
 }
