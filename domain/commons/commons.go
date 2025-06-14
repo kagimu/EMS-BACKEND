@@ -133,7 +133,7 @@ func PermissionGroups() []PermissionGroup {
 	return []PermissionGroup{
 		{"CURRICULUM": []string{"create_curriculum", "view_curriculum", "export_curriculum", "setup_curriculum",
 			"delete_curriculum", "import_curriculum", "create_learning_area", "view_learning_area", "update_learning_area", "view_subject-cluster", "view_subject",
-			"view_strands", "view_topic", "view_sub-topic", "view_concept"}},
+			"view_strands", "view_topic", "view_sub-topic", "view_concept", "add_assessment_area"}},
 		{"SCHEME OF WORK": []string{"view_scheme-of-work", "create_scheme", "import_scheme", "export_scheme", "delete_scheme"}},
 		{"SETUP": []string{"view_school", "add_school", "edit_school", "delete_school", "create_campus", "edit_campus", "delete_campus", "create_academic-year", "view_academic-year", "update_academic-year",
 			"create_term", "view_term", "update_term", "create_class", "view_class", "update_class", "create_stream", "view_streams", "update_stream", "view_campus_settings", "view_aggregate", "view_grading", "view_assessment_schedule", "view_report_card_settings", "view_student_score", "view_study_period", "view_study_period_group_names", "view_academic_year", "view_classes", "view_levels"}},
