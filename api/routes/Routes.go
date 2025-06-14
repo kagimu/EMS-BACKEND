@@ -552,7 +552,7 @@ func SetupRoutes() *gin.Engine {
 
 		}
 
-		templates := main.Group("/templates")
+		templates := admission.Group("/templates")
 		{
 			templates.POST("new", admissionController.NewAdmissionTemplateController)
 			templates.GET("", admissionController.GetAdmissionTemplateController)
