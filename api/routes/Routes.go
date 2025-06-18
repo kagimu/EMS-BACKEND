@@ -555,7 +555,7 @@ func SetupRoutes() *gin.Engine {
 		templates := admission.Group("/templates")
 		{
 			templates.POST("new", admissionController.NewAdmissionTemplateController)
-			templates.GET("", admissionController.GetAdmissionTemplateController)
+			templates.GET(":school_number", admissionController.GetAdmissionTemplateController)
 			templates.GET("decode", admissionController.DecodeAdmissionTemplateController)
 			templates.DELETE(":template_number", admissionController.DeleteAdmissionTemplateController)
 		}
