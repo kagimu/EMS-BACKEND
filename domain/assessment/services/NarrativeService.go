@@ -143,10 +143,13 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 		return errors.New("Date and time should not be in the future ")
 	}
 
-	/*referenceDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
-	if err != nil {
-		return errors.New(fmt.Sprint("Passing reference date error: ", err))
-	}*/
+	if dateTime.Before(studyPeriod.StudyPeriodStartDate) {
+		return errors.New("Reference date should be after the study period starts ")
+	}
+
+	if dateTime.After(studyPeriod.StudyPeriodEndDate) {
+		return errors.New("Reference date should be withing the study period ")
+	}
 
 	narrative := models.Narrative{
 		UserNumber:           userNumber,
@@ -328,8 +331,8 @@ func (narrativeService NarrativeService) doSaveSchedule(scheduledNarrativeReques
 				return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
 			}
 
-			if scheduledOn.Before(time.Now()) {
-				return errors.New(fmt.Sprint("The scheduled on date should not be in the past date. "))
+			if scheduledOn.Before(studyPeriod.StudyPeriodStartDate) {
+				return errors.New(fmt.Sprint("The scheduled on date should not be before the study period starts. "))
 			}
 
 			if scheduledOn.After(studyPeriod.StudyPeriodEndDate) {
