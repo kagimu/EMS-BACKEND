@@ -472,6 +472,10 @@ func CreateMedicalRecord(context *gin.Context) {
 	}
 
 	err = payload.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Failed to validate input " + err.Error()})
+		return
+	}
 
 	err = services2.CreateMedicalRecord(payload)
 

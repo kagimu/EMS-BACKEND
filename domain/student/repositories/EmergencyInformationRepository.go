@@ -18,7 +18,8 @@ type EmergencyInformationRepositoryImpl struct {
 }
 
 func (e EmergencyInformationRepositoryImpl) DeleteEmergencyInformationByStudentNumber(studentNumber string) error {
-	err := e.DB.Where("student_number = ?", studentNumber).Delete(models.EmergencyInformation{}).Error
+	var emergencyInformation models.EmergencyInformation
+	err := e.DB.Where("student_number = ?", studentNumber).Delete(&emergencyInformation).Error
 	if err != nil {
 		return err
 	}
