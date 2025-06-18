@@ -44,7 +44,7 @@ func GetAdmissionTemplateController(ctx *gin.Context) {
 }
 
 func DecodeAdmissionTemplateController(ctx *gin.Context) {
-	studentNumber := ctx.Param("student_number")
+	studentNumber := ctx.Query("student_number")
 	if studentNumber == "" {
 		ctx.JSON(400, gin.H{"message": "Student  number is required"})
 		return
