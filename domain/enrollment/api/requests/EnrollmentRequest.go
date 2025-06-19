@@ -63,8 +63,8 @@ func (e *EnrollmentRequest) Validate() error {
 	if e.BillableNumber == "" {
 		return errors.New("No bill selected for this enrollment ")
 	}
-	if e.PaidAmount <= 0 {
-		return errors.New("Enter amount paid on this bill ")
+	if e.PaidAmount < 0 {
+		return errors.New("You can not enter amount in negative ")
 	}
 	if e.ClientReference == "" {
 		return errors.New("Enter payment reference I.E Receipt number or Bank transaction reference ")
