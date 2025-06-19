@@ -34,7 +34,7 @@ func (a admissionTemplateRepository) SaveAdmissionTemplate(admissionTemplate mod
 
 func (a admissionTemplateRepository) FindAdmissionTemplateBySchoolNumber(schoolNumber string) (models.AdmissionLetterTemplate, error) {
 	var admissionLetterTemplate models.AdmissionLetterTemplate
-	if err := a.DB.Where("school_number = ?", schoolNumber).Order("id DESC").First(&admissionLetterTemplate).Error; err != nil {
+	if err := a.DB.Where("school_number = ?", schoolNumber).Order("created_at desc").First(&admissionLetterTemplate).Error; err != nil {
 		return admissionLetterTemplate, err
 	}
 	return admissionLetterTemplate, nil
@@ -42,7 +42,7 @@ func (a admissionTemplateRepository) FindAdmissionTemplateBySchoolNumber(schoolN
 
 func (a admissionTemplateRepository) FindAdmissionTemplateByNumber(templateNumber string) (models.AdmissionLetterTemplate, error) {
 	var admissionLetterTemplate models.AdmissionLetterTemplate
-	if err := a.DB.Where("number = ?", templateNumber).Order("id DESC").First(&admissionLetterTemplate).Error; err != nil {
+	if err := a.DB.Where("number = ?", templateNumber).Order("created_at desc").First(&admissionLetterTemplate).Error; err != nil {
 		return admissionLetterTemplate, err
 	}
 	return admissionLetterTemplate, nil

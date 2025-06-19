@@ -43,6 +43,22 @@ func GetAdmissionTemplateController(ctx *gin.Context) {
 	ctx.JSON(200, admissionTemplate)
 }
 
+func DecodeAdmissionTemplateController(ctx *gin.Context) {
+	studentNumber := ctx.Query("student_number")
+	if studentNumber == "" {
+		ctx.JSON(400, gin.H{"message": "Student  number is required"})
+		return
+	}
+
+	admissionTemplate, err := services.DecodeAdmissionLetterTemplateService(studentNumber)
+	if err != nil {
+		ctx.JSON(500, gin.H{"message": "Failed to retrieve admission template: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(200, admissionTemplate)
+}
+
 func DeleteAdmissionTemplateController(ctx *gin.Context) {
 	templateNumber := ctx.Param("template_number")
 	if templateNumber == "" {
