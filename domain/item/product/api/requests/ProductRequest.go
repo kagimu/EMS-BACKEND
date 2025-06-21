@@ -25,8 +25,8 @@ func (p *ProductRequest) Validate() error {
 	if len(p.SerialCode) == 0 {
 		return errors.New("serial code is required")
 	}
-	if p.Cost == 0 {
-		return errors.New("cost is required")
+	if p.Cost < 0 {
+		return errors.New("cost can not be negative")
 	}
 	return nil
 }
