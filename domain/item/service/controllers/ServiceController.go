@@ -12,7 +12,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 )
 
 var itemService = services.NewItemService()
@@ -35,55 +34,62 @@ func CreateService(c *gin.Context) {
 		return
 	}
 
-	tx := config.DB.Begin()
-	itemNumber := uuid.NewV4().String()
-	saveItem := models.Item{
-		Number:          itemNumber,
-		Cost:            payload.Cost,
-		Description:     payload.Description,
-		OneTimePurchase: payload.OneTimePurchase,
-		UserNumber:      user.Number,
-		SerialCode:      payload.SerialCode,
-		Mandatory:       payload.Mandatory,
-		RepeatCycle:     payload.RepeatCycle,
-		PaymentMode:     payload.PaymentMode,
-		Name:            payload.Name,
-		SchoolNumber:    payload.SchoolNumber,
-	}
-
-	if err := tx.Create(&saveItem).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create item " + err.Error()})
+	err = itemService.SaveService(user, payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save service"})
 		return
 	}
 
-	saveService := models2.Service{
-		ItemNumber: itemNumber,
-	}
-
-	if err := tx.Create(&saveService).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service " + err.Error()})
-		return
-	}
-
-	for _, campusNumber := range payload.CampusNumbers {
-		saveCampusService := models2.CampusItem{
-			Number:       uuid.NewV4().String(),
-			CampusNumber: campusNumber,
-			ItemNumber:   saveService.ItemNumber,
+	/*
+		tx := config.DB.Begin()
+		itemNumber := uuid.NewV4().String()
+		saveItem := models.Item{
+			Number:          itemNumber,
+			Cost:            payload.Cost,
+			Description:     payload.Description,
+			OneTimePurchase: payload.OneTimePurchase,
+			UserNumber:      user.Number,
+			SerialCode:      payload.SerialCode,
+			Mandatory:       payload.Mandatory,
+			RepeatCycle:     payload.RepeatCycle,
+			PaymentMode:     payload.PaymentMode,
+			Name:            payload.Name,
+			SchoolNumber:    payload.SchoolNumber,
 		}
 
-		if err := tx.Create(&saveCampusService).Error; err != nil {
+		if err := tx.Create(&saveItem).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service for the campus"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create item " + err.Error()})
 			return
 		}
-	}
 
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit service transaction"})
-		return
-	}
+		saveService := models2.Service{
+			ItemNumber: itemNumber,
+		}
+
+		if err := tx.Create(&saveService).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service " + err.Error()})
+			return
+		}
+
+		for _, campusNumber := range payload.CampusNumbers {
+			saveCampusService := models2.CampusItem{
+				Number:       uuid.NewV4().String(),
+				CampusNumber: campusNumber,
+				ItemNumber:   saveService.ItemNumber,
+			}
+
+			if err := tx.Create(&saveCampusService).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create service for the campus"})
+				return
+			}
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit service transaction"})
+			return
+		}*/
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Service created successfully"})
 }
@@ -134,8 +140,15 @@ func FetchAllItems(c *gin.Context) {
 }
 
 func EditService(c *gin.Context) {
-	if _, err := commons.GetUserFromHeader(c); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+	user, err := commons.GetUserFromHeader(c)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if user.Number == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized!"})
 		return
 	}
 
@@ -152,7 +165,9 @@ func EditService(c *gin.Context) {
 	}
 
 	serviceNumber := c.Param("service_number")
-	var service models.Item
+	err = itemService.UpdateService(serviceNumber, user, payload)
+
+	/*var service models.Item
 	if err := config.DB.Where("number = ?", serviceNumber).First(&service).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Service not found"})
 		return
@@ -193,9 +208,9 @@ func EditService(c *gin.Context) {
 			return
 		}
 
-	}
+	}*/
 
-	c.JSON(http.StatusOK, service)
+	c.JSON(http.StatusOK, gin.H{"message": "Service updated successfully"})
 }
 
 func DeleteService(c *gin.Context) {
