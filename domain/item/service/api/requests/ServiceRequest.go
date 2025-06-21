@@ -24,8 +24,8 @@ func (s *ServiceRequest) Validate() error {
 	if s.Description == " " {
 		return errors.New("description is required")
 	}
-	if s.Cost == 0 {
-		return errors.New("cost is required")
+	if s.Cost < 0 {
+		return errors.New("cost can not be negative")
 	}
 	if s.Name == "" {
 		return errors.New("name is required")
