@@ -112,7 +112,97 @@ func (receiver ItemProduct) SaveProduct(user *models.User, payload requests.Prod
 				CampusNumber: campusNumber,
 			}
 
-			err = repositories.SaveCampusItem(campusService, tx)
+			check, err := repositories.FindCampusItem(campusNumber, itemNumber)
+			if err != nil {
+				return err
+			}
+
+			if check.Number == "" {
+				err = repositories.SaveCampusItem(campusService, tx)
+			}
+		}
+
+		return err
+	})
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("Error %s saving product items", err.Error()))
+	}
+
+	return nil
+}
+
+func (receiver ItemProduct) UpdateProduct(productNumber string, user *models.User, payload requests.ProductRequest) error {
+
+	product, err := repositories.GetItemByNumber(productNumber)
+	if err != nil {
+		return err
+	}
+
+	if product.Number == "" {
+		return errors.New("Invalid product number ")
+	}
+
+	byName, err := repositories.GetItemByName(payload.Name, payload.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if byName.Number != "" && byName.Number != product.Number {
+		return errors.New("Item with name already exists ")
+	}
+
+	checkSerial, err := repositories.GetItemBySerialCode(payload.SerialCode, payload.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if checkSerial.Number != "" && checkSerial.Number != product.Number {
+		return errors.New("Item serial code already used ")
+	}
+
+	saveProductItem := itemModels.Item{
+		Number:          product.Number,
+		Cost:            payload.Cost,
+		Description:     payload.Description,
+		OneTimePurchase: payload.OneTimePurchase,
+		UserNumber:      user.Number,
+		SerialCode:      payload.SerialCode,
+		Mandatory:       payload.Mandatory,
+		RepeatCycle:     payload.RepeatCycle,
+		PaymentMode:     payload.PaymentMode,
+		Name:            payload.Name,
+		SchoolNumber:    payload.SchoolNumber,
+		Type:            "Product",
+		CreatedAt:       product.CreatedAt,
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		err := repositories.SaveItem(saveProductItem, tx)
+		if err != nil {
+			return err
+		}
+
+		err = repositories.DeleteCampusItem(product.Number, tx)
+		if err != nil {
+			return err
+		}
+
+		for _, campusNumber := range payload.CampusNumbers {
+			campusService := models2.CampusItem{
+				ItemNumber:   product.Number,
+				CampusNumber: campusNumber,
+			}
+
+			check, err := repositories.FindCampusItem(campusNumber, product.Number)
+			if err != nil {
+				return err
+			}
+
+			if check.Number == "" {
+				err = repositories.SaveCampusItem(campusService, tx)
+			}
 		}
 
 		return err
