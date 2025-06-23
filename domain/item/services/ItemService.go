@@ -193,7 +193,6 @@ func (receiver ItemService) UpdateService(serviceNumber string, user *models.Use
 		return errors.New("Item serial code already used ")
 	}
 
-	//itemNumber := uuid.NewV4().String()
 	saveProductItem := itemModels.Item{
 		Number:          product.Number,
 		Cost:            payload.Cost,
@@ -207,11 +206,8 @@ func (receiver ItemService) UpdateService(serviceNumber string, user *models.Use
 		Name:            payload.Name,
 		SchoolNumber:    payload.SchoolNumber,
 		Type:            "Service",
+		CreatedAt:       product.CreatedAt,
 	}
-
-	/*saveProduct := productModels.Product{
-		ItemNumber: itemNumber,
-	}*/
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
@@ -219,11 +215,6 @@ func (receiver ItemService) UpdateService(serviceNumber string, user *models.Use
 		if err != nil {
 			return err
 		}
-
-		/*err = repositories.SaveProductItem(saveProduct, tx)
-		if err != nil {
-			return err
-		}*/
 
 		err = repositories.DeleteCampusItem(product.Number, tx)
 		if err != nil {

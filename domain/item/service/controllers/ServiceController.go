@@ -167,49 +167,6 @@ func EditService(c *gin.Context) {
 	serviceNumber := c.Param("service_number")
 	err = itemService.UpdateService(serviceNumber, user, payload)
 
-	/*var service models.Item
-	if err := config.DB.Where("number = ?", serviceNumber).First(&service).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Service not found"})
-		return
-	}
-
-	updateService := models.Item{
-		Description:     payload.Description,
-		Cost:            payload.Cost,
-		Name:            payload.Name,
-		Mandatory:       payload.Mandatory,
-		SerialCode:      payload.SerialCode,
-		RepeatCycle:     payload.RepeatCycle,
-		PaymentMode:     payload.PaymentMode,
-		OneTimePurchase: payload.OneTimePurchase,
-		SchoolNumber:    payload.SchoolNumber,
-	}
-
-	if err := config.DB.Model(&service).Where("number = ?", serviceNumber).Updates(updateService).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update service item"})
-		return
-	}
-
-	// synchronize campus services by deleting all and adding them again
-	if err := config.DB.Where("item_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus services"})
-		return
-
-	}
-
-	for _, campusNumber := range payload.CampusNumbers {
-		saveCampusService := models2.CampusItem{
-			Number:       uuid.NewV4().String(),
-			CampusNumber: campusNumber,
-			ItemNumber:   serviceNumber,
-		}
-		if err := config.DB.Create(&saveCampusService).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create campus service"})
-			return
-		}
-
-	}*/
-
 	c.JSON(http.StatusOK, gin.H{"message": "Service updated successfully"})
 }
 
