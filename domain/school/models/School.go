@@ -19,5 +19,7 @@ type (
 		UserNumber       string             `json:"user_number" gorm:"size:36;index;not null"`
 		User             models.User        `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		Logo             string             `json:"logo"`
+		PrincipalName    string             `json:"principal_name" gorm:"size:100;not null"`
+		PrincipalTitle   string             `json:"principal_title" gorm:"size:100;not null"`
 	}
 )
