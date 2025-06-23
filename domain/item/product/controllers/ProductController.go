@@ -73,63 +73,6 @@ func EditProduct(c *gin.Context) {
 		return
 	}
 
-	/*
-		var product models.Item
-		if err := config.DB.First(&product, "number = ?", productNumber).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"message": "Product not found."})
-			return
-		}
-
-		checkSerial, err := repositories.GetItemBySerialCode(payload.SerialCode, payload.SchoolNumber)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-
-		if checkSerial.Number != "" && checkSerial.Number != productNumber {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "This serial code is already in use."})
-			return
-		}
-
-		txn := config.DB.Begin()
-
-		updateProduct := models.Item{
-			Name:         payload.Name,
-			Cost:         payload.Cost,
-			Description:  payload.Description,
-			UserNumber:   user.Number,
-			SerialCode:   payload.SerialCode,
-			Mandatory:    payload.Mandatory,
-			SchoolNumber: payload.SchoolNumber,
-		}
-
-		if err := txn.Model(&product).Where("number = ?", productNumber).Updates(updateProduct).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update product"})
-			return
-		}
-
-		// synchronize campus services by deleting all and adding them again
-		if err := txn.Where("item_number = ?", productNumber).Delete(&models2.CampusItem{}).Error; err != nil {
-			txn.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus services"})
-			return
-		}
-
-		for _, campusNumber := range payload.CampusNumbers {
-			saveCampusService := models2.CampusItem{
-				Number:       uuid.NewV4().String(),
-				CampusNumber: campusNumber,
-				ItemNumber:   productNumber,
-			}
-			if err := txn.Create(&saveCampusService).Error; err != nil {
-				txn.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create campus service"})
-				return
-			}
-		}
-
-		txn.Commit()*/
-
 	c.JSON(http.StatusOK, gin.H{"message": "Product updated"})
 }
 
