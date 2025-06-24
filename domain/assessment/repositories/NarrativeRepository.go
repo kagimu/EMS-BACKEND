@@ -19,6 +19,31 @@ func SaveNarrative(narrative models.Narrative, tx ...*gorm.DB) error {
 	return db.Save(&narrative).Error
 }
 
+func GetNarrativesGroupedByAssessmentArea(studentNumber, studyPeriodNumber, assessmentAreaNumber string, startDate, endDate time.Time, tx ...*gorm.DB) (map[string][]models.Narrative, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var narratives []models.Narrative
+
+	if err := db.Scopes(
+		filters.ByAnyField("student_number", studentNumber),
+		filters.ByAnyField("assessment_area_number", assessmentAreaNumber),
+		filters.ByAnyField("study_period_number", studyPeriodNumber),
+		filters.ByDateBetween("reference_date", startDate, endDate),
+	).Find(&narratives).Error; err != nil {
+		return nil, err
+	}
+
+	grouped := make(map[string][]models.Narrative)
+	for _, narrative := range narratives {
+		grouped[narrative.AssessmentAreaNumber] = append(grouped[narrative.AssessmentAreaNumber], narrative)
+	}
+
+	return grouped, nil
+}
+
 func DeleteNarrative(narrative models.Narrative, tx ...*gorm.DB) error {
 
 	db := config.DB

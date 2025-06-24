@@ -754,7 +754,7 @@ func SetupRoutes() *gin.Engine {
 				narrative.GET(":narrative_number", assessmentController.GetDetailedNarrative)
 				narrative.DELETE(":narrative_number", assessmentController.DeleteNarrative)
 				narrative.POST("", assessmentController.SaveNarrative)
-				narrative.POST("print-preview", assessmentController.NarrativePrintPreview)
+				narrative.GET("print-preview", assessmentController.NarrativePrintPreview)
 
 				scheduled := narrative.Group("scheduled")
 				{
