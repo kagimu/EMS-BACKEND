@@ -14,12 +14,16 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories10 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/repositories"
+	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	"github.com/araddon/dateparse"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"strconv"
 	"time"
 )
 
@@ -415,17 +419,45 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 
 	for assessmentAreaNumber, narrationList := range narrationData {
 
+		assessmentArea, err := repositories3.GetAssessmentAreaByNumber(assessmentAreaNumber)
+		if err != nil {
+			return response, err
+		}
+
+		subject, err := repositories8.GetSubjectByNumber(assessmentArea.SubjectNumber)
+		if err != nil {
+			return response, err
+		}
+
+		subjectCluster, err := repositories9.GetSubjectClusterByNumber(subject.SubjectClusterNumber)
+		if err != nil {
+			return response, err
+		}
+
+		learningArea, err := repositories10.GetLearningAreaByNumber(subjectCluster.LearningAreaNumber)
+		if err != nil {
+			return response, err
+		}
+
 		var narrativeResponseRows = make([]responses.NarrativeResponseRow, 0)
 
 		for _, narration := range narrationList {
 			narrativeResponseRows = append(narrativeResponseRows, responses.NarrativeResponseRow{
 				Status:        narration.Status,
 				CurrentStatus: narration.CurrentStatus,
+				Narration:     narration.Description,
+				ReferenceDate: narration.ReferenceDate.Format("2006-01-02"),
+				ReferenceTime: narration.ReferenceTime,
+				CreatedAt:     narration.CreatedAt.Format("2006-01-02"),
 			})
 		}
 
 		narrativeResponseData = append(narrativeResponseData, responses.NarrativeResponseData{
 			AssessmentAreaNumber:  assessmentAreaNumber,
+			AssessmentArea:        subject.Name,
+			SubjectCode:           strconv.FormatInt(subject.Code, 10),
+			SubjectCluster:        subjectCluster.Name,
+			LearningArea:          learningArea.Name,
 			NarrativeResponseRows: narrativeResponseRows,
 		})
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/models"
 	"gorm.io/gorm"
 )
 
@@ -55,4 +56,26 @@ func FindCurriculumByCampusClassNumber(campusClassNumber string, tx ...*gorm.DB)
 	}
 
 	return curriculum, nil
+}
+
+func GetSubjectClusterByNumber(subjectClusterNumber string, trn ...*gorm.DB) (models2.SubjectCluster, error) {
+
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var subjectCluster models2.SubjectCluster
+
+	if err := db.Where("number = ?", subjectClusterNumber).Unscoped().First(&subjectCluster).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return subjectCluster, nil
+		}
+
+		return subjectCluster, err
+	}
+
+	return subjectCluster, nil
+
 }
