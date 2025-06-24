@@ -406,6 +406,33 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 		School:               school.Name,
 	}
 
+	narrationData, err := repositories.GetNarrativesGroupedByAssessmentArea(narrative.StudentNumber, narrative.StudyPeriodNumber, "", startDate, endDate)
+	if err != nil {
+		return response, err
+	}
+
+	var narrativeResponseData = make([]responses.NarrativeResponseData, 0)
+
+	for assessmentAreaNumber, narrationList := range narrationData {
+
+		var narrativeResponseRows = make([]responses.NarrativeResponseRow, 0)
+
+		for _, narration := range narrationList {
+			narrativeResponseRows = append(narrativeResponseRows, responses.NarrativeResponseRow{
+				Status:        narration.Status,
+				CurrentStatus: narration.CurrentStatus,
+			})
+		}
+
+		narrativeResponseData = append(narrativeResponseData, responses.NarrativeResponseData{
+			AssessmentAreaNumber:  assessmentAreaNumber,
+			NarrativeResponseRows: narrativeResponseRows,
+		})
+
+	}
+
+	response.NarrativeResponseData = narrativeResponseData
+
 	return response, nil
 }
 
