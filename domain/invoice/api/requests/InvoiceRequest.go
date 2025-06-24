@@ -53,7 +53,7 @@ func ValidateItems(items []InvoiceItemRequest) error {
 func (i *UpdateInvoiceRequest) Validate() error {
 
 	if i.InvoiceNumber == "" {
-		return errors.New("provide invoice number")
+		return errors.New("provide promissory note number")
 	}
 
 	if err := i.InvoiceRequest.Validate(); err != nil {

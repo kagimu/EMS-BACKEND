@@ -53,7 +53,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 	}
 
 	if invoice.Number != "" {
-		return errors.New("try again to generate a new invoice number")
+		return errors.New("try again to generate a new promissory note number")
 	}
 
 	dueDate, err := commons.ConvertStringToDate(payload.DueDate)
@@ -140,7 +140,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if invoice.Number != "" {
-		return models.Invoice{}, errors.New("try again to generate a new invoice number")
+		return models.Invoice{}, errors.New("try again to generate a new promissory note number")
 	}
 
 	dueDate := time.Now().AddDate(0, 0, 14)
@@ -184,7 +184,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if err = invoiceRepositories.SaveInvoice(newInvoice, txn); err != nil {
-		return models.Invoice{}, errors.New("Creating invoice error: " + err.Error())
+		return models.Invoice{}, errors.New("Creating promissory note error: " + err.Error())
 	}
 
 	err = invoiceRepositories.SaveBillableInvoice(models.BillableInvoice{
@@ -193,7 +193,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}, txn)
 
 	if err != nil {
-		return models.Invoice{}, errors.New("Creating attaching invoice to billable error: " + err.Error())
+		return models.Invoice{}, errors.New("Creating attaching promissory note to billable error: " + err.Error())
 	}
 
 	for _, invoiceItem := range billableItems {
@@ -222,7 +222,7 @@ func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float
 		Number:        uuid.NewV4().String(),
 		Amount:        paidAmount,
 		UserNumber:    invoiceStatement.UserNumber,
-		Description:   "Payment received on invoice " + invoiceStatement.RefNumber,
+		Description:   "Payment received on promissory note " + invoiceStatement.RefNumber,
 		SchoolNumber:  invoiceStatement.SchoolNumber,
 		CampusNumber:  invoiceStatement.CampusNumber,
 		RefNumber:     generateNewInvoiceNumber(),
@@ -274,7 +274,7 @@ func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float
 
 	err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
 	if err != nil {
-		return errors.New("Attaching transaction to invoice error " + err.Error())
+		return errors.New("Attaching transaction to promissory note error " + err.Error())
 	}
 
 	if payAmount >= invoiceBalance {
@@ -284,7 +284,7 @@ func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float
 	}
 
 	if err := invoiceRepositories.UpdateInvoice(invoice, txn); err != nil {
-		return errors.New("Updating invoice status failed : " + err.Error())
+		return errors.New("Updating promissory note status failed : " + err.Error())
 	}
 
 	return err
@@ -402,14 +402,14 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 	var _paidAmount float64
 
 	if invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoice.Number); err != nil {
-		fmt.Println("Getting invoice amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
+		fmt.Println("Getting promissory note amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
 		_invoiceAmount = 0
 	} else {
 		_invoiceAmount = invoiceAmount
 	}
 
 	if paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number); err != nil {
-		fmt.Println("Getting invoice paid amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
+		fmt.Println("Getting promissory note paid amount error '" + err.Error() + "' for '" + invoice.RefNumber + "'")
 		_paidAmount = 0
 	} else {
 		_paidAmount = paidAmount
@@ -489,7 +489,7 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 	}
 
 	if invoice.Number == "" {
-		return responses.InvoiceResponse{}, errors.New("invalid invoice ref number")
+		return responses.InvoiceResponse{}, errors.New("invalid promissory note ref number")
 	}
 
 	minInvoice := createMinInvoiceResponse(invoice)
@@ -572,7 +572,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 	}
 
 	if invoice.Number == "" {
-		return minInvoiceResponse, errors.New("invalid invoice number: " + invoicePaymentRequest.InvoiceNumber)
+		return minInvoiceResponse, errors.New("invalid promissory note number: " + invoicePaymentRequest.InvoiceNumber)
 	}
 
 	invoiceStatement := invoice.Statement
@@ -587,7 +587,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
 
 	if paidAmount >= invoiceAmount {
-		return minInvoiceResponse, errors.New("This invoice is fully paid ")
+		return minInvoiceResponse, errors.New("This promissory note is fully paid ")
 	}
 
 	invoiceBalance := invoiceAmount - paidAmount
@@ -614,7 +614,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		CampusNumber:  invoiceStatement.CampusNumber,
 		UserNumber:    invoiceStatement.UserNumber,
 		Type:          constants.StatementTypeIn,
-		Description:   "Payment received on invoice " + invoiceStatement.RefNumber,
+		Description:   "Payment received on promissory note " + invoiceStatement.RefNumber,
 		Amount:        payRequestAmount,
 		Balance:       nextBlc,
 	}
@@ -657,13 +657,13 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 
 		err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
 		if err != nil {
-			return errors.New("Attaching transaction to invoice error " + err.Error())
+			return errors.New("Attaching transaction to promissory note error " + err.Error())
 		}
 
 		if newStatus != invoice.Status {
 			invoice.Status = newStatus
 			if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
-				return errors.New("Updating invoice failed : " + err.Error())
+				return errors.New("Updating promissory note failed : " + err.Error())
 			}
 		}
 
@@ -682,7 +682,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 	}
 
 	if invoice.Number == "" {
-		return minInvoiceResponse, errors.New("invalid invoice number: " + invoiceNumber)
+		return minInvoiceResponse, errors.New("invalid promissory note number: " + invoiceNumber)
 	}
 
 	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number)
@@ -690,7 +690,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
 
 	if paidAmount >= invoiceAmount {
-		return minInvoiceResponse, errors.New("This invoice is fully paid ")
+		return minInvoiceResponse, errors.New("This promissory note is fully paid ")
 	}
 
 	invoiceBalance := invoiceAmount - paidAmount
@@ -756,13 +756,13 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 		}
 
 		if err != nil {
-			return errors.New("Attaching transaction to invoice error " + err.Error())
+			return errors.New("Attaching transaction to promissory note error " + err.Error())
 		}
 
 		if newStatus != invoice.Status {
 			invoice.Status = newStatus
 			if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
-				return errors.New("Updating invoice failed : " + err.Error())
+				return errors.New("Updating promissory note failed : " + err.Error())
 			}
 		}
 
@@ -875,11 +875,11 @@ func DeleteInvoice(invoiceNumber, currentUser string) error {
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
 	if err != nil {
-		return errors.New("checking invoice number error: " + err.Error())
+		return errors.New("checking promissory note number error: " + err.Error())
 	}
 
 	if invoice.Number == "" {
-		return errors.New("invalid invoice number")
+		return errors.New("invalid promissory note number")
 	}
 
 	if invoice.Status != constants.StatusNotPaid {
@@ -908,7 +908,7 @@ func DeleteInvoice(invoiceNumber, currentUser string) error {
 		RefNumber:     generateNewInvoiceNumber(),
 		CampusNumber:  invoiceStatement.CampusNumber,
 		UserNumber:    invoiceStatement.UserNumber,
-		Description:   "Invoice deleted " + invoiceStatement.RefNumber,
+		Description:   "promissory note deleted " + invoiceStatement.RefNumber,
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
@@ -920,7 +920,7 @@ func DeleteInvoice(invoiceNumber, currentUser string) error {
 
 		err = invoiceRepositories.DeleteInvoice(invoice, tx)
 		if err != nil {
-			return errors.New("deleting invoice failed : " + err.Error())
+			return errors.New("deleting promissory note failed : " + err.Error())
 		}
 
 		return nil
@@ -933,15 +933,15 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
 	if err != nil {
-		return errors.New("checking invoice number error: " + err.Error())
+		return errors.New("checking promissory note number error: " + err.Error())
 	}
 
 	if invoice.Number == "" {
-		return errors.New("invalid invoice number")
+		return errors.New("invalid promissory note number")
 	}
 
 	if invoice.Status == constants.StatusCancelled {
-		return errors.New("This invoice is already cancelled ")
+		return errors.New("This promissory note is already cancelled ")
 	}
 
 	invoiceAmount, err := invoiceRepositories.GetInvoiceAmount(invoice.Number)
@@ -969,7 +969,7 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 		RefNumber:     generateNewInvoiceNumber(),
 		CampusNumber:  invoiceStatement.CampusNumber,
 		UserNumber:    invoiceStatement.UserNumber,
-		Description:   "Invoice cancelled " + invoiceStatement.RefNumber,
+		Description:   "Promissory note cancelled " + invoiceStatement.RefNumber,
 	}
 
 	invoice.Status = constants.StatusCancelled
@@ -986,7 +986,7 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 		for _, invoiceTransaction := range invoiceTransactions {
 			err := invoiceTransactionRepository.DeleteTransaction(invoiceTransaction)
 			if err != nil {
-				return errors.New("Clearing invoice payments error " + err.Error())
+				return errors.New("Clearing promissory note payments error " + err.Error())
 			}
 
 			transaction, _ := invoiceRepositories.GetTransactionByNumber(invoiceTransaction.TransactionNumber, tx)
@@ -997,12 +997,12 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 				return errors.New("Updating credit error " + err.Error())
 			}
 
-			fmt.Println("Invoice updated status to: " + updatedInvoice.Status)
+			fmt.Println("Promissory note updated status to: " + updatedInvoice.Status)
 		}
 
 		err = invoiceRepositories.UpdateInvoice(invoice, tx)
 		if err != nil {
-			return errors.New("updating invoice failed : " + err.Error())
+			return errors.New("updating promissory note failed : " + err.Error())
 		}
 
 		err = invoiceRepositories.SaveStatement(newStatement, tx)
@@ -1067,7 +1067,7 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 
 		invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
 		if err != nil {
-			return errors.New("Checking invoice transactions error " + err.Error())
+			return errors.New("Checking promissory note transactions error " + err.Error())
 		}
 
 		for _, invoiceTransaction := range invoiceTransactions {
@@ -1076,7 +1076,7 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 
 			err := invoiceTransactionRepository.DeleteTransaction(invoiceTransaction)
 			if err != nil {
-				return errors.New("Clearing invoice transaction error " + err.Error())
+				return errors.New("Clearing promissory note transaction error " + err.Error())
 			}
 
 			invoice, _ := invoiceRepositories.FindInvoiceByNumber(invoiceTransaction.InvoiceNumber, tx)
@@ -1089,7 +1089,7 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 
 			err = invoiceRepositories.SaveInvoice(invoice, tx)
 			if err != nil {
-				return errors.New("Updating invoice status error " + err.Error())
+				return errors.New("Updating promissory note status error " + err.Error())
 			}
 		}
 
@@ -1122,7 +1122,7 @@ func DeletePayment(transactionNumber, currentUser string) error {
 
 	invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
 	if err != nil {
-		return errors.New("Checking invoice transactions error " + err.Error())
+		return errors.New("Checking promissory note transactions error " + err.Error())
 	}
 
 	oldStatement, err := invoiceRepositories.GetStatementByNumber(transaction.StatementNumber)
@@ -1158,7 +1158,7 @@ func DeletePayment(transactionNumber, currentUser string) error {
 
 			err := invoiceTransactionRepository.DeleteTransaction(invoiceTransaction)
 			if err != nil {
-				return errors.New("Clearing invoice transaction error " + err.Error())
+				return errors.New("Clearing promissory note transaction error " + err.Error())
 			}
 
 			invoice, _ := invoiceRepositories.FindInvoiceByNumber(invoiceTransaction.InvoiceNumber, tx)
@@ -1171,7 +1171,7 @@ func DeletePayment(transactionNumber, currentUser string) error {
 
 			err = invoiceRepositories.SaveInvoice(invoice, tx)
 			if err != nil {
-				return errors.New("Updating invoice status error " + err.Error())
+				return errors.New("Updating promissory note status error " + err.Error())
 			}
 		}
 
@@ -1216,11 +1216,11 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(updateInvoiceRequest.InvoiceNumber)
 	if err != nil {
-		return errors.New("checking invoice number error: " + err.Error())
+		return errors.New("checking promissory note number error: " + err.Error())
 	}
 
 	if invoice.Number == "" {
-		return errors.New("invalid invoice number")
+		return errors.New("invalid promissory note number")
 	}
 
 	paidAmount, err := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
@@ -1229,7 +1229,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 	}
 
 	if paidAmount > 0 {
-		return errors.New("you cannot update an invoice with payments")
+		return errors.New("you cannot update an promissory note with payments")
 	}
 
 	dueDate, err := commons.ConvertStringToDate(updateInvoiceRequest.DueDate)
@@ -1239,7 +1239,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 
 	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number)
 	if err != nil {
-		return errors.New("getting current invoice items failed : " + err.Error())
+		return errors.New("getting current promissory note items failed : " + err.Error())
 	}
 
 	invoice.Description = updateInvoiceRequest.Description
@@ -1249,14 +1249,14 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 	err = invoiceRepositories.UpdateInvoice(invoice, tx)
 	if err != nil {
 		tx.Rollback()
-		return errors.New("updating invoice failed : " + err.Error())
+		return errors.New("updating promissory note failed : " + err.Error())
 	}
 
 	for _, item := range items {
 		err = invoiceRepositories.DeleteInvoiceItem(item, tx)
 		if err != nil {
 			tx.Rollback()
-			return errors.New("removing invoice item failed : " + err.Error())
+			return errors.New("removing promissory note item failed : " + err.Error())
 		}
 	}
 
@@ -1291,7 +1291,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 
 	if err := tx.Commit().Error; err != nil {
 		fmt.Println("commit error : " + err.Error())
-		return errors.New("completing invoice editing failed")
+		return errors.New("completing promissory note editing failed")
 	}
 
 	return nil

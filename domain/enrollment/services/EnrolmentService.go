@@ -273,7 +273,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		}, tx)
 
 		if err != nil {
-			return errors.New("Attaching enrollment to invoice error: " + err.Error())
+			return errors.New("Attaching enrollment to promissory note error: " + err.Error())
 		}
 
 		return nil

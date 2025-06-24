@@ -37,7 +37,7 @@ func CreateInvoicePayment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Invoice payment received successfully", "data": minInvoiceResponse})
+	c.JSON(http.StatusOK, gin.H{"message": "Promissory note payment received successfully", "data": minInvoiceResponse})
 }
 
 func GetAllPayments(context *gin.Context) {
