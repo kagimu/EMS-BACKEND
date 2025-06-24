@@ -185,7 +185,7 @@ func SubmitApplication(context *gin.Context) {
 	application.Status = constants.StatusSubmitted
 
 	if err := config.DB.Save(&application).Error; err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application"})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application " + err.Error()})
 		return
 	}
 
