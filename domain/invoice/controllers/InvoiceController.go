@@ -35,7 +35,7 @@ func CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Invoice created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Promissory note created successfully"})
 }
 
 func UpdateInvoice(c *gin.Context) {
@@ -62,7 +62,7 @@ func UpdateInvoice(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Invoice updated successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Promissory note updated successfully"})
 }
 
 func GetAllInvoices(context *gin.Context) {
@@ -118,7 +118,7 @@ func GetInvoiceDetails(context *gin.Context) {
 	refNumber := context.Query("ref_number")
 
 	if refNumber == "" {
-		context.JSON(http.StatusBadRequest, commons.Feedback("Provide the invoice ref number"))
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide the promissory note ref number"))
 		return
 	}
 
@@ -128,7 +128,7 @@ func GetInvoiceDetails(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message": "Invoice details", "data": details})
+	context.JSON(http.StatusOK, gin.H{"message": "Promissory note details", "data": details})
 }
 
 func FinancialSummary(context *gin.Context) {
@@ -167,7 +167,7 @@ func DeleteInvoice(context *gin.Context) {
 
 	invoiceNumber := context.Query("invoice_number")
 	if invoiceNumber == "" {
-		context.JSON(http.StatusBadRequest, commons.Feedback("Provide invoice number to delete"))
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide promissory note number to delete"))
 		return
 	}
 
@@ -177,7 +177,7 @@ func DeleteInvoice(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 	}
 
-	context.JSON(http.StatusOK, commons.Feedback("Invoice removed successfully"))
+	context.JSON(http.StatusOK, commons.Feedback("Promissory note removed successfully"))
 }
 
 func CancelInvoice(context *gin.Context) {
@@ -191,7 +191,7 @@ func CancelInvoice(context *gin.Context) {
 
 	invoiceNumber := context.Query("invoice_number")
 	if invoiceNumber == "" {
-		context.JSON(http.StatusBadRequest, commons.Feedback("Provide invoice number to cancel"))
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide promissory note number to cancel"))
 		return
 	}
 
@@ -201,5 +201,5 @@ func CancelInvoice(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, commons.Feedback("Invoice cancelled successfully"))
+	context.JSON(http.StatusOK, commons.Feedback("Promissory note cancelled successfully"))
 }

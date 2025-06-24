@@ -45,7 +45,7 @@ func (billableService *billableService) UpdateBillable(updateBillableRequest req
 
 	invoices, err := repositories.GetBillableInvoiceByBillableNumber(billable.Number, []string{constants.StatusPaid, constants.StatusPending, constants.StatusPartiallyPaid})
 	if err != nil {
-		return errors.New("Checking invoices from this bill error " + err.Error())
+		return errors.New("Checking promisory note from this bill error " + err.Error())
 	}
 
 	if len(invoices) != 0 {
@@ -108,7 +108,7 @@ func (billableService *billableService) DeleteBillable(billableNumber string) er
 
 	billableInvoice, err := repositories.GetBillableInvoiceByBillableNumber(billableNumber, []string{constants.StatusPaid, constants.StatusPending, constants.StatusPartiallyPaid})
 	if err != nil {
-		return errors.New("Checking if bill has ever created an invoice error " + err.Error())
+		return errors.New("Checking if bill has ever created an promissory note error " + err.Error())
 	}
 
 	if len(billableInvoice) != 0 {
