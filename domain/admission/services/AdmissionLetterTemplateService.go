@@ -75,8 +75,8 @@ func DecodeAdmissionLetterTemplateService(studentNumber string) (responses.Decod
 	phrase = replace(phrase, "{{ADMISSION_DATE}}", admission.CreatedAt.Format("2006-01-02"))
 	//phrase = replace(phrase, "{{ADMISSION_CLASS}}", admission.CampusClassNumber)
 	phrase = replace(phrase, "{{CAMPUS_NAME}}", campus.Name)
-	//phrase = replace(phrase, "{{PRINCIPAL_NAME}}", admission.CampusClassNumber)
-	//phrase = replace(phrase, "{{PRINCIPAL_TITLE}}", admission.CampusClassNumber)
+	phrase = replace(phrase, "{{PRINCIPAL_NAME}}", school.PrincipalName)
+	phrase = replace(phrase, "{{PRINCIPAL_TITLE}}", school.PrincipalTitle)
 	//phrase = replace(phrase, "{{REPORTING_DUE_DATE}}", admission.CampusClassNumber)
 
 	resp.Phrase = phrase
