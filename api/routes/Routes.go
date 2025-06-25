@@ -586,6 +586,11 @@ func SetupRoutes() *gin.Engine {
 			assessment.DELETE("metrics/:metric_number", assessmentController.DeleteMetric)
 			assessment.PUT("metrics/:metric_number", assessmentController.EditMetric)
 
+			schedules := assessment.Group("/schedules")
+			{
+				schedules.POST("", assessmentController.CreateMultipleSchedules)
+			}
+
 			aggregateScale := assessment.Group("/aggregate-scales")
 			{
 				aggregateScale.POST("", aggregateScaleController.CreateAggregateScale)
