@@ -92,6 +92,16 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		return errors.New("Invalid student number ")
 	}
 
+	emergencyInformationRepository := repositories2.NewEmergencyInformationRepository(config.DB)
+	emergencyInformation, err := emergencyInformationRepository.GetEmergencyInformationByStudentNumber(student.Number)
+	if err != nil {
+		return errors.New("Checking emergency information error: " + err.Error())
+	}
+
+	if emergencyInformation.StudentNumber != student.Number {
+		return errors.New("The student profile is incomplete ")
+	}
+
 	admission, err := admissionRepository.FindAdmissionByStudentNumber(enrolmentRequest.StudentNumber)
 	if err != nil {
 		return errors.New("Error checking for student admission " + err.Error())

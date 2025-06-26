@@ -123,6 +123,7 @@ func CreateEmergencyInformation(payload request.EmergencyInformationRequest) err
 }
 
 func FetchEmergencyInformation(studentNumber string) (responses.EmergencyInformationResponse, error) {
+
 	emergencyInformationRepository := repositories.NewEmergencyInformationRepository(config.DB)
 	emergencyInformation, err := emergencyInformationRepository.GetEmergencyInformationByStudentNumber(studentNumber)
 	if err != nil {
