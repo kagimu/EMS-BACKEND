@@ -51,6 +51,15 @@ func createAdmissionResponse(admission models.Admission) responses.AdmissionResp
 		Status:          admission.Status,
 	}
 
+	profileCompleted := "NO"
+	emergencyInfoRepository := repositories5.NewEmergencyInformationRepository(config.DB)
+	emergencyInfo, _ := emergencyInfoRepository.GetEmergencyInformationByStudentNumber(admission.StudentNumber)
+	if emergencyInfo.StudentNumber == admission.StudentNumber {
+		profileCompleted = "YES"
+	}
+
+	admissionResponse.ProfileCompleted = profileCompleted
+
 	var studentRepository = repositories5.NewStudentRepositoryImpl(config.DB)
 
 	class, _ := repositories2.GetClassByCampusClassNumber(admission.CampusClassNumber)
