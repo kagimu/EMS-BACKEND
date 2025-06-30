@@ -54,6 +54,7 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 		familyMemberModel.OtherName = familyMember.OtherName
 		familyMemberModel.PlaceOfEmployment = familyMember.PlaceOfEmployment
 		familyMemberModel.Relationship = familyMember.Relationship
+		familyMemberModel.PhysicalContactAddress = familyMember.PhysicalContactAddress
 
 		if err := familyStructureRepository.CreateFamilyMember(familyMemberModel); err != nil {
 			tx.Rollback()
@@ -175,6 +176,7 @@ func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureRespon
 		familyMemberResponse.OtherName = member.OtherName
 		familyMemberResponse.PlaceOfEmployment = member.PlaceOfEmployment
 		familyMemberResponse.PhysicalContactAddress = member.PhysicalContactAddress
+		familyMemberResponse.IsLiving = member.IsLiving
 		//familyMemberResponse.Contacts = member.Contacts
 		familyMemberResponse.Relationship = member.Relationship
 		contacts, err := familyMemberRepository.FindFamilyMemberContactsByFamilyMemberNumber(member.Number)

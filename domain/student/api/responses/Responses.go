@@ -65,6 +65,7 @@ type MedicalRecordResponse struct {
 type FamilyMemberResponse struct {
 	Number                 string                       `json:"number"`
 	Surname                string                       `json:"surname"`
+	IsLiving               string                       `json:"is_living"`
 	OtherName              string                       `json:"other_name"`
 	PlaceOfEmployment      string                       `json:"place_of_employment"`
 	PhysicalContactAddress string                       `json:"physical_contact_address"`
