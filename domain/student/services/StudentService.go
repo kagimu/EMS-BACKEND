@@ -55,6 +55,7 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 		familyMemberModel.PlaceOfEmployment = familyMember.PlaceOfEmployment
 		familyMemberModel.Relationship = familyMember.Relationship
 		familyMemberModel.PhysicalContactAddress = familyMember.PhysicalContactAddress
+		familyMemberModel.IsLiving = familyMember.IsLiving
 
 		if err := familyStructureRepository.CreateFamilyMember(familyMemberModel); err != nil {
 			tx.Rollback()
