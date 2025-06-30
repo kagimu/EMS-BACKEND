@@ -7,6 +7,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
+	"time"
 )
 
 func CreateMedicalRecord(req request.MedicalRecordRequest) error {
@@ -186,11 +187,15 @@ func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureRespon
 		if err != nil {
 			return responses.FamilyStructureResponse{}, err
 		}
-		familyMemberResponse.Contacts = make([]models.FamilyMemberContact, 0)
+		familyMemberResponse.Contacts = make([]responses.FamilyMemberContactResponse, 0)
 		for _, contact := range contacts {
-			familyMemberResponse.Contacts = append(familyMemberResponse.Contacts, models.FamilyMemberContact{
-				PhoneNumber: contact.PhoneNumber,
-				Email:       contact.Email,
+			familyMemberResponse.Contacts = append(familyMemberResponse.Contacts, responses.FamilyMemberContactResponse{
+				Number:             contact.Number,
+				PhoneNumber:        contact.PhoneNumber,
+				Email:              contact.Email,
+				FamilyMemberNumber: contact.FamilyMemberNumber,
+				CreatedAt:          contact.CreatedAt.Format(time.DateTime),
+				UpdatedAt:          contact.UpdatedAt.Format(time.DateTime),
 			})
 		}
 
@@ -208,8 +213,9 @@ func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureRespon
 
 	for _, lang := range languages {
 		languageResponses = append(languageResponses, responses.Language{
-			Name: lang.Name,
-			Code: lang.Code,
+			Name:   lang.Name,
+			Code:   lang.Code,
+			Number: lang.Number,
 		})
 	}
 
