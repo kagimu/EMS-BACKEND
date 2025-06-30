@@ -2,6 +2,7 @@ package request
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 )
 
@@ -19,6 +20,18 @@ func (req *FamilyStructureRequest) Validate() error {
 	if len(req.FamilyMembers) == 0 {
 		return errors.New("family members(father/mother/guardian) is required")
 	}
+
+	for index, m := range req.FamilyMembers {
+
+		if m.Surname == "" {
+			return errors.New(fmt.Sprintf("Surname at position %d is required", (index + 1)))
+		}
+
+		if m.PhysicalContactAddress == "" {
+			return errors.New(fmt.Sprintf("Physical Contact Address for %s is required", m.Surname))
+		}
+	}
+
 	return nil
 }
 
