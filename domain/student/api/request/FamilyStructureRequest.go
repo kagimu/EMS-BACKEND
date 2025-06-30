@@ -36,8 +36,6 @@ func (req *FamilyStructureRequest) Validate() error {
 }
 
 type FamilyMember struct {
-	Number                 string                `json:"number"`
-	StudentNumber          string                `json:"student_number"`
 	Surname                string                `json:"surname"`
 	OtherName              string                `json:"other_name"`
 	PlaceOfEmployment      string                `json:"place_of_employment"`
