@@ -19,13 +19,13 @@ type FamilyMember struct {
 }
 
 type FamilyMemberContact struct {
-	Number             string    `json:"number" gorm:"size:36;primaryKey"`
-	FamilyMemberNumber string    `json:"family_member_number" gorm:"size:36;not null"`
-	PhoneNumber        string    `json:"phone_number" gorm:"size:50"`
-	Email              string    `json:"email" gorm:"size:100;"`
-	CreatedAt          time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt          time.Time `json:"updated_at" gorm:"autoUpdateTime"`
-	Student            Student   `gorm:"foreignKey:FamilyMemberNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	Number             string       `json:"number" gorm:"size:36;primaryKey"`
+	FamilyMemberNumber string       `json:"family_member_number" gorm:"size:36;not null"`
+	PhoneNumber        string       `json:"phone_number" gorm:"size:50"`
+	Email              string       `json:"email" gorm:"size:100;"`
+	CreatedAt          time.Time    `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt          time.Time    `json:"updated_at" gorm:"autoUpdateTime"`
+	FamilyMember       FamilyMember `gorm:"foreignKey:FamilyMemberNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
 
 type StudentLanguage struct {
