@@ -44,7 +44,7 @@ type FamilyMember struct {
 	PhysicalContactAddress string                `json:"physical_contact_address"`
 	Contacts               []FamilyMemberContact `json:"contacts"`
 	Relationship           string                `json:"relationship"`
-	IsLiving               string                `json:"is_living"`
+	IsLiving               string                `json:"parent_living"`
 }
 
 type FamilyMemberContact struct {
