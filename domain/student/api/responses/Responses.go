@@ -4,7 +4,6 @@ import (
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	authResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 )
 
 type DetailedStudentProfile struct {
@@ -63,19 +62,29 @@ type MedicalRecordResponse struct {
 }
 
 type FamilyMemberResponse struct {
-	Number                 string                       `json:"number"`
-	Surname                string                       `json:"surname"`
-	IsLiving               string                       `json:"is_living"`
-	OtherName              string                       `json:"other_name"`
-	PlaceOfEmployment      string                       `json:"place_of_employment"`
-	PhysicalContactAddress string                       `json:"physical_contact_address"`
-	Contacts               []models.FamilyMemberContact `json:"contacts"`
-	Relationship           string                       `json:"relationship"`
+	Number                 string                        `json:"number"`
+	Surname                string                        `json:"surname"`
+	IsLiving               string                        `json:"is_living"`
+	OtherName              string                        `json:"other_name"`
+	PlaceOfEmployment      string                        `json:"place_of_employment"`
+	PhysicalContactAddress string                        `json:"physical_contact_address"`
+	Contacts               []FamilyMemberContactResponse `json:"contacts"`
+	Relationship           string                        `json:"relationship"`
+}
+
+type FamilyMemberContactResponse struct {
+	Number             string `json:"number"`
+	FamilyMemberNumber string `json:"family_member_number"`
+	PhoneNumber        string `json:"phone_number"`
+	Email              string `json:"email"`
+	CreatedAt          string `json:"created_at"`
+	UpdatedAt          string `json:"updated_at"`
 }
 
 type Language struct {
-	Name string
-	Code int64
+	Name   string `json:"name"`
+	Code   int64  `json:"code"`
+	Number string `json:"number"`
 }
 
 type FamilyStructureResponse struct {
