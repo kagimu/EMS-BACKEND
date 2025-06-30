@@ -64,6 +64,7 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 
 		for _, contact := range familyMember.Contacts {
 			var familyMemberContactModel models.FamilyMemberContact
+			familyMemberContactModel.Number = uuid.NewV4().String()
 			familyMemberContactModel.PhoneNumber = contact.PhoneNumber
 			familyMemberContactModel.Email = contact.Email
 			familyMemberContactModel.FamilyMemberNumber = familyMemberModel.Number
@@ -77,6 +78,7 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 
 	for _, language := range payload.Languages {
 		var languageModel models.StudentLanguage
+		languageModel.Number = uuid.NewV4().String()
 		languageModel.StudentNumber = payload.StudentNumber
 		languageModel.Name = language.Name
 		languageModel.Code = language.Code
