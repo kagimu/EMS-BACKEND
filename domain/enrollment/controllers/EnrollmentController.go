@@ -60,6 +60,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 	campusNumber := c.Query("campus_number")
 	campusClassNumber := c.Query("campus_class_number")
 	studyPeriodNumber := c.Query("study_period_number")
+	academicYear := c.Query("academic_year_number")
 	status := c.Query("status")
 
 	if user.Type != constants.TypeClient {
@@ -71,7 +72,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 
 	page := pagination.Paginate(c, &paginatedResponse)
 
-	students_, err := enrolmentService.Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status, user, page)
+	students_, err := enrolmentService.Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
