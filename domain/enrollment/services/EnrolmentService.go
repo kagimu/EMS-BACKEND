@@ -29,15 +29,15 @@ import (
 
 type EnrolmentService interface {
 	NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) error
-	Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
+	Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
 }
 
 type enrolmentService struct {
 }
 
-func (enrolment *enrolmentService) Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error) {
+func (enrolment *enrolmentService) Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error) {
 
-	paginatedResponse, err := enrolmentRepository.PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status, user, page)
+	paginatedResponse, err := enrolmentRepository.PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
 	students := make([]responses.Enrollment, 0)
 
 	if err != nil {
