@@ -14,7 +14,9 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"strconv"
 	"strings"
+	"time"
 )
 
 var admissionRepository = repositories4.NewAdmissionRepository()
@@ -258,4 +260,59 @@ func StreamDetails(streamNumber string) (responses2.StreamResponse, error) {
 	}
 
 	return CreateStreamResponse(stream), nil
+}
+
+func EditClassDetails(info requests.ClassInfo, userNumber string) error {
+	class, err := repositories.GetClassByNumber(info.ClassNumber)
+	if err != nil {
+		return errors.New("Getting class error " + err.Error())
+	}
+
+	if class.Number == "" {
+		return errors.New("Invalid Class number ")
+	}
+
+	codeNo, err := strconv.ParseInt(info.Code, 10, 64)
+	if err != nil {
+		return errors.New("Invalid Code: " + err.Error())
+	}
+
+	classByCode, err := repositories.GetClassByCode(codeNo, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by code error " + err.Error())
+	}
+
+	if classByCode.Number != "" && classByCode.Number != class.Number {
+		return errors.New("Code already in use ")
+	}
+
+	classByName, err := repositories.GetClassByName(info.Name, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by name error " + err.Error())
+	}
+
+	if classByName.Number != "" && classByName.Number != class.Number {
+		return errors.New("Name already in use ")
+	}
+
+	classByAbbreviation, err := repositories.GetClassByAbbreviation(info.Abbreviation, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by abbreviation error " + err.Error())
+	}
+
+	if classByAbbreviation.Number != "" && classByAbbreviation.Number != class.Number {
+		return errors.New("Abbreviation already in use ")
+	}
+
+	return repositories.SaveClass(classModels.Class{
+		Number:       class.Number,
+		Name:         info.Name,
+		Code:         codeNo,
+		EntityNumber: classByCode.Number,
+		Abbreviation: classByAbbreviation.Number,
+		CreatedAt:    class.CreatedAt,
+		UpdatedAt:    time.Now(),
+		UserNumber:   userNumber,
+		LevelNumber:  class.LevelNumber,
+	})
 }

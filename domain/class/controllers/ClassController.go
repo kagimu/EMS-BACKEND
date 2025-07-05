@@ -141,83 +141,25 @@ func EditClass(context *gin.Context) {
 		return
 	}
 
-	code := classInfo.Code
-	name := classInfo.Name
-	abbreviation := strings.ToUpper(classInfo.Abbreviation)
-	level := classInfo.Level
-	classNumber := classInfo.ClassNumber
-
 	userNumber := context.Request.Header["User-Number"][0]
 
-	if classNumber == "" {
+	if userNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Unknown user!"})
+		return
+	}
+
+	if classInfo.ClassNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Class is required!"})
 		return
 	}
 
-	codeNo, err := strconv.ParseInt(code, 10, 64)
+	err = services.EditClassDetails(classInfo, userNumber)
 	if err != nil {
-		fmt.Println("Error:", err)
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	var userData authModels.User
-	//check if user is a valid user
-	validateUser := config.DB.
-		Where("number = ?", userNumber).
-		First(&userData)
-	if validateUser.Error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
-		return
-	}
-
-	var duplicateCode classModel.Class
-	if duplicate := config.DB.
-		Where("code = ?", codeNo).
-		Where("number != ?", classNumber).
-		First(&duplicateCode).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists!"})
-		return
-	}
-
-	var duplicateClass classModel.Class
-	if duplicate := config.DB.
-		Where("name = ?", name).
-		Where("number != ?", classNumber).
-		First(&duplicateClass).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Class already exists!"})
-		return
-	}
-
-	var duplicateAbbreviation classModel.Class
-	if duplicate := config.DB.
-		Where("abbreviation = ?", abbreviation).
-		Where("number != ?", classNumber).
-		First(&duplicateAbbreviation).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Abbreviation already exists!"})
-		return
-	}
-
-	// Begin the transaction
-	tx := config.DB.Begin()
-
-	var classDataInfo classModel.Class
-	updateLevel := tx.Model(&classDataInfo).
-		Where("number = ?", classNumber).
-		Updates(classModel.Class{Name: name, UserNumber: userNumber, Abbreviation: abbreviation, Code: codeNo, LevelNumber: level})
-	if updateLevel.Error != nil {
-		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
-		return
-	}
-
-	// Commit the transaction if there is no error
-	if err := tx.Commit().Error; err != nil {
-		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to add class"})
-		return
-	}
-
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Edited Successfully!", "data": classDataInfo})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Class Edited Successfully!", "data": classInfo})
 }
 
 func AddCampusClass(context *gin.Context) {
