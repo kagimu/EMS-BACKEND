@@ -316,3 +316,50 @@ func EditClassDetails(info requests.ClassInfo, userNumber string) error {
 		LevelNumber:  class.LevelNumber,
 	})
 }
+
+func NewClass(info requests.ClassInfo, userNumber string) error {
+
+	codeNo, err := strconv.ParseInt(info.Code, 10, 64)
+	if err != nil {
+		return errors.New("Invalid Code: " + err.Error())
+	}
+
+	classByCode, err := repositories.GetClassByCode(codeNo, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by code error " + err.Error())
+	}
+
+	if classByCode.Number != "" {
+		return errors.New("Code already in use ")
+	}
+
+	classByName, err := repositories.GetClassByName(info.Name, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by name error " + err.Error())
+	}
+
+	if classByName.Number != "" {
+		return errors.New("Name already in use ")
+	}
+
+	classByAbbreviation, err := repositories.GetClassByAbbreviation(info.Abbreviation, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by abbreviation error " + err.Error())
+	}
+
+	if classByAbbreviation.Number != "" {
+		return errors.New("Abbreviation already in use ")
+	}
+
+	return repositories.SaveClass(classModels.Class{
+		Number:       uuid.NewV4().String(),
+		Name:         info.Name,
+		Code:         codeNo,
+		EntityNumber: classByCode.Number,
+		Abbreviation: classByAbbreviation.Number,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+		UserNumber:   userNumber,
+		LevelNumber:  info.Level,
+	})
+}
