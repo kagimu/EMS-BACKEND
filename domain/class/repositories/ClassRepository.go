@@ -51,6 +51,66 @@ func GetClassByNumber(classNumber string, trn ...*gorm.DB) (models.Class, error)
 	return class, nil
 }
 
+func GetClassByCode(code int64, entityNumber string, trn ...*gorm.DB) (models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var class models.Class
+
+	if err := db.Unscoped().Where("code = ? AND entity_number = ?", code, entityNumber).First(&class).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return class, nil
+		}
+
+		return class, err
+	}
+
+	return class, nil
+}
+
+func GetClassByName(name, entityNumber string, trn ...*gorm.DB) (models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var class models.Class
+
+	if err := db.Unscoped().Where("name = ? AND entity_number = ?", name, entityNumber).First(&class).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return class, nil
+		}
+
+		return class, err
+	}
+
+	return class, nil
+}
+
+func GetClassByAbbreviation(abbreviation, entityNumber string, trn ...*gorm.DB) (models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var class models.Class
+
+	if err := db.Unscoped().Where("abbreviation = ? AND entity_number = ?", abbreviation, entityNumber).First(&class).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return class, nil
+		}
+
+		return class, err
+	}
+
+	return class, nil
+}
+
 func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string, trn ...*gorm.DB) ([]models.Class, error) {
 	db := config.DB
 	if len(trn) > 0 {
@@ -106,4 +166,14 @@ func FindClassesByAssessmentGradeNumber(assessmentGradeNumber string, trn ...*go
 	}
 
 	return classes, nil
+}
+
+func SaveClass(class models.Class, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Save(&class).Error
 }

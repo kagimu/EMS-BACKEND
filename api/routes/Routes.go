@@ -752,6 +752,21 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("learning-area-comments", reportSettingsController.CreateLearningAreaComment)
 			reportSettings.DELETE("head-teacher-comment/:id", reportSettingsController.DeleteHeadTeacherComment)
 
+			classTeacherComment := reportSettings.Group("class-teacher-comment")
+			{
+				classTeacherComment.POST("", reportSettingsController.CreateClassTeacherComment)
+				classTeacherComment.GET("", reportSettingsController.FetchClassTeacherComments)
+				classTeacherComment.DELETE(":comment_number", reportSettingsController.DeleteClassTeacherComment)
+			}
+
+			subjectTeacherComment := reportSettings.Group("subject-teacher-comment")
+			{
+				subjectTeacherComment.POST("", reportSettingsController.CreateSubjectTeacherComment)
+				subjectTeacherComment.GET("", reportSettingsController.FetchSubjectTeacherComments)
+				subjectTeacherComment.DELETE(":comment_number", reportSettingsController.DeleteSubjectTeacherComment)
+
+			}
+
 			narrative := reportSettings.Group("narrative")
 			{
 				narrative.GET("", assessmentController.GetNarrative)
