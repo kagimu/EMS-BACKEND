@@ -139,3 +139,15 @@ type HeadTeacherCommentResponse struct {
 	CampusClassNumber   string  `json:"campus_class_number"`
 	ReportSettingNumber string  `json:"report_setting_number"`
 }
+
+type ClassTeacherCommentResponse struct {
+	Number     string `json:"number"`
+	Comment    string `json:"comment"`
+	UserNumber string `json:"user_number"`
+}
+
+type SubjectTeacherCommentResponse struct {
+	Number     string `json:"number"`
+	Comment    string `json:"comment"`
+	UserNumber string `json:"user_number"`
+}

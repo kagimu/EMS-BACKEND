@@ -17,3 +17,23 @@ type HeadTeacherComment struct {
 	ReportSettingNumber string        `json:"report_setting_number" gorm:"size:36"`
 	ReportSetting       ReportSetting `gorm:"foreignKey:ReportSettingNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
+
+type ClassTeacherComment struct {
+	ID         uint
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Number     string      `json:"number" gorm:"size:36;unique;not null;primaryKey"`
+	Comment    string      `json:"comment"`
+	UserNumber string      `json:"user_number" gorm:"size:36"`
+	User       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+}
+
+type SubjectTeacherComment struct {
+	ID         uint
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Number     string      `json:"number" gorm:"size:36;unique;not null;primaryKey"`
+	Comment    string      `json:"comment"`
+	UserNumber string      `json:"user_number" gorm:"size:36"`
+	User       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+}

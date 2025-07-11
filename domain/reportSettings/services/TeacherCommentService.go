@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -101,6 +103,100 @@ func DeleteHeadTeacherComment(commentNumber uint) error {
 	err = reporsitory.DeleteHeadTeacherComment(comment.ID)
 	if err != nil {
 		return errors.New("failed to delete head teacher comment")
+	}
+
+	return nil
+}
+
+func SaveClassTeacherComment(payload requests.ClassTeacherCommentRequest, user *authModel.User) error {
+	classTeacherComment := models.ClassTeacherComment{
+		Comment:    payload.Comment,
+		UserNumber: user.Number,
+	}
+
+	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
+
+	err := repo.CreatClasTeacherComment(classTeacherComment)
+	if err != nil {
+		return errors.New("failed to save class teacher comment")
+	}
+
+	return nil
+}
+
+func FetchClassTeacherComments() ([]responses.ClassTeacherCommentResponse, error) {
+	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
+
+	classTeacherComments, err := repo.FindClassTeacherComments()
+	if err != nil {
+		return nil, err
+	}
+
+	var comments = make([]responses.ClassTeacherCommentResponse, 0)
+
+	for _, comment := range classTeacherComments {
+		comments = append(comments, responses.ClassTeacherCommentResponse{
+			Number:     comment.Number,
+			Comment:    comment.Comment,
+			UserNumber: comment.UserNumber,
+		})
+	}
+
+	return comments, nil
+}
+
+func DeleteClassTeacherComment(number string) error {
+	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
+
+	err := repo.DeleteClassTeacherComment(number)
+	if err != nil {
+		return errors.New("failed to delete class teacher comment")
+	}
+
+	return nil
+}
+
+func SaveSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, user *authModel.User) error {
+	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
+	subjectTeacherComment := models.SubjectTeacherComment{
+		Comment:    payload.Comment,
+		UserNumber: user.Number,
+	}
+
+	err := repo.CreateSubjectTeacherComment(subjectTeacherComment)
+	if err != nil {
+		return errors.New("failed to save subject teacher comment")
+	}
+	return nil
+}
+
+func FetchSubjectTeacherComments() ([]responses.SubjectTeacherCommentResponse, error) {
+	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
+
+	subjectTeacherComments, err := repo.FindSubjectTeacherComments()
+	if err != nil {
+		return nil, err
+	}
+
+	var comments = make([]responses.SubjectTeacherCommentResponse, 0)
+
+	for _, comment := range subjectTeacherComments {
+		comments = append(comments, responses.SubjectTeacherCommentResponse{
+			Number:     comment.Number,
+			Comment:    comment.Comment,
+			UserNumber: comment.UserNumber,
+		})
+	}
+
+	return comments, nil
+}
+
+func DeleteSubjectTeacherComment(number string) error {
+	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
+
+	err := repo.DeleteSubjectTeacherComment(number)
+	if err != nil {
+		return errors.New("failed to delete subject teacher comment")
 	}
 
 	return nil
