@@ -701,11 +701,11 @@ func CreateClassTeacherComment(context *gin.Context) {
 }
 
 func FetchClassTeacherComments(context *gin.Context) {
-	campusClassNumber := context.Query("campus_class_number")
-	if campusClassNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Please select a class to view comments"})
-		return
-	}
+	//campusClassNumber := context.Query("campus_class_number")
+	//if campusClassNumber == "" {
+	//	context.JSON(http.StatusBadRequest, gin.H{"message": "Please select a class to view comments"})
+	//	return
+	//}
 
 	classTeacherComments, err := services3.FetchClassTeacherComments()
 	if err != nil {
