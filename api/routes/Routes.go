@@ -756,14 +756,14 @@ func SetupRoutes() *gin.Engine {
 			{
 				classTeacherComment.POST("", reportSettingsController.CreateClassTeacherComment)
 				classTeacherComment.GET("", reportSettingsController.FetchClassTeacherComments)
-				classTeacherComment.DELETE(":comment_number", reportSettingsController.DeleteClassTeacherComment)
+				classTeacherComment.DELETE("/:comment_number", reportSettingsController.DeleteClassTeacherComment)
 			}
 
 			subjectTeacherComment := reportSettings.Group("subject-teacher-comment")
 			{
 				subjectTeacherComment.POST("", reportSettingsController.CreateSubjectTeacherComment)
 				subjectTeacherComment.GET("", reportSettingsController.FetchSubjectTeacherComments)
-				subjectTeacherComment.DELETE(":comment_number", reportSettingsController.DeleteSubjectTeacherComment)
+				subjectTeacherComment.DELETE("/:comment_number", reportSettingsController.DeleteSubjectTeacherComment)
 
 			}
 
