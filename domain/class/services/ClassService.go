@@ -313,7 +313,7 @@ func EditClassDetails(info requests.ClassInfo, userNumber string) error {
 		CreatedAt:    class.CreatedAt,
 		UpdatedAt:    time.Now(),
 		UserNumber:   userNumber,
-		LevelNumber:  class.LevelNumber,
+		LevelNumber:  info.Level,
 	})
 }
 
