@@ -365,6 +365,31 @@ func NewClass(info requests.ClassInfo, userNumber string) error {
 		return errors.New("Abbreviation already in use ")
 	}
 
+	level, err := repositories2.GetLevelByNumber(info.Level)
+	if err != nil {
+		return errors.New("Getting level error " + err.Error())
+	}
+
+	if level.Number == "" {
+		return errors.New("Invalid Level number ")
+	}
+
+	//FindClassWithHighCode
+	classWithHighCode, err := repositories.FindClassWithHighCode(info.EntityNumber)
+	if err != nil {
+		return errors.New("Finding class error " + err.Error())
+	}
+
+	if info.Code > classWithHighCode.Code && classWithHighCode.LevelNumber != info.Level {
+		oldLevel, err := repositories2.GetLevelByNumber(classWithHighCode.LevelNumber)
+		if err != nil {
+			return errors.New("Getting old level error " + err.Error())
+		}
+		if oldLevel.Code < level.Code {
+			return errors.New("Check the class code, it can not be created in level " + level.Name)
+		}
+	}
+
 	return repositories.SaveClass(classModels.Class{
 		Number:       uuid.NewV4().String(),
 		Name:         info.Name,
