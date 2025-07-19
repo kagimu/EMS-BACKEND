@@ -313,12 +313,13 @@ func EditClassDetails(info requests.ClassInfo, userNumber string) error {
 		return errors.New("Finding class error " + err.Error())
 	}
 
-	if info.Code > classWithHighCode.Code && classWithHighCode.Number != class.Number && classWithHighCode.LevelNumber != info.Level {
+	if info.Code >= classWithHighCode.Code {
 		oldLevel, err := repositories2.GetLevelByNumber(classWithHighCode.LevelNumber)
 		if err != nil {
 			return errors.New("Getting old level error " + err.Error())
 		}
-		if oldLevel.Code < level.Code {
+
+		if oldLevel.Code > level.Code {
 			return errors.New("Check the class code, it can not be placed in level " + level.Name)
 		}
 	}
@@ -380,12 +381,12 @@ func NewClass(info requests.ClassInfo, userNumber string) error {
 		return errors.New("Finding class error " + err.Error())
 	}
 
-	if info.Code > classWithHighCode.Code && classWithHighCode.LevelNumber != info.Level {
+	if info.Code >= classWithHighCode.Code {
 		oldLevel, err := repositories2.GetLevelByNumber(classWithHighCode.LevelNumber)
 		if err != nil {
 			return errors.New("Getting old level error " + err.Error())
 		}
-		if oldLevel.Code < level.Code {
+		if oldLevel.Code > level.Code {
 			return errors.New("Check the class code, it can not be created in level " + level.Name)
 		}
 	}
