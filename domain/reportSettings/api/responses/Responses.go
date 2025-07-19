@@ -141,13 +141,27 @@ type HeadTeacherCommentResponse struct {
 }
 
 type ClassTeacherCommentResponse struct {
-	Number     string `json:"number"`
-	Comment    string `json:"comment"`
-	UserNumber string `json:"user_number"`
+	Number             string `json:"number"`
+	Comment            string `json:"comment"`
+	UserNumber         string `json:"user_number"`
+	StudyPeriod        string `json:"study_period"`
+	StudyPeriodNumber  string `json:"study_period_number"`
+	CampusClassNumber  string `json:"campus_class_number"`
+	ClassName          string `json:"class_name"`
+	AcademicYear       string `json:"academic_year"`
+	AcademicYearNumber string `json:"academic_year_number"`
+	TeacherName        string `json:"teacher_name"`
 }
 
 type SubjectTeacherCommentResponse struct {
-	Number     string `json:"number"`
-	Comment    string `json:"comment"`
-	UserNumber string `json:"user_number"`
+	Number               string `json:"number"`
+	Comment              string `json:"comment"`
+	UserNumber           string `json:"user_number"`
+	StudyPeriod          string `json:"study_period"`
+	StudyPeriodNumber    string `json:"study_period_number"`
+	AssessmentAreaNumber string `json:"assessment_area_number"`
+	AssessmentAreaName   string `json:"assessment_area_name"`
+	TeacherName          string `json:"teacher_name"`
+	AcademicYearNumber   string `json:"academic_year_number"`
+	AcademicYearName     string `json:"academic_year_name"`
 }
