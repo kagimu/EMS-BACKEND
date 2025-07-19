@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+	uuid "github.com/satori/go.uuid"
 )
 
 func CreateHeadTeacherComment(headTeacherCommentRequest requests.HeadTeacherCommentRequest, reportSettingNumber, userNumber string) error {
@@ -113,8 +114,12 @@ func DeleteHeadTeacherComment(commentNumber uint) error {
 
 func SaveClassTeacherComment(payload requests.ClassTeacherCommentRequest, user *authModel.User) error {
 	classTeacherComment := models.ClassTeacherComment{
-		Comment:    payload.Comment,
-		UserNumber: user.Number,
+		Comment:           payload.Comment,
+		UserNumber:        user.Number,
+		StudyPeriodNumber: payload.StudyPeriodNumber,
+		Date:              payload.Date,
+		CampusClassNumber: payload.CampusClassNumber,
+		Number:            uuid.NewV4().String(),
 	}
 
 	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)

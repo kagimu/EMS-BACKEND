@@ -25,6 +25,7 @@ type ClassTeacherComment struct {
 	ID                uint
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+	Date              time.Time
 	Number            string                       `json:"number" gorm:"size:36;unique;not null;primaryKey"`
 	Comment           string                       `json:"comment"`
 	StudyPeriodNumber string                       `json:"study_period_number" gorm:"size:36"`
