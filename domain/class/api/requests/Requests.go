@@ -10,7 +10,7 @@ import (
 
 type ClassInfo struct {
 	Name         string `json:"name"`
-	Code         string `json:"code"`
+	Code         int64  `json:"code"`
 	Abbreviation string `json:"abbreviation"`
 	Level        string `json:"level"`
 	ClassNumber  string `json:"class_number"`
@@ -64,11 +64,7 @@ func (p *ClassInfo) Prepare() {
 
 func (p *ClassInfo) Validate() error {
 
-	if p.Code == "" {
-		return errors.New("code is required")
-	}
-
-	if p.Code == "0" {
+	if p.Code <= 0 {
 		return errors.New("code must be greater than zero")
 	}
 

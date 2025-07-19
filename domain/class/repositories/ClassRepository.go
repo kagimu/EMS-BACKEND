@@ -39,7 +39,7 @@ func GetClassByNumber(classNumber string, trn ...*gorm.DB) (models.Class, error)
 
 	var class models.Class
 
-	if err := db.Where("number = ?", classNumber).First(&class).Error; err != nil {
+	if err := db.Unscoped().Where("number = ?", classNumber).First(&class).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return class, nil
@@ -176,4 +176,24 @@ func SaveClass(class models.Class, tx ...*gorm.DB) error {
 	}
 
 	return db.Save(&class).Error
+}
+
+func FindClassWithHighCode(entityNumber string, trn ...*gorm.DB) (models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var class models.Class
+
+	if err := db.Unscoped().Where("entity_number = ?", entityNumber).Order("code DESC").First(&class).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return class, nil
+		}
+
+		return class, err
+	}
+
+	return class, nil
 }
