@@ -63,6 +63,7 @@ func NewSchool(context *gin.Context) {
 		EntityNumber:     schoolInfo.EntityNumber,
 		PrincipalName:    schoolInfo.PrincipalName,
 		PrincipalTitle:   schoolInfo.PrincipalTitle,
+		Motto:            schoolInfo.Motto,
 	}
 
 	if err := tx.Create(&saveSchool).Error; err != nil {
@@ -166,7 +167,9 @@ func EditSchool(context *gin.Context) {
 	var schoolData schoolCurriculumModels.School
 	updateSchool := tx.Model(&schoolData).
 		Where("number = ?", schoolNumber).
-		Updates(schoolCurriculumModels.School{Name: name, UserNumber: userNumber, CommencementDate: commencementDateData, EntityNumber: schoolInfo.EntityNumber, PrincipalName: schoolInfo.PrincipalName, PrincipalTitle: schoolInfo.PrincipalTitle})
+		Updates(schoolCurriculumModels.School{Name: name, UserNumber: userNumber, CommencementDate: commencementDateData,
+			EntityNumber: schoolInfo.EntityNumber, PrincipalName: schoolInfo.PrincipalName,
+			PrincipalTitle: schoolInfo.PrincipalTitle, Motto: schoolInfo.Motto})
 	if updateSchool.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
