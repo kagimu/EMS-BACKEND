@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/requests"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/repositories"
@@ -41,6 +43,38 @@ func (ls LevelService) EditLevel(userNumber string, levelInfo requests.LevelInfo
 
 	if checkDup.Number != "" && checkDup.Number != level.Number {
 		return checkDup, errors.New("Provided name already used ")
+	}
+
+	levelClasses, err := repositories2.FindClassesByLevelNumber(levelInfo.LevelNumber)
+
+	if err != nil {
+		return level, err
+	}
+
+	if len(levelClasses) > 0 {
+
+		if levelInfo.Code < level.Code {
+			levelBefore, err := levelRepository.FindLevelWithClassesBeforeThisLevelCode(levelInfo.EntityNumber, levelInfo.Code)
+			if err != nil {
+				return level, err
+			}
+
+			if levelBefore.Number != "" && levelBefore.Code > levelInfo.Code {
+				return level, errors.New(fmt.Sprintf("Check level code, it can not be before %d", levelBefore.Code))
+			}
+		}
+
+		if levelInfo.Code > level.Code {
+			levelBefore, err := levelRepository.FindLevelWithClassesAfterThisLevelCode(levelInfo.EntityNumber, levelInfo.Code)
+			if err != nil {
+				return level, err
+			}
+
+			if levelBefore.Number != "" && levelInfo.Code > levelBefore.Code {
+				return level, errors.New(fmt.Sprintf("Check level code, it can not be after %d", levelBefore.Code))
+			}
+		}
+
 	}
 
 	level.UserNumber = userNumber
