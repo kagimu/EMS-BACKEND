@@ -161,9 +161,16 @@ func FetchClassTeacherComments() ([]responses.ClassTeacherCommentResponse, error
 		}
 
 		comments = append(comments, responses.ClassTeacherCommentResponse{
-			Number:     comment.Number,
-			Comment:    comment.Comment,
-			UserNumber: comment.UserNumber,
+			Number:             comment.Number,
+			Comment:            comment.Comment,
+			UserNumber:         comment.UserNumber,
+			StudyPeriod:        studyPeriodName.Name,
+			StudyPeriodNumber:  comment.StudyPeriodNumber,
+			CampusClassNumber:  comment.CampusClassNumber,
+			ClassName:          comment.CampusClass.ClassName,
+			AcademicYear:       academicYear.AcademicYearName,
+			AcademicYearNumber: academicYear.Number,
+			TeacherName:        user.FirstName + " " + user.LastName + " " + user.SecondName,
 		})
 	}
 
