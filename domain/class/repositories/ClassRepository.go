@@ -186,16 +186,14 @@ func FindClassWithHighCode(entityNumber string, currentLevelCode int64, trn ...*
 
 	var class models.Class
 
-	if err := db.Unscoped().
-		Joins("join levels on levels.number = classes.level_number").
-		Where("classes.entity_number = ? AND levels.code > ", entityNumber, currentLevelCode).Order("classes.code").First(&class).Error; err != nil {
+	err := db.
+		Joins("JOIN levels ON levels.number = classes.level_number").
+		Where("classes.entity_number = ? AND levels.code > ?", entityNumber, currentLevelCode).
+		Order("levels.code ASC, classes.code ASC").
+		First(&class).Error
 
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return class, nil
-		}
-
-		return class, err
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return class, nil
 	}
-
-	return class, nil
+	return class, err
 }
