@@ -3,7 +3,10 @@ package services
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -135,6 +138,28 @@ func FetchClassTeacherComments() ([]responses.ClassTeacherCommentResponse, error
 	var comments = make([]responses.ClassTeacherCommentResponse, 0)
 
 	for _, comment := range classTeacherComments {
+
+		studyPeriod, err := repositories.GetStudyPeriodByNumber(comment.StudyPeriodNumber)
+		if err != nil {
+			return nil, errors.New("failed to get study period: " + err.Error())
+		}
+
+		studyPeriodName, err := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+		if err != nil {
+			return nil, errors.New("failed to get study period name: " + err.Error())
+		}
+
+		academicYear, err := repositories2.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
+		if err != nil {
+			return nil, errors.New("failed to get academic year: " + err.Error())
+		}
+
+		user, err := repository.GetUserByNumber(comment.UserNumber)
+
+		if err != nil {
+			return nil, errors.New("failed to get user by number: " + err.Error())
+		}
+
 		comments = append(comments, responses.ClassTeacherCommentResponse{
 			Number:     comment.Number,
 			Comment:    comment.Comment,
@@ -172,7 +197,7 @@ func SaveSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, us
 
 func FetchSubjectTeacherComments() ([]responses.SubjectTeacherCommentResponse, error) {
 	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
-
+	var err error
 	subjectTeacherComments, err := repo.FindSubjectTeacherComments()
 	if err != nil {
 		return nil, err
@@ -181,10 +206,45 @@ func FetchSubjectTeacherComments() ([]responses.SubjectTeacherCommentResponse, e
 	var comments = make([]responses.SubjectTeacherCommentResponse, 0)
 
 	for _, comment := range subjectTeacherComments {
+
+		studyPeriod, err := repositories.GetStudyPeriodByNumber(comment.StudyPeriodNumber)
+		if err != nil {
+			return nil, errors.New("failed to get study period: " + err.Error())
+		}
+
+		studyPeriodName, err := repositories.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+		if err != nil {
+			return nil, errors.New("failed to get study period name: " + err.Error())
+		}
+
+		academicYear, err := repositories2.GetAcademicYearByNumber(studyPeriod.AcademicYearNumber)
+		if err != nil {
+			return nil, errors.New("failed to get academic year: " + err.Error())
+		}
+
+		user, err := repository.GetUserByNumber(comment.UserNumber)
+
+		if err != nil {
+			return nil, errors.New("failed to get user by number: " + err.Error())
+		}
+
+		assessmentArea, err := repositories3.GetAssessmentAreaByNumber(comment.AssessmentAreaNumber)
+
+		if err != nil {
+			return nil, errors.New("failed to get assessment area: " + err.Error())
+		}
+
 		comments = append(comments, responses.SubjectTeacherCommentResponse{
-			Number:     comment.Number,
-			Comment:    comment.Comment,
-			UserNumber: comment.UserNumber,
+			Number:               comment.Number,
+			Comment:              comment.Comment,
+			UserNumber:           comment.UserNumber,
+			StudyPeriod:          studyPeriodName.Name,
+			AcademicYearName:     academicYear.AcademicYearName,
+			StudyPeriodNumber:    comment.StudyPeriodNumber,
+			AcademicYearNumber:   academicYear.Number,
+			TeacherName:          user.FirstName + " " + user.LastName + " " + user.SecondName,
+			AssessmentAreaNumber: comment.AssessmentAreaNumber,
+			AssessmentAreaName:   assessmentArea.Name,
 		})
 	}
 

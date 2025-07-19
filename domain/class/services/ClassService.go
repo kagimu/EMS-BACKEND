@@ -14,7 +14,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -272,12 +271,7 @@ func EditClassDetails(info requests.ClassInfo, userNumber string) error {
 		return errors.New("Invalid Class number ")
 	}
 
-	codeNo, err := strconv.ParseInt(info.Code, 10, 64)
-	if err != nil {
-		return errors.New("Invalid Code: " + err.Error())
-	}
-
-	classByCode, err := repositories.GetClassByCode(codeNo, info.EntityNumber)
+	classByCode, err := repositories.GetClassByCode(info.Code, info.EntityNumber)
 	if err != nil {
 		return errors.New("Getting class by code error " + err.Error())
 	}
@@ -304,10 +298,38 @@ func EditClassDetails(info requests.ClassInfo, userNumber string) error {
 		return errors.New("Abbreviation already in use ")
 	}
 
+	level, err := repositories2.GetLevelByNumber(info.Level)
+	if err != nil {
+		return errors.New("Getting level error " + err.Error())
+	}
+
+	if level.Number == "" {
+		return errors.New("Invalid Level number ")
+	}
+
+	//FindClassWithHighCode
+	checkClass, err := repositories.FindClassAfterLevelCode(class.EntityNumber, level.Code)
+	if err != nil {
+		return errors.New("Finding class after level error " + err.Error())
+	}
+
+	if checkClass.Number != "" && info.Code > checkClass.Code {
+		return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
+	} else {
+		checkClass, err = repositories.FindClassBeforeLevelCode(class.EntityNumber, level.Code)
+		if err != nil {
+			return errors.New("Finding class before level error " + err.Error())
+		}
+
+		if checkClass.Number != "" && info.Code < checkClass.Code {
+			return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
+		}
+	}
+
 	return repositories.SaveClass(classModels.Class{
 		Number:       class.Number,
 		Name:         info.Name,
-		Code:         codeNo,
+		Code:         info.Code,
 		EntityNumber: info.EntityNumber,
 		Abbreviation: info.Abbreviation,
 		CreatedAt:    class.CreatedAt,
@@ -319,12 +341,7 @@ func EditClassDetails(info requests.ClassInfo, userNumber string) error {
 
 func NewClass(info requests.ClassInfo, userNumber string) error {
 
-	codeNo, err := strconv.ParseInt(info.Code, 10, 64)
-	if err != nil {
-		return errors.New("Invalid Code: " + err.Error())
-	}
-
-	classByCode, err := repositories.GetClassByCode(codeNo, info.EntityNumber)
+	classByCode, err := repositories.GetClassByCode(info.Code, info.EntityNumber)
 	if err != nil {
 		return errors.New("Getting class by code error " + err.Error())
 	}
@@ -351,10 +368,38 @@ func NewClass(info requests.ClassInfo, userNumber string) error {
 		return errors.New("Abbreviation already in use ")
 	}
 
+	level, err := repositories2.GetLevelByNumber(info.Level)
+	if err != nil {
+		return errors.New("Getting level error " + err.Error())
+	}
+
+	if level.Number == "" {
+		return errors.New("Invalid Level number ")
+	}
+
+	//FindClassWithHighCode
+	checkClass, err := repositories.FindClassAfterLevelCode(info.EntityNumber, level.Code)
+	if err != nil {
+		return errors.New("Finding class error " + err.Error())
+	}
+
+	if checkClass.Number != "" && info.Code > checkClass.Code {
+		return errors.New(fmt.Sprintf("Check the class code, it can not be created in '%s' level", level.Name))
+	} else {
+		checkClass, err = repositories.FindClassBeforeLevelCode(info.EntityNumber, level.Code)
+		if err != nil {
+			return errors.New("Finding class before level error " + err.Error())
+		}
+
+		if checkClass.Number != "" && info.Code < checkClass.Code {
+			return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
+		}
+	}
+
 	return repositories.SaveClass(classModels.Class{
 		Number:       uuid.NewV4().String(),
 		Name:         info.Name,
-		Code:         codeNo,
+		Code:         info.Code,
 		EntityNumber: info.EntityNumber,
 		Abbreviation: info.Abbreviation,
 		CreatedAt:    time.Now(),
