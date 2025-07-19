@@ -309,6 +309,8 @@ func FetchSchoolInfo(context *gin.Context) {
 		CommencementDate: schools.CommencementDate.Format("2006-01-02"),
 		SchoolCurriculum: curriculum_,
 		Logo:             commons.GenerateDownloadPath(schools.Logo, false),
+		Motto:            schools.Motto,
+		PrincipalName:    schools.PrincipalName,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
