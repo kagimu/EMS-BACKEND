@@ -6,6 +6,7 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
@@ -126,7 +127,7 @@ func SaveClassTeacherComment(payload requests.ClassTeacherCommentRequest, user *
 		UserNumber:        user.Number,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
 		Date:              date,
-		CampusClassNumber: payload.CampusClassNumber,
+		ClassNumber:       payload.CampusClassNumber,
 		Number:            uuid.NewV4().String(),
 	}
 
@@ -173,14 +174,20 @@ func FetchClassTeacherComments() ([]responses.ClassTeacherCommentResponse, error
 			return nil, errors.New("failed to get user by number: " + err.Error())
 		}
 
+		class, err := repositories4.GetClassByNumber(comment.ClassNumber)
+
+		if err != nil {
+			return nil, errors.New("failed to get class by number: " + err.Error())
+		}
+
 		comments = append(comments, responses.ClassTeacherCommentResponse{
 			Number:             comment.Number,
 			Comment:            comment.Comment,
 			UserNumber:         comment.UserNumber,
 			StudyPeriod:        studyPeriodName.Name,
 			StudyPeriodNumber:  comment.StudyPeriodNumber,
-			CampusClassNumber:  comment.CampusClassNumber,
-			ClassName:          comment.CampusClass.ClassName,
+			CampusClassNumber:  comment.ClassNumber,
+			ClassName:          class.Name,
 			AcademicYear:       academicYear.AcademicYearName,
 			AcademicYearNumber: academicYear.Number,
 			TeacherName:        user.FirstName + " " + user.LastName + " " + user.SecondName,

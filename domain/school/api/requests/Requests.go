@@ -13,6 +13,7 @@ type SchoolInfo struct {
 	Curriculum       []string `json:"curriculum"`
 	PrincipalName    string   `json:"principal_name"`
 	PrincipalTitle   string   `json:"principal_title"`
+	Motto            string   `json:"motto"`
 }
 
 func (r *SchoolInfo) Validate() error {
@@ -33,6 +34,9 @@ func (r *SchoolInfo) Validate() error {
 	}
 	if r.PrincipalTitle == "" {
 		return errors.New("principal title is required")
+	}
+	if r.Motto == "" {
+		return errors.New("motto is required")
 	}
 
 	return nil

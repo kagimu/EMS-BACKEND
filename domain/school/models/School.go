@@ -21,5 +21,6 @@ type (
 		Logo             string             `json:"logo"`
 		PrincipalName    string             `json:"principal_name" gorm:"size:100;not null"`
 		PrincipalTitle   string             `json:"principal_title" gorm:"size:100;not null"`
+		Motto            string             `json:"motto" gorm:"size:250;not null"`
 	}
 )
