@@ -308,19 +308,21 @@ func EditClassDetails(info requests.ClassInfo, userNumber string) error {
 	}
 
 	//FindClassWithHighCode
-	classWithHighCode, err := repositories.FindClassWithHighCode(class.EntityNumber)
+	checkClass, err := repositories.FindClassAfterLevelCode(class.EntityNumber, level.Code)
 	if err != nil {
-		return errors.New("Finding class error " + err.Error())
+		return errors.New("Finding class after level error " + err.Error())
 	}
 
-	if info.Code >= classWithHighCode.Code {
-		oldLevel, err := repositories2.GetLevelByNumber(classWithHighCode.LevelNumber)
+	if checkClass.Number != "" && info.Code > checkClass.Code {
+		return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
+	} else {
+		checkClass, err = repositories.FindClassBeforeLevelCode(class.EntityNumber, level.Code)
 		if err != nil {
-			return errors.New("Getting old level error " + err.Error())
+			return errors.New("Finding class before level error " + err.Error())
 		}
 
-		if oldLevel.Code > level.Code {
-			return errors.New("Check the class code, it can not be placed in level " + level.Name)
+		if checkClass.Number != "" && info.Code < checkClass.Code {
+			return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
 		}
 	}
 
@@ -376,18 +378,21 @@ func NewClass(info requests.ClassInfo, userNumber string) error {
 	}
 
 	//FindClassWithHighCode
-	classWithHighCode, err := repositories.FindClassWithHighCode(info.EntityNumber)
+	checkClass, err := repositories.FindClassAfterLevelCode(info.EntityNumber, level.Code)
 	if err != nil {
 		return errors.New("Finding class error " + err.Error())
 	}
 
-	if info.Code >= classWithHighCode.Code {
-		oldLevel, err := repositories2.GetLevelByNumber(classWithHighCode.LevelNumber)
+	if checkClass.Number != "" && info.Code > checkClass.Code {
+		return errors.New(fmt.Sprintf("Check the class code, it can not be created in '%s' level", level.Name))
+	} else {
+		checkClass, err = repositories.FindClassBeforeLevelCode(info.EntityNumber, level.Code)
 		if err != nil {
-			return errors.New("Getting old level error " + err.Error())
+			return errors.New("Finding class before level error " + err.Error())
 		}
-		if oldLevel.Code > level.Code {
-			return errors.New("Check the class code, it can not be created in level " + level.Name)
+
+		if checkClass.Number != "" && info.Code < checkClass.Code {
+			return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
 		}
 	}
 

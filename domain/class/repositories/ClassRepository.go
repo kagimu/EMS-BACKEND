@@ -178,7 +178,7 @@ func SaveClass(class models.Class, tx ...*gorm.DB) error {
 	return db.Save(&class).Error
 }
 
-func FindClassWithHighCode(entityNumber string, trn ...*gorm.DB) (models.Class, error) {
+func FindClassAfterLevelCode(entityNumber string, currentLevelCode int64, trn ...*gorm.DB) (models.Class, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
@@ -186,14 +186,34 @@ func FindClassWithHighCode(entityNumber string, trn ...*gorm.DB) (models.Class, 
 
 	var class models.Class
 
-	if err := db.Unscoped().Where("entity_number = ?", entityNumber).Order("code DESC").First(&class).Error; err != nil {
+	err := db.
+		Joins("JOIN levels ON levels.number = classes.level_number").
+		Where("classes.entity_number = ? AND levels.code > ?", entityNumber, currentLevelCode).
+		Order("levels.code ASC, classes.code ASC").
+		First(&class).Error
 
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return class, nil
-		}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return class, nil
+	}
+	return class, err
+}
 
-		return class, err
+func FindClassBeforeLevelCode(entityNumber string, currentLevelCode int64, trn ...*gorm.DB) (models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
 	}
 
-	return class, nil
+	var class models.Class
+
+	err := db.
+		Joins("JOIN levels ON levels.number = classes.level_number").
+		Where("classes.entity_number = ? AND levels.code < ?", entityNumber, currentLevelCode).
+		Order("levels.code DESC, classes.code DESC").
+		First(&class).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return class, nil
+	}
+	return class, err
 }
