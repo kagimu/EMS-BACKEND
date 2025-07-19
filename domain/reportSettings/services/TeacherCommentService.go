@@ -196,8 +196,10 @@ func DeleteClassTeacherComment(number string) error {
 func SaveSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, user *authModel.User) error {
 	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
 	subjectTeacherComment := models.SubjectTeacherComment{
-		Comment:    payload.Comment,
-		UserNumber: user.Number,
+		Comment:              payload.Comment,
+		UserNumber:           user.Number,
+		StudyPeriodNumber:    payload.StudyPeriodNumber,
+		AssessmentAreaNumber: payload.AssessmentAreaNumber,
 	}
 
 	err := repo.CreateSubjectTeacherComment(subjectTeacherComment)
