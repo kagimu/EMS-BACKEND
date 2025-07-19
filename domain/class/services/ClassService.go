@@ -308,20 +308,13 @@ func EditClassDetails(info requests.ClassInfo, userNumber string) error {
 	}
 
 	//FindClassWithHighCode
-	classWithHighCode, err := repositories.FindClassWithHighCode(class.EntityNumber)
+	classWithHighCode, err := repositories.FindClassWithHighCode(class.EntityNumber, level.Code)
 	if err != nil {
 		return errors.New("Finding class error " + err.Error())
 	}
 
-	if info.Code >= classWithHighCode.Code {
-		oldLevel, err := repositories2.GetLevelByNumber(classWithHighCode.LevelNumber)
-		if err != nil {
-			return errors.New("Getting old level error " + err.Error())
-		}
-
-		if oldLevel.Code > level.Code {
-			return errors.New("Check the class code, it can not be placed in level " + level.Name)
-		}
+	if classWithHighCode.Number != "" && info.Code > classWithHighCode.Code {
+		return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
 	}
 
 	return repositories.SaveClass(classModels.Class{
@@ -376,19 +369,13 @@ func NewClass(info requests.ClassInfo, userNumber string) error {
 	}
 
 	//FindClassWithHighCode
-	classWithHighCode, err := repositories.FindClassWithHighCode(info.EntityNumber)
+	classWithHighCode, err := repositories.FindClassWithHighCode(info.EntityNumber, level.Code)
 	if err != nil {
 		return errors.New("Finding class error " + err.Error())
 	}
 
-	if info.Code >= classWithHighCode.Code {
-		oldLevel, err := repositories2.GetLevelByNumber(classWithHighCode.LevelNumber)
-		if err != nil {
-			return errors.New("Getting old level error " + err.Error())
-		}
-		if oldLevel.Code > level.Code {
-			return errors.New("Check the class code, it can not be created in level " + level.Name)
-		}
+	if classWithHighCode.Number != "" && info.Code > classWithHighCode.Code {
+		return errors.New(fmt.Sprintf("Check the class code, it can not be created in '%s' level", level.Name))
 	}
 
 	return repositories.SaveClass(classModels.Class{
