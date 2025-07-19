@@ -14,6 +14,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
+	"time"
 )
 
 func CreateHeadTeacherComment(headTeacherCommentRequest requests.HeadTeacherCommentRequest, reportSettingNumber, userNumber string) error {
@@ -120,6 +121,8 @@ func SaveClassTeacherComment(payload requests.ClassTeacherCommentRequest, user *
 	}
 	classTeacherComment := models.ClassTeacherComment{
 		Comment:           payload.Comment,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 		UserNumber:        user.Number,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
 		Date:              date,
@@ -131,7 +134,7 @@ func SaveClassTeacherComment(payload requests.ClassTeacherCommentRequest, user *
 
 	err = repo.CreatClasTeacherComment(classTeacherComment)
 	if err != nil {
-		return errors.New("failed to save class teacher comment")
+		return errors.New("failed to save class teacher comment " + err.Error())
 	}
 
 	return nil
