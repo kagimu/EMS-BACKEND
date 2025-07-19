@@ -3,13 +3,14 @@ package requests
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 type ClassTeacherCommentRequest struct {
-	Comment           string `json:"comment"`
-	CampusClassNumber string `json:"campus_class_number"`
-	StudyPeriodNumber string `json:"study_period_number"`
-	Date              string `json:"date"`
+	Comment           string    `json:"comment"`
+	CampusClassNumber string    `json:"campus_class_number"`
+	StudyPeriodNumber string    `json:"study_period_number"`
+	Date              time.Time `json:"date"`
 }
 
 func (r *ClassTeacherCommentRequest) Validate() error {
@@ -22,9 +23,7 @@ func (r *ClassTeacherCommentRequest) Validate() error {
 	if r.StudyPeriodNumber == "" {
 		return errors.New("study period number is required")
 	}
-	if r.Date == "" {
-		return errors.New("date is required")
-	}
+
 	return nil
 }
 
