@@ -675,7 +675,7 @@ func CreateClassTeacherComment(context *gin.Context) {
 	var payload requests.ClassTeacherCommentRequest
 
 	if err := context.ShouldBindJSON(&payload); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body" + err.Error()})
 		return
 	}
 

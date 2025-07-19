@@ -6,6 +6,7 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
@@ -113,18 +114,22 @@ func DeleteHeadTeacherComment(commentNumber uint) error {
 }
 
 func SaveClassTeacherComment(payload requests.ClassTeacherCommentRequest, user *authModel.User) error {
+	date, err := commons.ConvertStringToDate(payload.Date)
+	if err != nil {
+		return errors.New("invalid date format: " + err.Error())
+	}
 	classTeacherComment := models.ClassTeacherComment{
 		Comment:           payload.Comment,
 		UserNumber:        user.Number,
 		StudyPeriodNumber: payload.StudyPeriodNumber,
-		Date:              payload.Date,
+		Date:              date,
 		CampusClassNumber: payload.CampusClassNumber,
 		Number:            uuid.NewV4().String(),
 	}
 
 	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
 
-	err := repo.CreatClasTeacherComment(classTeacherComment)
+	err = repo.CreatClasTeacherComment(classTeacherComment)
 	if err != nil {
 		return errors.New("failed to save class teacher comment")
 	}
