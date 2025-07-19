@@ -11,10 +11,46 @@ type LevelRepository interface {
 	FindLevelByNumber(levelNumber string) (LevelModels.Level, error)
 	FindLevelByCode(code int64, entityNumber string) (LevelModels.Level, error)
 	FindLevelByName(name, entityNumber string) (LevelModels.Level, error)
+	FindLevelWithClassesBeforeThisLevelCode(entityNumber string, currentLevelCode int64) (LevelModels.Level, error)
+	FindLevelWithClassesAfterThisLevelCode(entityNumber string, currentLevelCode int64) (LevelModels.Level, error)
 	SaveLevel(level LevelModels.Level) (LevelModels.Level, error)
 }
 
 type levelRepositoryImpl struct {
+}
+
+func (l levelRepositoryImpl) FindLevelWithClassesAfterThisLevelCode(entityNumber string, currentLevelCode int64) (LevelModels.Level, error) {
+	db := config.DB
+
+	var class LevelModels.Level
+
+	err := db.
+		Joins("JOIN classes ON classes.level_number = classes.number").
+		Where("classes.entity_number = ? AND levels.code > ?", entityNumber, currentLevelCode).
+		Order("levels.code ASC").
+		First(&class).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return class, nil
+	}
+	return class, err
+}
+
+func (l levelRepositoryImpl) FindLevelWithClassesBeforeThisLevelCode(entityNumber string, currentLevelCode int64) (LevelModels.Level, error) {
+	db := config.DB
+
+	var class LevelModels.Level
+
+	err := db.
+		Joins("JOIN classes ON classes.level_number = classes.number").
+		Where("classes.entity_number = ? AND levels.code < ?", entityNumber, currentLevelCode).
+		Order("levels.code DESC").
+		First(&class).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return class, nil
+	}
+	return class, err
 }
 
 func (l levelRepositoryImpl) SaveLevel(level LevelModels.Level) (LevelModels.Level, error) {

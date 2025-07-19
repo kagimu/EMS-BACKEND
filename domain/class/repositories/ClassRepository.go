@@ -145,6 +145,29 @@ func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, cu
 	return classes, nil
 }
 
+func FindClassesByLevelNumber(levelNumber string, trn ...*gorm.DB) ([]models.Class, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[1]
+	}
+
+	var classes []models.Class
+
+	if err := db.
+		Where("level_number = ?", levelNumber).
+		Order("classes.code asc").
+		Find(&classes).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return classes, nil
+		}
+
+		return classes, err
+	}
+
+	return classes, nil
+}
+
 func FindClassesByAssessmentGradeNumber(assessmentGradeNumber string, trn ...*gorm.DB) ([]models.Class, error) {
 
 	db := config.DB
