@@ -64,6 +64,7 @@ func (receiver ItemProduct) CreateServiceResponse(item itemModels.Item, campusSe
 			UserNumber:      item.UserNumber,
 			RepeatCycle:     item.RepeatCycle,
 			OneTimePurchase: item.OneTimePurchase,
+			Code:            item.Code,
 		},
 		Campuses: campusServiceResponse,
 	}
@@ -94,6 +95,7 @@ func (receiver ItemProduct) SaveProduct(user *models.User, payload requests.Prod
 		Name:            payload.Name,
 		SchoolNumber:    payload.SchoolNumber,
 		Type:            "Product",
+		Code:            payload.Code,
 	}
 
 	saveProduct := productModels.Product{
@@ -175,6 +177,7 @@ func (receiver ItemProduct) UpdateProduct(productNumber string, user *models.Use
 		SchoolNumber:    payload.SchoolNumber,
 		Type:            "Product",
 		CreatedAt:       product.CreatedAt,
+		Code:            payload.Code,
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {

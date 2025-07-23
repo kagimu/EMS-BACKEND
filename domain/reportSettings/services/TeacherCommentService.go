@@ -322,3 +322,57 @@ func DeleteSubjectTeacherComment(number string) error {
 
 	return nil
 }
+
+func UpdateClassTeacherComment(payload requests.ClassTeacherCommentRequest, number string, user *authModel.User) error {
+	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
+
+	classTeacherComment, err := repo.GetClassTeacherCommentByNumber(number)
+	if err != nil {
+		return errors.New("failed to get class teacher comment: " + err.Error())
+	}
+
+	if classTeacherComment.ID == 0 {
+		return errors.New("class teacher comment not found")
+	}
+
+	date, err := commons.ConvertStringToDate(payload.Date)
+	if err != nil {
+		return errors.New("invalid date format: " + err.Error())
+	}
+
+	classTeacherComment.Comment = payload.Comment
+	classTeacherComment.UserNumber = user.Number
+	classTeacherComment.Date = date
+	classTeacherComment.UpdatedAt = time.Now()
+
+	err = repo.UpdateClassTeacherComment(classTeacherComment)
+	if err != nil {
+		return errors.New("failed to update class teacher comment: " + err.Error())
+	}
+
+	return nil
+}
+
+func UpdateSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, number string, user *authModel.User) error {
+	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
+
+	subjectTeacherComment, err := repo.GetSubjectTeacherCommentByNumber(number)
+	if err != nil {
+		return errors.New("failed to get subject teacher comment: " + err.Error())
+	}
+
+	if subjectTeacherComment.ID == 0 {
+		return errors.New("subject teacher comment not found")
+	}
+
+	subjectTeacherComment.Comment = payload.Comment
+	subjectTeacherComment.UserNumber = user.Number
+	subjectTeacherComment.UpdatedAt = time.Now()
+
+	err = repo.UpdateSubjectTeacherComment(subjectTeacherComment)
+	if err != nil {
+		return errors.New("failed to update subject teacher comment: " + err.Error())
+	}
+
+	return nil
+}

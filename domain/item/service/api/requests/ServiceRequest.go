@@ -18,6 +18,7 @@ type ServiceRequest struct {
 	RepeatCycle     string   `json:"repeat_cycle"`
 	PaymentMode     string   `json:"payment_mode"`
 	SchoolNumber    string   `json:"school_number"`
+	Code            int64    `json:"code"`
 }
 
 func (s *ServiceRequest) Validate() error {
@@ -29,6 +30,9 @@ func (s *ServiceRequest) Validate() error {
 	}
 	if s.Name == "" {
 		return errors.New("name is required")
+	}
+	if s.Code <= 0 {
+		return errors.New("code must be a positive integer")
 	}
 	if len(s.CampusNumbers) == 0 {
 		return errors.New("at least one campus is required")

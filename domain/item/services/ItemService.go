@@ -63,6 +63,7 @@ func (receiver ItemService) CreateServiceResponse(item itemModels.Item, campusSe
 			UserNumber:      item.UserNumber,
 			RepeatCycle:     item.RepeatCycle,
 			OneTimePurchase: item.OneTimePurchase,
+			Code:            item.Code,
 		},
 		Campuses: campusServiceResponse,
 	}
@@ -98,6 +99,7 @@ func (receiver ItemService) createItemResponse(item itemModels.Item) responses.I
 		RepeatCycle:     item.RepeatCycle,
 		OneTimePurchase: item.OneTimePurchase,
 		Prefix:          item.Prefix,
+		Code:            item.Code,
 	}
 }
 
@@ -126,6 +128,7 @@ func (receiver ItemService) SaveService(user *models.User, payload requests2.Ser
 		Name:            payload.Name,
 		SchoolNumber:    payload.SchoolNumber,
 		Type:            "Service",
+		Code:            payload.Code,
 	}
 
 	saveService := models2.Service{
@@ -207,6 +210,7 @@ func (receiver ItemService) UpdateService(serviceNumber string, user *models.Use
 		SchoolNumber:    payload.SchoolNumber,
 		Type:            "Service",
 		CreatedAt:       product.CreatedAt,
+		Code:            payload.Code,
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
