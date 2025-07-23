@@ -12,6 +12,7 @@ type CurriculumDelRequest struct {
 
 type CurriculumCreateRequest struct {
 	Name string `json:"name"`
+	Code int64  `json:"code"`
 }
 
 func (p *CurriculumCreateRequest) Prepare() {
@@ -22,6 +23,9 @@ func (p *CurriculumCreateRequest) Validate() error {
 
 	if p.Name == "" {
 		return errors.New("name is required")
+	}
+	if p.Code <= 0 {
+		return errors.New("code must be a positive integer")
 	}
 
 	return nil

@@ -754,7 +754,7 @@ func CreateSubjectTeacherComment(context *gin.Context) {
 
 	err = services3.SaveSubjectTeacherComment(payload, currentUser)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": errors.New("failed to save subject teacher comment " + err.Error())})
 		return
 	}
 

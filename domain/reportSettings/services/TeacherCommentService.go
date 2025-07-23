@@ -13,6 +13,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"time"
@@ -180,6 +181,12 @@ func FetchClassTeacherComments() ([]responses.ClassTeacherCommentResponse, error
 			return nil, errors.New("failed to get class by number: " + err.Error())
 		}
 
+		level, err := repositories5.GetLevelByNumber(class.LevelNumber)
+
+		if err != nil {
+			return nil, errors.New("failed to get level by number: " + err.Error())
+		}
+
 		comments = append(comments, responses.ClassTeacherCommentResponse{
 			Number:             comment.Number,
 			Comment:            comment.Comment,
@@ -191,6 +198,10 @@ func FetchClassTeacherComments() ([]responses.ClassTeacherCommentResponse, error
 			AcademicYear:       academicYear.AcademicYearName,
 			AcademicYearNumber: academicYear.Number,
 			TeacherName:        user.FirstName + " " + user.LastName + " " + user.SecondName,
+			Class:              class.Name,
+			ClassNumber:        class.Number,
+			LevelNumber:        class.LevelNumber,
+			Level:              level.Name,
 		})
 	}
 
@@ -219,7 +230,7 @@ func SaveSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, us
 
 	err := repo.CreateSubjectTeacherComment(subjectTeacherComment)
 	if err != nil {
-		return errors.New("failed to save subject teacher comment")
+		return err
 	}
 	return nil
 }
@@ -263,6 +274,23 @@ func FetchSubjectTeacherComments() ([]responses.SubjectTeacherCommentResponse, e
 			return nil, errors.New("failed to get assessment area: " + err.Error())
 		}
 
+		curriculumClass, err := repositories4.GetCurriculumClass(assessmentArea.CurriculumClassNumber)
+		if err != nil {
+			return nil, errors.New("failed to get curriculum class: " + err.Error())
+		}
+
+		classs, err := repositories4.GetClassByNumber(curriculumClass.ClassNumber)
+
+		if err != nil {
+			return nil, errors.New("failed to get class by number: " + err.Error())
+		}
+
+		level, err := repositories5.GetLevelByNumber(classs.LevelNumber)
+
+		if err != nil {
+			return nil, errors.New("failed to get level by number: " + err.Error())
+		}
+
 		comments = append(comments, responses.SubjectTeacherCommentResponse{
 			Number:               comment.Number,
 			Comment:              comment.Comment,
@@ -274,6 +302,10 @@ func FetchSubjectTeacherComments() ([]responses.SubjectTeacherCommentResponse, e
 			TeacherName:          user.FirstName + " " + user.LastName + " " + user.SecondName,
 			AssessmentAreaNumber: comment.AssessmentAreaNumber,
 			AssessmentAreaName:   assessmentArea.Name,
+			Class:                classs.Name,
+			ClassNumber:          classs.Number,
+			LevelNumber:          classs.LevelNumber,
+			Level:                level.Name,
 		})
 	}
 

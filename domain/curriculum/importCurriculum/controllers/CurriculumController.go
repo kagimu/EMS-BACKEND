@@ -74,6 +74,15 @@ func NewCurriculum(context *gin.Context) {
 		return
 	}
 
+	var dupCode models5.Curriculum
+	if duplicate := config.DB.
+		Where("code = ?", curriculumInfo.Code).
+		Where("entity_number = ?", entityNumber).
+		First(&dupCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum with this code  already exists !!!"})
+		return
+	}
+
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
@@ -81,6 +90,7 @@ func NewCurriculum(context *gin.Context) {
 	saveCurriculum := models5.Curriculum{
 		Number:       uuid.NewV4().String(),
 		Name:         name,
+		Code:         curriculumInfo.Code,
 		UserNumber:   userNumber,
 		EntityNumber: entityNumber,
 	}
@@ -824,7 +834,7 @@ func CurriculumEdit(context *gin.Context) {
 	var curriculumDataInfo models5.Curriculum
 	updateCurriculum := tx.Model(&curriculumDataInfo).
 		Where("number = ?", curriculumNumber).
-		Updates(models5.Curriculum{Name: name, UserNumber: userNumber})
+		Updates(models5.Curriculum{Name: name, UserNumber: userNumber, Code: curriculumInfo.Code})
 	if updateCurriculum.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
