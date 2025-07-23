@@ -151,6 +151,10 @@ type ClassTeacherCommentResponse struct {
 	AcademicYear       string `json:"academic_year"`
 	AcademicYearNumber string `json:"academic_year_number"`
 	TeacherName        string `json:"teacher_name"`
+	ClassNumber        string `json:"class_number"`
+	Class              string `json:"class"`
+	LevelNumber        string `json:"level_number"`
+	Level              string `json:"level"`
 }
 
 type SubjectTeacherCommentResponse struct {
@@ -164,4 +168,8 @@ type SubjectTeacherCommentResponse struct {
 	TeacherName          string `json:"teacher_name"`
 	AcademicYearNumber   string `json:"academic_year_number"`
 	AcademicYearName     string `json:"academic_year_name"`
+	ClassNumber          string `json:"class_number"`
+	Class                string `json:"class"`
+	LevelNumber          string `json:"level_number"`
+	Level                string `json:"level"`
 }
