@@ -13,6 +13,7 @@ type Item struct {
 	Description     string      `json:"description" gorm:"type:text"`
 	Type            string      `json:"type" gorm:"not null;comment:'Service or Product'"`
 	Cost            float64     `json:"cost" gorm:"not null"`
+	Code            int64       `json:"code" gorm:""`
 	Prefix          string      `json:"prefix"`
 	PaymentMode     string      `json:"payment_mode" gorm:"default:'CASH'"`
 	Mandatory       bool        `json:"mandatory" gorm:"default:false"`

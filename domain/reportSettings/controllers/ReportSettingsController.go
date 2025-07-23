@@ -792,3 +792,73 @@ func DeleteSubjectTeacherComment(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Subject teacher comment deleted successfully"})
 }
+
+func UpdateSubjectTeacherComment(context *gin.Context) {
+	commentNumber := context.Param("number")
+	if commentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
+		return
+	}
+
+	var payload requests.SubjectTeacherCommentRequest
+
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body"})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	err = services3.UpdateSubjectTeacherComment(payload, commentNumber, currentUser)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": errors.New("failed to update subject teacher comment " + err.Error())})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Subject teacher comment updated successfully"})
+}
+
+func UpdateClassTeacherComment(context *gin.Context) {
+	commentNumber := context.Param("number")
+	if commentNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
+		return
+	}
+
+	var payload requests.ClassTeacherCommentRequest
+
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body"})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	err = services3.UpdateClassTeacherComment(payload, commentNumber, currentUser)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": errors.New("failed to update class teacher comment " + err.Error())})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Class teacher comment updated successfully"})
+}
