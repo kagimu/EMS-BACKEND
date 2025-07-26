@@ -40,6 +40,7 @@ func FetchUsers(c *gin.Context) {
 		RoleName   string `json:"role_name"`
 		RoleNumber string `json:"role_number"`
 		ExpiryDate string `json:"expiry_date"`
+		Status     string `json:"status"`
 	}
 
 	type CLeanUser struct {
@@ -59,8 +60,16 @@ func FetchUsers(c *gin.Context) {
 		}
 
 		for _, userRole := range userRoles {
+
+			var status string
+			if userRole.ExpiryDate.Before(time.Now()) {
+				status = "Expired"
+			} else {
+				status = "Active"
+			}
+
 			roles = append(roles, roleObject{RoleName: userRole.Role.Name,
-				RoleNumber: userRole.Role.Number, ExpiryDate: userRole.ExpiryDate.Format("2006-01-02")})
+				RoleNumber: userRole.Role.Number, ExpiryDate: userRole.ExpiryDate.Format("2006-01-02"), Status: status})
 		}
 
 		cleanUsers = append(cleanUsers, CLeanUser{User: user, Roles: roles})

@@ -62,7 +62,6 @@ func GetScaleByNameAndSchoolNumber(scaleNumber, schoolNumber string, trn ...*gor
 func FindAllScales(schoolNumber string, trn ...*gorm.DB) ([]models.Scale, error) {
 
 	db := config.DB
-
 	if len(trn) > 0 {
 		db = trn[0]
 	}

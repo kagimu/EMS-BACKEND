@@ -14,6 +14,7 @@ type ItemResponse struct {
 	UserNumber      string  `json:"user_number"`
 	RepeatCycle     string  `json:"repeat_cycle"`
 	OneTimePurchase bool    `json:"one_time_purchase"`
+	Code            int64   `json:"code"`
 }
 type ServiceResponse struct {
 	ItemNumber string                  `json:"item_number"`

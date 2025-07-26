@@ -13,6 +13,7 @@ type ProductRequest struct {
 	RepeatCycle     string   `json:"repeat_cycle"`
 	PaymentMode     string   `json:"payment_mode"`
 	SchoolNumber    string   `json:"school_number"`
+	Code            int64    `json:"code"`
 }
 
 func (p *ProductRequest) Validate() error {
@@ -25,8 +26,18 @@ func (p *ProductRequest) Validate() error {
 	if len(p.SerialCode) == 0 {
 		return errors.New("serial code is required")
 	}
-	if p.Cost == 0 {
-		return errors.New("cost is required")
+	if p.Cost < 0 {
+		return errors.New("cost can not be negative")
 	}
+	if p.Code <= 0 {
+		return errors.New("code must be a positive integer")
+	}
+	if len(p.CampusNumbers) == 0 {
+		return errors.New("at least one campus is required")
+	}
+	if p.SchoolNumber == "" {
+		return errors.New("school number is required")
+	}
+
 	return nil
 }

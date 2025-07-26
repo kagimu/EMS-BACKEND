@@ -225,6 +225,9 @@ func Init() error {
 		&studentModels.FamilyMemberContact{},
 		&studentModels.StudentLanguage{},
 		&studentModels.EmergencyInformation{},
+		&admissionModel.AdmissionLetterTemplate{},
+		&reportSettings.ClassTeacherComment{},
+		&reportSettings.SubjectTeacherComment{},
 	)
 
 	if err != nil {

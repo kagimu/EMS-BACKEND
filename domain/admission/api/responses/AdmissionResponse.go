@@ -25,4 +25,5 @@ type AdmissionResponse struct {
 	CampusClassNumber      string                     `json:"campus_class_number"`
 	StreamNumber           string                     `json:"stream_number"`
 	CampusCurriculumNumber string                     `json:"campus_curriculum_number"`
+	ProfileCompleted       string                     `json:"profile_completed"`
 }

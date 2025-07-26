@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"strings"
+	"time"
 )
 
 var admissionRepository = repositories4.NewAdmissionRepository()
@@ -258,4 +259,152 @@ func StreamDetails(streamNumber string) (responses2.StreamResponse, error) {
 	}
 
 	return CreateStreamResponse(stream), nil
+}
+
+func EditClassDetails(info requests.ClassInfo, userNumber string) error {
+	class, err := repositories.GetClassByNumber(info.ClassNumber)
+	if err != nil {
+		return errors.New("Getting class error " + err.Error())
+	}
+
+	if class.Number == "" {
+		return errors.New("Invalid Class number ")
+	}
+
+	classByCode, err := repositories.GetClassByCode(info.Code, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by code error " + err.Error())
+	}
+
+	if classByCode.Number != "" && classByCode.Number != class.Number {
+		return errors.New("Code already in use ")
+	}
+
+	classByName, err := repositories.GetClassByName(info.Name, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by name error " + err.Error())
+	}
+
+	if classByName.Number != "" && classByName.Number != class.Number {
+		return errors.New("Name already in use ")
+	}
+
+	classByAbbreviation, err := repositories.GetClassByAbbreviation(info.Abbreviation, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by abbreviation error " + err.Error())
+	}
+
+	if classByAbbreviation.Number != "" && classByAbbreviation.Number != class.Number {
+		return errors.New("Abbreviation already in use ")
+	}
+
+	level, err := repositories2.GetLevelByNumber(info.Level)
+	if err != nil {
+		return errors.New("Getting level error " + err.Error())
+	}
+
+	if level.Number == "" {
+		return errors.New("Invalid Level number ")
+	}
+
+	//FindClassWithHighCode
+	checkClass, err := repositories.FindClassAfterLevelCode(class.EntityNumber, level.Code)
+	if err != nil {
+		return errors.New("Finding class after level error " + err.Error())
+	}
+
+	if checkClass.Number != "" && info.Code > checkClass.Code {
+		return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
+	} else {
+		checkClass, err = repositories.FindClassBeforeLevelCode(class.EntityNumber, level.Code)
+		if err != nil {
+			return errors.New("Finding class before level error " + err.Error())
+		}
+
+		if checkClass.Number != "" && info.Code < checkClass.Code {
+			return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
+		}
+	}
+
+	return repositories.SaveClass(classModels.Class{
+		Number:       class.Number,
+		Name:         info.Name,
+		Code:         info.Code,
+		EntityNumber: info.EntityNumber,
+		Abbreviation: info.Abbreviation,
+		CreatedAt:    class.CreatedAt,
+		UpdatedAt:    time.Now(),
+		UserNumber:   userNumber,
+		LevelNumber:  info.Level,
+	})
+}
+
+func NewClass(info requests.ClassInfo, userNumber string) error {
+
+	classByCode, err := repositories.GetClassByCode(info.Code, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by code error " + err.Error())
+	}
+
+	if classByCode.Number != "" {
+		return errors.New("Code already in use ")
+	}
+
+	classByName, err := repositories.GetClassByName(info.Name, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by name error " + err.Error())
+	}
+
+	if classByName.Number != "" {
+		return errors.New("Name already in use ")
+	}
+
+	classByAbbreviation, err := repositories.GetClassByAbbreviation(info.Abbreviation, info.EntityNumber)
+	if err != nil {
+		return errors.New("Getting class by abbreviation error " + err.Error())
+	}
+
+	if classByAbbreviation.Number != "" {
+		return errors.New("Abbreviation already in use ")
+	}
+
+	level, err := repositories2.GetLevelByNumber(info.Level)
+	if err != nil {
+		return errors.New("Getting level error " + err.Error())
+	}
+
+	if level.Number == "" {
+		return errors.New("Invalid Level number ")
+	}
+
+	//FindClassWithHighCode
+	checkClass, err := repositories.FindClassAfterLevelCode(info.EntityNumber, level.Code)
+	if err != nil {
+		return errors.New("Finding class error " + err.Error())
+	}
+
+	if checkClass.Number != "" && info.Code > checkClass.Code {
+		return errors.New(fmt.Sprintf("Check the class code, it can not be created in '%s' level", level.Name))
+	} else {
+		checkClass, err = repositories.FindClassBeforeLevelCode(info.EntityNumber, level.Code)
+		if err != nil {
+			return errors.New("Finding class before level error " + err.Error())
+		}
+
+		if checkClass.Number != "" && info.Code < checkClass.Code {
+			return errors.New(fmt.Sprintf("Check the class code, it can not be placed in '%s' level", level.Name))
+		}
+	}
+
+	return repositories.SaveClass(classModels.Class{
+		Number:       uuid.NewV4().String(),
+		Name:         info.Name,
+		Code:         info.Code,
+		EntityNumber: info.EntityNumber,
+		Abbreviation: info.Abbreviation,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+		UserNumber:   userNumber,
+		LevelNumber:  info.Level,
+	})
 }

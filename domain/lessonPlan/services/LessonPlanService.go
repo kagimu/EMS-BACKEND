@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/repositories"
@@ -30,10 +31,38 @@ type LessonPlanService interface {
 	AddLessonPlanReferences(lessonPlanReferenceRequest requests.LessonPlanReferenceRequest, userNumber string) error
 	UpdateLessonPlanReference(lessonPlanReferenceRequest requests.Material, referenceNumber, userNumber string) error
 	DeleteLessonPlanReference(referenceNumber string) error
+	Invalidate(lessonPlanNumber string, user *authModel.User) error
 }
 
 type lessonPlanServiceImp struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanServiceImp) Invalidate(lessonPlanNumber string, user *authModel.User) error {
+	lessonPlanRepository.UseTx(config.DB)
+
+	lessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanNumber)
+	if err != nil {
+		return err
+	}
+
+	if lessonPlan.Number == "" {
+		return errors.New("Invalid lesson plan number ")
+	}
+
+	if lessonPlan.Status == constants.StatusInactive {
+		return errors.New("Lesson plan already in invalidated ")
+	}
+
+	lessonPlan.Status = constants.StatusInactive
+	lessonPlan.UserNumber = user.Number
+
+	_, err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (l *lessonPlanServiceImp) UpdateLessonPlanReference(material requests.Material, referenceNumber, userNumber string) error {
@@ -179,7 +208,7 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 	}
 
 	lessonPlanRepository.UseTx(config.DB)
-	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber)
+	checkDuplicate, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(lessonPlanInfo.SchemeSubTopicNumber, constants.StatusActive)
 	if err != nil {
 		return err
 	}
@@ -190,51 +219,55 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 
 	lessonPlanNumber := lessonPlanInfo.LessonPlanNumber
 
-	if lessonPlanNumber == "" {
-		lessonPlanNumber = uuid.NewV4().String()
-	}
-
-	saveLessonPlan := models.LessonPlan{
-		Number:               lessonPlanNumber,
-		SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
-		Status:               constants.StatusDraft,
-		UserNumber:           userNumber,
-		UpdatedAt:            time.Now(),
-	}
-
-	oldLessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanNumber)
-	if err != nil {
-		return errors.New("Checking old lesson plan existence failed : " + err.Error())
-	}
-
-	if oldLessonPlan.Number != "" {
-		saveLessonPlan.CreatedAt = oldLessonPlan.CreatedAt
-		saveLessonPlan.Status = oldLessonPlan.Status
-	}
-
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
 		lessonPlanRepository.UseTx(tx)
-		conceptRepository.UseTx(tx)
 
-		err = lessonPlanRepository.SaveLessonPlan(saveLessonPlan)
+		oldLessonPlan, err := lessonPlanRepository.FindLessonPlanByNumber(lessonPlanNumber)
+		if err != nil {
+			return errors.New("Checking old lesson plan existence failed : " + err.Error())
+		}
+
+		if oldLessonPlan.Number != "" {
+			oldLessonPlan.SchemeSubTopicNumber = lessonPlanInfo.SchemeSubTopicNumber
+			oldLessonPlan.UserNumber = userNumber
+			oldLessonPlan.UpdatedAt = time.Now()
+		} else {
+			oldLessonPlan = models.LessonPlan{
+				Number:               uuid.NewV4().String(),
+				SchemeSubTopicNumber: lessonPlanInfo.SchemeSubTopicNumber,
+				Status:               constants.StatusActive,
+				UserNumber:           userNumber,
+				UpdatedAt:            time.Now(),
+				CreatedAt:            time.Now(),
+			}
+		}
+
+		saveLessonPlan, err := lessonPlanRepository.SaveLessonPlan(oldLessonPlan)
 		if err != nil {
 			return err
 		}
 
+		saveLessonPlan, err = lessonPlanRepository.FindLessonPlanByNumber(saveLessonPlan.Number)
+		if err != nil {
+			return errors.New("Confirming lesson plan error: " + err.Error())
+		}
+
+		if saveLessonPlan.Number == "" {
+			return errors.New("Lesson plan not saved! ")
+		}
+
+		fmt.Println("Saved lesson plan ", saveLessonPlan.Number)
+
 		for _, concept := range lessonPlanInfo.LessonPlanConceptInfo {
 
-			duplicateLessonPlanConcept, err := lessonPlanRepository.GetLessonPlanConcept(lessonPlanNumber, concept.LessonPlanConceptNumber)
+			conceptNumber := concept.LessonPlanConceptNumber
+			oldLessonPlanConcept, err := lessonPlanRepository.GetLessonPlanConceptByNumber(conceptNumber)
 			if err != nil {
 				return err
 			}
 
-			if duplicateLessonPlanConcept.Number != "" {
-				return errors.New("Duplicates Concepts not allowed ")
-			}
-
-			conceptNumber := concept.LessonPlanConceptNumber
-			if conceptNumber == "" {
+			if oldLessonPlanConcept.Number != "" && oldLessonPlanConcept.LessonPlanNumber != saveLessonPlan.Number {
 				conceptNumber = uuid.NewV4().String()
 			}
 
@@ -244,10 +277,12 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 				Code:             concept.Code,
 				LessonPlanNumber: saveLessonPlan.Number,
 				UserNumber:       userNumber,
+				UpdatedAt:        time.Now(),
+				CreatedAt:        time.Now(),
 			}
 
-			//	adds new concepts when Concept number doesnt exists
-			err = conceptRepository.SaveConcept(saveLessonConcepts)
+			//	adds new concepts when Concept number does not exist
+			err = lessonPlanRepository.SaveLessonPlanConcept(saveLessonConcepts)
 			if err != nil {
 				return errors.New("Failed to save concept " + err.Error())
 			}
@@ -267,6 +302,8 @@ func (l *lessonPlanServiceImp) NewLessonPlan(lessonPlanInfo requests.LessonPlanI
 						Code:                    step.Code,
 						Step:                    step.Step,
 						LessonPlanConceptNumber: conceptNumber,
+						UpdatedAt:               time.Now(),
+						CreatedAt:               time.Now(),
 					}
 
 					err = lessonPlanRepository.SaveConceptStep(saveLearningSteps)
@@ -357,6 +394,7 @@ func toFileName(subTopicName string) string {
 }
 
 var lessonPlanRepository = repository.NewLessonPlanRepository()
+
 var conceptRepository = repositories.NewConceptRepository()
 
 func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeSubTopicNumber, currentUserNumber string) error {
@@ -374,14 +412,14 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 		return errors.New("Invalid scheme subtopic ")
 	}
 
-	conceptRepository.UseTx(config.DB)
+	//conceptRepository.UseTx(config.DB)
 	concepts, err := resolveConcepts(schemeOfWorkSubTopic.SubTopicNumber, config.DB)
 	if err != nil {
 		return err
 	}
 
 	lessonPlanRepository.UseTx(config.DB)
-	lessonPlan, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber)
+	lessonPlan, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber, constants.StatusActive)
 	if err != nil {
 		return errors.New("Checking lesson plan error " + err.Error())
 	}
@@ -396,7 +434,7 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 				UserNumber:           currentUserNumber,
 				SchemeSubTopicNumber: schemeSubTopicNumber,
 			}
-			err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
+			lessonPlan, err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
 			if err != nil {
 				return errors.New("Creating lesson plan error " + err.Error())
 			}

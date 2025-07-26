@@ -129,8 +129,8 @@ func Login(context *gin.Context) {
 	//prepare roles and permissions
 	//get user roles
 	var userRoles = make([]permissionModels.UserRole, 0)
-	var userRolesList []rolesResponses.RoleView
-	var permissions []string
+	var userRolesList = make([]rolesResponses.RoleView, 0)
+	var permissions = make([]string, 0)
 
 	err = config.DB.Where("user_number = ? AND DATE(expiry_date) >= ?", userNumber, time.Now()).Find(&userRoles).Error
 	if err != nil {
@@ -150,7 +150,7 @@ func Login(context *gin.Context) {
 		})
 
 		//get role permissions
-		var rolePermissions []permissionModels.RolePermission
+		var rolePermissions = make([]permissionModels.RolePermission, 0)
 		config.DB.Where("role_number = ?", item.RoleNumber).Find(&rolePermissions)
 
 		for _, permission := range rolePermissions {

@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/api/responses"
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
@@ -99,7 +100,7 @@ func FetchLessonPlan(context *gin.Context) {
 
 	var lessonPlanInfo lessonPlanModel.LessonPlan
 	if err := config.DB.
-		Where("scheme_sub_topic_number = ?", subTopicNumber).
+		Where("scheme_sub_topic_number = ? AND status = ?", subTopicNumber, constants.StatusActive).
 		//Preload("SchemeOfWork").
 		Order("created_at desc").
 		First(&lessonPlanInfo).Error; err != nil {
@@ -301,4 +302,25 @@ func DeleteLessonPlanReference(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference deleted successfully"})
+}
+
+func InvalidateLessonPlan(context *gin.Context) {
+	user, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+	}
+
+	lessonPlanNumber := context.Param("lessonPlanNumber")
+	if lessonPlanNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose the lesson plan to invalidate"})
+		return
+	}
+
+	err = lessonPlanService.Invalidate(lessonPlanNumber, user)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Lesson plan invalidated successfully"})
 }

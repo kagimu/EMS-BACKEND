@@ -27,7 +27,7 @@ func (i *InvoicePaymentRequest) Validate() error {
 	}
 
 	if i.InvoiceNumber == "" {
-		return errors.New("choose the invoice they are paying against")
+		return errors.New("choose the promissory note they are paying against")
 	}
 
 	return nil

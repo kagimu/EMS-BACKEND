@@ -36,7 +36,7 @@ import (
 
 func NewCurriculum(context *gin.Context) {
 
-	var curriculumInfo responses.CurriculumResponse
+	var curriculumInfo requests.CurriculumCreateRequest
 	err := context.BindJSON(&curriculumInfo)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
@@ -53,7 +53,7 @@ func NewCurriculum(context *gin.Context) {
 	name := curriculumInfo.Name
 
 	userNumber := context.Request.Header["User-Number"][0]
-
+	entityNumber, _ := commons.GetUserEntityNumber(context)
 	var userData models.User
 	//check if user is a valid user
 	if err := config.DB.Where("number = ?", userNumber).First(&userData).Error; err != nil {
@@ -68,19 +68,29 @@ func NewCurriculum(context *gin.Context) {
 	var duplicateSchool models5.Curriculum
 	if duplicate := config.DB.
 		Where("name = ?", name).
-		Where("user_number = ?", userNumber).
+		Where("entity_number = ?", entityNumber).
 		First(&duplicateSchool).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum already exists!!!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum with this name  already exists !!!"})
+		return
+	}
+
+	var dupCode models5.Curriculum
+	if duplicate := config.DB.
+		Where("code = ?", curriculumInfo.Code).
+		Where("entity_number = ?", entityNumber).
+		First(&dupCode).Error; duplicate == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum with this code  already exists !!!"})
 		return
 	}
 
 	// Begin the transaction
 	tx := config.DB.Begin()
 	///save user data
-	entityNumber, _ := commons.GetUserEntityNumber(context)
+
 	saveCurriculum := models5.Curriculum{
 		Number:       uuid.NewV4().String(),
 		Name:         name,
+		Code:         curriculumInfo.Code,
 		UserNumber:   userNumber,
 		EntityNumber: entityNumber,
 	}
@@ -588,7 +598,7 @@ func FetchCurriculum(context *gin.Context) {
 	var curriculum []models5.Curriculum
 	if err := config.DB.
 		Scopes(filters.ByEntityNumber(context.Query("entity_number"))).
-		Order("created_at desc").
+		Order("code asc").
 		Find(&curriculum).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No curriculum found!"})
 		return
@@ -824,7 +834,7 @@ func CurriculumEdit(context *gin.Context) {
 	var curriculumDataInfo models5.Curriculum
 	updateCurriculum := tx.Model(&curriculumDataInfo).
 		Where("number = ?", curriculumNumber).
-		Updates(models5.Curriculum{Name: name, UserNumber: userNumber})
+		Updates(models5.Curriculum{Name: name, UserNumber: userNumber, Code: curriculumInfo.Code})
 	if updateCurriculum.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})

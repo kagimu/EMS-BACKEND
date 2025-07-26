@@ -40,3 +40,55 @@ type SingleAssessment struct {
 	AssessmentScheduleNumber string `json:"assessment_schedule_number"`
 	AssessmentScheduleName   string `json:"assessment_schedule_name"`
 }
+
+type EmergencyInformationResponse struct {
+	StudentNumber                 string `json:"student_number" `
+	ContactPerson                 string `json:"contact_person" `
+	ContactPersonPhone            string `json:"contact_person_phone" `
+	ContactPersonAlternative      string `json:"contact_person_alternative" `
+	ContactPersonAlternativePhone string `json:"contact_person_alternative_phone" `
+	ContactDoctorName             string `json:"contact_doctor_name" `
+	ContactDoctorPhone            string `json:"contact_doctor_phone" `
+}
+
+type MedicalRecordResponse struct {
+	StudentNumber     string `json:"student_number"`
+	BloodTypeGroup    string `json:"blood_type_group"`
+	Allergies         string `json:"allergies" `
+	ExistingCondition string `json:"existing_condition"`
+	RegularMedication string `json:"regular_medication"`
+	DoctorName        string `json:"doctor_name"`
+	DoctorPhone       string `json:"doctor_phone"`
+}
+
+type FamilyMemberResponse struct {
+	Number                 string                        `json:"number"`
+	Surname                string                        `json:"surname"`
+	IsLiving               string                        `json:"is_living"`
+	OtherName              string                        `json:"other_name"`
+	PlaceOfEmployment      string                        `json:"place_of_employment"`
+	PhysicalContactAddress string                        `json:"physical_contact_address"`
+	Contacts               []FamilyMemberContactResponse `json:"contacts"`
+	Relationship           string                        `json:"relationship"`
+}
+
+type FamilyMemberContactResponse struct {
+	Number             string `json:"number"`
+	FamilyMemberNumber string `json:"family_member_number"`
+	PhoneNumber        string `json:"phone_number"`
+	Email              string `json:"email"`
+	CreatedAt          string `json:"created_at"`
+	UpdatedAt          string `json:"updated_at"`
+}
+
+type Language struct {
+	Name   string `json:"name"`
+	Code   int64  `json:"code"`
+	Number string `json:"number"`
+}
+
+type FamilyStructureResponse struct {
+	StudentNumber string                 `json:"student_number" gorm:"size:36;not null"`
+	FamilyMembers []FamilyMemberResponse `json:"family_members" `
+	Languages     []Language             `json:"languages"`
+}

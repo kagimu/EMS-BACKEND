@@ -41,5 +41,37 @@ func (p *LessonPlanInfo) Validate() error {
 		}
 	}
 
+	hasDuplicateCode, code := hasDuplicateCodes(p.LessonPlanConceptInfo)
+	if hasDuplicateCode {
+		return errors.New(fmt.Sprintf("Duplicate code entry '%d' in concepts", code))
+	}
+
+	hasDuplicateConcept, _ := hasDuplicateConcepts(p.LessonPlanConceptInfo)
+	if hasDuplicateConcept {
+		return errors.New(fmt.Sprintf("Duplicate concept entry in the selected concepts"))
+	}
+
 	return nil
+}
+
+func hasDuplicateCodes(subtopics []LessonPlanConceptInfo) (bool, int64) {
+	seen := make(map[int64]bool)
+	for _, s := range subtopics {
+		if seen[s.Code] {
+			return true, s.Code
+		}
+		seen[s.Code] = true
+	}
+	return false, 0
+}
+
+func hasDuplicateConcepts(subtopics []LessonPlanConceptInfo) (bool, string) {
+	seen := make(map[string]bool)
+	for _, s := range subtopics {
+		if seen[s.LessonPlanConceptNumber] {
+			return true, s.LessonPlanConceptNumber
+		}
+		seen[s.LessonPlanConceptNumber] = true
+	}
+	return false, ""
 }

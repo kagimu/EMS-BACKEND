@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
@@ -92,7 +93,7 @@ func CountAllUserInvoices(userNumber string) (int64, error) {
 	if err := db.
 		Joins("JOIN statements ON statements.number =  invoices.statement_number").
 		Model(&invoiceModel.Invoice{}).
-		Where("user_number = ?", userNumber).
+		Where("user_number = ? AND invoices.status != ?", userNumber, constants.StatusCancelled).
 		Count(&invoicesCount).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -115,7 +116,7 @@ func GetAllInvoicedAmount(userNumber string) (float64, error) {
 		Model(&invoiceModel.Invoice{}).
 		Joins("JOIN statements ON statements.number =  invoices.statement_number").
 		Joins("JOIN invoice_items ON invoice_items.invoice_number = invoices.number").
-		Where("statements.user_number = ? ", userNumber).
+		Where("statements.user_number = ? AND invoices.status != ?", userNumber, constants.StatusCancelled).
 		Select("COALESCE(sum(invoice_items.quantity * invoice_items.unit_price), 0)").
 		Scan(&totalAmount).Error; err != nil {
 

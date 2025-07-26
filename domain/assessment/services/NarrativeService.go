@@ -14,10 +14,16 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
+	repositories10 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/repositories"
+	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
+	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	"github.com/araddon/dateparse"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
+	"strconv"
 	"time"
 )
 
@@ -141,10 +147,13 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 		return errors.New("Date and time should not be in the future ")
 	}
 
-	/*referenceDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
-	if err != nil {
-		return errors.New(fmt.Sprint("Passing reference date error: ", err))
-	}*/
+	if dateTime.Before(studyPeriod.StudyPeriodStartDate) {
+		return errors.New("Reference date should be after the study period starts ")
+	}
+
+	if dateTime.After(studyPeriod.StudyPeriodEndDate) {
+		return errors.New("Reference date should be withing the study period ")
+	}
 
 	narrative := models.Narrative{
 		UserNumber:           userNumber,
@@ -156,6 +165,8 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
 		ReferenceDate:        dateTime,
 		ReferenceTime:        narrativeRequest.ReferenceTime,
+		CurrentStatus:        narrativeRequest.CurrentStatus,
+		Status:               narrativeRequest.Status,
 	}
 
 	createdAt := time.Now()
@@ -324,8 +335,8 @@ func (narrativeService NarrativeService) doSaveSchedule(scheduledNarrativeReques
 				return errors.New(fmt.Sprint("Passing scheduled on date error: ", err))
 			}
 
-			if scheduledOn.Before(time.Now()) {
-				return errors.New(fmt.Sprint("The scheduled on date should not be in the past date. "))
+			if scheduledOn.Before(studyPeriod.StudyPeriodStartDate) {
+				return errors.New(fmt.Sprint("The scheduled on date should not be before the study period starts. "))
 			}
 
 			if scheduledOn.After(studyPeriod.StudyPeriodEndDate) {
@@ -371,6 +382,92 @@ func (narrativeService NarrativeService) doSaveSchedule(scheduledNarrativeReques
 	return err
 }
 
+func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative requests.NarrativeRequest, startDate, endDate time.Time, user *models2.User) (responses.NarrativeResponsePrintPreview, error) {
+
+	student, err := repositories6.FindStudentByNumber(narrative.StudentNumber)
+	if err != nil {
+		return responses.NarrativeResponsePrintPreview{}, err
+	}
+
+	if student.Number == "" {
+		return responses.NarrativeResponsePrintPreview{}, errors.New("Invalid study number ")
+	}
+
+	studyPeriod, _ := repositories2.GetStudyPeriodByNumber(narrative.StudyPeriodNumber)
+	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
+	class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
+
+	school, _ := repositories7.GetSchoolByNumber(spn.SchoolNumber)
+
+	response := responses.NarrativeResponsePrintPreview{
+		Class:                class.Name,
+		StudyPeriod:          spn.Name,
+		DateOfConference:     time.Now().Format("2006-01-02"),
+		CurrentAdministrator: user.FirstName + " " + user.LastName,
+		RegistrationNumber:   student.ADN,
+		ChildFirstName:       student.Surname,
+		ChildSecondName:      student.SecondName,
+		School:               school.Name,
+	}
+
+	narrationData, err := repositories.GetNarrativesGroupedByAssessmentArea(narrative.StudentNumber, narrative.StudyPeriodNumber, "", startDate, endDate)
+	if err != nil {
+		return response, err
+	}
+
+	var narrativeResponseData = make([]responses.NarrativeResponseData, 0)
+
+	for assessmentAreaNumber, narrationList := range narrationData {
+
+		assessmentArea, err := repositories3.GetAssessmentAreaByNumber(assessmentAreaNumber)
+		if err != nil {
+			return response, err
+		}
+
+		subject, err := repositories8.GetSubjectByNumber(assessmentArea.SubjectNumber)
+		if err != nil {
+			return response, err
+		}
+
+		subjectCluster, err := repositories9.GetSubjectClusterByNumber(subject.SubjectClusterNumber)
+		if err != nil {
+			return response, err
+		}
+
+		learningArea, err := repositories10.GetLearningAreaByNumber(subjectCluster.LearningAreaNumber)
+		if err != nil {
+			return response, err
+		}
+
+		var narrativeResponseRows = make([]responses.NarrativeResponseRow, 0)
+
+		for _, narration := range narrationList {
+			narrativeResponseRows = append(narrativeResponseRows, responses.NarrativeResponseRow{
+				Status:        narration.Status,
+				CurrentStatus: narration.CurrentStatus,
+				Narration:     narration.Description,
+				ReferenceDate: narration.ReferenceDate.Format("2006-01-02"),
+				ReferenceTime: narration.ReferenceTime,
+				CreatedAt:     narration.CreatedAt.Format("2006-01-02"),
+			})
+		}
+
+		narrativeResponseData = append(narrativeResponseData, responses.NarrativeResponseData{
+			AssessmentAreaNumber:  assessmentAreaNumber,
+			AssessmentArea:        subject.Name,
+			SubjectCode:           strconv.FormatInt(subject.Code, 10),
+			SubjectCluster:        subjectCluster.Name,
+			LearningArea:          learningArea.Name,
+			NarrativeResponseRows: narrativeResponseRows,
+		})
+
+	}
+
+	response.NarrativeResponseData = narrativeResponseData
+
+	return response, nil
+}
+
 func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResponse {
 
 	user, _ := repository.GetUserByNumber(narrative.UserNumber)
@@ -380,18 +477,24 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 	assessmentArea, _ := repositories3.GetAssessmentAreaByNumber(narrative.AssessmentAreaNumber)
 	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
+	row := responses.NarrativeResponseRow{
+		Teacher:       user.FirstName + " " + user.LastName,
+		CreatedAt:     narrative.CreatedAt.Format(time.DateTime),
+		Narration:     narrative.Description,
+		ReferenceTime: narrative.ReferenceTime,
+		ReferenceDate: narrative.ReferenceDate.Format(time.DateOnly),
+		Status:        narrative.Status,
+		CurrentStatus: narrative.CurrentStatus,
+	}
+
 	return responses.NarrativeResponse{
-		Teacher:              user.FirstName + " " + user.LastName,
 		Number:               narrative.Number,
-		CreatedAt:            narrative.CreatedAt.Format(time.DateTime),
 		AssessmentAreaNumber: narrative.AssessmentAreaNumber,
 		StudyPeriod:          spn.Name,
 		Class:                class.Name,
-		Narration:            narrative.Description,
 		AssessmentArea:       assessmentArea.Name,
 		AcademicYear:         academicYear.AcademicYearName,
-		ReferenceTime:        narrative.ReferenceTime,
-		ReferenceDate:        narrative.ReferenceDate.Format(time.DateOnly),
+		NarrativeResponseRow: row,
 	}
 }
 

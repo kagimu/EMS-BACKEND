@@ -13,15 +13,16 @@ type EnrolmentRepository interface {
 	GetStudentEnrolment(studentNumber, studyPeriodNumber, campusClassNumber, status string, txn ...*gorm.DB) (models.Enrollment, error)
 	AllEnrolments(studentNumber, studyPeriodNumber, campusClassNumber, campusNumber, status string, txn ...*gorm.DB) ([]models.Enrollment, error)
 	SaveEnrolment(enrollment models.Enrollment, txn ...*gorm.DB) error
-	PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error)
+	PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error)
 }
 
 type enrolmentRepository struct {
 }
 
-func (enrolmentRepository *enrolmentRepository) PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error) {
+func (enrolmentRepository *enrolmentRepository) PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error) {
 	var enrolledStudents []models.Enrollment
 	if err := config.DB.
+		Joins("JOIN study_periods ON study_periods.number = enrollments.study_period_number").
 		Joins("JOIN students ON students.number = enrollments.student_number").
 		Joins("JOIN applications ON applications.number = students.application_number").
 		Scopes(
@@ -32,6 +33,7 @@ func (enrolmentRepository *enrolmentRepository) PaginatedEnrolments(schoolNumber
 			filters.ByAnyField("enrollments.study_period_number", studyPeriodNumber),
 			filters.ByParent("applications.user_number", user),
 			filters.ByAnyField("enrollments.status", status),
+			filters.ByAnyField("study_periods.academic_year_number", academicYearNumber),
 			page,
 		).
 		Preload("School").Preload("CampusClass").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {

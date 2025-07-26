@@ -7,6 +7,8 @@ type (
 		CommencementDate string                     `json:"commencement_date"`
 		SchoolCurriculum []SchoolCurriculumResponse `json:"school_curriculum"`
 		Logo             string                     `json:"logo"`
+		Motto            string                     `json:"motto"`
+		PrincipalName    string                     `json:"principal_name"`
 	}
 
 	SchoolCurriculumResponse struct {

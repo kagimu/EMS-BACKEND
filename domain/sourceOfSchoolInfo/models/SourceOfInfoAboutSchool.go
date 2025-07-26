@@ -2,19 +2,23 @@ package models
 
 import (
 	"errors"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"html"
 	"strings"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"gorm.io/gorm"
 )
 
 type SourceOfSchoolInfo struct {
-	gorm.Model
-	Number     string      `json:"number" gorm:"size:36;unique;not null"`
-	Name       string      `gorm:"size:100;unique;not null" json:"name"`
-	UserNumber string      `json:"user_number" gorm:"size:36;index;not null"`
-	User       models.User `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Number       string         `json:"number" gorm:"size:36;primaryKey"`
+	Name         string         `gorm:"size:100;not null" json:"name"`
+	UserNumber   string         `json:"user_number" gorm:"size:36;index;not null"`
+	User         models.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	EntityNumber string         `json:"entity_number" gorm:"size:36;index;not null"`
+	Entity       models2.Entity `gorm:"foreignKey:EntityNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
 
 func (s *SourceOfSchoolInfo) TableName() string {

@@ -53,7 +53,6 @@ func SaveAssessmentMetric(assessmentMetricRequest requests.AssessmentMetricReque
 	if err != nil {
 		return errors.New("creating schedule error: " + err.Error())
 	}
-
 	return nil
 }
 
@@ -304,6 +303,61 @@ func RemoveAssessmentMetric(assessmentMetricNumber string) error {
 
 	if err != nil {
 		return errors.New("deleting assessment metric error: " + err.Error())
+	}
+
+	return nil
+}
+
+func SaveMultipleAssessmentSchedules(payLoad requests.MultipleAssessmentScheduleRequest, userNumber string) error {
+
+	campusClass, err := classService.ResolveCampusClass(payLoad.ClassNumber, payLoad.CampusNumber, payLoad.CurriculumNumber, payLoad.CampusCurriculumNumber)
+	if err != nil {
+		return err
+	}
+
+	studyPeriod, err := repositories4.GetStudyPeriodByNumber(payLoad.StudyPeriodNumber)
+	if err != nil {
+		return err
+	}
+
+	if studyPeriod.Number == "" {
+		return errors.New("invalid study period number")
+	}
+
+	schedules := payLoad.Schedules
+	for _, assessmentMetricRequest := range schedules {
+
+		formatDate, err := time.Parse(time.DateOnly, assessmentMetricRequest.ScheduledOn)
+		if err != nil {
+			return err
+		}
+
+		if formatDate.Before(studyPeriod.StudyPeriodStartDate) {
+			return errors.New("Schedule date should be after study period has start ")
+		}
+
+		if formatDate.After(studyPeriod.StudyPeriodEndDate) {
+			return errors.New("Schedule date should be before study period has ended ")
+		}
+
+		saveAssessmentMetric := models.AssessmentMetric{
+			Number:               uuid.NewV4().String(),
+			StudyPeriodNumber:    payLoad.StudyPeriodNumber,
+			ScheduledOn:          formatDate,
+			CampusClassNumber:    campusClass.Number,
+			MetricNumber:         payLoad.MetricNumber,
+			AssessmentAreaNumber: assessmentMetricRequest.AssessmentAreaNumber,
+			Description:          payLoad.Description,
+			MaxScore:             assessmentMetricRequest.MaxScore,
+			RequireComment:       assessmentMetricRequest.RequireComment,
+			UserNumber:           userNumber,
+		}
+
+		err = assessmentRepository.SaveAssessmentMetric(saveAssessmentMetric)
+		if err != nil {
+			return errors.New("creating schedule error: " + err.Error())
+		}
+
 	}
 
 	return nil

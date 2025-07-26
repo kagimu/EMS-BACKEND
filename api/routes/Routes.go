@@ -323,9 +323,9 @@ func SetupRoutes() *gin.Engine {
 			schemeOfWork.PATCH("invalidate/:scheme_of_work_number", schemeOfWorkControllers.InvalidateSchemeOfWork)
 			schemeOfWork.PATCH("activate/:scheme_of_work_number", schemeOfWorkControllers.ActivateSchemeOfWork)
 			schemeOfWork.GET("fetch-scheme-of-work-by-class-and-subject", schemeOfWorkControllers.FetchSchemeOfWork)
+			schemeOfWork.POST("", schemeOfWorkControllers.NewSchemeOfWork)
+			schemeOfWork.PUT("", schemeOfWorkControllers.UpdateSchemeOfWork)
 		}
-		main.POST("new-scheme-of-work", schemeOfWorkControllers.NewSchemeOfWork)
-		main.POST("update-scheme-of-work", schemeOfWorkControllers.UpdateSchemeOfWork)
 
 		//lesson notes
 		main.GET("fetch-concepts-by-subtopic", conceptController.FetchConceptBySubTopic)
@@ -335,6 +335,7 @@ func SetupRoutes() *gin.Engine {
 			lessonPlan.POST("/new-lesson-Plan", lessonPlanControllers.NewLessonPlan)
 			lessonPlan.POST("/add-reference", lessonPlanControllers.AddLessonPlanReference)
 			lessonPlan.PATCH("/update-reference/:referenceNumber", lessonPlanControllers.UpdateLessonPlanReference)
+			lessonPlan.PATCH("/invalidate/:lessonPlanNumber", lessonPlanControllers.InvalidateLessonPlan)
 			lessonPlan.DELETE("/delete-reference/:referenceNumber", lessonPlanControllers.DeleteLessonPlanReference)
 			lessonPlan.GET("/fetch-lesson-plan", lessonPlanControllers.FetchLessonPlan)
 			lessonPlan.GET("/references/:id", lessonPlanControllers.FetchLessonPlanReferences)
@@ -551,6 +552,14 @@ func SetupRoutes() *gin.Engine {
 
 		}
 
+		templates := admission.Group("/templates")
+		{
+			templates.POST("new", admissionController.NewAdmissionTemplateController)
+			templates.GET(":school_number", admissionController.GetAdmissionTemplateController)
+			templates.GET("decode", admissionController.DecodeAdmissionTemplateController)
+			templates.DELETE(":template_number", admissionController.DeleteAdmissionTemplateController)
+		}
+
 		assessmentArea := main.Group("/assessment-areas")
 		{
 			assessmentArea.POST("", assessmentAreaController.CreateAssessmentArea)
@@ -576,6 +585,11 @@ func SetupRoutes() *gin.Engine {
 			assessment.GET("metrics", assessmentController.FetchMetrics)
 			assessment.DELETE("metrics/:metric_number", assessmentController.DeleteMetric)
 			assessment.PUT("metrics/:metric_number", assessmentController.EditMetric)
+
+			schedules := assessment.Group("/schedules")
+			{
+				schedules.POST("", assessmentController.CreateMultipleSchedules)
+			}
 
 			aggregateScale := assessment.Group("/aggregate-scales")
 			{
@@ -738,6 +752,23 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("learning-area-comments", reportSettingsController.CreateLearningAreaComment)
 			reportSettings.DELETE("head-teacher-comment/:id", reportSettingsController.DeleteHeadTeacherComment)
 
+			classTeacherComment := reportSettings.Group("class-teacher-comment")
+			{
+				classTeacherComment.POST("", reportSettingsController.CreateClassTeacherComment)
+				classTeacherComment.GET("", reportSettingsController.FetchClassTeacherComments)
+				classTeacherComment.DELETE("/:comment_number", reportSettingsController.DeleteClassTeacherComment)
+				classTeacherComment.POST("/:number", reportSettingsController.UpdateClassTeacherComment)
+			}
+
+			subjectTeacherComment := reportSettings.Group("subject-teacher-comment")
+			{
+				subjectTeacherComment.POST("", reportSettingsController.CreateSubjectTeacherComment)
+				subjectTeacherComment.GET("", reportSettingsController.FetchSubjectTeacherComments)
+				subjectTeacherComment.DELETE("/:comment_number", reportSettingsController.DeleteSubjectTeacherComment)
+				subjectTeacherComment.POST("/:comment_number", reportSettingsController.UpdateSubjectTeacherComment)
+
+			}
+
 			narrative := reportSettings.Group("narrative")
 			{
 				narrative.GET("", assessmentController.GetNarrative)
@@ -745,6 +776,7 @@ func SetupRoutes() *gin.Engine {
 				narrative.GET(":narrative_number", assessmentController.GetDetailedNarrative)
 				narrative.DELETE(":narrative_number", assessmentController.DeleteNarrative)
 				narrative.POST("", assessmentController.SaveNarrative)
+				narrative.GET("print-preview", assessmentController.NarrativePrintPreview)
 
 				scheduled := narrative.Group("scheduled")
 				{
@@ -792,8 +824,11 @@ func SetupRoutes() *gin.Engine {
 		{
 			students.GET("/by-assessment-metric/:assessment_metric_number", studentController.FetchStudentsByAssessmentMetricNumber)
 			students.POST("medical-records", studentController.CreateMedicalRecord)
+			students.GET("medical-records/:student_number", studentController.FetchMedicalRecord)
 			students.POST("family-structure", studentController.CreateFamilyStructure)
+			students.GET("family-structure/:student_number", studentController.FetchFamilyStructure)
 			students.POST("emergency-information", studentController.CreateEmergencyInformation)
+			students.GET("emergency-information/:student_number", studentController.FetchEmergencyInformation)
 		}
 
 		catering := main.Group("catering")

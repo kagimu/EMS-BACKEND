@@ -12,7 +12,7 @@ type (
 	SchemeOfWork struct {
 		ID                 uint      `gorm:"primaryKey"`
 		Number             string    `json:"number" gorm:"size:36;unique;not null"`
-		Name               string    `json:"name" form:"name" binding:"required" gorm:"size:200;unique;not null"`
+		Name               string    `json:"name" form:"name" binding:"required" gorm:"size:200;not null"`
 		Status             string    `json:"status" form:"status" binding:"required" gorm:"size:15;not null"`
 		CampusClassNumber  string    `json:"campus_class_number" gorm:"size:36;not null"`
 		SubjectNumber      string    `json:"subject_number" gorm:"size:36;not null"`

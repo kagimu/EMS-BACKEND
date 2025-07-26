@@ -10,10 +10,20 @@ type EmergencyInformationRepository interface {
 	GetEmergencyInformationByStudentNumber(studentNumber string) (models.EmergencyInformation, error)
 	CreateEmergencyInformation(emergencyInformation models.EmergencyInformation) error
 	DeleteEmergencyInformation(emergencyInformation models.EmergencyInformation) error
+	DeleteEmergencyInformationByStudentNumber(studentNumber string) error
 }
 
 type EmergencyInformationRepositoryImpl struct {
 	DB *gorm.DB
+}
+
+func (e EmergencyInformationRepositoryImpl) DeleteEmergencyInformationByStudentNumber(studentNumber string) error {
+	var emergencyInformation models.EmergencyInformation
+	err := e.DB.Where("student_number = ?", studentNumber).Delete(&emergencyInformation).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (e EmergencyInformationRepositoryImpl) DeleteEmergencyInformation(emergencyInformation models.EmergencyInformation) error {

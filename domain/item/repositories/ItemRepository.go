@@ -55,6 +55,28 @@ func GetItemBySerialCode(serialCode, schoolNumber string, tx ...*gorm.DB) (itemM
 	return item, nil
 }
 
+func GetItemByName(name, schoolNumber string, tx ...*gorm.DB) (itemModels.Item, error) {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var item itemModels.Item
+
+	if err := db.Where("name = ? AND school_number = ?", name, schoolNumber).First(&item).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return item, nil
+		}
+
+		return item, err
+	}
+
+	return item, nil
+}
+
 func SaveItem(newItem itemModels.Item, tx ...*gorm.DB) error {
 
 	db := config.DB
@@ -77,6 +99,17 @@ func SaveProductItem(newProductItem models.Product, tx ...*gorm.DB) error {
 	return db.Save(&newProductItem).Error
 }
 
+func SaveServiceItem(newServiceItem models2.Service, tx ...*gorm.DB) error {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Save(&newServiceItem).Error
+}
+
 func SaveCampusItem(newCampusItem models2.CampusItem, tx ...*gorm.DB) error {
 
 	db := config.DB
@@ -86,6 +119,42 @@ func SaveCampusItem(newCampusItem models2.CampusItem, tx ...*gorm.DB) error {
 	}
 
 	return db.Save(&newCampusItem).Error
+}
+
+func FindCampusItem(campusNumber, itemNumber string, tx ...*gorm.DB) (models2.CampusItem, error) {
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var item models2.CampusItem
+
+	if err := db.Where("campus_number = ? AND item_number = ?", campusNumber, itemNumber).First(&item).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return item, nil
+		}
+
+		return item, err
+	}
+
+	return item, nil
+}
+
+func DeleteCampusItem(itemNumber string, tx ...*gorm.DB) error {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var campusItem models2.CampusItem
+
+	if err := db.Where("item_number = ?", itemNumber).Unscoped().Delete(&campusItem).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func FetchAllServiceItems(schoolNumber string, tx ...*gorm.DB) ([]itemModels.Item, error) {

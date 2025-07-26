@@ -14,8 +14,8 @@ import (
 
 type LessonPlanRepository interface {
 	UseTx(tx *gorm.DB) *gorm.DB
-	GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeOfWorkSubTopicNumber string) (lessonPlanModel.LessonPlan, error)
-	SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) error
+	GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeOfWorkSubTopicNumber, status string) (lessonPlanModel.LessonPlan, error)
+	SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) (lessonPlanModel.LessonPlan, error)
 	GetLessonPlanConcept(lessonPlanNumber, conceptNumber string) (lessonPlanModel.LessonPlanConcept, error)
 	SaveLessonPlanConcept(lessonPlanConcept lessonPlanModel.LessonPlanConcept) error
 	SaveConceptStep(lessonPlanStep lessonPlanModel.LessonPlanStep) error
@@ -36,10 +36,28 @@ type LessonPlanRepository interface {
 	SaveLessonPlanReference(lessonPlanReference lessonPlanModel.LessonPlanReference) error
 	FindLessonPlanReferenceByNumber(referenceNumber string) (lessonPlanModel.LessonPlanReference, error)
 	DeleteLessonPlanReference(lessonPlanReference lessonPlanModel.LessonPlanReference) error
+	FindLessonPlanBySchemeOfWorkNumber(schemeOfWorkNumber string) (lessonPlanModel.LessonPlan, error)
 }
 
 type lessonPlanRepositoryImpl struct {
 	Db *gorm.DB
+}
+
+func (l *lessonPlanRepositoryImpl) FindLessonPlanBySchemeOfWorkNumber(schemeOfWorkNumber string) (lessonPlanModel.LessonPlan, error) {
+	var lessonPlan lessonPlanModel.LessonPlan
+	err := l.Db.
+		Joins("JOIN scheme_of_work_sub_topics ON lesson_plans.scheme_sub_topic_number = scheme_of_work_sub_topics.number").
+		Where("scheme_of_work_sub_topics.scheme_of_work_number = ?", schemeOfWorkNumber).First(&lessonPlan).Error
+	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return lessonPlan, nil
+		}
+
+		return lessonPlan, err
+	}
+
+	return lessonPlan, nil
 }
 
 func (l *lessonPlanRepositoryImpl) FindLessonPlanReferenceByNumber(lessonPlanReferenceNumber string) (lessonPlanModel.LessonPlanReference, error) {
@@ -129,7 +147,8 @@ func (l *lessonPlanRepositoryImpl) CountStepsByCurriculumNumber(number string) (
 	var count int64
 	err := l.Db.Model(&lessonPlanModel.LessonPlanStep{}).
 		Joins("JOIN lesson_plan_concepts ON lesson_plan_steps.lesson_plan_concept_number = lesson_plan_concepts.number ").
-		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND concepts.curriculum_number = ?", number).Count(&count).Error
+		Joins("JOIN concepts ON lesson_plan_concepts.concept_number = concepts.number AND concepts.curriculum_number = ?", number).
+		Count(&count).Error
 	if err != nil {
 		return 0, errors.New("error counting steps" + err.Error())
 	}
@@ -298,15 +317,32 @@ func (l *lessonPlanRepositoryImpl) GetLessonPlanConcept(lessonPlanNumber, concep
 	return lessonPlanConcept, nil
 }
 
-func (l *lessonPlanRepositoryImpl) SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) error {
-	return l.Db.Save(&lessonPlan).Error
+func (l *lessonPlanRepositoryImpl) SaveLessonPlan(lessonPlan lessonPlanModel.LessonPlan) (lessonPlanModel.LessonPlan, error) {
+	var existing lessonPlanModel.LessonPlan
+
+	err := l.Db.
+		Where("number = ?", lessonPlan.Number).
+		First(&existing).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Insert
+			return lessonPlan, l.Db.Create(&lessonPlan).Error
+		}
+		// Other error
+		return lessonPlan, err
+	}
+
+	// Update
+	return lessonPlan, l.Db.Model(&existing).Updates(lessonPlan).Error
 }
 
-func (l *lessonPlanRepositoryImpl) GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber string) (lessonPlanModel.LessonPlan, error) {
+func (l *lessonPlanRepositoryImpl) GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber, status string) (lessonPlanModel.LessonPlan, error) {
 
 	var lessonPlan lessonPlanModel.LessonPlan
 
-	if err := l.Db.Where("scheme_sub_topic_number = ?", schemeSubTopicNumber).Find(&lessonPlan).Error; err != nil {
+	if err := l.Db.Where("scheme_sub_topic_number = ? AND status = ?", schemeSubTopicNumber, status).Find(&lessonPlan).Error; err != nil {
+
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return lessonPlanModel.LessonPlan{}, nil
 		}

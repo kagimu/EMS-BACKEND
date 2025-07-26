@@ -29,15 +29,15 @@ import (
 
 type EnrolmentService interface {
 	NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) error
-	Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
+	Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
 }
 
 type enrolmentService struct {
 }
 
-func (enrolment *enrolmentService) Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error) {
+func (enrolment *enrolmentService) Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error) {
 
-	paginatedResponse, err := enrolmentRepository.PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, status, user, page)
+	paginatedResponse, err := enrolmentRepository.PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
 	students := make([]responses.Enrollment, 0)
 
 	if err != nil {
@@ -90,6 +90,16 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 	if student.Number == "" {
 		return errors.New("Invalid student number ")
+	}
+
+	emergencyInformationRepository := repositories2.NewEmergencyInformationRepository(config.DB)
+	emergencyInformation, err := emergencyInformationRepository.GetEmergencyInformationByStudentNumber(student.Number)
+	if err != nil {
+		return errors.New("Checking emergency information error: " + err.Error())
+	}
+
+	if emergencyInformation.StudentNumber != student.Number {
+		return errors.New("The student profile is incomplete ")
 	}
 
 	admission, err := admissionRepository.FindAdmissionByStudentNumber(enrolmentRequest.StudentNumber)
@@ -273,7 +283,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		}, tx)
 
 		if err != nil {
-			return errors.New("Attaching enrollment to invoice error: " + err.Error())
+			return errors.New("Attaching enrollment to promissory note error: " + err.Error())
 		}
 
 		return nil
