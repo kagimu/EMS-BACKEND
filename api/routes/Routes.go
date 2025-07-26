@@ -84,7 +84,7 @@ func SetupRoutes() *gin.Engine {
 	//router.Use(middlewares.JWTMiddleware())
 	router.MaxMultipartMemory = 20 << 20 // 20 MiB
 	//router.Static("/", "./fileRepo")
-	router.Use(static.Serve("/fileRepo", static.LocalFile("/fileRepo", true)))
+	router.Use(static.Serve("fileRepo", static.LocalFile("fileRepo", true)))
 
 	router.NoRoute(commons.RouteNotFound)
 	router.GET("ping", commons.APIHealth)
