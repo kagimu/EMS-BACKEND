@@ -1,12 +1,22 @@
 package services
 
 import (
+	"errors"
+	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -226,4 +236,178 @@ func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureRespon
 	}
 
 	return response, nil
+}
+
+func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber string) error {
+	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, payload.CampusCurriculumNumber)
+	if err != nil {
+		return errors.New("Error checking class and campus: " + err.Error())
+	}
+
+	if campusClass.Number == "" {
+		return errors.New("campus class is not active on the selected campus")
+	}
+
+	/*var campusClass classModels.CampusClass
+	if err := config.DB.Where("number = ?", campusClass.Number).First(&campusClass).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Campus class not found"})
+		return
+	}*/
+
+	tx := config.DB.Begin()
+
+	applicationRepo := repository.NewApplicationRepositoryImpl(tx)
+
+	saveApplication := applicationModel.Application{
+		Number:     uuid.NewV4().String(),
+		UserNumber: userNumber,
+		Type:       payload.Type,
+	}
+
+	if payload.ApplicationNumber == "" {
+		if err := applicationRepo.SaveApplication(saveApplication); err != nil {
+			tx.Rollback()
+			return errors.New("failed to create application " + err.Error())
+		}
+
+	}
+
+	studentAPN, err := CreateAPN(tx)
+	if err != nil {
+		tx.Rollback()
+		return errors.New("failed to create APN " + err.Error())
+	}
+
+	studentNumber := uuid.NewV4().String()
+
+	// find Student by application number
+
+	student, err := applicationRepo.GetStudentByApplicationNumber(saveApplication.Number)
+	if err != nil {
+		tx.Rollback()
+		return errors.New("failed to get student " + err.Error())
+	}
+
+	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
+	if student.Number != "" {
+
+		// update student details
+		updateStudent := models.Student{
+			Surname:                   payload.Surname,
+			OtherName:                 payload.OtherName,
+			Gender:                    payload.Gender,
+			DateOfBirth:               payload.DateOfBirth,
+			ADNStatus:                 payload.ADNStatus,
+			ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
+			PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+			SecondName:                payload.SecondName,
+			PreferredCampusNumber:     payload.PreferredCampusNumber,
+			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
+			ApplicationNumber:         saveApplication.Number,
+			CampusClassNumber:         campusClass.Number,
+			SchoolNumber:              payload.SchoolNumber,
+			Lin:                       payload.Lin,
+			ModeOfStudyNumber:         payload.ModeOfStudyNumber,
+			AddedBy:                   userNumber,
+		}
+
+		if payload.ADN != "" {
+			updateStudent.ADN = payload.ADN
+		}
+
+		if err := applicationRepo.UpdateStudentByApplicationNumber(payload.ApplicationNumber, updateStudent); err != nil {
+			return errors.New("failed to update student " + err.Error())
+		}
+
+		// update the user details
+		updateUser := authModel.User{
+			FirstName:  payload.SecondName,
+			LastName:   payload.Surname,
+			SecondName: payload.OtherName,
+		}
+
+		if err := tx.Where("number = ?", student.UserNumber).Updates(updateUser).Error; err != nil {
+			return errors.New("failed to update user")
+		}
+
+		if err := tx.Commit().Error; err != nil {
+			return errors.New("failed to commit transaction")
+		}
+
+	}
+
+	var createdUser = authModel.User{
+		Number:     uuid.NewV4().String(),
+		FirstName:  payload.SecondName,
+		LastName:   payload.Surname,
+		SecondName: payload.OtherName,
+		Gender:     payload.Gender,
+		Type:       constants.TypeStudent,
+		Status:     constants.StatusInactive,
+	}
+
+	if err := applicationRepo.CreateUser(createdUser); err != nil {
+		tx.Rollback()
+		return errors.New("failed to create user " + err.Error())
+	}
+
+	savStudent := models.Student{
+		Number:                    studentNumber,
+		APN:                       studentAPN,
+		Surname:                   payload.Surname,
+		OtherName:                 payload.OtherName,
+		Gender:                    payload.Gender,
+		DateOfBirth:               payload.DateOfBirth,
+		ADNStatus:                 payload.ADNStatus,
+		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
+		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+		SecondName:                payload.SecondName,
+		PreferredCampusNumber:     payload.PreferredCampusNumber,
+		UserNumber:                createdUser.Number,
+		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
+		ApplicationNumber:         saveApplication.Number,
+		CampusClassNumber:         campusClass.Number,
+		SchoolNumber:              payload.SchoolNumber,
+		Lin:                       payload.Lin,
+		ModeOfStudyNumber:         payload.ModeOfStudyNumber,
+	}
+
+	if payload.ADN != "" {
+		savStudent.ADN = payload.ADN
+	}
+
+	if err := applicationRepo.CreateStudent(savStudent); err != nil {
+		tx.Rollback()
+		return errors.New("failed to save student " + err.Error())
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return errors.New("failed to commit transaction " + err.Error())
+	}
+
+	return nil
+}
+
+func CreateAPN(tx *gorm.DB) (string, error) {
+	year := strconv.Itoa(time.Now().Year())
+	month := time.Now().Format("01")
+
+	saveAPN := models.APN{
+		Year:  year,
+		Month: month,
+	}
+
+	if tx == nil {
+		tx = config.DB
+	}
+
+	if err := tx.Create(&saveAPN).Error; err != nil {
+		return "", err
+	}
+
+	savedID := saveAPN.ID + 1
+	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%04s", strconv.FormatUint(uint64(savedID), 10))}, "")
+
+	return result, nil
 }
