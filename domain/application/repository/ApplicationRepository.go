@@ -10,6 +10,7 @@ import (
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ApplicationRepository interface {
@@ -51,7 +52,25 @@ func (applicationRepository *applicationRepositoryImpl) DeleteDraftApplication(a
 }
 
 func (applicationRepository *applicationRepositoryImpl) UpdateApplicationStatus(applicationNumber string, status string) error {
-	return applicationRepository.DB.Model(&applicationModels.Application{}).Where("number = ?", applicationNumber).Update("status", status).Error
+	//	return applicationRepository.DB.Model(&applicationModels.Application{}).Where("number = ?", applicationNumber).Update("status", status).Error
+	var application applicationModels.Application
+	tx := applicationRepository.DB.Begin()
+
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("number = ?", applicationNumber).
+		First(&application).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	application.Status = status
+
+	if err := tx.Save(&application).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
 func (applicationRepository *applicationRepositoryImpl) FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error) {
