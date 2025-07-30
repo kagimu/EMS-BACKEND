@@ -18,7 +18,7 @@ type ApplicationRepository interface {
 	FindAllApplicationsPaginated(ctx *gin.Context, pagination *pagination.PaginatedResponse, schoolNumber string) ([]applicationModels.Application, error)
 	FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error)
 	GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error)
-	UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error
+	UpdateApplicationStatus(application *applicationModels.Application, status string) error
 	DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error
 	SaveApplication(application applicationModels.Application) error
 	UpdateStudentByApplicationNumber(applicationNumber string, student studentModel.Student) error
@@ -50,8 +50,9 @@ func (applicationRepository *applicationRepositoryImpl) DeleteDraftApplication(a
 	return txn.Where("number = ? AND status = ? ", applicationNumber, constants.StatusDraft).Delete(&applicationModels.Application{}).Error
 }
 
-func (applicationRepository *applicationRepositoryImpl) UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error {
-	return txn.Model(&applicationModels.Application{}).Where("number = ?", applicationNumber).Update("status", status).Error
+func (applicationRepository *applicationRepositoryImpl) UpdateApplicationStatus(application *applicationModels.Application, status string) error {
+	application.Status = status
+	return applicationRepository.DB.Model(&applicationModels.Application{}).Where("number = ?", application.Number).Updates(application).Error
 }
 
 func (applicationRepository *applicationRepositoryImpl) FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error) {

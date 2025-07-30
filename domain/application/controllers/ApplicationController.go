@@ -175,16 +175,16 @@ func FetchApplicationByNumber(c *gin.Context, applicationNumber string) (*models
 func SubmitApplication(context *gin.Context) {
 
 	var applicationNumber = context.Param("application_number")
-	var application models.Application
-	if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Application not found"})
+	applicationRepo := repository.NewApplicationRepositoryImpl(config.DB)
+	application, err := applicationRepo.FindApplicationByNumber(applicationNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Application not found error " + err.Error()})
 		return
-
 	}
 
-	application.Status = constants.StatusSubmitted
+	err = applicationRepo.UpdateApplicationStatus(application, constants.StatusSubmitted)
 
-	if err := config.DB.Save(&application).Error; err != nil {
+	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application " + err.Error()})
 		return
 	}
