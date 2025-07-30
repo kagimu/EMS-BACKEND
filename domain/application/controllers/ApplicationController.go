@@ -176,13 +176,13 @@ func SubmitApplication(context *gin.Context) {
 
 	var applicationNumber = context.Param("application_number")
 	applicationRepo := repository.NewApplicationRepositoryImpl(config.DB)
-	//application, err := applicationRepo.FindApplicationByNumber(applicationNumber)
-	//if err != nil {
-	//	context.JSON(http.StatusBadRequest, gin.H{"message": "Application not found error " + err.Error()})
-	//	return
-	//}
+	application, err := applicationRepo.FindApplicationByNumber(applicationNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Application not found error " + err.Error()})
+		return
+	}
 
-	err := applicationRepo.UpdateApplicationStatus(applicationNumber, constants.StatusSubmitted)
+	err = applicationRepo.UpdateApplicationStatus(application, constants.StatusSubmitted)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application " + err.Error()})
