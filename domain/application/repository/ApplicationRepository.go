@@ -10,7 +10,6 @@ import (
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type ApplicationRepository interface {
@@ -19,7 +18,7 @@ type ApplicationRepository interface {
 	FindAllApplicationsPaginated(ctx *gin.Context, pagination *pagination.PaginatedResponse, schoolNumber string) ([]applicationModels.Application, error)
 	FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error)
 	GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error)
-	UpdateApplicationStatus(applicationNumber string, status string) error
+	UpdateApplicationStatus(application *applicationModels.Application, status string) error
 	DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error
 	SaveApplication(application applicationModels.Application) error
 	UpdateStudentByApplicationNumber(applicationNumber string, student studentModel.Student) error
@@ -51,26 +50,8 @@ func (applicationRepository *applicationRepositoryImpl) DeleteDraftApplication(a
 	return txn.Where("number = ? AND status = ? ", applicationNumber, constants.StatusDraft).Delete(&applicationModels.Application{}).Error
 }
 
-func (applicationRepository *applicationRepositoryImpl) UpdateApplicationStatus(applicationNumber string, status string) error {
-	//	return applicationRepository.DB.Model(&applicationModels.Application{}).Where("number = ?", applicationNumber).Update("status", status).Error
-	var application applicationModels.Application
-	tx := applicationRepository.DB.Begin()
-
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-		Where("number = ?", applicationNumber).
-		First(&application).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	application.Status = status
-
-	if err := tx.Save(&application).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+func (applicationRepository *applicationRepositoryImpl) UpdateApplicationStatus(application *applicationModels.Application, status string) error {
+	return applicationRepository.DB.Model(&applicationModels.Application{}).Where("number = ?", application.Number).Update("status", status).Error
 }
 
 func (applicationRepository *applicationRepositoryImpl) FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error) {
