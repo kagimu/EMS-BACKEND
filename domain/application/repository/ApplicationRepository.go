@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"errors"
 	applicationModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
@@ -16,20 +18,40 @@ type ApplicationRepository interface {
 	FindAllApplicationsPaginated(ctx *gin.Context, pagination *pagination.PaginatedResponse, schoolNumber string) ([]applicationModels.Application, error)
 	FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error)
 	GetStudentByApplicationNumber(applicationNumber string) (studentModel.Student, error)
-	UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error
+	UpdateApplicationStatus(application *applicationModels.Application, status string) error
 	DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error
+	SaveApplication(application applicationModels.Application) error
+	UpdateStudentByApplicationNumber(applicationNumber string, student studentModel.Student) error
+	CreateStudent(student studentModel.Student) error
+	CreateUser(user userModel.User) error
 }
 
 type applicationRepositoryImpl struct {
 	DB *gorm.DB
 }
 
+func (applicationRepository *applicationRepositoryImpl) CreateUser(user userModel.User) error {
+	return applicationRepository.DB.Create(&user).Error
+}
+
+func (applicationRepository *applicationRepositoryImpl) CreateStudent(student studentModel.Student) error {
+	return applicationRepository.DB.Create(&student).Error
+}
+
+func (applicationRepository *applicationRepositoryImpl) SaveApplication(application applicationModels.Application) error {
+	return applicationRepository.DB.Create(&application).Error
+}
+
+func (applicationRepository *applicationRepositoryImpl) UpdateStudentByApplicationNumber(applicationNumber string, student studentModel.Student) error {
+	return applicationRepository.DB.Where("application_number = ?", applicationNumber).Updates(student).Error
+}
+
 func (applicationRepository *applicationRepositoryImpl) DeleteDraftApplication(applicationNumber string, txn *gorm.DB) error {
 	return txn.Where("number = ? AND status = ? ", applicationNumber, constants.StatusDraft).Delete(&applicationModels.Application{}).Error
 }
 
-func (applicationRepository *applicationRepositoryImpl) UpdateApplicationStatus(applicationNumber string, status string, txn *gorm.DB) error {
-	return txn.Model(&applicationModels.Application{}).Where("number = ?", applicationNumber).Update("status", status).Error
+func (applicationRepository *applicationRepositoryImpl) UpdateApplicationStatus(application *applicationModels.Application, status string) error {
+	return applicationRepository.DB.Model(&applicationModels.Application{}).Where("number = ?", application.Number).Update("status", status).Error
 }
 
 func (applicationRepository *applicationRepositoryImpl) FindPreviousSchoolsByApplicationNumber(applicationNumber string) ([]models.PreviousSchool, error) {
@@ -45,6 +67,9 @@ func (applicationRepository *applicationRepositoryImpl) GetStudentByApplicationN
 	var student studentModel.Student
 	err := applicationRepository.DB.Preload("PreferredCampus").Preload("CampusClass").Where("application_number = ?", applicationNumber).First(&student).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return student, nil
+		}
 		return student, err
 	}
 	return student, nil

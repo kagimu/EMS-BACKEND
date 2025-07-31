@@ -3,8 +3,6 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
@@ -13,7 +11,6 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -22,7 +19,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
-	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
@@ -47,186 +43,18 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	//applicationNumber := payload.ApplicationNumber
-	//var application applicationModel.Application
-	//if err := config.DB.Where("number = ?", applicationNumber).First(&application).Error; err != nil {
-	//	c.JSON(http.StatusBadRequest, gin.H{
-	//		"message": "Application not found"})
-	//	return
-	//}
+	err = services2.CreateNewStudentAndApplication(payload, user.Number)
 
-	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, payload.CampusCurriculumNumber)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Error checking class and campus: " + err.Error()})
-		return
-	}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": fmt.Sprintf("failed to create new student application for %s: %s", payload.ClassNumber, err.Error()),
+		})
 
-	if campusClass.Number == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Selected class is not active on the selected campus"})
-		return
-	}
-
-	/*var campusClass classModels.CampusClass
-	if err := config.DB.Where("number = ?", campusClass.Number).First(&campusClass).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Campus class not found"})
-		return
-	}*/
-
-	tx := config.DB.Begin()
-
-	saveApplication := applicationModel.Application{
-		Number:     uuid.NewV4().String(),
-		UserNumber: user.Number,
-		Type:       payload.Type,
-	}
-
-	if payload.ApplicationNumber == "" {
-		if err := tx.Create(&saveApplication).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "failed to create application",
-				"details": err.Error(),
-			})
-			return
-		}
-
-	}
-
-	studentAPN, err := CreateAPN(tx)
-	if err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create APN"})
-		return
-	}
-
-	studentNumber := uuid.NewV4().String()
-	userNumber := user.Number
-
-	// find Student by application number
-
-	var student models.Student
-	tx.Where("application_number = ?", saveApplication.Number).First(&student)
-
-	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
-	if student.Number != "" {
-
-		// update student details
-		updateStudent := models.Student{
-			Surname:                   payload.Surname,
-			OtherName:                 payload.OtherName,
-			Gender:                    payload.Gender,
-			DateOfBirth:               payload.DateOfBirth,
-			ADNStatus:                 payload.ADNStatus,
-			ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
-			PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
-			SecondName:                payload.SecondName,
-			PreferredCampusNumber:     payload.PreferredCampusNumber,
-			SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
-			ApplicationNumber:         saveApplication.Number,
-			CampusClassNumber:         campusClass.Number,
-			SchoolNumber:              payload.SchoolNumber,
-			Lin:                       payload.Lin,
-			ModeOfStudyNumber:         payload.ModeOfStudyNumber,
-			AddedBy:                   userNumber,
-		}
-
-		if payload.ADN != "" {
-			updateStudent.ADN = payload.ADN
-		}
-
-		if err := tx.Where("application_number = ?", payload.ApplicationNumber).Updates(updateStudent).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  http.StatusInternalServerError,
-				"message": "failed to update student",
-			})
-			return
-		}
-
-		// update the user details
-		updateUser := authModel.User{
-			FirstName:  payload.SecondName,
-			LastName:   payload.Surname,
-			SecondName: payload.OtherName,
-		}
-
-		if err := tx.Where("number = ?", student.UserNumber).Updates(updateUser).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  http.StatusInternalServerError,
-				"message": "failed to update user",
-			})
-			return
-		}
-
-		if err := tx.Commit().Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  http.StatusInternalServerError,
-				"message": "failed to commit transaction",
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "updated student details successfully"})
-		return
-	}
-
-	var createdUser = authModel.User{
-		Number:     uuid.NewV4().String(),
-		FirstName:  payload.SecondName,
-		LastName:   payload.Surname,
-		SecondName: payload.OtherName,
-		Gender:     payload.Gender,
-		Type:       constants.TypeStudent,
-		Status:     constants.StatusInactive,
-	}
-
-	if err := tx.Create(&createdUser).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user"})
-		return
-	}
-
-	savStudent := models.Student{
-		Number:                    studentNumber,
-		APN:                       studentAPN,
-		Surname:                   payload.Surname,
-		OtherName:                 payload.OtherName,
-		Gender:                    payload.Gender,
-		DateOfBirth:               payload.DateOfBirth,
-		ADNStatus:                 payload.ADNStatus,
-		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
-		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
-		SecondName:                payload.SecondName,
-		PreferredCampusNumber:     payload.PreferredCampusNumber,
-		UserNumber:                createdUser.Number,
-		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
-		ApplicationNumber:         saveApplication.Number,
-		CampusClassNumber:         campusClass.Number,
-		SchoolNumber:              payload.SchoolNumber,
-		Lin:                       payload.Lin,
-		ModeOfStudyNumber:         payload.ModeOfStudyNumber,
-	}
-
-	if payload.ADN != "" {
-		savStudent.ADN = payload.ADN
-	}
-
-	if err := tx.Create(&savStudent).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Saving student error: " + err.Error()})
-		return
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit transaction"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "student created successfully",
-		"data":    savStudent,
 	})
 }
 

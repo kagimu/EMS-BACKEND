@@ -165,7 +165,7 @@ func UpdateParent(c *gin.Context) {
 
 	if err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusNotFound, gin.H{"message": "Error updating application"})
+		c.JSON(http.StatusNotFound, gin.H{"message": "Error updating application " + err.Error()})
 		return
 	}
 
@@ -178,9 +178,11 @@ func UpdateParent(c *gin.Context) {
 	parent.AlternativeEmail = parentRequest.AlternativeEmail
 
 	if err := tx.Save(&parent).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update parent"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update parent " + err.Error()})
 		return
 	}
+
+	tx.Commit()
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": parent})
 }
