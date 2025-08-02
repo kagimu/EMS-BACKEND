@@ -238,14 +238,14 @@ func FetchFamilyStructure(studentNumber string) (responses.FamilyStructureRespon
 	return response, nil
 }
 
-func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber string) error {
+func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber string) (string, error) {
 	campusClass, err := services.ResolveCampusClass(payload.ClassNumber, payload.CampusNumber, payload.CurriculumNumber, payload.CampusCurriculumNumber)
 	if err != nil {
-		return errors.New("Error checking class and campus: " + err.Error())
+		return "", errors.New("Error checking class and campus: " + err.Error())
 	}
 
 	if campusClass.Number == "" {
-		return errors.New("campus class is not active on the selected campus")
+		return "", errors.New("campus class is not active on the selected campus")
 	}
 
 	/*var campusClass classModels.CampusClass
@@ -268,7 +268,7 @@ func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber s
 	if payload.ApplicationNumber == "" {
 		if err := applicationRepo.SaveApplication(saveApplication); err != nil {
 			tx.Rollback()
-			return errors.New("failed to create application " + err.Error())
+			return "", errors.New("failed to create application " + err.Error())
 		}
 
 	}
@@ -276,7 +276,7 @@ func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber s
 	studentAPN, err := CreateAPN(tx)
 	if err != nil {
 		tx.Rollback()
-		return errors.New("failed to create APN " + err.Error())
+		return "", errors.New("failed to create APN " + err.Error())
 	}
 
 	studentNumber := uuid.NewV4().String()
@@ -286,7 +286,7 @@ func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber s
 	student, err := applicationRepo.GetStudentByApplicationNumber(saveApplication.Number)
 	if err != nil {
 		tx.Rollback()
-		return errors.New("failed to get student " + err.Error())
+		return "", errors.New("failed to get student " + err.Error())
 	}
 
 	// NOTE: To avoid duplicate records, check if the student number is empty else, update the existing student
@@ -317,7 +317,7 @@ func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber s
 		}
 
 		if err := applicationRepo.UpdateStudentByApplicationNumber(payload.ApplicationNumber, updateStudent); err != nil {
-			return errors.New("failed to update student " + err.Error())
+			return "", errors.New("failed to update student " + err.Error())
 		}
 
 		// update the user details
@@ -328,11 +328,11 @@ func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber s
 		}
 
 		if err := tx.Where("number = ?", student.UserNumber).Updates(updateUser).Error; err != nil {
-			return errors.New("failed to update user")
+			return "", errors.New("failed to update user")
 		}
 
 		if err := tx.Commit().Error; err != nil {
-			return errors.New("failed to commit transaction")
+			return "", errors.New("failed to commit transaction")
 		}
 
 	}
@@ -349,7 +349,7 @@ func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber s
 
 	if err := applicationRepo.CreateUser(createdUser); err != nil {
 		tx.Rollback()
-		return errors.New("failed to create user " + err.Error())
+		return "", errors.New("failed to create user " + err.Error())
 	}
 
 	savStudent := models.Student{
@@ -379,14 +379,19 @@ func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber s
 
 	if err := applicationRepo.CreateStudent(savStudent); err != nil {
 		tx.Rollback()
-		return errors.New("failed to save student " + err.Error())
+		return "", errors.New("failed to save student " + err.Error())
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return errors.New("failed to commit transaction " + err.Error())
+		return "", errors.New("failed to commit transaction " + err.Error())
 	}
 
-	return nil
+	var apn = payload.ApplicationNumber
+	if apn == "" {
+		apn = saveApplication.Number
+	}
+
+	return apn, nil
 }
 
 func CreateAPN(tx *gorm.DB) (string, error) {

@@ -21,4 +21,5 @@ type PromotionSetting struct {
 	User                      authModel.User          `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriodNumber         string                  `json:"study_period_number" gorm:"size:36;not null"`
 	StudyPeriod               studyModels.StudyPeriod `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	CampusCurriculumNumber    string                  `json:"campus_curriculum_number" gorm:"size:36"`
 }

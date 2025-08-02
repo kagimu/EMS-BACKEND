@@ -143,6 +143,7 @@ func (p *promotionService) UpdatePromotionSetting(promotionSettingsRequest reque
 	promotionSetting.UserNumber = user.Number
 	promotionSetting.StudyPeriodNumber = studyPeriod.Number
 	promotionSetting.UpdatedAt = time.Now()
+	promotionSetting.CampusCurriculumNumber = promotionSettingsRequest.CampusCurriculumNumber
 
 	err = repositories.SavePromotionSettings(promotionSetting)
 	if err != nil {
@@ -460,6 +461,7 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 		Type:                    promotionSetting.Type,
 		Status:                  promotionSetting.Status,
 		StudyPeriod:             services2.CreateStudyPeriodResponse(studyPeriod),
+		CampusCurriculumNumber:  promotionSetting.CampusCurriculumNumber,
 	}
 
 	campusClass, err := repositories2.GetCampusClassByNumber(promotionSetting.PreviousCampusClassNumber)

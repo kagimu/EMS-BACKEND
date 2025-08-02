@@ -22,6 +22,7 @@ type PromotionResponse struct {
 	Campus                  responses4.CampusResponse      `json:"campus"`
 	SchoolName              string                         `json:"school_name"`
 	SchoolNumber            string                         `json:"school_number"`
+	CampusCurriculumNumber  string                         `json:"campus_curriculum_number"`
 }
 
 type PromotionDetailedResponse struct {
