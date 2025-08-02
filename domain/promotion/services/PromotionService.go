@@ -144,6 +144,7 @@ func (p *promotionService) UpdatePromotionSetting(promotionSettingsRequest reque
 	promotionSetting.StudyPeriodNumber = studyPeriod.Number
 	promotionSetting.UpdatedAt = time.Now()
 	promotionSetting.CampusCurriculumNumber = promotionSettingsRequest.CampusCurriculumNumber
+	promotionSetting.CampusLevelNumber = promotionSettingsRequest.CampusLevelNumber
 
 	err = repositories.SavePromotionSettings(promotionSetting)
 	if err != nil {
@@ -422,6 +423,8 @@ func (p *promotionService) NewPromotionSetting(promotionSettingsRequest requests
 		PreviousCampusClassNumber: prevCampusClass.Number,
 		UserNumber:                user.Number,
 		StudyPeriodNumber:         studyPeriod.Number,
+		CampusCurriculumNumber:    promotionSettingsRequest.CampusCurriculumNumber,
+		CampusLevelNumber:         promotionSettingsRequest.CampusLevelNumber,
 	}
 
 	err = repositories.SavePromotionSettings(savePromotionSettings)
