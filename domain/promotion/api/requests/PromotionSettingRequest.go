@@ -16,6 +16,7 @@ type PromotionSettingRequest struct {
 	CampusNumber           string `json:"campus_number"`
 	CurriculumNumber       string `json:"curriculum_number"`
 	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	CampusLevelNumber      string `json:"campus_level_number"`
 }
 
 func (p *PromotionSettingRequest) Prepare() {

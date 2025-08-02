@@ -22,4 +22,5 @@ type PromotionSetting struct {
 	StudyPeriodNumber         string                  `json:"study_period_number" gorm:"size:36;not null"`
 	StudyPeriod               studyModels.StudyPeriod `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	CampusCurriculumNumber    string                  `json:"campus_curriculum_number" gorm:"size:36"`
+	CampusLevelNumber         string                  `json:"campus_level_number" gorm:"size:36"`
 }
