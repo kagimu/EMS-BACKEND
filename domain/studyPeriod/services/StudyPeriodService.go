@@ -140,6 +140,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 	}
 
 	nextTermBeginsOn, errorDate := time.Parse(layout, studyPeriodRequest.NextTermBeginsOn)
+	reportingDate, errorDate := time.Parse(layout, studyPeriodRequest.ReportingDate)
 
 	checkDuplicate, err := repositories.GetStudyPeriodByCode(studyPeriodRequest.AcademicYearNumber, studyPeriodRequest.Code)
 	if err != nil {
@@ -183,6 +184,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 			StudyPeriodEndDate:    endDate,
 			StudyPeriodNameNumber: studyPeriodRequest.StudyPeriodNameNumber,
 			NextTermBeginsOn:      nextTermBeginsOn,
+			ReportingDate:         reportingDate,
 		}, tx)
 
 		if err != nil {
@@ -272,6 +274,7 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 	endDate, errorDate := time.Parse(layout, studyPeriodRequest.StudyPeriodEndDate)
 
 	nextTermBeginsOn, errorDate := time.Parse(layout, studyPeriodRequest.NextTermBeginsOn)
+	reportingDate, errorDate := time.Parse(layout, studyPeriodRequest.ReportingDate)
 
 	if errorDate != nil {
 		return errorDate
@@ -284,6 +287,7 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 	studyPeriod.StudyPeriodEndDate = endDate
 	studyPeriod.StudyPeriodNameNumber = studyPeriodRequest.StudyPeriodNameNumber
 	studyPeriod.NextTermBeginsOn = nextTermBeginsOn
+	studyPeriod.ReportingDate = reportingDate
 
 	calendarEvent, err := repositories2.GetCalendarEventByNumber(studyPeriod.CalendarEventNumber)
 	if err != nil {

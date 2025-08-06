@@ -16,6 +16,7 @@ type StudyPeriodRequest struct {
 	StudyPeriodNameNumber string   `json:"study_period_name_number"`
 	Classes               []string `json:"classes"`
 	NextTermBeginsOn      string   `json:"next_term_begins_on"`
+	ReportingDate         string   `json:"reporting_date"`
 }
 
 func (studyPeriodRequest *StudyPeriodRequest) Validate() error {
@@ -41,6 +42,9 @@ func (studyPeriodRequest *StudyPeriodRequest) Validate() error {
 	}
 	if studyPeriodRequest.NextTermBeginsOn == "" {
 		return errors.New("please choose the date on which next term/study period begins ")
+	}
+	if studyPeriodRequest.ReportingDate == "" {
+		return errors.New("please choose the reporting date")
 	}
 
 	if len(studyPeriodRequest.Classes) == 0 {
