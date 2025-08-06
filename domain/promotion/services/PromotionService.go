@@ -465,6 +465,7 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 		Status:                  promotionSetting.Status,
 		StudyPeriod:             services2.CreateStudyPeriodResponse(studyPeriod),
 		CampusCurriculumNumber:  promotionSetting.CampusCurriculumNumber,
+		CampusLevelNumber:       promotionSetting.CampusLevelNumber,
 	}
 
 	campusClass, err := repositories2.GetCampusClassByNumber(promotionSetting.PreviousCampusClassNumber)
