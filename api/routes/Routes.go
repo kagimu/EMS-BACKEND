@@ -751,6 +751,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("add-teacher-comment", reportSettingsController.CreateTeachersComment)
 			reportSettings.POST("learning-area-comments", reportSettingsController.CreateLearningAreaComment)
 			reportSettings.DELETE("head-teacher-comment/:id", reportSettingsController.DeleteHeadTeacherComment)
+			reportSettings.POST("/subject-groups", reportSettingsController.CreateSubjectGroupHandler)
 
 			classTeacherComment := reportSettings.Group("class-teacher-comment")
 			{
