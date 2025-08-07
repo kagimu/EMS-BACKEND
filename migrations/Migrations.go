@@ -228,6 +228,8 @@ func Init() error {
 		&admissionModel.AdmissionLetterTemplate{},
 		&reportSettings.ClassTeacherComment{},
 		&reportSettings.SubjectTeacherComment{},
+		&reportSettings.SubjectGroup{},
+		&reportSettings.GroupAssessmentArea{},
 	)
 
 	if err != nil {
