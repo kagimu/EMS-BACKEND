@@ -111,7 +111,7 @@ func FetchCampusClasses(ctx *gin.Context) ([]campusClassModel.CampusClass, error
 
 	err := config.DB.
 		Scopes(
-			filters.ByScopedItems("campusClass", ctx),
+			//filters.ByScopedItems("campusClass", ctx),
 			filters.ByCampusNumber(ctx.Param("campus_number")),
 		).
 		Find(&campusClasses).Error

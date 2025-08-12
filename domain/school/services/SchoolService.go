@@ -128,7 +128,7 @@ func FetchSchoolsByEntityNumber(entityNumber string, ctx *gin.Context) ([]respon
 		Preload("SchoolCurriculum").
 		Order("created_at desc").
 		Scopes(
-			filters.ByScopedItems("school", ctx),
+			//filters.ByScopedItems("school", ctx),
 			filters.ByEntityNumber(entityNumber),
 		).
 		Find(&schools).Error; err != nil {

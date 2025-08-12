@@ -390,7 +390,7 @@ func FetchCampuses(context *gin.Context) {
 	if err := config.DB.
 		Scopes(
 			filters.BySchoolNumber(schoolNumber),
-			filters.ByScopedItems("campus", context),
+			//filters.ByScopedItems("campus", context),
 		).
 		Order("created_at desc").
 		Find(&campuses).Error; err != nil {
