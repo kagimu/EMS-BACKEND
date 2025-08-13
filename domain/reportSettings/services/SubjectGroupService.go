@@ -103,6 +103,12 @@ func DeleteSubjectGroup(subjectGroupNumber string) error {
 		return err
 	}
 
+	err = sgRepo.DeleteGroupAssessmentAreaByGroupNumber(subjectGroup.Number)
+	if err != nil {
+		txn.Rollback()
+		return err
+	}
+
 	err = sgRepo.DeleteGroup(subjectGroup.Number)
 	if err != nil {
 		txn.Rollback()

@@ -5,8 +5,23 @@ import (
 	"gorm.io/gorm"
 )
 
+type SubjectGroupRepository interface {
+	Save(group models.SubjectGroup) error
+	SaveGroupAssessmentArea(group models.GroupAssessmentArea) error
+	Update(group models.SubjectGroup) error
+	FindSubjectGroupByNumber(number string) (*models.SubjectGroup, error)
+	FindSubjectGroupsByReportSettingNumber(number string) ([]models.SubjectGroup, error)
+	DeleteGroup(number string) error
+	FindAssessmentAreasByGroupNumber(number string) ([]models.GroupAssessmentArea, error)
+	DeleteGroupAssessmentAreaByGroupNumber(groupNumber string) error
+}
+
 type subjectGroupRepository struct {
 	DB *gorm.DB
+}
+
+func (r *subjectGroupRepository) DeleteGroupAssessmentAreaByGroupNumber(groupNumber string) error {
+	return r.DB.Where("group_number = ?", groupNumber).Delete(&models.GroupAssessmentArea{}).Error
 }
 
 func (r *subjectGroupRepository) FindAssessmentAreasByGroupNumber(number string) ([]models.GroupAssessmentArea, error) {
@@ -33,16 +48,6 @@ func (r *subjectGroupRepository) FindSubjectGroupsByReportSettingNumber(number s
 
 func (r *subjectGroupRepository) SaveGroupAssessmentArea(group models.GroupAssessmentArea) error {
 	return r.DB.Create(&group).Error
-}
-
-type SubjectGroupRepository interface {
-	Save(group models.SubjectGroup) error
-	SaveGroupAssessmentArea(group models.GroupAssessmentArea) error
-	Update(group models.SubjectGroup) error
-	FindSubjectGroupByNumber(number string) (*models.SubjectGroup, error)
-	FindSubjectGroupsByReportSettingNumber(number string) ([]models.SubjectGroup, error)
-	DeleteGroup(number string) error
-	FindAssessmentAreasByGroupNumber(number string) ([]models.GroupAssessmentArea, error)
 }
 
 func (r *subjectGroupRepository) Save(group models.SubjectGroup) error {
