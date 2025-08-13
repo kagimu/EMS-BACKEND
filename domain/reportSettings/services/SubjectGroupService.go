@@ -2,7 +2,10 @@ package services
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	uuid "github.com/satori/go.uuid"
@@ -47,4 +50,67 @@ func CreateSubjectGroup(req requests.CreateSubjectGroupRequest) error {
 	txn.Commit()
 
 	return nil
+}
+
+func GetSubjectGroupsByReportSettingNumber(reportSettingsNumber string) ([]responses.SubjectGroupResponse, error) {
+	sgRepo := reporsitory.NewSubjectGroupRepository(config.DB)
+	var resp []responses.SubjectGroupResponse
+	var subjectGroups = make([]models.SubjectGroup, 0)
+	var err error
+	subjectGroups, err = sgRepo.FindSubjectGroupsByReportSettingNumber(reportSettingsNumber)
+	if err != nil {
+		return resp, err
+	}
+
+	for _, subjectGroup := range subjectGroups {
+		assessmentAreas, err := sgRepo.FindAssessmentAreasByGroupNumber(subjectGroup.Number)
+		if err != nil {
+			return resp, err
+		}
+
+		var groupAssessmentArea []responses2.AssessmentAreaResponse
+
+		for _, assessmentArea := range assessmentAreas {
+			asArea, err := repositories.GetAssessmentAreaByNumber(assessmentArea.AssessmentAreaNumber)
+			if err != nil {
+				return resp, err
+			}
+
+			groupAssessmentArea = append(groupAssessmentArea, responses2.AssessmentAreaResponse{
+				Name:   asArea.Name,
+				Number: asArea.Number,
+			})
+
+		}
+
+		resp = append(resp, responses.SubjectGroupResponse{
+			Number:          subjectGroup.Number,
+			Name:            subjectGroup.SubjectGroupName,
+			AssessmentAreas: groupAssessmentArea,
+		})
+	}
+
+	return resp, nil
+
+}
+
+func DeleteSubjectGroup(subjectGroupNumber string) error {
+	txn := config.DB.Begin()
+	sgRepo := reporsitory.NewSubjectGroupRepository(txn)
+	subjectGroup, err := sgRepo.FindSubjectGroupByNumber(subjectGroupNumber)
+	if err != nil {
+		txn.Rollback()
+		return err
+	}
+
+	err = sgRepo.DeleteGroup(subjectGroup.Number)
+	if err != nil {
+		txn.Rollback()
+		return err
+	}
+
+	txn.Commit()
+
+	return nil
+
 }

@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 )
 
@@ -172,4 +173,10 @@ type SubjectTeacherCommentResponse struct {
 	Class                string `json:"class"`
 	LevelNumber          string `json:"level_number"`
 	Level                string `json:"level"`
+}
+
+type SubjectGroupResponse struct {
+	Number          string                             `json:"number"`
+	Name            string                             `json:"name"`
+	AssessmentAreas []responses.AssessmentAreaResponse `json:"assessment_areas"`
 }
