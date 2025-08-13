@@ -61,3 +61,15 @@ func DeleteSubjectGroup(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Subject group deleted successfully"})
 
 }
+
+func DeleteSubjectGroupAssessment(ctx *gin.Context) {
+	subjectGroupNumber := ctx.Param("number")
+	err := services.DeleteSubjectGroupAssessment(subjectGroupNumber)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete assessment area " + err.Error(), "details": err})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Assessment  deleted successfully"})
+
+}

@@ -14,10 +14,15 @@ type SubjectGroupRepository interface {
 	DeleteGroup(number string) error
 	FindAssessmentAreasByGroupNumber(number string) ([]models.GroupAssessmentArea, error)
 	DeleteGroupAssessmentAreaByGroupNumber(groupNumber string) error
+	DeleteGroupAssessmentAreaByAssessmentAreaNumber(assessmentAreaNumber string) error
 }
 
 type subjectGroupRepository struct {
 	DB *gorm.DB
+}
+
+func (r *subjectGroupRepository) DeleteGroupAssessmentAreaByAssessmentAreaNumber(assessmentAreaNumber string) error {
+	return r.DB.Where("assessment_area_number = ?", assessmentAreaNumber).Delete(&models.GroupAssessmentArea{}).Error
 }
 
 func (r *subjectGroupRepository) DeleteGroupAssessmentAreaByGroupNumber(groupNumber string) error {
