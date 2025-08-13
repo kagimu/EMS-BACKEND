@@ -120,3 +120,19 @@ func DeleteSubjectGroup(subjectGroupNumber string) error {
 	return nil
 
 }
+
+func DeleteSubjectGroupAssessment(assessmentArea string) error {
+	txn := config.DB.Begin()
+	sgRepo := reporsitory.NewSubjectGroupRepository(txn)
+
+	err := sgRepo.DeleteGroupAssessmentAreaByAssessmentAreaNumber(assessmentArea)
+	if err != nil {
+		txn.Rollback()
+		return err
+	}
+
+	txn.Commit()
+
+	return nil
+
+}
