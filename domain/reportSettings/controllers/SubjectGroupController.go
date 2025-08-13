@@ -32,3 +32,32 @@ func CreateSubjectGroupHandler(c *gin.Context) {
 	// Success response
 	c.JSON(http.StatusCreated, gin.H{"message": "Subject group created successfully"})
 }
+
+func FetchSubjectGroups(ctx *gin.Context) {
+	reportSettingNumber := ctx.Query("report-setting-number")
+	if reportSettingNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report-Setting not provided"})
+		return
+	}
+
+	groups, err := services.GetSubjectGroupsByReportSettingNumber(reportSettingNumber)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subject groups", "details": err})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": groups})
+
+}
+
+func DeleteSubjectGroup(ctx *gin.Context) {
+	subjectGroupNumber := ctx.Param("number")
+	err := services.DeleteSubjectGroup(subjectGroupNumber)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete subject group " + err.Error(), "details": err})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Subject group deleted successfully"})
+
+}
