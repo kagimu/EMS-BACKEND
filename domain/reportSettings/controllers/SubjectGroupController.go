@@ -34,7 +34,7 @@ func CreateSubjectGroupHandler(c *gin.Context) {
 }
 
 func FetchSubjectGroups(ctx *gin.Context) {
-	reportSettingNumber := ctx.Query("report-setting-number")
+	reportSettingNumber := ctx.Query("report_settings_number")
 	if reportSettingNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Report-Setting not provided"})
 		return
