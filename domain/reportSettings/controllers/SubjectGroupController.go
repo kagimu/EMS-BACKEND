@@ -33,6 +33,31 @@ func CreateSubjectGroupHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Subject group created successfully"})
 }
 
+func AddAssessmentsToSubjectGroupHandler(c *gin.Context) {
+	var req requests.AddAssessmentAreaSubjectGroupRequest
+
+	// Bind incoming JSON to struct
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format", "details": err.Error()})
+		return
+	}
+
+	// Validate struct
+	if err := req.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Validation failed", "details": err})
+		return
+	}
+
+	// Call service to handle saving logic
+	if err := services.AddAssessmentAreaToSubjectGroup(req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create subject group", "details": err})
+		return
+	}
+
+	// Success response
+	c.JSON(http.StatusCreated, gin.H{"message": "Subject group created successfully"})
+}
+
 func FetchSubjectGroups(ctx *gin.Context) {
 	reportSettingNumber := ctx.Query("report_settings_number")
 	if reportSettingNumber == "" {
