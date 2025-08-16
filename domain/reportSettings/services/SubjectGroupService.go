@@ -52,6 +52,30 @@ func CreateSubjectGroup(req requests.CreateSubjectGroupRequest) error {
 	return nil
 }
 
+func AddAssessmentAreaToSubjectGroup(req requests.AddAssessmentAreaSubjectGroupRequest) error {
+	txn := config.DB.Begin()
+
+	sgRepo := reporsitory.NewSubjectGroupRepository(txn)
+
+	for _, area := range req.AssessmentAreas {
+
+		var groupAssessmentArea models.GroupAssessmentArea
+
+		groupAssessmentArea.AssessmentAreaNumber = area.AssessmentAreaNumber
+		groupAssessmentArea.GroupNumber = req.SubjectGroupNumber
+
+		err := sgRepo.SaveGroupAssessmentArea(groupAssessmentArea)
+		if err != nil {
+			txn.Rollback()
+			return err
+		}
+	}
+
+	txn.Commit()
+
+	return nil
+}
+
 func GetSubjectGroupsByReportSettingNumber(reportSettingsNumber string) ([]responses.SubjectGroupResponse, error) {
 	sgRepo := reporsitory.NewSubjectGroupRepository(config.DB)
 	var resp []responses.SubjectGroupResponse

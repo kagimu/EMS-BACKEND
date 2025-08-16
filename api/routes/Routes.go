@@ -755,6 +755,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("/subject-groups", reportSettingsController.FetchSubjectGroups)
 			reportSettings.DELETE("/subject-groups/:number", reportSettingsController.DeleteSubjectGroup)
 			reportSettings.DELETE("/subject-group-assessment/:number", reportSettingsController.DeleteSubjectGroupAssessment)
+			reportSettings.POST("/subject-group-assessment", reportSettingsController.AddAssessmentsToSubjectGroupHandler)
 
 			classTeacherComment := reportSettings.Group("class-teacher-comment")
 			{

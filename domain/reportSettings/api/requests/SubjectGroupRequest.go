@@ -22,3 +22,13 @@ func (r *CreateSubjectGroupRequest) Validate() error {
 	validate := validator.New()
 	return validate.Struct(r)
 }
+
+type AddAssessmentAreaSubjectGroupRequest struct {
+	SubjectGroupNumber string                  `json:"subject_group_number" validate:"required,uuid4"`
+	AssessmentAreas    []AssessmentAreaRequest `json:"assessmentAreas" validate:"required,dive"`
+}
+
+func (r *AddAssessmentAreaSubjectGroupRequest) Validate() error {
+	validate := validator.New()
+	return validate.Struct(r)
+}
