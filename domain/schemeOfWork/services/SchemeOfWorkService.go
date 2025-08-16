@@ -136,7 +136,7 @@ func (s SchemeOfWorkService) Update(schemeOfWorkInfo requests.SchemeOfWorkInfo, 
 
 			item.Code = codeNo
 			item.EstimatedTime = schemeList.EstimatedTime
-			item.SubTopicNumber = schemeList.SubTopicNumber
+			item.SubTopicNumber = schemeList.Number
 			item.UserNumber = userNumber
 			item.UpdatedAt = time.Now()
 
