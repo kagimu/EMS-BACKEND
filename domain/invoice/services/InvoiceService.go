@@ -3,6 +3,10 @@ package services
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
@@ -21,9 +25,6 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"math/rand"
-	"strings"
-	"time"
 )
 
 var invoiceTransactionRepository = invoiceRepositories.NewInvoiceTransactionRepository()
@@ -31,6 +32,20 @@ var invoiceTransactionRepository = invoiceRepositories.NewInvoiceTransactionRepo
 var admissionRepository = repositories2.NewAdmissionRepository()
 
 func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) error {
+
+	dueDate, err := commons.ConvertStringToDate(payload.DueDate)
+	if err != nil {
+		return err
+	}
+
+	issueDate, err := commons.ConvertStringToDate(payload.IssueDate)
+	if err != nil {
+		return err
+	}
+
+	if dueDate.Before(issueDate) {
+		return errors.New("due date should be after the date of issue")
+	}
 
 	userNumber := payload.UserNumber
 
@@ -55,8 +70,6 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 	if invoice.Number != "" {
 		return errors.New("try again to generate a new promissory note number")
 	}
-
-	dueDate, err := commons.ConvertStringToDate(payload.DueDate)
 
 	var student studentModel.Student
 
@@ -169,6 +182,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 		Balance:       balance,
 		Type:          constants.StatementTypeOut,
 		AddedByNumber: currentUserNumber,
+		IssueDate:     time.Now(),
 	}
 
 	newInvoice := models.Invoice{
@@ -262,6 +276,7 @@ func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float
 	}
 
 	invoiceTransactionRepository.UseTx(txn)
+	transactionStatement.IssueDate = transactionDate
 
 	err = invoiceRepositories.SaveStatement(transactionStatement, txn)
 	if err != nil {
@@ -452,6 +467,7 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 		RefNumber:       statement.RefNumber,
 		Date:            statement.CreatedAt.Format(time.DateOnly),
 		DueDate:         invoice.DueDate.Format(time.DateOnly),
+		IssueDate:       statement.IssueDate.Format(time.DateOnly),
 		Number:          invoice.Number,
 		TotalAmount:     _invoiceAmount,
 		PaidAmount:      _paidAmount,
@@ -554,6 +570,7 @@ func createPaymentResponse(invoiceTransaction models.InvoiceTransaction) respons
 		DateTime:         invoiceTransaction.CreatedAt.Format(time.DateOnly),
 		Status:           constants.StatusActive,
 		PaymentNumber:    transactionStatement.RefNumber,
+		PaymentDate:      transactionStatement.IssueDate.Format(time.DateOnly),
 	}
 	return paymentResponse
 }
@@ -617,6 +634,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		Description:   "Payment received on promissory note " + invoiceStatement.RefNumber,
 		Amount:        payRequestAmount,
 		Balance:       nextBlc,
+		IssueDate:     dateTimePaid,
 	}
 
 	newTransaction := models.Transaction{
@@ -909,6 +927,7 @@ func DeleteInvoice(invoiceNumber, currentUser string) error {
 		CampusNumber:  invoiceStatement.CampusNumber,
 		UserNumber:    invoiceStatement.UserNumber,
 		Description:   "promissory note deleted " + invoiceStatement.RefNumber,
+		IssueDate:     time.Now(),
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
@@ -970,6 +989,7 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 		CampusNumber:  invoiceStatement.CampusNumber,
 		UserNumber:    invoiceStatement.UserNumber,
 		Description:   "Promissory note cancelled " + invoiceStatement.RefNumber,
+		IssueDate:     time.Now(),
 	}
 
 	invoice.Status = constants.StatusCancelled
@@ -1056,6 +1076,7 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 		Description:   "Payment cancelled " + transactionStatement.RefNumber,
 		Amount:        transactionStatement.Amount,
 		Balance:       nextBlc,
+		IssueDate:     time.Now(),
 	}
 
 	transaction.Status = constants.StatusCancelled
@@ -1146,6 +1167,7 @@ func DeletePayment(transactionNumber, currentUser string) error {
 		Balance:       balance,
 		Type:          constants.StatementTypeOut,
 		AddedByNumber: currentUser,
+		IssueDate:     time.Now(),
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
@@ -1214,6 +1236,20 @@ func ComputeNextBalance(newAmount float64, statementType string, userNumber stri
 
 func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUser string) error {
 
+	dueDate, err := commons.ConvertStringToDate(updateInvoiceRequest.DueDate)
+	if err != nil {
+		return err
+	}
+
+	issueDate, err := commons.ConvertStringToDate(updateInvoiceRequest.IssueDate)
+	if err != nil {
+		return err
+	}
+
+	if dueDate.Before(issueDate) {
+		return errors.New("due date should be after the date of issue")
+	}
+
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(updateInvoiceRequest.InvoiceNumber)
 	if err != nil {
 		return errors.New("checking promissory note number error: " + err.Error())
@@ -1229,12 +1265,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 	}
 
 	if paidAmount > 0 {
-		return errors.New("you cannot update an promissory note with payments")
-	}
-
-	dueDate, err := commons.ConvertStringToDate(updateInvoiceRequest.DueDate)
-	if err != nil {
-		return err
+		return errors.New("you cannot update a promissory note with payments")
 	}
 
 	items, err := invoiceRepositories.GetInvoiceItems(invoice.Number)
@@ -1317,6 +1348,7 @@ func UserStatement(userNumber string, startDate, endDate time.Time) ([]responses
 			Description:  statement.Description,
 			DateReceived: statement.CreatedAt.Format(time.DateTime),
 			ReceivedBy:   receivedBy.FirstName,
+			IssueDate:    statement.IssueDate.Format(time.DateTime),
 		})
 	}
 
@@ -1389,6 +1421,7 @@ func GeneralStatement(userNumber string, minAmount, maxAmount float64) ([]respon
 			LearnerName:       fmt.Sprintf("%s %s %s", learner.FirstName, learner.SecondName, learner.LastName),
 			LearnerUserNumber: statement.UserNumber,
 			StudentNumber:     student.Number,
+			IssueDate:         statement.IssueDate.Format(time.DateTime),
 		})
 	}
 
