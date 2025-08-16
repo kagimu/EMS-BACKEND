@@ -791,6 +791,15 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		}
 
 		for _, assessmentArea := range assessmentAreas {
+			sgRepo := reporsitory.NewSubjectGroupRepository(config.DB)
+			existIng, err := sgRepo.FindAssessmentAreasByAssessmentNumber(assessmentArea.Number)
+			if err != nil {
+				return responses.FullReportSummary{}, errors.New("failed to find assessment areas error: " + err.Error())
+			}
+
+			if len(existIng) > 0 {
+				continue
+			}
 
 			reportScoreSummary, err := reporsitory.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummaryNumber, assessmentArea.Number)
 			if err != nil {

@@ -13,12 +13,24 @@ type SubjectGroupRepository interface {
 	FindSubjectGroupsByReportSettingNumber(number string) ([]models.SubjectGroup, error)
 	DeleteGroup(number string) error
 	FindAssessmentAreasByGroupNumber(number string) ([]models.GroupAssessmentArea, error)
+	FindAssessmentAreasByAssessmentNumber(number string) ([]models.GroupAssessmentArea, error)
 	DeleteGroupAssessmentAreaByGroupNumber(groupNumber string) error
 	DeleteGroupAssessmentAreaByAssessmentAreaNumber(assessmentAreaNumber string) error
 }
 
 type subjectGroupRepository struct {
 	DB *gorm.DB
+}
+
+func (r *subjectGroupRepository) FindAssessmentAreasByAssessmentNumber(number string) ([]models.GroupAssessmentArea, error) {
+	var assessmentAreas = make([]models.GroupAssessmentArea, 0)
+	err := r.DB.Where("assessment_area_number = ?", number).Find(&assessmentAreas).Error
+	if err != nil {
+		if err.Error() == gorm.ErrRecordNotFound.Error() {
+			return assessmentAreas, nil
+		}
+	}
+	return assessmentAreas, err
 }
 
 func (r *subjectGroupRepository) DeleteGroupAssessmentAreaByAssessmentAreaNumber(assessmentAreaNumber string) error {
