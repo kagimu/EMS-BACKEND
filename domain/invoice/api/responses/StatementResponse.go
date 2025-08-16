@@ -5,6 +5,7 @@ type StatementResponse struct {
 	Balance           float64 `json:"balance"`
 	Type              string  `json:"type"`
 	DateReceived      string  `json:"date_received"`
+	IssueDate         string  `json:"issue_date"`
 	ReceivedBy        string  `json:"received_by"`
 	Description       string  `json:"description"`
 	LearnerName       string  `json:"learner_name"`
