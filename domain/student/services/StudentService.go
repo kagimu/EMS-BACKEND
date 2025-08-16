@@ -68,6 +68,25 @@ func CreateFamilyStructure(payload request.FamilyStructureRequest) error {
 		familyMemberModel.PhysicalContactAddress = familyMember.PhysicalContactAddress
 		familyMemberModel.IsLiving = familyMember.IsLiving
 
+		if len(familyMember.OtherName) > 50 {
+			tx.Rollback()
+			return errors.New(familyMember.OtherName + " other name is  too long maximum 50 characters")
+		}
+
+		if len(familyMember.Surname) > 50 {
+			tx.Rollback()
+			return errors.New(familyMember.Surname + " surname is  too long maximum 50 characters")
+		}
+		if len(familyMember.PhysicalContactAddress) > 100 {
+			tx.Rollback()
+			return errors.New(familyMember.PhysicalContactAddress + " Physical Contact Address is  too long maximum 50 characters")
+		}
+
+		if len(familyMember.PlaceOfEmployment) > 100 {
+			tx.Rollback()
+			return errors.New(familyMember.PlaceOfEmployment + "place of employment is  too long maximum 50 characters")
+		}
+
 		if err := familyStructureRepository.CreateFamilyMember(familyMemberModel); err != nil {
 			tx.Rollback()
 			return err

@@ -11,6 +11,7 @@ type MinInvoiceResponse struct {
 	RefNumber       string  `json:"ref_number"`
 	Date            string  `json:"date"`
 	DueDate         string  `json:"due_date"`
+	IssueDate       string  `json:"issue_date"`
 	TotalAmount     float64 `json:"total_amount"`
 	PaidAmount      float64 `json:"paid_amount"`
 	Balance         float64 `json:"balance"`
