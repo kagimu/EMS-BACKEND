@@ -318,7 +318,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 					return err
 				}
 
-				fmt.Println("Scale use is ***" + scale.ScaleNumber)
+				//fmt.Println("Scale use is ***" + scale.ScaleNumber)
 
 				grade, err = repository2.FindGradeByNumber(scale.GradeNumber)
 				if err != nil {
@@ -375,12 +375,10 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				}
 
 			}
-			fmt.Println("****-----****")
-			fmt.Println("Scale here: " + scale.Number)
-			fmt.Println(scale.Grade)
-			fmt.Println("****")
 
-			finalAggregateScale = scale
+			if scale.Number != "" {
+				finalAggregateScale = scale
+			}
 
 		}
 
@@ -396,10 +394,10 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		var summation float64
 		for _, r := range rs {
 			summation += r.Score
-			fmt.Println(fmt.Sprintf("score %.1f", r.Score))
+			//fmt.Println(fmt.Sprintf("score %.1f", r.Score))
 		}
 
-		fmt.Println(fmt.Sprintf("summation %.1f", summation))
+		//fmt.Println(fmt.Sprintf("summation %.1f", summation))
 		scale, err = GetProperAggregateScale(summation, campusClass.Number)
 		if err != nil {
 			tx.Rollback()
@@ -421,7 +419,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			}
 		}
 
-		fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
+		//fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
 
 		//check if the report score summary already exists with the same report summary number and assessment area number
 		var reportScoreSummary models.ReportScoreSummary
@@ -491,9 +489,6 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 	reportSummary.HeadTeacherComment = headTeacherComment.Comment
 	reportSummary.AggregateScaleUsed = finalAggregateScale.Number
-	fmt.Println("Start ******")
-	fmt.Println()
-	fmt.Println("End ******")
 
 	if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 		tx.Rollback()
@@ -509,7 +504,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 
 	if finalStatus.Number != "" {
-		fmt.Println("Final learner status: " + finalStatus.Type)
+		//fmt.Println("Final learner status: " + finalStatus.Type)
 		//FindPromotionByReportSummaryNumber
 		currentPromotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber, tx)
 		if err != nil {
@@ -985,7 +980,7 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
 	}
 
-	fmt.Println("Minimum assessment grade: ", minimumAssessmentGrade.Name)
+	//fmt.Println("Minimum assessment grade: ", minimumAssessmentGrade.Name)
 
 	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
 		return promotion, nil
