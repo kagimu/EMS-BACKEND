@@ -13,4 +13,5 @@ type SubjectGroup struct {
 type GroupAssessmentArea struct {
 	AssessmentAreaNumber string `json:"assessment_area_number"`
 	GroupNumber          string `json:"group_number"`
+	NameOnReport         string `json:"name_on_report"`
 }

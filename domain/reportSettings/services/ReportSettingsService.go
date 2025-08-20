@@ -796,6 +796,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		}
 
 		for _, assessmentArea := range assessmentAreas {
+			assessmentAreaName := assessmentArea.Name
 			sgRepo := reporsitory.NewSubjectGroupRepository(config.DB)
 			existIng, err := sgRepo.FindAssessmentAreasByAssessmentNumber(assessmentArea.Number)
 			if err != nil {
@@ -803,7 +804,9 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 			}
 
 			if len(existIng) > 0 {
-				continue
+				if existIng[0].NameOnReport != "" {
+					assessmentAreaName = existIng[0].NameOnReport
+				}
 			}
 
 			reportScoreSummary, err := reporsitory.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummaryNumber, assessmentArea.Number)
@@ -825,7 +828,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 			}
 
 			assessments = append(assessments, responses.Assessments{
-				Name:               assessmentArea.Name,
+				Name:               assessmentAreaName,
 				ReportScores:       reportScores,
 				ReportScoreSummary: reportScoreSummary,
 			})

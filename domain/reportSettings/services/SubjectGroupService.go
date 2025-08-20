@@ -39,6 +39,7 @@ func CreateSubjectGroup(req requests.CreateSubjectGroupRequest) error {
 
 		groupAssessmentArea.AssessmentAreaNumber = area.AssessmentAreaNumber
 		groupAssessmentArea.GroupNumber = subjectGroup.Number
+		groupAssessmentArea.NameOnReport = area.NameOnReport
 
 		err := sgRepo.SaveGroupAssessmentArea(groupAssessmentArea)
 		if err != nil {
@@ -63,6 +64,7 @@ func AddAssessmentAreaToSubjectGroup(req requests.AddAssessmentAreaSubjectGroupR
 
 		groupAssessmentArea.AssessmentAreaNumber = area.AssessmentAreaNumber
 		groupAssessmentArea.GroupNumber = req.SubjectGroupNumber
+		groupAssessmentArea.NameOnReport = area.NameOnReport
 
 		err := sgRepo.SaveGroupAssessmentArea(groupAssessmentArea)
 		if err != nil {
