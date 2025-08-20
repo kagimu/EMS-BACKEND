@@ -804,8 +804,8 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 			}
 
 			if len(existIng) > 0 {
-				if existIng[0].NameOnReport != "" {
-					assessmentAreaName = existIng[0].NameOnReport
+				if existIng[0].SubjectNameOnReport != "" {
+					assessmentAreaName = existIng[0].SubjectNameOnReport
 				}
 			}
 

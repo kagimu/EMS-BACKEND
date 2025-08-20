@@ -6,7 +6,7 @@ import (
 
 type AssessmentAreaRequest struct {
 	AssessmentAreaNumber string `json:"assessment_area_number" validate:"required,uuid4"`
-	NameOnReport         string `json:"name_on_report" validate:"required,string"`
+	SubjectNameOnReport  string `json:"subject_name_on_report" validate:"required,string"`
 }
 
 type CreateSubjectGroupRequest struct {
