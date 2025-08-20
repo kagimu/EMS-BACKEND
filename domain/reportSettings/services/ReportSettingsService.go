@@ -372,6 +372,10 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				}
 
 			}
+			fmt.Println("****-----****")
+			fmt.Println("Scale here: " + scale.Number)
+			fmt.Println(scale.Grade)
+			fmt.Println("****")
 
 			finalAggregateScale = scale
 
