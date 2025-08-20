@@ -371,9 +371,9 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 				}
 
-				finalAggregateScale = scale
-
 			}
+
+			finalAggregateScale = scale
 
 		}
 
