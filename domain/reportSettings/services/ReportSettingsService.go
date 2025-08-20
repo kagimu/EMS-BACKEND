@@ -317,6 +317,9 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 					tx.Rollback()
 					return err
 				}
+
+				fmt.Println("Scale use is ***" + scale.ScaleNumber)
+
 				grade, err = repository2.FindGradeByNumber(scale.GradeNumber)
 				if err != nil {
 					tx.Rollback()
@@ -488,6 +491,9 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 	reportSummary.HeadTeacherComment = headTeacherComment.Comment
 	reportSummary.AggregateScaleUsed = finalAggregateScale.Number
+	fmt.Println("Start ******")
+	fmt.Println()
+	fmt.Println("End ******")
 
 	if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 		tx.Rollback()
