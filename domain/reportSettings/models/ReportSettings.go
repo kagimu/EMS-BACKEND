@@ -1,11 +1,12 @@
 package models
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	userModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
-	"time"
 )
 import academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 import studyModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -133,4 +134,11 @@ type LearningAreaReportComment struct {
 	Comment             string                          `json:"comment" gorm:"type:text;not null;"`
 	UserNumber          string                          `json:"user_number" gorm:"size:36;not null;"`
 	User                userModels.User                 `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+}
+
+type ReportSummaryComment struct {
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	ReportSummaryNumber string
+	ReportSummary       ReportSummary `gorm:"foreignKey:ReportSummaryNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }

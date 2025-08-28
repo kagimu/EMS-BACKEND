@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
@@ -37,7 +39,6 @@ import (
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
@@ -174,6 +175,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 
 	tx := config.DB.Begin()
+
+	repo := reporsitory.NewReportScoreSummaryRepository(tx)
 
 	var staffRepository = repository3.NewStaffRepository(tx)
 
@@ -433,7 +436,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			reportScoreSummary.Illustration = scale.Illustration
 			reportScoreSummary.TeacherInitial = teacherInitial
 
-			if err := reporsitory.SaveReportScoreSummary(reportScoreSummary, tx); err != nil {
+			if err := repo.SaveReportScoreSummary(reportScoreSummary); err != nil {
 				tx.Rollback()
 				return errors.New("failed to update report score summary")
 			}
@@ -454,7 +457,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				TeacherInitial:       teacherInitial,
 			}
 
-			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {
+			if err := repo.CreateReportScoreSummary(reportScoreSummary); err != nil {
 				tx.Rollback()
 				return errors.New("failed to create report score summary")
 			}
@@ -727,6 +730,7 @@ func DeleteReportColumn(reportColumnNumber string) error {
 }
 
 func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, error) {
+	repo := reporsitory.NewReportScoreSummaryRepository(config.DB)
 	reportSummary, err := reporsitory.FindReportSummaryByNumber(reportSummaryNumber)
 	if err != nil {
 		return responses.FullReportSummary{}, errors.New("failed to find report summary error: " + err.Error())
@@ -809,7 +813,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 				}
 			}
 
-			reportScoreSummary, err := reporsitory.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummaryNumber, assessmentArea.Number)
+			reportScoreSummary, err := repo.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummaryNumber, assessmentArea.Number)
 			if err != nil {
 				return responses.FullReportSummary{}, errors.New("failed to find report score summary error: " + err.Error())
 			}
