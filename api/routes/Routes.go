@@ -1,12 +1,13 @@
 package routes
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/controller"
 	controllers4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attendance/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	controllers3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/controllers"
 	controllers2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/landingPage/controllers"
-	"time"
 
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	activityReportingControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/activityreporting/api/controllers"
@@ -742,6 +743,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("report-summary", reportSettingsController.FetchReportSummaries)
 			reportSettings.POST("report-score", reportSettingsController.CreateReportScore)
 			reportSettings.GET("report-score-summary", reportSettingsController.FetchReportScoreSummaries)
+			reportSettings.POST("report-score-summary/update-comments", reportSettingsController.UpdateReportScoreSummariesComments)
 			reportSettings.GET("report-settings-by-student", reportSettingsController.FetchReportSummaryByStudentAndStudyPeriodAndClass)
 			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
 			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)

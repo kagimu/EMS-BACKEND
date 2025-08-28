@@ -67,6 +67,34 @@ func (r *TeacherCommentRequest) Validate() error {
 	return nil
 }
 
+type UpdateReportScoreSummaryComments struct {
+	ReportSummaryNumber    string                      `json:"report_summary_number"`
+	AssessmentAreaComments []ReportScoreCommentRequest `json:"assessment_area_comments"`
+}
+
+type ReportScoreCommentRequest struct {
+	AssessmentAreaNumber string `json:"assessment_area_number"`
+	Comment              string `json:"comment"`
+}
+
+func (r *UpdateReportScoreSummaryComments) Validate() error {
+
+	if r.ReportSummaryNumber == "" {
+		return errors.New("report summary number is required")
+	}
+
+	for _, val := range r.AssessmentAreaComments {
+		if val.AssessmentAreaNumber == "" {
+			return errors.New("assessment area number is required")
+		}
+		if val.Comment == "" {
+			return errors.New("comment is required for all assessment areas")
+		}
+	}
+
+	return nil
+}
+
 type LearningAreaReportComment struct {
 	Comment            string `json:"comment"`
 	LearningAreaNumber string `json:"learning_area_number"`

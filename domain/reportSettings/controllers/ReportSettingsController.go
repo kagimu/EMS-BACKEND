@@ -3,6 +3,8 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
@@ -18,7 +20,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"strconv"
 
 	"net/http"
 )
@@ -857,6 +858,35 @@ func UpdateClassTeacherComment(context *gin.Context) {
 	err = services3.UpdateClassTeacherComment(payload, commentNumber, currentUser)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": errors.New("failed to update class teacher comment " + err.Error())})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Class teacher comment updated successfully"})
+}
+
+func UpdateReportScoreSummariesComments(context *gin.Context) {
+	var payload requests.UpdateReportScoreSummaryComments
+
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body " + err.Error()})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	err = services3.UpdateReportSummaryComments(payload, currentUser)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": errors.New("failed to update report summary comments " + err.Error())})
 		return
 	}
 
