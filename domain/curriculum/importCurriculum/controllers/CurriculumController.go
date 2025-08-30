@@ -3,11 +3,12 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -209,22 +210,23 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 	for idx, row := range rows {
 		if idx > 0 {
 			curriculumInfo := models5.ExcelCurriculumInfo{
-				LearningAreaCode:   getValueAtIndex(row, 0),
-				LearningArea:       getValueAtIndex(row, 1),
-				SubjectClusterCode: getValueAtIndex(row, 2),
-				SubjectCluster:     getValueAtIndex(row, 3),
-				SubjectCode:        getValueAtIndex(row, 4),
-				Subject:            getValueAtIndex(row, 5),
-				Class:              getValueAtIndex(row, 6),
-				StrandCode:         getValueAtIndex(row, 7),
-				Strand:             getValueAtIndex(row, 8),
-				TopicCode:          getValueAtIndex(row, 9),
-				Topic:              getValueAtIndex(row, 10),
-				SubTopicCode:       getValueAtIndex(row, 11),
-				SubTopic:           getValueAtIndex(row, 12),
-				EstimatedTime:      getValueAtIndex(row, 13),
-				ConceptCode:        getValueAtIndex(row, 14),
-				Concept:            getValueAtIndex(row, 15),
+				LearningAreaCode:     getValueAtIndex(row, 0),
+				LearningArea:         getValueAtIndex(row, 1),
+				SubjectClusterCode:   getValueAtIndex(row, 2),
+				SubjectCluster:       getValueAtIndex(row, 3),
+				SubjectCode:          getValueAtIndex(row, 4),
+				Subject:              getValueAtIndex(row, 5),
+				Class:                getValueAtIndex(row, 6),
+				StrandCode:           getValueAtIndex(row, 7),
+				Strand:               getValueAtIndex(row, 8),
+				TopicCode:            getValueAtIndex(row, 9),
+				Topic:                getValueAtIndex(row, 10),
+				SubTopicCode:         getValueAtIndex(row, 11),
+				SubTopic:             getValueAtIndex(row, 12),
+				EstimatedTime:        getValueAtIndex(row, 13),
+				TeachingSequenceCode: getValueAtIndex(row, 14),
+				ConceptCode:          getValueAtIndex(row, 15),
+				Concept:              getValueAtIndex(row, 16),
 			}
 			curriculumInfo.Prepare()
 			saveCurriculumData(curriculumInfo, idx, userNumber, curriculumNumber)
@@ -500,27 +502,22 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 		estimatedTimeData = "0"
 	}
 
-	estTime, err := strconv.ParseInt(estimatedTimeData, 10, 64)
+	estTime, _ := strconv.ParseInt(estimatedTimeData, 10, 64)
 
-	if err != nil {
-		// Handle the error if the string cannot be converted to int64
-		//return err
-	}
+	subTopicCode, _ := strconv.ParseInt(info.SubTopicCode, 10, 64)
 
-	subTopicCode, err := strconv.ParseInt(info.SubTopicCode, 10, 64)
-	if err != nil {
-		//fmt.Println("Error:", err)
-	}
+	subTopicTeachingSequenceCode, _ := strconv.ParseInt(info.TeachingSequenceCode, 10, 64)
 
 	///save user data
 	saveSubTopic := subTopicModels.SubTopic{
-		Number:           subtopicNo,
-		Name:             info.SubTopic,
-		Code:             subTopicCode,
-		EstimatedTime:    estTime,
-		TopicNumber:      topicNumber,
-		CurriculumNumber: curriculumNumber,
-		UserNumber:       userNumber,
+		Number:              subtopicNo,
+		Name:                info.SubTopic,
+		Code:                subTopicCode,
+		EstimatedTime:       estTime,
+		TopicNumber:         topicNumber,
+		CurriculumNumber:    curriculumNumber,
+		UserNumber:          userNumber,
+		TeacherSequenceCode: subTopicTeachingSequenceCode,
 	}
 
 	var subtopicInfo subTopicModels.SubTopic

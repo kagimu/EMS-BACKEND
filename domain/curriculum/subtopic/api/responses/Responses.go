@@ -23,5 +23,6 @@ type (
 		LearningAreaNumber   string                            `json:"learning_area_number"`
 		ReferenceInfo        []responses2.LearningMaterialList `json:"references"`
 		Concept              []responses.ConceptList           `json:"concept"`
+		TeachingSequenceCode int64                             `json:"teaching_sequence_code"`
 	}
 )
