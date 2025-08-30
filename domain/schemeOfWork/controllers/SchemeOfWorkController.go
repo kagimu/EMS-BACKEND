@@ -324,12 +324,12 @@ func DownloadSchemeOfWork(context *gin.Context) {
 		return
 	}
 
-	for idx, subtopicList := range subtopic {
+	for _, subtopicList := range subtopic {
 		if subjectNumber == subtopicList.Topic.Strand.Subject.Number {
 			subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
 				Number:        subtopicList.Number,
 				Code:          subtopicList.TeacherSequenceCode,
-				SortCode:      int64(idx + 1),
+				SortCode:      subtopicList.TeacherSequenceCode,
 				Name:          subtopicList.Name,
 				UserNumber:    subtopicList.UserNumber,
 				EstimatedTime: subtopicList.EstimatedTime,
