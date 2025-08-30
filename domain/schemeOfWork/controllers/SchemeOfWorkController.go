@@ -2,6 +2,11 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"path/filepath"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -18,10 +23,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
-	"net/http"
-	"path/filepath"
-	"strconv"
-	"time"
 )
 
 var schemeOfWorkService = services.InitSchemeOfWorkService()

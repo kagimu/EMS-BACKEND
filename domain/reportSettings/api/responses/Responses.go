@@ -111,7 +111,6 @@ type FullReportSummary struct {
 	AcademicYear        string         `json:"academic_year"`
 	ReportColumns       []string       `json:"report_columns"`
 	ReportTemplateName  string         `json:"report_template_name"`
-	TeacherComment      string         `json:"teacher_comment"`
 	HeadTeachersComment string         `json:"head_teachers_comment"`
 	AggregateScale      []AppliedScale `json:"aggregate_scale"`
 	NextTermBegins      string         `json:"next_term_begins"`

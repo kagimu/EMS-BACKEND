@@ -7,12 +7,13 @@ import (
 )
 
 type SubTopicInfo struct {
-	Code             string `json:"code"`
-	Name             string `json:"name"`
-	TopicNumber      string `json:"topic_number"`
-	EstimatedTime    string `json:"estimated_time"`
-	CurriculumNumber string `json:"curriculum_number"`
-	SubTopicNumber   string `json:"sub_topic_number"`
+	Code                 string `json:"code"`
+	TeachingSequenceCode string `json:"teaching_sequence_code"`
+	Name                 string `json:"name"`
+	TopicNumber          string `json:"topic_number"`
+	EstimatedTime        string `json:"estimated_time"`
+	CurriculumNumber     string `json:"curriculum_number"`
+	SubTopicNumber       string `json:"sub_topic_number"`
 }
 
 type SubTopicDelRequest struct {
@@ -47,6 +48,10 @@ func (p *SubTopicInfo) Validate() error {
 
 	if p.EstimatedTime == "" {
 		return errors.New("estimated time is required")
+	}
+
+	if p.TeachingSequenceCode == "" {
+		return errors.New("teaching sequence code is required")
 	}
 
 	return nil
