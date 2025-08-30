@@ -508,6 +508,8 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 
 	subTopicTeachingSequenceCode, _ := strconv.ParseInt(info.TeachingSequenceCode, 10, 64)
 
+	fmt.Println("Teaching sequence code " + info.TeachingSequenceCode)
+
 	///save user data
 	saveSubTopic := subTopicModels.SubTopic{
 		Number:              subtopicNo,
