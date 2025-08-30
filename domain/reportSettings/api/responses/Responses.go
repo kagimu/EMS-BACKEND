@@ -117,6 +117,7 @@ type FullReportSummary struct {
 	NextTermBegins      string         `json:"next_term_begins"`
 	PromotionStatus     string         `json:"promotion_status"`
 	ReportTemplate      string         `json:"report_template"`
+	TeachersComment     string         `json:"teachers_comment"`
 }
 
 type LeanSchool struct {

@@ -904,6 +904,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		LevelName:           levelName.Name,
 		NextTermBegins:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
 		ReportTemplate:      reportTemplate.Name,
+		TeachersComment:     reportSummary.Comment,
 	}
 
 	if len(scalesUsed) > 0 {
