@@ -328,7 +328,7 @@ func FetchSubTopicByClass(context *gin.Context) {
 		Preload("Topic.Strand.Subject").
 		Preload("Topic.Strand").
 		Preload("Topic").
-		Order("code asc").
+		Order("created_at asc").
 		Find(&subtopic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
 		return
