@@ -1,9 +1,10 @@
 package models
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
-	"time"
 )
 
 type (

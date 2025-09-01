@@ -3,14 +3,15 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
 	"gorm.io/gorm"
-	"strconv"
-	"time"
 )
 
 type SchemeOfWorkService struct {
@@ -136,7 +137,7 @@ func (s SchemeOfWorkService) Update(schemeOfWorkInfo requests.SchemeOfWorkInfo, 
 
 			item.Code = codeNo
 			item.EstimatedTime = schemeList.EstimatedTime
-			item.SubTopicNumber = schemeList.Number
+			item.SubTopicNumber = schemeList.SubTopicNumber
 			item.UserNumber = userNumber
 			item.UpdatedAt = time.Now()
 
