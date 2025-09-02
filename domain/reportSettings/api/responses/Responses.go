@@ -40,6 +40,7 @@ type ReportColumnAssessmentResponse struct {
 	Class            string `json:"class"`
 	AcademicYear     string `json:"academic_year"`
 	StudyPeriod      string `json:"study_period"`
+	Description      string `json:"description"`
 }
 
 type SummarizedFinalReportResponse struct {

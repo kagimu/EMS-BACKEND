@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
@@ -16,7 +18,6 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 var assessmentRepository = repositories2.NewAssessmentMetricRepository()
@@ -268,6 +269,7 @@ func GetReportColumns(reportSettingNumber string) ([]responses.ReportColumnRespo
 				AssessmentArea:   assessmentArea.Name,
 				AssessmentMetric: metric.Name + " (" + metricAssessmentArea.Name + ")",
 				ScheduledOn:      assessmentSchedule.ScheduledOn.Format(time.DateOnly),
+				Description:      assessmentSchedule.Description,
 			})
 		}
 
@@ -324,6 +326,7 @@ func CreateReportColumnAssessmentResponse(reportColumnAssessment models.ReportCo
 		Class:            class.Name,
 		StudyPeriod:      spn.Name,
 		AcademicYear:     ay.AcademicYearName,
+		Description:      assessmentSchedule.Description,
 	}
 }
 
