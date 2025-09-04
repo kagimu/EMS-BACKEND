@@ -527,6 +527,8 @@ func processConceptSteps(conceptSteps [][]string, concept conceptModels.Concept,
 
 	}
 
+	fmt.Println(fmt.Sprintf("Processing %d steps for concept %s", len(lessonPlanSteps), concept.Name))
+
 	err := checkStepDuplicates(lessonPlanSteps)
 	if err != nil {
 		return err
