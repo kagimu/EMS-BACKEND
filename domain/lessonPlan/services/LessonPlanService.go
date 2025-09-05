@@ -432,11 +432,12 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 
 		if lessonPlan.Number == "" {
 			lessonPlan = models.LessonPlan{
-				Status:               constants.StatusDraft,
+				Status:               constants.StatusActive,
 				Number:               uuid.NewV4().String(),
 				UserNumber:           currentUserNumber,
 				SchemeSubTopicNumber: schemeSubTopicNumber,
 			}
+
 			lessonPlan, err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
 			if err != nil {
 				return errors.New("Creating lesson plan error " + err.Error())
