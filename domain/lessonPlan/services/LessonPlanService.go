@@ -350,11 +350,14 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 		return nil, "", errors.New(fmt.Sprintf("Sub-topic '%s' has no concepts for lesson planning", subTopic.Name))
 	}
 
-	defaultOpenSheet := 0
+	//defaultOpenSheet := 0
 
+	defaultOpenSheet := -1
 	for _, concept := range concepts {
 
 		sheetName := fmt.Sprintf("Sheet-%d", concept.Code)
+
+		fmt.Println("Sheet Name: ", sheetName)
 
 		defaultOpenSheet, err = fileTemplate.NewSheet(sheetName)
 		if err != nil {
@@ -376,6 +379,10 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 			}
 		}
 
+	}
+
+	if defaultOpenSheet < 0 {
+		return nil, "", errors.New(fmt.Sprintf("Invalid default open sheet number: %d", defaultOpenSheet))
 	}
 
 	fileTemplate.SetActiveSheet(defaultOpenSheet)
