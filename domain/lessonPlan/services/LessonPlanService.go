@@ -528,6 +528,18 @@ func processConceptSteps(conceptSteps [][]string, concept conceptModels.Concept,
 		}
 		code := int64(code_)
 
+		if code < 1 {
+			fmt.Println(fmt.Sprintf("Skipping code: %d", code))
+			continue
+		}
+
+		if step == "" || len(step) < 2 {
+			fmt.Println(fmt.Sprintf("Skipping step: %s", step))
+			continue
+		}
+
+		fmt.Println("Added step: " + step)
+
 		lessonPlanSteps = append(lessonPlanSteps, models.ExtractedStep{
 			Code: code,
 			Step: step,
