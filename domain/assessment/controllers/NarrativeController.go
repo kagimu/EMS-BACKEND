@@ -95,13 +95,14 @@ func GetNarrative(context *gin.Context) {
 func GetNarrativeStudents(c *gin.Context) {
 
 	assessmentMetricNumber := c.Query("narrative_schedule_number")
+	studyPeriodNumber := c.Query("study_period_number")
 
 	if assessmentMetricNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Narrative schedule is required"})
 		return
 	}
 
-	var assessmentMetric assessmentMetricModel.Narrative
+	var assessmentMetric assessmentMetricModel.NarrativeSchedule
 
 	if err := config.DB.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Narrative schedule not found"})
@@ -112,10 +113,9 @@ func GetNarrativeStudents(c *gin.Context) {
 
 	var enrollments []enrollmentModel.Enrollment
 
-	if err := config.DB.Where("campus_class_number = ? AND status = ? AND study_period_number = ?", assessmentMetric.CampusClassNumber, constants.StatusActive, assessmentMetric.StudyPeriodNumber).Find(&enrollments).Error; err != nil {
+	if err := config.DB.Where("campus_class_number = ? AND status = ? AND study_period_number = ?", assessmentMetric.ScheduledNarrative.CampusClassNumber, constants.StatusActive, studyPeriodNumber).Find(&enrollments).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch students"})
 		return
-
 	}
 
 	var students []enrollmentResponse.NarrativeEnrolledStudent
@@ -131,7 +131,7 @@ func GetNarrativeStudents(c *gin.Context) {
 
 		var assessment assessmentMetricModel.Narrative
 
-		if err := config.DB.Where("student_number = ? AND narrative_schedule_number = ?", student.Number, assessmentMetric.Number).First(&assessment).Error; err != nil {
+		if err := config.DB.Where("student_number = ? AND narrative_schedule_number = ?", student.Number, assessment.Number).First(&assessment).Error; err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch narrative assessments " + err.Error()})
 				return
