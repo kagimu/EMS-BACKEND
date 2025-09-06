@@ -13,6 +13,7 @@ type NarrativeRequest struct {
 	ReferenceTime           string `json:"reference_time"`
 	CurrentStatus           string `json:"current_status"`
 	Status                  string `json:"status"`
+	SuggestedSolution       string `json:"suggested_solution"`
 }
 
 func (receiver NarrativeRequest) Validate() error {
