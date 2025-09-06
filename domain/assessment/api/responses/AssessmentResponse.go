@@ -11,14 +11,15 @@ type NarrativeResponse struct {
 }
 
 type NarrativeResponseRow struct {
-	ReferenceDate     string `json:"reference_date"`
-	ReferenceTime     string `json:"reference_time"`
-	Narration         string `json:"narration"`
-	SuggestedSolution string `json:"suggested_solution"`
-	CreatedAt         string `json:"created_at"`
-	Teacher           string `json:"teacher"`
-	Status            string `json:"status"`
-	CurrentStatus     string `json:"current_status"`
+	ReferenceDate           string `json:"reference_date"`
+	ReferenceTime           string `json:"reference_time"`
+	Narration               string `json:"narration"`
+	SuggestedSolution       string `json:"suggested_solution"`
+	CreatedAt               string `json:"created_at"`
+	Teacher                 string `json:"teacher"`
+	Status                  string `json:"status"`
+	CurrentStatus           string `json:"current_status"`
+	NarrativeScheduleNumber string `json:"narrative_schedule_number"`
 }
 
 type NarrativeResponseData struct {

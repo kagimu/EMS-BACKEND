@@ -1,12 +1,22 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/gin-gonic/gin"
+	"errors"
 	"net/http"
 	"time"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
+	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
+	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
+	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 var narrativeService = services.NewNarrativeService()
@@ -81,6 +91,71 @@ func GetNarrative(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"data": data})
+}
+func GetNarrativeStudents(c *gin.Context) {
+
+	assessmentMetricNumber := c.Param("narrative_schedule_number")
+
+	if assessmentMetricNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Narrative schedule is required"})
+		return
+	}
+
+	var assessmentMetric assessmentMetricModel.Narrative
+
+	if err := config.DB.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Narrative schedule not found"})
+		return
+	}
+
+	//fetch enrollment students from assessment metric campus class number
+
+	var enrollments []enrollmentModel.Enrollment
+
+	if err := config.DB.Where("campus_class_number = ? AND status = ? AND study_period_number = ?", assessmentMetric.CampusClassNumber, constants.StatusActive, assessmentMetric.StudyPeriodNumber).Find(&enrollments).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch students"})
+		return
+
+	}
+
+	var students []enrollmentResponse.NarrativeEnrolledStudent
+
+	for _, enrollment := range enrollments {
+		var student models.Student
+		if err := config.DB.Where("number = ?", enrollment.StudentNumber).First(&student).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch student"})
+			return
+		}
+
+		// find assesment for student and assessment metric
+
+		var assessment assessmentMetricModel.Narrative
+
+		if err := config.DB.Where("student_number = ? AND narrative_schedule_number = ?", student.Number, assessmentMetric.Number).First(&assessment).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch narrative assessments " + err.Error()})
+				return
+			}
+		}
+
+		var campusClass classModels.CampusClass
+		if err := config.DB.Where("number = ?", enrollment.CampusClassNumber).First(&campusClass).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class not found"})
+			return
+		}
+
+		students = append(students, enrollmentResponse.NarrativeEnrolledStudent{
+			Number:            student.Number,
+			StudentSurname:    student.Surname,
+			StudentOtherName:  student.OtherName,
+			StudentSecondName: student.SecondName,
+			Narrative:         assessment.Description,
+			SuggestedSolution: assessment.SuggestedSolution,
+			Class:             campusClass.ClassName,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": students})
 }
 
 func SaveNarrativeSchedule(context *gin.Context) {

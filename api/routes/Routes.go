@@ -779,6 +779,7 @@ func SetupRoutes() *gin.Engine {
 			narrative := reportSettings.Group("narrative")
 			{
 				narrative.GET("", assessmentController.GetNarrative)
+				narrative.GET("students", assessmentController.GetNarrativeStudents)
 				narrative.PATCH(":narrative_number", assessmentController.UpdateNarrative)
 				narrative.GET(":narrative_number", assessmentController.GetDetailedNarrative)
 				narrative.DELETE(":narrative_number", assessmentController.DeleteNarrative)
