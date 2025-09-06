@@ -1,12 +1,13 @@
 package models
 
 import (
+	"time"
+
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
-	"time"
 )
 
 type Narrative struct {
@@ -28,6 +29,7 @@ type Narrative struct {
 	CampusClass          classModels.CampusClass      `gorm:"foreignKey:CampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	AssessmentAreaNumber string                       `gorm:"size:36; not null;column:assessment_area_number"`
 	AssessmentArea       models.AssessmentArea        `gorm:"foreignKey:AssessmentAreaNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	SuggestedSolution    string                       `gorm:"size:2500;not null"`
 }
 
 type ScheduledNarrative struct {

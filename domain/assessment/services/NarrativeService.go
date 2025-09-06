@@ -3,6 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
@@ -23,8 +26,6 @@ import (
 	"github.com/araddon/dateparse"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"strconv"
-	"time"
 )
 
 type NarrativeService struct {
@@ -167,6 +168,7 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 		ReferenceTime:        narrativeRequest.ReferenceTime,
 		CurrentStatus:        narrativeRequest.CurrentStatus,
 		Status:               narrativeRequest.Status,
+		SuggestedSolution:    narrativeRequest.SuggestedSolution,
 	}
 
 	createdAt := time.Now()
@@ -478,13 +480,14 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	row := responses.NarrativeResponseRow{
-		Teacher:       user.FirstName + " " + user.LastName,
-		CreatedAt:     narrative.CreatedAt.Format(time.DateTime),
-		Narration:     narrative.Description,
-		ReferenceTime: narrative.ReferenceTime,
-		ReferenceDate: narrative.ReferenceDate.Format(time.DateOnly),
-		Status:        narrative.Status,
-		CurrentStatus: narrative.CurrentStatus,
+		Teacher:           user.FirstName + " " + user.LastName,
+		CreatedAt:         narrative.CreatedAt.Format(time.DateTime),
+		Narration:         narrative.Description,
+		ReferenceTime:     narrative.ReferenceTime,
+		ReferenceDate:     narrative.ReferenceDate.Format(time.DateOnly),
+		Status:            narrative.Status,
+		CurrentStatus:     narrative.CurrentStatus,
+		SuggestedSolution: narrative.SuggestedSolution,
 	}
 
 	return responses.NarrativeResponse{
