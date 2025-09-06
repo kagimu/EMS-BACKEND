@@ -94,7 +94,7 @@ func GetNarrative(context *gin.Context) {
 }
 func GetNarrativeStudents(c *gin.Context) {
 
-	assessmentMetricNumber := c.Param("narrative_schedule_number")
+	assessmentMetricNumber := c.Query("narrative_schedule_number")
 
 	if assessmentMetricNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Narrative schedule is required"})
