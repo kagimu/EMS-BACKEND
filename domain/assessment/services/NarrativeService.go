@@ -157,18 +157,19 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 	}
 
 	narrative := models.Narrative{
-		UserNumber:           userNumber,
-		StudentNumber:        narrativeRequest.StudentNumber,
-		CampusClassNumber:    narrativeRequest.CampusClassNumber,
-		AssessmentAreaNumber: narrativeRequest.AssessmentAreaNumber,
-		Description:          narrativeRequest.Description,
-		UpdatedAt:            time.Now(),
-		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
-		ReferenceDate:        dateTime,
-		ReferenceTime:        narrativeRequest.ReferenceTime,
-		CurrentStatus:        narrativeRequest.CurrentStatus,
-		Status:               narrativeRequest.Status,
-		SuggestedSolution:    narrativeRequest.SuggestedSolution,
+		UserNumber:              userNumber,
+		StudentNumber:           narrativeRequest.StudentNumber,
+		CampusClassNumber:       narrativeRequest.CampusClassNumber,
+		AssessmentAreaNumber:    narrativeRequest.AssessmentAreaNumber,
+		Description:             narrativeRequest.Description,
+		UpdatedAt:               time.Now(),
+		StudyPeriodNumber:       narrativeRequest.StudyPeriodNumber,
+		ReferenceDate:           dateTime,
+		ReferenceTime:           narrativeRequest.ReferenceTime,
+		CurrentStatus:           narrativeRequest.CurrentStatus,
+		Status:                  narrativeRequest.Status,
+		SuggestedSolution:       narrativeRequest.SuggestedSolution,
+		NarrativeScheduleNumber: narrativeRequest.NarrativeScheduleNumber,
 	}
 
 	createdAt := time.Now()
@@ -445,13 +446,14 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 
 		for _, narration := range narrationList {
 			narrativeResponseRows = append(narrativeResponseRows, responses.NarrativeResponseRow{
-				Status:            narration.Status,
-				CurrentStatus:     narration.CurrentStatus,
-				Narration:         narration.Description,
-				SuggestedSolution: narration.SuggestedSolution,
-				ReferenceDate:     narration.ReferenceDate.Format("2006-01-02"),
-				ReferenceTime:     narration.ReferenceTime,
-				CreatedAt:         narration.CreatedAt.Format("2006-01-02"),
+				Status:                  narration.Status,
+				CurrentStatus:           narration.CurrentStatus,
+				Narration:               narration.Description,
+				SuggestedSolution:       narration.SuggestedSolution,
+				ReferenceDate:           narration.ReferenceDate.Format("2006-01-02"),
+				ReferenceTime:           narration.ReferenceTime,
+				CreatedAt:               narration.CreatedAt.Format("2006-01-02"),
+				NarrativeScheduleNumber: narration.NarrativeScheduleNumber,
 			})
 		}
 
@@ -481,14 +483,15 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	row := responses.NarrativeResponseRow{
-		Teacher:           user.FirstName + " " + user.LastName,
-		CreatedAt:         narrative.CreatedAt.Format(time.DateTime),
-		Narration:         narrative.Description,
-		ReferenceTime:     narrative.ReferenceTime,
-		ReferenceDate:     narrative.ReferenceDate.Format(time.DateOnly),
-		Status:            narrative.Status,
-		CurrentStatus:     narrative.CurrentStatus,
-		SuggestedSolution: narrative.SuggestedSolution,
+		Teacher:                 user.FirstName + " " + user.LastName,
+		CreatedAt:               narrative.CreatedAt.Format(time.DateTime),
+		Narration:               narrative.Description,
+		ReferenceTime:           narrative.ReferenceTime,
+		ReferenceDate:           narrative.ReferenceDate.Format(time.DateOnly),
+		Status:                  narrative.Status,
+		CurrentStatus:           narrative.CurrentStatus,
+		SuggestedSolution:       narrative.SuggestedSolution,
+		NarrativeScheduleNumber: narrative.NarrativeScheduleNumber,
 	}
 
 	return responses.NarrativeResponse{
