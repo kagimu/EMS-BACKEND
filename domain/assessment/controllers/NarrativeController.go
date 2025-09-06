@@ -102,7 +102,7 @@ func GetNarrativeStudents(c *gin.Context) {
 		return
 	}
 
-	var assessmentMetric assessmentMetricModel.NarrativeSchedule
+	var assessmentMetric assessmentMetricModel.ScheduledNarrative
 
 	if err := config.DB.Where("number = ?", assessmentMetricNumber).First(&assessmentMetric).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Narrative schedule not found"})
@@ -113,7 +113,7 @@ func GetNarrativeStudents(c *gin.Context) {
 
 	var enrollments []enrollmentModel.Enrollment
 
-	if err := config.DB.Where("campus_class_number = ? AND status = ? AND study_period_number = ?", assessmentMetric.ScheduledNarrative.CampusClassNumber, constants.StatusActive, studyPeriodNumber).Find(&enrollments).Error; err != nil {
+	if err := config.DB.Where("campus_class_number = ? AND status = ? AND study_period_number = ?", assessmentMetric.CampusClassNumber, constants.StatusActive, studyPeriodNumber).Find(&enrollments).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch students"})
 		return
 	}
