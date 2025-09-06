@@ -217,7 +217,7 @@ func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeRes
 		Teacher:           user.FirstName + " " + user.LastName,
 		CreatedAt:         assessment.CreatedAt.Format(time.DateOnly),
 		Narration:         assessment.Comment,
-		SuggestedSolution: "",
+		SuggestedSolution: "N/A",
 		ReferenceTime:     assessment.CreatedAt.Format(time.TimeOnly),
 		ReferenceDate:     assessment.CreatedAt.Format(time.DateOnly),
 		Status:            "Unknown",

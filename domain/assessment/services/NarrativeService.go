@@ -445,12 +445,13 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 
 		for _, narration := range narrationList {
 			narrativeResponseRows = append(narrativeResponseRows, responses.NarrativeResponseRow{
-				Status:        narration.Status,
-				CurrentStatus: narration.CurrentStatus,
-				Narration:     narration.Description,
-				ReferenceDate: narration.ReferenceDate.Format("2006-01-02"),
-				ReferenceTime: narration.ReferenceTime,
-				CreatedAt:     narration.CreatedAt.Format("2006-01-02"),
+				Status:            narration.Status,
+				CurrentStatus:     narration.CurrentStatus,
+				Narration:         narration.Description,
+				SuggestedSolution: narration.SuggestedSolution,
+				ReferenceDate:     narration.ReferenceDate.Format("2006-01-02"),
+				ReferenceTime:     narration.ReferenceTime,
+				CreatedAt:         narration.CreatedAt.Format("2006-01-02"),
 			})
 		}
 
