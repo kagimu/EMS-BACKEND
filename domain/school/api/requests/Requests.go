@@ -2,6 +2,7 @@ package requests
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 )
 
@@ -45,6 +46,7 @@ func (r *SchoolInfo) Validate() error {
 type ModeOfStudyRequest struct {
 	SchoolNumber string `json:"school_number"`
 	Name         string `json:"name"`
+	Code         int64  `json:"code"`
 }
 
 type UpdateModeOfStudyRequest struct {
@@ -60,6 +62,10 @@ func (modeOfStudyRequest *ModeOfStudyRequest) Validate() error {
 
 	if modeOfStudyRequest.Name == "" {
 		return errors.New("Enter mode name I.E Boarding, Half Day ")
+	}
+
+	if modeOfStudyRequest.Code == 0 {
+		return errors.New("Enter mode code   ")
 	}
 
 	return nil

@@ -124,7 +124,8 @@ func UpdateLearningMaterial(ctx *gin.Context) {
 
 	}
 
-	if err := config.DB.Where("number", learningMaterialNumber).Save(&learningMaterial).Error; err != nil {
+	if err := config.DB.Where("number", learningMaterialNumber).
+		Updates(learningMaterial).Error; err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred. Learning material not saved " + err.Error()})
 		return
 	}

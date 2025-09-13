@@ -22,5 +22,6 @@ type (
 		SchoolNumber      string `json:"school_number"`
 		Status            string `json:"status"`
 		CreatedAt         string `json:"created_at"`
+		Code              int64  `json:"code"`
 	}
 )
