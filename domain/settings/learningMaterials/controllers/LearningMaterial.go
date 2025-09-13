@@ -61,6 +61,59 @@ func CreateNewLearningMaterial(ctx *gin.Context) {
 
 }
 
+func UpdateLearningMaterial(ctx *gin.Context) {
+	var learningMaterial = models.LearningMaterial{}
+	/*	err := ctx.BindJSON(&learningMaterial)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+			return
+		}*/
+
+	learningMaterial.Name = ctx.PostForm("name")
+	learningMaterial.Type = ctx.PostForm("type")
+	learningMaterial.Category = ctx.PostForm("category")
+	learningMaterial.SubCategoryNumber = ctx.PostForm("sub_category")
+	learningMaterialNumber := ctx.PostForm("learning_material_number")
+
+	if learningMaterialNumber != "" {
+		learningMaterial.Number = learningMaterialNumber
+	}
+
+	Code, err := strconv.Atoi(ctx.PostForm("code"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+	learningMaterial.Code = int64(Code)
+	learningMaterial.UserNumber = ctx.Request.Header["User-Number"][0]
+
+	/*err := learningMaterial.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}*/
+
+	file, _ := ctx.FormFile("file")
+	log.Println(file.Filename)
+
+	// Upload the file to specific dst.
+	err = ctx.SaveUploadedFile(file, "fileRepo/learningMaterials/"+file.Filename)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+
+	}
+
+	if err := config.DB.Save(&learningMaterial).Error; err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred. Learning material not saved"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Learning material updated successfully!"})
+
+}
+
 func FetchAllLearningMaterials(ctx *gin.Context) {
 	var learningMaterials []models.LearningMaterial
 	config.DB.Find(&learningMaterials)
