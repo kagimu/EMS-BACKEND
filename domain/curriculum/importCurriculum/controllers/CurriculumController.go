@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
 
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -853,4 +854,57 @@ func CurriculumEdit(context *gin.Context) {
 
 func ExportCurriculum(context *gin.Context) {
 
+}
+
+func ExportLessonPlanTemplate(ctx *gin.Context) (*excelize.File, string, error) {
+
+	curriculumNumber := ctx.Query("curriculum_number")
+
+	fileTemplate := excelize.NewFile()
+
+	schemeOfWorkSubTopic, err := repositories2.GetSchemeOfWorkSubTopicByNumber(curriculumNumber)
+	if err != nil {
+		return nil, "", errors.New("Checking scheme subtopic error: " + err.Error())
+	}
+
+	if schemeOfWorkSubTopic.Number == "" {
+		return nil, "", errors.New("Invalid scheme subtopic, we can not export anything ")
+	}
+
+	//defaultOpenSheet := 0
+
+	defaultOpenSheet := -1
+
+	sheetName := fmt.Sprintf("Sheet-%d", "name")
+
+	fmt.Println("Sheet Name: ", sheetName)
+
+	defaultOpenSheet, err = fileTemplate.NewSheet(sheetName)
+	if err != nil {
+		return nil, "", errors.New(fmt.Sprintf("Error '%s' creating sheet '%s'", err.Error(), " concept.Name"))
+	}
+
+	sheetsHeaders := [][]string{
+		{"Concept name:", "Name"},
+		{"Code", "Step"},
+	}
+
+	for i, row := range sheetsHeaders {
+		for j, cell := range row {
+			cellRef, _ := excelize.CoordinatesToCellName(j+1, i+1)
+			err = fileTemplate.SetCellValue(sheetName, cellRef, cell)
+			if err != nil {
+				return nil, "", errors.New(fmt.Sprintf("Error '%s' writing sheet '%s' headers", err.Error(), "concept.Name"))
+			}
+		}
+	}
+
+	if defaultOpenSheet < 0 {
+		return nil, "", errors.New(fmt.Sprintf("Invalid default open sheet number: %d", defaultOpenSheet))
+	}
+
+	fileTemplate.SetActiveSheet(defaultOpenSheet)
+
+	unixTime := time.Now().Unix()
+	return fileTemplate, fmt.Sprintf("%s-%d.xlsx", "subTopic.Name", unixTime), nil
 }

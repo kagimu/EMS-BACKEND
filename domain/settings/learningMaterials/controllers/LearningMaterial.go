@@ -94,14 +94,15 @@ func UpdateLearningMaterial(ctx *gin.Context) {
 	}*/
 
 	file, _ := ctx.FormFile("file")
-	log.Println(file.Filename)
 
-	// Upload the file to specific dst.
-	err = ctx.SaveUploadedFile(file, "fileRepo/learningMaterials/"+file.Filename)
+	if file != nil {
+		// Upload the file to specific dst.
+		err = ctx.SaveUploadedFile(file, "fileRepo/learningMaterials/"+file.Filename)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
 
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
+		}
 
 	}
 
