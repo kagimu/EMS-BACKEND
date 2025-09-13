@@ -2,12 +2,13 @@ package services
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers/api"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/repositories"
 	uuid "github.com/satori/go.uuid"
-	"time"
 )
 
 type SourceOfSchoolService struct {
@@ -61,6 +62,7 @@ func (s SourceOfSchoolService) FindAllSources(entityNumber string) ([]responses.
 			Number:       v.Number,
 			UserNumber:   v.UserNumber,
 			EntityNumber: v.EntityNumber,
+			Code:         v.Code,
 		})
 	}
 
@@ -89,6 +91,7 @@ func (s SourceOfSchoolService) Update(sourceOfSchoolInfo api.SourceOfSchoolReque
 	sourceOfSchool.Name = sourceOfSchoolInfo.Name
 	sourceOfSchool.UserNumber = userNumber
 	sourceOfSchool.UpdatedAt = time.Now()
+	sourceOfSchool.Code = sourceOfSchoolInfo.Code
 
 	err = repositories.SaveSourceOfSchoolInfo(sourceOfSchool)
 
@@ -100,6 +103,7 @@ func (s SourceOfSchoolService) Update(sourceOfSchoolInfo api.SourceOfSchoolReque
 		Name:         sourceOfSchool.Name,
 		Number:       sourceOfSchool.Number,
 		EntityNumber: sourceOfSchool.EntityNumber,
+		Code:         sourceOfSchool.Code,
 	}, nil
 }
 

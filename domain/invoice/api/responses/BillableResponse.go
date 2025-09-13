@@ -19,6 +19,7 @@ type BillableResponse struct {
 	ModeOfStudyNumber      string  `json:"mode_of_study_number"`
 	ModeOfStudyName        string  `json:"mode_of_study_name"`
 	CurriculumName         string  `json:"curriculum_name"`
+	Code                   int64   `json:"code"`
 }
 
 type DetailedBillableResponse struct {

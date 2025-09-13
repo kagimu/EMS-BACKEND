@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
@@ -278,6 +279,7 @@ func createBillResponse(billable models.Billable) (responses.BillableResponse, e
 		ModeOfStudyNumber:      billable.ModeOfStudyNumber,
 		ModeOfStudyName:        modeOfStudy.Name,
 		CurriculumName:         curriculum.Name,
+		Code:                   billable.Code,
 	}, nil
 }
 
@@ -312,6 +314,7 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 		Description:       billableRequest.Description,
 		BillType:          billableRequest.BillType,
 		CurriculumNumber:  curriculum.Number,
+		Code:              billableRequest.Code,
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {

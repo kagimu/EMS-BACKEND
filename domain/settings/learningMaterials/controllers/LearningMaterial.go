@@ -136,7 +136,7 @@ func UpdateLearningMaterial(ctx *gin.Context) {
 
 func FetchAllLearningMaterials(ctx *gin.Context) {
 	var learningMaterials []models.LearningMaterial
-	config.DB.Find(&learningMaterials)
+	config.DB.Order("code asc").Find(&learningMaterials)
 
 	ctx.JSON(http.StatusOK, gin.H{"data": learningMaterials})
 

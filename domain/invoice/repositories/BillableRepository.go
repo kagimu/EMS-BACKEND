@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
@@ -29,6 +30,7 @@ func FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, ac
 		Joins("JOIN study_periods ON study_periods.number = billables.study_period_number").
 		Scopes(filters.ByStatus(status), filters.ByAnyField("bill_type", billType), filters.ByCampusNumber(campusNumber), filters.ByAnyField("academic_year_number", academicYearNumber), filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByAnyField("class_number", classNumber)).
 		Distinct("billables.*").
+		Order("billables.code ASC").
 		Where("school_number = ?", schoolNumber).Find(&billable).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
