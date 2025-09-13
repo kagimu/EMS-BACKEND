@@ -70,6 +70,7 @@ func (modeOfStudyService *modeOfStudyService) UpdateModeOfStudy(updateModeOfStud
 	modeOfStudy.Name = updateModeOfStudyRequest.Name
 	modeOfStudy.SchoolNumber = updateModeOfStudyRequest.SchoolNumber
 	modeOfStudy.UserNumber = currentUserNumber
+	modeOfStudy.Code = updateModeOfStudyRequest.Code
 
 	if updateModeOfStudyRequest.Status != "" {
 		modeOfStudy.Status = updateModeOfStudyRequest.Status
