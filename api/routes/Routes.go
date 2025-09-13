@@ -119,6 +119,7 @@ func SetupRoutes() *gin.Engine {
 			curriculum.GET("uploaded", curriculumController.FetchUploadedCurriculum)
 			curriculum.GET("school-curriculum", curriculumController.FetchSchoolCurriculum)
 			curriculum.GET("data", curriculumController.FetchCurriculumInfo)
+			curriculum.GET("export", curriculumController.ExportCurriculum)
 		}
 
 		school := main.Group("/school")
@@ -438,6 +439,7 @@ func SetupRoutes() *gin.Engine {
 		learningMaterials := main.Group("/learning-materials")
 		{
 			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
+			learningMaterials.PUT("", learningMaterialsControllers.UpdateLearningMaterial)
 			learningMaterials.POST("sub-type", learningMaterialsControllers.CreateMaterialSubType)
 			learningMaterials.GET("sub-types/:category", learningMaterialsControllers.FetchMaterialSubTypesByCategory)
 			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)

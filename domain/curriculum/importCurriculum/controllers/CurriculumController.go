@@ -850,3 +850,7 @@ func CurriculumEdit(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Curriculum Edited Successfully!", "data": curriculumDataInfo})
 }
+
+func ExportCurriculum(context *gin.Context) {
+
+}

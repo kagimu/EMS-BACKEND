@@ -53,9 +53,9 @@ func (receiver NarrativeRequest) Validate() error {
 		return errors.New("Choose the time ")
 	}
 
-	if receiver.NarrativeScheduleNumber == "" {
-		return errors.New("Please Choose the schedule to enter narrative scores ")
-	}
+	//if receiver.NarrativeScheduleNumber == "" {
+	//	return errors.New("Please Choose the schedule to enter narrative scores ")
+	//}
 
 	return nil
 }
