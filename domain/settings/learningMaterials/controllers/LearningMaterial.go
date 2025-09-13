@@ -61,6 +61,24 @@ func CreateNewLearningMaterial(ctx *gin.Context) {
 
 }
 
+func DeleteMaterial(ctx *gin.Context) {
+
+	number := ctx.Param("number")
+	var learningMaterial models.LearningMaterial
+
+	err := config.DB.Where(&models.LearningMaterial{Number: number}).First(&learningMaterial).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Learning material not found"})
+	}
+
+	err = config.DB.Delete(&models.LearningMaterial{}, "number = ?", number).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Learning material not deleted try again " + err.Error()})
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "Learning material deleted successfully!"})
+
+}
+
 func UpdateLearningMaterial(ctx *gin.Context) {
 	var learningMaterial = models.LearningMaterial{}
 	/*	err := ctx.BindJSON(&learningMaterial)
@@ -106,8 +124,8 @@ func UpdateLearningMaterial(ctx *gin.Context) {
 
 	}
 
-	if err := config.DB.Save(&learningMaterial).Error; err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred. Learning material not saved"})
+	if err := config.DB.Where("number", learningMaterialNumber).Save(&learningMaterial).Error; err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred. Learning material not saved " + err.Error()})
 		return
 	}
 

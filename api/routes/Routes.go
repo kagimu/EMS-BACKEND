@@ -440,6 +440,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			learningMaterials.POST("", learningMaterialsControllers.CreateNewLearningMaterial)
 			learningMaterials.PUT("", learningMaterialsControllers.UpdateLearningMaterial)
+			learningMaterials.DELETE("/:number", learningMaterialsControllers.DeleteMaterial)
 			learningMaterials.POST("sub-type", learningMaterialsControllers.CreateMaterialSubType)
 			learningMaterials.GET("sub-types/:category", learningMaterialsControllers.FetchMaterialSubTypesByCategory)
 			learningMaterials.POST("new-curriculum-reference", learningMaterialsControllers.CreateCurriculumReference)
