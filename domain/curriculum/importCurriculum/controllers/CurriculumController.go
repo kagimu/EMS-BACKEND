@@ -8,12 +8,16 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
-	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
-
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
+	responses8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/requests"
+	responses9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/api/responses"
+	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
+	responses6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/api/responses"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -853,6 +857,161 @@ func CurriculumEdit(context *gin.Context) {
 }
 
 func ExportCurriculum(context *gin.Context) {
+
+	learningAreaNumber := context.Query("learning_area_number")
+	subjectClusterNumber := context.Query("subject_cluster_number")
+	subjectNumber := context.Query("subject_number")
+	strandNumber := context.Query("strand_number")
+	topicNumber := context.Query("topic_number")
+	subtopicNumber := context.Query("sub_topic_number")
+	curriculumNumber := context.Query("curriculum_number")
+	classNumber := context.Query("class_number")
+
+	//fetch learning area
+	learningAreaResp, msg := curriculum.FetchLearningAreaCurriculum(learningAreaNumber, curriculumNumber)
+	if msg != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": msg})
+		return
+	}
+
+	f := excelize.NewFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	// Create a new sheet.
+	index, err := f.NewSheet("Sheet2")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// Set value of a cell.
+	_ = f.SetCellValue("Sheet2", "A2", "Learning Area.")
+	_ = f.SetCellValue("Sheet2", "A3", "Subject Cluster world.")
+	_ = f.SetCellValue("Sheet2", "A4", "Subject")
+
+	_ = f.SetCellValue("Sheet2", "B2", " : ")
+	_ = f.SetCellValue("Sheet2", "B3", " : ")
+	_ = f.SetCellValue("Sheet2", "B4", " : ")
+
+	// Set active sheet of the workbook.
+	f.SetActiveSheet(index)
+
+	var lstLA learningAreaModels.LearningArea
+	lstLA = learningAreaResp[0]
+
+	//fetch subject cluster
+	subjectClusterResp, msg := curriculum.FetchSubjectClusterCurriculum("", lstLA.Number, subjectClusterNumber)
+	if msg != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	var lstSC models3.SubjectCluster
+	lstSC = subjectClusterResp[0]
+
+	subjectResp, msg := curriculum.FetchSubjectCurriculum("", lstSC.Number, subjectNumber)
+	if msg != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+	var lstSB models4.Subject
+	lstSB = subjectResp[0]
+
+	_ = f.SetCellValue("Sheet2", "C2", lstLA.Name)
+	_ = f.SetCellValue("Sheet2", "C3", lstSC.Name)
+	_ = f.SetCellValue("Sheet2", "C4", lstSB.Name)
+
+	strandResp, msg := curriculum.FetchStrandCurriculum("", lstSB.Number, strandNumber)
+	if msg != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	var strand_ []responses9.StrandDataList
+	for _, lstST := range strandResp {
+
+		topicResp, err := curriculum.FetchTopicCurriculum("", lstST.Number, topicNumber, classNumber)
+		if err != "" {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+			return
+		}
+
+		var topic_ []responses6.TopicDataList
+		for _, list := range topicResp {
+
+			subtopicResp, err := curriculum.FetchSubtopicCurriculum("", list.Number, subtopicNumber)
+			if err != "" {
+				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+				return
+			}
+
+			var subTopicInfo_ []responses7.SubTopicList
+			for idx, subtopicList := range subtopicResp {
+
+				conceptResp, err := curriculum.FetchConceptCurriculum("", subtopicList.Number)
+				if err != "" {
+					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+					return
+				}
+
+				var concept_ []responses8.ConceptList
+				for _, list := range conceptResp {
+					concept_ = append(concept_, responses8.ConceptList{
+						Number:         list.Number,
+						Name:           list.Name,
+						Code:           list.Code,
+						UserNumber:     list.UserNumber,
+						SubTopicNumber: list.SubTopicNumber,
+						SubTopicName:   list.SubTopic.Name,
+					})
+				}
+
+				subTopicInfo_ = append(subTopicInfo_, responses7.SubTopicList{
+					Number:        subtopicList.Number,
+					Code:          subtopicList.Code,
+					SortCode:      int64(idx + 1),
+					Name:          subtopicList.Name,
+					UserNumber:    subtopicList.UserNumber,
+					EstimatedTime: subtopicList.EstimatedTime,
+					TopicNumber:   subtopicList.TopicNumber,
+					Concept:       concept_,
+				})
+			}
+
+			topic_ = append(topic_, responses6.TopicDataList{
+				Number:     list.Number,
+				Name:       list.Name,
+				Code:       list.Code,
+				UserNumber: list.UserNumber,
+				//ClassNumber: list.ClassNumber,
+				SubTopic: subTopicInfo_,
+			})
+		}
+
+		strand_ = append(strand_, responses9.StrandDataList{
+			Number:        lstST.Number,
+			Name:          lstST.Name,
+			Code:          lstST.Code,
+			UserNumber:    lstST.UserNumber,
+			SubjectNumber: lstST.SubjectNumber,
+			Topic:         topic_,
+		})
+	}
+
+	f.SetActiveSheet(index)
+
+	unixTime := time.Now().Unix()
+	fileName := fmt.Sprintf("%s-%d.xlsx", lstSB.Name, unixTime)
+
+	context.Header("Content-Disposition", "attachment; filename="+fileName)
+	context.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if err := f.Write(context.Writer); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
 
 }
 
