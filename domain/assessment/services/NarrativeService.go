@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -24,6 +25,7 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	"github.com/araddon/dateparse"
+	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -93,6 +95,8 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 
 		class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
 
+		uploads, _ := repositories.FindNarrativeScriptMarkingGuideByNumber(narrative.Number)
+
 		scheduledNarratives = append(scheduledNarratives, responses.ScheduledNarrativeResponse{
 			Number:               narrative.Number,
 			ScheduledOn:          narrative.ScheduledOn.Format(time.DateOnly),
@@ -103,6 +107,8 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 			StudyPeriod:          name,
 			AssessmentArea:       assessmentArea.Name,
 			Class:                class.Name,
+			ScriptNumber:         uploads.ScriptNumber,
+			MarkingGuideNumber:   uploads.MarkingGuideNumber,
 		})
 	}
 
@@ -503,6 +509,43 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 		AcademicYear:         academicYear.AcademicYearName,
 		NarrativeResponseRow: row,
 	}
+}
+
+func UploadNarrativeMarkingGuide(ctx *gin.Context, scheduledNarrativeNumber, currentUserNumber string) error {
+
+	narrative, err := repositories.FindScheduledNarrativeByNumber(scheduledNarrativeNumber)
+	if err != nil {
+		return errors.New("Error getting narrative details: " + err.Error())
+	}
+
+	if narrative.Number == "" {
+		return errors.New("Invalid narrative number ")
+	}
+
+	scriptFile, err := services2.UploadAttachment(ctx, "script-file")
+	if err != nil {
+		return errors.New("uploading narrative script file error: " + err.Error())
+	}
+
+	markingGuideFile, err := services2.UploadAttachment(ctx, "marking-guide-file")
+	if err != nil {
+		return errors.New("uploading narrative marking guide error: " + err.Error())
+	}
+
+	scriptMarkingGuideRepository.UseTx(config.DB)
+
+	err = repositories.SaveScheduledNarrativeScriptMarkingGuide(models.ScheduledNarrativeScriptMarkingGuide{
+		ScriptNumber:             scriptFile,
+		MarkingGuideNumber:       markingGuideFile,
+		UserNumber:               currentUserNumber,
+		ScheduledNarrativeNumber: scheduledNarrativeNumber,
+	})
+
+	if err != nil {
+		return errors.New("storing narrative script marking guide error: " + err.Error())
+	}
+
+	return nil
 }
 
 func NewNarrativeService() *NarrativeService {

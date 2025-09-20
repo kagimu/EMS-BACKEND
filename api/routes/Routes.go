@@ -795,6 +795,7 @@ func SetupRoutes() *gin.Engine {
 					scheduled.POST("", assessmentController.SaveNarrativeSchedule)
 					scheduled.GET("", assessmentController.NarrativeSchedule)
 					scheduled.DELETE(":schedule_number", assessmentController.DeleteNarrativeSchedule)
+					scheduled.POST("script-marking-guide", assessmentController.NarrativeScriptMarkingGuide)
 				}
 
 			}

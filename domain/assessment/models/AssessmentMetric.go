@@ -1,8 +1,9 @@
 package models
 
 import (
-	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"time"
+
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 
 	campusClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"

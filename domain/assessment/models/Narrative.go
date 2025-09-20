@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/models"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
@@ -55,4 +56,17 @@ type NarrativeSchedule struct {
 
 	ScheduledNarrative ScheduledNarrative `gorm:"foreignKey:ScheduledNarrativeNumber;references:Number;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	Narrative          Narrative          `gorm:"foreignKey:NarrativeNumber;references:Number;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+}
+
+type ScheduledNarrativeScriptMarkingGuide struct {
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	ScriptNumber             string             `gorm:"column:script_number;size:36;unique"`
+	Script                   models2.Attachment `gorm:"foreignKey:ScriptNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	MarkingGuideNumber       string             `gorm:"column:marking_guide_number;size:36;unique"`
+	MarkingGuide             models2.Attachment `gorm:"foreignKey:MarkingGuideNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	UserNumber               string             `gorm:"size:36;not null;column:user_number"`
+	User                     authModel.User     `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	ScheduledNarrativeNumber string             `gorm:"primaryKey;size:36;not null;column:scheduled_narrative_number"`
+	ScheduledNarrative       ScheduledNarrative `gorm:"foreignKey:ScheduledNarrativeNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }
