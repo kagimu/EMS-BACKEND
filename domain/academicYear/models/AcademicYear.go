@@ -1,11 +1,12 @@
 package models
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"gorm.io/gorm"
-	"time"
 )
 
 type (

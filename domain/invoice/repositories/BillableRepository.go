@@ -73,6 +73,45 @@ func GetBillableByNumber(billableNumber string, trn ...*gorm.DB) (models.Billabl
 	return billable, nil
 }
 
+func GetBillableByCode(studyPeriodNumber string, code int64, trn ...*gorm.DB) (models.Billable, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var billable models.Billable
+
+	if err := db.Where("study_period_number = ? AND code = ?", studyPeriodNumber, code).First(&billable).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return billable, nil
+		}
+		return billable, err
+	}
+
+	return billable, nil
+}
+
+func FindBillableByStudyPeriod(studyPeriodNumber, status, billType, classNumber, campusNumber, modeOfStudyNumber, curriculumNumber string, trn ...*gorm.DB) (models.Billable, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var billable models.Billable
+
+	if err := db.
+		Where("study_period_number = ? AND status = ? AND bill_type = ? AND class_number = ? AND campus_number = ? AND mode_of_study_number = ? AND curriculum_number = ?", studyPeriodNumber, status, billType, classNumber, campusNumber, modeOfStudyNumber, curriculumNumber).First(&billable).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return billable, nil
+		}
+
+		return billable, err
+	}
+
+	return billable, nil
+}
+
 func GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, curriculumNumber, status string, trn ...*gorm.DB) (models.Billable, error) {
 	db := config.DB
 	if len(trn) > 0 {
