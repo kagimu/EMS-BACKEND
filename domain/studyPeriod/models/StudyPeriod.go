@@ -1,10 +1,11 @@
 package models
 
 import (
+	"time"
+
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
-	"time"
 )
 
 type (
