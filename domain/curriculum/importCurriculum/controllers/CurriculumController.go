@@ -1064,6 +1064,59 @@ func ExportCurriculum(context *gin.Context) {
 
 	f.SetActiveSheet(index)
 
+	// Add borders to the Excel file
+	// Define border style
+	borderStyle := []excelize.Border{
+		{Type: "left", Color: "000000", Style: 1},
+		{Type: "top", Color: "000000", Style: 1},
+		{Type: "bottom", Color: "000000", Style: 1},
+		{Type: "right", Color: "000000", Style: 1},
+	}
+
+	// Apply borders and styling to header row (row 5)
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Border: borderStyle,
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"#D3D3D3"},
+			Pattern: 1,
+		},
+		Font: &excelize.Font{
+			Bold: true,
+		},
+	})
+
+	for col := 'A'; col <= 'J'; col++ {
+		cellRef := fmt.Sprintf("%c5", col)
+		f.SetCellStyle("Sheet2", cellRef, cellRef, headerStyle)
+	}
+
+	// Apply borders to basic info rows (rows 2-4)
+	infoStyle, _ := f.NewStyle(&excelize.Style{
+		Border: borderStyle,
+		Font: &excelize.Font{
+			Bold: true,
+		},
+	})
+
+	for row := 2; row <= 4; row++ {
+		for col := 'A'; col <= 'C'; col++ {
+			cellRef := fmt.Sprintf("%c%d", col, row)
+			f.SetCellStyle("Sheet2", cellRef, cellRef, infoStyle)
+		}
+	}
+
+	// Apply borders to data rows (from row 6 to the last row)
+	for row := 6; row < rowCounter; row++ {
+		for col := 'A'; col <= 'J'; col++ {
+			cellRef := fmt.Sprintf("%c%d", col, row)
+			style, _ := f.NewStyle(&excelize.Style{
+				Border: borderStyle,
+			})
+			f.SetCellStyle("Sheet2", cellRef, cellRef, style)
+		}
+	}
+
 	unixTime := time.Now().Unix()
 	fileName := fmt.Sprintf("%s-%d.xlsx", lstSB.Name, unixTime)
 
