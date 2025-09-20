@@ -61,6 +61,7 @@ func (billableService *billableService) UpdateBillable(updateBillableRequest req
 	billable.StudyPeriodNumber = updateBillableRequest.StudyPeriodNumber
 	billable.BillType = updateBillableRequest.BillType
 	billable.ModeOfStudyNumber = updateBillableRequest.ModeOfStudyNumber
+	billable.Code = updateBillableRequest.Code
 
 	if updateBillableRequest.Status != "" {
 		billable.Status = updateBillableRequest.Status
