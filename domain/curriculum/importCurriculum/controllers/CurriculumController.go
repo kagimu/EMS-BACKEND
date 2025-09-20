@@ -12,11 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
-	responses8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/requests"
-	responses9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/strand/api/responses"
-	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/responses"
-	responses6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/api/responses"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -887,6 +883,10 @@ func ExportCurriculum(context *gin.Context) {
 		fmt.Println(err)
 		return
 	}
+
+	// Set active sheet of the workbook.
+	f.SetActiveSheet(index)
+
 	// Set value of a cell.
 	_ = f.SetCellValue("Sheet2", "A2", "Learning Area.")
 	_ = f.SetCellValue("Sheet2", "A3", "Subject Cluster world.")
@@ -896,11 +896,19 @@ func ExportCurriculum(context *gin.Context) {
 	_ = f.SetCellValue("Sheet2", "B3", " : ")
 	_ = f.SetCellValue("Sheet2", "B4", " : ")
 
-	// Set active sheet of the workbook.
-	f.SetActiveSheet(index)
+	// Add header row for detailed curriculum data starting at A5
+	_ = f.SetCellValue("Sheet2", "A5", "Strand Code")
+	_ = f.SetCellValue("Sheet2", "B5", "Strand Name")
+	_ = f.SetCellValue("Sheet2", "C5", "Topic Code")
+	_ = f.SetCellValue("Sheet2", "D5", "Topic Name")
+	_ = f.SetCellValue("Sheet2", "E5", "Subtopic Code")
+	_ = f.SetCellValue("Sheet2", "F5", "Subtopic Name (Lesson)")
+	_ = f.SetCellValue("Sheet2", "G5", "Estimated Time Load (Minutes)")
+	_ = f.SetCellValue("Sheet2", "H5", "Teaching Sequence Code")
+	_ = f.SetCellValue("Sheet2", "I5", "Concept Code")
+	_ = f.SetCellValue("Sheet2", "J5", "Concept Name")
 
-	var lstLA learningAreaModels.LearningArea
-	lstLA = learningAreaResp[0]
+	lstLA := learningAreaResp[0]
 
 	//fetch subject cluster
 	subjectClusterResp, msg := curriculum.FetchSubjectClusterCurriculum("", lstLA.Number, subjectClusterNumber)
@@ -909,16 +917,14 @@ func ExportCurriculum(context *gin.Context) {
 		return
 	}
 
-	var lstSC models3.SubjectCluster
-	lstSC = subjectClusterResp[0]
+	lstSC := subjectClusterResp[0]
 
 	subjectResp, msg := curriculum.FetchSubjectCurriculum("", lstSC.Number, subjectNumber)
 	if msg != "" {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
 		return
 	}
-	var lstSB models4.Subject
-	lstSB = subjectResp[0]
+	lstSB := subjectResp[0]
 
 	_ = f.SetCellValue("Sheet2", "C2", lstLA.Name)
 	_ = f.SetCellValue("Sheet2", "C3", lstSC.Name)
@@ -930,7 +936,10 @@ func ExportCurriculum(context *gin.Context) {
 		return
 	}
 
-	var strand_ []responses9.StrandDataList
+	// Initialize row counter for data rows (starting from row 6)
+	rowCounter := 6
+
+	// Loop through strands and populate Excel data
 	for _, lstST := range strandResp {
 
 		topicResp, err := curriculum.FetchTopicCurriculum("", lstST.Number, topicNumber, classNumber)
@@ -939,7 +948,6 @@ func ExportCurriculum(context *gin.Context) {
 			return
 		}
 
-		var topic_ []responses6.TopicDataList
 		for _, list := range topicResp {
 
 			subtopicResp, err := curriculum.FetchSubtopicCurriculum("", list.Number, subtopicNumber)
@@ -948,8 +956,7 @@ func ExportCurriculum(context *gin.Context) {
 				return
 			}
 
-			var subTopicInfo_ []responses7.SubTopicList
-			for idx, subtopicList := range subtopicResp {
+			for _, subtopicList := range subtopicResp {
 
 				conceptResp, err := curriculum.FetchConceptCurriculum("", subtopicList.Number)
 				if err != "" {
@@ -957,48 +964,40 @@ func ExportCurriculum(context *gin.Context) {
 					return
 				}
 
-				var concept_ []responses8.ConceptList
-				for _, list := range conceptResp {
-					concept_ = append(concept_, responses8.ConceptList{
-						Number:         list.Number,
-						Name:           list.Name,
-						Code:           list.Code,
-						UserNumber:     list.UserNumber,
-						SubTopicNumber: list.SubTopicNumber,
-						SubTopicName:   list.SubTopic.Name,
-					})
+				// If there are concepts, create a row for each concept
+				if len(conceptResp) > 0 {
+					for _, concept := range conceptResp {
+						// Write data to Excel row
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), lstST.Code)                 // Strand Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), lstST.Name)                 // Strand Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), list.Code)                  // Topic Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), list.Name)                  // Topic Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicList.Code)          // Subtopic Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicList.Name)          // Subtopic Name (Lesson)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("G%d", rowCounter), subtopicList.EstimatedTime) // Estimated Time Load (Minutes)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("H%d", rowCounter), "")                         // Teaching Sequence Code (empty for now)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("I%d", rowCounter), concept.Code)               // Concept Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("J%d", rowCounter), concept.Name)               // Concept Name
+
+						rowCounter++
+					}
+				} else {
+					// If no concepts, still create a row for the subtopic
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), lstST.Code)                 // Strand Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), lstST.Name)                 // Strand Name
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), list.Code)                  // Topic Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), list.Name)                  // Topic Name
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicList.Code)          // Subtopic Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicList.Name)          // Subtopic Name (Lesson)
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("G%d", rowCounter), subtopicList.EstimatedTime) // Estimated Time Load (Minutes)
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("H%d", rowCounter), "")                         // Teaching Sequence Code (empty for now)
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("I%d", rowCounter), "")                         // Concept Code (empty)
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("J%d", rowCounter), "")                         // Concept Name (empty)
+
+					rowCounter++
 				}
-
-				subTopicInfo_ = append(subTopicInfo_, responses7.SubTopicList{
-					Number:        subtopicList.Number,
-					Code:          subtopicList.Code,
-					SortCode:      int64(idx + 1),
-					Name:          subtopicList.Name,
-					UserNumber:    subtopicList.UserNumber,
-					EstimatedTime: subtopicList.EstimatedTime,
-					TopicNumber:   subtopicList.TopicNumber,
-					Concept:       concept_,
-				})
 			}
-
-			topic_ = append(topic_, responses6.TopicDataList{
-				Number:     list.Number,
-				Name:       list.Name,
-				Code:       list.Code,
-				UserNumber: list.UserNumber,
-				//ClassNumber: list.ClassNumber,
-				SubTopic: subTopicInfo_,
-			})
 		}
-
-		strand_ = append(strand_, responses9.StrandDataList{
-			Number:        lstST.Number,
-			Name:          lstST.Name,
-			Code:          lstST.Code,
-			UserNumber:    lstST.UserNumber,
-			SubjectNumber: lstST.SubjectNumber,
-			Topic:         topic_,
-		})
 	}
 
 	f.SetActiveSheet(index)
