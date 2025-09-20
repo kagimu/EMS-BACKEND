@@ -944,6 +944,12 @@ func ExportCurriculum(context *gin.Context) {
 
 	// Loop through strands and populate Excel data
 	for _, lstST := range strandResp {
+		// Reset topic and subtopic tracking when starting a new strand
+		// This ensures that similar codes across different strands are handled correctly
+		if lstST.Code != prevStrandCode {
+			prevTopicCode = 0
+			prevSubtopicCode = 0
+		}
 
 		topicResp, err := curriculum.FetchTopicCurriculum("", lstST.Number, topicNumber, classNumber)
 		if err != "" {
@@ -952,6 +958,11 @@ func ExportCurriculum(context *gin.Context) {
 		}
 
 		for _, list := range topicResp {
+			// Reset subtopic tracking when starting a new topic
+			// This ensures that similar subtopic codes across different topics are handled correctly
+			if list.Code != prevTopicCode {
+				prevSubtopicCode = 0
+			}
 
 			subtopicResp, err := curriculum.FetchSubtopicCurriculum("", list.Number, subtopicNumber)
 			if err != "" {
