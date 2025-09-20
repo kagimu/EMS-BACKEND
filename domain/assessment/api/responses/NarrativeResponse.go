@@ -10,4 +10,6 @@ type ScheduledNarrativeResponse struct {
 	StudyPeriodNumber    string `json:"study_period_number"`
 	StudyPeriod          string `json:"study_period"`
 	Description          string `json:"description"`
+	ScriptNumber         string `json:"script_number"`
+	MarkingGuideNumber   string `json:"marking_guide_number"`
 }
