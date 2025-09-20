@@ -939,6 +939,9 @@ func ExportCurriculum(context *gin.Context) {
 	// Initialize row counter for data rows (starting from row 6)
 	rowCounter := 6
 
+	// Variables to track previous values to avoid duplication
+	var prevStrandCode, prevTopicCode, prevSubtopicCode int64
+
 	// Loop through strands and populate Excel data
 	for _, lstST := range strandResp {
 
@@ -967,13 +970,42 @@ func ExportCurriculum(context *gin.Context) {
 				// If there are concepts, create a row for each concept
 				if len(conceptResp) > 0 {
 					for _, concept := range conceptResp {
+						// Determine which values to show (only when they change)
+						strandCode := ""
+						strandName := ""
+						topicCode := ""
+						topicName := ""
+						subtopicCode := ""
+						subtopicName := ""
+
+						// Show strand info only if it changed
+						if lstST.Code != prevStrandCode {
+							strandCode = fmt.Sprintf("%d", lstST.Code)
+							strandName = lstST.Name
+							prevStrandCode = lstST.Code
+						}
+
+						// Show topic info only if it changed
+						if list.Code != prevTopicCode {
+							topicCode = fmt.Sprintf("%d", list.Code)
+							topicName = list.Name
+							prevTopicCode = list.Code
+						}
+
+						// Show subtopic info only if it changed
+						if subtopicList.Code != prevSubtopicCode {
+							subtopicCode = fmt.Sprintf("%d", subtopicList.Code)
+							subtopicName = subtopicList.Name
+							prevSubtopicCode = subtopicList.Code
+						}
+
 						// Write data to Excel row
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), lstST.Code)                 // Strand Code
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), lstST.Name)                 // Strand Name
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), list.Code)                  // Topic Code
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), list.Name)                  // Topic Name
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicList.Code)          // Subtopic Code
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicList.Name)          // Subtopic Name (Lesson)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), strandCode)                 // Strand Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), strandName)                 // Strand Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), topicCode)                  // Topic Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), topicName)                  // Topic Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicCode)               // Subtopic Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicName)               // Subtopic Name (Lesson)
 						_ = f.SetCellValue("Sheet2", fmt.Sprintf("G%d", rowCounter), subtopicList.EstimatedTime) // Estimated Time Load (Minutes)
 						_ = f.SetCellValue("Sheet2", fmt.Sprintf("H%d", rowCounter), "")                         // Teaching Sequence Code (empty for now)
 						_ = f.SetCellValue("Sheet2", fmt.Sprintf("I%d", rowCounter), concept.Code)               // Concept Code
@@ -983,12 +1015,42 @@ func ExportCurriculum(context *gin.Context) {
 					}
 				} else {
 					// If no concepts, still create a row for the subtopic
-					_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), lstST.Code)                 // Strand Code
-					_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), lstST.Name)                 // Strand Name
-					_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), list.Code)                  // Topic Code
-					_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), list.Name)                  // Topic Name
-					_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicList.Code)          // Subtopic Code
-					_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicList.Name)          // Subtopic Name (Lesson)
+					// Determine which values to show (only when they change)
+					strandCode := ""
+					strandName := ""
+					topicCode := ""
+					topicName := ""
+					subtopicCode := ""
+					subtopicName := ""
+
+					// Show strand info only if it changed
+					if lstST.Code != prevStrandCode {
+						strandCode = fmt.Sprintf("%d", lstST.Code)
+						strandName = lstST.Name
+						prevStrandCode = lstST.Code
+					}
+
+					// Show topic info only if it changed
+					if list.Code != prevTopicCode {
+						topicCode = fmt.Sprintf("%d", list.Code)
+						topicName = list.Name
+						prevTopicCode = list.Code
+					}
+
+					// Show subtopic info only if it changed
+					if subtopicList.Code != prevSubtopicCode {
+						subtopicCode = fmt.Sprintf("%d", subtopicList.Code)
+						subtopicName = subtopicList.Name
+						prevSubtopicCode = subtopicList.Code
+					}
+
+					// Write data to Excel row
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), strandCode)                 // Strand Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), strandName)                 // Strand Name
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), topicCode)                  // Topic Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), topicName)                  // Topic Name
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicCode)               // Subtopic Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicName)               // Subtopic Name (Lesson)
 					_ = f.SetCellValue("Sheet2", fmt.Sprintf("G%d", rowCounter), subtopicList.EstimatedTime) // Estimated Time Load (Minutes)
 					_ = f.SetCellValue("Sheet2", fmt.Sprintf("H%d", rowCounter), "")                         // Teaching Sequence Code (empty for now)
 					_ = f.SetCellValue("Sheet2", fmt.Sprintf("I%d", rowCounter), "")                         // Concept Code (empty)
