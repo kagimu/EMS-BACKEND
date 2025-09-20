@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
@@ -15,8 +18,6 @@ import (
 	responses5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/api/responses"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
-	"strconv"
 )
 
 func NewTopic(context *gin.Context) {
@@ -248,7 +249,7 @@ func DeleteTopic(context *gin.Context) {
 	if err := config.DB.
 		Where("topic_number = ?", topicNumber).
 		First(&topicChecker).Error; err == nil {
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "You can not delete this topic, it has subtopic."})
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusNotFound, "message": "You can not delete this topic, it has subtopic."})
 		return
 	}
 
@@ -271,14 +272,14 @@ func DeleteTopic(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete topic"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete topic " + err.Error()})
 		return
 	}
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete topic"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete topic " + err.Error()})
 		return
 	}
 
