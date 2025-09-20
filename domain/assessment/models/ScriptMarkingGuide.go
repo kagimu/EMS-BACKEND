@@ -1,9 +1,10 @@
 package models
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/models"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	"time"
 )
 
 type ScriptMarkingGuide struct {

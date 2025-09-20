@@ -388,3 +388,26 @@ func NarrativePrintPreview(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": data})
 }
+
+func NarrativeScriptMarkingGuide(c *gin.Context) {
+
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	narrativeNumber := c.PostForm("narrative_number")
+	if narrativeNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the assessment schedule"})
+		return
+	}
+
+	err = services.UploadNarrativeMarkingGuide(c, narrativeNumber, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Marking guide uploaded successfully"))
+}
