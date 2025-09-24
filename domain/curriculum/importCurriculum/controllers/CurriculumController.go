@@ -889,7 +889,7 @@ func ExportCurriculum(context *gin.Context) {
 
 	// Set value of a cell.
 	_ = f.SetCellValue("Sheet2", "A2", "Learning Area.")
-	_ = f.SetCellValue("Sheet2", "A3", "Subject Cluster world.")
+	_ = f.SetCellValue("Sheet2", "A3", "Subject Cluster Code.")
 	_ = f.SetCellValue("Sheet2", "A4", "Subject")
 
 	_ = f.SetCellValue("Sheet2", "B2", " : ")
