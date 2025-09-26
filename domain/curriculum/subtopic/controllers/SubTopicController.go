@@ -401,7 +401,7 @@ func DeleteSubTopic(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete sub topic"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete sub topic "+err.Error()})
 		return
 	}
 
