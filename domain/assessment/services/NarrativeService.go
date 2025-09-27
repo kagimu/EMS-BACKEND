@@ -532,14 +532,26 @@ func UploadNarrativeMarkingGuide(ctx *gin.Context, scheduledNarrativeNumber, cur
 		return errors.New("uploading narrative marking guide error: " + err.Error())
 	}
 
-	scriptMarkingGuideRepository.UseTx(config.DB)
-
-	err = repositories.SaveScheduledNarrativeScriptMarkingGuide(models.ScheduledNarrativeScriptMarkingGuide{
+	//scriptMarkingGuideRepository.UseTx(config.DB)
+	enty := models.ScheduledNarrativeScriptMarkingGuide{
 		ScriptNumber:             scriptFile,
 		MarkingGuideNumber:       markingGuideFile,
 		UserNumber:               currentUserNumber,
 		ScheduledNarrativeNumber: scheduledNarrativeNumber,
-	})
+	}
+
+	oldScripts, err := repositories.FindNarrativeScriptMarkingGuideByNumber(scheduledNarrativeNumber)
+	if err != nil {
+		return errors.New("Error checking old narrative script and marking guide error: " + err.Error())
+	}
+
+	if oldScripts.ScheduledNarrativeNumber != "" {
+		enty.CreatedAt = oldScripts.CreatedAt
+	}
+
+	enty.UpdatedAt = oldScripts.UpdatedAt
+
+	err = repositories.SaveScheduledNarrativeScriptMarkingGuide(enty)
 
 	if err != nil {
 		return errors.New("storing narrative script marking guide error: " + err.Error())
