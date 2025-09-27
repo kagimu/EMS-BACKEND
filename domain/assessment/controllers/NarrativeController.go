@@ -397,9 +397,9 @@ func NarrativeScriptMarkingGuide(c *gin.Context) {
 		return
 	}
 
-	narrativeNumber := c.PostForm("narrative_number")
+	narrativeNumber := c.PostForm("narrative_schedule_number")
 	if narrativeNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the assessment schedule"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide the narrative schedule"})
 		return
 	}
 
