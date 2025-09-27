@@ -253,7 +253,7 @@ func FindNarrativeScriptMarkingGuideByNumber(scheduledNarrativeNumber string, tx
 
 	var narrativeScriptMarkingGuide models.ScheduledNarrativeScriptMarkingGuide
 
-	if err := db.Where("narrative_number = ?", scheduledNarrativeNumber).First(&narrativeScriptMarkingGuide).Error; err != nil {
+	if err := db.Where("scheduled_narrative_number = ?", scheduledNarrativeNumber).First(&narrativeScriptMarkingGuide).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return narrativeScriptMarkingGuide, nil
