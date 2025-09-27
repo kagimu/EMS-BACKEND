@@ -223,6 +223,7 @@ func DeleteClassTeacherComment(number string) error {
 func SaveSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, user *authModel.User) error {
 	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
 	subjectTeacherComment := models.SubjectTeacherComment{
+		Number:               uuid.NewV4().String(),
 		Comment:              payload.Comment,
 		UserNumber:           user.Number,
 		StudyPeriodNumber:    payload.StudyPeriodNumber,
@@ -362,7 +363,7 @@ func UpdateSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, 
 		return errors.New("failed to get subject teacher comment: " + err.Error())
 	}
 
-	if subjectTeacherComment.ID == 0 {
+	if subjectTeacherComment.Number == "" {
 		return errors.New("subject teacher comment not found")
 	}
 
