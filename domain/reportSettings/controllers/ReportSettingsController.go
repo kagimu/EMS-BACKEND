@@ -261,6 +261,76 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 }
 
+func FetchClassReportSummaries(ctx *gin.Context) {
+
+	var cleanReportSummary = make([]responses.LeanReportSummary, 0)
+
+	classNumber := ctx.Query("class_number")
+	campusNumber := ctx.Query("campus_number")
+	curriculumNumber := ctx.Query("curriculum_number")
+
+	campusClassNumber := ctx.Query("campus_class_number")
+
+	if campusClassNumber == "" {
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
+
+	if campusClassNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a class to view report summaries"})
+		return
+	}
+
+	var reportSummaries []models.ReportSummary
+	if err := config.DB.Scopes(
+		filters.ByStudyPeriodNumber(ctx.Query("study_period_number")),
+		filters.ByStudentNumber(ctx.Query("student_number")),
+		filters.ByStreamNumber(ctx.Query("stream_number")),
+		filters.ByGrade(ctx.Query("grade")),
+		filters.ByCampusClassNumber(campusClassNumber),
+	).Preload("Student").Preload("StudyPeriod").
+		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
+		return
+	}
+
+	for _, reportSummary := range reportSummaries {
+
+		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
+
+		promotionStatus := ""
+
+		promotion, err := repositories2.FindPromotionByReportSummaryNumber(reportSummary.Number)
+		if err == nil {
+			promotionStatus = promotion.Status
+		} else {
+			fmt.Println(fmt.Sprintf("Checking promotion status error %s", err.Error()))
+		}
+
+		leanStudent := services3.CreateLeanStudent(reportSummary.Student)
+
+		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
+			Number:          reportSummary.Number,
+			StudentName:     leanStudent.Surname + " " + leanStudent.SecondName + " " + leanStudent.OtherName,
+			StudentNumber:   reportSummary.StudentNumber,
+			Photo:           commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
+			Grade:           reportSummary.Grade,
+			Stream:          reportSummary.Stream.Name,
+			StudyPeriod:     studyPeriodName.Name,
+			Class:           reportSummary.CampusClass.ClassName,
+			PromotionStatus: promotionStatus,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, cleanReportSummary)
+
+}
+
 func FetchReportSummaryDetails(ctx *gin.Context) {
 	reportSummaryNumber := ctx.Param("report_summary_number")
 
