@@ -264,7 +264,6 @@ func FetchReportSummaries(ctx *gin.Context) {
 func FetchClassReportSummaries(ctx *gin.Context) {
 
 	var cleanReportSummary = make([]responses.LeanReportSummary, 0)
-	var paginatedResponse = pagination.PaginatedResponse{}
 
 	classNumber := ctx.Query("class_number")
 	campusNumber := ctx.Query("campus_number")

@@ -74,7 +74,6 @@ type ClassLeanReportSummary struct {
 	Stream          string `json:"stream"`
 	Class           string `json:"class"`
 	PromotionStatus string `json:"promotion_status"`
-	ReportSummaryDetail
 }
 
 type LeanStudent struct {
