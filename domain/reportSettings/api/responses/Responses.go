@@ -64,6 +64,18 @@ type LeanReportSummary struct {
 	Class           string `json:"class"`
 	PromotionStatus string `json:"promotion_status"`
 }
+type ClassLeanReportSummary struct {
+	Number          string `json:"number"`
+	StudentName     string `json:"student_name"`
+	StudentNumber   string `json:"student_number"`
+	Photo           string `json:"photo"`
+	Grade           string `json:"grade"`
+	StudyPeriod     string `json:"study_period"`
+	Stream          string `json:"stream"`
+	Class           string `json:"class"`
+	PromotionStatus string `json:"promotion_status"`
+	ReportSummaryDetail
+}
 
 type LeanStudent struct {
 	Number      string `json:"number"`
@@ -110,6 +122,21 @@ type FullReportSummary struct {
 	StudyPeriod         string         `json:"study_period"`
 	StudyPeriodEndDate  string         `json:"study_period_end_date"`
 	AcademicYear        string         `json:"academic_year"`
+	ReportColumns       []string       `json:"report_columns"`
+	ReportTemplateName  string         `json:"report_template_name"`
+	HeadTeachersComment string         `json:"head_teachers_comment"`
+	AggregateScale      []AppliedScale `json:"aggregate_scale"`
+	NextTermBegins      string         `json:"next_term_begins"`
+	PromotionStatus     string         `json:"promotion_status"`
+	ReportTemplate      string         `json:"report_template"`
+	TeachersComment     string         `json:"teachers_comment"`
+}
+
+type ClassFullReportSummary struct {
+	ReportSummaryNumber string         `json:"report_summary_number"`
+	Grade               string         `json:"grade"`
+	LearningAreas       []LearningArea `json:"learning_areas"`
+	Stream              string         `json:"stream"`
 	ReportColumns       []string       `json:"report_columns"`
 	ReportTemplateName  string         `json:"report_template_name"`
 	HeadTeachersComment string         `json:"head_teachers_comment"`

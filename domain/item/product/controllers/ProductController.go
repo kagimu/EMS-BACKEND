@@ -2,12 +2,15 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
 	"net/http"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
+
+	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/api/requests"
 	productModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/product/models"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -111,14 +114,39 @@ func DeleteProduct(c *gin.Context) {
 	}
 
 	productNumber := c.Param("product_number")
-	var service productModels.Product
-	if err := config.DB.Where("number = ?", productNumber).First(&service).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found "})
+	var product productModels.Product
+	if err := config.DB.Where("item_number = ?", productNumber).First(&product).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Product not found"})
 		return
 	}
 
-	if err := config.DB.Delete(&service).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete product"})
+	// Start database transaction
+	tx := config.DB.Begin()
+
+	// Delete campus items
+	if err := tx.Where("item_number = ?", productNumber).Delete(&models2.CampusItem{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus items"})
+		return
+	}
+
+	// Delete product record
+	if err := tx.Delete(&product).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete product"})
+		return
+	}
+
+	// Delete item record
+	if err := tx.Where("number = ?", productNumber).Delete(&itemModels.Item{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete product item"})
+		return
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit product transaction"})
 		return
 	}
 
