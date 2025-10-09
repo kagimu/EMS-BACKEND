@@ -1,5 +1,10 @@
 package responses
 
+import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
+)
+
 type NarrativeResponse struct {
 	Number               string `json:"number"`
 	AcademicYear         string `json:"academic_year"`
@@ -32,17 +37,18 @@ type NarrativeResponseData struct {
 }
 
 type NarrativeResponsePrintPreview struct {
-	AcademicYear          string                  `json:"academic_year"`
-	StudyPeriod           string                  `json:"study_period"`
-	Class                 string                  `json:"class"`
-	RegistrationNumber    string                  `json:"registration_number"`
-	ChildFirstName        string                  `json:"child_first_name"`
-	ChildSecondName       string                  `json:"child_second_name"`
-	DateOfConference      string                  `json:"date_of_conference"`
-	Parent                string                  `json:"parent"`
-	School                string                  `json:"school"`
-	CurrentAdministrator  string                  `json:"current_administrator"`
-	NarrativeResponseData []NarrativeResponseData `json:"narrative_response_data"`
+	AcademicYear          string                    `json:"academic_year"`
+	StudyPeriod           string                    `json:"study_period"`
+	Class                 string                    `json:"class"`
+	RegistrationNumber    string                    `json:"registration_number"`
+	ChildFirstName        string                    `json:"child_first_name"`
+	ChildSecondName       string                    `json:"child_second_name"`
+	DateOfConference      string                    `json:"date_of_conference"`
+	Parent                string                    `json:"parent"`
+	School                responses2.SchoolResponse `json:"school"`
+	Campus                responses.CampusResponse  `json:"campus"`
+	CurrentAdministrator  string                    `json:"current_administrator"`
+	NarrativeResponseData []NarrativeResponseData   `json:"narrative_response_data"`
 }
 
 type AssessmentResponse struct {
