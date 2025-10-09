@@ -502,8 +502,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	finalStatus, err := checkStatus(campusClass.Number, reportSummary.StudyPeriodNumber, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate, tx)
 	if err != nil {
-		tx.Rollback()
-		return err
+		fmt.Println(fmt.Sprintf("%s while generating for report summary number: %s", err.Error(), reportSummaryNumber))
 	}
 
 	if finalStatus.Number != "" {
