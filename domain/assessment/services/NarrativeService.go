@@ -15,11 +15,14 @@ import (
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
+	repositories11 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repositories10 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/repositories"
 	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
@@ -407,6 +410,7 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 	class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
 
 	school, _ := repositories7.GetSchoolByNumber(spn.SchoolNumber)
+	campus, _ := repositories11.GetCampusByCampusClassNumber(narrative.CampusClassNumber)
 
 	response := responses.NarrativeResponsePrintPreview{
 		Class:                class.Name,
@@ -416,7 +420,22 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 		RegistrationNumber:   student.ADN,
 		ChildFirstName:       student.Surname,
 		ChildSecondName:      student.SecondName,
-		School:               school.Name,
+		School: responses2.SchoolResponse{
+			Name:             school.Name,
+			Number:           school.Number,
+			Logo:             school.Logo,
+			Motto:            school.Motto,
+			PrincipalName:    school.PrincipalName,
+			CommencementDate: school.CommencementDate.Format("2006-01-02"),
+		},
+		Campus: responses3.CampusResponse{
+			Name:             campus.Name,
+			Number:           campus.Number,
+			Phone:            campus.Phone,
+			Email:            campus.Email,
+			Location:         campus.Location,
+			CommencementDate: campus.CommencementDate,
+		},
 	}
 
 	narrationData, err := repositories.GetNarrativesGroupedByAssessmentArea(narrative.StudentNumber, narrative.StudyPeriodNumber, "", startDate, endDate)
