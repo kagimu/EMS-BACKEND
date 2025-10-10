@@ -224,7 +224,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 		pagination.Paginate(ctx, &paginatedResponse),
 	).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report summaries: " + err.Error()})
 		return
 	}
 
@@ -295,7 +295,7 @@ func FetchClassReportSummaries(ctx *gin.Context) {
 		filters.ByCampusClassNumber(campusClassNumber),
 	).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report summaries - 2" + err.Error()})
 		return
 	}
 
