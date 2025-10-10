@@ -1,12 +1,13 @@
 package pagination
 
 import (
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"html"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type PaginatedResponse struct {
@@ -23,7 +24,7 @@ func Paginate(ctx *gin.Context, pagination *PaginatedResponse) func(db *gorm.DB)
 	return func(db *gorm.DB) *gorm.DB {
 		pageStr := html.EscapeString(strings.TrimSpace(strings.ToLower(ctx.DefaultQuery("page", "1"))))
 		page, _ := strconv.Atoi(pageStr)
-		sortColumn := html.EscapeString(strings.TrimSpace(strings.ToLower(ctx.DefaultQuery("sort_column", "id"))))
+		sortColumn := html.EscapeString(strings.TrimSpace(strings.ToLower(ctx.DefaultQuery("sort_column", ""))))
 		sortDirection := html.EscapeString(strings.TrimSpace(strings.ToLower(ctx.DefaultQuery("sort_direction", "desc")))) //ctx.DefaultQuery("sort_direction", "asc")
 		if page <= 0 {
 			page = 1
@@ -56,8 +57,11 @@ func Paginate(ctx *gin.Context, pagination *PaginatedResponse) func(db *gorm.DB)
 		pagination.TotalPages = totalPages
 		pagination.TotalRows = total
 		pagination.PerPage = pageSize
-		pagination.SortColumn = sortColumn
-		pagination.SortDirection = sortDirection
+
+		if sortColumn != "" {
+			pagination.SortColumn = sortColumn
+			pagination.SortDirection = sortDirection
+		}
 
 		offset := (page - 1) * pageSize
 		return db.Offset(offset).Limit(pageSize).Order(sortColumn + " " + sortDirection)
