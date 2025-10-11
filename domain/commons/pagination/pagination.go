@@ -64,6 +64,10 @@ func Paginate(ctx *gin.Context, pagination *PaginatedResponse) func(db *gorm.DB)
 		}
 
 		offset := (page - 1) * pageSize
-		return db.Offset(offset).Limit(pageSize).Order(sortColumn + " " + sortDirection)
+		if sortColumn != "" {
+			return db.Offset(offset).Limit(pageSize).Order(sortColumn + " " + sortDirection)
+		} else {
+			return db.Offset(offset).Limit(pageSize)
+		}
 	}
 }
