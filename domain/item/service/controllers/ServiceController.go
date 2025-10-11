@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -189,24 +190,24 @@ func DeleteService(c *gin.Context) {
 	//delete campus services
 	if err := tx.Where("item_number = ?", serviceNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus services"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus services", "error": err.Error()})
 		return
 
 	}
 
 	if err := tx.Delete(&service).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete service"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete service", "error": err.Error()})
 		return
 	}
 	if err := tx.Where("number = ?", serviceNumber).Delete(&models.Item{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete service item"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete service item", "error": err.Error()})
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit service transaction"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit service transaction", "error": err.Error()})
 		return
 	}
 
