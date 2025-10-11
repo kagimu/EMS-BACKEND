@@ -4,6 +4,7 @@ import "errors"
 
 type MetricRequest struct {
 	Name             string `json:"name"`
+	Code             int32  `json:"code"`
 	CurriculumNumber string `json:"curriculum_number"`
 }
 
