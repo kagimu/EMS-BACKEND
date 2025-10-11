@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -9,6 +10,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 func CreateMetric(c *gin.Context) {
@@ -35,6 +37,7 @@ func CreateMetric(c *gin.Context) {
 		CurriculumNumber: payload.CurriculumNumber,
 		//ExamType:         payload.ExamType,
 		UserNumber: user.Number,
+		Code:       payload.Code,
 	}
 
 	var duplicateMetric models.Metric
@@ -43,8 +46,13 @@ func CreateMetric(c *gin.Context) {
 		return
 	}
 
+	if duplicate := config.DB.Where("code = ? AND curriculum_number = ? ", saveMetric.Code, saveMetric.CurriculumNumber).First(&duplicateMetric).Error; duplicate == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists on this curriculum"})
+		return
+	}
+
 	if err := config.DB.Create(&saveMetric).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create metric"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create metric " + saveMetric.Name})
 		return
 	}
 
@@ -99,14 +107,37 @@ func EditMetric(c *gin.Context) {
 		return
 	}
 
+	if err := config.DB.Where("name = ? AND curriculum_number = ? AND number != ?", payload.Name, payload.CurriculumNumber, metricNumber).First(&metric).Error; err != nil {
+
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Name already exists on this curriculum"})
+			return
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Error checking name duplicate. " + err.Error()})
+			return
+		}
+	}
+
+	if err := config.DB.Where("code = ? AND curriculum_number = ? AND number != ?", payload.Code, payload.CurriculumNumber, metricNumber).First(&metric).Error; err != nil {
+
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists on this curriculum"})
+			return
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Error checking code duplicate. " + err.Error()})
+			return
+		}
+	}
+
 	updateMetric := models.Metric{
 		Name:             payload.Name,
 		CurriculumNumber: payload.CurriculumNumber,
+		Code:             payload.Code,
 		//ExamType:         payload.ExamType,
 	}
 
 	if err := config.DB.Model(&metric).Where("number = ?", metricNumber).Updates(updateMetric).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update metric"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update metric"})
 		return
 	}
 
