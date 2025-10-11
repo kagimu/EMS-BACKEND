@@ -952,6 +952,15 @@ func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumbe
 		return finalStatus, nil
 	}
 
+	finalStatus, err = checkIfDemoted(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
 	return models2.PromotionSetting{}, errors.New("Failed to find promotion/demotion/repeat configuration criteria, error: ")
 }
 
@@ -986,8 +995,6 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
 	}
 
-	//fmt.Println("Minimum assessment grade: ", minimumAssessmentGrade.Name)
-
 	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
 		return promotion, nil
 	}
@@ -1019,6 +1026,42 @@ func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmen
 
 	if promotionValue.Number == "" {
 		return models2.PromotionSetting{}, errors.New("Repeat value not set for " + promotion.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return promotion, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
+func checkIfDemoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
+	//Check demote
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "demoted", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
+	}
+
+	if promotion.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(promotion.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Demote value not set for " + promotion.Name)
 	}
 
 	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)

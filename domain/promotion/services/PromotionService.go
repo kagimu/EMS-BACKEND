@@ -3,6 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
@@ -31,7 +34,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 type PromotionService interface {
@@ -136,7 +138,7 @@ func (p *promotionService) UpdatePromotionSetting(promotionSettingsRequest reque
 	}
 
 	promotionSetting.Name = promotionSettingsRequest.Name
-	promotionSetting.Type = promotionSettingsRequest.Type
+	promotionSetting.Type = strings.ToLower(promotionSettingsRequest.Type)
 	promotionSetting.Status = promotionSettingsRequest.Status
 	promotionSetting.NextCampusClassNumber = nextCampusClass.Number
 	promotionSetting.PreviousCampusClassNumber = prevCampusClass.Number
@@ -417,7 +419,7 @@ func (p *promotionService) NewPromotionSetting(promotionSettingsRequest requests
 	savePromotionSettings := models2.PromotionSetting{
 		Number:                    uuid.NewV4().String(),
 		Name:                      promotionSettingsRequest.Name,
-		Type:                      promotionSettingsRequest.Type,
+		Type:                      strings.ToLower(promotionSettingsRequest.Type),
 		Status:                    promotionSettingsRequest.Status,
 		NextCampusClassNumber:     nextCampusClass.Number,
 		PreviousCampusClassNumber: prevCampusClass.Number,
