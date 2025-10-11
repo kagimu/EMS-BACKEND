@@ -68,6 +68,16 @@ func (billableService *billableService) UpdateBillable(updateBillableRequest req
 		billable.Status = updateBillableRequest.Status
 	}
 
+	if updateBillableRequest.Status == constants.StatusActive {
+		checkCode, err := repositories.FindBillableByCode(updateBillableRequest.Code, constants.StatusActive, updateBillableRequest.ClassNumber, updateBillableRequest.CampusNumber)
+		if err != nil {
+			return errors.New("Checking code duplicate error: " + err.Error())
+		}
+		if checkCode.Number != "" && checkCode.Number != updateBillableRequest.BillableNumber {
+			return errors.New("You already have an active bill with same code ")
+		}
+	}
+
 	if billable.Status == constants.StatusActive {
 		checkDuplicate, err := repositories.FindBillableByStudyPeriod(
 			billable.StudyPeriodNumber,
@@ -331,6 +341,14 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 
 	if billable.Number != "" {
 		return errors.New("You already have an active similar bill ")
+	}
+
+	checkCode, err := repositories.FindBillableByCode(billableRequest.Code, constants.StatusActive, billableRequest.ClassNumber, billableRequest.CampusNumber)
+	if err != nil {
+		return errors.New("Checking code duplicate error: " + err.Error())
+	}
+	if checkCode.Number != "" {
+		return errors.New("You already have an active bill with same code ")
 	}
 
 	newBillable := models.Billable{

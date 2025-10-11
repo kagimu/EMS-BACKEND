@@ -112,6 +112,27 @@ func FindBillableByStudyPeriod(studyPeriodNumber, status, billType, classNumber,
 	return billable, nil
 }
 
+func FindBillableByCode(code int64, status, classNumber, campusNumber string, trn ...*gorm.DB) (models.Billable, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var billable models.Billable
+
+	if err := db.
+		Where("status = ? AND class_number = ? AND campus_number = ? AND code = ?", status, classNumber, campusNumber, code).First(&billable).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return billable, nil
+		}
+
+		return billable, err
+	}
+
+	return billable, nil
+}
+
 func GetEnrollmentBill(studyPeriodNumber, classNumber, campusNumber, billType, modeOfStudyNumber, curriculumNumber, status string, trn ...*gorm.DB) (models.Billable, error) {
 	db := config.DB
 	if len(trn) > 0 {

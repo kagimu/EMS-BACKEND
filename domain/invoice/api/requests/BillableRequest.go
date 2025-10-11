@@ -54,7 +54,7 @@ func (billableRequest *BillableRequest) Validate() error {
 		return errors.New("Choose a valid bill type ")
 	}
 
-	if billableRequest.Code == 0 {
+	if billableRequest.Code <= 0 {
 		return errors.New("Choose a valid code ")
 	}
 
