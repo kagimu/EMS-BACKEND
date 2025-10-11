@@ -54,14 +54,6 @@ func (billableService *billableService) UpdateBillable(updateBillableRequest req
 		return errors.New("This bill created invoices, it can not be edited ")
 	}
 
-	checkCode, err := repositories.FindBillableByCode(updateBillableRequest.Code, constants.StatusActive, updateBillableRequest.ClassNumber, updateBillableRequest.CampusNumber)
-	if err != nil {
-		return errors.New("Checking code duplicate error: " + err.Error())
-	}
-	if checkCode.Number != "" && checkCode.Number != updateBillableRequest.BillableNumber {
-		return errors.New("You already have an active bill with same code ")
-	}
-
 	billable.ClassNumber = updateBillableRequest.ClassNumber
 	billable.CampusNumber = updateBillableRequest.CampusNumber
 	billable.Description = updateBillableRequest.Description
@@ -74,6 +66,16 @@ func (billableService *billableService) UpdateBillable(updateBillableRequest req
 
 	if updateBillableRequest.Status != "" {
 		billable.Status = updateBillableRequest.Status
+	}
+
+	if updateBillableRequest.Status == constants.StatusActive {
+		checkCode, err := repositories.FindBillableByCode(updateBillableRequest.Code, constants.StatusActive, updateBillableRequest.ClassNumber, updateBillableRequest.CampusNumber)
+		if err != nil {
+			return errors.New("Checking code duplicate error: " + err.Error())
+		}
+		if checkCode.Number != "" && checkCode.Number != updateBillableRequest.BillableNumber {
+			return errors.New("You already have an active bill with same code ")
+		}
 	}
 
 	if billable.Status == constants.StatusActive {
