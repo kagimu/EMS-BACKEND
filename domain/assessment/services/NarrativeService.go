@@ -213,7 +213,7 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 			return errors.New("Invalid schedule selected ")
 		}
 
-		if checkScheduled.ScheduledOn.Before(time.Now()) {
+		if time.Now().Before(checkScheduled.ScheduledOn) {
 			return errors.New("This schedule is not yet due ")
 		}
 

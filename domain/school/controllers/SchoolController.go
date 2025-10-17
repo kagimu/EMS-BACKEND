@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -11,8 +14,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
-	"time"
 )
 
 func NewSchool(context *gin.Context) {
@@ -311,6 +312,7 @@ func FetchSchoolInfo(context *gin.Context) {
 		Logo:             commons.GenerateDownloadPath(schools.Logo, false),
 		Motto:            schools.Motto,
 		PrincipalName:    schools.PrincipalName,
+		PrincipalTitle:   schools.PrincipalTitle,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})

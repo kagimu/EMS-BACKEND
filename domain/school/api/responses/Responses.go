@@ -9,6 +9,7 @@ type (
 		Logo             string                     `json:"logo"`
 		Motto            string                     `json:"motto"`
 		PrincipalName    string                     `json:"principal_name"`
+		PrincipalTitle   string                     `json:"principal_title"`
 	}
 
 	SchoolCurriculumResponse struct {
