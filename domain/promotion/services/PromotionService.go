@@ -3,10 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
-<<<<<<< HEAD
 	"strings"
-=======
->>>>>>> 18638da1 (promotion: add current_study_period_number to request, model, service and responses; include in fetch endpoints)
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
