@@ -37,7 +37,7 @@ func CreateService(c *gin.Context) {
 
 	err = itemService.SaveService(user, payload)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save service"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save service " + err.Error()})
 		return
 	}
 

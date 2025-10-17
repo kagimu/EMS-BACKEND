@@ -11,19 +11,20 @@ import (
 )
 
 type PromotionResponse struct {
-	PromotionSettingsNumber string                         `json:"promotion_settings_number"`
-	Name                    string                         `json:"name"`
-	PreviousClass           responses.ClassResponse        `json:"previous_class"`
-	NextClass               responses.ClassResponse        `json:"next_class"`
-	StudyPeriod             responses2.StudyPeriodResponse `json:"study_period"`
-	Status                  string                         `json:"status"`
-	Type                    string                         `json:"type"`
-	Curriculum              responses3.CurriculumResponse  `json:"curriculum"`
-	Campus                  responses4.CampusResponse      `json:"campus"`
-	SchoolName              string                         `json:"school_name"`
-	SchoolNumber            string                         `json:"school_number"`
-	CampusCurriculumNumber  string                         `json:"campus_curriculum_number"`
-	CampusLevelNumber       string                         `json:"campus_level_number"`
+	PromotionSettingsNumber  string                         `json:"promotion_settings_number"`
+	Name                     string                         `json:"name"`
+	PreviousClass            responses.ClassResponse        `json:"previous_class"`
+	NextClass                responses.ClassResponse        `json:"next_class"`
+	StudyPeriod              responses2.StudyPeriodResponse `json:"study_period"`
+	CurrentStudyPeriodNumber string                         `json:"current_study_period_number"`
+	Status                   string                         `json:"status"`
+	Type                     string                         `json:"type"`
+	Curriculum               responses3.CurriculumResponse  `json:"curriculum"`
+	Campus                   responses4.CampusResponse      `json:"campus"`
+	SchoolName               string                         `json:"school_name"`
+	SchoolNumber             string                         `json:"school_number"`
+	CampusCurriculumNumber   string                         `json:"campus_curriculum_number"`
+	CampusLevelNumber        string                         `json:"campus_level_number"`
 }
 
 type PromotionDetailedResponse struct {

@@ -3,7 +3,10 @@ package services
 import (
 	"errors"
 	"fmt"
+<<<<<<< HEAD
 	"strings"
+=======
+>>>>>>> 18638da1 (promotion: add current_study_period_number to request, model, service and responses; include in fetch endpoints)
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -425,6 +428,7 @@ func (p *promotionService) NewPromotionSetting(promotionSettingsRequest requests
 		PreviousCampusClassNumber: prevCampusClass.Number,
 		UserNumber:                user.Number,
 		StudyPeriodNumber:         studyPeriod.Number,
+		CurrentStudyPeriodNumber:  promotionSettingsRequest.CurrentStudyPeriodNumber,
 		CampusCurriculumNumber:    promotionSettingsRequest.CampusCurriculumNumber,
 		CampusLevelNumber:         promotionSettingsRequest.CampusLevelNumber,
 	}
@@ -459,15 +463,16 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
 
 	promo := responses.PromotionResponse{
-		Name:                    promotionSetting.Name,
-		PromotionSettingsNumber: promotionSetting.Number,
-		NextClass:               services.CreateClassResponse(nextClass),
-		PreviousClass:           services.CreateClassResponse(prevClass),
-		Type:                    promotionSetting.Type,
-		Status:                  promotionSetting.Status,
-		StudyPeriod:             services2.CreateStudyPeriodResponse(studyPeriod),
-		CampusCurriculumNumber:  promotionSetting.CampusCurriculumNumber,
-		CampusLevelNumber:       promotionSetting.CampusLevelNumber,
+		Name:                     promotionSetting.Name,
+		PromotionSettingsNumber:  promotionSetting.Number,
+		NextClass:                services.CreateClassResponse(nextClass),
+		PreviousClass:            services.CreateClassResponse(prevClass),
+		Type:                     promotionSetting.Type,
+		Status:                   promotionSetting.Status,
+		StudyPeriod:              services2.CreateStudyPeriodResponse(studyPeriod),
+		CurrentStudyPeriodNumber: promotionSetting.CurrentStudyPeriodNumber,
+		CampusCurriculumNumber:   promotionSetting.CampusCurriculumNumber,
+		CampusLevelNumber:        promotionSetting.CampusLevelNumber,
 	}
 
 	campusClass, err := repositories2.GetCampusClassByNumber(promotionSetting.PreviousCampusClassNumber)
