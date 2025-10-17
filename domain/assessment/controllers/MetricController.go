@@ -110,23 +110,27 @@ func EditMetric(c *gin.Context) {
 	if err := config.DB.Where("name = ? AND curriculum_number = ? AND number != ?", payload.Name, payload.CurriculumNumber, metricNumber).First(&metric).Error; err != nil {
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Name already exists on this curriculum"})
-			return
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Error checking name duplicate. " + err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Error  " + err.Error()})
 			return
 		}
+	}
+
+	if metric.Name == payload.Name {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Name already exists on this curriculum"})
+		return
 	}
 
 	if err := config.DB.Where("code = ? AND curriculum_number = ? AND number != ?", payload.Code, payload.CurriculumNumber, metricNumber).First(&metric).Error; err != nil {
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists on this curriculum"})
-			return
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Error checking code duplicate. " + err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Error " + err.Error()})
 			return
 		}
+	}
+
+	if metric.Code == payload.Code {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Code already exists on this curriculum"})
+		return
 	}
 
 	updateMetric := models.Metric{
