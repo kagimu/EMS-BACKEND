@@ -456,6 +456,7 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 
 	nextClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.NextCampusClassNumber)
 	prevClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
 
 	promo := responses.PromotionResponse{
@@ -469,6 +470,12 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 		CurrentStudyPeriodNumber: promotionSetting.CurrentStudyPeriodNumber,
 		CampusCurriculumNumber:   promotionSetting.CampusCurriculumNumber,
 		CampusLevelNumber:        promotionSetting.CampusLevelNumber,
+	}
+
+	if promotionSetting.CurrentStudyPeriodNumber != "" {
+		if curSp, err := repositories3.GetStudyPeriodByNumber(promotionSetting.CurrentStudyPeriodNumber); err == nil {
+			promo.CurrentStudyPeriodName = curSp.StudyPeriodName.Name
+		}
 	}
 
 	campusClass, err := repositories2.GetCampusClassByNumber(promotionSetting.PreviousCampusClassNumber)

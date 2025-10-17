@@ -17,6 +17,7 @@ type PromotionResponse struct {
 	NextClass                responses.ClassResponse        `json:"next_class"`
 	StudyPeriod              responses2.StudyPeriodResponse `json:"study_period"`
 	CurrentStudyPeriodNumber string                         `json:"current_study_period_number"`
+	CurrentStudyPeriodName   string                         `json:"current_study_period_name"`
 	Status                   string                         `json:"status"`
 	Type                     string                         `json:"type"`
 	Curriculum               responses3.CurriculumResponse  `json:"curriculum"`
