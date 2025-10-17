@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/services"
 	"gorm.io/gorm"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -125,7 +126,7 @@ func ReEnrollStudent(context *gin.Context) {
 	// update the enrollment status to active
 	enrollment.Status = constants.StatusActive
 	if err := config.DB.Save(&enrollment).Error; err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to re-enroll student"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to re-enroll student " + err.Error()})
 		return
 	}
 

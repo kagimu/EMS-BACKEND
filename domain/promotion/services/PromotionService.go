@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
@@ -31,7 +33,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 type PromotionService interface {
@@ -423,6 +424,7 @@ func (p *promotionService) NewPromotionSetting(promotionSettingsRequest requests
 		PreviousCampusClassNumber: prevCampusClass.Number,
 		UserNumber:                user.Number,
 		StudyPeriodNumber:         studyPeriod.Number,
+		CurrentStudyPeriodNumber:  promotionSettingsRequest.CurrentStudyPeriodNumber,
 		CampusCurriculumNumber:    promotionSettingsRequest.CampusCurriculumNumber,
 		CampusLevelNumber:         promotionSettingsRequest.CampusLevelNumber,
 	}
@@ -457,15 +459,16 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
 
 	promo := responses.PromotionResponse{
-		Name:                    promotionSetting.Name,
-		PromotionSettingsNumber: promotionSetting.Number,
-		NextClass:               services.CreateClassResponse(nextClass),
-		PreviousClass:           services.CreateClassResponse(prevClass),
-		Type:                    promotionSetting.Type,
-		Status:                  promotionSetting.Status,
-		StudyPeriod:             services2.CreateStudyPeriodResponse(studyPeriod),
-		CampusCurriculumNumber:  promotionSetting.CampusCurriculumNumber,
-		CampusLevelNumber:       promotionSetting.CampusLevelNumber,
+		Name:                     promotionSetting.Name,
+		PromotionSettingsNumber:  promotionSetting.Number,
+		NextClass:                services.CreateClassResponse(nextClass),
+		PreviousClass:            services.CreateClassResponse(prevClass),
+		Type:                     promotionSetting.Type,
+		Status:                   promotionSetting.Status,
+		StudyPeriod:              services2.CreateStudyPeriodResponse(studyPeriod),
+		CurrentStudyPeriodNumber: promotionSetting.CurrentStudyPeriodNumber,
+		CampusCurriculumNumber:   promotionSetting.CampusCurriculumNumber,
+		CampusLevelNumber:        promotionSetting.CampusLevelNumber,
 	}
 
 	campusClass, err := repositories2.GetCampusClassByNumber(promotionSetting.PreviousCampusClassNumber)

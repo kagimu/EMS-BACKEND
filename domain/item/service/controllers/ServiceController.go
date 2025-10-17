@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/api/requests"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/service/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/services"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -36,7 +37,7 @@ func CreateService(c *gin.Context) {
 
 	err = itemService.SaveService(user, payload)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save service"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save service " + err.Error()})
 		return
 	}
 
