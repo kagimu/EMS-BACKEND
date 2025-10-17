@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -16,7 +18,6 @@ import (
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 type StudyPeriodService interface {
@@ -114,6 +115,7 @@ func CreateStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPerio
 		StudyPeriodEndDate:    studyPeriod.StudyPeriodEndDate.Format(time.DateTime),
 		UserNumber:            studyPeriod.UserNumber,
 		NextTermBeginsOn:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
+		ReportingDate:         studyPeriod.ReportingDate.Format("02-01-2006"),
 	}
 }
 
