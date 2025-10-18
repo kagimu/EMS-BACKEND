@@ -808,6 +808,7 @@ func SetupRoutes() *gin.Engine {
 			promotions.POST("", promotionController.PromoteStudent)
 			promotions.GET("", promotionController.FetchAllPromotions)
 			promotions.PUT(":promotion_number", promotionController.EditPromotion)
+			promotions.GET("next-class", promotionController.NextPromotedOrDemotedClass)
 
 			promotionSettings := promotions.Group("settings")
 			{

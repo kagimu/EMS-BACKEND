@@ -44,6 +44,7 @@ type PromotionService interface {
 	PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error)
 	UpdatePromotionSetting(payload requests.PromotionSettingRequest, user *models.User, promotionSettingNumber string) error
 	UpdatePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
+	GetNextPromotedOrDemotedClass(studyPeriodNumber, studentNumber, promotionType, campusClassNumber string) (responses.PromotionDetailedResponse, error)
 }
 
 type promotionService struct{}
@@ -474,7 +475,8 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 
 	if promotionSetting.CurrentStudyPeriodNumber != "" {
 		if curSp, err := repositories3.GetStudyPeriodByNumber(promotionSetting.CurrentStudyPeriodNumber); err == nil {
-			promo.CurrentStudyPeriodName = curSp.StudyPeriodName.Name
+			sp := services2.CreateStudyPeriodResponse(curSp)
+			promo.CurrentStudyPeriodName = sp.Name
 		}
 	}
 
@@ -520,6 +522,41 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 	}
 
 	return promo
+}
+
+func (p *promotionService) GetNextPromotedOrDemotedClass(studyPeriodNumber, studentNumber, promotionType, campusClassNumber string) (responses.PromotionDetailedResponse, error) {
+	// Find the promotion setting for the current campus class and current study period
+	promotionSetting, err := repositories.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, promotionType)
+	if err != nil {
+		return responses.PromotionDetailedResponse{}, errors.New("Error finding promotion setting: " + err.Error())
+	}
+
+	if promotionSetting.Number == "" {
+		return responses.PromotionDetailedResponse{}, errors.New("no promotion setting found for the given parameters")
+	}
+
+	// Find the report summary for the student by student_number and study_period_number
+	reportSummary, err := reporsitory.GetReportSummaryByStudentAndStudyPeriod(studentNumber, studyPeriodNumber)
+	if err != nil {
+		return responses.PromotionDetailedResponse{}, errors.New("Error finding report summary: " + err.Error())
+	}
+
+	if reportSummary.Number == "" {
+		return responses.PromotionDetailedResponse{}, errors.New("no report summary found for the student in the given study period")
+	}
+
+	// Query Promotions table by ReportSummaryNumber and promotion_type
+	promotion, err := repositories.FindPromotionByReportSummaryAndType(reportSummary.Number, promotionType)
+	if err != nil {
+		return responses.PromotionDetailedResponse{}, errors.New("Error finding promotion record: " + err.Error())
+	}
+
+	if promotion.Number == "" {
+		return responses.PromotionDetailedResponse{}, errors.New("No promotion record found for the student")
+	}
+
+	// Return the promotion settings details
+	return p.PromotionSettingDetails(promotionSetting.Number)
 }
 
 func NewPromotionService() PromotionService {
