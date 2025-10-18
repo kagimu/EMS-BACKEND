@@ -34,6 +34,28 @@ func GetReportSummaryByStudentNumberAndStudyPeriodNumberAndCampusClassNumber(stu
 	return reportSummary, nil
 }
 
+func GetReportSummaryByStudentAndStudyPeriod(studentNumber string, studyPeriodNumber string, trn ...*gorm.DB) (models.ReportSummary, error) {
+
+	db := config.DB
+
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var reportSummary models.ReportSummary
+
+	if err := db.Where("student_number = ? AND study_period_number = ?", studentNumber, studyPeriodNumber).First(&reportSummary).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return reportSummary, nil
+		}
+
+		return reportSummary, err
+	}
+
+	return reportSummary, nil
+}
+
 func FindReportSummaryByNumber(reportSummaryNumber string, trn ...*gorm.DB) (models.ReportSummary, error) {
 
 	db := config.DB

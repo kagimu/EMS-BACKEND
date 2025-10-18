@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/services"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 
 	"github.com/gin-gonic/gin"
@@ -140,4 +141,34 @@ func EditPromotion(c *gin.Context) {
 	}*/
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": promotion})
+}
+
+func NextPromotedOrDemotedClass(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	// Get query params
+	studyPeriodNumber := context.Query("study_period_number")
+	studentNumber := context.Query("student_number")
+	promotionType := context.Query("promotion_type")
+	campusClassNumber := context.Query("campus_class_number")
+
+	// Validate required parameters
+	if studyPeriodNumber == "" || studentNumber == "" || promotionType == "" || campusClassNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Missing required query parameters: study_period_number, student_number, promotion_type, campus_class_number"})
+		return
+	}
+
+	// Call service function to handle the logic
+	promotionService := services.NewPromotionService()
+	result, err := promotionService.GetNextPromotedOrDemotedClass(studyPeriodNumber, studentNumber, promotionType, campusClassNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": result})
 }
