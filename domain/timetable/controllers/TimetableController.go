@@ -13,6 +13,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/service"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -277,4 +279,160 @@ func FetchStudyTimetables(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, studyTimetables)
+}
+
+func CreateTimetableTask(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.TimetableTaskRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	if err := timetableTaskService.CreateTimetableTask(payload, user.Number); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable task created successfully"})
+}
+
+func UpdateTimetableTask(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	taskNumber := c.Param("task_number")
+	if taskNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task number is required"})
+		return
+	}
+
+	var payload requests.UpdateTimetableTaskRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	if err := timetableTaskService.UpdateTimetableTask(taskNumber, payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable task updated successfully"})
+}
+
+func DeleteTimetableTask(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	taskNumber := c.Param("task_number")
+	if taskNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task number is required"})
+		return
+	}
+
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	if err := timetableTaskService.DeleteTimetableTask(taskNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable task deleted successfully"})
+}
+
+func CreateTimetableSlot(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.TimetableSlotRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	if err := timetableSlotService.CreateTimetableSlot(payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable slot created successfully"})
+}
+
+func UpdateTimetableSlot(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	slotNumber := c.Param("slot_number")
+	if slotNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Slot number is required"})
+		return
+	}
+
+	var payload requests.UpdateTimetableSlotRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		return
+	}
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	if err := timetableSlotService.UpdateTimetableSlot(slotNumber, payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable slot updated successfully"})
+}
+
+func DeleteTimetableSlot(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	slotNumber := c.Param("slot_number")
+	if slotNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Slot number is required"})
+		return
+	}
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	if err := timetableSlotService.DeleteTimetableSlot(slotNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable slot deleted successfully"})
 }

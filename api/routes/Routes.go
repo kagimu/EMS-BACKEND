@@ -363,6 +363,16 @@ func SetupRoutes() *gin.Engine {
 			timetable.GET("subjects-by-class-level-number/:class_level_number", timetableController.FetchSubjectsByClassLevelNumber)
 			timetable.GET("get-classes-by-campus-number-and-level-number", timetableController.FetchClassLevelsByCampusNumberAndLevelNumber)
 			timetable.GET("fetch-levels-by-campus-number/:campus_number", timetableController.FetchLevelsByCampusNumber)
+
+			// TimetableTask endpoints
+			timetable.POST("timetable-tasks", timetableController.CreateTimetableTask)
+			timetable.PUT("timetable-tasks/:task_number", timetableController.UpdateTimetableTask)
+			timetable.DELETE("timetable-tasks/:task_number", timetableController.DeleteTimetableTask)
+
+			// TimetableSlot endpoints
+			timetable.POST("timetable-slots", timetableController.CreateTimetableSlot)
+			timetable.PUT("timetable-slots/:slot_number", timetableController.UpdateTimetableSlot)
+			timetable.DELETE("timetable-slots/:slot_number", timetableController.DeleteTimetableSlot)
 		}
 
 		stream := main.Group("/stream")
