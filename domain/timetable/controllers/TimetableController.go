@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -13,11 +15,10 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
 )
 
 func AddPeriod(context *gin.Context) {
-	var timetable models.StudyTimetablePeriods
+	var timetable models.StudyTimetablePeriod
 	var timetableRequest requests.TimetableRequest
 
 	err := context.ShouldBind(&timetableRequest)
@@ -49,16 +50,14 @@ func AddPeriod(context *gin.Context) {
 
 	timetable.Number = uuid.NewV4().String()
 
-	period := models.StudyTimetablePeriods{
-		Number:        timetable.Number,
-		StartTime:     timetableRequest.StartTime,
-		EndTime:       timetableRequest.EndTime,
-		SubjectNumber: timetableRequest.SubjectNumber,
-		StreamNumber:  timetableRequest.StreamNumber,
-		Day:           timetableRequest.Day,
-		DayCode:       timetableRequestDayCode,
-		CampusNumber:  timetableRequest.CampusNumber,
-		UserNumber:    context.GetHeader("User-Number"),
+	period := models.StudyTimetablePeriod{
+		Number:       timetable.Number,
+		StartTime:    timetableRequest.StartTime,
+		EndTime:      timetableRequest.EndTime,
+		StreamNumber: timetableRequest.StreamNumber,
+		Day:          timetableRequest.Day,
+		DayCode:      timetableRequestDayCode,
+		UserNumber:   context.GetHeader("User-Number"),
 	}
 
 	config.DB.Save(&period)
@@ -69,7 +68,7 @@ func AddPeriod(context *gin.Context) {
 
 func GetDistinctDays(ctx *gin.Context) {
 	var days []string
-	config.DB.Model(&models.StudyTimetablePeriods{}).
+	config.DB.Model(&models.StudyTimetablePeriod{}).
 		Select("DISTINCT day").
 		Order("day_code asc").
 		Scan(&days)
@@ -79,13 +78,13 @@ func GetDistinctDays(ctx *gin.Context) {
 
 func GetPeriodsByDay(ctx *gin.Context) {
 	day := ctx.Param("day")
-	var periods []models.StudyTimetablePeriods
+	var periods []models.StudyTimetablePeriod
 	config.DB.Where("day = ?", day).Find(&periods)
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
 
 func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
-	var periods []models.StudyTimetablePeriods
+	var periods []models.StudyTimetablePeriod
 	config.DB.
 		//Model(&models.StudyTimetablePeriods{}).
 		//Select("stream_number,day").
@@ -101,7 +100,7 @@ func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
 
 func GetPeriodsByStream(ctx *gin.Context) {
 	streamNumber := ctx.Param("stream_number")
-	var periods []models.StudyTimetablePeriods
+	var periods []models.StudyTimetablePeriod
 	config.DB.Where("stream_number = ?", streamNumber).Find(&periods)
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
