@@ -40,3 +40,33 @@ type StudyPeriodRequest struct {
 	Comment                 string `json:"comment"`
 	LessonPlanStepNumber    string `json:"lesson_plan_step_number"`
 }
+
+type TimetableTaskRequest struct {
+	Name        string `json:"name" binding:"required"`
+	Type        string `json:"type" binding:"required"`
+	ClassNumber string `json:"class_number" binding:"required"`
+}
+
+type UpdateTimetableTaskRequest struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	ClassNumber string `json:"class_number"`
+}
+
+type TimetableSlotRequest struct {
+	Name         string `json:"name" binding:"required"`
+	Type         string `json:"type" binding:"required"`
+	SchoolNumber string `json:"school_number" binding:"required"`
+	LevelNumber  string `json:"level_number" binding:"required"`
+	StartTime    string `json:"start_time" binding:"required"`
+	EndTime      string `json:"end_time" binding:"required"`
+}
+
+type UpdateTimetableSlotRequest struct {
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	SchoolNumber string `json:"school_number"`
+	LevelNumber  string `json:"level_number"`
+	StartTime    string `json:"start_time"`
+	EndTime      string `json:"end_time"`
+}

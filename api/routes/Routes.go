@@ -363,12 +363,20 @@ func SetupRoutes() *gin.Engine {
 			timetable.GET("subjects-by-class-level-number/:class_level_number", timetableController.FetchSubjectsByClassLevelNumber)
 			timetable.GET("get-classes-by-campus-number-and-level-number", timetableController.FetchClassLevelsByCampusNumberAndLevelNumber)
 			timetable.GET("fetch-levels-by-campus-number/:campus_number", timetableController.FetchLevelsByCampusNumber)
-			timetable.GET("studying-timeblocks", timetableController.CreateStudyingTimeBlock)
-			timetable.POST("studying-timeblocks", timetableController.FetchStudyingTimeBlocks)
-			timetable.POST("studying-timetable", timetableController.CreateStudyingTimeTable)
-			timetable.GET("studying-timetable", timetableController.FetchStudyingTimeTables)
-			timetable.POST("study-periods", timetableController.CreateStudyPeriod)
-			timetable.GET("study-periods", timetableController.FetchStudyPeriods)
+
+			// TimetableTask endpoints
+			timetable.POST("timetable-tasks", timetableController.CreateTimetableTask)
+			timetable.GET("timetable-tasks", timetableController.GetTimetableTasks)
+			timetable.GET("timetable-tasks/:task_number", timetableController.GetTimetableTask)
+			timetable.PUT("timetable-tasks/:task_number", timetableController.UpdateTimetableTask)
+			timetable.DELETE("timetable-tasks/:task_number", timetableController.DeleteTimetableTask)
+
+			// TimetableSlot endpoints
+			timetable.POST("timetable-slots", timetableController.CreateTimetableSlot)
+			timetable.GET("timetable-slots", timetableController.GetTimetableSlots)
+			timetable.GET("timetable-slots/:slot_number", timetableController.GetTimetableSlot)
+			timetable.PUT("timetable-slots/:slot_number", timetableController.UpdateTimetableSlot)
+			timetable.DELETE("timetable-slots/:slot_number", timetableController.DeleteTimetableSlot)
 		}
 
 		stream := main.Group("/stream")
