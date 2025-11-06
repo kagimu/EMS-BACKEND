@@ -366,11 +366,15 @@ func SetupRoutes() *gin.Engine {
 
 			// TimetableTask endpoints
 			timetable.POST("timetable-tasks", timetableController.CreateTimetableTask)
+			timetable.GET("timetable-tasks", timetableController.GetTimetableTasks)
+			timetable.GET("timetable-tasks/:task_number", timetableController.GetTimetableTask)
 			timetable.PUT("timetable-tasks/:task_number", timetableController.UpdateTimetableTask)
 			timetable.DELETE("timetable-tasks/:task_number", timetableController.DeleteTimetableTask)
 
 			// TimetableSlot endpoints
 			timetable.POST("timetable-slots", timetableController.CreateTimetableSlot)
+			timetable.GET("timetable-slots", timetableController.GetTimetableSlots)
+			timetable.GET("timetable-slots/:slot_number", timetableController.GetTimetableSlot)
 			timetable.PUT("timetable-slots/:slot_number", timetableController.UpdateTimetableSlot)
 			timetable.DELETE("timetable-slots/:slot_number", timetableController.DeleteTimetableSlot)
 		}

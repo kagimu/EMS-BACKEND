@@ -359,6 +359,52 @@ func DeleteTimetableTask(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Timetable task deleted successfully"})
 }
 
+func GetTimetableTasks(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	classNumber := c.Query("class_number")
+
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	tasks, err := timetableTaskService.GetAllTimetableTasks(classNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": tasks})
+}
+
+func GetTimetableTask(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	taskNumber := c.Param("task_number")
+	if taskNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task number is required"})
+		return
+	}
+
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	task, err := timetableTaskService.GetTimetableTaskByNumber(taskNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": task})
+}
+
 func CreateTimetableSlot(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
@@ -435,4 +481,51 @@ func DeleteTimetableSlot(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Timetable slot deleted successfully"})
+}
+
+func GetTimetableSlots(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+	levelNumber := c.Query("level_number")
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	slots, err := timetableSlotService.GetAllTimetableSlots(schoolNumber, levelNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": slots})
+}
+
+func GetTimetableSlot(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	slotNumber := c.Param("slot_number")
+	if slotNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Slot number is required"})
+		return
+	}
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	slot, err := timetableSlotService.GetTimetableSlotByNumber(slotNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": slot})
 }
