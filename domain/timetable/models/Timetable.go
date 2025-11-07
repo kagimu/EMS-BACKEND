@@ -50,5 +50,5 @@ type StudyTimetablePeriod struct {
 	UserNumber           string             `json:"user_number" gorm:"size:36;not null"`
 	User                 authModels.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Stream               classModels.Stream `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	StudyTimetable       StudyTimetable     `gorm:"foreignKey:StudyTimetableNumber;references:StudyTimetableNumber; constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	StudyTimetable       StudyTimetable     `gorm:"foreignKey:StudyTimetableNumber;references:Number; constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
