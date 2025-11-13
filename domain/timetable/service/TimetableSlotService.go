@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/repository"
@@ -25,17 +26,31 @@ func NewTimetableSlotService(repo repository.TimetableSlotRepository) TimetableS
 }
 
 func (s *timetableSlotService) CreateTimetableSlot(request requests.TimetableSlotRequest) error {
-	slot := models.TimetableSlots{
-		Number:       uuid.NewV4().String(),
-		Name:         request.Name,
-		Type:         request.Type,
-		SchoolNumber: request.SchoolNumber,
-		LevelNumber:  request.LevelNumber,
-		StartTime:    request.StartTime,
-		EndTime:      request.EndTime,
+	if len(request.Slots) == 0 {
+		return errors.New("at least one slot is required")
 	}
 
-	return s.repo.SaveTimetableSlot(slot)
+	for _, slotItem := range request.Slots {
+		if slotItem.StartTime == "" || slotItem.EndTime == "" {
+			return errors.New("start time and end time cannot be empty")
+		}
+
+		slot := models.TimetableSlots{
+			Number:       uuid.NewV4().String(),
+			Name:         request.Name,
+			Type:         request.Type,
+			SchoolNumber: request.SchoolNumber,
+			LevelNumber:  request.LevelNumber,
+			StartTime:    slotItem.StartTime,
+			EndTime:      slotItem.EndTime,
+		}
+
+		if err := s.repo.SaveTimetableSlot(slot); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *timetableSlotService) UpdateTimetableSlot(slotNumber string, request requests.UpdateTimetableSlotRequest) error {

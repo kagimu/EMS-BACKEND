@@ -47,6 +47,7 @@ type StudyTimetablePeriod struct {
 	DayCode              int32              `json:"day_code" gorm:"size:36;not null"`
 	StartTime            string             `json:"start_time" gorm:"size:10;not null"`
 	EndTime              string             `json:"end_time" gorm:"size:10;not null"`
+	TaskType             string             `json:"task_type" gorm:"size:100;not null"`
 	UserNumber           string             `json:"user_number" gorm:"size:36;not null"`
 	User                 authModels.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Stream               classModels.Stream `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

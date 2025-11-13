@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/repository"
@@ -25,15 +26,42 @@ func NewTimetableTaskService(repo repository.TimetableTaskRepository) TimetableT
 }
 
 func (s *timetableTaskService) CreateTimetableTask(request requests.TimetableTaskRequest, userNumber string) error {
-	task := models.TimetableTask{
-		Number:      uuid.NewV4().String(),
-		Name:        request.Name,
-		Type:        request.Type,
-		UserNumber:  userNumber,
-		ClassNumber: request.ClassNumber,
+	if len(request.Tasks) == 0 {
+		return errors.New("at least one task definition is required")
 	}
 
-	return s.repo.SaveTimetableTask(task)
+	if len(request.ClassNumbers) == 0 {
+		return errors.New("at least one class number is required")
+	}
+
+	for _, classNumber := range request.ClassNumbers {
+		if classNumber == "" {
+			return errors.New("class number cannot be empty")
+		}
+
+		for _, taskItem := range request.Tasks {
+			if taskItem.Name == "" {
+				return errors.New("task name cannot be empty")
+			}
+			if taskItem.Type == "" {
+				return errors.New("task type cannot be empty")
+			}
+
+			task := models.TimetableTask{
+				Number:      uuid.NewV4().String(),
+				Name:        taskItem.Name,
+				Type:        taskItem.Type,
+				UserNumber:  userNumber,
+				ClassNumber: classNumber,
+			}
+
+			if err := s.repo.SaveTimetableTask(task); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (s *timetableTaskService) UpdateTimetableTask(taskNumber string, request requests.UpdateTimetableTaskRequest) error {

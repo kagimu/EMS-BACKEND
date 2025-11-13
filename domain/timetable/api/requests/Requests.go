@@ -1,7 +1,5 @@
 package requests
 
-import "time"
-
 type TimetableRequest struct {
 	SubjectNumber string `json:"subject_number"`
 	StreamNumber  string `json:"stream_number"`
@@ -14,16 +12,6 @@ type TimetableRequest struct {
 type StudyTimetableRequest struct {
 	StudyPeriodNumber string `json:"study_period_number"`
 	Name              string `json:"name"`
-}
-
-type StudyTimeBlockRequest struct {
-	StartTime          string        `json:"start_time"`
-	EndTime            string        `json:"end_time"`
-	Day                string        `json:"day"`
-	CampusNumber       string        `json:"campus_number"`
-	Length             time.Duration `json:"length"`
-	AcademicYearNumber string        `json:"academic_year_number"`
-	LevelNumber        string        `json:"level_number"`
 }
 
 type StudyingTimeTableRequest struct {
@@ -41,10 +29,14 @@ type StudyPeriodRequest struct {
 	LessonPlanStepNumber    string `json:"lesson_plan_step_number"`
 }
 
+type TimetableTaskItem struct {
+	Name string `json:"name" binding:"required"`
+	Type string `json:"type" binding:"required"`
+}
+
 type TimetableTaskRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Type        string `json:"type" binding:"required"`
-	ClassNumber string `json:"class_number" binding:"required"`
+	Tasks        []TimetableTaskItem `json:"tasks" binding:"required,min=1,dive"`
+	ClassNumbers []string            `json:"class_numbers" binding:"required,min=1,dive,required"`
 }
 
 type UpdateTimetableTaskRequest struct {
@@ -53,13 +45,17 @@ type UpdateTimetableTaskRequest struct {
 	ClassNumber string `json:"class_number"`
 }
 
+type TimetableSlotItem struct {
+	StartTime string `json:"start_time" binding:"required"`
+	EndTime   string `json:"end_time" binding:"required"`
+}
+
 type TimetableSlotRequest struct {
-	Name         string `json:"name" binding:"required"`
-	Type         string `json:"type" binding:"required"`
-	SchoolNumber string `json:"school_number" binding:"required"`
-	LevelNumber  string `json:"level_number" binding:"required"`
-	StartTime    string `json:"start_time" binding:"required"`
-	EndTime      string `json:"end_time" binding:"required"`
+	Name         string              `json:"name" binding:"required"`
+	Type         string              `json:"type" binding:"required"`
+	SchoolNumber string              `json:"school_number" binding:"required"`
+	LevelNumber  string              `json:"level_number" binding:"required"`
+	Slots        []TimetableSlotItem `json:"slots" binding:"required,min=1,dive"`
 }
 
 type UpdateTimetableSlotRequest struct {
@@ -69,4 +65,26 @@ type UpdateTimetableSlotRequest struct {
 	LevelNumber  string `json:"level_number"`
 	StartTime    string `json:"start_time"`
 	EndTime      string `json:"end_time"`
+}
+
+type StudyTimetablePeriodItem struct {
+	Day        string `json:"day" binding:"required"`
+	TaskNumber string `json:"task_number" binding:"required"`
+	SlotNumber string `json:"slot_number" binding:"required"`
+}
+
+type CreateStudyTimetablePeriodRequest struct {
+	StudyTimetableNumber string                     `json:"study_timetable_number" binding:"required"`
+	StreamNumber         string                     `json:"stream_number" binding:"required"`
+	Periods              []StudyTimetablePeriodItem `json:"periods"`
+}
+
+type UpdateStudyTimetablePeriodRequest struct {
+	StudyTimetableNumber string `json:"study_timetable_number"`
+	StreamNumber         string `json:"stream_number"`
+	Day                  string `json:"day"`
+	DayCode              *int32 `json:"day_code"`
+	StartTime            string `json:"start_time"`
+	EndTime              string `json:"end_time"`
+	TaskType             string `json:"task_type"`
 }
