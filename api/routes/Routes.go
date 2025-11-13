@@ -354,9 +354,12 @@ func SetupRoutes() *gin.Engine {
 
 		timetable := main.Group("/timetable")
 		{
-			timetable.GET("all-study-timetables", timetableController.FetchStudyTimetables)
-			timetable.POST("create-study-timetable", timetableController.CreateStudyTimetable)
-			timetable.POST("add-timetable-period", timetableController.AddPeriod)
+
+			timetable.POST("study-timetable-periods", timetableController.CreateStudyTimetablePeriod)
+			timetable.GET("study-timetable-periods", timetableController.GetStudyTimetablePeriods)
+			timetable.GET("study-timetable-periods/:period_number", timetableController.GetStudyTimetablePeriod)
+			timetable.PUT("study-timetable-periods/:period_number", timetableController.UpdateStudyTimetablePeriod)
+			timetable.DELETE("study-timetable-periods/:period_number", timetableController.DeleteStudyTimetablePeriod)
 			timetable.GET("get-timetable-periods", timetableController.FetchTimetablePeriodsGroupedByDay)
 			timetable.GET("get-distinct-days", timetableController.GetDistinctDays)
 			timetable.GET("get-periods-by-day/:day", timetableController.GetPeriodsByDay)
