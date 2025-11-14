@@ -74,17 +74,12 @@ type StudyTimetablePeriodItem struct {
 }
 
 type CreateStudyTimetablePeriodRequest struct {
-	StudyTimetableNumber string                     `json:"study_timetable_number" binding:"required"`
-	StreamNumber         string                     `json:"stream_number" binding:"required"`
-	Periods              []StudyTimetablePeriodItem `json:"periods"`
+	StudyPeriodNumber string                     `json:"study_period_number"`
+	StreamNumber      string                     `json:"stream_number" binding:"required"`
+	Periods           []StudyTimetablePeriodItem `json:"periods"`
 }
 
 type UpdateStudyTimetablePeriodRequest struct {
-	StudyTimetableNumber string `json:"study_timetable_number"`
-	StreamNumber         string `json:"stream_number"`
-	Day                  string `json:"day"`
-	DayCode              *int32 `json:"day_code"`
-	StartTime            string `json:"start_time"`
-	EndTime              string `json:"end_time"`
-	TaskType             string `json:"task_type"`
+	StudyTimetableNumber string `json:"study_timetable_number" binding:"required"`
+	CreateStudyTimetablePeriodRequest
 }

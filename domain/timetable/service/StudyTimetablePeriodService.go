@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/repository"
@@ -19,20 +20,23 @@ type StudyTimetablePeriodService interface {
 }
 
 type studyTimetablePeriodService struct {
-	periodRepo repository.StudyTimetablePeriodRepository
-	slotRepo   repository.TimetableSlotRepository
-	taskRepo   repository.TimetableTaskRepository
+	periodRepo    repository.StudyTimetablePeriodRepository
+	slotRepo      repository.TimetableSlotRepository
+	taskRepo      repository.TimetableTaskRepository
+	timetableRepo repository.StudyTimetableRepository
 }
 
 func NewStudyTimetablePeriodService(
 	periodRepo repository.StudyTimetablePeriodRepository,
 	slotRepo repository.TimetableSlotRepository,
 	taskRepo repository.TimetableTaskRepository,
+	timetableRepo repository.StudyTimetableRepository,
 ) StudyTimetablePeriodService {
 	return &studyTimetablePeriodService{
-		periodRepo: periodRepo,
-		slotRepo:   slotRepo,
-		taskRepo:   taskRepo,
+		periodRepo:    periodRepo,
+		slotRepo:      slotRepo,
+		taskRepo:      taskRepo,
+		timetableRepo: timetableRepo,
 	}
 }
 
@@ -43,6 +47,27 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 
 	if len(request.Periods) == 0 {
 		return errors.New("at least one study timetable period is required")
+	}
+
+	if request.StudyPeriodNumber == "" {
+		return errors.New("study period number is required")
+	}
+
+	if request.StreamNumber == "" {
+		return errors.New("stream number is required")
+	}
+
+	studyTimetable := models.StudyTimetable{
+		Number:            uuid.NewV4().String(),
+		Name:              "StudyTimetablePeriod",
+		Status:            constants.StatusDraft,
+		UserNumber:        userNumber,
+		StreamNumber:      request.StreamNumber,
+		StudyPeriodNumber: request.StudyPeriodNumber,
+	}
+
+	if err := s.timetableRepo.SaveStudyTimetable(studyTimetable); err != nil {
+		return errors.New("error saving study timetable: " + err.Error())
 	}
 
 	for _, periodItem := range request.Periods {
@@ -74,7 +99,7 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 
 		period := models.StudyTimetablePeriod{
 			Number:               uuid.NewV4().String(),
-			StudyTimetableNumber: request.StudyTimetableNumber,
+			StudyTimetableNumber: studyTimetable.Number,
 			StreamNumber:         request.StreamNumber,
 			Day:                  periodItem.Day,
 			DayCode:              mapDayToCode(periodItem.Day),
@@ -100,33 +125,6 @@ func (s *studyTimetablePeriodService) UpdateStudyTimetablePeriod(periodNumber st
 	period, err := s.periodRepo.FindStudyTimetablePeriodByNumber(periodNumber)
 	if err != nil {
 		return errors.New("error finding study timetable period: " + err.Error())
-	}
-
-	if period.Number == "" {
-		return errors.New("study timetable period not found")
-	}
-
-	if request.StudyTimetableNumber != "" {
-		period.StudyTimetableNumber = request.StudyTimetableNumber
-	}
-	if request.StreamNumber != "" {
-		period.StreamNumber = request.StreamNumber
-	}
-	if request.Day != "" {
-		period.Day = request.Day
-		period.DayCode = mapDayToCode(request.Day)
-	}
-	if request.DayCode != nil {
-		period.DayCode = *request.DayCode
-	}
-	if request.StartTime != "" {
-		period.StartTime = request.StartTime
-	}
-	if request.EndTime != "" {
-		period.EndTime = request.EndTime
-	}
-	if request.TaskType != "" {
-		period.TaskType = request.TaskType
 	}
 
 	return s.periodRepo.UpdateStudyTimetablePeriod(&period)
