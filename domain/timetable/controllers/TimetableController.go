@@ -146,6 +146,64 @@ func getStudyTimetablePeriodService() service.StudyTimetablePeriodService {
 	return service.NewStudyTimetablePeriodService(periodRepo, slotRepo, taskRepo, timetableRepo)
 }
 
+func getStudyTimetableService() service.StudyTimetableService {
+	timetableRepo := repository.NewStudyTimetableRepository(config.DB)
+	return service.NewStudyTimetableService(timetableRepo)
+}
+
+func GetStudyTimetable(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	timetableNumber := c.Param("timetable_number")
+	if timetableNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Timetable number is required"})
+		return
+	}
+
+	timetableService := getStudyTimetableService()
+	timetable, err := timetableService.GetStudyTimetableByNumber(timetableNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": timetable})
+}
+
+func GetAllStudyTimetables(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	// Get query parameters
+	studyPeriodNumber := c.Query("study_period_number")
+	userNumber := c.Query("user_number")
+	if userNumber == "" {
+		userNumber = user.Number
+	}
+	status := c.Query("status")
+	schoolNumber := c.Query("school_number")
+	levelNumber := c.Query("level_number")
+	campusNumber := c.Query("campus_number")
+	classNumber := c.Query("class_number")
+	streamNumber := c.Query("stream_number")
+
+	timetableService := getStudyTimetableService()
+	timetables, err := timetableService.GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, classNumber, streamNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": timetables})
+}
+
 func AddPeriod(context *gin.Context) {
 	var timetable models.StudyTimetablePeriod
 	var timetableRequest requests.TimetableRequest
