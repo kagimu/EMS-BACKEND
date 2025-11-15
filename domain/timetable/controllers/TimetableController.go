@@ -138,6 +138,32 @@ func GetStudyTimetablePeriods(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": periods})
 }
 
+func GetStructuredTimetablePeriods(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	userNumber := c.Query("user_number")
+	if userNumber == "" {
+		userNumber = user.Number
+	}
+
+	studyTimetableNumber := c.Query("study_timetable_number")
+	streamNumber := c.Query("stream_number")
+	day := c.Query("day")
+
+	periodService := getStudyTimetablePeriodService()
+	structuredResponse, err := periodService.GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": structuredResponse})
+}
+
 func getStudyTimetablePeriodService() service.StudyTimetablePeriodService {
 	periodRepo := repository.NewStudyTimetablePeriodRepository(config.DB)
 	slotRepo := repository.NewTimetableSlotRepository(config.DB)

@@ -361,6 +361,7 @@ func SetupRoutes() *gin.Engine {
 
 			// StudyTimetablePeriod endpoints
 			timetable.POST("study-timetable-periods", timetableController.CreateStudyTimetablePeriod)
+			timetable.GET("study-timetable-periods/structured", timetableController.GetStructuredTimetablePeriods)
 			timetable.GET("study-timetable-periods", timetableController.GetStudyTimetablePeriods)
 			timetable.GET("study-timetable-periods/:period_number", timetableController.GetStudyTimetablePeriod)
 			timetable.PUT("study-timetable-periods/:period_number", timetableController.UpdateStudyTimetablePeriod)
