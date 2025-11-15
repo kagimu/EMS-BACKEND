@@ -54,3 +54,27 @@ type StudyingTimeTablePeriodResponse struct {
 	StudyingTimeTableStartTime time.Time `json:"studying_time_table_start_time"`
 	StudyingTimeTableEndTime   time.Time `json:"studying_time_table_end_time"`
 }
+
+type StudyTimetablePeriodItem struct {
+	PeriodNumber string `json:"period_number"`
+	TaskName     string `json:"task_name"`
+	TaskType     string `json:"task_type"`
+	TaskNumber   string `json:"task_number"`
+	StartTime    string `json:"start_time"`
+	EndTime      string `json:"end_time"`
+	TimeSlot     string `json:"time_slot"` // Format: "8:00 AM - 9:00 AM"
+	SlotNumber   string `json:"slot_number"`
+	StreamNumber string `json:"stream_number"`
+	UserNumber   string `json:"user_number"`
+}
+
+type DayPeriods struct {
+	Day     string                     `json:"day"`
+	DayCode int32                      `json:"day_code"`
+	Periods []StudyTimetablePeriodItem `json:"periods"`
+}
+
+type TimetablePeriodsResponse struct {
+	StudyTimetableNumber string       `json:"study_timetable_number"`
+	Days                 []DayPeriods `json:"days"`
+}

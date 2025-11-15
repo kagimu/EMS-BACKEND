@@ -2,10 +2,13 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/repository"
 	uuid "github.com/satori/go.uuid"
@@ -17,6 +20,7 @@ type StudyTimetablePeriodService interface {
 	DeleteStudyTimetablePeriod(periodNumber string) error
 	GetStudyTimetablePeriodByNumber(periodNumber string) (models.StudyTimetablePeriod, error)
 	ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) ([]models.StudyTimetablePeriod, error)
+	GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) (responses.TimetablePeriodsResponse, error)
 }
 
 type studyTimetablePeriodService struct {
@@ -166,6 +170,117 @@ func (s *studyTimetablePeriodService) GetStudyTimetablePeriodByNumber(periodNumb
 
 func (s *studyTimetablePeriodService) ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) ([]models.StudyTimetablePeriod, error) {
 	return s.periodRepo.FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber)
+}
+
+func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) (responses.TimetablePeriodsResponse, error) {
+	// Get all periods
+	periods, err := s.periodRepo.FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber)
+	if err != nil {
+		return responses.TimetablePeriodsResponse{}, err
+	}
+
+	if len(periods) == 0 {
+		return responses.TimetablePeriodsResponse{
+			StudyTimetableNumber: studyTimetableNumber,
+			Days:                 []responses.DayPeriods{},
+		}, nil
+	}
+
+	// Build a map of task types to tasks for quick lookup
+	taskTypeMap := make(map[string]models.TimetableTask)
+	taskTypes := make(map[string]bool)
+	for _, period := range periods {
+		if !taskTypes[period.TaskType] {
+			taskTypes[period.TaskType] = true
+		}
+	}
+
+	// Fetch all tasks that match the task types we found
+	// Note: This assumes we can get tasks by type, which might need adjustment
+	// For now, we'll query all tasks and filter by type
+	allTasks, err := s.taskRepo.FindAllTimetableTasks("")
+	if err == nil {
+		for _, task := range allTasks {
+			if taskTypes[task.Type] {
+				// Use the first task found for this type
+				if _, exists := taskTypeMap[task.Type]; !exists {
+					taskTypeMap[task.Type] = task
+				}
+			}
+		}
+	}
+
+	// Build a map of slots by slot number (we'll need to match by time if we don't have slot number stored)
+	// For now, we'll format the time slot directly from period times
+
+	// Group periods by day
+	dayMap := make(map[string][]models.StudyTimetablePeriod)
+	for _, period := range periods {
+		dayKey := fmt.Sprintf("%s_%d", period.Day, period.DayCode)
+		dayMap[dayKey] = append(dayMap[dayKey], period)
+	}
+
+	// Convert to response structure
+	var days []responses.DayPeriods
+	dayOrder := []string{"monday_1", "tuesday_2", "wednesday_3", "thursday_4", "friday_5", "saturday_6", "sunday_7"}
+
+	for _, dayKey := range dayOrder {
+		periodsForDay, exists := dayMap[dayKey]
+		if !exists {
+			continue
+		}
+
+		// Sort periods by start time
+		sort.Slice(periodsForDay, func(i, j int) bool {
+			return periodsForDay[i].StartTime < periodsForDay[j].StartTime
+		})
+
+		var periodItems []responses.StudyTimetablePeriodItem
+		for _, period := range periodsForDay {
+			task, taskFound := taskTypeMap[period.TaskType]
+			taskName := period.TaskType
+			taskNumber := ""
+			if taskFound {
+				taskName = task.Name
+				taskNumber = task.Number
+			}
+
+			// Format time slot (e.g., "8:00 AM - 9:00 AM")
+			timeSlot := formatTimeSlot(period.StartTime, period.EndTime)
+
+			periodItem := responses.StudyTimetablePeriodItem{
+				PeriodNumber: period.Number,
+				TaskName:     taskName,
+				TaskType:     period.TaskType,
+				TaskNumber:   taskNumber,
+				StartTime:    period.StartTime,
+				EndTime:      period.EndTime,
+				TimeSlot:     timeSlot,
+				SlotNumber:   "", // We don't store slot number in period, would need model update
+				StreamNumber: period.StreamNumber,
+				UserNumber:   period.UserNumber,
+			}
+			periodItems = append(periodItems, periodItem)
+		}
+
+		if len(periodItems) > 0 {
+			dayPeriods := responses.DayPeriods{
+				Day:     periodsForDay[0].Day,
+				DayCode: periodsForDay[0].DayCode,
+				Periods: periodItems,
+			}
+			days = append(days, dayPeriods)
+		}
+	}
+
+	return responses.TimetablePeriodsResponse{
+		StudyTimetableNumber: studyTimetableNumber,
+		Days:                 days,
+	}, nil
+}
+
+func formatTimeSlot(startTime, endTime string) string {
+	return fmt.Sprintf("%s - %s", startTime, endTime)
 }
 
 func mapDayToCode(day string) int32 {
