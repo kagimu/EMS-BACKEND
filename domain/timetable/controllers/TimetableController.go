@@ -129,7 +129,7 @@ func GetStudyTimetablePeriods(c *gin.Context) {
 	day := c.Query("day")
 
 	periodService := getStudyTimetablePeriodService()
-	periods, err := periodService.ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber)
+	periods, err := periodService.ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -139,15 +139,10 @@ func GetStudyTimetablePeriods(c *gin.Context) {
 }
 
 func GetStructuredTimetablePeriods(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
-	}
-
-	userNumber := c.Query("user_number")
-	if userNumber == "" {
-		userNumber = user.Number
 	}
 
 	studyTimetableNumber := c.Query("study_timetable_number")
@@ -155,7 +150,7 @@ func GetStructuredTimetablePeriods(c *gin.Context) {
 	day := c.Query("day")
 
 	periodService := getStudyTimetablePeriodService()
-	structuredResponse, err := periodService.GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber)
+	structuredResponse, err := periodService.GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

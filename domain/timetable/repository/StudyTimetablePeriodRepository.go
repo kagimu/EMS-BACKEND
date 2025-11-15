@@ -12,7 +12,7 @@ type StudyTimetablePeriodRepository interface {
 	UpdateStudyTimetablePeriod(period *models.StudyTimetablePeriod) error
 	DeleteStudyTimetablePeriod(period models.StudyTimetablePeriod) error
 	FindStudyTimetablePeriodByNumber(number string) (models.StudyTimetablePeriod, error)
-	FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) ([]models.StudyTimetablePeriod, error)
+	FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day string) ([]models.StudyTimetablePeriod, error)
 }
 
 type studyTimetablePeriodRepository struct {
@@ -48,7 +48,7 @@ func (r *studyTimetablePeriodRepository) FindStudyTimetablePeriodByNumber(number
 	return period, nil
 }
 
-func (r *studyTimetablePeriodRepository) FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) ([]models.StudyTimetablePeriod, error) {
+func (r *studyTimetablePeriodRepository) FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day string) ([]models.StudyTimetablePeriod, error) {
 	var periods []models.StudyTimetablePeriod
 
 	query := r.DB
@@ -60,9 +60,6 @@ func (r *studyTimetablePeriodRepository) FindStudyTimetablePeriods(studyTimetabl
 	}
 	if day != "" {
 		query = query.Where("day = ?", day)
-	}
-	if userNumber != "" {
-		query = query.Where("user_number = ?", userNumber)
 	}
 
 	if err := query.Find(&periods).Error; err != nil {

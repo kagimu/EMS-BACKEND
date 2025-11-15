@@ -19,8 +19,8 @@ type StudyTimetablePeriodService interface {
 	UpdateStudyTimetablePeriod(periodNumber string, request requests.UpdateStudyTimetablePeriodRequest) error
 	DeleteStudyTimetablePeriod(periodNumber string) error
 	GetStudyTimetablePeriodByNumber(periodNumber string) (models.StudyTimetablePeriod, error)
-	ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) ([]models.StudyTimetablePeriod, error)
-	GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) (responses.TimetablePeriodsResponse, error)
+	ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day string) ([]models.StudyTimetablePeriod, error)
+	GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day string) (responses.TimetablePeriodsResponse, error)
 }
 
 type studyTimetablePeriodService struct {
@@ -168,13 +168,13 @@ func (s *studyTimetablePeriodService) GetStudyTimetablePeriodByNumber(periodNumb
 	return period, nil
 }
 
-func (s *studyTimetablePeriodService) ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) ([]models.StudyTimetablePeriod, error) {
-	return s.periodRepo.FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber)
+func (s *studyTimetablePeriodService) ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day string) ([]models.StudyTimetablePeriod, error) {
+	return s.periodRepo.FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day)
 }
 
-func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber string) (responses.TimetablePeriodsResponse, error) {
+func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day string) (responses.TimetablePeriodsResponse, error) {
 	// Get all periods
-	periods, err := s.periodRepo.FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day, userNumber)
+	periods, err := s.periodRepo.FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day)
 	if err != nil {
 		return responses.TimetablePeriodsResponse{}, err
 	}
