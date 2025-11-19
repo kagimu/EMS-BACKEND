@@ -174,60 +174,15 @@ func (s *studyTimetablePeriodService) ListStudyTimetablePeriods(studyTimetableNu
 
 func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day string) (responses.TimetablePeriodsResponse, error) {
 	// Get all periods
-	periods, err := s.periodRepo.FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day)
-	if err != nil {
-		return responses.TimetablePeriodsResponse{}, err
-	}
-
-	if len(periods) == 0 {
-		return responses.TimetablePeriodsResponse{
-			StudyTimetableNumber: studyTimetableNumber,
-			Days:                 []responses.DayPeriods{},
-		}, nil
-	}
-
-	// Build a map of task types to tasks for quick lookup
-	taskTypeMap := make(map[string]models.TimetableTask)
-	taskTypes := make(map[string]bool)
-	for _, period := range periods {
-		if !taskTypes[period.TaskType] {
-			taskTypes[period.TaskType] = true
-		}
-	}
-
-	// Fetch all tasks that match the task types we found
-	// Note: This assumes we can get tasks by type, which might need adjustment
-	// For now, we'll query all tasks and filter by type
-	allTasks, err := s.taskRepo.FindAllTimetableTasks("")
-	if err == nil {
-		for _, task := range allTasks {
-			if taskTypes[task.Type] {
-				// Use the first task found for this type
-				if _, exists := taskTypeMap[task.Type]; !exists {
-					taskTypeMap[task.Type] = task
-				}
-			}
-		}
-	}
-
-	// Build a map of slots by slot number (we'll need to match by time if we don't have slot number stored)
-	// For now, we'll format the time slot directly from period times
-
-	// Group periods by day
-	dayMap := make(map[string][]models.StudyTimetablePeriod)
-	for _, period := range periods {
-		dayKey := fmt.Sprintf("%s_%d", period.Day, period.DayCode)
-		dayMap[dayKey] = append(dayMap[dayKey], period)
-	}
 
 	// Convert to response structure
 	var days []responses.DayPeriods
-	dayOrder := []string{"monday_1", "tuesday_2", "wednesday_3", "thursday_4", "friday_5", "saturday_6", "sunday_7"}
+	dayOrder := []string{"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"}
 
 	for _, dayKey := range dayOrder {
-		periodsForDay, exists := dayMap[dayKey]
-		if !exists {
-			continue
+		periodsForDay, err := s.periodRepo.FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, dayKey)
+		if err != nil {
+			return responses.TimetablePeriodsResponse{}, err
 		}
 
 		// Sort periods by start time
@@ -235,24 +190,17 @@ func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetab
 			return periodsForDay[i].StartTime < periodsForDay[j].StartTime
 		})
 
-		var periodItems []responses.StudyTimetablePeriodItem
+		var periodItems = make([]responses.StudyTimetablePeriodItem, 0)
 		for _, period := range periodsForDay {
-			task, taskFound := taskTypeMap[period.TaskType]
-			taskName := period.TaskType
-			taskNumber := ""
-			if taskFound {
-				taskName = task.Name
-				taskNumber = task.Number
-			}
 
 			// Format time slot (e.g., "8:00 AM - 9:00 AM")
 			timeSlot := formatTimeSlot(period.StartTime, period.EndTime)
 
 			periodItem := responses.StudyTimetablePeriodItem{
 				PeriodNumber: period.Number,
-				TaskName:     taskName,
+				TaskName:     period.Task,
 				TaskType:     period.TaskType,
-				TaskNumber:   taskNumber,
+				TaskNumber:   period.Number,
 				StartTime:    period.StartTime,
 				EndTime:      period.EndTime,
 				TimeSlot:     timeSlot,
@@ -265,8 +213,8 @@ func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetab
 
 		if len(periodItems) > 0 {
 			dayPeriods := responses.DayPeriods{
-				Day:     periodsForDay[0].Day,
-				DayCode: periodsForDay[0].DayCode,
+				Day:     dayKey,
+				DayCode: mapDayToCode(dayKey),
 				Periods: periodItems,
 			}
 			days = append(days, dayPeriods)
