@@ -77,4 +77,5 @@ type DayPeriods struct {
 type TimetablePeriodsResponse struct {
 	StudyTimetableNumber string       `json:"study_timetable_number"`
 	Days                 []DayPeriods `json:"days"`
+	SLots                []string     `json:"slots"`
 }
