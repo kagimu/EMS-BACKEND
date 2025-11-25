@@ -17,9 +17,15 @@ type ClassResponse struct {
 }
 
 type StudyTimetables struct {
-	Name   string `json:"name"`
-	Number string `json:"number"`
-	Status string `json:"status"`
+	Name         string `json:"name"`
+	Number       string `json:"number"`
+	Status       string `json:"status"`
+	School       string `json:"school"`
+	Campus       string `json:"campus"`
+	CLass        string `json:"class"`
+	Stream       string `json:"stream"`
+	StudyPeriod  string `json:"study_period"`
+	AcademicYear string `json:"academic_year"`
 }
 
 type StudyingTimeBlockResponse struct {
