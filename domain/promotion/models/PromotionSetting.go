@@ -11,7 +11,7 @@ type PromotionSetting struct {
 	gorm.Model
 	Number                    string                  `json:"number" gorm:"size:36;unique;not null"`
 	Name                      string                  `json:"name" gorm:"size:100;not null"`
-	Status                    string                  `json:"status" gorm:"size:20;"`
+	Status                    string                  `json:"status" gorm:"size:200;"`
 	Type                      string                  `json:"type" gorm:"size:50"` //promotion, repeated or demotion
 	NextCampusClassNumber     string                  `json:"next_campus_class_number" gorm:"size:36;not null"`
 	NextCampusClass           classModels.CampusClass `json:"next_class" gorm:"foreignKey:NextCampusClassNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`

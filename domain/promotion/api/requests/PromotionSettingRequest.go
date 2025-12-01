@@ -36,8 +36,8 @@ func (p *PromotionSettingRequest) Validate() error {
 		return errors.New("status is required")
 	}
 
-	if len(p.Status) > 20 {
-		return errors.New("The status should be 20 characters maximum ")
+	if len(p.Status) > 90 {
+		return errors.New("The status should be 900 characters maximum ")
 	}
 
 	if p.Type == "" {
