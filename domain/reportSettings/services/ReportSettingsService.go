@@ -943,7 +943,34 @@ func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumbe
 		return finalStatus, nil
 	}
 
+	finalStatus, err = checkIfRemedial(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
+	finalStatus, err = checkIfProgressed(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
 	finalStatus, err = checkIfRepeat(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
+	finalStatus, err = checkIfDemoted(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
 	if err != nil {
 		return models2.PromotionSetting{}, err
 	}
@@ -986,21 +1013,127 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
 	}
 
-	//fmt.Println("Minimum assessment grade: ", minimumAssessmentGrade.Name)
-
 	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
 		return promotion, nil
 	}
 
 	return models2.PromotionSetting{}, nil
 }
+func checkIfRemedial(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
 
+	//Check remedial
+	checkRemedial, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "remedial", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find remedial configuration, error: " + err.Error())
+	}
+
+	if checkRemedial.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(checkRemedial.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Remedial value not set for " + checkRemedial.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return checkRemedial, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
+func checkIfProgressed(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
+
+	checkProgressed, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "progressed", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find progressed configuration, error: " + err.Error())
+	}
+
+	if checkProgressed.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(checkProgressed.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Progressed value not set for " + checkProgressed.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return checkProgressed, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
 func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
 
 	//Check repeat
-	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat", db)
+	checkRepeat, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat", db)
 	if err != nil {
-		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
+		return models2.PromotionSetting{}, errors.New("Failed to find retained configuration, error: " + err.Error())
+	}
+
+	if checkRepeat.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(checkRepeat.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Retained value not set for " + checkRepeat.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return checkRepeat, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
+func checkIfDemoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
+	//Check demote
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "demoted", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find demoted configuration, error: " + err.Error())
 	}
 
 	if promotion.Number == "" {
@@ -1018,7 +1151,7 @@ func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmen
 	}
 
 	if promotionValue.Number == "" {
-		return models2.PromotionSetting{}, errors.New("Repeat value not set for " + promotion.Name)
+		return models2.PromotionSetting{}, errors.New("Demoted value not set for " + promotion.Name)
 	}
 
 	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)

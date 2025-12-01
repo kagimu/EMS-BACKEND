@@ -849,9 +849,9 @@ func FetchSubjectTeacherComments(context *gin.Context) {
 }
 
 func DeleteSubjectTeacherComment(context *gin.Context) {
-	commentNumber := context.Param("id")
+	commentNumber := context.Param("comment_number")
 	if commentNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number to delete"})
 		return
 	}
 
@@ -867,7 +867,7 @@ func DeleteSubjectTeacherComment(context *gin.Context) {
 func UpdateSubjectTeacherComment(context *gin.Context) {
 	commentNumber := context.Param("number")
 	if commentNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number to update"})
 		return
 	}
 

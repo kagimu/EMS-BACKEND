@@ -3,6 +3,10 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
@@ -15,9 +19,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func CreateMedicalRecord(req request.MedicalRecordRequest) error {
@@ -339,7 +340,6 @@ func CreateNewStudentAndApplication(payload request.StudentRequest, userNumber s
 			return "", errors.New("failed to update student " + err.Error())
 		}
 
-		// update the user details
 		updateUser := authModel.User{
 			FirstName:  payload.SecondName,
 			LastName:   payload.Surname,

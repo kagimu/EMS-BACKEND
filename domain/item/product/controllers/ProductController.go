@@ -126,27 +126,27 @@ func DeleteProduct(c *gin.Context) {
 	// Delete campus items
 	if err := tx.Where("item_number = ?", productNumber).Delete(&models2.CampusItem{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus items"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete campus items", "error": err.Error()})
 		return
 	}
 
 	// Delete product record
 	if err := tx.Delete(&product).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete product"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete product", "error": err.Error()})
 		return
 	}
 
 	// Delete item record
 	if err := tx.Where("number = ?", productNumber).Delete(&itemModels.Item{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete product item"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete product item", "error": err.Error()})
 		return
 	}
 
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit product transaction"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to commit product transaction", "error": err.Error()})
 		return
 	}
 

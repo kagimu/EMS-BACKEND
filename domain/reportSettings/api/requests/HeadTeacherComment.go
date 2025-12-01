@@ -15,12 +15,16 @@ func (r *HeadTeacherCommentRequest) Validate() error {
 		return errors.New("comment is required")
 	}
 
-	if r.MinAggregate == 0 {
+	if r.MinAggregate < 0 {
 		return errors.New("min aggregate is required")
 	}
 
-	if r.MaxAggregate == 0 {
+	if r.MaxAggregate < 0 {
 		return errors.New("max aggregate is required")
+	}
+
+	if r.MaxAggregate < r.MinAggregate {
+		return errors.New("max should be greater than min aggregate")
 	}
 
 	return nil
