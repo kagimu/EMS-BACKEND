@@ -46,9 +46,15 @@ type PromotionService interface {
 	UpdatePromotionSetting(payload requests.PromotionSettingRequest, user *models.User, promotionSettingNumber string) error
 	UpdatePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
 	GetNextPromotedOrDemotedClass(studyPeriodNumber, studentNumber, promotionType, campusClassNumber string) (responses.PromotionDetailedResponse, error)
+	AllPromotions(c *gin.Context)
 }
 
 type promotionService struct{}
+
+func (p *promotionService) AllPromotions(c *gin.Context) {
+	promotions := make([]models2.Promotion, 0)
+	promotions = repositories.f
+}
 
 func (p *promotionService) UpdatePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error {
 
@@ -429,6 +435,10 @@ func (p *promotionService) NewPromotionSetting(promotionSettingsRequest requests
 		CurrentStudyPeriodNumber:  promotionSettingsRequest.CurrentStudyPeriodNumber,
 		CampusCurriculumNumber:    promotionSettingsRequest.CampusCurriculumNumber,
 		CampusLevelNumber:         promotionSettingsRequest.CampusLevelNumber,
+		CurrentAcademicYearNumber: promotionSettingsRequest.CurrentAcademicYearNumber,
+		NextAcademicYearNumber:    nextCampusClass.Number,
+		CurrentLevelNumber:        promotionSettingsRequest.CurrentLevelNumber,
+		NextLevelNumber:           promotionSettingsRequest.NextLevelNumber,
 	}
 
 	err = repositories.SavePromotionSettings(savePromotionSettings)

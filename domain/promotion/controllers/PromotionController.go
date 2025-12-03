@@ -87,23 +87,6 @@ func FetchAllPromotions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": promotions})
 }
 
-func FetchPromotionsByAcademicYear(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	academicYearNumber := c.Query("academic_year_number")
-	var promotions []models.Promotion
-	if err := config.DB.Where("current_academic_year_number = ?", academicYearNumber).Preload("CurrentAcademicYear").Preload("Student").Preload("PromotionSetting").Preload("PromotionSetting.NextClass").Preload("PromotionSetting.PreviousClass").Preload("Student.PreferredCampus").Find(&promotions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotions"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": promotions})
-}
-
 func EditPromotion(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
@@ -125,20 +108,6 @@ func EditPromotion(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No promotion found with the specified number"})
 		return
 	}
-
-	/*updatedPromotion := models.Promotion{
-		PromotionSettingNumber:    payload.PromotionSettingNumber,
-		UserNumber:             payload.UserNumber,
-		Status:                    payload.Status,
-		Reason:                    payload.Reason,
-		CurrentAcademicYearNumber: payload.CurrentAcademicYearNumber,
-		UserNumber:                user.Number,
-	}
-
-	if err := config.DB.Model(&promotion).Where("number = ?", promotionNumber).Updates(updatedPromotion).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update promotion"})
-		return
-	}*/
 
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": promotion})
 }

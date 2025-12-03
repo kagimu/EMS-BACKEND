@@ -24,4 +24,8 @@ type PromotionSetting struct {
 	CurrentStudyPeriodNumber  string                  `json:"current_study_period_number" gorm:"size:36"`
 	CampusCurriculumNumber    string                  `json:"campus_curriculum_number" gorm:"size:36"`
 	CampusLevelNumber         string                  `json:"campus_level_number" gorm:"size:36"`
+	CurrentAcademicYearNumber string                  `json:"current_academic_year_number" gorm:"size:36"`
+	CurrentLevelNumber        string                  `json:"current_level_number" gorm:"size:36"`
+	NextLevelNumber           string                  `json:"next_level_number" gorm:"size:36"`
+	NextAcademicYearNumber    string                  `json:"next_academic_year_number" gorm:"size:36"`
 }
