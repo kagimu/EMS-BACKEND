@@ -52,8 +52,7 @@ type PromotionService interface {
 type promotionService struct{}
 
 func (p *promotionService) AllPromotions(c *gin.Context) {
-	promotions := make([]models2.Promotion, 0)
-	promotions = repositories.f
+
 }
 
 func (p *promotionService) UpdatePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error {
