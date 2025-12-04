@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
@@ -68,6 +69,7 @@ func QueryByCampusClassNumber(campusClassNumber string) (models.ClassReportTempl
 
 	if err := db.
 		Where("campus_class_number = ? ", campusClassNumber).
+		Order("created_at DESC").
 		First(&queryResults).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
