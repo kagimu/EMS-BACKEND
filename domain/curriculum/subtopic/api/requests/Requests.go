@@ -46,9 +46,9 @@ func (p *SubTopicInfo) Validate() error {
 		return errors.New("topic is required")
 	}
 
-	if p.EstimatedTime == "" {
-		return errors.New("estimated time is required")
-	}
+	//if p.EstimatedTime == "" {
+	//	return errors.New("estimated time is required")
+	//}
 
 	if p.TeachingSequenceCode == "" {
 		return errors.New("teaching sequence code is required")

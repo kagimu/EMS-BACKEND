@@ -1,10 +1,11 @@
 package models
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
-	"time"
 )
 
 type (
@@ -16,6 +17,7 @@ type (
 		CurriculumNumber string                     `json:"curriculum_number" gorm:"size:36;not null"`
 		UserNumber       string                     `json:"user_number" gorm:"size:36;not null"`
 		SubTopicNumber   string                     `json:"sub_topic_number" gorm:"size:36;not null"`
+		EstimatedTime    int64                      `json:"estimated_time"`
 		CreatedAt        time.Time                  `json:"created_at"`
 		UpdatedAt        time.Time                  `json:"updated_at"`
 		Curriculum       curriculumModel.Curriculum `gorm:"foreignKey:CurriculumNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`

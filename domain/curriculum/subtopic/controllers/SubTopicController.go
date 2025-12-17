@@ -44,7 +44,7 @@ func NewSubTopic(context *gin.Context) {
 
 	name := topicInfo.Name
 	topicNumber := topicInfo.TopicNumber
-	estimatedTime := topicInfo.EstimatedTime
+	//estimatedTime := topicInfo.EstimatedTime
 	curriculumNumber := topicInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
@@ -91,8 +91,6 @@ func NewSubTopic(context *gin.Context) {
 		return
 	}
 
-	estTime, err := strconv.ParseInt(estimatedTime, 10, 64)
-
 	if err != nil {
 		// Handle the error if the string cannot be converted to int64
 		//return err
@@ -103,7 +101,6 @@ func NewSubTopic(context *gin.Context) {
 	saveSubtopic := models2.SubTopic{
 		Number:              number,
 		Name:                name,
-		EstimatedTime:       estTime,
 		TopicNumber:         topicNumber,
 		UserNumber:          userNumber,
 		Code:                codeNo,
@@ -198,7 +195,10 @@ func FetchSubTopic(context *gin.Context) {
 									SubTopicNumber:         refList.SubTopicNumber,
 									UserNumber:             refList.UserNumber,
 								})
+
 							}
+
+							totalConceptsTime, _ := curriculum.GetSubTopicTotalEstimatedTime(subtopicList.Number)
 
 							subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
 								Number:        subtopicList.Number,
@@ -206,7 +206,7 @@ func FetchSubTopic(context *gin.Context) {
 								SortCode:      int64(idx + 1),
 								Name:          subtopicList.Name,
 								UserNumber:    subtopicList.UserNumber,
-								EstimatedTime: subtopicList.EstimatedTime,
+								EstimatedTime: totalConceptsTime,
 								TopicNumber:   subtopicList.TopicNumber,
 								ReferenceInfo: referenceInfo_,
 							})
@@ -401,7 +401,7 @@ func DeleteSubTopic(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete sub topic "+err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete sub topic " + err.Error()})
 		return
 	}
 

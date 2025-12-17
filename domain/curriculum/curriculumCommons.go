@@ -125,6 +125,14 @@ func FetchSubTopicReferences(subtopicNumber string) ([]models.CurriculumSubtopic
 	return references, errInfo
 
 }
+func GetSubTopicTotalEstimatedTime(subtopicNumber string) (int64, error) {
+	var totalConceptsTime int64
+	err := config.DB.Model(&conceptModels.Concept{}).Where("sub_topic_number = ?", subtopicNumber).Select("COALESCE(sum(estimated_time),0)").Scan(&totalConceptsTime).Error
+	if err != nil {
+		return 0, err
+	}
+	return totalConceptsTime, nil
+}
 
 func scopeFilter(tableType, number string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
