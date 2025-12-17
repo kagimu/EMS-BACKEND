@@ -845,7 +845,8 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 	mostRecentPayment, err := invoiceRepositories.GetMostRecentTransaction(userNumber)
 	if err == nil {
 		mostRecent.PaidAmount = mostRecentPayment.Amount
-		mostRecent.PaidDate = mostRecentPayment.CreatedAt.Format(time.DateOnly)
+		mostRecent.PaidDate = mostRecentPayment.IssueDate.Format(time.DateOnly)
+		mostRecent.DateReceived = mostRecentPayment.CreatedAt.Format(time.DateOnly)
 	} else {
 		errorDesc = err.Error()
 	}
