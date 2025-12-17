@@ -185,15 +185,16 @@ func FetchConcept(context *gin.Context) {
 								})
 							}
 
+							totalConceptsTime, _ := curriculum.GetSubTopicTotalEstimatedTime(subtopicList.Number)
 							subTopicInfo_ = append(subTopicInfo_, responses7.SubTopicList{
-								Number:     subtopicList.Number,
-								Code:       subtopicList.Code,
-								SortCode:   int64(idx + 1),
-								Name:       subtopicList.Name,
-								UserNumber: subtopicList.UserNumber,
-								//EstimatedTime: subtopicList.EstimatedTime,
-								TopicNumber: subtopicList.TopicNumber,
-								Concept:     concept_,
+								Number:        subtopicList.Number,
+								Code:          subtopicList.Code,
+								SortCode:      int64(idx + 1),
+								Name:          subtopicList.Name,
+								UserNumber:    subtopicList.UserNumber,
+								EstimatedTime: totalConceptsTime,
+								TopicNumber:   subtopicList.TopicNumber,
+								Concept:       concept_,
 							})
 						}
 

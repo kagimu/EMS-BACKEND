@@ -516,7 +516,6 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 		Number:              subtopicNo,
 		Name:                info.SubTopic,
 		Code:                subTopicCode,
-		EstimatedTime:       estTime,
 		TopicNumber:         topicNumber,
 		CurriculumNumber:    curriculumNumber,
 		UserNumber:          userNumber,
@@ -565,6 +564,7 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 		SubTopicNumber:   subTopicNumber,
 		CurriculumNumber: curriculumNumber,
 		UserNumber:       userNumber,
+		EstimatedTime:    estTime,
 	}
 
 	var conceptInfo conceptModels.Concept
