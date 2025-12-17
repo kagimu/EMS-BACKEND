@@ -15,4 +15,5 @@ type MostRecent struct {
 	InvoiceDate   string  `json:"invoice_date"`
 	PaidAmount    float64 `json:"paid_amount"`
 	PaidDate      string  `json:"paid_date"`
+	DateReceived  string  `json:"date_received"`
 }
