@@ -6,6 +6,7 @@ type FinancialSummaryResponse struct {
 	TotalPayments      int64      `json:"total_payments"`
 	TotalPaidAmount    float64    `json:"total_paid_amount"`
 	TotalBalanceAmount float64    `json:"total_balance_amount"`
+	TotalCreditAmount  float64    `json:"total_credit_amount"`
 	MostRecent         MostRecent `json:"most_recent"`
 }
 

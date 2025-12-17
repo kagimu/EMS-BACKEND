@@ -824,7 +824,12 @@ func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse,
 		errorDesc = err.Error()
 	}
 
-	financialSummaryResponse.TotalBalanceAmount = financialSummaryResponse.TotalInvoiceAmount - financialSummaryResponse.TotalPaidAmount
+	totalBalance := financialSummaryResponse.TotalInvoiceAmount - financialSummaryResponse.TotalPaidAmount
+	if totalBalance >= 0 {
+		financialSummaryResponse.TotalBalanceAmount = totalBalance
+	} else {
+		financialSummaryResponse.TotalCreditAmount = -1 * totalBalance
+	}
 
 	mostRecent := responses.MostRecent{}
 
