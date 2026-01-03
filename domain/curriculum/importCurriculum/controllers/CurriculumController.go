@@ -224,10 +224,11 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 				Topic:                getValueAtIndex(row, 10),
 				SubTopicCode:         getValueAtIndex(row, 11),
 				SubTopic:             getValueAtIndex(row, 12),
-				EstimatedTime:        getValueAtIndex(row, 13),
-				TeachingSequenceCode: getValueAtIndex(row, 14),
-				ConceptCode:          getValueAtIndex(row, 15),
-				Concept:              getValueAtIndex(row, 16),
+				TeachingSequenceCode: getValueAtIndex(row, 13),
+				ConceptCode:          getValueAtIndex(row, 14),
+				Concept:              getValueAtIndex(row, 15),
+				EstimatedTime:        getValueAtIndex(row, 16),
+				RequiredMaterials:    getValueAtIndex(row, 17),
 			}
 			curriculumInfo.Prepare()
 			saveCurriculumData(curriculumInfo, idx, userNumber, curriculumNumber)
@@ -558,13 +559,14 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 	conceptNo := uuid.NewV4().String()
 	///save user data
 	saveConcept := conceptModels.Concept{
-		Number:           conceptNo,
-		Name:             info.Concept,
-		Code:             conceptCode,
-		SubTopicNumber:   subTopicNumber,
-		CurriculumNumber: curriculumNumber,
-		UserNumber:       userNumber,
-		EstimatedTime:    estTime,
+		Number:            conceptNo,
+		Name:              info.Concept,
+		Code:              conceptCode,
+		SubTopicNumber:    subTopicNumber,
+		CurriculumNumber:  curriculumNumber,
+		UserNumber:        userNumber,
+		EstimatedTime:     estTime,
+		RequiredMaterials: info.RequiredMaterials,
 	}
 
 	var conceptInfo conceptModels.Concept

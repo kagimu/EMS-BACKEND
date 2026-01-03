@@ -7,12 +7,13 @@ import (
 )
 
 type ConceptInfo struct {
-	Code             string `json:"code"`
-	Name             string `json:"name"`
-	SubTopicNumber   string `json:"sub_topic_number"`
-	CurriculumNumber string `json:"curriculum_number"`
-	ConceptNumber    string `json:"concept_number"`
-	EstimatedTime    int64  `json:"estimated_time"`
+	Code              string `json:"code"`
+	Name              string `json:"name"`
+	SubTopicNumber    string `json:"sub_topic_number"`
+	CurriculumNumber  string `json:"curriculum_number"`
+	ConceptNumber     string `json:"concept_number"`
+	EstimatedTime     int64  `json:"estimated_time"`
+	RequiredMaterials string `json:"required_materials"`
 }
 
 type ConceptDelRequest struct {
