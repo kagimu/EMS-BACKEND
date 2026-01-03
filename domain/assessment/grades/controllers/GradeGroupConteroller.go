@@ -73,7 +73,7 @@ func UpdateGradeGroup(ctx *gin.Context) {
 	var req requests.UpdateGradeGroupRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 

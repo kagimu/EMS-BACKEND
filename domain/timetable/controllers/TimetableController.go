@@ -26,7 +26,7 @@ func CreateStudyTimetablePeriod(c *gin.Context) {
 
 	var payload requests.CreateStudyTimetablePeriodRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -54,7 +54,7 @@ func UpdateStudyTimetablePeriod(c *gin.Context) {
 
 	var payload requests.UpdateStudyTimetablePeriodRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -362,7 +362,7 @@ func CreateTimetableTask(c *gin.Context) {
 
 	var payload requests.TimetableTaskRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -392,7 +392,7 @@ func UpdateTimetableTask(c *gin.Context) {
 
 	var payload requests.UpdateTimetableTaskRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -486,7 +486,7 @@ func CreateTimetableSlot(c *gin.Context) {
 
 	var payload requests.TimetableSlotRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -516,7 +516,7 @@ func UpdateTimetableSlot(c *gin.Context) {
 
 	var payload requests.UpdateTimetableSlotRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 

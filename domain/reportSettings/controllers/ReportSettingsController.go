@@ -34,7 +34,7 @@ func CreateReportSettings(c *gin.Context) {
 
 	var payload requests.ReportSettingsRequest
 	if err = c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -87,7 +87,7 @@ func CreatReportColumn(ctx *gin.Context) {
 
 	var payload requests.ReportColumnRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -135,7 +135,7 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 
 	var payload requests.ReportColumnAssessmentRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -346,7 +346,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 func CreateReportScore(ctx *gin.Context) {
 	var payload requests.ReportScoreRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -465,7 +465,7 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 func GenerateReportSummary(ctx *gin.Context) {
 	var payload requests.GenerateReportSummaryRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -490,7 +490,7 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 	reportSettingNumber := ctx.Param("report_setting_number")
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -527,7 +527,7 @@ func CreateTeachersComment(ctx *gin.Context) {
 	var payload requests.TeacherCommentRequest
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -583,7 +583,7 @@ func UpdateReportSettings(context *gin.Context) {
 
 	var payload requests.UpdateReportSettingsRequest
 	if err = context.ShouldBindJSON(&payload); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -693,7 +693,7 @@ func UpdateReportColumnAssessment(context *gin.Context) {
 
 	var payload requests.ReportColumnAssessmentUpdateRequest
 	if err := context.ShouldBindJSON(&payload); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 

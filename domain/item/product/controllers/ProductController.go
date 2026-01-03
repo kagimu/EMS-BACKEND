@@ -28,7 +28,7 @@ func SaveProduct(c *gin.Context) {
 
 	var payload requests.ProductRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input - " + err.Error()})
 		return
 	}
 
@@ -55,7 +55,7 @@ func EditProduct(c *gin.Context) {
 
 	var payload requests.ProductRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
