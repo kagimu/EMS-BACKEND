@@ -17,5 +17,6 @@ type (
 		SubjectClusterNumber string `json:"subject_cluster_number"`
 		LearningAreaNumber   string `json:"learning_area_number"`
 		EstimatedTime        int64  `json:"estimated_time"`
+		RequiredMaterials    string `json:"required_materials"`
 	}
 )

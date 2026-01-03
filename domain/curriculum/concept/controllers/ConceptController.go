@@ -85,13 +85,14 @@ func NewConcept(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveConcept := conceptModel.Concept{
-		Number:           number,
-		Name:             name,
-		SubTopicNumber:   subtopicNumber,
-		UserNumber:       userNumber,
-		Code:             codeNo,
-		CurriculumNumber: curriculumNumber,
-		EstimatedTime:    conceptInfo.EstimatedTime,
+		Number:            number,
+		Name:              name,
+		SubTopicNumber:    subtopicNumber,
+		UserNumber:        userNumber,
+		Code:              codeNo,
+		CurriculumNumber:  curriculumNumber,
+		EstimatedTime:     conceptInfo.EstimatedTime,
+		RequiredMaterials: conceptInfo.RequiredMaterials,
 	}
 	config.DB.Save(&saveConcept)
 
@@ -175,13 +176,14 @@ func FetchConcept(context *gin.Context) {
 							var concept_ []responses.ConceptList
 							for _, list := range conceptResp {
 								concept_ = append(concept_, responses.ConceptList{
-									Number:         list.Number,
-									Name:           list.Name,
-									Code:           list.Code,
-									UserNumber:     list.UserNumber,
-									SubTopicNumber: list.SubTopicNumber,
-									SubTopicName:   list.SubTopic.Name,
-									EstimatedTime:  list.EstimatedTime,
+									Number:            list.Number,
+									Name:              list.Name,
+									Code:              list.Code,
+									UserNumber:        list.UserNumber,
+									SubTopicNumber:    list.SubTopicNumber,
+									SubTopicName:      list.SubTopic.Name,
+									EstimatedTime:     list.EstimatedTime,
+									RequiredMaterials: list.RequiredMaterials,
 								})
 							}
 

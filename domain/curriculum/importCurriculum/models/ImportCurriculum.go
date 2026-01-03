@@ -38,6 +38,7 @@ type (
 		EstimatedTime        string
 		ConceptCode          string
 		TeachingSequenceCode string
+		RequiredMaterials    string
 	}
 )
 
