@@ -111,6 +111,7 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 			EndTime:              slot.EndTime,
 			TaskType:             task.Type,
 			UserNumber:           userNumber,
+			Task:                 task.Name,
 		}
 
 		if err := s.periodRepo.SaveStudyTimetablePeriod(period); err != nil {
