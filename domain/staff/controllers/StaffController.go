@@ -20,7 +20,7 @@ func AttachStaffToStream(c *gin.Context) {
 
 	var payload requests.StreamTeacherRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 

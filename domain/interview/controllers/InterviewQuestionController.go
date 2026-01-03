@@ -24,7 +24,7 @@ func CreateInterviewQuestion(c *gin.Context) {
 
 	var payload requests.InterviewQuestionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -122,7 +122,7 @@ func EditInterviewQuestion(c *gin.Context) {
 
 	var payload requests.InterviewQuestionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
