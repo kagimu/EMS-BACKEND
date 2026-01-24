@@ -905,10 +905,11 @@ func ExportCurriculum(context *gin.Context) {
 	_ = f.SetCellValue("Sheet2", "D5", "Topic Name")
 	_ = f.SetCellValue("Sheet2", "E5", "Subtopic Code")
 	_ = f.SetCellValue("Sheet2", "F5", "Subtopic Name (Lesson)")
-	_ = f.SetCellValue("Sheet2", "G5", "Estimated Time Load (Minutes)")
-	_ = f.SetCellValue("Sheet2", "H5", "Teaching Sequence Code")
-	_ = f.SetCellValue("Sheet2", "I5", "Concept Code")
-	_ = f.SetCellValue("Sheet2", "J5", "Concept Name")
+	_ = f.SetCellValue("Sheet2", "G5", "Teaching Sequence Code")
+	_ = f.SetCellValue("Sheet2", "H5", "Concept Code")
+	_ = f.SetCellValue("Sheet2", "I5", "Concept Name")
+	_ = f.SetCellValue("Sheet2", "J5", "Estimated Time Load (Minutes)")
+	_ = f.SetCellValue("Sheet2", "K5", "Required Materials")
 
 	lstLA := learningAreaResp[0]
 
@@ -1013,16 +1014,17 @@ func ExportCurriculum(context *gin.Context) {
 						}
 
 						// Write data to Excel row
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), strandCode)                 // Strand Code
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), strandName)                 // Strand Name
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), topicCode)                  // Topic Code
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), topicName)                  // Topic Name
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicCode)               // Subtopic Code
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicName)               // Subtopic Name (Lesson)
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("G%d", rowCounter), subtopicList.EstimatedTime) // Estimated Time Load (Minutes)
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("H%d", rowCounter), "")                         // Teaching Sequence Code (empty for now)
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("I%d", rowCounter), concept.Code)               // Concept Code
-						_ = f.SetCellValue("Sheet2", fmt.Sprintf("J%d", rowCounter), concept.Name)               // Concept Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), strandCode)                // Strand Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), strandName)                // Strand Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), topicCode)                 // Topic Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), topicName)                 // Topic Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicCode)              // Subtopic Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicName)              // Subtopic Name (Lesson)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("G%d", rowCounter), "")                        // Teaching Sequence Code (empty for now)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("H%d", rowCounter), concept.Code)              // Concept Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("I%d", rowCounter), concept.Name)              // Concept Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("J%d", rowCounter), concept.EstimatedTime)     // Estimated Time Load (Minutes)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("K%d", rowCounter), concept.RequiredMaterials) // Required materials
 
 						rowCounter++
 					}
@@ -1099,7 +1101,7 @@ func ExportCurriculum(context *gin.Context) {
 		},
 	})
 
-	for col := 'A'; col <= 'J'; col++ {
+	for col := 'A'; col <= 'K'; col++ {
 		cellRef := fmt.Sprintf("%c5", col)
 		f.SetCellStyle("Sheet2", cellRef, cellRef, headerStyle)
 	}
@@ -1121,7 +1123,7 @@ func ExportCurriculum(context *gin.Context) {
 
 	// Apply borders to data rows (from row 6 to the last row)
 	for row := 6; row < rowCounter; row++ {
-		for col := 'A'; col <= 'J'; col++ {
+		for col := 'A'; col <= 'K'; col++ {
 			cellRef := fmt.Sprintf("%c%d", col, row)
 			style, _ := f.NewStyle(&excelize.Style{
 				Border: borderStyle,
