@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
@@ -60,6 +62,23 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 	if request.StreamNumber == "" {
 		return errors.New("stream number is required")
 	}
+	stream, err := repositories.GetStreamByNumber(request.StreamNumber)
+
+	if err != nil {
+		return err
+	}
+
+	campusClass, err := repositories.GetCampusClassByNumber(stream.CampusClassNumber)
+
+	if err != nil {
+		return err
+	}
+
+	campus, err := repositories2.GetCampusByNumber(campusClass.CampusNumber)
+
+	if err != nil {
+		return err
+	}
 
 	studyTimetable := models.StudyTimetable{
 		Number:            uuid.NewV4().String(),
@@ -68,6 +87,9 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 		UserNumber:        userNumber,
 		StreamNumber:      request.StreamNumber,
 		StudyPeriodNumber: request.StudyPeriodNumber,
+		CampusNumber:      campusClass.CampusNumber,
+		ClassNumber:       campusClass.ClassNumber,
+		SchoolNumber:      campus.SchoolNumber,
 	}
 
 	if err := s.timetableRepo.SaveStudyTimetable(studyTimetable); err != nil {

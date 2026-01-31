@@ -3,16 +3,18 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
-	"os"
-	"time"
 )
 
 // Initialize the timezone globally
@@ -25,14 +27,14 @@ func init() {
 }
 
 func main() {
-	/*err := godotenv.Load(".env")
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
-	}*/
+	}
 
 	gin.SetMode(gin.DebugMode)
 
-	err := os.Setenv("TZ", "Africa/Nairobi")
+	err = os.Setenv("TZ", "Africa/Nairobi")
 	if err != nil {
 		return
 	}
