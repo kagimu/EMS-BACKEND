@@ -860,6 +860,9 @@ func SetupRoutes() *gin.Engine {
 			students.GET("family-structure/:student_number", studentController.FetchFamilyStructure)
 			students.POST("emergency-information", studentController.CreateEmergencyInformation)
 			students.GET("emergency-information/:student_number", studentController.FetchEmergencyInformation)
+			students.POST("bio-data", studentController.UploadStudentBioData)
+			students.GET("bio-data/:student_number", studentController.GetStudentBioData)
+			students.DELETE("bio-data/:student_number", studentController.DeleteStudentBioData)
 		}
 
 		catering := main.Group("catering")
