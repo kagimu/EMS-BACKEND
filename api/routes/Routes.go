@@ -570,6 +570,7 @@ func SetupRoutes() *gin.Engine {
 			admission.GET("", admissionController.FetchAdmissions)
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 			admission.GET("items/:admission_number", admissionController.FetchItemsAddedOnAdmission)
+			admission.POST("admission-requirements", admissionController.NewAdmissionRequirementController)
 
 		}
 

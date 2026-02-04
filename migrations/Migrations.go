@@ -229,6 +229,7 @@ func Init() error {
 		&reportSettings.SubjectGroup{},
 		&reportSettings.GroupAssessmentArea{},
 		&assessmentModel.ScheduledNarrativeScriptMarkingGuide{},
+		&admissionModel.AdmissionRequirement{},
 	)
 
 	if err != nil {
