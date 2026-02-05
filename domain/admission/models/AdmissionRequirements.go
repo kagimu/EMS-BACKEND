@@ -9,7 +9,7 @@ import (
 type AdmissionRequirement struct {
 	gorm.Model
 	Number             string    `json:"number" gorm:"size:36;primaryKey"`
-	ItemNumber         string    `json:"item_number" gorm:"type:text;not null"`
+	ItemNumber         string    `json:"item_number" gorm:"size:36;not null"`
 	CampusClassNumber  string    `json:"campus_class_number" gorm:"size:36;"`
 	StudyPeriodNumber  string    `json:"study_period_number" gorm:"size:36;"`
 	AcademicYearNumber string    `json:"academic_year_number" gorm:"size:36;not null"`

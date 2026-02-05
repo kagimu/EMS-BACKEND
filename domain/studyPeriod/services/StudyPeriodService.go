@@ -221,7 +221,7 @@ func prepareClasses(classes []string, period studyModels.StudyPeriod, tx *gorm.D
 			continue
 		}
 
-		//Attach class to study period
+		//Attach class to studyperiod
 		err = repositories.SaveClassStudyPeriod(studyModels.ClassStudyPeriod{
 			ClassNumber:       classNumber,
 			StudyPeriodNumber: period.Number,
