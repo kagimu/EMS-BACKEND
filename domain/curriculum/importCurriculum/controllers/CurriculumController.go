@@ -212,6 +212,8 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 		fmt.Println(err)
 		return
 	}
+	fmt.Println("Reading rows successfully!")
+	fmt.Println("Number of rows:", len(rows))
 
 	for idx, row := range rows {
 		if idx > 0 {
