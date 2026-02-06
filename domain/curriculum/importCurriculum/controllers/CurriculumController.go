@@ -178,13 +178,18 @@ func ImportCurriculum(context *gin.Context) {
 	}
 	config.DB.Save(&saveFileData)
 
+	fmt.Println("File uploaded successfully!")
+
 	//read now the Excel file
 	readExcelFile(path, userNumber, curriculumNumber)
+
+	fmt.Println("Excel file read successfully!")
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
 }
 
 func readExcelFile(filePath string, userNumber string, curriculumNumber string) {
+	fmt.Println("Reading Excel File")
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
