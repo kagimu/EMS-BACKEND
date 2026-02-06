@@ -220,7 +220,7 @@ func CreateCurriculumReference(context *gin.Context) {
 				// If any error occurs, rollback the transaction
 				tx.Rollback()
 				// Handle or return the error as needed
-				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference"})
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference " + err.Error()})
 				return
 			}
 		}
@@ -229,11 +229,11 @@ func CreateCurriculumReference(context *gin.Context) {
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create reference!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create reference! " + err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Success"})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference Created Successfully!"})
 }
 
 func CreateMaterialSubType(context *gin.Context) {
