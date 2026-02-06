@@ -215,6 +215,10 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 
 	for idx, row := range rows {
 		if idx > 0 {
+			fmt.Println("Processing row:", idx)
+			fmt.Println("Teaching sequence code: ", getValueAtIndex(row, 13))
+			fmt.Println("Estimated time: ", getValueAtIndex(row, 16))
+			fmt.Println("Required materials: ", getValueAtIndex(row, 17))
 			curriculumInfo := models5.ExcelCurriculumInfo{
 				LearningAreaCode:     getValueAtIndex(row, 0),
 				LearningArea:         getValueAtIndex(row, 1),
@@ -540,6 +544,8 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 			fmt.Println("Insertion failed:", err)
 			return
 		}
+
+		fmt.Println("Subtopic saved successfully")
 	}
 
 	//-------------
