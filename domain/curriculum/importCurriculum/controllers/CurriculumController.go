@@ -159,6 +159,7 @@ func ImportCurriculum(context *gin.Context) {
 	fileName := name + extension
 	path := "fileRepo/excelFile/" + fileName
 
+	fmt.Println("File Name:", fileName)
 	err = context.SaveUploadedFile(excelFile, path)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
@@ -191,6 +192,7 @@ func ImportCurriculum(context *gin.Context) {
 func readExcelFile(filePath string, userNumber string, curriculumNumber string) {
 	fmt.Println("Reading Excel File")
 	//f, err := excelize.OpenFile("Book1.xlsx")
+
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
 		fmt.Println(err)
