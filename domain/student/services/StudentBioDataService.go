@@ -68,8 +68,8 @@ func GetStudentBioDataByStudentNumber(studentNumber string) ([]models.StudentBio
 }
 
 // DeleteStudentBioData deletes bio data and the associated file
-func DeleteStudentBioData(studentNumber string) error {
-	if studentNumber == "" {
+func DeleteStudentBioData(number string) error {
+	if number == "" {
 		return errors.New("student_number is required")
 	}
 
@@ -77,14 +77,14 @@ func DeleteStudentBioData(studentNumber string) error {
 	bioDataRepository := repositories.NewStudentBioDataRepository(db)
 
 	// Get bio data to retrieve file path
-	bioData, err := bioDataRepository.GetStudentBioDataByNumber(studentNumber)
+	bioData, err := bioDataRepository.GetStudentBioDataByNumber(number)
 	if err != nil {
 		db.Rollback()
 		return err
 	}
 
 	// Delete from database
-	if err := bioDataRepository.DeleteStudentBioDataByNumber(studentNumber); err != nil {
+	if err := bioDataRepository.DeleteStudentBioDataByNumber(number); err != nil {
 		db.Rollback()
 		return err
 	}

@@ -100,9 +100,9 @@ func GetStudentBioData(c *gin.Context) {
 
 // DeleteStudentBioData deletes bio data for a specific student
 func DeleteStudentBioData(c *gin.Context) {
-	studentNumber := c.Param("student_number")
+	number := c.Param("number")
 
-	if studentNumber == "" {
+	if number == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
 			"message": "student_number is required",
@@ -110,7 +110,7 @@ func DeleteStudentBioData(c *gin.Context) {
 		return
 	}
 
-	err := services.DeleteStudentBioData(studentNumber)
+	err := services.DeleteStudentBioData(number)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
