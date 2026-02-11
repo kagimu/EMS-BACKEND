@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -12,14 +13,14 @@ import (
 type AdmissionRepository interface {
 	FindAdmissionByStudentNumber(studentNumber string, txn ...*gorm.DB) (admissionModel.Admission, error)
 	SaveAdmission(admission admissionModel.Admission, txn ...*gorm.DB) error
-	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error)
+	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error)
 	FindAdmissionsByStreamNumber(streamNumber string, txn ...*gorm.DB) ([]admissionModel.Admission, error)
 }
 
 type admissionRepository struct {
 }
 
-func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error) {
+func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error) {
 
 	db := config.DB
 	if len(txn) > 0 {
@@ -35,7 +36,6 @@ func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, stud
 			filters.ByAnyField("admissions.study_period_number", studyPeriodNumber),
 			filters.ByAnyField("admissions.campus_number", campusNumber),
 			filters.ByAnyField("admissions.stream_number", streamNumber),
-			filters.ByAnyField("admissions.interview_number", interviewNumber),
 			filters.ByAnyField("admissions.school_number", schoolNumber),
 			filters.ByAnyField("admissions.campus_class_number", campusClassNumber),
 			filters.ByParent("applications.user_number", user),
