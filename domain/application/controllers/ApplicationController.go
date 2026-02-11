@@ -1,14 +1,17 @@
 package controllers
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -175,9 +178,12 @@ func FetchApplicationByNumber(c *gin.Context, applicationNumber string) (*models
 func SubmitApplication(context *gin.Context) {
 
 	var applicationNumber = context.Param("application_number")
-	applicationRepo := repository.NewApplicationRepositoryImpl(config.DB)
+	tx := config.DB.Begin()
+
+	applicationRepo := repository.NewApplicationRepositoryImpl(tx)
 	application, err := applicationRepo.FindApplicationByNumber(applicationNumber)
 	if err != nil {
+		tx.Rollback()
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Application not found error " + err.Error()})
 		return
 	}
@@ -185,9 +191,27 @@ func SubmitApplication(context *gin.Context) {
 	err = applicationRepo.UpdateApplicationStatus(application, constants.StatusSubmitted)
 
 	if err != nil {
+		tx.Rollback()
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application " + err.Error()})
 		return
 	}
+
+	// send email to parents
+	var parentRepo = repositories.NewParentRepositoryImpl(config.DB)
+	var parent, _ = parentRepo.GetParentByApplicationNumber(application.Number)
+
+	d := emailSender.Info{Email: parent.Email, MailType: "WholesomeEd: Application for you child has been submitted", UserName: parent.Surname, CurrentYear: time.Now().Year(), Type: "application-submitted"}
+	err = d.SendEmail()
+	if err != nil {
+		// If any error occurs, rollback the transaction
+		tx.Rollback()
+		// Handle or return the error as needed
+		//fmt.Println(fmt.Printf("Sending mail error %s\n", err.Error()))
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email\n" + err.Error()})
+		return
+	}
+
+	tx.Commit()
 
 	context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully"))
 }
