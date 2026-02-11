@@ -10,6 +10,7 @@ import (
 type AdmissionRequirementsRequest struct {
 	ItemNumbers        []string `json:"item_numbers" binding:"required"`
 	ClassNumber        string   `json:"class_number" binding:"required"`
+	CampusNumber       string   `json:"campus_number" binding:"required"`
 	StudyPeriodNumber  string   `json:"study_period_number" binding:"required"`
 	AcademicYearNumber string   `json:"academic_year_number" binding:"required"`
 	SchoolNumber       string   `json:"school_number" binding:"required"`
@@ -24,6 +25,9 @@ func (a *AdmissionRequirementsRequest) Validate() error {
 	}
 	if a.ClassNumber == "" {
 		return errors.New("class number is required")
+	}
+	if a.CampusNumber == "" {
+		return errors.New("campus number is required")
 	}
 	if a.AcademicYearNumber == "" {
 		return errors.New("academic year number is required")
@@ -42,6 +46,7 @@ func (a *AdmissionRequirementsRequest) ToModels(userNumber string) []models.Admi
 			Number:             uuid.NewV4().String(),
 			ItemNumber:         itemNumber,
 			CampusClassNumber:  a.ClassNumber,
+			CampusNumber:       a.CampusNumber,
 			StudyPeriodNumber:  a.StudyPeriodNumber,
 			AcademicYearNumber: a.AcademicYearNumber,
 			SchoolNumber:       a.SchoolNumber,

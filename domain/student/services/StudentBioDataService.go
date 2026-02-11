@@ -27,13 +27,6 @@ func UploadStudentBioData(ctx *gin.Context, req request.StudentBioDataRequest) e
 	db := config.DB.Begin()
 	bioDataRepository := repositories.NewStudentBioDataRepository(db)
 
-	// Delete existing bio data for this student
-	err = bioDataRepository.DeleteStudentBioDataByStudentNumber(req.StudentNumber)
-	if err != nil {
-		db.Rollback()
-		return err
-	}
-
 	// Create new bio data record
 	bioData := models.StudentBioData{
 		Number:        uuid.NewV4().String(),
@@ -60,7 +53,7 @@ func UploadStudentBioData(ctx *gin.Context, req request.StudentBioDataRequest) e
 }
 
 // GetStudentBioDataByStudentNumber retrieves bio data for a student
-func GetStudentBioDataByStudentNumber(studentNumber string) (interface{}, error) {
+func GetStudentBioDataByStudentNumber(studentNumber string) ([]models.StudentBioData, error) {
 	if studentNumber == "" {
 		return nil, errors.New("student_number is required")
 	}
@@ -84,14 +77,14 @@ func DeleteStudentBioData(studentNumber string) error {
 	bioDataRepository := repositories.NewStudentBioDataRepository(db)
 
 	// Get bio data to retrieve file path
-	bioData, err := bioDataRepository.GetStudentBioDataByStudentNumber(studentNumber)
+	bioData, err := bioDataRepository.GetStudentBioDataByNumber(studentNumber)
 	if err != nil {
 		db.Rollback()
 		return err
 	}
 
 	// Delete from database
-	if err := bioDataRepository.DeleteStudentBioDataByStudentNumber(studentNumber); err != nil {
+	if err := bioDataRepository.DeleteStudentBioDataByNumber(studentNumber); err != nil {
 		db.Rollback()
 		return err
 	}

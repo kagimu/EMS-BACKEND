@@ -11,6 +11,7 @@ type AdmissionRequirement struct {
 	Number             string    `json:"number" gorm:"size:36;primaryKey"`
 	ItemNumber         string    `json:"item_number" gorm:"size:36;not null"`
 	CampusClassNumber  string    `json:"campus_class_number" gorm:"size:36;"`
+	CampusNumber       string    `json:"campus_number" gorm:"size:36;"`
 	StudyPeriodNumber  string    `json:"study_period_number" gorm:"size:36;"`
 	AcademicYearNumber string    `json:"academic_year_number" gorm:"size:36;not null"`
 	UserNumber         string    `json:"user_number" gorm:"size:36;not null"`

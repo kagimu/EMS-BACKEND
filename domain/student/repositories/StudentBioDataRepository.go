@@ -7,11 +7,11 @@ import (
 
 type StudentBioDataRepository interface {
 	FindAll() ([]models.StudentBioData, error)
-	GetStudentBioDataByStudentNumber(studentNumber string) (models.StudentBioData, error)
+	GetStudentBioDataByStudentNumber(studentNumber string) ([]models.StudentBioData, error)
 	GetStudentBioDataByNumber(number string) (models.StudentBioData, error)
 	CreateStudentBioData(biData models.StudentBioData) error
 	DeleteStudentBioData(bioData models.StudentBioData) error
-	DeleteStudentBioDataByStudentNumber(studentNumber string) error
+	DeleteStudentBioDataByNumber(number string) error
 	UpdateStudentBioData(bioData models.StudentBioData) error
 }
 
@@ -19,9 +19,9 @@ type StudentBioDataRepositoryImpl struct {
 	DB *gorm.DB
 }
 
-func (s StudentBioDataRepositoryImpl) DeleteStudentBioDataByStudentNumber(studentNumber string) error {
+func (s StudentBioDataRepositoryImpl) DeleteStudentBioDataByNumber(studentNumber string) error {
 	var bioData models.StudentBioData
-	if err := s.DB.Where("student_number = ?", studentNumber).Delete(&bioData).Error; err != nil {
+	if err := s.DB.Where("number = ?", studentNumber).Delete(&bioData).Error; err != nil {
 		return err
 	}
 	return nil
@@ -41,11 +41,11 @@ func (s StudentBioDataRepositoryImpl) FindAll() ([]models.StudentBioData, error)
 	return bioDataList, nil
 }
 
-func (s StudentBioDataRepositoryImpl) GetStudentBioDataByStudentNumber(studentNumber string) (models.StudentBioData, error) {
-	var bioData models.StudentBioData
+func (s StudentBioDataRepositoryImpl) GetStudentBioDataByStudentNumber(studentNumber string) ([]models.StudentBioData, error) {
+	var bioData = make([]models.StudentBioData, 0)
 
-	if err := s.DB.Where("student_number = ?", studentNumber).First(&bioData).Error; err != nil {
-		return models.StudentBioData{}, err
+	if err := s.DB.Where("student_number = ?", studentNumber).Find(&bioData).Error; err != nil {
+		return bioData, err
 	}
 
 	return bioData, nil

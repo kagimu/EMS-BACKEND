@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
@@ -21,7 +22,7 @@ import (
 )
 
 type AdmissionService interface {
-	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error)
+	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error)
 }
 
 type admissionService struct {
@@ -29,11 +30,11 @@ type admissionService struct {
 
 var admissionRepository = repositories.NewAdmissionRepository()
 
-func (admissionService *admissionService) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error) {
+func (admissionService *admissionService) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error) {
 
 	var admissionResponse = make([]responses.AdmissionResponse, 0)
 
-	admissions, err := admissionRepository.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber, user, paginateFunc)
+	admissions, err := admissionRepository.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, user, paginateFunc)
 	if err != nil {
 		return admissionResponse, errors.New("Error getting admissions " + err.Error())
 	}
