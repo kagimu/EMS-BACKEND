@@ -84,14 +84,14 @@ func DeleteStudentBioData(studentNumber string) error {
 	bioDataRepository := repositories.NewStudentBioDataRepository(db)
 
 	// Get bio data to retrieve file path
-	bioData, err := bioDataRepository.GetStudentBioDataByStudentNumber(studentNumber)
+	bioData, err := bioDataRepository.GetStudentBioDataByNumber(studentNumber)
 	if err != nil {
 		db.Rollback()
 		return err
 	}
 
 	// Delete from database
-	if err := bioDataRepository.DeleteStudentBioDataByStudentNumber(studentNumber); err != nil {
+	if err := bioDataRepository.DeleteStudentBioDataByNumber(studentNumber); err != nil {
 		db.Rollback()
 		return err
 	}
