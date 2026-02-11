@@ -27,13 +27,6 @@ func UploadStudentBioData(ctx *gin.Context, req request.StudentBioDataRequest) e
 	db := config.DB.Begin()
 	bioDataRepository := repositories.NewStudentBioDataRepository(db)
 
-	// Delete existing bio data for this student
-	err = bioDataRepository.DeleteStudentBioDataByStudentNumber(req.StudentNumber)
-	if err != nil {
-		db.Rollback()
-		return err
-	}
-
 	// Create new bio data record
 	bioData := models.StudentBioData{
 		Number:        uuid.NewV4().String(),
