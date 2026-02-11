@@ -60,7 +60,7 @@ func UploadStudentBioData(ctx *gin.Context, req request.StudentBioDataRequest) e
 }
 
 // GetStudentBioDataByStudentNumber retrieves bio data for a student
-func GetStudentBioDataByStudentNumber(studentNumber string) (interface{}, error) {
+func GetStudentBioDataByStudentNumber(studentNumber string) ([]models.StudentBioData, error) {
 	if studentNumber == "" {
 		return nil, errors.New("student_number is required")
 	}

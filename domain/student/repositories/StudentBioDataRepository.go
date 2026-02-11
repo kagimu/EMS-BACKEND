@@ -7,7 +7,7 @@ import (
 
 type StudentBioDataRepository interface {
 	FindAll() ([]models.StudentBioData, error)
-	GetStudentBioDataByStudentNumber(studentNumber string) (models.StudentBioData, error)
+	GetStudentBioDataByStudentNumber(studentNumber string) ([]models.StudentBioData, error)
 	GetStudentBioDataByNumber(number string) (models.StudentBioData, error)
 	CreateStudentBioData(biData models.StudentBioData) error
 	DeleteStudentBioData(bioData models.StudentBioData) error
@@ -41,11 +41,11 @@ func (s StudentBioDataRepositoryImpl) FindAll() ([]models.StudentBioData, error)
 	return bioDataList, nil
 }
 
-func (s StudentBioDataRepositoryImpl) GetStudentBioDataByStudentNumber(studentNumber string) (models.StudentBioData, error) {
-	var bioData models.StudentBioData
+func (s StudentBioDataRepositoryImpl) GetStudentBioDataByStudentNumber(studentNumber string) ([]models.StudentBioData, error) {
+	var bioData = make([]models.StudentBioData, 0)
 
-	if err := s.DB.Where("student_number = ?", studentNumber).First(&bioData).Error; err != nil {
-		return models.StudentBioData{}, err
+	if err := s.DB.Where("student_number = ?", studentNumber).Find(&bioData).Error; err != nil {
+		return bioData, err
 	}
 
 	return bioData, nil
