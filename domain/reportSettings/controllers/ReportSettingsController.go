@@ -299,6 +299,8 @@ func FetchClassReportSummaries(ctx *gin.Context) {
 		return
 	}
 
+	position := 1
+
 	for _, reportSummary := range reportSummaries {
 
 		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
@@ -324,7 +326,10 @@ func FetchClassReportSummaries(ctx *gin.Context) {
 			StudyPeriod:     studyPeriodName.Name,
 			Class:           reportSummary.CampusClass.ClassName,
 			PromotionStatus: promotionStatus,
+			Position:        position,
 		})
+
+		position = position + 1
 	}
 
 	ctx.JSON(http.StatusOK, cleanReportSummary)
