@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
@@ -196,6 +197,30 @@ func FetchReportSummaries(ctx *gin.Context) {
 	classNumber := ctx.Query("class_number")
 	campusNumber := ctx.Query("campus_number")
 	curriculumNumber := ctx.Query("curriculum_number")
+	sortBy := ctx.Query("sort_by")
+	dir := ctx.Query("dir")
+
+	if dir == "" {
+		dir = "asc"
+	}
+
+	if dir != "asc" && dir != "desc" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Unknown direction key"})
+		return
+	}
+
+	if sortBy == "" {
+		sortBy = "total_score"
+	}
+
+	sortBy = strings.ToLower(sortBy)
+
+	if sortBy != "total_score" && sortBy != "aggregate" && sortBy != "grade" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Unknown sorting key"})
+		return
+	}
+
+	orderBy := sortBy + " " + strings.ToUpper(dir)
 
 	campusClassNumber := ctx.Query("campus_class_number")
 
@@ -223,85 +248,8 @@ func FetchReportSummaries(ctx *gin.Context) {
 		filters.ByCampusClassNumber(campusClassNumber),
 		pagination.Paginate(ctx, &paginatedResponse),
 	).Preload("Student").Preload("StudyPeriod").
-		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
+		Preload("Stream").Preload("CampusClass").Order(orderBy).Find(&reportSummaries).Error; err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report summaries: " + err.Error()})
-		return
-	}
-
-	for _, reportSummary := range reportSummaries {
-
-		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
-
-		promotionStatus := ""
-
-		promotion, err := repositories2.FindPromotionByReportSummaryNumber(reportSummary.Number)
-		if err == nil {
-			promotionStatus = promotion.Status
-		} else {
-			fmt.Println(fmt.Sprintf("Checking promotion status error %s", err.Error()))
-		}
-
-		leanStudent := services3.CreateLeanStudent(reportSummary.Student)
-
-		position := 1
-
-		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
-			Number:          reportSummary.Number,
-			StudentName:     leanStudent.Surname + " " + leanStudent.SecondName + " " + leanStudent.OtherName,
-			StudentNumber:   reportSummary.StudentNumber,
-			Photo:           commons.GenerateDownloadPath(reportSummary.Student.Photo, true),
-			Grade:           reportSummary.Grade,
-			Stream:          reportSummary.Stream.Name,
-			StudyPeriod:     studyPeriodName.Name,
-			Class:           reportSummary.CampusClass.ClassName,
-			PromotionStatus: promotionStatus,
-			Position:        position,
-		})
-
-		position = position + 1
-	}
-
-	paginatedResponse.Content = cleanReportSummary
-
-	ctx.JSON(http.StatusOK, paginatedResponse)
-
-}
-
-func FetchClassReportSummaries(ctx *gin.Context) {
-
-	var cleanReportSummary = make([]responses.LeanReportSummary, 0)
-
-	classNumber := ctx.Query("class_number")
-	campusNumber := ctx.Query("campus_number")
-	curriculumNumber := ctx.Query("curriculum_number")
-
-	campusClassNumber := ctx.Query("campus_class_number")
-
-	if campusClassNumber == "" {
-		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-
-		campusClassNumber = campusClass.Number
-	}
-
-	if campusClassNumber == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a class to view report summaries"})
-		return
-	}
-
-	var reportSummaries []models.ReportSummary
-	if err := config.DB.Scopes(
-		filters.ByStudyPeriodNumber(ctx.Query("study_period_number")),
-		filters.ByStudentNumber(ctx.Query("student_number")),
-		filters.ByStreamNumber(ctx.Query("stream_number")),
-		filters.ByGrade(ctx.Query("grade")),
-		filters.ByCampusClassNumber(campusClassNumber),
-	).Preload("Student").Preload("StudyPeriod").
-		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report summaries - 2" + err.Error()})
 		return
 	}
 
@@ -333,12 +281,16 @@ func FetchClassReportSummaries(ctx *gin.Context) {
 			Class:           reportSummary.CampusClass.ClassName,
 			PromotionStatus: promotionStatus,
 			Position:        position,
+			Aggregate:       reportSummary.Aggregate,
+			TotalScore:      reportSummary.TotalScore,
 		})
 
 		position = position + 1
 	}
 
-	ctx.JSON(http.StatusOK, cleanReportSummary)
+	paginatedResponse.Content = cleanReportSummary
+
+	ctx.JSON(http.StatusOK, paginatedResponse)
 
 }
 
