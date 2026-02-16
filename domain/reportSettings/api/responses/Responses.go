@@ -63,6 +63,7 @@ type LeanReportSummary struct {
 	Stream          string `json:"stream"`
 	Class           string `json:"class"`
 	PromotionStatus string `json:"promotion_status"`
+	Position        int    `json:"position"`
 }
 type ClassLeanReportSummary struct {
 	Number          string `json:"number"`
