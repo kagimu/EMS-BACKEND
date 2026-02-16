@@ -406,19 +406,19 @@ func CreateExistingAdmission(c *gin.Context) {
 	}
 
 	// Create AdmissionInterview record if interview number is provided
-	if payload.InterviewNumber != "" {
-		admissionInterview := models.AdmissionInterview{
-			Number:          uuid.NewV4().String(),
-			InterviewNumber: payload.InterviewNumber,
-			AdmissionNumber: saveAdmission.Number,
-		}
-
-		if err := tx.Create(&admissionInterview).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission interview record"})
-			return
-		}
-	}
+	//if payload.InterviewNumber != "" {
+	//	admissionInterview := models.AdmissionInterview{
+	//		Number:          uuid.NewV4().String(),
+	//		InterviewNumber: payload.InterviewNumber,
+	//		AdmissionNumber: saveAdmission.Number,
+	//	}
+	//
+	//	if err := tx.Create(&admissionInterview).Error; err != nil {
+	//		tx.Rollback()
+	//		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission interview record"})
+	//		return
+	//	}
+	//}
 
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
