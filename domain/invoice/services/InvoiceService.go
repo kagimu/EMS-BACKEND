@@ -219,6 +219,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if paidAmount > 0 {
+
 		err = addTransactionToInvoice(invoiceStatement, paidAmount, newInvoice, currentUserNumber, clientReference, description, datePaid, txn)
 	}
 
@@ -227,80 +228,11 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 
 func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description, datePaid string, txn *gorm.DB) error {
 
-	nextBlc, err := ComputeNextBalance(paidAmount, constants.StatementTypeIn, invoiceStatement.UserNumber)
-	if err != nil {
-		return err
-	}
-
-	transactionStatement := models.Statement{
-		Number:        uuid.NewV4().String(),
+	_, err := ReceiveInvoicePayment(requests.InvoicePaymentRequest{
+		InvoiceNumber: invoice.Number,
 		Amount:        paidAmount,
-		UserNumber:    invoiceStatement.UserNumber,
-		Description:   "Payment received on promissory note " + invoiceStatement.RefNumber,
-		SchoolNumber:  invoiceStatement.SchoolNumber,
-		CampusNumber:  invoiceStatement.CampusNumber,
-		RefNumber:     generateNewInvoiceNumber(),
-		Type:          constants.StatementTypeIn,
-		Balance:       nextBlc,
-		AddedByNumber: currentUserNumber,
-	}
-
-	invoiceBalance := invoiceStatement.Amount
-
-	payAmount := invoiceBalance
-
-	if paidAmount < invoiceBalance {
-		payAmount = paidAmount
-	}
-
-	var transactionDate time.Time
-	if transactionDate, err = time.Parse(time.DateOnly, datePaid); err != nil {
-		return errors.New("Error reading payment date: " + err.Error())
-	}
-
-	newTransaction := models.Transaction{
-		StatementNumber: transactionStatement.Number,
-		Number:          uuid.NewV4().String(),
-		Date:            transactionDate,
-		Status:          constants.StatusActive,
-		AmountInCredit:  paidAmount - payAmount,
-		Description:     description,
-		ClientReference: clientReference,
-	}
-
-	newInvoiceTransaction := models.InvoiceTransaction{
-		InvoiceNumber:     invoice.Number,
-		TransactionNumber: newTransaction.Number,
-		AmountPaidOff:     payAmount,
-		AddedByNumber:     currentUserNumber,
-	}
-
-	invoiceTransactionRepository.UseTx(txn)
-	transactionStatement.IssueDate = transactionDate
-
-	err = invoiceRepositories.SaveStatement(transactionStatement, txn)
-	if err != nil {
-		return errors.New("Creating statement error " + err.Error())
-	}
-
-	if _, err = invoiceRepositories.SaveTransaction(newTransaction, txn); err != nil {
-		return errors.New("Adding new transaction error " + err.Error())
-	}
-
-	err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
-	if err != nil {
-		return errors.New("Attaching transaction to promissory note error " + err.Error())
-	}
-
-	if payAmount >= invoiceBalance {
-		invoice.Status = constants.StatusPaid
-	} else {
-		invoice.Status = constants.StatusPartiallyPaid
-	}
-
-	if err := invoiceRepositories.UpdateInvoice(invoice, txn); err != nil {
-		return errors.New("Updating promissory note status failed : " + err.Error())
-	}
+		Date:          datePaid,
+	}, currentUserNumber, txn)
 
 	return err
 }
@@ -575,7 +507,7 @@ func createPaymentResponse(invoiceTransaction models.InvoiceTransaction) respons
 	return paymentResponse
 }
 
-func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) (responses.MinInvoiceResponse, error) {
+func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string, tx ...*gorm.DB) (responses.MinInvoiceResponse, error) {
 
 	if len(invoicePaymentRequest.Credits) >= 1 {
 		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits)
@@ -660,36 +592,44 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		newStatus = constants.StatusPartiallyPaid
 	}
 
-	err = config.DB.Transaction(func(tx *gorm.DB) error {
-
-		tx = invoiceTransactionRepository.UseTx(tx)
-
-		err := invoiceRepositories.SaveStatement(newStatement, tx)
-		if err != nil {
-			return errors.New("Creating statement error " + err.Error())
-		}
-
-		if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
-			return errors.New("Adding new transaction error " + err.Error())
-		}
-
-		err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
-		if err != nil {
-			return errors.New("Attaching transaction to promissory note error " + err.Error())
-		}
-
-		if newStatus != invoice.Status {
-			invoice.Status = newStatus
-			if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
-				return errors.New("Updating promissory note failed : " + err.Error())
-			}
-		}
-
-		return nil
-	})
+	if len(tx) > 0 {
+		err = config.DB.Transaction(func(tx *gorm.DB) error {
+			return doSave(tx, newStatement, newTransaction, newInvoiceTransaction, invoice, newStatus)
+		})
+	} else {
+		err = doSave(tx[0], newStatement, newTransaction, newInvoiceTransaction, invoice, newStatus)
+	}
 
 	return createMinInvoiceResponse(invoice), err
 }
+
+func doSave(tx *gorm.DB, newStatement models.Statement, newTransaction models.Transaction, newInvoiceTransaction models.InvoiceTransaction, invoice models.Invoice, newStatus string) error {
+	tx = invoiceTransactionRepository.UseTx(tx)
+
+	err := invoiceRepositories.SaveStatement(newStatement, tx)
+	if err != nil {
+		return errors.New("Creating statement error " + err.Error())
+	}
+
+	if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
+		return errors.New("Adding new transaction error " + err.Error())
+	}
+
+	err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
+	if err != nil {
+		return errors.New("Attaching transaction to promissory note error " + err.Error())
+	}
+
+	if newStatus != invoice.Status {
+		invoice.Status = newStatus
+		if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
+			return errors.New("Updating promissory note failed : " + err.Error())
+		}
+	}
+
+	return nil
+}
+
 func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string) (responses.MinInvoiceResponse, error) {
 
 	var minInvoiceResponse responses.MinInvoiceResponse
