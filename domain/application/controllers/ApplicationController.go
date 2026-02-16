@@ -87,12 +87,14 @@ func FetchApplications(c *gin.Context) {
 				filters.ByAnyField("students.preferred_campus_number", c.Query("campus_number")),
 				filters.ByAnyField("students.school_number", schoolNumber),
 				pagination.Paginate(c, &paginationResponse),
+				filters.BySearchingAnyField([]string{"students.adn", "students.apn", "students.surname", "students.second_name", "students.other_name", "parents.surname", "parents.second_name", "parents.other_name"}, c.Query("search")),
 			).
 			Preload("Student").Preload("Parent").
 			Preload("Student.CampusClass").
 			Preload("Student.PreferredCampus").
 			Preload("PreviousSchools").
 			Joins("JOIN students ON students.application_number = applications.number").
+			Joins("JOIN parents ON parents.application_number = applications.number").
 			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "application fetching failed",
