@@ -36,7 +36,7 @@ func (enrolmentRepository *enrolmentRepository) PaginatedEnrolments(search, scho
 			filters.ByAnyField("enrollments.status", status),
 			filters.ByAnyField("study_periods.academic_year_number", academicYearNumber),
 			page,
-			filters.BySearchingAnyField([]string{"students.adn", "students.apn", "students.surname", "students.second_name", "students.email"}, search),
+			filters.BySearchingAnyField([]string{"students.adn", "students.apn", "students.surname", "students.second_name", "students.other_name"}, search),
 		).
 		Preload("School").Preload("CampusClass").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {
 
