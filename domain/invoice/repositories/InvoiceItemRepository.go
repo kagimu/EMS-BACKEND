@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
@@ -45,9 +46,13 @@ func SaveInvoiceItem(invoiceItem invoiceModel.InvoiceItem, tx ...*gorm.DB) (invo
 
 }
 
-func GetInvoiceAmount(invoiceNumber string) (float64, error) {
+func GetInvoiceAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error) {
 
 	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var totalAmount float64
 

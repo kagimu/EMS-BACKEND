@@ -515,13 +515,13 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 
 	var minInvoiceResponse responses.MinInvoiceResponse
 
-	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber)
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber, tx...)
 	if err != nil {
 		return minInvoiceResponse, err
 	}
 
 	if invoice.Number == "" {
-		return minInvoiceResponse, errors.New("invalid promissory note number: " + invoicePaymentRequest.InvoiceNumber)
+		return minInvoiceResponse, errors.New("invalid promissory note number while receiving payment: " + invoicePaymentRequest.InvoiceNumber)
 	}
 
 	invoiceStatement := invoice.Statement
@@ -531,9 +531,9 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
 	}
 
-	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number)
+	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number, tx...)
 
-	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
+	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number, tx...)
 
 	if paidAmount >= invoiceAmount {
 		return minInvoiceResponse, errors.New("This promissory note is fully paid ")
@@ -1160,13 +1160,13 @@ func DeletePayment(transactionNumber, currentUser string) error {
 	return err
 }
 
-func ComputeNextBalance(newAmount float64, statementType string, userNumber string) (float64, error) {
+func ComputeNextBalance(newAmount float64, statementType string, userNumber string, tx ...*gorm.DB) (float64, error) {
 
 	if statementType != constants.StatementTypeIn && statementType != constants.StatementTypeOut {
 		return 0, errors.New("Invalid statement type: '" + statementType + "'")
 	}
 
-	recentStatement, err := invoiceRepositories.GetRecentStatementByUserNumber(userNumber)
+	recentStatement, err := invoiceRepositories.GetRecentStatementByUserNumber(userNumber, tx...)
 	if err != nil {
 		return 0, errors.New("Getting recent statement error " + err.Error())
 	}
