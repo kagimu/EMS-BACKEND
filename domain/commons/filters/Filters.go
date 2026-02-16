@@ -138,10 +138,12 @@ func ByAnyField(fieldName string, fieldValue string) func(db *gorm.DB) *gorm.DB 
 
 func BySearchingAnyField(fieldName []string, searchValue string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-
-		for _, v := range fieldName {
-			db = db.Or(v+" like ?", "%"+searchValue+"%")
+		if searchValue != "" {
+			for _, v := range fieldName {
+				db = db.Or(v+" like ?", "%"+searchValue+"%")
+			}
 		}
+
 		return db
 	}
 }
