@@ -232,7 +232,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 
 func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description, datePaid string, txn *gorm.DB) error {
 
-	_, err := ReceiveInvoicePayment(requests.InvoicePaymentRequest{
+	_, err := ReceiveEnrollmentInvoicePayment(requests.InvoicePaymentRequest{
 		InvoiceNumber: invoice.Number,
 		Amount:        paidAmount,
 		Date:          datePaid,
@@ -511,7 +511,7 @@ func createPaymentResponse(invoiceTransaction models.InvoiceTransaction) respons
 	return paymentResponse
 }
 
-func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string, tx ...*gorm.DB) (responses.MinInvoiceResponse, error) {
+func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) (responses.MinInvoiceResponse, error) {
 
 	if len(invoicePaymentRequest.Credits) >= 1 {
 		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits)
@@ -519,7 +519,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 
 	var minInvoiceResponse responses.MinInvoiceResponse
 
-	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber, tx...)
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber)
 	if err != nil {
 		return minInvoiceResponse, err
 	}
@@ -535,9 +535,9 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
 	}
 
-	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number, tx...)
+	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number)
 
-	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number, tx...)
+	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
 
 	if paidAmount >= invoiceAmount {
 		return minInvoiceResponse, errors.New("This promissory note is fully paid ")
@@ -596,42 +596,145 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		newStatus = constants.StatusPartiallyPaid
 	}
 
-	if len(tx) > 0 && tx[0] != nil {
-		err = config.DB.Transaction(func(tx *gorm.DB) error {
-			return doSave(tx, newStatement, newTransaction, newInvoiceTransaction, invoice, newStatus)
-		})
-	} else {
-		err = doSave(tx[0], newStatement, newTransaction, newInvoiceTransaction, invoice, newStatus)
-	}
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		tx = invoiceTransactionRepository.UseTx(tx)
+
+		err := invoiceRepositories.SaveStatement(newStatement, tx)
+		if err != nil {
+			return errors.New("Creating statement error " + err.Error())
+		}
+
+		if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
+			return errors.New("Adding new transaction error " + err.Error())
+		}
+
+		err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
+		if err != nil {
+			return errors.New("Attaching transaction to promissory note error " + err.Error())
+		}
+
+		if newStatus != invoice.Status {
+			invoice.Status = newStatus
+			if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
+				return errors.New("Updating promissory note failed : " + err.Error())
+			}
+		}
+
+		return nil
+	})
 
 	return createMinInvoiceResponse(invoice), err
 }
+func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string, tx *gorm.DB) (responses.MinInvoiceResponse, error) {
 
-func doSave(tx *gorm.DB, newStatement models.Statement, newTransaction models.Transaction, newInvoiceTransaction models.InvoiceTransaction, invoice models.Invoice, newStatus string) error {
+	if len(invoicePaymentRequest.Credits) >= 1 {
+		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits)
+	}
+
+	var minInvoiceResponse responses.MinInvoiceResponse
+
+	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber, tx)
+	if err != nil {
+		return minInvoiceResponse, err
+	}
+
+	if invoice.Number == "" {
+		return minInvoiceResponse, errors.New("invalid promissory note number while receiving payment: " + invoicePaymentRequest.InvoiceNumber)
+	}
+
+	invoiceStatement := invoice.Statement
+
+	var dateTimePaid time.Time
+	if dateTimePaid, err = time.Parse(time.DateOnly, invoicePaymentRequest.Date); err != nil {
+		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
+	}
+
+	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number, tx)
+
+	paidAmount := 0.0
+
+	if paidAmount >= invoiceAmount {
+		return minInvoiceResponse, errors.New("This promissory note is fully paid ")
+	}
+
+	invoiceBalance := invoiceAmount - paidAmount
+
+	payAmount := invoiceBalance
+	payRequestAmount := invoicePaymentRequest.Amount
+
+	if payRequestAmount < invoiceBalance {
+		payAmount = payRequestAmount
+	}
+
+	trnRefNo := generateNewInvoiceNumber()
+
+	nextBlc, err := ComputeNextBalance(payRequestAmount, constants.StatementTypeIn, invoiceStatement.UserNumber, tx)
+	if err != nil {
+		return minInvoiceResponse, err
+	}
+
+	newStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		SchoolNumber:  invoiceStatement.SchoolNumber,
+		AddedByNumber: currentUserNumber,
+		RefNumber:     trnRefNo,
+		CampusNumber:  invoiceStatement.CampusNumber,
+		UserNumber:    invoiceStatement.UserNumber,
+		Type:          constants.StatementTypeIn,
+		Description:   "Payment received on promissory note " + invoiceStatement.RefNumber,
+		Amount:        payRequestAmount,
+		Balance:       nextBlc,
+		IssueDate:     dateTimePaid,
+	}
+
+	newTransaction := models.Transaction{
+		StatementNumber: newStatement.Number,
+		Number:          uuid.NewV4().String(),
+		Date:            dateTimePaid,
+		Status:          constants.StatusActive,
+		AmountInCredit:  payRequestAmount - payAmount,
+	}
+
+	newInvoiceTransaction := models.InvoiceTransaction{
+		InvoiceNumber:     invoice.Number,
+		TransactionNumber: newTransaction.Number,
+		AmountPaidOff:     payAmount,
+		AddedByNumber:     currentUserNumber,
+	}
+
+	var newStatus string
+
+	if payAmount >= invoiceBalance {
+		newStatus = constants.StatusPaid
+	} else {
+		newStatus = constants.StatusPartiallyPaid
+	}
+
 	tx = invoiceTransactionRepository.UseTx(tx)
 
-	err := invoiceRepositories.SaveStatement(newStatement, tx)
+	err = invoiceRepositories.SaveStatement(newStatement, tx)
+
 	if err != nil {
-		return errors.New("Creating statement error " + err.Error())
+		return minInvoiceResponse, errors.New("Creating statement error " + err.Error())
 	}
 
 	if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
-		return errors.New("Adding new transaction error " + err.Error())
+		return minInvoiceResponse, errors.New("Adding new transaction error " + err.Error())
 	}
 
 	err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
 	if err != nil {
-		return errors.New("Attaching transaction to promissory note error " + err.Error())
+		return minInvoiceResponse, errors.New("Attaching transaction to promissory note error " + err.Error())
 	}
 
 	if newStatus != invoice.Status {
 		invoice.Status = newStatus
 		if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
-			return errors.New("Updating promissory note failed : " + err.Error())
+			return minInvoiceResponse, errors.New("Updating promissory note failed : " + err.Error())
 		}
 	}
 
-	return nil
+	return createMinInvoiceResponse(invoice), err
 }
 
 func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string) (responses.MinInvoiceResponse, error) {
