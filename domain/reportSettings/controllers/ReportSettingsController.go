@@ -243,6 +243,8 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 		leanStudent := services3.CreateLeanStudent(reportSummary.Student)
 
+		position := 1
+
 		cleanReportSummary = append(cleanReportSummary, responses.LeanReportSummary{
 			Number:          reportSummary.Number,
 			StudentName:     leanStudent.Surname + " " + leanStudent.SecondName + " " + leanStudent.OtherName,
@@ -253,8 +255,12 @@ func FetchReportSummaries(ctx *gin.Context) {
 			StudyPeriod:     studyPeriodName.Name,
 			Class:           reportSummary.CampusClass.ClassName,
 			PromotionStatus: promotionStatus,
+			Position:        position,
 		})
+
+		position = position + 1
 	}
+
 	paginatedResponse.Content = cleanReportSummary
 
 	ctx.JSON(http.StatusOK, paginatedResponse)
