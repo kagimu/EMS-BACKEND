@@ -616,7 +616,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		if newStatus != invoice.Status {
 			invoice.Status = newStatus
 			if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
-				return errors.New("Updating promissory note failed : " + err.Error())
+				return errors.New("Updating promissory note failed, after receiving payment: " + err.Error())
 			}
 		}
 
@@ -730,7 +730,7 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 	if newStatus != invoice.Status {
 		invoice.Status = newStatus
 		if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
-			return minInvoiceResponse, errors.New("Updating promissory note failed : " + err.Error())
+			return minInvoiceResponse, errors.New("Updating promissory note failed while enrolling: " + err.Error())
 		}
 	}
 
@@ -827,7 +827,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 		if newStatus != invoice.Status {
 			invoice.Status = newStatus
 			if err = invoiceRepositories.UpdateInvoice(invoice, tx); err != nil {
-				return errors.New("Updating promissory note failed : " + err.Error())
+				return errors.New("Updating promissory note failed while using credit: " + err.Error())
 			}
 		}
 
@@ -1075,7 +1075,7 @@ func CancelInvoice(invoiceNumber string, currentUserNumber string) error {
 
 		err = invoiceRepositories.UpdateInvoice(invoice, tx)
 		if err != nil {
-			return errors.New("updating promissory note failed : " + err.Error())
+			return errors.New("updating promissory note failed after cancellation: " + err.Error())
 		}
 
 		err = invoiceRepositories.SaveStatement(newStatement, tx)
@@ -1333,7 +1333,7 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 	err = invoiceRepositories.UpdateInvoice(invoice, tx)
 	if err != nil {
 		tx.Rollback()
-		return errors.New("updating promissory note failed : " + err.Error())
+		return errors.New("updating promissory note failed: " + err.Error())
 	}
 
 	for _, item := range items {
