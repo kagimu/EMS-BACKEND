@@ -93,8 +93,6 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 
 	invoiceTotal := newInvoiceTotalAmount(payload.Items)
 
-	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, userNumber)
-
 	newStatement := models.Statement{
 		Number:        uuid.NewV4().String(),
 		Amount:        invoiceTotal,
@@ -103,7 +101,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 		SchoolNumber:  admission.SchoolNumber,
 		CampusNumber:  admission.CampusNumber,
 		RefNumber:     invoiceNumber,
-		Balance:       balance,
+		Balance:       0,
 		Type:          constants.StatementTypeOut,
 		AddedByNumber: currentUserNumber,
 	}
@@ -118,7 +116,14 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
-		err := invoiceRepositories.SaveStatement(newStatement, tx)
+		balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, userNumber, tx)
+		if err != nil {
+			return err
+		}
+
+		newStatement.Balance = balance
+
+		err = invoiceRepositories.SaveStatement(newStatement, tx)
 		if err != nil {
 			return errors.New("Error creating new bill statement " + err.Error())
 		}
@@ -169,7 +174,7 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 		invoiceTotal = invoiceTotal + (billItem.Quantity * billItem.UnitPrice)
 	}
 
-	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, student.UserNumber)
+	balance, err := ComputeNextBalance(invoiceTotal, constants.StatementTypeOut, student.UserNumber, txn)
 
 	invoiceStatement := models.Statement{
 		Number:        uuid.NewV4().String(),
@@ -219,7 +224,6 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if paidAmount > 0 {
-
 		err = addTransactionToInvoice(invoiceStatement, paidAmount, newInvoice, currentUserNumber, clientReference, description, datePaid, txn)
 	}
 
@@ -592,7 +596,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		newStatus = constants.StatusPartiallyPaid
 	}
 
-	if len(tx) > 0 {
+	if len(tx) > 0 && tx[0] != nil {
 		err = config.DB.Transaction(func(tx *gorm.DB) error {
 			return doSave(tx, newStatement, newTransaction, newInvoiceTransaction, invoice, newStatus)
 		})
