@@ -262,6 +262,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 	var finalAggregateScale aggregateSaceltModel.AggregateScale
 	var totalAggregates float64
+	var totalScore float64
 	for _, assessmentArea := range assessmentAreas {
 		var scale aggregateSaceltModel.AggregateScale
 		var grade gradesModels.Grade
@@ -383,6 +384,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				finalAggregateScale = scale
 			}
 
+			totalScore = totalScore + score
+
 		}
 
 		var rs []models.ReportScore
@@ -483,6 +486,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 
 	reportSummary.Aggregate = totalAggregates
+	reportSummary.TotalScore = totalScore
 
 	headTeacherComment, err = GetProperHeadTeacherCommentByReportSettingNumberAndPoints(reportSettings.Number, totalAggregates)
 	if err != nil {
