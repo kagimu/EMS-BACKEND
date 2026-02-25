@@ -181,6 +181,11 @@ func SubmitApplication(context *gin.Context) {
 
 	var applicationNumber = context.Param("application_number")
 	tx := config.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
 	applicationRepo := repository.NewApplicationRepositoryImpl(tx)
 	application, err := applicationRepo.FindApplicationByNumber(applicationNumber)
@@ -191,29 +196,26 @@ func SubmitApplication(context *gin.Context) {
 	}
 
 	err = applicationRepo.UpdateApplicationStatus(application, constants.StatusSubmitted)
-
 	if err != nil {
 		tx.Rollback()
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application " + err.Error()})
 		return
 	}
 
-	// send email to parents
-	var parentRepo = repositories.NewParentRepositoryImpl(config.DB)
-	var parent, _ = parentRepo.GetParentByApplicationNumber(application.Number)
-
-	d := emailSender.Info{Email: parent.Email, MailType: "WholesomeEd: Application for you child has been submitted", UserName: parent.Surname, CurrentYear: time.Now().Year(), Type: "application-submitted"}
-	err = d.SendEmail()
-	if err != nil {
-		// If any error occurs, rollback the transaction
-		tx.Rollback()
-		// Handle or return the error as needed
-		//fmt.Println(fmt.Printf("Sending mail error %s\n", err.Error()))
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email\n" + err.Error()})
+	if err := tx.Commit().Error; err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application " + err.Error()})
 		return
 	}
 
-	tx.Commit()
+	// Send email after commit so the transaction does not hold locks during slow I/O
+	var parentRepo = repositories.NewParentRepositoryImpl(config.DB)
+	parent, _ := parentRepo.GetParentByApplicationNumber(application.Number)
+	d := emailSender.Info{Email: parent.Email, MailType: "WholesomeEd: Application for your child has been submitted", UserName: parent.Surname, CurrentYear: time.Now().Year(), Type: "application-submitted"}
+	if err := d.SendEmail(); err != nil {
+		// Application already submitted; do not rollback. Optionally log and inform client.
+		context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully. Confirmation email could not be sent."))
+		return
+	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully"))
 }

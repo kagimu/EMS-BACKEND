@@ -7,6 +7,7 @@ type AdmissionRequirementResponse struct {
 	Number              string    `json:"number"`
 	ItemNumber          string    `json:"item_number"`
 	ItemName            string    `json:"item_name"`
+	ItemCost            float64   `json:"item_cost"`
 	CampusClassNumber   string    `json:"campus_class_number"`
 	CampusNumber        string    `json:"campus_number"`
 	StudyPeriodNumber   string    `json:"study_period_number"`
