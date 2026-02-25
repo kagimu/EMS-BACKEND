@@ -12,6 +12,7 @@ import (
 	academicYearController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/controllers"
 	activityReportingControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/activityreporting/api/controllers"
 	admissionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/controllers"
+	admissionLettersController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admissionLetters/controllers"
 	applicationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/controllers"
 	aggregateScaleController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/controllers"
 	assessmentGradeController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/controllers"
@@ -582,6 +583,16 @@ func SetupRoutes() *gin.Engine {
 			templates.GET(":school_number", admissionController.GetAdmissionTemplateController)
 			templates.GET("decode", admissionController.DecodeAdmissionTemplateController)
 			templates.DELETE(":template_number", admissionController.DeleteAdmissionTemplateController)
+		}
+
+		admissionLetters := main.Group("/admission-letters")
+		{
+			admissionLetters.POST("", admissionLettersController.CreateAdmissionLetter)
+			admissionLetters.PUT("/:number", admissionLettersController.UpdateAdmissionLetter)
+			admissionLetters.GET("/by-school", admissionLettersController.GetAdmissionLettersBySchool)
+			admissionLetters.GET("/:number", admissionLettersController.GetAdmissionLetter)
+			admissionLetters.GET("", admissionLettersController.GetAdmissionLettersByStudent)
+			admissionLetters.DELETE("/:number", admissionLettersController.DeleteAdmissionLetter)
 		}
 
 		assessmentArea := main.Group("/assessment-areas")

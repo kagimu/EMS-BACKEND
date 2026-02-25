@@ -4,6 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	reportingActivityModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/activityreporting/models"
+	admissionLettersModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admissionLetters/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
@@ -111,6 +112,7 @@ func Init() error {
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&studentModels.ADN{},
+		&admissionLettersModels.AdmissionLetter{},
 		&admissionModel.Admission{},
 		&admissionModel.AdmissionCondition{},
 		&previousSchoolModels.PreviousSchoolClass{},
