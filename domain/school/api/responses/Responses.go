@@ -6,9 +6,10 @@ type (
 		Name             string                     `json:"name"`
 		CommencementDate string                     `json:"commencement_date"`
 		SchoolCurriculum []SchoolCurriculumResponse `json:"school_curriculum"`
-		Logo             string                     `json:"logo"`
-		Motto            string                     `json:"motto"`
-		PrincipalName    string                     `json:"principal_name"`
+		Logo                 string                     `json:"logo"`
+		PrincipalSignature   string                     `json:"principal_signature"`
+		Motto                string                     `json:"motto"`
+		PrincipalName        string                     `json:"principal_name"`
 		PrincipalTitle   string                     `json:"principal_title"`
 	}
 
