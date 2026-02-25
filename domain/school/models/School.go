@@ -18,8 +18,9 @@ type (
 		SchoolCurriculum []SchoolCurriculum `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 		UserNumber       string             `json:"user_number" gorm:"size:36;index;not null"`
 		User             models.User        `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-		Logo             string             `json:"logo"`
-		PrincipalName    string             `json:"principal_name" gorm:"size:100;not null"`
+		Logo                 string             `json:"logo"`
+		PrincipalSignature   string             `json:"principal_signature"`
+		PrincipalName        string             `json:"principal_name" gorm:"size:100;not null"`
 		PrincipalTitle   string             `json:"principal_title" gorm:"size:100;not null"`
 		Motto            string             `json:"motto" gorm:"size:250;not null"`
 	}

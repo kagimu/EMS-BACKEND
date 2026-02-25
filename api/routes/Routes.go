@@ -130,6 +130,7 @@ func SetupRoutes() *gin.Engine {
 			school.GET("/info", schoolController.FetchSchoolInfo)
 			school.DELETE("/delete/:school_number", schoolController.DeleteSchool)
 			school.POST("/upload-logo", schoolController.UploadSchoolLogo)
+			school.POST("/upload-signature", schoolController.UploadPrincipalSignature)
 
 			template := school.Group("/report-templates")
 			{

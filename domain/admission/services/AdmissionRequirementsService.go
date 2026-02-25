@@ -21,11 +21,12 @@ func SaveAdmissionRequirementsService(req *requests.AdmissionRequirementsRequest
 }
 
 // createAdmissionRequirementResponse maps a model to the API response with resolved names.
-func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolName, campusName, curriculumName, className, studyPeriodName, itemName string) responses.AdmissionRequirementResponse {
+func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolName, campusName, curriculumName, className, studyPeriodName, itemName string, itemCost float64) responses.AdmissionRequirementResponse {
 	return responses.AdmissionRequirementResponse{
 		Number:             m.Number,
 		ItemNumber:         m.ItemNumber,
 		ItemName:           itemName,
+		ItemCost:           itemCost,
 		CampusClassNumber:  m.CampusClassNumber,
 		CampusNumber:       m.CampusNumber,
 		StudyPeriodNumber:  m.StudyPeriodNumber,
@@ -58,9 +59,11 @@ func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPer
 			}
 		}
 		itemName := ""
+		var itemCost float64
 		if m.ItemNumber != "" {
 			if item, err := repositories4.GetItemByNumber(m.ItemNumber); err == nil && item.Number != "" {
 				itemName = item.Name
+				itemCost = item.Cost
 			}
 		}
 		campusName := ""
@@ -92,7 +95,7 @@ func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPer
 			}
 		}
 
-		out = append(out, createAdmissionRequirementResponse(m, schoolName, campusName, curriculumName, className, studyPeriodName, itemName))
+		out = append(out, createAdmissionRequirementResponse(m, schoolName, campusName, curriculumName, className, studyPeriodName, itemName, itemCost))
 	}
 	return out, nil
 }
