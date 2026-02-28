@@ -8,10 +8,12 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
@@ -195,8 +197,10 @@ func FetchReportSummaries(ctx *gin.Context) {
 	var paginatedResponse = pagination.PaginatedResponse{}
 
 	classNumber := ctx.Query("class_number")
+	status := ctx.Query("status")
 	campusNumber := ctx.Query("campus_number")
 	curriculumNumber := ctx.Query("curriculum_number")
+	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
 	sortBy := ctx.Query("sort_by")
 	dir := ctx.Query("dir")
 
@@ -225,7 +229,46 @@ func FetchReportSummaries(ctx *gin.Context) {
 	campusClassNumber := ctx.Query("campus_class_number")
 
 	if campusClassNumber == "" {
-		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+
+		if classNumber == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a class to view report summaries"})
+			return
+
+		}
+
+		class, err := repositories3.GetClassByNumber(classNumber)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if class.Number == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid class number selected"})
+			return
+		}
+
+		if campusNumber == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a campus to view report summaries"})
+			return
+		}
+
+		if curriculumNumber == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a curriculum to view report summaries"})
+			return
+		}
+
+		curriculum, err := models2.GetCurriculumByNumber(curriculumNumber)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if curriculum.Number == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid curriculum number selected"})
+			return
+		}
+
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
@@ -246,6 +289,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
 		filters.ByCampusClassNumber(campusClassNumber),
+		filters.ByAnyField("promotion_status", status),
 		pagination.Paginate(ctx, &paginatedResponse),
 	).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Order(orderBy).Find(&reportSummaries).Error; err != nil {

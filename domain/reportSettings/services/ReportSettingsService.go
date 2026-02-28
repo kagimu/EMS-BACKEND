@@ -539,6 +539,13 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			return errors.New("failed to save promotion " + err.Error())
 		}
 
+		reportSummary.PromotionStatus = finalStatus.Status
+
+		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
+			tx.Rollback()
+			return errors.New("failed to update edit summary with promotional status" + err.Error())
+		}
+
 	}
 
 	if err := tx.Commit().Error; err != nil {
