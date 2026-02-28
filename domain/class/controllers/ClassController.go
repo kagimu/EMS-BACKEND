@@ -1,19 +1,21 @@
 package controllers
 
 import (
-	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
-	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
+	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	"github.com/gin-gonic/gin"
@@ -893,6 +895,32 @@ func FetchClassesBySchoolNumber(context *gin.Context) {
 	if schoolNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Choose school"})
 		return
+	}
+
+	if curriculumNumber != "" {
+		curriculum, err := models.GetCurriculumByNumber(curriculumNumber)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+			return
+		}
+
+		if curriculum.Number == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Invalid Curriculum number provided"})
+			return
+		}
+	}
+
+	if campusNumber != "" {
+		campus, err := repositories2.GetCampusByNumber(campusNumber)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+			return
+		}
+
+		if campus.Number == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": "Invalid Campus number provided"})
+			return
+		}
 	}
 
 	classes, err := services.FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber)

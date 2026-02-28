@@ -80,6 +80,7 @@ type ReportSummary struct {
 	Stream                     classModel.Stream       `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	HeadTeacherComment         string                  `json:"head_teacher_comment" gorm:"size:100"`
 	AggregateScaleUsed         string                  `json:"aggregate_scale_used" gorm:"size:100"`
+	PromotionStatus            string                  `json:"promotion_status" gorm:"size:100;column:promotion_status;default:'NOT_SET'"`
 	AssessmentGradeScaleNumber string                  `json:"assessment_grade_scale_number" gorm:"column:assessment_grade_scale_number;size:36;"`
 }
 
