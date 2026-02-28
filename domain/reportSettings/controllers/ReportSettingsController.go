@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
-	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -303,14 +301,14 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
 
-		promotionStatus := ""
+		/*promotionStatus := ""
 
 		promotion, err := repositories2.FindPromotionByReportSummaryNumber(reportSummary.Number)
 		if err == nil {
 			promotionStatus = promotion.Status
 		} else {
 			fmt.Println(fmt.Sprintf("Checking promotion status error %s", err.Error()))
-		}
+		}*/
 
 		leanStudent := services3.CreateLeanStudent(reportSummary.Student)
 
@@ -323,7 +321,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 			Stream:          reportSummary.Stream.Name,
 			StudyPeriod:     studyPeriodName.Name,
 			Class:           reportSummary.CampusClass.ClassName,
-			PromotionStatus: promotionStatus,
+			PromotionStatus: reportSummary.PromotionStatus,
 			Position:        position,
 			Aggregate:       reportSummary.Aggregate,
 			TotalScore:      reportSummary.TotalScore,

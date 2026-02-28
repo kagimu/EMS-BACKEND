@@ -132,6 +132,9 @@ type FullReportSummary struct {
 	PromotionStatus     string         `json:"promotion_status"`
 	ReportTemplate      string         `json:"report_template"`
 	TeachersComment     string         `json:"teachers_comment"`
+	Position            int            `json:"position"`
+	Aggregate           float64        `json:"aggregate"`
+	TotalScore          float64        `json:"total_score"`
 }
 
 type ClassFullReportSummary struct {
