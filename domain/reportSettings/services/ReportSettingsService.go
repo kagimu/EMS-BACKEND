@@ -914,9 +914,12 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		NextTermBegins:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
 		ReportTemplate:      reportTemplate.Name,
 		TeachersComment:     reportSummary.Comment,
+		PromotionStatus:     reportSummary.PromotionStatus,
+		Aggregate:           reportSummary.Aggregate,
+		TotalScore:          reportSummary.TotalScore,
 	}
 
-	if len(scalesUsed) > 0 {
+	/*if len(scalesUsed) > 0 {
 		promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
 		if err != nil {
 			return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
@@ -927,7 +930,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		}
 	} else {
 		response.PromotionStatus = "N/A"
-	}
+	}*/
 
 	return response, nil
 }
