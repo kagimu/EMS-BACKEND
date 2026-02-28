@@ -8,7 +8,6 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
-	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -250,17 +249,6 @@ func FetchReportSummaries(ctx *gin.Context) {
 
 		if campusNumber == "" {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a campus to view report summaries"})
-			return
-		}
-
-		campus, err := repositories4.GetCampusByNumber(campusNumber)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-			return
-		}
-
-		if campus.Number == "" {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid campus number selected"})
 			return
 		}
 
