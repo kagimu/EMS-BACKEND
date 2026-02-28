@@ -195,6 +195,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 	var paginatedResponse = pagination.PaginatedResponse{}
 
 	classNumber := ctx.Query("class_number")
+	status := ctx.Query("status")
 	campusNumber := ctx.Query("campus_number")
 	curriculumNumber := ctx.Query("curriculum_number")
 	sortBy := ctx.Query("sort_by")
@@ -246,6 +247,7 @@ func FetchReportSummaries(ctx *gin.Context) {
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
 		filters.ByCampusClassNumber(campusClassNumber),
+		filters.ByAnyField("promotion_status", status),
 		pagination.Paginate(ctx, &paginatedResponse),
 	).Preload("Student").Preload("StudyPeriod").
 		Preload("Stream").Preload("CampusClass").Order(orderBy).Find(&reportSummaries).Error; err != nil {
