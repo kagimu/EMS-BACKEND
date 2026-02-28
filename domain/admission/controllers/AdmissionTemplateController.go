@@ -50,7 +50,7 @@ func DecodeAdmissionTemplateController(ctx *gin.Context) {
 		return
 	}
 
-	admissionTemplate, err := services.DecodeAdmissionLetterTemplateService(studentNumber)
+	admissionTemplate, err := services.DecodeAdmissionLetterTemplateService(studentNumber, "")
 	if err != nil {
 		ctx.JSON(500, gin.H{"message": "Failed to retrieve admission template: " + err.Error()})
 		return

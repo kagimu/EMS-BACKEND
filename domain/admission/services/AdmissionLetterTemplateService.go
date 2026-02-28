@@ -32,7 +32,7 @@ func GetAdmissionLetterTemplateService(schoolNumber string) (models.AdmissionLet
 	return admissionTemplate, nil
 }
 
-func DecodeAdmissionLetterTemplateService(studentNumber string) (responses.DecodedAdmissionLetter, error) {
+func DecodeAdmissionLetterTemplateService(studentNumber, phrase string) (responses.DecodedAdmissionLetter, error) {
 	repo := repositories.NewAdmissionTemplateRepository(config.DB)
 	student, err := repositories2.FindStudentByNumber(studentNumber)
 	if err != nil {
@@ -70,7 +70,10 @@ func DecodeAdmissionLetterTemplateService(studentNumber string) (responses.Decod
 	resp.AdmissionLetterNumber = admissionTemplate.Number
 
 	// find and replace {{STUDENT_NAME}} with student's full name in the phrase template
-	var phrase = admissionTemplate.Phrase
+	if phrase == "" {
+		phrase = admissionTemplate.Phrase
+	}
+
 	capitalizedFirstName := capitalizeFirstLetter(user.FirstName)
 	capitalizedLastName := capitalizeFirstLetter(user.LastName)
 	capitalizedSecondName := capitalizeFirstLetter(user.SecondName)
