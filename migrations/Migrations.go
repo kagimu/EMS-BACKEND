@@ -4,8 +4,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	reportingActivityModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/activityreporting/models"
-	admissionLettersModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admissionLetters/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	admissionLettersModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admissionLetters/models"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
@@ -233,6 +233,7 @@ func Init() error {
 		&assessmentModel.ScheduledNarrativeScriptMarkingGuide{},
 		&admissionModel.AdmissionRequirement{},
 		&studentModels.StudentBioData{},
+		&admissionModel.AdmissionInterview{},
 	)
 
 	if err != nil {
