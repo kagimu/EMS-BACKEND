@@ -15,5 +15,5 @@ type EnrollmentItem struct {
 	Quantity         float64         `json:"quantity"`
 	Brought          bool            `json:"brought"`
 	UserNumber       string          `json:"user_number" gorm:"size:36; not null"`
-	User             userModel.User  `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;""`
+	User             userModel.User  `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

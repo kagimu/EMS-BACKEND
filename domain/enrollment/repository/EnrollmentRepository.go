@@ -12,6 +12,7 @@ import (
 
 type EnrolmentRepository interface {
 	GetStudentEnrolment(studentNumber, studyPeriodNumber, campusClassNumber, status string, txn ...*gorm.DB) (models.Enrollment, error)
+	GetEnrollmentByNumber(number string, txn ...*gorm.DB) (models.Enrollment, error)
 	AllEnrolments(studentNumber, studyPeriodNumber, campusClassNumber, campusNumber, status string, txn ...*gorm.DB) ([]models.Enrollment, error)
 	SaveEnrolment(enrollment models.Enrollment, txn ...*gorm.DB) error
 	PaginatedEnrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error)
@@ -78,6 +79,25 @@ func (enrolmentRepository *enrolmentRepository) SaveEnrolment(enrollment models.
 	}
 
 	return db.Save(&enrollment).Error
+}
+
+func (enrolmentRepository *enrolmentRepository) GetEnrollmentByNumber(number string, txn ...*gorm.DB) (models.Enrollment, error) {
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+	var enrollment models.Enrollment
+	if err := db.
+		Preload("EnrollmentItems.Item").
+		Preload("Student").Preload("School").Preload("Campus").Preload("CampusClass").Preload("StudyPeriod").Preload("Stream").
+		Where("number = ?", number).
+		First(&enrollment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Enrollment{}, nil
+		}
+		return models.Enrollment{}, err
+	}
+	return enrollment, nil
 }
 
 func (enrolmentRepository *enrolmentRepository) GetStudentEnrolment(studentNumber, studyPeriodNumber, campusClassNumber, status string, txn ...*gorm.DB) (models.Enrollment, error) {
