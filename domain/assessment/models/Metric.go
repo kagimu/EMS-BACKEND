@@ -9,6 +9,7 @@ type Metric struct {
 	gorm.Model
 	Number           string `json:"number" gorm:"size:36;unique;not null"`
 	Name             string `json:"name"`
+	Code             int32  `json:"code"`
 	CurriculumNumber string `json:"curriculum_number" gorm:"size:36;not null"`
 	//ExamType         string         `json:"exam_type"`
 	UserNumber string         `json:"user_number" gorm:"size:36;index;not null"`

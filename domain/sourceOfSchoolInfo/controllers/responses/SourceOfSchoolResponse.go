@@ -5,4 +5,5 @@ type SourceOfSchoolResponse struct {
 	Name         string `json:"name"`
 	UserNumber   string `json:"user_number"`
 	EntityNumber string `json:"entity_number"`
+	Code         int64  `json:"code"`
 }

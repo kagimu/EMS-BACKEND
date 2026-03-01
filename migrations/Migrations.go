@@ -5,6 +5,7 @@ import (
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	reportingActivityModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/activityreporting/models"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	admissionLettersModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admissionLetters/models"
 	applicationModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
 	assessmentScaleModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
 	assessmentGradeModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/models"
@@ -90,8 +91,9 @@ func Init() error {
 		&curriculumModel.ImportCurriculum{},
 		&classModel.Stream{},
 		&timetableModels.StudyTimetable{},
-		&timetableModels.StudyTimetablePeriods{},
+		&timetableModels.StudyTimetablePeriod{},
 		&timetableModels.TimetableSlots{},
+		&timetableModels.TimetableTask{},
 		&eosModels.GeneralCalendar{},
 		&eosModels.CalendarEvent{},
 		&academicYearModel.AcademicYear{},
@@ -110,6 +112,7 @@ func Init() error {
 		&previousSchoolModels.PreviousSchoolClass{},
 		&studentModels.APN{},
 		&studentModels.ADN{},
+		&admissionLettersModels.AdmissionLetter{},
 		&admissionModel.Admission{},
 		&admissionModel.AdmissionCondition{},
 		&previousSchoolModels.PreviousSchoolClass{},
@@ -176,9 +179,6 @@ func Init() error {
 		&cateringModels.FeedingGroupSession{},
 		&cateringModels.FeedingAllGroups{},
 		&cateringModels.Meal{},
-		&timetableModels.StudyingTimeBlock{},
-		&timetableModels.StudyingTimeTable{},
-		&timetableModels.StudyingPeriod{},
 		&permissionModels.Scope{},
 		&reportTemplateModel.ReportTemplate{},
 		&reportTemplateModel.ClassReportTemplate{},
@@ -228,6 +228,12 @@ func Init() error {
 		&admissionModel.AdmissionLetterTemplate{},
 		&reportSettings.ClassTeacherComment{},
 		&reportSettings.SubjectTeacherComment{},
+		&reportSettings.SubjectGroup{},
+		&reportSettings.GroupAssessmentArea{},
+		&assessmentModel.ScheduledNarrativeScriptMarkingGuide{},
+		&admissionModel.AdmissionRequirement{},
+		&studentModels.StudentBioData{},
+		&admissionModel.AdmissionInterview{},
 	)
 
 	if err != nil {

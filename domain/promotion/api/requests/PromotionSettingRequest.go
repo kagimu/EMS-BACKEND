@@ -7,15 +7,21 @@ import (
 )
 
 type PromotionSettingRequest struct {
-	Name                   string `json:"name"`
-	Status                 string `json:"status"`
-	Type                   string `json:"type"`
-	NextClassNumber        string `json:"next_class_number"`
-	PreviousClassNumber    string `json:"previous_class_number"`
-	StudyPeriodNumber      string `json:"study_period_number"`
-	CampusNumber           string `json:"campus_number"`
-	CurriculumNumber       string `json:"curriculum_number"`
-	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	Name                      string `json:"name"`
+	Status                    string `json:"status"`
+	Type                      string `json:"type"`
+	NextClassNumber           string `json:"next_class_number"`
+	PreviousClassNumber       string `json:"previous_class_number"`
+	StudyPeriodNumber         string `json:"study_period_number"`
+	CurrentStudyPeriodNumber  string `json:"current_study_period_number"`
+	CampusNumber              string `json:"campus_number"`
+	CurriculumNumber          string `json:"curriculum_number"`
+	CampusCurriculumNumber    string `json:"campus_curriculum_number"`
+	CampusLevelNumber         string `json:"campus_level_number"`
+	CurrentAcademicYearNumber string `json:"current_academic_year_number"`
+	CurrentLevelNumber        string `json:"current_level_number"`
+	NextLevelNumber           string `json:"next_level_number"`
+	NextAcademicYearNumber    string `json:"next_academic_year_number"`
 }
 
 func (p *PromotionSettingRequest) Prepare() {
@@ -34,8 +40,8 @@ func (p *PromotionSettingRequest) Validate() error {
 		return errors.New("status is required")
 	}
 
-	if len(p.Status) > 20 {
-		return errors.New("The status should be 20 characters maximum ")
+	if len(p.Status) > 90 {
+		return errors.New("The status should be 900 characters maximum ")
 	}
 
 	if p.Type == "" {

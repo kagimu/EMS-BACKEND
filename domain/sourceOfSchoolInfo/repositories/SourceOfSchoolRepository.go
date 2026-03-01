@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
@@ -55,6 +56,28 @@ func FindSourceOfSchoolInfoByName(entityNumber, name string, tx ...*gorm.DB) (mo
 
 	if err := db.
 		Scopes(filters.ByAnyField("entity_number", entityNumber), filters.ByAnyField("name", name)).
+		Find(&sourceOfSchoolInfo).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return sourceOfSchoolInfo, nil
+		}
+
+		return sourceOfSchoolInfo, err
+	}
+
+	return sourceOfSchoolInfo, nil
+}
+
+func FindSourceOfSchoolInfoByCode(entityNumber string, code int64, tx ...*gorm.DB) (models2.SourceOfSchoolInfo, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var sourceOfSchoolInfo models2.SourceOfSchoolInfo
+
+	if err := db.
+		Scopes(filters.ByAnyField("entity_number", entityNumber)).
+		Where("code = ?", code).
 		Find(&sourceOfSchoolInfo).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return sourceOfSchoolInfo, nil

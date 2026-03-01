@@ -1,13 +1,13 @@
 package controllers
 
 import (
-	"fmt"
+	"net/http"
+	"strconv"
+
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	conceptModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/api/requests"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/api/responses"
-	"net/http"
-	"strconv"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -41,16 +41,23 @@ func NewSubTopic(context *gin.Context) {
 	}
 
 	code := topicInfo.Code
+
 	name := topicInfo.Name
 	topicNumber := topicInfo.TopicNumber
-	estimatedTime := topicInfo.EstimatedTime
+	//estimatedTime := topicInfo.EstimatedTime
 	curriculumNumber := topicInfo.CurriculumNumber
 
 	userNumber := context.Request.Header["User-Number"][0]
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
-		fmt.Println("Error:", err)
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	teachingSequenceCode, err := strconv.ParseInt(topicInfo.TeachingSequenceCode, 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -84,8 +91,6 @@ func NewSubTopic(context *gin.Context) {
 		return
 	}
 
-	estTime, err := strconv.ParseInt(estimatedTime, 10, 64)
-
 	if err != nil {
 		// Handle the error if the string cannot be converted to int64
 		//return err
@@ -94,13 +99,13 @@ func NewSubTopic(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveSubtopic := models2.SubTopic{
-		Number:           number,
-		Name:             name,
-		EstimatedTime:    estTime,
-		TopicNumber:      topicNumber,
-		UserNumber:       userNumber,
-		Code:             codeNo,
-		CurriculumNumber: curriculumNumber,
+		Number:              number,
+		Name:                name,
+		TopicNumber:         topicNumber,
+		UserNumber:          userNumber,
+		Code:                codeNo,
+		CurriculumNumber:    curriculumNumber,
+		TeacherSequenceCode: teachingSequenceCode,
 	}
 	config.DB.Save(&saveSubtopic)
 
@@ -190,7 +195,10 @@ func FetchSubTopic(context *gin.Context) {
 									SubTopicNumber:         refList.SubTopicNumber,
 									UserNumber:             refList.UserNumber,
 								})
+
 							}
+
+							totalConceptsTime, _ := curriculum.GetSubTopicTotalEstimatedTime(subtopicList.Number)
 
 							subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
 								Number:        subtopicList.Number,
@@ -198,7 +206,7 @@ func FetchSubTopic(context *gin.Context) {
 								SortCode:      int64(idx + 1),
 								Name:          subtopicList.Name,
 								UserNumber:    subtopicList.UserNumber,
-								EstimatedTime: subtopicList.EstimatedTime,
+								EstimatedTime: totalConceptsTime,
 								TopicNumber:   subtopicList.TopicNumber,
 								ReferenceInfo: referenceInfo_,
 							})
@@ -272,13 +280,14 @@ func FetchSubTopiList(context *gin.Context) {
 	var subTopicInfo_ []responses.SubTopicList
 	for idx, subtopicList := range subtopicResp {
 		subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
-			Number:        subtopicList.Number,
-			Code:          subtopicList.Code,
-			SortCode:      int64(idx + 1),
-			Name:          subtopicList.Name,
-			UserNumber:    subtopicList.UserNumber,
-			EstimatedTime: subtopicList.EstimatedTime,
-			TopicNumber:   subtopicList.TopicNumber,
+			Number:               subtopicList.Number,
+			Code:                 subtopicList.Code,
+			SortCode:             int64(idx + 1),
+			Name:                 subtopicList.Name,
+			UserNumber:           subtopicList.UserNumber,
+			EstimatedTime:        subtopicList.EstimatedTime,
+			TopicNumber:          subtopicList.TopicNumber,
+			TeachingSequenceCode: subtopicList.TeacherSequenceCode,
 		})
 	}
 
@@ -319,7 +328,7 @@ func FetchSubTopicByClass(context *gin.Context) {
 		Preload("Topic.Strand.Subject").
 		Preload("Topic.Strand").
 		Preload("Topic").
-		Order("code asc").
+		Order("created_at asc").
 		Find(&subtopic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
 		return
@@ -328,16 +337,17 @@ func FetchSubTopicByClass(context *gin.Context) {
 	for idx, subtopicList := range subtopic {
 		if subjectNumber == subtopicList.Topic.Strand.Subject.Number {
 			subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
-				Number:        subtopicList.Number,
-				Code:          subtopicList.Code,
-				SortCode:      int64(idx + 1),
-				Name:          subtopicList.Name,
-				UserNumber:    subtopicList.UserNumber,
-				EstimatedTime: subtopicList.EstimatedTime,
-				TopicNumber:   subtopicList.TopicNumber,
-				TopicName:     subtopicList.Topic.Name,
-				StrandNumber:  subtopicList.Topic.Strand.Number,
-				StrandName:    subtopicList.Topic.Strand.Name,
+				Number:               subtopicList.Number,
+				Code:                 subtopicList.Code,
+				SortCode:             int64(idx + 1),
+				Name:                 subtopicList.Name,
+				UserNumber:           subtopicList.UserNumber,
+				EstimatedTime:        subtopicList.EstimatedTime,
+				TopicNumber:          subtopicList.TopicNumber,
+				TopicName:            subtopicList.Topic.Name,
+				StrandNumber:         subtopicList.Topic.Strand.Number,
+				StrandName:           subtopicList.Topic.Strand.Name,
+				TeachingSequenceCode: subtopicList.TeacherSequenceCode,
 			})
 		}
 	}
@@ -391,7 +401,7 @@ func DeleteSubTopic(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete sub topic"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete sub topic " + err.Error()})
 		return
 	}
 
@@ -473,7 +483,13 @@ func SubTopicEdit(context *gin.Context) {
 
 	codeNo, err := strconv.ParseInt(code, 10, 64)
 	if err != nil {
-		fmt.Println("Error:", err)
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	teachingSequenceCode, err := strconv.ParseInt(topicInfo.TeachingSequenceCode, 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -509,19 +525,14 @@ func SubTopicEdit(context *gin.Context) {
 		return
 	}
 
-	estTime, err := strconv.ParseInt(estimatedTime, 10, 64)
-
-	if err != nil {
-		// Handle the error if the string cannot be converted to int64
-		//return err
-	}
+	estTime, _ := strconv.ParseInt(estimatedTime, 10, 64)
 
 	tx := config.DB.Begin()
 
 	var subTopicDataInfo models2.SubTopic
 	updateData := tx.Model(&subTopicDataInfo).
 		Where("number = ?", subTopicNumber).
-		Updates(models2.SubTopic{Name: name, UserNumber: userNumber, Code: codeNo, EstimatedTime: estTime, TopicNumber: topicNumber})
+		Updates(models2.SubTopic{Name: name, UserNumber: userNumber, Code: codeNo, EstimatedTime: estTime, TopicNumber: topicNumber, TeacherSequenceCode: teachingSequenceCode})
 	if updateData.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})

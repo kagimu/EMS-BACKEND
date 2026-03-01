@@ -1,8 +1,9 @@
 package models
 
 import (
-	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"time"
+
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 )
 
 type ModeOfStudy struct {
@@ -16,6 +17,7 @@ type ModeOfStudy struct {
 	Name         string         `json:"name" gorm:"size:64;not null"`
 	SchoolNumber string         `json:"school_number" gorm:"size:36;not null"`
 	School       School         `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	Code         int64          `json:"code"`
 }
 
 func (modeOfStudy *ModeOfStudy) TableName() string {

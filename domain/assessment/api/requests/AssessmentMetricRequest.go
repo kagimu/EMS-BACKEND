@@ -3,6 +3,7 @@ package requests
 import (
 	"errors"
 	"fmt"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 )
@@ -72,8 +73,9 @@ func (assessmentMetric MultipleAssessmentScheduleRequest) Validate() error {
 			return errors.New("max score can not be zero or negative")
 		}
 	}
-	
-	return checkAssessmentAreaDuplicatesInAssessmentScheduleRequest(schedules)
+	return nil
+	// validation removed on mwesigwa's request
+	//return checkAssessmentAreaDuplicatesInAssessmentScheduleRequest(schedules)
 }
 
 func checkAssessmentAreaDuplicatesInAssessmentScheduleRequest(assessmentScheduleRequests []AssessmentScheduleRequest) error {
@@ -91,7 +93,7 @@ func checkAssessmentAreaDuplicatesInAssessmentScheduleRequest(assessmentSchedule
 					return errors.New("error fetching assessment area while checking duplicates: " + err.Error())
 				}
 
-				return errors.New(fmt.Sprintf("%s is selected multiple times", assessmentAreaByNumber.Name))
+				return errors.New(fmt.Sprintf("%s has been selected multiple times", assessmentAreaByNumber.Name))
 			}
 
 		}

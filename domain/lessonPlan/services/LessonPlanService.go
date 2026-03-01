@@ -3,6 +3,12 @@ package services
 import (
 	"errors"
 	"fmt"
+	"mime/multipart"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -17,11 +23,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
-	"mime/multipart"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type LessonPlanService interface {
@@ -349,11 +350,14 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 		return nil, "", errors.New(fmt.Sprintf("Sub-topic '%s' has no concepts for lesson planning", subTopic.Name))
 	}
 
-	defaultOpenSheet := 0
+	//defaultOpenSheet := 0
 
+	defaultOpenSheet := -1
 	for _, concept := range concepts {
 
 		sheetName := fmt.Sprintf("Sheet-%d", concept.Code)
+
+		fmt.Println("Sheet Name: ", sheetName)
 
 		defaultOpenSheet, err = fileTemplate.NewSheet(sheetName)
 		if err != nil {
@@ -375,6 +379,10 @@ func (l *lessonPlanServiceImp) ExportLessonPlanTemplate(schemeSubTopicNumber str
 			}
 		}
 
+	}
+
+	if defaultOpenSheet < 0 {
+		return nil, "", errors.New(fmt.Sprintf("Invalid default open sheet number: %d", defaultOpenSheet))
 	}
 
 	fileTemplate.SetActiveSheet(defaultOpenSheet)
@@ -418,6 +426,8 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 		return err
 	}
 
+	fmt.Println(fmt.Sprintf("Scheme with code %d has %d concepts", schemeOfWorkSubTopic.Code, len(concepts)))
+
 	lessonPlanRepository.UseTx(config.DB)
 	lessonPlan, err := lessonPlanRepository.GetLessonPlanBySchemeOfWorkSubTopicNumber(schemeSubTopicNumber, constants.StatusActive)
 	if err != nil {
@@ -429,22 +439,28 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 
 		if lessonPlan.Number == "" {
 			lessonPlan = models.LessonPlan{
-				Status:               constants.StatusDraft,
+				Status:               constants.StatusActive,
 				Number:               uuid.NewV4().String(),
 				UserNumber:           currentUserNumber,
 				SchemeSubTopicNumber: schemeSubTopicNumber,
 			}
+
 			lessonPlan, err = lessonPlanRepository.SaveLessonPlan(lessonPlan)
 			if err != nil {
 				return errors.New("Creating lesson plan error " + err.Error())
 			}
+
+			fmt.Println("Created lesson plan: " + lessonPlan.Number)
 		}
 
 		for _, concept := range concepts {
-			rows, err := excelFile.GetRows(fmt.Sprintf("Sheet-%d", concept.Code))
+			sheet := fmt.Sprintf("Sheet-%d", concept.Code)
+			rows, err := excelFile.GetRows(sheet)
 			if err != nil {
 				return errors.New(fmt.Sprintf("Error %s extracting for %s", err.Error(), concept.Name))
 			}
+
+			fmt.Println(fmt.Sprintf("Steps %d from sheet %s", len(rows), sheet))
 
 			lessonPlanConcept, err := lessonPlanRepository.GetLessonPlanConcept(lessonPlan.Number, concept.Number)
 			if err != nil {
@@ -463,6 +479,8 @@ func (l *lessonPlanServiceImp) ImportPlan(lessonPlanFile multipart.File, schemeS
 				if err != nil {
 					return errors.New("Creating lesson plan concept error " + err.Error())
 				}
+
+				fmt.Println("Created lesson plan concept: " + lessonPlanConcept.Number)
 			}
 
 			err = processConceptSteps(rows, concept, lessonPlanConcept)
@@ -510,12 +528,26 @@ func processConceptSteps(conceptSteps [][]string, concept conceptModels.Concept,
 		}
 		code := int64(code_)
 
+		if code < 1 {
+			fmt.Println(fmt.Sprintf("Skipping code: %d", code))
+			continue
+		}
+
+		if step == "" || len(step) < 2 {
+			fmt.Println(fmt.Sprintf("Skipping step: %s", step))
+			continue
+		}
+
+		fmt.Println("Added step: " + step)
+
 		lessonPlanSteps = append(lessonPlanSteps, models.ExtractedStep{
 			Code: code,
 			Step: step,
 		})
 
 	}
+
+	fmt.Println(fmt.Sprintf("Processing %d steps for concept %s", len(lessonPlanSteps), concept.Name))
 
 	err := checkStepDuplicates(lessonPlanSteps)
 	if err != nil {

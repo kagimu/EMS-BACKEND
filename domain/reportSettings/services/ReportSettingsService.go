@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	aggregateSaceltModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/models"
@@ -37,7 +39,6 @@ import (
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
@@ -175,6 +176,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	tx := config.DB.Begin()
 
+	repo := reporsitory.NewReportScoreSummaryRepository(tx)
+
 	var staffRepository = repository3.NewStaffRepository(tx)
 
 	var reportTemplate reportTemplateModel.ReportTemplate
@@ -259,6 +262,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 	var finalAggregateScale aggregateSaceltModel.AggregateScale
 	var totalAggregates float64
+	var totalScore float64
 	for _, assessmentArea := range assessmentAreas {
 		var scale aggregateSaceltModel.AggregateScale
 		var grade gradesModels.Grade
@@ -317,6 +321,9 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 					tx.Rollback()
 					return err
 				}
+
+				//fmt.Println("Scale use is ***" + scale.ScaleNumber)
+
 				grade, err = repository2.FindGradeByNumber(scale.GradeNumber)
 				if err != nil {
 					tx.Rollback()
@@ -371,9 +378,13 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 				}
 
-				finalAggregateScale = scale
-
 			}
+
+			if scale.Number != "" {
+				finalAggregateScale = scale
+			}
+
+			totalScore = totalScore + score
 
 		}
 
@@ -389,10 +400,10 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		var summation float64
 		for _, r := range rs {
 			summation += r.Score
-			fmt.Println(fmt.Sprintf("score %.1f", r.Score))
+			//fmt.Println(fmt.Sprintf("score %.1f", r.Score))
 		}
 
-		fmt.Println(fmt.Sprintf("summation %.1f", summation))
+		//fmt.Println(fmt.Sprintf("summation %.1f", summation))
 		scale, err = GetProperAggregateScale(summation, campusClass.Number)
 		if err != nil {
 			tx.Rollback()
@@ -414,7 +425,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			}
 		}
 
-		fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
+		//fmt.Println(fmt.Printf("Weight %.1f for assessment area %s with percentage score of %.1f, now total aggregates %.1f on aggregate scale %s %s", scale.Weight, assessmentArea.Name, summation, totalAggregates, scale.Description, scale.Number))
 
 		//check if the report score summary already exists with the same report summary number and assessment area number
 		var reportScoreSummary models.ReportScoreSummary
@@ -428,7 +439,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			reportScoreSummary.Illustration = scale.Illustration
 			reportScoreSummary.TeacherInitial = teacherInitial
 
-			if err := reporsitory.SaveReportScoreSummary(reportScoreSummary, tx); err != nil {
+			if err := repo.SaveReportScoreSummary(reportScoreSummary); err != nil {
 				tx.Rollback()
 				return errors.New("failed to update report score summary")
 			}
@@ -449,7 +460,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				TeacherInitial:       teacherInitial,
 			}
 
-			if err := reporsitory.CreateReportScoreSummary(reportScoreSummary, tx); err != nil {
+			if err := repo.CreateReportScoreSummary(reportScoreSummary); err != nil {
 				tx.Rollback()
 				return errors.New("failed to create report score summary")
 			}
@@ -475,6 +486,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 
 	reportSummary.Aggregate = totalAggregates
+	reportSummary.TotalScore = totalScore
 
 	headTeacherComment, err = GetProperHeadTeacherCommentByReportSettingNumberAndPoints(reportSettings.Number, totalAggregates)
 	if err != nil {
@@ -494,12 +506,11 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 
 	finalStatus, err := checkStatus(campusClass.Number, reportSummary.StudyPeriodNumber, reportSummary.AssessmentGradeScaleNumber, reportSummary.Aggregate, reportSummary.Aggregate, tx)
 	if err != nil {
-		tx.Rollback()
-		return err
+		fmt.Println(fmt.Sprintf("%s while generating for report summary number: %s", err.Error(), reportSummaryNumber))
 	}
 
 	if finalStatus.Number != "" {
-		fmt.Println("Final learner status: " + finalStatus.Type)
+		//fmt.Println("Final learner status: " + finalStatus.Type)
 		//FindPromotionByReportSummaryNumber
 		currentPromotion, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber, tx)
 		if err != nil {
@@ -526,6 +537,13 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		if err != nil {
 			tx.Rollback()
 			return errors.New("failed to save promotion " + err.Error())
+		}
+
+		reportSummary.PromotionStatus = finalStatus.Status
+
+		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
+			tx.Rollback()
+			return errors.New("failed to update edit summary with promotional status" + err.Error())
 		}
 
 	}
@@ -722,6 +740,7 @@ func DeleteReportColumn(reportColumnNumber string) error {
 }
 
 func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, error) {
+	repo := reporsitory.NewReportScoreSummaryRepository(config.DB)
 	reportSummary, err := reporsitory.FindReportSummaryByNumber(reportSummaryNumber)
 	if err != nil {
 		return responses.FullReportSummary{}, errors.New("failed to find report summary error: " + err.Error())
@@ -791,8 +810,20 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		}
 
 		for _, assessmentArea := range assessmentAreas {
+			assessmentAreaName := assessmentArea.Name
+			sgRepo := reporsitory.NewSubjectGroupRepository(config.DB)
+			existIng, err := sgRepo.FindAssessmentAreasByAssessmentNumber(assessmentArea.Number)
+			if err != nil {
+				return responses.FullReportSummary{}, errors.New("failed to find assessment areas error: " + err.Error())
+			}
 
-			reportScoreSummary, err := reporsitory.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummaryNumber, assessmentArea.Number)
+			if len(existIng) > 0 {
+				if existIng[0].SubjectNameOnReport != "" {
+					assessmentAreaName = existIng[0].SubjectNameOnReport
+				}
+			}
+
+			reportScoreSummary, err := repo.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummaryNumber, assessmentArea.Number)
 			if err != nil {
 				return responses.FullReportSummary{}, errors.New("failed to find report score summary error: " + err.Error())
 			}
@@ -811,7 +842,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 			}
 
 			assessments = append(assessments, responses.Assessments{
-				Name:               assessmentArea.Name,
+				Name:               assessmentAreaName,
 				ReportScores:       reportScores,
 				ReportScoreSummary: reportScoreSummary,
 			})
@@ -877,15 +908,18 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		StudyPeriodEndDate:  studyPeriod.StudyPeriodEndDate.Format("02-01-2006"),
 		ReportColumns:       rcs,
 		ReportTemplateName:  reportSummary.ReportTemplateName,
-		TeacherComment:      reportSummary.TeacherComment,
 		HeadTeachersComment: reportSummary.HeadTeacherComment,
 		AggregateScale:      scales,
 		LevelName:           levelName.Name,
 		NextTermBegins:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
 		ReportTemplate:      reportTemplate.Name,
+		TeachersComment:     reportSummary.Comment,
+		PromotionStatus:     reportSummary.PromotionStatus,
+		Aggregate:           reportSummary.Aggregate,
+		TotalScore:          reportSummary.TotalScore,
 	}
 
-	if len(scalesUsed) > 0 {
+	/*if len(scalesUsed) > 0 {
 		promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
 		if err != nil {
 			return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
@@ -896,7 +930,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		}
 	} else {
 		response.PromotionStatus = "N/A"
-	}
+	}*/
 
 	return response, nil
 }
@@ -923,7 +957,34 @@ func checkStatus(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumbe
 		return finalStatus, nil
 	}
 
+	finalStatus, err = checkIfRemedial(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
+	finalStatus, err = checkIfProgressed(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
 	finalStatus, err = checkIfRepeat(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, err
+	}
+
+	if finalStatus.Number != "" {
+		return finalStatus, nil
+	}
+
+	finalStatus, err = checkIfDemoted(campusClassNumber, studyPeriodNumber, assessmentGradeScaleNumber, db)
 	if err != nil {
 		return models2.PromotionSetting{}, err
 	}
@@ -966,21 +1027,127 @@ func checkIfPromoted(campusClassNumber string, studyPeriodNumber string, assessm
 		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
 	}
 
-	fmt.Println("Minimum assessment grade: ", minimumAssessmentGrade.Name)
-
 	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
 		return promotion, nil
 	}
 
 	return models2.PromotionSetting{}, nil
 }
+func checkIfRemedial(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
 
+	//Check remedial
+	checkRemedial, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "remedial", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find remedial configuration, error: " + err.Error())
+	}
+
+	if checkRemedial.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(checkRemedial.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Remedial value not set for " + checkRemedial.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return checkRemedial, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
+func checkIfProgressed(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
+
+	checkProgressed, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "progressed", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find progressed configuration, error: " + err.Error())
+	}
+
+	if checkProgressed.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(checkProgressed.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Progressed value not set for " + checkProgressed.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return checkProgressed, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
 func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
 
 	//Check repeat
-	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat", db)
+	checkRepeat, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "repeat", db)
 	if err != nil {
-		return models2.PromotionSetting{}, errors.New("Failed to find promotion configuration, error: " + err.Error())
+		return models2.PromotionSetting{}, errors.New("Failed to find retained configuration, error: " + err.Error())
+	}
+
+	if checkRepeat.Number == "" {
+		return models2.PromotionSetting{}, nil
+	}
+
+	scoredAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(assessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find scored assessment grade, error: " + err.Error())
+	}
+
+	promotionValue, err := repositories10.FindPromotionSettingValueBySettingNumber(checkRepeat.Number, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find required aggregate scale error: " + err.Error())
+	}
+
+	if promotionValue.Number == "" {
+		return models2.PromotionSetting{}, errors.New("Retained value not set for " + checkRepeat.Name)
+	}
+
+	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find assessment grade, error: " + err.Error())
+	}
+
+	if minimumAssessmentGrade.Code >= scoredAssessmentGrade.Code {
+		return checkRepeat, nil
+	}
+
+	return models2.PromotionSetting{}, nil
+}
+func checkIfDemoted(campusClassNumber string, studyPeriodNumber string, assessmentGradeScaleNumber string, db *gorm.DB) (models2.PromotionSetting, error) {
+	//Check demote
+	promotion, err := repositories10.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, "demoted", db)
+	if err != nil {
+		return models2.PromotionSetting{}, errors.New("Failed to find demoted configuration, error: " + err.Error())
 	}
 
 	if promotion.Number == "" {
@@ -998,7 +1165,7 @@ func checkIfRepeat(campusClassNumber string, studyPeriodNumber string, assessmen
 	}
 
 	if promotionValue.Number == "" {
-		return models2.PromotionSetting{}, errors.New("Repeat value not set for " + promotion.Name)
+		return models2.PromotionSetting{}, errors.New("Demoted value not set for " + promotion.Name)
 	}
 
 	minimumAssessmentGrade, err := repositories2.FindAssessmentGradeScaleByNumber(promotionValue.AssessmentGradeScaleNumber, db)

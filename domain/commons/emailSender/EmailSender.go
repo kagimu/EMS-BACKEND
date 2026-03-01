@@ -3,9 +3,10 @@ package emailSender
 import (
 	"bytes"
 	"crypto/tls"
-	"gopkg.in/gomail.v2"
 	"html/template"
 	"log"
+
+	"gopkg.in/gomail.v2"
 )
 
 type Info struct {
@@ -26,6 +27,8 @@ func (i Info) SendEmail() error {
 		templateUrl = "/fileRepo/templates/registrationTemplate.html"
 	} else if i.Type == "scheduled-interview" {
 		templateUrl = "/fileRepo/templates/notifyInterview.html"
+	} else if i.Type == "application-submitted" {
+		templateUrl = "/fileRepo/templates/applicationSubmittedTemplate.html"
 	} else {
 		templateUrl = "/fileRepo/templates/resetPasswordTemplate.html"
 	}

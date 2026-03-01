@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -16,7 +18,6 @@ import (
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
-	"time"
 )
 
 func CreateHeadTeacherComment(headTeacherCommentRequest requests.HeadTeacherCommentRequest, reportSettingNumber, userNumber string) error {
@@ -222,6 +223,7 @@ func DeleteClassTeacherComment(number string) error {
 func SaveSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, user *authModel.User) error {
 	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
 	subjectTeacherComment := models.SubjectTeacherComment{
+		Number:               uuid.NewV4().String(),
 		Comment:              payload.Comment,
 		UserNumber:           user.Number,
 		StudyPeriodNumber:    payload.StudyPeriodNumber,
@@ -361,7 +363,7 @@ func UpdateSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, 
 		return errors.New("failed to get subject teacher comment: " + err.Error())
 	}
 
-	if subjectTeacherComment.ID == 0 {
+	if subjectTeacherComment.Number == "" {
 		return errors.New("subject teacher comment not found")
 	}
 
@@ -375,4 +377,33 @@ func UpdateSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, 
 	}
 
 	return nil
+}
+
+func UpdateReportSummaryComments(payload requests.UpdateReportScoreSummaryComments, user *authModel.User) error {
+
+	repo := reporsitory.NewReportScoreSummaryRepository(config.DB)
+
+	reportSummary, err := reporsitory.FindReportSummaryByNumber(payload.ReportSummaryNumber)
+	if err != nil {
+		return errors.New("failed to get report summary by number: " + err.Error())
+	}
+
+	for _, val := range payload.AssessmentAreaComments {
+
+		reportScoreSummary, err := repo.FindReportScoreSummaryByReportSummaryAndAssessmentArea(reportSummary.Number, val.AssessmentAreaNumber)
+
+		if err != nil {
+			return errors.New("failed to get report summary by number: " + err.Error())
+		}
+
+		reportScoreSummary.Comment = val.Comment
+
+		err = repo.UpdateReportScoreSummary(reportScoreSummary)
+		if err != nil {
+			return errors.New("failed to update report summary: " + err.Error())
+		}
+	}
+
+	return nil
+
 }

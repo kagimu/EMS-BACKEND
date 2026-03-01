@@ -2,11 +2,12 @@ package repositories
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
-	"time"
 )
 
 func SaveNarrative(narrative models.Narrative, tx ...*gorm.DB) error {
@@ -231,4 +232,35 @@ func FindAllScheduledNarratives(studyPeriodNumber, campusClassNumber, assessment
 	}
 
 	return narratives, nil
+}
+
+func SaveScheduledNarrativeScriptMarkingGuide(narrativeScriptMarkingGuide models.ScheduledNarrativeScriptMarkingGuide, tx ...*gorm.DB) error {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	return db.Save(&narrativeScriptMarkingGuide).Error
+}
+
+func FindNarrativeScriptMarkingGuideByNumber(scheduledNarrativeNumber string, tx ...*gorm.DB) (models.ScheduledNarrativeScriptMarkingGuide, error) {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var narrativeScriptMarkingGuide models.ScheduledNarrativeScriptMarkingGuide
+
+	if err := db.Where("scheduled_narrative_number = ?", scheduledNarrativeNumber).First(&narrativeScriptMarkingGuide).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return narrativeScriptMarkingGuide, nil
+		}
+
+		return narrativeScriptMarkingGuide, err
+	}
+
+	return narrativeScriptMarkingGuide, nil
 }

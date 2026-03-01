@@ -22,7 +22,6 @@ type AdmissionRequest struct {
 type ExistingAdmissionRequest struct {
 	StudentNumber      string `json:"student_number"`
 	AdmissionFeePaid   bool   `json:"admission_fee_paid"`
-	InterviewNumber    string `json:"interview_number"`
 	StudyPeriodNumber  string `json:"study_period_number"`
 	CampusClassNumber  string `json:"campus_class_number"`
 	StreamNumber       string `json:"stream_number"`
@@ -91,9 +90,6 @@ func (a *ExistingAdmissionRequest) Validate() error {
 	}
 	if a.StudentNumber == "" {
 		return errors.New("student  number is required")
-	}
-	if a.InterviewNumber == "" {
-		return errors.New("interview  number is required")
 	}
 
 	return nil

@@ -3,6 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
@@ -21,8 +24,6 @@ import (
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
-	"strconv"
-	"time"
 )
 
 var assessmentMetricRepository = assessmentMetricRepositories.NewAssessmentMetricRepository()
@@ -213,13 +214,14 @@ func buildNarrativeResponse(assessment models.Assessment) responses.NarrativeRes
 	studyPeriodName, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	row := responses.NarrativeResponseRow{
-		Teacher:       user.FirstName + " " + user.LastName,
-		CreatedAt:     assessment.CreatedAt.Format(time.DateOnly),
-		Narration:     assessment.Comment,
-		ReferenceTime: assessment.CreatedAt.Format(time.TimeOnly),
-		ReferenceDate: assessment.CreatedAt.Format(time.DateOnly),
-		Status:        "Unknown",
-		CurrentStatus: "Unknown",
+		Teacher:           user.FirstName + " " + user.LastName,
+		CreatedAt:         assessment.CreatedAt.Format(time.DateOnly),
+		Narration:         assessment.Comment,
+		SuggestedSolution: "N/A",
+		ReferenceTime:     assessment.CreatedAt.Format(time.TimeOnly),
+		ReferenceDate:     assessment.CreatedAt.Format(time.DateOnly),
+		Status:            "Unknown",
+		CurrentStatus:     "Unknown",
 	}
 
 	return responses.NarrativeResponse{

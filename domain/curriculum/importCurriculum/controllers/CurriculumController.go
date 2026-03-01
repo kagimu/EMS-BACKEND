@@ -3,7 +3,6 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -11,7 +10,10 @@ import (
 
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/api/requests"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -176,13 +178,18 @@ func ImportCurriculum(context *gin.Context) {
 	}
 	config.DB.Save(&saveFileData)
 
+	fmt.Println("File uploaded successfully!")
+
 	//read now the Excel file
 	readExcelFile(path, userNumber, curriculumNumber)
+
+	fmt.Println("Excel file read successfully!")
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
 }
 
 func readExcelFile(filePath string, userNumber string, curriculumNumber string) {
+	fmt.Println("Reading Excel File")
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
@@ -208,23 +215,29 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 
 	for idx, row := range rows {
 		if idx > 0 {
+			fmt.Println("Processing row:", idx)
+			fmt.Println("Teaching sequence code: ", getValueAtIndex(row, 13))
+			fmt.Println("Estimated time: ", getValueAtIndex(row, 16))
+			fmt.Println("Required materials: ", getValueAtIndex(row, 17))
 			curriculumInfo := models5.ExcelCurriculumInfo{
-				LearningAreaCode:   getValueAtIndex(row, 0),
-				LearningArea:       getValueAtIndex(row, 1),
-				SubjectClusterCode: getValueAtIndex(row, 2),
-				SubjectCluster:     getValueAtIndex(row, 3),
-				SubjectCode:        getValueAtIndex(row, 4),
-				Subject:            getValueAtIndex(row, 5),
-				Class:              getValueAtIndex(row, 6),
-				StrandCode:         getValueAtIndex(row, 7),
-				Strand:             getValueAtIndex(row, 8),
-				TopicCode:          getValueAtIndex(row, 9),
-				Topic:              getValueAtIndex(row, 10),
-				SubTopicCode:       getValueAtIndex(row, 11),
-				SubTopic:           getValueAtIndex(row, 12),
-				EstimatedTime:      getValueAtIndex(row, 13),
-				ConceptCode:        getValueAtIndex(row, 14),
-				Concept:            getValueAtIndex(row, 15),
+				LearningAreaCode:     getValueAtIndex(row, 0),
+				LearningArea:         getValueAtIndex(row, 1),
+				SubjectClusterCode:   getValueAtIndex(row, 2),
+				SubjectCluster:       getValueAtIndex(row, 3),
+				SubjectCode:          getValueAtIndex(row, 4),
+				Subject:              getValueAtIndex(row, 5),
+				Class:                getValueAtIndex(row, 6),
+				StrandCode:           getValueAtIndex(row, 7),
+				Strand:               getValueAtIndex(row, 8),
+				TopicCode:            getValueAtIndex(row, 9),
+				Topic:                getValueAtIndex(row, 10),
+				SubTopicCode:         getValueAtIndex(row, 11),
+				SubTopic:             getValueAtIndex(row, 12),
+				TeachingSequenceCode: getValueAtIndex(row, 13),
+				ConceptCode:          getValueAtIndex(row, 14),
+				Concept:              getValueAtIndex(row, 15),
+				EstimatedTime:        getValueAtIndex(row, 16),
+				RequiredMaterials:    getValueAtIndex(row, 17),
 			}
 			curriculumInfo.Prepare()
 			saveCurriculumData(curriculumInfo, idx, userNumber, curriculumNumber)
@@ -500,27 +513,23 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 		estimatedTimeData = "0"
 	}
 
-	estTime, err := strconv.ParseInt(estimatedTimeData, 10, 64)
+	estTime, _ := strconv.ParseInt(estimatedTimeData, 10, 64)
 
-	if err != nil {
-		// Handle the error if the string cannot be converted to int64
-		//return err
-	}
+	subTopicCode, _ := strconv.ParseInt(info.SubTopicCode, 10, 64)
 
-	subTopicCode, err := strconv.ParseInt(info.SubTopicCode, 10, 64)
-	if err != nil {
-		//fmt.Println("Error:", err)
-	}
+	subTopicTeachingSequenceCode, _ := strconv.ParseInt(info.TeachingSequenceCode, 10, 64)
+
+	fmt.Println("Teaching sequence code " + info.TeachingSequenceCode)
 
 	///save user data
 	saveSubTopic := subTopicModels.SubTopic{
-		Number:           subtopicNo,
-		Name:             info.SubTopic,
-		Code:             subTopicCode,
-		EstimatedTime:    estTime,
-		TopicNumber:      topicNumber,
-		CurriculumNumber: curriculumNumber,
-		UserNumber:       userNumber,
+		Number:              subtopicNo,
+		Name:                info.SubTopic,
+		Code:                subTopicCode,
+		TopicNumber:         topicNumber,
+		CurriculumNumber:    curriculumNumber,
+		UserNumber:          userNumber,
+		TeacherSequenceCode: subTopicTeachingSequenceCode,
 	}
 
 	var subtopicInfo subTopicModels.SubTopic
@@ -535,6 +544,8 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 			fmt.Println("Insertion failed:", err)
 			return
 		}
+
+		fmt.Println("Subtopic saved successfully")
 	}
 
 	//-------------
@@ -559,12 +570,14 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 	conceptNo := uuid.NewV4().String()
 	///save user data
 	saveConcept := conceptModels.Concept{
-		Number:           conceptNo,
-		Name:             info.Concept,
-		Code:             conceptCode,
-		SubTopicNumber:   subTopicNumber,
-		CurriculumNumber: curriculumNumber,
-		UserNumber:       userNumber,
+		Number:            conceptNo,
+		Name:              info.Concept,
+		Code:              conceptCode,
+		SubTopicNumber:    subTopicNumber,
+		CurriculumNumber:  curriculumNumber,
+		UserNumber:        userNumber,
+		EstimatedTime:     estTime,
+		RequiredMaterials: info.RequiredMaterials,
 	}
 
 	var conceptInfo conceptModels.Concept
@@ -850,4 +863,347 @@ func CurriculumEdit(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Curriculum Edited Successfully!", "data": curriculumDataInfo})
+}
+
+func ExportCurriculum(context *gin.Context) {
+
+	learningAreaNumber := context.Query("learning_area_number")
+	subjectClusterNumber := context.Query("subject_cluster_number")
+	subjectNumber := context.Query("subject_number")
+	strandNumber := context.Query("strand_number")
+	topicNumber := context.Query("topic_number")
+	subtopicNumber := context.Query("sub_topic_number")
+	curriculumNumber := context.Query("curriculum_number")
+	classNumber := context.Query("class_number")
+
+	//fetch learning area
+	learningAreaResp, msg := curriculum.FetchLearningAreaCurriculum(learningAreaNumber, curriculumNumber)
+	if msg != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": msg})
+		return
+	}
+
+	f := excelize.NewFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	// Create a new sheet.
+	index, err := f.NewSheet("Sheet2")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// Set active sheet of the workbook.
+	f.SetActiveSheet(index)
+
+	// Set value of a cell.
+	_ = f.SetCellValue("Sheet2", "A2", "Learning Area.")
+	_ = f.SetCellValue("Sheet2", "A3", "Subject Cluster Code.")
+	_ = f.SetCellValue("Sheet2", "A4", "Subject")
+
+	_ = f.SetCellValue("Sheet2", "B2", " : ")
+	_ = f.SetCellValue("Sheet2", "B3", " : ")
+	_ = f.SetCellValue("Sheet2", "B4", " : ")
+
+	// Add header row for detailed curriculum data starting at A5
+	_ = f.SetCellValue("Sheet2", "A5", "Strand Code")
+	_ = f.SetCellValue("Sheet2", "B5", "Strand Name")
+	_ = f.SetCellValue("Sheet2", "C5", "Topic Code")
+	_ = f.SetCellValue("Sheet2", "D5", "Topic Name")
+	_ = f.SetCellValue("Sheet2", "E5", "Subtopic Code")
+	_ = f.SetCellValue("Sheet2", "F5", "Subtopic Name (Lesson)")
+	_ = f.SetCellValue("Sheet2", "G5", "Teaching Sequence Code")
+	_ = f.SetCellValue("Sheet2", "H5", "Concept Code")
+	_ = f.SetCellValue("Sheet2", "I5", "Concept Name")
+	_ = f.SetCellValue("Sheet2", "J5", "Estimated Time Load (Minutes)")
+	_ = f.SetCellValue("Sheet2", "K5", "Required Materials")
+
+	lstLA := learningAreaResp[0]
+
+	//fetch subject cluster
+	subjectClusterResp, msg := curriculum.FetchSubjectClusterCurriculum("", lstLA.Number, subjectClusterNumber)
+	if msg != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	lstSC := subjectClusterResp[0]
+
+	subjectResp, msg := curriculum.FetchSubjectCurriculum("", lstSC.Number, subjectNumber)
+	if msg != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+	lstSB := subjectResp[0]
+
+	_ = f.SetCellValue("Sheet2", "C2", lstLA.Name)
+	_ = f.SetCellValue("Sheet2", "C3", lstSC.Name)
+	_ = f.SetCellValue("Sheet2", "C4", lstSB.Name)
+
+	strandResp, msg := curriculum.FetchStrandCurriculum("", lstSB.Number, strandNumber)
+	if msg != "" {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+		return
+	}
+
+	// Initialize row counter for data rows (starting from row 6)
+	rowCounter := 6
+
+	// Variables to track previous values to avoid duplication
+	var prevStrandCode, prevTopicCode, prevSubtopicCode int64
+
+	// Loop through strands and populate Excel data
+	for _, lstST := range strandResp {
+		// Reset topic and subtopic tracking when starting a new strand
+		// This ensures that similar codes across different strands are handled correctly
+		if lstST.Code != prevStrandCode {
+			prevTopicCode = 0
+			prevSubtopicCode = 0
+		}
+
+		topicResp, err := curriculum.FetchTopicCurriculum("", lstST.Number, topicNumber, classNumber)
+		if err != "" {
+			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+			return
+		}
+
+		for _, list := range topicResp {
+			// Reset subtopic tracking when starting a new topic
+			// This ensures that similar subtopic codes across different topics are handled correctly
+			if list.Code != prevTopicCode {
+				prevSubtopicCode = 0
+			}
+
+			subtopicResp, err := curriculum.FetchSubtopicCurriculum("", list.Number, subtopicNumber)
+			if err != "" {
+				context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+				return
+			}
+
+			for _, subtopicList := range subtopicResp {
+
+				conceptResp, err := curriculum.FetchConceptCurriculum("", subtopicList.Number)
+				if err != "" {
+					context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": err})
+					return
+				}
+
+				// If there are concepts, create a row for each concept
+				if len(conceptResp) > 0 {
+					for _, concept := range conceptResp {
+						// Determine which values to show (only when they change)
+						strandCode := ""
+						strandName := ""
+						topicCode := ""
+						topicName := ""
+						subtopicCode := ""
+						subtopicName := ""
+
+						// Show strand info only if it changed
+						if lstST.Code != prevStrandCode {
+							strandCode = fmt.Sprintf("%d", lstST.Code)
+							strandName = lstST.Name
+							prevStrandCode = lstST.Code
+						}
+
+						// Show topic info only if it changed
+						if list.Code != prevTopicCode {
+							topicCode = fmt.Sprintf("%d", list.Code)
+							topicName = list.Name
+							prevTopicCode = list.Code
+						}
+
+						// Show subtopic info only if it changed
+						if subtopicList.Code != prevSubtopicCode {
+							subtopicCode = fmt.Sprintf("%d", subtopicList.Code)
+							subtopicName = subtopicList.Name
+							prevSubtopicCode = subtopicList.Code
+						}
+
+						// Write data to Excel row
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), strandCode)                // Strand Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), strandName)                // Strand Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), topicCode)                 // Topic Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), topicName)                 // Topic Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicCode)              // Subtopic Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicName)              // Subtopic Name (Lesson)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("G%d", rowCounter), "")                        // Teaching Sequence Code (empty for now)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("H%d", rowCounter), concept.Code)              // Concept Code
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("I%d", rowCounter), concept.Name)              // Concept Name
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("J%d", rowCounter), concept.EstimatedTime)     // Estimated Time Load (Minutes)
+						_ = f.SetCellValue("Sheet2", fmt.Sprintf("K%d", rowCounter), concept.RequiredMaterials) // Required materials
+
+						rowCounter++
+					}
+				} else {
+					// If no concepts, still create a row for the subtopic
+					// Determine which values to show (only when they change)
+					strandCode := ""
+					strandName := ""
+					topicCode := ""
+					topicName := ""
+					subtopicCode := ""
+					subtopicName := ""
+
+					// Show strand info only if it changed
+					if lstST.Code != prevStrandCode {
+						strandCode = fmt.Sprintf("%d", lstST.Code)
+						strandName = lstST.Name
+						prevStrandCode = lstST.Code
+					}
+
+					// Show topic info only if it changed
+					if list.Code != prevTopicCode {
+						topicCode = fmt.Sprintf("%d", list.Code)
+						topicName = list.Name
+						prevTopicCode = list.Code
+					}
+
+					// Show subtopic info only if it changed
+					if subtopicList.Code != prevSubtopicCode {
+						subtopicCode = fmt.Sprintf("%d", subtopicList.Code)
+						subtopicName = subtopicList.Name
+						prevSubtopicCode = subtopicList.Code
+					}
+
+					// Write data to Excel row
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("A%d", rowCounter), strandCode)                 // Strand Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("B%d", rowCounter), strandName)                 // Strand Name
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("C%d", rowCounter), topicCode)                  // Topic Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("D%d", rowCounter), topicName)                  // Topic Name
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("E%d", rowCounter), subtopicCode)               // Subtopic Code
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("F%d", rowCounter), subtopicName)               // Subtopic Name (Lesson)
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("G%d", rowCounter), subtopicList.EstimatedTime) // Estimated Time Load (Minutes)
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("H%d", rowCounter), "")                         // Teaching Sequence Code (empty for now)
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("I%d", rowCounter), "")                         // Concept Code (empty)
+					_ = f.SetCellValue("Sheet2", fmt.Sprintf("J%d", rowCounter), "")                         // Concept Name (empty)
+
+					rowCounter++
+				}
+			}
+		}
+	}
+
+	f.SetActiveSheet(index)
+
+	// Add borders to the Excel file
+	// Define border style
+	borderStyle := []excelize.Border{
+		{Type: "left", Color: "000000", Style: 1},
+		{Type: "top", Color: "000000", Style: 1},
+		{Type: "bottom", Color: "000000", Style: 1},
+		{Type: "right", Color: "000000", Style: 1},
+	}
+
+	// Apply borders and styling to header row (row 5)
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Border: borderStyle,
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"#D3D3D3"},
+			Pattern: 1,
+		},
+		Font: &excelize.Font{
+			Bold: true,
+		},
+	})
+
+	for col := 'A'; col <= 'K'; col++ {
+		cellRef := fmt.Sprintf("%c5", col)
+		f.SetCellStyle("Sheet2", cellRef, cellRef, headerStyle)
+	}
+
+	// Apply borders to basic info rows (rows 2-4)
+	infoStyle, _ := f.NewStyle(&excelize.Style{
+		Border: borderStyle,
+		Font: &excelize.Font{
+			Bold: true,
+		},
+	})
+
+	for row := 2; row <= 4; row++ {
+		for col := 'A'; col <= 'C'; col++ {
+			cellRef := fmt.Sprintf("%c%d", col, row)
+			f.SetCellStyle("Sheet2", cellRef, cellRef, infoStyle)
+		}
+	}
+
+	// Apply borders to data rows (from row 6 to the last row)
+	for row := 6; row < rowCounter; row++ {
+		for col := 'A'; col <= 'K'; col++ {
+			cellRef := fmt.Sprintf("%c%d", col, row)
+			style, _ := f.NewStyle(&excelize.Style{
+				Border: borderStyle,
+			})
+			f.SetCellStyle("Sheet2", cellRef, cellRef, style)
+		}
+	}
+
+	unixTime := time.Now().Unix()
+	fileName := fmt.Sprintf("%s-%d.xlsx", lstSB.Name, unixTime)
+
+	context.Header("Content-Disposition", "attachment; filename="+fileName)
+	context.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if err := f.Write(context.Writer); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+}
+
+func ExportLessonPlanTemplate(ctx *gin.Context) (*excelize.File, string, error) {
+
+	curriculumNumber := ctx.Query("curriculum_number")
+
+	fileTemplate := excelize.NewFile()
+
+	schemeOfWorkSubTopic, err := repositories2.GetSchemeOfWorkSubTopicByNumber(curriculumNumber)
+	if err != nil {
+		return nil, "", errors.New("Checking scheme subtopic error: " + err.Error())
+	}
+
+	if schemeOfWorkSubTopic.Number == "" {
+		return nil, "", errors.New("Invalid scheme subtopic, we can not export anything ")
+	}
+
+	//defaultOpenSheet := 0
+
+	defaultOpenSheet := -1
+
+	sheetName := fmt.Sprintf("Sheet-%d", "name")
+
+	fmt.Println("Sheet Name: ", sheetName)
+
+	defaultOpenSheet, err = fileTemplate.NewSheet(sheetName)
+	if err != nil {
+		return nil, "", errors.New(fmt.Sprintf("Error '%s' creating sheet '%s'", err.Error(), " concept.Name"))
+	}
+
+	sheetsHeaders := [][]string{
+		{"Concept name:", "Name"},
+		{"Code", "Step"},
+	}
+
+	for i, row := range sheetsHeaders {
+		for j, cell := range row {
+			cellRef, _ := excelize.CoordinatesToCellName(j+1, i+1)
+			err = fileTemplate.SetCellValue(sheetName, cellRef, cell)
+			if err != nil {
+				return nil, "", errors.New(fmt.Sprintf("Error '%s' writing sheet '%s' headers", err.Error(), "concept.Name"))
+			}
+		}
+	}
+
+	if defaultOpenSheet < 0 {
+		return nil, "", errors.New(fmt.Sprintf("Invalid default open sheet number: %d", defaultOpenSheet))
+	}
+
+	fileTemplate.SetActiveSheet(defaultOpenSheet)
+
+	unixTime := time.Now().Unix()
+	return fileTemplate, fmt.Sprintf("%s-%d.xlsx", "subTopic.Name", unixTime), nil
 }

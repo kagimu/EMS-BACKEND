@@ -1,6 +1,9 @@
 package services
 
 import (
+	"strings"
+	"unicode"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
@@ -9,7 +12,6 @@ import (
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
-	"strings"
 )
 
 func SaveAdmissionLetterTemplateService(temp models.AdmissionLetterTemplate) error {
@@ -30,7 +32,7 @@ func GetAdmissionLetterTemplateService(schoolNumber string) (models.AdmissionLet
 	return admissionTemplate, nil
 }
 
-func DecodeAdmissionLetterTemplateService(studentNumber string) (responses.DecodedAdmissionLetter, error) {
+func DecodeAdmissionLetterTemplateService(studentNumber, phrase string) (responses.DecodedAdmissionLetter, error) {
 	repo := repositories.NewAdmissionTemplateRepository(config.DB)
 	student, err := repositories2.FindStudentByNumber(studentNumber)
 	if err != nil {
@@ -68,11 +70,17 @@ func DecodeAdmissionLetterTemplateService(studentNumber string) (responses.Decod
 	resp.AdmissionLetterNumber = admissionTemplate.Number
 
 	// find and replace {{STUDENT_NAME}} with student's full name in the phrase template
-	var phrase = admissionTemplate.Phrase
-	phrase = replace(phrase, "{{STUDENT_NAME}}", user.FirstName+" "+user.LastName+" "+user.SecondName)
+	if phrase == "" {
+		phrase = admissionTemplate.Phrase
+	}
+
+	capitalizedFirstName := capitalizeFirstLetter(user.FirstName)
+	capitalizedLastName := capitalizeFirstLetter(user.LastName)
+	capitalizedSecondName := capitalizeFirstLetter(user.SecondName)
+	phrase = replace(phrase, "{{STUDENT_NAME}}", capitalizedFirstName+" "+capitalizedLastName+" "+capitalizedSecondName)
 	phrase = replace(phrase, "{{SCHOOL_NAME}}", school.Name)
 	phrase = replace(phrase, "{{ADMISSION_NUMBER}}", student.ADN)
-	phrase = replace(phrase, "{{ADMISSION_DATE}}", admission.CreatedAt.Format("2006-01-02"))
+	phrase = replace(phrase, "{{ADMISSION_DATE}}", admission.CreatedAt.Format("02-01-2006"))
 	//phrase = replace(phrase, "{{ADMISSION_CLASS}}", admission.CampusClassNumber)
 	phrase = replace(phrase, "{{CAMPUS_NAME}}", campus.Name)
 	phrase = replace(phrase, "{{PRINCIPAL_NAME}}", school.PrincipalName)
@@ -97,6 +105,15 @@ func replace(phrase, placeholder, value string) string {
 	}
 	phrase = strings.ReplaceAll(phrase, placeholder, value)
 	return phrase
+}
+
+func capitalizeFirstLetter(s string) string {
+	if s == "" {
+		return s
+	}
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }
 
 func DeleteAdmissionLetterTemplateService(templateNumber string) error {

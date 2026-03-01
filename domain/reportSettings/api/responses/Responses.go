@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 )
 
@@ -39,6 +40,7 @@ type ReportColumnAssessmentResponse struct {
 	Class            string `json:"class"`
 	AcademicYear     string `json:"academic_year"`
 	StudyPeriod      string `json:"study_period"`
+	Description      string `json:"description"`
 }
 
 type SummarizedFinalReportResponse struct {
@@ -52,6 +54,20 @@ type SummarizedFinalReportResponse struct {
 }
 
 type LeanReportSummary struct {
+	Number          string  `json:"number"`
+	StudentName     string  `json:"student_name"`
+	StudentNumber   string  `json:"student_number"`
+	Photo           string  `json:"photo"`
+	Grade           string  `json:"grade"`
+	StudyPeriod     string  `json:"study_period"`
+	Stream          string  `json:"stream"`
+	Class           string  `json:"class"`
+	PromotionStatus string  `json:"promotion_status"`
+	Position        int     `json:"position"`
+	Aggregate       float64 `json:"aggregate"`
+	TotalScore      float64 `json:"total_score"`
+}
+type ClassLeanReportSummary struct {
 	Number          string `json:"number"`
 	StudentName     string `json:"student_name"`
 	StudentNumber   string `json:"student_number"`
@@ -110,12 +126,30 @@ type FullReportSummary struct {
 	AcademicYear        string         `json:"academic_year"`
 	ReportColumns       []string       `json:"report_columns"`
 	ReportTemplateName  string         `json:"report_template_name"`
-	TeacherComment      string         `json:"teacher_comment"`
 	HeadTeachersComment string         `json:"head_teachers_comment"`
 	AggregateScale      []AppliedScale `json:"aggregate_scale"`
 	NextTermBegins      string         `json:"next_term_begins"`
 	PromotionStatus     string         `json:"promotion_status"`
 	ReportTemplate      string         `json:"report_template"`
+	TeachersComment     string         `json:"teachers_comment"`
+	Position            int            `json:"position"`
+	Aggregate           float64        `json:"aggregate"`
+	TotalScore          float64        `json:"total_score"`
+}
+
+type ClassFullReportSummary struct {
+	ReportSummaryNumber string         `json:"report_summary_number"`
+	Grade               string         `json:"grade"`
+	LearningAreas       []LearningArea `json:"learning_areas"`
+	Stream              string         `json:"stream"`
+	ReportColumns       []string       `json:"report_columns"`
+	ReportTemplateName  string         `json:"report_template_name"`
+	HeadTeachersComment string         `json:"head_teachers_comment"`
+	AggregateScale      []AppliedScale `json:"aggregate_scale"`
+	NextTermBegins      string         `json:"next_term_begins"`
+	PromotionStatus     string         `json:"promotion_status"`
+	ReportTemplate      string         `json:"report_template"`
+	TeachersComment     string         `json:"teachers_comment"`
 }
 
 type LeanSchool struct {
@@ -172,4 +206,10 @@ type SubjectTeacherCommentResponse struct {
 	Class                string `json:"class"`
 	LevelNumber          string `json:"level_number"`
 	Level                string `json:"level"`
+}
+
+type SubjectGroupResponse struct {
+	Number          string                             `json:"number"`
+	Name            string                             `json:"name"`
+	AssessmentAreas []responses.AssessmentAreaResponse `json:"assessment_areas"`
 }

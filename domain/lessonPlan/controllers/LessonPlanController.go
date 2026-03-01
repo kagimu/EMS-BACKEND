@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"mime/multipart"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -9,8 +12,6 @@ import (
 	lessonPlanModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/services"
 	"github.com/gin-gonic/gin"
-	"mime/multipart"
-	"net/http"
 )
 
 var lessonPlanService = services.NewLessonPlanService()
@@ -185,6 +186,7 @@ func ImportLessonPlan(context *gin.Context) {
 	user, err := commons.GetUserFromHeader(context)
 	if err != nil {
 		context.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+		return
 	}
 
 	schemeSubTopicNumber := context.PostForm("scheme_sub_topic_number")

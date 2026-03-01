@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
@@ -29,6 +30,7 @@ func FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, ac
 		Joins("JOIN study_periods ON study_periods.number = billables.study_period_number").
 		Scopes(filters.ByStatus(status), filters.ByAnyField("bill_type", billType), filters.ByCampusNumber(campusNumber), filters.ByAnyField("academic_year_number", academicYearNumber), filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByAnyField("class_number", classNumber)).
 		Distinct("billables.*").
+		Order("billables.code ASC").
 		Where("school_number = ?", schoolNumber).Find(&billable).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -60,6 +62,66 @@ func GetBillableByNumber(billableNumber string, trn ...*gorm.DB) (models.Billabl
 
 	if err := db.
 		Where("number = ?", billableNumber).First(&billable).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return billable, nil
+		}
+
+		return billable, err
+	}
+
+	return billable, nil
+}
+
+func GetBillableByCode(studyPeriodNumber string, code int64, trn ...*gorm.DB) (models.Billable, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var billable models.Billable
+
+	if err := db.Where("study_period_number = ? AND code = ?", studyPeriodNumber, code).First(&billable).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return billable, nil
+		}
+		return billable, err
+	}
+
+	return billable, nil
+}
+
+func FindBillableByStudyPeriod(studyPeriodNumber, status, billType, classNumber, campusNumber, modeOfStudyNumber, curriculumNumber string, trn ...*gorm.DB) (models.Billable, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var billable models.Billable
+
+	if err := db.
+		Where("study_period_number = ? AND status = ? AND bill_type = ? AND class_number = ? AND campus_number = ? AND mode_of_study_number = ? AND curriculum_number = ?", studyPeriodNumber, status, billType, classNumber, campusNumber, modeOfStudyNumber, curriculumNumber).First(&billable).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return billable, nil
+		}
+
+		return billable, err
+	}
+
+	return billable, nil
+}
+
+func FindBillableByCode(code int64, status, classNumber, campusNumber string, trn ...*gorm.DB) (models.Billable, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var billable models.Billable
+
+	if err := db.
+		Where("status = ? AND class_number = ? AND campus_number = ? AND code = ?", status, classNumber, campusNumber, code).First(&billable).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return billable, nil

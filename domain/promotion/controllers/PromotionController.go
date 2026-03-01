@@ -8,6 +8,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/services"
 	studentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 
 	"github.com/gin-gonic/gin"
@@ -22,7 +23,7 @@ func PromoteStudent(c *gin.Context) {
 
 	var payload requests.PromotionRequest
 	if err := c.BindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -86,23 +87,6 @@ func FetchAllPromotions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": promotions})
 }
 
-func FetchPromotionsByAcademicYear(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
-		return
-	}
-
-	academicYearNumber := c.Query("academic_year_number")
-	var promotions []models.Promotion
-	if err := config.DB.Where("current_academic_year_number = ?", academicYearNumber).Preload("CurrentAcademicYear").Preload("Student").Preload("PromotionSetting").Preload("PromotionSetting.NextClass").Preload("PromotionSetting.PreviousClass").Preload("Student.PreferredCampus").Find(&promotions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch promotions"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": promotions})
-}
-
 func EditPromotion(c *gin.Context) {
 	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
@@ -112,7 +96,7 @@ func EditPromotion(c *gin.Context) {
 
 	var payload requests.PromotionRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -125,19 +109,35 @@ func EditPromotion(c *gin.Context) {
 		return
 	}
 
-	/*updatedPromotion := models.Promotion{
-		PromotionSettingNumber:    payload.PromotionSettingNumber,
-		UserNumber:             payload.UserNumber,
-		Status:                    payload.Status,
-		Reason:                    payload.Reason,
-		CurrentAcademicYearNumber: payload.CurrentAcademicYearNumber,
-		UserNumber:                user.Number,
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": promotion})
+}
+
+func NextPromotedOrDemotedClass(context *gin.Context) {
+	_, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
 	}
 
-	if err := config.DB.Model(&promotion).Where("number = ?", promotionNumber).Updates(updatedPromotion).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update promotion"})
-		return
-	}*/
+	// Get query params
+	studyPeriodNumber := context.Query("study_period_number")
+	studentNumber := context.Query("student_number")
+	promotionType := context.Query("promotion_type")
+	campusClassNumber := context.Query("campus_class_number")
 
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": promotion})
+	// Validate required parameters
+	if studyPeriodNumber == "" || studentNumber == "" || promotionType == "" || campusClassNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Missing required query parameters: study_period_number, student_number, promotion_type, campus_class_number"})
+		return
+	}
+
+	// Call service function to handle the logic
+	promotionService := services.NewPromotionService()
+	result, err := promotionService.GetNextPromotedOrDemotedClass(studyPeriodNumber, studentNumber, promotionType, campusClassNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"data": result})
 }

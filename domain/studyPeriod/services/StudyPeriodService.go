@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -16,7 +18,6 @@ import (
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 type StudyPeriodService interface {
@@ -114,6 +115,7 @@ func CreateStudyPeriod(studyPeriod studyModels.StudyPeriod) responses.StudyPerio
 		StudyPeriodEndDate:    studyPeriod.StudyPeriodEndDate.Format(time.DateTime),
 		UserNumber:            studyPeriod.UserNumber,
 		NextTermBeginsOn:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
+		ReportingDate:         studyPeriod.ReportingDate.Format("02-01-2006"),
 	}
 }
 
@@ -140,6 +142,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 	}
 
 	nextTermBeginsOn, errorDate := time.Parse(layout, studyPeriodRequest.NextTermBeginsOn)
+	reportingDate, errorDate := time.Parse(layout, studyPeriodRequest.ReportingDate)
 
 	checkDuplicate, err := repositories.GetStudyPeriodByCode(studyPeriodRequest.AcademicYearNumber, studyPeriodRequest.Code)
 	if err != nil {
@@ -183,6 +186,7 @@ func (studyPeriodService *studyPeriodService) NewStudyPeriod(studyPeriodRequest 
 			StudyPeriodEndDate:    endDate,
 			StudyPeriodNameNumber: studyPeriodRequest.StudyPeriodNameNumber,
 			NextTermBeginsOn:      nextTermBeginsOn,
+			ReportingDate:         reportingDate,
 		}, tx)
 
 		if err != nil {
@@ -217,7 +221,7 @@ func prepareClasses(classes []string, period studyModels.StudyPeriod, tx *gorm.D
 			continue
 		}
 
-		//Attach class to study period
+		//Attach class to studyperiod
 		err = repositories.SaveClassStudyPeriod(studyModels.ClassStudyPeriod{
 			ClassNumber:       classNumber,
 			StudyPeriodNumber: period.Number,
@@ -272,6 +276,7 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 	endDate, errorDate := time.Parse(layout, studyPeriodRequest.StudyPeriodEndDate)
 
 	nextTermBeginsOn, errorDate := time.Parse(layout, studyPeriodRequest.NextTermBeginsOn)
+	reportingDate, errorDate := time.Parse(layout, studyPeriodRequest.ReportingDate)
 
 	if errorDate != nil {
 		return errorDate
@@ -284,6 +289,7 @@ func (studyPeriodService *studyPeriodService) UpdateStudyPeriod(studyPeriodReque
 	studyPeriod.StudyPeriodEndDate = endDate
 	studyPeriod.StudyPeriodNameNumber = studyPeriodRequest.StudyPeriodNameNumber
 	studyPeriod.NextTermBeginsOn = nextTermBeginsOn
+	studyPeriod.ReportingDate = reportingDate
 
 	calendarEvent, err := repositories2.GetCalendarEventByNumber(studyPeriod.CalendarEventNumber)
 	if err != nil {

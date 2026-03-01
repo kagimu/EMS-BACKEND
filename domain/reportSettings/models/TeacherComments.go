@@ -1,11 +1,12 @@
 package models
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
-	"time"
 )
 
 type HeadTeacherComment struct {
@@ -37,7 +38,6 @@ type ClassTeacherComment struct {
 }
 
 type SubjectTeacherComment struct {
-	ID                   uint
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	Number               string                             `json:"number" gorm:"size:36;unique;not null;primaryKey"`

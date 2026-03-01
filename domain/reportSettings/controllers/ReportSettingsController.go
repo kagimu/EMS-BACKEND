@@ -2,15 +2,18 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/services"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
-	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -18,7 +21,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"strconv"
 
 	"net/http"
 )
@@ -33,7 +35,7 @@ func CreateReportSettings(c *gin.Context) {
 
 	var payload requests.ReportSettingsRequest
 	if err = c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -86,7 +88,7 @@ func CreatReportColumn(ctx *gin.Context) {
 
 	var payload requests.ReportColumnRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -134,7 +136,7 @@ func CreateReportColumnAssessment(ctx *gin.Context) {
 
 	var payload requests.ReportColumnAssessmentRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -193,13 +195,78 @@ func FetchReportSummaries(ctx *gin.Context) {
 	var paginatedResponse = pagination.PaginatedResponse{}
 
 	classNumber := ctx.Query("class_number")
+	status := ctx.Query("status")
 	campusNumber := ctx.Query("campus_number")
 	curriculumNumber := ctx.Query("curriculum_number")
+	campusCurriculumNumber := ctx.Query("campus_curriculum_number")
+	sortBy := ctx.Query("sort_by")
+	dir := ctx.Query("dir")
+
+	if dir == "" {
+		dir = "asc"
+	}
+
+	if dir != "asc" && dir != "desc" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Unknown direction key"})
+		return
+	}
+
+	if sortBy == "" {
+		sortBy = "total_score"
+	}
+
+	sortBy = strings.ToLower(sortBy)
+
+	if sortBy != "total_score" && sortBy != "aggregate" && sortBy != "grade" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Unknown sorting key"})
+		return
+	}
+
+	orderBy := sortBy + " " + strings.ToUpper(dir)
 
 	campusClassNumber := ctx.Query("campus_class_number")
 
 	if campusClassNumber == "" {
-		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, "")
+
+		if classNumber == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a class to view report summaries"})
+			return
+
+		}
+
+		class, err := repositories3.GetClassByNumber(classNumber)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if class.Number == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid class number selected"})
+			return
+		}
+
+		if campusNumber == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a campus to view report summaries"})
+			return
+		}
+
+		if curriculumNumber == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please select  a curriculum to view report summaries"})
+			return
+		}
+
+		curriculum, err := models2.GetCurriculumByNumber(curriculumNumber)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if curriculum.Number == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid curriculum number selected"})
+			return
+		}
+
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
@@ -220,25 +287,28 @@ func FetchReportSummaries(ctx *gin.Context) {
 		filters.ByStreamNumber(ctx.Query("stream_number")),
 		filters.ByGrade(ctx.Query("grade")),
 		filters.ByCampusClassNumber(campusClassNumber),
+		filters.ByAnyField("promotion_status", status),
 		pagination.Paginate(ctx, &paginatedResponse),
 	).Preload("Student").Preload("StudyPeriod").
-		Preload("Stream").Preload("CampusClass").Find(&reportSummaries).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch report summaries"})
+		Preload("Stream").Preload("CampusClass").Order(orderBy).Find(&reportSummaries).Error; err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch report summaries: " + err.Error()})
 		return
 	}
+
+	position := 1
 
 	for _, reportSummary := range reportSummaries {
 
 		studyPeriodName, _ := repositories.GetStudyPeriodNameByNumber(reportSummary.StudyPeriod.StudyPeriodNameNumber)
 
-		promotionStatus := ""
+		/*promotionStatus := ""
 
 		promotion, err := repositories2.FindPromotionByReportSummaryNumber(reportSummary.Number)
 		if err == nil {
 			promotionStatus = promotion.Status
 		} else {
 			fmt.Println(fmt.Sprintf("Checking promotion status error %s", err.Error()))
-		}
+		}*/
 
 		leanStudent := services3.CreateLeanStudent(reportSummary.Student)
 
@@ -251,9 +321,15 @@ func FetchReportSummaries(ctx *gin.Context) {
 			Stream:          reportSummary.Stream.Name,
 			StudyPeriod:     studyPeriodName.Name,
 			Class:           reportSummary.CampusClass.ClassName,
-			PromotionStatus: promotionStatus,
+			PromotionStatus: reportSummary.PromotionStatus,
+			Position:        position,
+			Aggregate:       reportSummary.Aggregate,
+			TotalScore:      reportSummary.TotalScore,
 		})
+
+		position = position + 1
 	}
+
 	paginatedResponse.Content = cleanReportSummary
 
 	ctx.JSON(http.StatusOK, paginatedResponse)
@@ -275,7 +351,7 @@ func FetchReportSummaryDetails(ctx *gin.Context) {
 func CreateReportScore(ctx *gin.Context) {
 	var payload requests.ReportScoreRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -394,7 +470,7 @@ func FetchReportSummaryByStudentAndStudyPeriodAndClass(ctx *gin.Context) {
 func GenerateReportSummary(ctx *gin.Context) {
 	var payload requests.GenerateReportSummaryRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -419,7 +495,7 @@ func CreateHeadTeacherComment(ctx *gin.Context) {
 	reportSettingNumber := ctx.Param("report_setting_number")
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -456,7 +532,7 @@ func CreateTeachersComment(ctx *gin.Context) {
 	var payload requests.TeacherCommentRequest
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -512,7 +588,7 @@ func UpdateReportSettings(context *gin.Context) {
 
 	var payload requests.UpdateReportSettingsRequest
 	if err = context.ShouldBindJSON(&payload); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -622,7 +698,7 @@ func UpdateReportColumnAssessment(context *gin.Context) {
 
 	var payload requests.ReportColumnAssessmentUpdateRequest
 	if err := context.ShouldBindJSON(&payload); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -778,9 +854,9 @@ func FetchSubjectTeacherComments(context *gin.Context) {
 }
 
 func DeleteSubjectTeacherComment(context *gin.Context) {
-	commentNumber := context.Param("id")
+	commentNumber := context.Param("comment_number")
 	if commentNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number to delete"})
 		return
 	}
 
@@ -796,7 +872,7 @@ func DeleteSubjectTeacherComment(context *gin.Context) {
 func UpdateSubjectTeacherComment(context *gin.Context) {
 	commentNumber := context.Param("number")
 	if commentNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Provide comment number to update"})
 		return
 	}
 
@@ -857,6 +933,35 @@ func UpdateClassTeacherComment(context *gin.Context) {
 	err = services3.UpdateClassTeacherComment(payload, commentNumber, currentUser)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": errors.New("failed to update class teacher comment " + err.Error())})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Class teacher comment updated successfully"})
+}
+
+func UpdateReportScoreSummariesComments(context *gin.Context) {
+	var payload requests.UpdateReportScoreSummaryComments
+
+	if err := context.ShouldBindJSON(&payload); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body " + err.Error()})
+		return
+	}
+
+	err := payload.Validate()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	currentUser, err := commons.GetUserFromHeader(context)
+	if err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	err = services3.UpdateReportSummaryComments(payload, currentUser)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": errors.New("failed to update report summary comments " + err.Error())})
 		return
 	}
 

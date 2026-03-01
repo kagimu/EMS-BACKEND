@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
@@ -182,6 +183,25 @@ func FindPromotionByReportSummaryNumber(reportSummaryNumber string, trn ...*gorm
 	}
 
 	if err := db.Where("report_summary_number = ?", reportSummaryNumber).Find(&promotion).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Promotion{}, nil
+		}
+
+		return models.Promotion{}, err
+	}
+
+	return promotion, nil
+}
+
+func FindPromotionByReportSummaryAndType(reportSummaryNumber, promotionType string, trn ...*gorm.DB) (models.Promotion, error) {
+	var promotion models.Promotion
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	if err := db.Where("report_summary_number = ? AND promotion_type = ?", reportSummaryNumber, promotionType).Find(&promotion).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.Promotion{}, nil

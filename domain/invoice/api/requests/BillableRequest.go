@@ -2,6 +2,7 @@ package requests
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 )
 
@@ -15,6 +16,7 @@ type BillableRequest struct {
 	Description            string               `json:"description"`
 	BillableItems          []InvoiceItemRequest `json:"billable_items"`
 	CampusCurriculumNumber string               `json:"campus_curriculum_number"`
+	Code                   int64                `json:"code"`
 }
 
 type UpdateBillableRequest struct {
@@ -50,6 +52,10 @@ func (billableRequest *BillableRequest) Validate() error {
 
 	if billableRequest.BillType != constants.BillTypeContinuing && billableRequest.BillType != constants.BillTypeNewApplication {
 		return errors.New("Choose a valid bill type ")
+	}
+
+	if billableRequest.Code <= 0 {
+		return errors.New("Choose a valid code ")
 	}
 
 	if len(billableRequest.BillableItems) == 0 {

@@ -3,7 +3,6 @@ package repositories
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -78,7 +77,7 @@ func (s SchoolRepositoryImpl) FindSchoolsByEntityNumber(entityNumber string, ctx
 	var schools []schoolModel.School
 
 	if err := s.db.
-		Scopes(filters.ByScopedItems("school", ctx)).
+		//Scopes(filters.ByScopedItems("school", ctx)).
 		Where("entity_number = ?", entityNumber).Find(&schools).Error; err != nil {
 		return schools, err
 	}

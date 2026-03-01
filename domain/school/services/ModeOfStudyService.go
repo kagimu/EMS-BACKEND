@@ -2,13 +2,14 @@ package services
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
-	"time"
 )
 
 type ModeOfStudyService interface {
@@ -69,6 +70,7 @@ func (modeOfStudyService *modeOfStudyService) UpdateModeOfStudy(updateModeOfStud
 	modeOfStudy.Name = updateModeOfStudyRequest.Name
 	modeOfStudy.SchoolNumber = updateModeOfStudyRequest.SchoolNumber
 	modeOfStudy.UserNumber = currentUserNumber
+	modeOfStudy.Code = updateModeOfStudyRequest.Code
 
 	if updateModeOfStudyRequest.Status != "" {
 		modeOfStudy.Status = updateModeOfStudyRequest.Status
@@ -98,6 +100,7 @@ func (modeOfStudyService *modeOfStudyService) AllModesOfStudy(schoolNumber strin
 			Status:            modeOfStudy.Status,
 			CreatedAt:         modeOfStudy.CreatedAt.Format(time.DateTime),
 			SchoolNumber:      modeOfStudy.SchoolNumber,
+			Code:              modeOfStudy.Code,
 		})
 	}
 
@@ -119,6 +122,7 @@ func (modeOfStudyService *modeOfStudyService) NewModeOfStudy(modeOfStudyRequest 
 		Name:         modeOfStudyRequest.Name,
 		SchoolNumber: modeOfStudyRequest.SchoolNumber,
 		UserNumber:   currentUserNumber,
+		Code:         modeOfStudyRequest.Code,
 	})
 
 	if err != nil {

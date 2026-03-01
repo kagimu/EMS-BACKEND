@@ -3,14 +3,15 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/lessonPlan/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/repositories"
 	"gorm.io/gorm"
-	"strconv"
-	"time"
 )
 
 type SchemeOfWorkService struct {

@@ -1,11 +1,12 @@
 package models
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	userModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	learningAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/models"
-	"time"
 )
 import academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 import studyModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
@@ -67,6 +68,7 @@ type ReportSummary struct {
 	StudyPeriodNumber          string                  `json:"study_period_number" gorm:"size:36;not null;"`
 	Grade                      string                  `json:"grade" gorm:"type:text;not null;"`
 	Aggregate                  float64                 `json:"aggregate" gorm:"type:double precision;not null;"`
+	TotalScore                 float64                 `json:"total_score" gorm:"type:double precision;not null;column:total_score"`
 	Comment                    string                  `json:"comment" gorm:"type:text;not null;"`
 	ReportSetting              ReportSetting           `gorm:"foreignKey:ReportSettingNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Student                    studentModel.Student    `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
@@ -76,9 +78,9 @@ type ReportSummary struct {
 	User                       userModels.User         `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StreamNumber               string                  `json:"stream_number" gorm:"size:36;"`
 	Stream                     classModel.Stream       `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	TeacherComment             string                  `json:"teacher_comment" gorm:"size:100"`
 	HeadTeacherComment         string                  `json:"head_teacher_comment" gorm:"size:100"`
 	AggregateScaleUsed         string                  `json:"aggregate_scale_used" gorm:"size:100"`
+	PromotionStatus            string                  `json:"promotion_status" gorm:"size:100;column:promotion_status;default:'NOT_SET'"`
 	AssessmentGradeScaleNumber string                  `json:"assessment_grade_scale_number" gorm:"column:assessment_grade_scale_number;size:36;"`
 }
 
@@ -133,4 +135,11 @@ type LearningAreaReportComment struct {
 	Comment             string                          `json:"comment" gorm:"type:text;not null;"`
 	UserNumber          string                          `json:"user_number" gorm:"size:36;not null;"`
 	User                userModels.User                 `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+}
+
+type ReportSummaryComment struct {
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	ReportSummaryNumber string
+	ReportSummary       ReportSummary `gorm:"foreignKey:ReportSummaryNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 }

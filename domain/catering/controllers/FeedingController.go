@@ -22,12 +22,12 @@ func CreateFeeding(c *gin.Context) {
 
 	var payload requests.FeedingRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
 	if err := payload.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 

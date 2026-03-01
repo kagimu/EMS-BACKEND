@@ -1,10 +1,11 @@
 package models
 
 import (
+	"time"
+
 	academicYearModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
-	"time"
 )
 
 type (
@@ -26,5 +27,6 @@ type (
 		AcademicYear          academicYearModels.AcademicYear `gorm:"foreignKey:AcademicYearNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 		CalendarEvent         eosModels.CalendarEvent         `gorm:"foreignKey:CalendarEventNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 		NextTermBeginsOn      time.Time                       `json:"next_term_begins_on"`
+		ReportingDate         time.Time                       `json:"reporting_date"`
 	}
 )

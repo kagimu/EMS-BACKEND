@@ -1,23 +1,232 @@
 package controllers
 
 import (
-	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	campusModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	subjectModes "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/repository"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/service"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
 )
 
+func CreateStudyTimetablePeriod(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.CreateStudyTimetablePeriodRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
+		return
+	}
+
+	periodService := getStudyTimetablePeriodService()
+	if err := periodService.CreateStudyTimetablePeriod(payload, user.Number); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Study timetable period created successfully"})
+}
+
+func UpdateStudyTimetablePeriod(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	periodNumber := c.Param("period_number")
+	if periodNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Period number is required"})
+		return
+	}
+
+	var payload requests.UpdateStudyTimetablePeriodRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
+		return
+	}
+
+	periodService := getStudyTimetablePeriodService()
+	if err := periodService.UpdateStudyTimetablePeriod(periodNumber, payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Study timetable period updated successfully"})
+}
+
+func DeleteStudyTimetablePeriod(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	periodNumber := c.Param("period_number")
+	if periodNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Period number is required"})
+		return
+	}
+
+	periodService := getStudyTimetablePeriodService()
+	if err := periodService.DeleteStudyTimetablePeriod(periodNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Study timetable period deleted successfully"})
+}
+
+func GetStudyTimetablePeriod(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	periodNumber := c.Param("period_number")
+	if periodNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Period number is required"})
+		return
+	}
+
+	periodService := getStudyTimetablePeriodService()
+	period, err := periodService.GetStudyTimetablePeriodByNumber(periodNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": period})
+}
+
+func GetStudyTimetablePeriods(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	userNumber := c.Query("user_number")
+	if userNumber == "" {
+		userNumber = user.Number
+	}
+
+	studyTimetableNumber := c.Query("study_timetable_number")
+	streamNumber := c.Query("stream_number")
+	day := c.Query("day")
+
+	periodService := getStudyTimetablePeriodService()
+	periods, err := periodService.ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": periods})
+}
+
+func GetStructuredTimetablePeriods(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	studyTimetableNumber := c.Query("study_timetable_number")
+	streamNumber := c.Query("stream_number")
+	day := c.Query("day")
+
+	periodService := getStudyTimetablePeriodService()
+	structuredResponse, err := periodService.GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": structuredResponse})
+}
+
+func getStudyTimetablePeriodService() service.StudyTimetablePeriodService {
+	periodRepo := repository.NewStudyTimetablePeriodRepository(config.DB)
+	slotRepo := repository.NewTimetableSlotRepository(config.DB)
+	taskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableRepo := repository.NewStudyTimetableRepository(config.DB)
+	return service.NewStudyTimetablePeriodService(periodRepo, slotRepo, taskRepo, timetableRepo)
+}
+
+func getStudyTimetableService() service.StudyTimetableService {
+	timetableRepo := repository.NewStudyTimetableRepository(config.DB)
+	return service.NewStudyTimetableService(timetableRepo)
+}
+
+func GetStudyTimetable(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	timetableNumber := c.Param("timetable_number")
+	if timetableNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Timetable number is required"})
+		return
+	}
+
+	timetableService := getStudyTimetableService()
+	timetable, err := timetableService.GetStudyTimetableByNumber(timetableNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": timetable})
+}
+
+func GetAllStudyTimetables(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	// Get query parameters
+	studyPeriodNumber := c.Query("study_period_number")
+	userNumber := c.Query("user_number")
+	if userNumber == "" {
+		userNumber = user.Number
+	}
+	status := c.Query("status")
+	schoolNumber := c.Query("school_number")
+	levelNumber := c.Query("level_number")
+	campusNumber := c.Query("campus_number")
+	classNumber := c.Query("class_number")
+	streamNumber := c.Query("stream_number")
+
+	timetableService := getStudyTimetableService()
+	timetables, err := timetableService.GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, classNumber, streamNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": timetables})
+}
+
 func AddPeriod(context *gin.Context) {
-	var timetable models.StudyTimetablePeriods
+	var timetable models.StudyTimetablePeriod
 	var timetableRequest requests.TimetableRequest
 
 	err := context.ShouldBind(&timetableRequest)
@@ -49,16 +258,14 @@ func AddPeriod(context *gin.Context) {
 
 	timetable.Number = uuid.NewV4().String()
 
-	period := models.StudyTimetablePeriods{
-		Number:        timetable.Number,
-		StartTime:     timetableRequest.StartTime,
-		EndTime:       timetableRequest.EndTime,
-		SubjectNumber: timetableRequest.SubjectNumber,
-		StreamNumber:  timetableRequest.StreamNumber,
-		Day:           timetableRequest.Day,
-		DayCode:       timetableRequestDayCode,
-		CampusNumber:  timetableRequest.CampusNumber,
-		UserNumber:    context.GetHeader("User-Number"),
+	period := models.StudyTimetablePeriod{
+		Number:       timetable.Number,
+		StartTime:    timetableRequest.StartTime,
+		EndTime:      timetableRequest.EndTime,
+		StreamNumber: timetableRequest.StreamNumber,
+		Day:          timetableRequest.Day,
+		DayCode:      timetableRequestDayCode,
+		UserNumber:   context.GetHeader("User-Number"),
 	}
 
 	config.DB.Save(&period)
@@ -69,7 +276,7 @@ func AddPeriod(context *gin.Context) {
 
 func GetDistinctDays(ctx *gin.Context) {
 	var days []string
-	config.DB.Model(&models.StudyTimetablePeriods{}).
+	config.DB.Model(&models.StudyTimetablePeriod{}).
 		Select("DISTINCT day").
 		Order("day_code asc").
 		Scan(&days)
@@ -79,13 +286,13 @@ func GetDistinctDays(ctx *gin.Context) {
 
 func GetPeriodsByDay(ctx *gin.Context) {
 	day := ctx.Param("day")
-	var periods []models.StudyTimetablePeriods
+	var periods []models.StudyTimetablePeriod
 	config.DB.Where("day = ?", day).Find(&periods)
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
 
 func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
-	var periods []models.StudyTimetablePeriods
+	var periods []models.StudyTimetablePeriod
 	config.DB.
 		//Model(&models.StudyTimetablePeriods{}).
 		//Select("stream_number,day").
@@ -101,7 +308,7 @@ func FetchTimetablePeriodsGroupedByDay(ctx *gin.Context) {
 
 func GetPeriodsByStream(ctx *gin.Context) {
 	streamNumber := ctx.Param("stream_number")
-	var periods []models.StudyTimetablePeriods
+	var periods []models.StudyTimetablePeriod
 	config.DB.Where("stream_number = ?", streamNumber).Find(&periods)
 	ctx.JSON(http.StatusOK, gin.H{"data": periods})
 }
@@ -146,136 +353,251 @@ func FetchLevelsByCampusNumber(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"data": levels})
 }
 
-/*func AddCalendarEvent(ctx *gin.Context) {
-
-	var calendarEvent eosModels.CalendarEvent
-	var calendarEventRequest requests.CalendarEventRequest
-
-	err := ctx.BindJSON(&calendarEventRequest)
+func CreateTimetableTask(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	calendarEvent.Number = uuid.NewV4().String()
-
-	//convert date to time
-	layout := "2006-01-02"
-	startDate, err := time.Parse(layout, calendarEventRequest.StartDate)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var payload requests.TimetableTaskRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
-	endDate, _ := time.Parse(layout, calendarEventRequest.EndDate)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	if err := timetableTaskService.CreateTimetableTask(payload, user.Number); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	event := eosModels.CalendarEvent{
-		Number:    calendarEvent.Number,
-		StartDate: startDate,
-		EndDate:   endDate,
-		StartTime: calendarEventRequest.StartTime,
-		EndTime:   calendarEventRequest.EndTime,
-	}
-
-	config.DB.Save(&event)
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable task created successfully"})
 }
 
-func CreateGeneralCalendar(ctx *gin.Context) {
-	var generalCalendar eosModels.GeneralCalendar
-	var generalCalendarRequest requests.GeneralCalendarRequest
-
-	err := ctx.BindJSON(&generalCalendarRequest)
+func UpdateTimetableTask(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	generalCalendar.Number = uuid.NewV4().String()
-
-	//convert date to time
-	layout := "2006-01-02"
-	startDate, err := time.Parse(layout, generalCalendarRequest.StartDate)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	taskNumber := c.Param("task_number")
+	if taskNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task number is required"})
 		return
 	}
 
-	endDate, _ := time.Parse(layout, generalCalendarRequest.EndDate)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var payload requests.UpdateTimetableTaskRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
-	event := eosModels.GeneralCalendar{
-		Number:    generalCalendar.Number,
-		StartDate: startDate,
-		EndDate:   endDate,
-		Name:      generalCalendarRequest.Name,
-	}
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
 
-	config.DB.Save(&event)
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Event added successfully"})
-}*/
-
-func CreateStudyTimetable(ctx *gin.Context) {
-
-	var request = requests.StudyTimetableRequest{}
-	var studyTimetable = models.StudyTimetable{}
-
-	err := ctx.Bind(&request)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, commons.Feedback("Failed to unwrap request"))
+	if err := timetableTaskService.UpdateTimetableTask(taskNumber, payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	studyTimetable.Number = uuid.NewV4().String()
-	studyTimetable.UserNumber = ctx.GetHeader("User-Number")
-	studyTimetable.Status = constants.StatusPending
-	studyTimetable.StudyPeriodNumber = request.StudyPeriodNumber
-	studyTimetable.Name = request.Name
-	err = config.DB.Create(&studyTimetable).Error
-
-	if err != nil {
-		fmt.Println("Error", err.Error())
-		ctx.JSON(http.StatusBadRequest, commons.Feedback("Failed to save timetable"))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, commons.Feedback("Timetable added successfully"))
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable task updated successfully"})
 }
 
-func FetchStudyTimetables(ctx *gin.Context) {
-
-	studyPeriodNumber := ctx.Query("study_period_number")
-	if studyPeriodNumber == "" {
-		ctx.JSON(http.StatusBadRequest, commons.Feedback("Choose study period "))
-		return
-	}
-
-	var timetables []models.StudyTimetable
-	studyTimetables := []responses.StudyTimetables{}
-
-	err := config.DB.Where("study_period_number = ? ", studyPeriodNumber).Find(&timetables).Error
+func DeleteTimetableTask(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, commons.Feedback("Failed to fetch timetables"))
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
-	for _, timetable := range timetables {
-		studyTimetables = append(studyTimetables, responses.StudyTimetables{
-			Number: timetable.Number,
-			Name:   timetable.Name,
-			Status: timetable.Status,
-		})
+	taskNumber := c.Param("task_number")
+	if taskNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task number is required"})
+		return
 	}
 
-	ctx.JSON(http.StatusOK, studyTimetables)
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	if err := timetableTaskService.DeleteTimetableTask(taskNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable task deleted successfully"})
+}
+
+func GetTimetableTasks(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	classNumber := c.Query("class_number")
+
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	tasks, err := timetableTaskService.GetAllTimetableTasks(classNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": tasks})
+}
+
+func GetTimetableTask(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	taskNumber := c.Param("task_number")
+	if taskNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Task number is required"})
+		return
+	}
+
+	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
+	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
+
+	task, err := timetableTaskService.GetTimetableTaskByNumber(taskNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": task})
+}
+
+func CreateTimetableSlot(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.TimetableSlotRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
+		return
+	}
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	if err := timetableSlotService.CreateTimetableSlot(payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable slot created successfully"})
+}
+
+func UpdateTimetableSlot(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	slotNumber := c.Param("slot_number")
+	if slotNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Slot number is required"})
+		return
+	}
+
+	var payload requests.UpdateTimetableSlotRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
+		return
+	}
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	if err := timetableSlotService.UpdateTimetableSlot(slotNumber, payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable slot updated successfully"})
+}
+
+func DeleteTimetableSlot(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	slotNumber := c.Param("slot_number")
+	if slotNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Slot number is required"})
+		return
+	}
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	if err := timetableSlotService.DeleteTimetableSlot(slotNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Timetable slot deleted successfully"})
+}
+
+func GetTimetableSlots(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+	levelNumber := c.Query("level_number")
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	slots, err := timetableSlotService.GetAllTimetableSlots(schoolNumber, levelNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": slots})
+}
+
+func GetTimetableSlot(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	slotNumber := c.Param("slot_number")
+	if slotNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Slot number is required"})
+		return
+	}
+
+	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
+	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
+
+	slot, err := timetableSlotService.GetTimetableSlotByNumber(slotNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": slot})
 }

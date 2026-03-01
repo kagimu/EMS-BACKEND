@@ -3,7 +3,6 @@ package commons
 import (
 	"errors"
 	"fmt"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 	"math"
 	"os"
 	"path/filepath"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -244,12 +245,9 @@ func DaysOfTheWeek() []string {
 
 func ConvertStringToDate(dateString string) (time.Time, error) {
 
-	var dueDate time.Time
-
-	if _dueDate, err := time.Parse(time.DateOnly, dateString); err != nil {
-		return dueDate, errors.New("Due date error: " + dateString)
-	} else {
-		dueDate = _dueDate
+	dueDate, err := time.Parse(time.DateOnly, dateString)
+	if err != nil {
+		return dueDate, errors.New("Date error: " + dateString)
 	}
 
 	return dueDate, nil

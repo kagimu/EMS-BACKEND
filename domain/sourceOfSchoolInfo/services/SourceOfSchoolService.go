@@ -2,12 +2,13 @@ package services
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers/api"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/repositories"
 	uuid "github.com/satori/go.uuid"
-	"time"
 )
 
 type SourceOfSchoolService struct {
@@ -24,6 +25,16 @@ func (s SourceOfSchoolService) NewSourceOfSchool(sourceOfSchoolInfoRequest api.S
 		return responses.SourceOfSchoolResponse{}, errors.New("Source name already used ")
 	}
 
+	// Enforce unique code per entity
+	checkCode, err := repositories.FindSourceOfSchoolInfoByCode(entityNumber, sourceOfSchoolInfoRequest.Code)
+	if err != nil {
+		return responses.SourceOfSchoolResponse{}, err
+	}
+
+	if checkCode.Number != "" {
+		return responses.SourceOfSchoolResponse{}, errors.New("Source code already used ")
+	}
+
 	data := models.SourceOfSchoolInfo{
 		Name:         sourceOfSchoolInfoRequest.Name,
 		Number:       uuid.NewV4().String(),
@@ -31,6 +42,7 @@ func (s SourceOfSchoolService) NewSourceOfSchool(sourceOfSchoolInfoRequest api.S
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 		UserNumber:   userNumber,
+		Code:         sourceOfSchoolInfoRequest.Code,
 	}
 
 	err = repositories.SaveSourceOfSchoolInfo(data)
@@ -61,6 +73,7 @@ func (s SourceOfSchoolService) FindAllSources(entityNumber string) ([]responses.
 			Number:       v.Number,
 			UserNumber:   v.UserNumber,
 			EntityNumber: v.EntityNumber,
+			Code:         v.Code,
 		})
 	}
 
@@ -86,9 +99,21 @@ func (s SourceOfSchoolService) Update(sourceOfSchoolInfo api.SourceOfSchoolReque
 		return responses.SourceOfSchoolResponse{}, errors.New("Source name already used ")
 	}
 
+	// Enforce unique code per entity during update
+	if sourceOfSchool.Code != sourceOfSchoolInfo.Code {
+		checkByCode, err := repositories.FindSourceOfSchoolInfoByCode(sourceOfSchool.EntityNumber, sourceOfSchoolInfo.Code)
+		if err != nil {
+			return responses.SourceOfSchoolResponse{}, err
+		}
+		if checkByCode.Number != "" && checkByCode.Number != sourceOfSchool.Number {
+			return responses.SourceOfSchoolResponse{}, errors.New("Source code already used ")
+		}
+	}
+
 	sourceOfSchool.Name = sourceOfSchoolInfo.Name
 	sourceOfSchool.UserNumber = userNumber
 	sourceOfSchool.UpdatedAt = time.Now()
+	sourceOfSchool.Code = sourceOfSchoolInfo.Code
 
 	err = repositories.SaveSourceOfSchoolInfo(sourceOfSchool)
 
@@ -100,6 +125,7 @@ func (s SourceOfSchoolService) Update(sourceOfSchoolInfo api.SourceOfSchoolReque
 		Name:         sourceOfSchool.Name,
 		Number:       sourceOfSchool.Number,
 		EntityNumber: sourceOfSchool.EntityNumber,
+		Code:         sourceOfSchool.Code,
 	}, nil
 }
 

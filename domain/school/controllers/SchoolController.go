@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -11,8 +14,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
-	"time"
 )
 
 func NewSchool(context *gin.Context) {
@@ -304,13 +305,15 @@ func FetchSchoolInfo(context *gin.Context) {
 	}
 
 	schools_ := responses.SchoolResponse{
-		Number:           schools.Number,
-		Name:             schools.Name,
-		CommencementDate: schools.CommencementDate.Format("2006-01-02"),
-		SchoolCurriculum: curriculum_,
-		Logo:             commons.GenerateDownloadPath(schools.Logo, false),
-		Motto:            schools.Motto,
-		PrincipalName:    schools.PrincipalName,
+		Number:             schools.Number,
+		Name:               schools.Name,
+		CommencementDate:   schools.CommencementDate.Format("2006-01-02"),
+		SchoolCurriculum:   curriculum_,
+		Logo:               commons.GenerateDownloadPath(schools.Logo, false),
+		PrincipalSignature: commons.GenerateDownloadPath(schools.PrincipalSignature, false),
+		Motto:              schools.Motto,
+		PrincipalName:      schools.PrincipalName,
+		PrincipalTitle:     schools.PrincipalTitle,
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools_})
@@ -355,4 +358,26 @@ func UploadSchoolLogo(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Logo uploaded successfully!"})
+}
+
+func UploadPrincipalSignature(context *gin.Context) {
+
+	file, err := context.FormFile("signature")
+	schoolNumber := context.PostForm("school_number")
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "File not found!"})
+		return
+	}
+
+	if file.Size > 1024*1024*2 {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "File size should not exceed 2MB"})
+		return
+	}
+
+	if err := services.UploadPrincipalSignature(schoolNumber, context); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Principal signature uploaded successfully!"})
 }

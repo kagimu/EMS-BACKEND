@@ -21,22 +21,24 @@ type (
 	}
 
 	ExcelCurriculumInfo struct {
-		LearningArea       string
-		SubjectCluster     string
-		Subject            string
-		Class              string
-		Strand             string
-		Topic              string
-		SubTopic           string
-		Concept            string
-		LearningAreaCode   string
-		SubjectClusterCode string
-		SubjectCode        string
-		StrandCode         string
-		TopicCode          string
-		SubTopicCode       string
-		EstimatedTime      string
-		ConceptCode        string
+		LearningArea         string
+		SubjectCluster       string
+		Subject              string
+		Class                string
+		Strand               string
+		Topic                string
+		SubTopic             string
+		Concept              string
+		LearningAreaCode     string
+		SubjectClusterCode   string
+		SubjectCode          string
+		StrandCode           string
+		TopicCode            string
+		SubTopicCode         string
+		EstimatedTime        string
+		ConceptCode          string
+		TeachingSequenceCode string
+		RequiredMaterials    string
 	}
 )
 
@@ -57,6 +59,7 @@ func (p *ExcelCurriculumInfo) Prepare() {
 	p.SubTopicCode = html.EscapeString(strings.TrimSpace(p.SubTopicCode))
 	p.EstimatedTime = html.EscapeString(strings.TrimSpace(p.EstimatedTime))
 	p.ConceptCode = html.EscapeString(strings.TrimSpace(p.ConceptCode))
+	p.TeachingSequenceCode = html.EscapeString(strings.TrimSpace(p.TeachingSequenceCode))
 }
 
 func (u *ImportCurriculum) TableName() string {

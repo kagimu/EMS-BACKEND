@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/services"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
@@ -9,7 +11,6 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
@@ -136,7 +137,6 @@ func CreateAdmission(c *gin.Context) {
 		saveAdmission := models.Admission{
 			Number:             uuid.NewV4().String(),
 			StudyPeriodNumber:  payload.StudyPeriodNumber,
-			InterviewNumber:    payload.InterviewNumber,
 			StudentNumber:      studentPayload,
 			CampusClassNumber:  payload.CampusClassNumber,
 			CampusNumber:       payload.CampusNumber,
@@ -150,6 +150,21 @@ func CreateAdmission(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission"})
 			tx.Rollback()
 			return
+		}
+
+		// Create AdmissionInterview record if interview number is provided
+		if payload.InterviewNumber != "" {
+			admissionInterview := models.AdmissionInterview{
+				Number:          uuid.NewV4().String(),
+				InterviewNumber: payload.InterviewNumber,
+				AdmissionNumber: saveAdmission.Number,
+			}
+
+			if err := tx.Create(&admissionInterview).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission interview record"})
+				return
+			}
 		}
 
 		for _, admissionOfferCondition := range payload.Items {
@@ -194,7 +209,6 @@ func FetchAdmissions(c *gin.Context) {
 	campusNumber := c.Query("campus_number")
 	studyPeriodNumber := c.Query("study_period_number")
 	streamNumber := c.Query("stream_number")
-	interviewNumber := c.Query("interview_number")
 	schoolNumber := c.Query("school_number")
 	campusClassNumber := c.Query("campus_class_number")
 
@@ -205,7 +219,7 @@ func FetchAdmissions(c *gin.Context) {
 		}
 	}
 
-	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, interviewNumber, schoolNumber, campusClassNumber, user, paginate)
+	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, user, paginate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -375,7 +389,6 @@ func CreateExistingAdmission(c *gin.Context) {
 	saveAdmission := models.Admission{
 		Number:             uuid.NewV4().String(),
 		StudyPeriodNumber:  payload.StudyPeriodNumber,
-		InterviewNumber:    payload.InterviewNumber,
 		StudentNumber:      payload.StudentNumber,
 		CampusClassNumber:  payload.CampusClassNumber,
 		CampusNumber:       payload.CampusNumber,
@@ -391,6 +404,21 @@ func CreateExistingAdmission(c *gin.Context) {
 
 		return
 	}
+
+	// Create AdmissionInterview record if interview number is provided
+	//if payload.InterviewNumber != "" {
+	//	admissionInterview := models.AdmissionInterview{
+	//		Number:          uuid.NewV4().String(),
+	//		InterviewNumber: payload.InterviewNumber,
+	//		AdmissionNumber: saveAdmission.Number,
+	//	}
+	//
+	//	if err := tx.Create(&admissionInterview).Error; err != nil {
+	//		tx.Rollback()
+	//		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create admission interview record"})
+	//		return
+	//	}
+	//}
 
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()

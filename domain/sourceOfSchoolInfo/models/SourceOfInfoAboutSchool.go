@@ -2,10 +2,11 @@ package models
 
 import (
 	"errors"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"html"
 	"strings"
 	"time"
+
+	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 )
@@ -19,6 +20,7 @@ type SourceOfSchoolInfo struct {
 	User         models.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	EntityNumber string         `json:"entity_number" gorm:"size:36;index;not null"`
 	Entity       models2.Entity `gorm:"foreignKey:EntityNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	Code         int64          `json:"code"`
 }
 
 func (s *SourceOfSchoolInfo) TableName() string {

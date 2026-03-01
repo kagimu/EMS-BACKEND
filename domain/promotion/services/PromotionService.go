@@ -3,6 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	responses7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/aggregateScale/api/responses"
 	assessmentGradeResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/api/responses"
@@ -31,7 +34,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 type PromotionService interface {
@@ -43,9 +45,15 @@ type PromotionService interface {
 	PromotionSettingValue(promotionSettingNumber string) (responses.PromotionSettingValueResponse, error)
 	UpdatePromotionSetting(payload requests.PromotionSettingRequest, user *models.User, promotionSettingNumber string) error
 	UpdatePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error
+	GetNextPromotedOrDemotedClass(studyPeriodNumber, studentNumber, promotionType, campusClassNumber string) (responses.PromotionDetailedResponse, error)
+	AllPromotions(c *gin.Context)
 }
 
 type promotionService struct{}
+
+func (p *promotionService) AllPromotions(c *gin.Context) {
+
+}
 
 func (p *promotionService) UpdatePromotionSettingValue(payload requests.PromotionSettingValueRequest, user *models.User) error {
 
@@ -136,13 +144,15 @@ func (p *promotionService) UpdatePromotionSetting(promotionSettingsRequest reque
 	}
 
 	promotionSetting.Name = promotionSettingsRequest.Name
-	promotionSetting.Type = promotionSettingsRequest.Type
+	promotionSetting.Type = strings.ToLower(promotionSettingsRequest.Type)
 	promotionSetting.Status = promotionSettingsRequest.Status
 	promotionSetting.NextCampusClassNumber = nextCampusClass.Number
 	promotionSetting.PreviousCampusClassNumber = prevCampusClass.Number
 	promotionSetting.UserNumber = user.Number
 	promotionSetting.StudyPeriodNumber = studyPeriod.Number
 	promotionSetting.UpdatedAt = time.Now()
+	promotionSetting.CampusCurriculumNumber = promotionSettingsRequest.CampusCurriculumNumber
+	promotionSetting.CampusLevelNumber = promotionSettingsRequest.CampusLevelNumber
 
 	err = repositories.SavePromotionSettings(promotionSetting)
 	if err != nil {
@@ -415,12 +425,19 @@ func (p *promotionService) NewPromotionSetting(promotionSettingsRequest requests
 	savePromotionSettings := models2.PromotionSetting{
 		Number:                    uuid.NewV4().String(),
 		Name:                      promotionSettingsRequest.Name,
-		Type:                      promotionSettingsRequest.Type,
+		Type:                      strings.ToLower(promotionSettingsRequest.Type),
 		Status:                    promotionSettingsRequest.Status,
 		NextCampusClassNumber:     nextCampusClass.Number,
 		PreviousCampusClassNumber: prevCampusClass.Number,
 		UserNumber:                user.Number,
 		StudyPeriodNumber:         studyPeriod.Number,
+		CurrentStudyPeriodNumber:  promotionSettingsRequest.CurrentStudyPeriodNumber,
+		CampusCurriculumNumber:    promotionSettingsRequest.CampusCurriculumNumber,
+		CampusLevelNumber:         promotionSettingsRequest.CampusLevelNumber,
+		CurrentAcademicYearNumber: promotionSettingsRequest.CurrentAcademicYearNumber,
+		NextAcademicYearNumber:    nextCampusClass.Number,
+		CurrentLevelNumber:        promotionSettingsRequest.CurrentLevelNumber,
+		NextLevelNumber:           promotionSettingsRequest.NextLevelNumber,
 	}
 
 	err = repositories.SavePromotionSettings(savePromotionSettings)
@@ -450,16 +467,27 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 
 	nextClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.NextCampusClassNumber)
 	prevClass, _ := repositories2.GetClassByCampusClassNumber(promotionSetting.PreviousCampusClassNumber)
+
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(promotionSetting.StudyPeriodNumber)
 
 	promo := responses.PromotionResponse{
-		Name:                    promotionSetting.Name,
-		PromotionSettingsNumber: promotionSetting.Number,
-		NextClass:               services.CreateClassResponse(nextClass),
-		PreviousClass:           services.CreateClassResponse(prevClass),
-		Type:                    promotionSetting.Type,
-		Status:                  promotionSetting.Status,
-		StudyPeriod:             services2.CreateStudyPeriodResponse(studyPeriod),
+		Name:                     promotionSetting.Name,
+		PromotionSettingsNumber:  promotionSetting.Number,
+		NextClass:                services.CreateClassResponse(nextClass),
+		PreviousClass:            services.CreateClassResponse(prevClass),
+		Type:                     promotionSetting.Type,
+		Status:                   promotionSetting.Status,
+		StudyPeriod:              services2.CreateStudyPeriodResponse(studyPeriod),
+		CurrentStudyPeriodNumber: promotionSetting.CurrentStudyPeriodNumber,
+		CampusCurriculumNumber:   promotionSetting.CampusCurriculumNumber,
+		CampusLevelNumber:        promotionSetting.CampusLevelNumber,
+	}
+
+	if promotionSetting.CurrentStudyPeriodNumber != "" {
+		if curSp, err := repositories3.GetStudyPeriodByNumber(promotionSetting.CurrentStudyPeriodNumber); err == nil {
+			sp := services2.CreateStudyPeriodResponse(curSp)
+			promo.CurrentStudyPeriodName = sp.Name
+		}
 	}
 
 	campusClass, err := repositories2.GetCampusClassByNumber(promotionSetting.PreviousCampusClassNumber)
@@ -504,6 +532,41 @@ func createPromotionResponse(promotionSetting models2.PromotionSetting) response
 	}
 
 	return promo
+}
+
+func (p *promotionService) GetNextPromotedOrDemotedClass(studyPeriodNumber, studentNumber, promotionType, campusClassNumber string) (responses.PromotionDetailedResponse, error) {
+	// Find the promotion setting for the current campus class and current study period
+	promotionSetting, err := repositories.FindPromotionSettingsByStudyPeriod(studyPeriodNumber, campusClassNumber, promotionType)
+	if err != nil {
+		return responses.PromotionDetailedResponse{}, errors.New("Error finding promotion setting: " + err.Error())
+	}
+
+	if promotionSetting.Number == "" {
+		return responses.PromotionDetailedResponse{}, errors.New("no promotion setting found for the given parameters")
+	}
+
+	// Find the report summary for the student by student_number and study_period_number
+	reportSummary, err := reporsitory.GetReportSummaryByStudentAndStudyPeriod(studentNumber, studyPeriodNumber)
+	if err != nil {
+		return responses.PromotionDetailedResponse{}, errors.New("Error finding report summary: " + err.Error())
+	}
+
+	if reportSummary.Number == "" {
+		return responses.PromotionDetailedResponse{}, errors.New("no report summary found for the student in the given study period")
+	}
+
+	// Query Promotions table by ReportSummaryNumber and promotion_type
+	promotion, err := repositories.FindPromotionByReportSummaryAndType(reportSummary.Number, promotionType)
+	if err != nil {
+		return responses.PromotionDetailedResponse{}, errors.New("Error finding promotion record: " + err.Error())
+	}
+
+	if promotion.Number == "" {
+		return responses.PromotionDetailedResponse{}, errors.New("No promotion record found for the student")
+	}
+
+	// Return the promotion settings details
+	return p.PromotionSettingDetails(promotionSetting.Number)
 }
 
 func NewPromotionService() PromotionService {

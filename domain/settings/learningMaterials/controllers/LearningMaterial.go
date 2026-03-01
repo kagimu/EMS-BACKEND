@@ -61,9 +61,82 @@ func CreateNewLearningMaterial(ctx *gin.Context) {
 
 }
 
+func DeleteMaterial(ctx *gin.Context) {
+
+	number := ctx.Param("number")
+	var learningMaterial models.LearningMaterial
+
+	err := config.DB.Where(&models.LearningMaterial{Number: number}).First(&learningMaterial).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Learning material not found"})
+	}
+
+	err = config.DB.Delete(&models.LearningMaterial{}, "number = ?", number).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Learning material not deleted try again " + err.Error()})
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "Learning material deleted successfully!"})
+
+}
+
+func UpdateLearningMaterial(ctx *gin.Context) {
+	var learningMaterial = models.LearningMaterial{}
+	/*	err := ctx.BindJSON(&learningMaterial)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+			return
+		}*/
+
+	learningMaterial.Name = ctx.PostForm("name")
+	learningMaterial.Type = ctx.PostForm("type")
+	learningMaterial.Category = ctx.PostForm("category")
+	learningMaterial.SubCategoryNumber = ctx.PostForm("sub_category")
+	learningMaterialNumber := ctx.PostForm("learning_material_number")
+
+	if learningMaterialNumber != "" {
+		learningMaterial.Number = learningMaterialNumber
+	}
+
+	Code, err := strconv.Atoi(ctx.PostForm("code"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+		return
+	}
+	learningMaterial.Code = int64(Code)
+	learningMaterial.UserNumber = ctx.Request.Header["User-Number"][0]
+
+	/*err := learningMaterial.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}*/
+
+	file, _ := ctx.FormFile("file")
+
+	if file != nil {
+		// Upload the file to specific dst.
+		err = ctx.SaveUploadedFile(file, "fileRepo/learningMaterials/"+file.Filename)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+
+		}
+
+	}
+
+	if err := config.DB.Where("number", learningMaterialNumber).
+		Updates(learningMaterial).Error; err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "An error occurred. Learning material not saved " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Learning material updated successfully!"})
+
+}
+
 func FetchAllLearningMaterials(ctx *gin.Context) {
 	var learningMaterials []models.LearningMaterial
-	config.DB.Find(&learningMaterials)
+	config.DB.Order("code asc").Find(&learningMaterials)
 
 	ctx.JSON(http.StatusOK, gin.H{"data": learningMaterials})
 
@@ -147,7 +220,7 @@ func CreateCurriculumReference(context *gin.Context) {
 				// If any error occurs, rollback the transaction
 				tx.Rollback()
 				// Handle or return the error as needed
-				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference"})
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to save reference " + err.Error()})
 				return
 			}
 		}
@@ -156,11 +229,11 @@ func CreateCurriculumReference(context *gin.Context) {
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create reference!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create reference! " + err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Success"})
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Reference Created Successfully!"})
 }
 
 func CreateMaterialSubType(context *gin.Context) {

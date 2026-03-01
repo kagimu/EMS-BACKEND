@@ -1,7 +1,13 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"path/filepath"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
@@ -18,10 +24,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
-	"net/http"
-	"path/filepath"
-	"strconv"
-	"time"
 )
 
 var schemeOfWorkService = services.InitSchemeOfWorkService()
@@ -131,14 +133,14 @@ func NewSchemeOfWork(context *gin.Context) {
 			Code:               schemeList.Code,
 			EstimatedTime:      schemeList.EstimatedTime,
 			SchemeOfWorkNumber: saveSchemeOfWork.Number,
-			SubTopicNumber:     schemeList.SubTopicNumber,
+			SubTopicNumber:     schemeList.Number,
 			UserNumber:         userNumber,
 		}
 		if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {
 			// If any error occurs, rollback the transaction
 			tx.Rollback()
 			// Handle or return the error as needed
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme " + "sub topic " + err.Error()})
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme sub topic " + err.Error()})
 			return
 		}
 	}
@@ -317,18 +319,18 @@ func DownloadSchemeOfWork(context *gin.Context) {
 		Preload("Topic.Strand.Subject").
 		Preload("Topic.Strand").
 		Preload("Topic").
-		Order("code asc").
+		Order("created_at asc").
 		Find(&subtopic).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!"})
 		return
 	}
 
-	for idx, subtopicList := range subtopic {
+	for _, subtopicList := range subtopic {
 		if subjectNumber == subtopicList.Topic.Strand.Subject.Number {
 			subTopicInfo_ = append(subTopicInfo_, responses.SubTopicList{
 				Number:        subtopicList.Number,
-				Code:          subtopicList.Code,
-				SortCode:      int64(idx + 1),
+				Code:          subtopicList.TeacherSequenceCode,
+				SortCode:      subtopicList.TeacherSequenceCode,
 				Name:          subtopicList.Name,
 				UserNumber:    subtopicList.UserNumber,
 				EstimatedTime: subtopicList.EstimatedTime,
@@ -624,7 +626,13 @@ func ImportSchemeOfWork(context *gin.Context) {
 	}
 
 	//read now the Excel file
-	readSchemeExcelFile(path, userNumber, schemeNumber, subjectNumber, tx, context)
+	err = readSchemeExcelFile(path, userNumber, schemeNumber, subjectNumber, tx, context)
+
+	if err != nil {
+		tx.Rollback()
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
 
 	// Commit the transaction if there is no error
 	if err := tx.Commit().Error; err != nil {
@@ -637,13 +645,13 @@ func ImportSchemeOfWork(context *gin.Context) {
 
 }
 
-func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
+func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) error {
 
 	//f, err := excelize.OpenFile("Book1.xlsx")
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 	defer func() {
 		// Close the spreadsheet.
@@ -659,7 +667,7 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 	rows, err := f.GetRows(sheetName[0])
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 
 	for idx, row := range rows {
@@ -669,24 +677,29 @@ func readSchemeExcelFile(filePath string, userNumber string, schemeNumber string
 				EstimatedTime: getValueAtIndex(row, 4),
 				SortingCode:   getValueAtIndex(row, 5),
 			}
-			saveSchemeOfWorkData(schemeInfo, userNumber, schemeNumber, subjectNumber, tx, context)
+			err := saveSchemeOfWorkData(schemeInfo, userNumber, schemeNumber, subjectNumber, tx, context)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
+	return nil
+
 }
 
-func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) {
+func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber string, schemeNumber string, subjectNumber string, tx *gorm.DB, context *gin.Context) error {
 
 	codeNo, err := strconv.ParseInt(schemeInfo.SortingCode, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
+		return err
 	}
 
 	estimatedTime, err := strconv.ParseInt(schemeInfo.EstimatedTime, 10, 64)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
+		return err
 	}
 
 	var duplicateSchemeCode schemeOfWorkModel.SchemeOfWorkSubTopic
@@ -694,9 +707,9 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber 
 		Where("code = ?", codeNo).
 		Where("scheme_of_work_number = ?", schemeNumber).
 		First(&duplicateSchemeCode).Error; duplicate == nil {
-		tx.Rollback()
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Duplicate codes are not allowed!!!, Code: " + strconv.FormatInt(codeNo, 10)})
-		return
+		//tx.Rollback()
+		//context.JSON(http.StatusBadRequest, gin.H{"message": })
+		return errors.New("Duplicate codes are not allowed!!!, Code: " + strconv.FormatInt(codeNo, 10))
 	}
 
 	//fetch scheme of work
@@ -706,9 +719,9 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber 
 	if err := tx.
 		Where("number = ?", subjectNumber).
 		First(&subjectInfo).Error; err != nil {
-		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
-		return
+		//tx.Rollback()
+		//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Subject!"})
+		return errors.New("No Subject found!!!")
 	}
 
 	//then fetch subtopic by curriculum and its  name
@@ -717,9 +730,9 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber 
 		Where("name = ?", schemeInfo.SubTopic).
 		Where("curriculum_number = ?", subjectInfo.CurriculumNumber).
 		First(&subtopic).Error; err != nil {
-		tx.Rollback()
-		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!!"})
-		return
+		//tx.Rollback()
+		//context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Sub topic found!!"})
+		return errors.New("No Sub topic found!!!")
 	}
 
 	//-----------------------
@@ -734,12 +747,14 @@ func saveSchemeOfWorkData(schemeInfo requests.ExcelSchemeOfWorkInfo, userNumber 
 	}
 	if err := tx.Create(&saveSchemeOfWorkSubtopic).Error; err != nil {
 		// If any error occurs, rollback the transaction
-		tx.Rollback()
+		//tx.Rollback()
 		// Handle or return the error as needed
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create scheme of work sub topic"})
-		return
+		return errors.New("Failed to create scheme of work sub topic - " + err.Error())
 	}
 	//}
+
+	return nil
 
 }
 

@@ -43,7 +43,7 @@ func CreateStudent(c *gin.Context) {
 		return
 	}
 
-	err = services2.CreateNewStudentAndApplication(payload, user.Number)
+	apn, err := services2.CreateNewStudentAndApplication(payload, user.Number)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -55,6 +55,7 @@ func CreateStudent(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "student created successfully",
+		"data":    apn,
 	})
 }
 

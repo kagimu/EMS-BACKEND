@@ -1,14 +1,17 @@
 package controllers
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
@@ -84,12 +87,14 @@ func FetchApplications(c *gin.Context) {
 				filters.ByAnyField("students.preferred_campus_number", c.Query("campus_number")),
 				filters.ByAnyField("students.school_number", schoolNumber),
 				pagination.Paginate(c, &paginationResponse),
+				filters.BySearchingAnyField([]string{"students.adn", "students.apn", "students.surname", "students.second_name", "students.other_name", "parents.surname", "parents.second_name", "parents.other_name"}, c.Query("search")),
 			).
 			Preload("Student").Preload("Parent").
 			Preload("Student.CampusClass").
 			Preload("Student.PreferredCampus").
 			Preload("PreviousSchools").
 			Joins("JOIN students ON students.application_number = applications.number").
+			Joins("JOIN parents ON parents.application_number = applications.number").
 			Find(&applications).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": "application fetching failed",
@@ -124,7 +129,7 @@ func EditApplication(c *gin.Context) {
 
 	var payload ApplicationInfo
 	if err := c.BindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input- " + err.Error()})
 		return
 	}
 
@@ -175,17 +180,40 @@ func FetchApplicationByNumber(c *gin.Context, applicationNumber string) (*models
 func SubmitApplication(context *gin.Context) {
 
 	var applicationNumber = context.Param("application_number")
-	applicationRepo := repository.NewApplicationRepositoryImpl(config.DB)
+	tx := config.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	applicationRepo := repository.NewApplicationRepositoryImpl(tx)
 	application, err := applicationRepo.FindApplicationByNumber(applicationNumber)
 	if err != nil {
+		tx.Rollback()
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Application not found error " + err.Error()})
 		return
 	}
 
 	err = applicationRepo.UpdateApplicationStatus(application, constants.StatusSubmitted)
-
 	if err != nil {
+		tx.Rollback()
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application " + err.Error()})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save application " + err.Error()})
+		return
+	}
+
+	// Send email after commit so the transaction does not hold locks during slow I/O
+	var parentRepo = repositories.NewParentRepositoryImpl(config.DB)
+	parent, _ := parentRepo.GetParentByApplicationNumber(application.Number)
+	d := emailSender.Info{Email: parent.Email, MailType: "WholesomeEd: Application for your child has been submitted", UserName: parent.Surname, CurrentYear: time.Now().Year(), Type: "application-submitted"}
+	if err := d.SendEmail(); err != nil {
+		// Application already submitted; do not rollback. Optionally log and inform client.
+		context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully. Confirmation email could not be sent."))
 		return
 	}
 

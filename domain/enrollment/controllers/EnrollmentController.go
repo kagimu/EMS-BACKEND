@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/services"
 	"gorm.io/gorm"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -62,6 +63,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 	studyPeriodNumber := c.Query("study_period_number")
 	academicYear := c.Query("academic_year_number")
 	status := c.Query("status")
+	search := c.Query("search")
 
 	if user.Type != constants.TypeClient {
 		if schoolNumber == "" {
@@ -72,7 +74,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 
 	page := pagination.Paginate(c, &paginatedResponse)
 
-	students_, err := enrolmentService.Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
+	students_, err := enrolmentService.Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -125,7 +127,7 @@ func ReEnrollStudent(context *gin.Context) {
 	// update the enrollment status to active
 	enrollment.Status = constants.StatusActive
 	if err := config.DB.Save(&enrollment).Error; err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to re-enroll student"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to re-enroll student " + err.Error()})
 		return
 	}
 

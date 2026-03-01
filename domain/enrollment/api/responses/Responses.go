@@ -14,6 +14,18 @@ type EnrolledStudent struct {
 	Status            string  `json:"status"`
 }
 
+type NarrativeEnrolledStudent struct {
+	APN               string `json:"apn"`
+	ADN               string `json:"adn"`
+	Number            string `json:"number"`
+	StudentSurname    string `json:"student_surname"`
+	StudentSecondName string `json:"student_second_name"`
+	StudentOtherName  string `json:"student_other_name"`
+	Narrative         string `json:"narrative"`
+	SuggestedSolution string `json:"suggested_solution"`
+	Class             string `json:"class"`
+}
+
 type Enrollment struct {
 	Number                 string `json:"number"`
 	StudentNumber          string `json:"student_number"`

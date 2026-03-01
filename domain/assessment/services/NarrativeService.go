@@ -3,28 +3,34 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
+	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/api/responses"
+	repositories11 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	repositories10 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/learningarea/repositories"
 	repositories9 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/repositories"
+	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	repositories8 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/repositories"
 	"github.com/araddon/dateparse"
+	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"strconv"
-	"time"
 )
 
 type NarrativeService struct {
@@ -92,6 +98,8 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 
 		class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
 
+		uploads, _ := repositories.FindNarrativeScriptMarkingGuideByNumber(narrative.Number)
+
 		scheduledNarratives = append(scheduledNarratives, responses.ScheduledNarrativeResponse{
 			Number:               narrative.Number,
 			ScheduledOn:          narrative.ScheduledOn.Format(time.DateOnly),
@@ -102,6 +110,8 @@ func (narrativeService NarrativeService) AllSchedules(studyPeriodNumber, classNu
 			StudyPeriod:          name,
 			AssessmentArea:       assessmentArea.Name,
 			Class:                class.Name,
+			ScriptNumber:         uploads.ScriptNumber,
+			MarkingGuideNumber:   uploads.MarkingGuideNumber,
 		})
 	}
 
@@ -156,17 +166,19 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 	}
 
 	narrative := models.Narrative{
-		UserNumber:           userNumber,
-		StudentNumber:        narrativeRequest.StudentNumber,
-		CampusClassNumber:    narrativeRequest.CampusClassNumber,
-		AssessmentAreaNumber: narrativeRequest.AssessmentAreaNumber,
-		Description:          narrativeRequest.Description,
-		UpdatedAt:            time.Now(),
-		StudyPeriodNumber:    narrativeRequest.StudyPeriodNumber,
-		ReferenceDate:        dateTime,
-		ReferenceTime:        narrativeRequest.ReferenceTime,
-		CurrentStatus:        narrativeRequest.CurrentStatus,
-		Status:               narrativeRequest.Status,
+		UserNumber:              userNumber,
+		StudentNumber:           narrativeRequest.StudentNumber,
+		CampusClassNumber:       narrativeRequest.CampusClassNumber,
+		AssessmentAreaNumber:    narrativeRequest.AssessmentAreaNumber,
+		Description:             narrativeRequest.Description,
+		UpdatedAt:               time.Now(),
+		StudyPeriodNumber:       narrativeRequest.StudyPeriodNumber,
+		ReferenceDate:           dateTime,
+		ReferenceTime:           narrativeRequest.ReferenceTime,
+		CurrentStatus:           narrativeRequest.CurrentStatus,
+		Status:                  narrativeRequest.Status,
+		SuggestedSolution:       narrativeRequest.SuggestedSolution,
+		NarrativeScheduleNumber: narrativeRequest.NarrativeScheduleNumber,
 	}
 
 	createdAt := time.Now()
@@ -201,7 +213,7 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 			return errors.New("Invalid schedule selected ")
 		}
 
-		if checkScheduled.ScheduledOn.Before(time.Now()) {
+		if time.Now().Before(checkScheduled.ScheduledOn) {
 			return errors.New("This schedule is not yet due ")
 		}
 
@@ -398,6 +410,7 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 	class, _ := repositories4.GetClassByCampusClassNumber(narrative.CampusClassNumber)
 
 	school, _ := repositories7.GetSchoolByNumber(spn.SchoolNumber)
+	campus, _ := repositories11.GetCampusByCampusClassNumber(narrative.CampusClassNumber)
 
 	response := responses.NarrativeResponsePrintPreview{
 		Class:                class.Name,
@@ -407,7 +420,23 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 		RegistrationNumber:   student.ADN,
 		ChildFirstName:       student.Surname,
 		ChildSecondName:      student.SecondName,
-		School:               school.Name,
+		School: responses2.SchoolResponse{
+			Name:               school.Name,
+			Number:             school.Number,
+			Logo:               school.Logo,
+			PrincipalSignature: school.PrincipalSignature,
+			Motto:              school.Motto,
+			PrincipalName:      school.PrincipalName,
+			CommencementDate:   school.CommencementDate.Format("2006-01-02"),
+		},
+		Campus: responses3.CampusResponse{
+			Name:             campus.Name,
+			Number:           campus.Number,
+			Phone:            campus.Phone,
+			Email:            campus.Email,
+			Location:         campus.Location,
+			CommencementDate: campus.CommencementDate,
+		},
 	}
 
 	narrationData, err := repositories.GetNarrativesGroupedByAssessmentArea(narrative.StudentNumber, narrative.StudyPeriodNumber, "", startDate, endDate)
@@ -443,12 +472,14 @@ func (narrativeService NarrativeService) NarrativeReportPrintPreview(narrative r
 
 		for _, narration := range narrationList {
 			narrativeResponseRows = append(narrativeResponseRows, responses.NarrativeResponseRow{
-				Status:        narration.Status,
-				CurrentStatus: narration.CurrentStatus,
-				Narration:     narration.Description,
-				ReferenceDate: narration.ReferenceDate.Format("2006-01-02"),
-				ReferenceTime: narration.ReferenceTime,
-				CreatedAt:     narration.CreatedAt.Format("2006-01-02"),
+				Status:                  narration.Status,
+				CurrentStatus:           narration.CurrentStatus,
+				Narration:               narration.Description,
+				SuggestedSolution:       narration.SuggestedSolution,
+				ReferenceDate:           narration.ReferenceDate.Format("2006-01-02"),
+				ReferenceTime:           narration.ReferenceTime,
+				CreatedAt:               narration.CreatedAt.Format("2006-01-02"),
+				NarrativeScheduleNumber: narration.NarrativeScheduleNumber,
 			})
 		}
 
@@ -478,13 +509,15 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 	spn, _ := repositories2.GetStudyPeriodNameByNumber(studyPeriod.StudyPeriodNameNumber)
 
 	row := responses.NarrativeResponseRow{
-		Teacher:       user.FirstName + " " + user.LastName,
-		CreatedAt:     narrative.CreatedAt.Format(time.DateTime),
-		Narration:     narrative.Description,
-		ReferenceTime: narrative.ReferenceTime,
-		ReferenceDate: narrative.ReferenceDate.Format(time.DateOnly),
-		Status:        narrative.Status,
-		CurrentStatus: narrative.CurrentStatus,
+		Teacher:                 user.FirstName + " " + user.LastName,
+		CreatedAt:               narrative.CreatedAt.Format(time.DateTime),
+		Narration:               narrative.Description,
+		ReferenceTime:           narrative.ReferenceTime,
+		ReferenceDate:           narrative.ReferenceDate.Format(time.DateOnly),
+		Status:                  narrative.Status,
+		CurrentStatus:           narrative.CurrentStatus,
+		SuggestedSolution:       narrative.SuggestedSolution,
+		NarrativeScheduleNumber: narrative.NarrativeScheduleNumber,
 	}
 
 	return responses.NarrativeResponse{
@@ -496,6 +529,55 @@ func CreateNarrativeResponse(narrative models.Narrative) responses.NarrativeResp
 		AcademicYear:         academicYear.AcademicYearName,
 		NarrativeResponseRow: row,
 	}
+}
+
+func UploadNarrativeMarkingGuide(ctx *gin.Context, scheduledNarrativeNumber, currentUserNumber string) error {
+
+	narrative, err := repositories.FindScheduledNarrativeByNumber(scheduledNarrativeNumber)
+	if err != nil {
+		return errors.New("Error getting narrative details: " + err.Error())
+	}
+
+	if narrative.Number == "" {
+		return errors.New("Invalid narrative number ")
+	}
+
+	scriptFile, err := services2.UploadAttachment(ctx, "script-file")
+	if err != nil {
+		return errors.New("uploading narrative script file error: " + err.Error())
+	}
+
+	markingGuideFile, err := services2.UploadAttachment(ctx, "marking-guide-file")
+	if err != nil {
+		return errors.New("uploading narrative marking guide error: " + err.Error())
+	}
+
+	//scriptMarkingGuideRepository.UseTx(config.DB)
+	enty := models.ScheduledNarrativeScriptMarkingGuide{
+		ScriptNumber:             scriptFile,
+		MarkingGuideNumber:       markingGuideFile,
+		UserNumber:               currentUserNumber,
+		ScheduledNarrativeNumber: scheduledNarrativeNumber,
+	}
+
+	oldScripts, err := repositories.FindNarrativeScriptMarkingGuideByNumber(scheduledNarrativeNumber)
+	if err != nil {
+		return errors.New("Error checking old narrative script and marking guide error: " + err.Error())
+	}
+
+	if oldScripts.ScheduledNarrativeNumber != "" {
+		enty.CreatedAt = oldScripts.CreatedAt
+	}
+
+	enty.UpdatedAt = oldScripts.UpdatedAt
+
+	err = repositories.SaveScheduledNarrativeScriptMarkingGuide(enty)
+
+	if err != nil {
+		return errors.New("storing narrative script marking guide error: " + err.Error())
+	}
+
+	return nil
 }
 
 func NewNarrativeService() *NarrativeService {

@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum"
@@ -18,8 +21,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 )
 
 func NewConcept(context *gin.Context) {
@@ -84,12 +85,14 @@ func NewConcept(context *gin.Context) {
 	number := uuid.NewV4().String()
 	///save user data
 	saveConcept := conceptModel.Concept{
-		Number:           number,
-		Name:             name,
-		SubTopicNumber:   subtopicNumber,
-		UserNumber:       userNumber,
-		Code:             codeNo,
-		CurriculumNumber: curriculumNumber,
+		Number:            number,
+		Name:              name,
+		SubTopicNumber:    subtopicNumber,
+		UserNumber:        userNumber,
+		Code:              codeNo,
+		CurriculumNumber:  curriculumNumber,
+		EstimatedTime:     conceptInfo.EstimatedTime,
+		RequiredMaterials: conceptInfo.RequiredMaterials,
 	}
 	config.DB.Save(&saveConcept)
 
@@ -173,22 +176,25 @@ func FetchConcept(context *gin.Context) {
 							var concept_ []responses.ConceptList
 							for _, list := range conceptResp {
 								concept_ = append(concept_, responses.ConceptList{
-									Number:         list.Number,
-									Name:           list.Name,
-									Code:           list.Code,
-									UserNumber:     list.UserNumber,
-									SubTopicNumber: list.SubTopicNumber,
-									SubTopicName:   list.SubTopic.Name,
+									Number:            list.Number,
+									Name:              list.Name,
+									Code:              list.Code,
+									UserNumber:        list.UserNumber,
+									SubTopicNumber:    list.SubTopicNumber,
+									SubTopicName:      list.SubTopic.Name,
+									EstimatedTime:     list.EstimatedTime,
+									RequiredMaterials: list.RequiredMaterials,
 								})
 							}
 
+							totalConceptsTime, _ := curriculum.GetSubTopicTotalEstimatedTime(subtopicList.Number)
 							subTopicInfo_ = append(subTopicInfo_, responses7.SubTopicList{
 								Number:        subtopicList.Number,
 								Code:          subtopicList.Code,
 								SortCode:      int64(idx + 1),
 								Name:          subtopicList.Name,
 								UserNumber:    subtopicList.UserNumber,
-								EstimatedTime: subtopicList.EstimatedTime,
+								EstimatedTime: totalConceptsTime,
 								TopicNumber:   subtopicList.TopicNumber,
 								Concept:       concept_,
 							})
@@ -400,6 +406,7 @@ func ConceptEdit(context *gin.Context) {
 	subtopicNumber := conceptInfo.SubTopicNumber
 	curriculumNumber := conceptInfo.CurriculumNumber
 	conceptNumber := conceptInfo.ConceptNumber
+	estTime := conceptInfo.EstimatedTime
 
 	userNumber := context.Request.Header["User-Number"][0]
 
@@ -451,7 +458,7 @@ func ConceptEdit(context *gin.Context) {
 	var conceptDataInfo conceptModel.Concept
 	updateData := tx.Model(&conceptDataInfo).
 		Where("number = ?", conceptNumber).
-		Updates(conceptModel.Concept{Name: name, UserNumber: userNumber, Code: codeNo, SubTopicNumber: subtopicNumber})
+		Updates(conceptModel.Concept{Name: name, UserNumber: userNumber, Code: codeNo, SubTopicNumber: subtopicNumber, EstimatedTime: estTime})
 	if updateData.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})

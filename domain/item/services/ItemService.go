@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
@@ -111,7 +112,16 @@ func (receiver ItemService) SaveService(user *models.User, payload requests2.Ser
 	}
 
 	if checkSerial.Number != "" {
-		return errors.New("Item serial code already used ")
+		return errors.New("item serial code already used")
+	}
+
+	checkCode, err := repositories.GetItemByCode(fmt.Sprintf("%d", payload.Code), payload.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if checkCode.Number != "" {
+		return errors.New("item code already used for this school")
 	}
 
 	itemNumber := uuid.NewV4().String()
@@ -193,7 +203,16 @@ func (receiver ItemService) UpdateService(serviceNumber string, user *models.Use
 	}
 
 	if checkSerial.Number != "" && checkSerial.Number != product.Number {
-		return errors.New("Item serial code already used ")
+		return errors.New("item serial code already used")
+	}
+
+	checkCode, err := repositories.GetItemByCode(fmt.Sprintf("%d", payload.Code), payload.SchoolNumber)
+	if err != nil {
+		return err
+	}
+
+	if checkCode.Number != "" && checkCode.Number != product.Number {
+		return errors.New("item code already used for this school")
 	}
 
 	saveProductItem := itemModels.Item{

@@ -7,11 +7,13 @@ import (
 )
 
 type ConceptInfo struct {
-	Code             string `json:"code"`
-	Name             string `json:"name"`
-	SubTopicNumber   string `json:"sub_topic_number"`
-	CurriculumNumber string `json:"curriculum_number"`
-	ConceptNumber    string `json:"concept_number"`
+	Code              string `json:"code"`
+	Name              string `json:"name"`
+	SubTopicNumber    string `json:"sub_topic_number"`
+	CurriculumNumber  string `json:"curriculum_number"`
+	ConceptNumber     string `json:"concept_number"`
+	EstimatedTime     int64  `json:"estimated_time"`
+	RequiredMaterials string `json:"required_materials"`
 }
 
 type ConceptDelRequest struct {
@@ -42,6 +44,10 @@ func (p *ConceptInfo) Validate() error {
 
 	if p.SubTopicNumber == "" {
 		return errors.New("sub topic is required")
+	}
+
+	if p.EstimatedTime == 0 {
+		return errors.New("estimated time is required")
 	}
 
 	return nil

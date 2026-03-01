@@ -91,6 +91,32 @@ func UploadSchoolLogo(schoolNumber string, ctx *gin.Context) error {
 
 }
 
+func UploadPrincipalSignature(schoolNumber string, ctx *gin.Context) error {
+	repo := repositories.NewSchoolRepositoryImpl(config.DB)
+	school, err := repo.FindSchoolByNumber(schoolNumber)
+	if err != nil {
+		return errors.New("checking school existence: " + err.Error())
+	}
+
+	if school.Number == "" {
+		return errors.New("invalid school number")
+	}
+
+	signature, err := services.UploadAttachment(ctx, "signature")
+	if err != nil {
+		return errors.New("uploading principal signature: " + err.Error())
+	}
+
+	school.PrincipalSignature = signature
+
+	err = repo.UpdateSchool(school)
+	if err != nil {
+		return errors.New("updating principal signature: " + err.Error())
+	}
+
+	return nil
+}
+
 func GetLatestSchoolLogo(schoolNumber string) (string, error) {
 	repo := repositories.NewSchoolRepositoryImpl(config.DB)
 	school, err := repo.FindSchoolByNumber(schoolNumber)
@@ -128,7 +154,7 @@ func FetchSchoolsByEntityNumber(entityNumber string, ctx *gin.Context) ([]respon
 		Preload("SchoolCurriculum").
 		Order("created_at desc").
 		Scopes(
-			filters.ByScopedItems("school", ctx),
+			//filters.ByScopedItems("school", ctx),
 			filters.ByEntityNumber(entityNumber),
 		).
 		Find(&schools).Error; err != nil {
@@ -147,11 +173,15 @@ func FetchSchoolsByEntityNumber(entityNumber string, ctx *gin.Context) ([]respon
 		}
 
 		schools_ = append(schools_, responses2.SchoolResponse{
-			Number:           item.Number,
-			Name:             item.Name,
-			CommencementDate: item.CommencementDate.Format("2-Jan-2006"),
-			SchoolCurriculum: curriculum_,
-			Logo:             commons.GenerateDownloadPath(item.Logo, false),
+			Number:             item.Number,
+			Name:               item.Name,
+			CommencementDate:   item.CommencementDate.Format("2-Jan-2006"),
+			SchoolCurriculum:   curriculum_,
+			Logo:               commons.GenerateDownloadPath(item.Logo, false),
+			PrincipalSignature: commons.GenerateDownloadPath(item.PrincipalSignature, false),
+			Motto:              item.Motto,
+			PrincipalName:      item.PrincipalName,
+			PrincipalTitle:     item.PrincipalTitle,
 		})
 	}
 
