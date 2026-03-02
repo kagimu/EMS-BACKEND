@@ -166,7 +166,7 @@ func UpdateEnrollmentItem(c *gin.Context) {
 		return
 	}
 	id := uint(parsed)
-	if err := enrolmentService.UpdateEnrollmentItem(number, req.Quantity, req.Brought); err != nil {
+	if err := enrolmentService.UpdateEnrollmentItem(id, req.Quantity, req.Brought); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
