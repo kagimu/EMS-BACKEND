@@ -138,13 +138,20 @@ func ByAnyField(fieldName string, fieldValue string) func(db *gorm.DB) *gorm.DB 
 
 func BySearchingAnyField(fieldName []string, searchValue string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if searchValue != "" {
-			for _, v := range fieldName {
-				db = db.Or(v+" like ?", "%"+searchValue+"%")
-			}
+		if searchValue == "" || len(fieldName) == 0 {
+			return db
 		}
-
-		return db
+		pattern := "%" + searchValue + "%"
+		clause := ""
+		args := make([]interface{}, 0, len(fieldName))
+		for i, v := range fieldName {
+			if i > 0 {
+				clause += " OR "
+			}
+			clause += v + " LIKE ?"
+			args = append(args, pattern)
+		}
+		return db.Where("("+clause+")", args...)
 	}
 }
 
