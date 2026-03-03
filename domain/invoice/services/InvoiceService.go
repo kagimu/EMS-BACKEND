@@ -147,7 +147,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 	return err
 }
 
-func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, txn *gorm.DB) (models.Invoice, error) {
+func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, balanceDueDate string, txn *gorm.DB) (models.Invoice, error) {
 
 	invoiceNumber := generateNewInvoiceNumber()
 
@@ -162,6 +162,11 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	dueDate := time.Now().AddDate(0, 0, 14)
+	if balanceDueDate != "" {
+		if parsed, err := commons.ConvertStringToDate(balanceDueDate); err == nil {
+			dueDate = parsed
+		}
+	}
 
 	billableItems, err := invoiceRepositories.FindBillableItems(billable.Number, txn)
 	if err != nil {
