@@ -22,6 +22,7 @@ type EnrollmentRequest struct {
 	Description            string           `json:"description"`
 	PaidAmount             float64          `json:"paid_amount"`
 	DatePaid               string           `json:"date_paid"`
+	BalanceDueDate         string           `json:"balance_due_date"`
 	CampusCurriculumNumber string           `json:"campus_curriculum_number"`
 }
 

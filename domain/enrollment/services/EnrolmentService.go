@@ -344,7 +344,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		}
 
-		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, enrolmentRequest.DatePaid, tx)
+		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, enrolmentRequest.DatePaid, enrolmentRequest.BalanceDueDate, tx)
 		if err != nil {
 			return err
 		}
@@ -352,6 +352,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		err = repositories4.SaveEnrollmentInvoice(models4.EnrollmentInvoice{
 			InvoiceNumber:    invoice.Number,
 			EnrollmentNumber: saveEnrollment.Number,
+			BalanceDueDate:   enrolmentRequest.BalanceDueDate,
 		}, tx)
 
 		if err != nil {
