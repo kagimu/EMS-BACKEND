@@ -18,6 +18,7 @@ import (
 	assessmentGradeController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/assessmentGrade/controllers"
 	assessmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/controllers"
 	gradesController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/controllers"
+	studentAssessmentAreaReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/controllers"
 	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/middleware"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
@@ -528,6 +529,8 @@ func SetupRoutes() *gin.Engine {
 				payments.GET("", invoiceController.GetAllPayments)
 				payments.POST("cancel", invoiceController.CancelPayment)
 				payments.POST("delete", invoiceController.DeletePayment)
+				payments.POST("prepaid", invoiceController.PrepaidDeposit)
+				payments.GET("prepaid", invoiceController.GetPrepaidBalance)
 			}
 
 			invoices.POST("delete", invoiceController.DeleteInvoice)
@@ -608,6 +611,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			assessment.POST("", assessmentController.CreateAssessment)
 			assessment.GET("", assessmentController.FetchAssessmentByStudent)
+			assessment.GET("student-assessment-area-report", studentAssessmentAreaReportController.GetStudentAssessmentAreaReport)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.DELETE("assessment-metrics/:assessment_metric_number", assessmentController.DeleteAssessmentMetric)
