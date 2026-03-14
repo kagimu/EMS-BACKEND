@@ -535,9 +535,9 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 
 	invoiceStatement := invoice.Statement
 
-	var dateTimePaid time.Time
-	if dateTimePaid, err = time.Parse(time.DateOnly, invoicePaymentRequest.Date); err != nil {
-		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
+	paymentDate, err := validatePaymentDate(invoicePaymentRequest.Date, invoiceStatement.IssueDate)
+	if err != nil {
+		return minInvoiceResponse, err
 	}
 
 	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number)
@@ -575,13 +575,13 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		Description:   "Payment received on promissory note " + invoiceStatement.RefNumber,
 		Amount:        payRequestAmount,
 		Balance:       nextBlc,
-		IssueDate:     dateTimePaid,
+		IssueDate:     paymentDate,
 	}
 
 	newTransaction := models.Transaction{
 		StatementNumber: newStatement.Number,
 		Number:          uuid.NewV4().String(),
-		Date:            dateTimePaid,
+		Date:            paymentDate,
 		Status:          constants.StatusActive,
 		AmountInCredit:  payRequestAmount - payAmount,
 	}
@@ -649,9 +649,9 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 
 	invoiceStatement := invoice.Statement
 
-	var dateTimePaid time.Time
-	if dateTimePaid, err = time.Parse(time.DateOnly, invoicePaymentRequest.Date); err != nil {
-		return minInvoiceResponse, errors.New("Date error: " + err.Error() + " for " + invoicePaymentRequest.Date)
+	dateTimePaid, err := validatePaymentDate(invoicePaymentRequest.Date, invoiceStatement.IssueDate)
+	if err != nil {
+		return minInvoiceResponse, err
 	}
 
 	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number, tx)
@@ -740,6 +740,19 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 	}
 
 	return createMinInvoiceResponse(invoice), err
+}
+
+func validatePaymentDate(date string, dateOfIssue time.Time) (time.Time, error) {
+	var paymentDate time.Time
+	if paymentDate, err := time.Parse(time.DateOnly, date); err != nil {
+		return paymentDate, errors.New("Date error: " + err.Error() + " for " + date)
+	}
+
+	if paymentDate.Before(dateOfIssue) {
+		return paymentDate, errors.New(fmt.Sprintf("The payment date '%s' can not be before the issue date '%s'", paymentDate.Format(time.DateOnly), dateOfIssue.Format(time.DateOnly)))
+	}
+
+	return paymentDate, nil
 }
 
 func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string) (responses.MinInvoiceResponse, error) {
