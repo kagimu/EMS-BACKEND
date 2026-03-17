@@ -535,7 +535,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 
 	invoiceStatement := invoice.Statement
 
-	paymentDate, err := validatePaymentDate(invoicePaymentRequest.Date, invoiceStatement.IssueDate)
+	paymentDate, err := validatePaymentDateBefore(invoicePaymentRequest.Date, invoiceStatement.IssueDate)
 	if err != nil {
 		return minInvoiceResponse, err
 	}
@@ -630,6 +630,113 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 
 	return createMinInvoiceResponse(invoice), err
 }
+
+func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, currentUserNumber string) (responses.TransactionResponse, error) {
+
+	var transactionResponse responses.TransactionResponse
+
+	student, err := repositories.FindStudentByUserNumber(accountTopUpRequest.UserNumber)
+	if err != nil {
+		return transactionResponse, err
+	}
+
+	if student.Number == "" {
+		return transactionResponse, errors.New("selected user is not a learner")
+	}
+
+	if student.Status != constants.StatusActive {
+		return transactionResponse, errors.New("the selected student is not active")
+	}
+
+	campus, err := repositories3.GetCampusByCampusClassNumber(student.CampusClassNumber)
+	if err != nil {
+		return transactionResponse, err
+	}
+
+	if campus.Number == "" {
+		return transactionResponse, errors.New("could not determine campus for student: " + student.Surname)
+	}
+
+	paymentDate, err := validatePaymentDateAfter(accountTopUpRequest.DatePaid, time.Now())
+	if err != nil {
+		return transactionResponse, err
+	}
+
+	trnRefNo := generateNewInvoiceNumber()
+
+	nextBlc, err := ComputeNextBalance(accountTopUpRequest.Amount, constants.StatementTypeIn, accountTopUpRequest.UserNumber)
+	if err != nil {
+		return transactionResponse, err
+	}
+
+	var clientReference, description string
+	if accountTopUpRequest.ClientReference != nil {
+		clientReference = *accountTopUpRequest.ClientReference
+		transaction, err := invoiceRepositories.GetTransactionByClientReference(clientReference, campus.Number)
+		if err != nil {
+			return transactionResponse, errors.New("Checking client reference error: " + err.Error())
+		}
+
+		if transaction.Number != "" {
+			return transactionResponse, errors.New(fmt.Sprintf("Client reference '%s' already used!", clientReference))
+		}
+	}
+
+	if accountTopUpRequest.Description != nil {
+		description = *accountTopUpRequest.Description
+	}
+
+	newStatement := models.Statement{
+		Number:        uuid.NewV4().String(),
+		SchoolNumber:  student.SchoolNumber,
+		AddedByNumber: currentUserNumber,
+		RefNumber:     trnRefNo,
+		CampusNumber:  campus.Number,
+		UserNumber:    accountTopUpRequest.UserNumber,
+		Type:          constants.StatementTypeIn,
+		Description:   fmt.Sprintf("Top up received %s:\n %s", clientReference, description),
+		Amount:        accountTopUpRequest.Amount,
+		Balance:       nextBlc,
+		IssueDate:     paymentDate,
+	}
+
+	newTransaction := models.Transaction{
+		ClientReference: clientReference,
+		StatementNumber: newStatement.Number,
+		Number:          uuid.NewV4().String(),
+		Date:            paymentDate,
+		Status:          constants.StatusActive,
+		AmountInCredit:  accountTopUpRequest.Amount,
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		tx = invoiceTransactionRepository.UseTx(tx)
+
+		err := invoiceRepositories.SaveStatement(newStatement, tx)
+		if err != nil {
+			return errors.New("Creating top up statement error " + err.Error())
+		}
+
+		if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
+			return errors.New("Adding new top up entry error " + err.Error())
+		}
+
+		return nil
+	})
+
+	return responses.TransactionResponse{
+		Amount:            newStatement.Amount,
+		ReceiptNumber:     newStatement.RefNumber,
+		DateReceived:      newStatement.CreatedAt.Format(time.DateTime),
+		DatePaid:          newTransaction.Date.Format(time.DateOnly),
+		PaidBy:            student.Surname,
+		Description:       newStatement.Description,
+		AmountInCredit:    newTransaction.AmountInCredit,
+		TransactionNumber: newTransaction.Number,
+		Status:            newTransaction.Status,
+	}, err
+}
+
 func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string, tx *gorm.DB) (responses.MinInvoiceResponse, error) {
 
 	if len(invoicePaymentRequest.Credits) >= 1 {
@@ -649,7 +756,7 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 
 	invoiceStatement := invoice.Statement
 
-	dateTimePaid, err := validatePaymentDate(invoicePaymentRequest.Date, invoiceStatement.IssueDate)
+	dateTimePaid, err := validatePaymentDateBefore(invoicePaymentRequest.Date, invoiceStatement.IssueDate)
 	if err != nil {
 		return minInvoiceResponse, err
 	}
@@ -742,7 +849,7 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 	return createMinInvoiceResponse(invoice), err
 }
 
-func validatePaymentDate(date string, dateOfIssue time.Time) (time.Time, error) {
+func validatePaymentDateBefore(date string, dateOfIssue time.Time) (time.Time, error) {
 	var paymentDate time.Time
 	if paymentDate, err := time.Parse(time.DateOnly, date); err != nil {
 		return paymentDate, errors.New("Date error: " + err.Error() + " for " + date)
@@ -750,6 +857,19 @@ func validatePaymentDate(date string, dateOfIssue time.Time) (time.Time, error) 
 
 	if paymentDate.Before(dateOfIssue) {
 		return paymentDate, errors.New(fmt.Sprintf("The payment date '%s' can not be before the issue date '%s'", paymentDate.Format(time.DateOnly), dateOfIssue.Format(time.DateOnly)))
+	}
+
+	return paymentDate, nil
+}
+
+func validatePaymentDateAfter(date string, dateOfIssue time.Time) (time.Time, error) {
+	var paymentDate time.Time
+	if paymentDate, err := time.Parse(time.DateOnly, date); err != nil {
+		return paymentDate, errors.New("Date error: " + err.Error() + " for " + date)
+	}
+
+	if paymentDate.After(dateOfIssue) {
+		return paymentDate, errors.New(fmt.Sprintf("The payment date '%s' can not be after the date '%s'", paymentDate.Format(time.DateOnly), dateOfIssue.Format(time.DateOnly)))
 	}
 
 	return paymentDate, nil

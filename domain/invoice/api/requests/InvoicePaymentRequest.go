@@ -9,8 +9,7 @@ type InvoicePaymentRequest struct {
 	Credits       []string `json:"credits"`
 }
 
-// PrepaidDepositRequest is the body for depositing money into a user's prepaid balance.
-type PrepaidDepositRequest struct {
+type AccountTopUpRequest struct {
 	UserNumber      string  `json:"user_number"`
 	Amount          float64 `json:"amount"`
 	Description     *string `json:"description"`
@@ -18,15 +17,15 @@ type PrepaidDepositRequest struct {
 	ClientReference *string `json:"client_reference"`
 }
 
-func (r *PrepaidDepositRequest) Validate() error {
+func (r *AccountTopUpRequest) Validate() error {
 	if r.UserNumber == "" {
-		return errors.New("user_number is required")
+		return errors.New("choose the user paying")
 	}
 	if r.Amount <= 0 {
 		return errors.New("amount must be greater than zero")
 	}
 	if r.DatePaid == "" {
-		return errors.New("date_paid is required")
+		return errors.New("choose the date paid")
 	}
 	return nil
 }

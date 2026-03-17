@@ -240,7 +240,7 @@ func PrepaidDeposit(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
-	var payload requests.PrepaidDepositRequest
+	var payload requests.AccountTopUpRequest
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request: " + err.Error()})
 		return
@@ -287,4 +287,32 @@ func parseFloat64Ptr(val string) (float64, error) {
 		return -1, err
 	}
 	return f, nil
+}
+
+func AccountTopUpRequest(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"Message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.AccountTopUpRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide a valid payment request"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	minInvoiceResponse, err := services.ReceiveAccountTopUp(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Failed saving top up with error: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Top up received successfully", "data": minInvoiceResponse})
 }

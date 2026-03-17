@@ -15,7 +15,7 @@ import (
 )
 
 // DepositPrepaid records a deposit (money brought in) and adds it to the user's prepaid balance.
-func DepositPrepaid(payload requests.PrepaidDepositRequest, addedByNumber string) (responses.PrepaidBalanceResponse, error) {
+func DepositPrepaid(payload requests.AccountTopUpRequest, addedByNumber string) (responses.PrepaidBalanceResponse, error) {
 	var out responses.PrepaidBalanceResponse
 	datePaid, err := time.Parse(time.DateOnly, payload.DatePaid)
 	if err != nil {
