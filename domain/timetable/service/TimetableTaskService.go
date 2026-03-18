@@ -3,7 +3,11 @@ package service
 import (
 	"errors"
 
+	campusRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	levelRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/repository"
 	uuid "github.com/satori/go.uuid"
@@ -14,7 +18,7 @@ type TimetableTaskService interface {
 	UpdateTimetableTask(taskNumber string, request requests.UpdateTimetableTaskRequest) error
 	DeleteTimetableTask(taskNumber string) error
 	GetTimetableTaskByNumber(taskNumber string) (models.TimetableTask, error)
-	GetAllTimetableTasks(classNumber string) ([]models.TimetableTask, error)
+	GetAllTimetableTasks(classNumber string) ([]responses.TimetableTaskResponse, error)
 }
 
 type timetableTaskService struct {
@@ -113,6 +117,47 @@ func (s *timetableTaskService) GetTimetableTaskByNumber(taskNumber string) (mode
 	return task, nil
 }
 
-func (s *timetableTaskService) GetAllTimetableTasks(classNumber string) ([]models.TimetableTask, error) {
-	return s.repo.FindAllTimetableTasks(classNumber)
+func (s *timetableTaskService) GetAllTimetableTasks(classNumber string) ([]responses.TimetableTaskResponse, error) {
+	tasks, err := s.repo.FindAllTimetableTasks(classNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []responses.TimetableTaskResponse
+	for _, task := range tasks {
+		res := responses.TimetableTaskResponse{
+			Number:       task.Number,
+			Name:         task.Name,
+			Type:         task.Type,
+			UserNumber:   task.UserNumber,
+			ClassNumber:  task.ClassNumber,
+			StreamNumber: task.StreamNumber,
+		}
+
+		// Derive extra fields from task.ClassNumber (CampusClass Number)
+		if task.ClassNumber != "" {
+			campusClass, err := repositories.GetCampusClassByNumber(task.ClassNumber)
+			if err == nil && campusClass.Number != "" {
+				res.CampusNumber = campusClass.CampusNumber
+
+				campus, err := campusRepositories.GetCampusByNumber(campusClass.CampusNumber)
+				if err == nil && campus.Number != "" {
+					res.SchoolNumber = campus.SchoolNumber
+				}
+
+				campusLevel, err := levelRepositories.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
+				if err == nil && campusLevel.Number != "" {
+					curriculumLevel, err := levelRepositories.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
+					if err == nil && curriculumLevel.Number != "" {
+						res.CurriculumNumber = curriculumLevel.CurriculumNumber
+						res.LevelNumber = curriculumLevel.LevelNumber
+					}
+				}
+			}
+		}
+
+		response = append(response, res)
+	}
+
+	return response, nil
 }

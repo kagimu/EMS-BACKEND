@@ -85,3 +85,16 @@ type TimetablePeriodsResponse struct {
 	Days                 []DayPeriods `json:"days"`
 	SLots                []string     `json:"slots"`
 }
+
+type TimetableTaskResponse struct {
+	Number           string `json:"number"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+	UserNumber       string `json:"user_number"`
+	ClassNumber      string `json:"class_number"`
+	StreamNumber     string `json:"stream_number"`
+	SchoolNumber     string `json:"school_number"`
+	CampusNumber     string `json:"campus_number"`
+	CurriculumNumber string `json:"curriculum_number"`
+	LevelNumber      string `json:"level_number"`
+}
