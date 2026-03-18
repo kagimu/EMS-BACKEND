@@ -208,6 +208,8 @@ func Init() error {
 		&invoiceModel.BillableItem{},
 		&invoiceModel.BillableInvoice{},
 		&invoiceModel.EnrollmentInvoice{},
+		&invoiceModel.PrepaidBalance{},
+		&invoiceModel.PrepaidDeposit{},
 		&serviceModel.CampusItem{},
 		&studentDetails.StudentPhoto{},
 		&models3.Attachment{},

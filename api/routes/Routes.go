@@ -57,6 +57,7 @@ import (
 	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
 	statisticsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/statistics/api/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
+	studentAssessmentAreaReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/controllers"
 	studentDetailsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/controllers"
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
@@ -525,9 +526,12 @@ func SetupRoutes() *gin.Engine {
 			{
 				payments.GET("statements", invoiceController.AllStatements)
 				payments.GET("credits", invoiceController.TransactionCredits)
+				payments.POST("credits", invoiceController.AccountTopUpRequest)
 				payments.GET("", invoiceController.GetAllPayments)
 				payments.POST("cancel", invoiceController.CancelPayment)
 				payments.POST("delete", invoiceController.DeletePayment)
+				payments.POST("prepaid", invoiceController.PrepaidDeposit)
+				payments.GET("prepaid", invoiceController.GetPrepaidBalance)
 			}
 
 			invoices.POST("delete", invoiceController.DeleteInvoice)
@@ -567,7 +571,7 @@ func SetupRoutes() *gin.Engine {
 
 		admission := main.Group("/admissions")
 		{
-			admission.POST("", admissionController.CreateeAdmission)
+			admission.POST("", admissionController.CreateAdmission)
 			admission.POST("existing-admission", admissionController.CreateExistingAdmission)
 			admission.GET("", admissionController.FetchAdmissions)
 			admission.GET("admission-requirements", admissionController.GetAdmissionRequirementsController)
@@ -608,6 +612,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			assessment.POST("", assessmentController.CreateAssessment)
 			assessment.GET("", assessmentController.FetchAssessmentByStudent)
+			assessment.GET("student-assessment-area-report", studentAssessmentAreaReportController.GetStudentAssessmentAreaReport)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.DELETE("assessment-metrics/:assessment_metric_number", assessmentController.DeleteAssessmentMetric)
@@ -728,6 +733,8 @@ func SetupRoutes() *gin.Engine {
 		{
 			enrollment.POST("", enrollmentController.CreateEnrollment)
 			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
+			enrollment.GET("/:enrollment_number", enrollmentController.FetchEnrollmentDetails)
+			enrollment.PUT("/enrollment-items/:id", enrollmentController.UpdateEnrollmentItem)
 			enrollment.POST("terminate-student/:student_number", enrollmentController.TerminateStudentEnrollment)
 			enrollment.POST("re-enroll-student/:student_number", enrollmentController.ReEnrollStudent)
 		}

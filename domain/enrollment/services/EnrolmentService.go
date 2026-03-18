@@ -31,6 +31,8 @@ import (
 type EnrolmentService interface {
 	NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) error
 	Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
+	GetEnrollmentDetailsByNumber(number string) (responses.EnrollmentDetails, error)
+	UpdateEnrollmentItem(id uint, quantity float64, brought bool) error
 }
 
 type enrolmentService struct {
@@ -77,6 +79,75 @@ func (enrolment *enrolmentService) Enrolments(search, schoolNumber, streamNumber
 	}
 
 	return students, nil
+}
+
+func (enrolment *enrolmentService) GetEnrollmentDetailsByNumber(number string) (responses.EnrollmentDetails, error) {
+	enrollment, err := enrolmentRepository.GetEnrollmentByNumber(number)
+	if err != nil {
+		return responses.EnrollmentDetails{}, err
+	}
+	if enrollment.Number == "" {
+		return responses.EnrollmentDetails{}, errors.New("enrollment not found")
+	}
+	studyPeriodName, _ := repositories7.GetStudyPeriodNameByNumber(enrollment.StudyPeriod.StudyPeriodNameNumber)
+	streamName := ""
+	if enrollment.Stream.Number != "" {
+		streamName = enrollment.Stream.Name
+	}
+	classDisplay := ""
+	if enrollment.CampusClass.Number != "" {
+		classDisplay = enrollment.CampusClass.ClassName + "(" + enrollment.CampusClass.ClassAbbreviation + ")"
+	}
+	items := make([]responses.EnrollmentItemWithName, 0, len(enrollment.EnrollmentItems))
+	for _, ei := range enrollment.EnrollmentItems {
+		itemName := ""
+		if ei.Item.Number != "" {
+			itemName = ei.Item.Name
+		}
+		items = append(items, responses.EnrollmentItemWithName{
+			ID:               ei.ID,
+			EnrollmentNumber: ei.EnrollmentNumber,
+			ItemNumber:       ei.ItemNumber,
+			ItemName:         itemName,
+			Quantity:         ei.Quantity,
+			Brought:          ei.Brought,
+		})
+	}
+	return responses.EnrollmentDetails{
+		Number:            enrollment.Number,
+		StudentNumber:     enrollment.StudentNumber,
+		Adn:               enrollment.Student.ADN,
+		StudentSurname:    enrollment.Student.Surname,
+		StudentSecondName: enrollment.Student.SecondName,
+		StudentOtherName:  enrollment.Student.OtherName,
+		Class:             classDisplay,
+		Stream:            streamName,
+		School:            enrollment.School.Name,
+		Campus:            enrollment.Campus.Name,
+		StudyPeriod:       studyPeriodName.Name,
+		Status:            enrollment.Status,
+		EnrollmentDate:    enrollment.EnrollmentDate,
+		ContinuingStudent: enrollment.ContinuingStudent,
+		CampusClassNumber: enrollment.CampusClassNumber,
+		CampusNumber:      enrollment.CampusNumber,
+		StudyPeriodNumber: enrollment.StudyPeriodNumber,
+		SchoolNumber:      enrollment.SchoolNumber,
+		StreamNumber:      enrollment.StreamNumber,
+		EnrollmentItems:   items,
+	}, nil
+}
+
+func (enrolment *enrolmentService) UpdateEnrollmentItem(id uint, quantity float64, brought bool) error {
+	item, err := repository.GetEnrollmentItemByID(id)
+	if err != nil {
+		return err
+	}
+	if item.ID == 0 {
+		return errors.New("enrollment item not found")
+	}
+	item.Quantity = quantity
+	item.Brought = brought
+	return repository.SaveEnrollmentItem(item)
 }
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
@@ -273,7 +344,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		}
 
-		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, enrolmentRequest.DatePaid, tx)
+		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, enrolmentRequest.DatePaid, enrolmentRequest.BalanceDueDate, tx)
 		if err != nil {
 			return err
 		}
@@ -281,6 +352,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		err = repositories4.SaveEnrollmentInvoice(models4.EnrollmentInvoice{
 			InvoiceNumber:    invoice.Number,
 			EnrollmentNumber: saveEnrollment.Number,
+			BalanceDueDate:   enrolmentRequest.BalanceDueDate,
 		}, tx)
 
 		if err != nil {

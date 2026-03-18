@@ -232,6 +232,52 @@ func GeneralStatement(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"data": statementResponses})
 }
 
+// PrepaidDeposit records money brought in by the student (or parent) to be used later.
+// Body: {"user_number":"...","amount":700000,"description":null,"date_paid":"2026-03-10","client_reference":null}
+func PrepaidDeposit(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+	var payload requests.AccountTopUpRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request: " + err.Error()})
+		return
+	}
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	data, err := services.DepositPrepaid(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Deposit failed: "+err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Prepaid deposit recorded successfully", "data": data})
+}
+
+// GetPrepaidBalance returns the prepaid balance for a user. Query: user_number (required), include_deposits (optional, true to include history).
+func GetPrepaidBalance(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+	userNumber := c.Query("user_number")
+	if userNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user_number is required"})
+		return
+	}
+	includeDeposits := c.Query("include_deposits") == "true" || c.Query("include_deposits") == "1"
+	data, err := services.GetPrepaidBalance(userNumber, includeDeposits)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Failed to get prepaid balance: "+err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": data})
+}
+
 func parseFloat64Ptr(val string) (float64, error) {
 	if val == "" {
 		return -1, nil
@@ -241,4 +287,32 @@ func parseFloat64Ptr(val string) (float64, error) {
 		return -1, err
 	}
 	return f, nil
+}
+
+func AccountTopUpRequest(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"Message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.AccountTopUpRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		fmt.Println(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide a valid payment request"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	minInvoiceResponse, err := services.ReceiveAccountTopUp(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Failed saving top up with error: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Top up received successfully", "data": minInvoiceResponse})
 }
