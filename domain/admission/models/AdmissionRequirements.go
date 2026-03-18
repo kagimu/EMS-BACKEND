@@ -15,6 +15,7 @@ type AdmissionRequirement struct {
 	StudyPeriodNumber  string    `json:"study_period_number" gorm:"size:36;"`
 	AcademicYearNumber string    `json:"academic_year_number" gorm:"size:36;not null"`
 	UserNumber         string    `json:"user_number" gorm:"size:36;not null"`
+	Status             string    `json:"status" gorm:"size:20;not null;default:'ACTIVE'"`
 	CreatedAt          time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt          time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	SchoolNumber       string    `json:"school_number" gorm:"size:36;"`
