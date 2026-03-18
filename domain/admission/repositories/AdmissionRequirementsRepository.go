@@ -9,6 +9,8 @@ type AdmissionRequirementsRepository interface {
 	SaveAdmissionRequirements(admissionRequirement models.AdmissionRequirement) error
 	SaveAdmissionRequirementsBatch(requirements []models.AdmissionRequirement) error
 	FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber string) ([]models.AdmissionRequirement, error)
+	DeleteAdmissionRequirementByNumber(number string) error
+	UpdateAdmissionRequirementStatus(number, status string) error
 }
 
 type admissionRequirementsRepository struct {
@@ -24,6 +26,16 @@ func (a admissionRequirementsRepository) SaveAdmissionRequirementsBatch(requirem
 		return nil
 	}
 	return a.DB.Create(&requirements).Error
+}
+
+func (a admissionRequirementsRepository) DeleteAdmissionRequirementByNumber(number string) error {
+	return a.DB.Where("number = ?", number).Delete(&models.AdmissionRequirement{}).Error
+}
+
+func (a admissionRequirementsRepository) UpdateAdmissionRequirementStatus(number, status string) error {
+	return a.DB.Model(&models.AdmissionRequirement{}).
+		Where("number = ?", number).
+		Update("status", status).Error
 }
 
 // FindAdmissionRequirements returns admission requirements filtered by non-empty query params.

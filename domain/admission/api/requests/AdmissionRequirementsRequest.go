@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -14,6 +15,7 @@ type AdmissionRequirementsRequest struct {
 	StudyPeriodNumber  string   `json:"study_period_number" binding:"required"`
 	AcademicYearNumber string   `json:"academic_year_number" binding:"required"`
 	SchoolNumber       string   `json:"school_number" binding:"required"`
+	Status             string   `json:"status"`
 }
 
 func (a *AdmissionRequirementsRequest) Validate() error {
@@ -35,6 +37,12 @@ func (a *AdmissionRequirementsRequest) Validate() error {
 	if len(a.ItemNumbers) == 0 {
 		return errors.New("at least one item number is required")
 	}
+	if a.Status == "" {
+		a.Status = constants.StatusActive
+	}
+	if a.Status != constants.StatusActive && a.Status != constants.StatusInactive {
+		return errors.New("status must be ACTIVE or INACTIVE")
+	}
 	return nil
 }
 
@@ -51,6 +59,7 @@ func (a *AdmissionRequirementsRequest) ToModels(userNumber string) []models.Admi
 			AcademicYearNumber: a.AcademicYearNumber,
 			SchoolNumber:       a.SchoolNumber,
 			UserNumber:         userNumber,
+			Status:             a.Status,
 		})
 	}
 	return out
