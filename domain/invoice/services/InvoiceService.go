@@ -650,7 +650,7 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 
 	campus, err := repositories3.GetCampusByCampusClassNumber(student.CampusClassNumber)
 	if err != nil {
-		return transactionResponse, err
+		return transactionResponse, errors.New("determine campus error: " + err.Error())
 	}
 
 	if campus.Number == "" {
@@ -666,7 +666,7 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 
 	nextBlc, err := ComputeNextBalance(accountTopUpRequest.Amount, constants.StatementTypeIn, accountTopUpRequest.UserNumber)
 	if err != nil {
-		return transactionResponse, err
+		return transactionResponse, errors.New("computing next balance error: " + err.Error())
 	}
 
 	var clientReference, description string

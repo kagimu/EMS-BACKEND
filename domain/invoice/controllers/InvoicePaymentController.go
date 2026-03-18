@@ -310,7 +310,7 @@ func AccountTopUpRequest(c *gin.Context) {
 
 	minInvoiceResponse, err := services.ReceiveAccountTopUp(payload, user.Number)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, commons.Feedback("Failed saving top up with error: "+err.Error()))
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
