@@ -850,6 +850,12 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 }
 
 func validatePaymentDateBefore(date string, dateOfIssue time.Time) (time.Time, error) {
+
+	if date == "" {
+		fmt.Println("payment date not provided")
+		return time.Now(), nil
+	}
+
 	var paymentDate time.Time
 	if paymentDate, err := time.Parse(time.DateOnly, date); err != nil {
 		return paymentDate, errors.New("Date error: " + err.Error() + " for " + date)
