@@ -644,9 +644,9 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 		return transactionResponse, errors.New("selected user is not a learner")
 	}
 
-	if student.Status != constants.StatusActive {
+	/*if student.Status != constants.StatusActive {
 		return transactionResponse, errors.New("the selected student is not active")
-	}
+	}*/
 
 	campus, err := repositories3.GetCampusByCampusClassNumber(student.CampusClassNumber)
 	if err != nil {
