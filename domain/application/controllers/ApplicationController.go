@@ -207,17 +207,27 @@ func SubmitApplication(context *gin.Context) {
 		return
 	}
 
-	// Send email after commit so the transaction does not hold locks during slow I/O
-	var parentRepo = repositories.NewParentRepositoryImpl(config.DB)
-	parent, _ := parentRepo.GetParentByApplicationNumber(application.Number)
-	d := emailSender.Info{Email: parent.Email, MailType: "WholesomeEd: Application for your child has been submitted", UserName: parent.Surname, CurrentYear: time.Now().Year(), Type: "application-submitted"}
-	if err := d.SendEmail(); err != nil {
-		// Application already submitted; do not rollback. Optionally log and inform client.
-		context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully. Confirmation email could not be sent."))
-		return
-	}
+	// Respond immediately; send confirmation email in background
+	context.JSON(http.StatusOK, commons.Feedback("Application submitted; email sending in progress."))
 
-	context.JSON(http.StatusOK, commons.Feedback("Application submitted successfully"))
+	appNumber := application.Number
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// Log and avoid crashing the process if email code panics
+			}
+		}()
+		parentRepo := repositories.NewParentRepositoryImpl(config.DB)
+		parent, _ := parentRepo.GetParentByApplicationNumber(appNumber)
+		d := emailSender.Info{
+			Email:       parent.Email,
+			MailType:    "WholesomeEd: Application for your child has been submitted",
+			UserName:    parent.Surname,
+			CurrentYear: time.Now().Year(),
+			Type:        "application-submitted",
+		}
+		_ = d.SendEmail()
+	}()
 }
 func DeleteApplication(ctx *gin.Context) {
 	txn := config.DB.Begin()
