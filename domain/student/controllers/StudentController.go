@@ -15,6 +15,7 @@ import (
 	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	classServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
@@ -96,22 +97,71 @@ func EditStudent(c *gin.Context) {
 	// 	Gender:                    payload.Gender,
 	// }
 
+	// Resolve the real `campus_classes.number` so updating `students.campus_class_number`
+	// won't break the FK constraint.
+	campusNumber := payload.CampusNumber
+	if campusNumber == "" {
+		campusNumber = payload.PreferredCampusNumber
+	}
+
+	campusClass, err := classServices.ResolveCampusClass(
+		payload.ClassNumber,
+		campusNumber,
+		payload.CurriculumNumber, // mapped from `level` in StudentUpdateRequest.Prepare()
+		payload.CampusCurriculumNumber,
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid class/campus selection", "error": err.Error()})
+		return
+	}
+	if campusClass.Number == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class is not active on the selected campus"})
+		return
+	}
+
+	// Build an update struct (GORM will skip zero values), so empty/null payload fields
+	// won't overwrite existing DB values.
 	savedStudent := models.Student{
-		Surname:                   payload.Surname,
-		OtherName:                 payload.OtherName,
-		SecondName:                payload.SecondName,
-		APNStatus:                 payload.APNStatus,
-		DateOfBirth:               payload.DateOfBirth,
-		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
-		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
-		SchoolNumber:              payload.SchoolNumber,
-		Gender:                    payload.Gender,
-		PreferredCampusNumber:     payload.PreferredCampusNumber,
-		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
-		ModeOfStudyNumber:         payload.ModeOfStudyNumber,
-		Lin:                       payload.Lin,
-		// Class: frontend sends "class_number" -> use ClassNumber for DB column CampusClassNumber
-		CampusClassNumber: payload.ClassNumber, // or prefer payload.ClassNumber, fallback payload.CampusClassNumber
+		CampusClassNumber: campusClass.Number, // FK column
+	}
+	if payload.Surname != "" {
+		savedStudent.Surname = payload.Surname
+	}
+	if payload.OtherName != "" {
+		savedStudent.OtherName = payload.OtherName
+	}
+	if payload.SecondName != "" {
+		savedStudent.SecondName = payload.SecondName
+	}
+	if payload.APNStatus != "" {
+		savedStudent.APNStatus = payload.APNStatus
+	}
+	if payload.DateOfBirth != "" {
+		savedStudent.DateOfBirth = payload.DateOfBirth
+	}
+	if payload.ReasonForChoosingSchool != "" {
+		savedStudent.ReasonForChoosingSchool = payload.ReasonForChoosingSchool
+	}
+	if payload.PreferredTypeOfEnrollment != "" {
+		savedStudent.PreferredTypeOfEnrollment = payload.PreferredTypeOfEnrollment
+	}
+	if payload.SchoolNumber != "" {
+		savedStudent.SchoolNumber = payload.SchoolNumber
+	}
+	if payload.Gender != "" {
+		savedStudent.Gender = payload.Gender
+	}
+	if payload.PreferredCampusNumber != "" {
+		savedStudent.PreferredCampusNumber = payload.PreferredCampusNumber
+	}
+	if payload.SourceOfSchoolInfo != "" {
+		savedStudent.SourceOfSchoolInfo = payload.SourceOfSchoolInfo
+	}
+	if payload.ModeOfStudyNumber != "" {
+		savedStudent.ModeOfStudyNumber = payload.ModeOfStudyNumber
+	}
+	if payload.Lin != "" {
+		savedStudent.Lin = payload.Lin
 	}
 
 	// if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
@@ -124,6 +174,12 @@ func EditStudent(c *gin.Context) {
 			"message": "Failed to update student",
 			"error":   err.Error(), // actual DB error
 		})
+		return
+	}
+
+	// Reload so the response includes the updated values.
+	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Updated but failed to reload student", "error": err.Error()})
 		return
 	}
 
