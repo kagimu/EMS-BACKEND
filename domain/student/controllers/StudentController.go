@@ -3,12 +3,13 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
@@ -82,6 +83,19 @@ func EditStudent(c *gin.Context) {
 		return
 	}
 
+	// savedStudent := models.Student{
+	// 	Surname:                   payload.Surname,
+	// 	OtherName:                 payload.OtherName,
+	// 	SecondName:                payload.SecondName,
+	// 	APNStatus:                 payload.APNStatus,
+	// 	DateOfBirth:               payload.DateOfBirth,
+	// 	ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
+	// 	PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+	// 	CampusClassNumber:         payload.CampusClassNumber,
+	// 	SchoolNumber:              payload.SchoolNumber,
+	// 	Gender:                    payload.Gender,
+	// }
+
 	savedStudent := models.Student{
 		Surname:                   payload.Surname,
 		OtherName:                 payload.OtherName,
@@ -90,9 +104,14 @@ func EditStudent(c *gin.Context) {
 		DateOfBirth:               payload.DateOfBirth,
 		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
 		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
-		CampusClassNumber:         payload.CampusClassNumber,
 		SchoolNumber:              payload.SchoolNumber,
 		Gender:                    payload.Gender,
+		PreferredCampusNumber:     payload.PreferredCampusNumber,
+		SourceOfSchoolInfo:        payload.SourceOfSchoolInfo,
+		ModeOfStudyNumber:         payload.ModeOfStudyNumber,
+		Lin:                       payload.Lin,
+		// Class: frontend sends "class_number" -> use ClassNumber for DB column CampusClassNumber
+		CampusClassNumber: payload.ClassNumber, // or prefer payload.ClassNumber, fallback payload.CampusClassNumber
 	}
 
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
