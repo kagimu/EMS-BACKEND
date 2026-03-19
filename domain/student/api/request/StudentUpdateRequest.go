@@ -13,7 +13,6 @@ type StudentUpdateRequest struct {
 	APNStatus                 string `json:"apn_status"`
 	ReasonForChoosingSchool   string `json:"reason_for_choosing_school"`
 	PreferredTypeOfEnrollment string `json:"preferred_type_of_enrollment"`
-	CampusClassNumber         string `json:"campus_class_number"`
 	SchoolNumber              string `json:"school_number"`
 	Gender                    string `json:"gender"`
 	ClassNumber               string `json:"class_number"`
