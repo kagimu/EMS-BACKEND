@@ -16,6 +16,16 @@ type StudentUpdateRequest struct {
 	CampusClassNumber         string `json:"campus_class_number"`
 	SchoolNumber              string `json:"school_number"`
 	Gender                    string `json:"gender"`
+	ClassNumber               string `json:"class_number"`
+	CurriculumNumber          string `json:"curriculum_number"`
+	CampusCurriculumNumber    string `json:"campus_curriculum_number"`
+	CampusNumber              string `json:"campus_number"`
+	Lin                       string `json:"lin"`
+	ModeOfStudyNumber         string `json:"mode_of_study_number"`
+	ADN                       string `json:"adn"`
+	Type                      string `json:"type"`
+	PreferredCampusNumber     string `json:"preferred_campus_number"`
+	SourceOfSchoolInfo        string `json:"source_of_school_info"`
 }
 
 func (s *StudentUpdateRequest) Prepare() {
