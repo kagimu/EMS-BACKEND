@@ -104,10 +104,24 @@ func EditStudent(c *gin.Context) {
 		campusNumber = payload.PreferredCampusNumber
 	}
 
+	// `class/services.ResolveCampusClass` needs `curriculumNumber` from
+	// `curriculum_levels.curriculum_number`. Your frontend sends `level`,
+	// which is (almost certainly) `curriculum_levels.number`.
+	// Translate `payload.Level` -> `curriculumNumber` when needed.
+	curriculumNumber := payload.CurriculumNumber
+	if curriculumNumber == "" && payload.Level != "" {
+		curriculumLevel, err := repositories4.GetCurriculumLevelByNumber(payload.Level)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid level/curriculum selection", "error": err.Error()})
+			return
+		}
+		curriculumNumber = curriculumLevel.CurriculumNumber
+	}
+
 	campusClass, err := classServices.ResolveCampusClass(
 		payload.ClassNumber,
 		campusNumber,
-		payload.CurriculumNumber, // mapped from `level` in StudentUpdateRequest.Prepare()
+		curriculumNumber,
 		payload.CampusCurriculumNumber,
 	)
 	if err != nil {
