@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/gin-gonic/gin"
 )
 
@@ -63,4 +64,52 @@ func GetAdmissionRequirementsController(ctx *gin.Context) {
 		"data":    list,
 		"count":   len(list),
 	})
+}
+
+func DeleteAdmissionRequirementController(ctx *gin.Context) {
+	if _, err := commons.GetUserFromHeader(ctx); err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+		return
+	}
+
+	number := ctx.Param("number")
+	if err := services.DeleteAdmissionRequirementService(number); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete admission requirement: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Admission requirement deleted successfully"})
+}
+
+type UpdateAdmissionRequirementStatusRequest struct {
+	Status string `json:"status"`
+}
+
+func UpdateAdmissionRequirementStatusController(ctx *gin.Context) {
+	if _, err := commons.GetUserFromHeader(ctx); err != nil {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+		return
+	}
+
+	number := ctx.Param("number")
+	var req UpdateAdmissionRequirementStatusRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request data: " + err.Error()})
+		return
+	}
+	if req.Status == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "status is required"})
+		return
+	}
+	if req.Status != constants.StatusActive && req.Status != constants.StatusInactive {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "status must be ACTIVE or INACTIVE"})
+		return
+	}
+
+	if err := services.UpdateAdmissionRequirementStatusService(number, req.Status); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update admission requirement status: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Admission requirement status updated successfully"})
 }

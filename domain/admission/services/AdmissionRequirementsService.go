@@ -1,6 +1,9 @@
 package services
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/responses"
@@ -8,6 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
@@ -18,6 +22,28 @@ func SaveAdmissionRequirementsService(req *requests.AdmissionRequirementsRequest
 	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
 	requirements := req.ToModels(userNumber)
 	return repo.SaveAdmissionRequirementsBatch(requirements)
+}
+
+func DeleteAdmissionRequirementService(number string) error {
+	if number == "" {
+		return errors.New("number is required")
+	}
+	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
+	return repo.DeleteAdmissionRequirementByNumber(number)
+}
+
+func UpdateAdmissionRequirementStatusService(number, status string) error {
+	if number == "" {
+		return errors.New("number is required")
+	}
+	if status == "" {
+		return errors.New("status is required")
+	}
+	if status != constants.StatusActive && status != constants.StatusInactive {
+		return fmt.Errorf("status must be %s or %s", constants.StatusActive, constants.StatusInactive)
+	}
+	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
+	return repo.UpdateAdmissionRequirementStatus(number, status)
 }
 
 // createAdmissionRequirementResponse maps a model to the API response with resolved names.
@@ -38,6 +64,7 @@ func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolNam
 		ClassName:          className,
 		StudyPeriodName:    studyPeriodName,
 		UserNumber:         m.UserNumber,
+		Status:             m.Status,
 		CreatedAt:          m.CreatedAt,
 		UpdatedAt:          m.UpdatedAt,
 	}

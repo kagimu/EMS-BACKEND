@@ -19,6 +19,7 @@ type AdmissionRequirementResponse struct {
 	ClassName           string    `json:"class_name"`
 	StudyPeriodName     string    `json:"study_period_name"`
 	UserNumber          string    `json:"user_number"`
+	Status              string    `json:"status"`
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
 }
