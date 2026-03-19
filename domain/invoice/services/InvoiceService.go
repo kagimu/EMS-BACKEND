@@ -850,19 +850,20 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 }
 
 func validatePaymentDateBefore(date string, dateOfIssue time.Time) (time.Time, error) {
-
-	if date == "" {
-		fmt.Println("payment date not provided")
-		return time.Now(), nil
-	}
-
 	var paymentDate time.Time
-	if paymentDate, err := time.Parse(time.DateOnly, date); err != nil {
+	var err error
+
+	paymentDate, err = time.Parse(time.DateOnly, date)
+	if err != nil {
 		return paymentDate, errors.New("Date error: " + err.Error() + " for " + date)
 	}
 
 	if paymentDate.Before(dateOfIssue) {
-		return paymentDate, errors.New(fmt.Sprintf("The payment date '%s' can not be before the issue date '%s'", date, dateOfIssue.Format(time.DateOnly)))
+		return paymentDate, errors.New(fmt.Sprintf(
+			"The payment date '%s' can not be before the issue date '%s'",
+			date,
+			dateOfIssue.Format(time.DateOnly),
+		))
 	}
 
 	return paymentDate, nil
@@ -870,7 +871,10 @@ func validatePaymentDateBefore(date string, dateOfIssue time.Time) (time.Time, e
 
 func validatePaymentDateAfter(date string, dateOfIssue time.Time) (time.Time, error) {
 	var paymentDate time.Time
-	if paymentDate, err := time.Parse(time.DateOnly, date); err != nil {
+	var err error
+
+	paymentDate, err = time.Parse(time.DateOnly, date)
+	if err != nil {
 		return paymentDate, errors.New("Date error: " + err.Error() + " for " + date)
 	}
 
