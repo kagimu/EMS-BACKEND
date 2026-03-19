@@ -862,7 +862,7 @@ func validatePaymentDateBefore(date string, dateOfIssue time.Time) (time.Time, e
 	}
 
 	if paymentDate.Before(dateOfIssue) {
-		return paymentDate, errors.New(fmt.Sprintf("The payment date '%s' can not be before the issue date '%s'", paymentDate.Format(time.DateOnly), dateOfIssue.Format(time.DateOnly)))
+		return paymentDate, errors.New(fmt.Sprintf("The payment date '%s' can not be before the issue date '%s'", date, dateOfIssue.Format(time.DateOnly)))
 	}
 
 	return paymentDate, nil
@@ -875,7 +875,7 @@ func validatePaymentDateAfter(date string, dateOfIssue time.Time) (time.Time, er
 	}
 
 	if paymentDate.After(dateOfIssue) {
-		return paymentDate, errors.New(fmt.Sprintf("The payment date '%s' can not be after the date '%s'", paymentDate.Format(time.DateOnly), dateOfIssue.Format(time.DateOnly)))
+		return paymentDate, errors.New(fmt.Sprintf("The payment date '%s' can not be after the date '%s'", date, dateOfIssue.Format(time.DateOnly)))
 	}
 
 	return paymentDate, nil
