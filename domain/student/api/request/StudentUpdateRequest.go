@@ -35,10 +35,4 @@ func (s *StudentUpdateRequest) Prepare() {
 	s.ReasonForChoosingSchool = html.EscapeString(strings.TrimSpace(strings.ToLower(s.ReasonForChoosingSchool)))
 	s.SecondName = html.EscapeString(strings.TrimSpace(strings.ToLower(s.SecondName)))
 	s.OtherName = html.EscapeString(strings.TrimSpace(strings.ToLower(s.OtherName)))
-
-	// Frontend sends `level`, while resolution needs `curriculum_number`.
-	// If curriculum_number isn't provided explicitly, map from level.
-	if s.CurriculumNumber == "" && s.Level != "" {
-		s.CurriculumNumber = s.Level
-	}
 }
