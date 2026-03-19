@@ -114,8 +114,16 @@ func EditStudent(c *gin.Context) {
 		CampusClassNumber: payload.ClassNumber, // or prefer payload.ClassNumber, fallback payload.CampusClassNumber
 	}
 
+	// if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
+	// 	return
+	// }
+
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to update student",
+			"error":   err.Error(), // actual DB error
+		})
 		return
 	}
 
