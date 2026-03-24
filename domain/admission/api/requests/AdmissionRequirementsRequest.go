@@ -13,7 +13,8 @@ type AdmissionRequirementsRequest struct {
 	ClassNumber        string   `json:"class_number" binding:"required"`
 	CampusNumber       string   `json:"campus_number" binding:"required"`
 	CampusCurriculumNumber string `json:"campus_curriculum_number" binding:"required"`
-	StudyPeriodNumber  string   `json:"study_period_number" binding:"required"`
+	CampusLevelNumber      string `json:"campus_level_number" binding:"required"`
+	StudyPeriodNumber      string `json:"study_period_number" binding:"required"`
 	AcademicYearNumber string   `json:"academic_year_number" binding:"required"`
 	SchoolNumber       string   `json:"school_number" binding:"required"`
 	Status             string   `json:"status"`
@@ -35,6 +36,9 @@ func (a *AdmissionRequirementsRequest) Validate() error {
 	}
 	if a.CampusCurriculumNumber == "" {
 		return errors.New("campus curriculum number is required")
+	}
+	if a.CampusLevelNumber == "" {
+		return errors.New("campus level number is required")
 	}
 	if a.AcademicYearNumber == "" {
 		return errors.New("academic year number is required")
@@ -64,7 +68,8 @@ func (a *AdmissionRequirementsRequest) ToModels(userNumber string) []models.Admi
 			CampusClassNumber:  a.ClassNumber,
 			CampusNumber:       a.CampusNumber,
 			CampusCurriculumNumber: a.CampusCurriculumNumber,
-			StudyPeriodNumber:  a.StudyPeriodNumber,
+			CampusLevelNumber:      a.CampusLevelNumber,
+			StudyPeriodNumber:      a.StudyPeriodNumber,
 			AcademicYearNumber: a.AcademicYearNumber,
 			SchoolNumber:       a.SchoolNumber,
 			UserNumber:         userNumber,
