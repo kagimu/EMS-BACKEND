@@ -73,9 +73,31 @@ func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolNam
 }
 
 // FetchAdmissionRequirementsService returns admission requirements filtered by non-empty params, as response DTOs.
-func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber string) ([]responses.AdmissionRequirementResponse, error) {
+func FetchAdmissionRequirementsService(
+	schoolNumber,
+	campusClassNumber,
+	classNumber,
+	campusNumber,
+	campusCurriculumNumber,
+	campusLevelNumber,
+	studyPeriodNumber,
+	academicYearNumber,
+	itemNumber,
+	modeOfStudyNumber string,
+) ([]responses.AdmissionRequirementResponse, error) {
 	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
-	list, err := repo.FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber)
+	list, err := repo.FindAdmissionRequirements(
+		schoolNumber,
+		campusClassNumber,
+		classNumber,
+		campusNumber,
+		campusCurriculumNumber,
+		campusLevelNumber,
+		studyPeriodNumber,
+		academicYearNumber,
+		itemNumber,
+		modeOfStudyNumber,
+	)
 	if err != nil {
 		return nil, err
 	}

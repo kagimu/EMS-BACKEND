@@ -8,7 +8,18 @@ import (
 type AdmissionRequirementsRepository interface {
 	SaveAdmissionRequirements(admissionRequirement models.AdmissionRequirement) error
 	SaveAdmissionRequirementsBatch(requirements []models.AdmissionRequirement) error
-	FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber string) ([]models.AdmissionRequirement, error)
+	FindAdmissionRequirements(
+		schoolNumber,
+		campusClassNumber,
+		classNumber,
+		campusNumber,
+		campusCurriculumNumber,
+		campusLevelNumber,
+		studyPeriodNumber,
+		academicYearNumber,
+		itemNumber,
+		modeOfStudyNumber string,
+	) ([]models.AdmissionRequirement, error)
 	DeleteAdmissionRequirementByNumber(number string) error
 	UpdateAdmissionRequirementStatus(number, status string) error
 }
@@ -39,14 +50,40 @@ func (a admissionRequirementsRepository) UpdateAdmissionRequirementStatus(number
 }
 
 // FindAdmissionRequirements returns admission requirements filtered by non-empty query params.
-func (a admissionRequirementsRepository) FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber string) ([]models.AdmissionRequirement, error) {
+func (a admissionRequirementsRepository) FindAdmissionRequirements(
+	schoolNumber,
+	campusClassNumber,
+	classNumber,
+	campusNumber,
+	campusCurriculumNumber,
+	campusLevelNumber,
+	studyPeriodNumber,
+	academicYearNumber,
+	itemNumber,
+	modeOfStudyNumber string,
+) ([]models.AdmissionRequirement, error) {
 	var list []models.AdmissionRequirement
-	query := a.DB.Model(&models.AdmissionRequirement{})
+	query := a.DB.Model(&models.AdmissionRequirement{}).
+		Joins("LEFT JOIN campus_classes ON campus_classes.number = admission_requirements.campus_class_number")
 	if schoolNumber != "" {
 		query = query.Where("school_number = ?", schoolNumber)
 	}
 	if campusClassNumber != "" {
 		query = query.Where("campus_class_number = ?", campusClassNumber)
+	}
+	if classNumber != "" {
+		query = query.Joins("LEFT JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+			Where("curriculum_classes.class_number = ?", classNumber)
+	}
+	if campusNumber != "" {
+		query = query.Where("admission_requirements.campus_number = ?", campusNumber)
+	}
+	if campusCurriculumNumber != "" {
+		query = query.Joins("LEFT JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number").
+			Where("campus_levels.campus_curriculum_number = ?", campusCurriculumNumber)
+	}
+	if campusLevelNumber != "" {
+		query = query.Where("campus_classes.campus_level_number = ?", campusLevelNumber)
 	}
 	if studyPeriodNumber != "" {
 		query = query.Where("study_period_number = ?", studyPeriodNumber)
@@ -60,10 +97,10 @@ func (a admissionRequirementsRepository) FindAdmissionRequirements(schoolNumber,
 	if modeOfStudyNumber != "" {
 		query = query.Where("mode_of_study_number = ?", modeOfStudyNumber)
 	}
-	if err := query.Order("created_at DESC").Find(&list).Error; err != nil {
+	if err := query.Order("admission_requirements.created_at DESC").Find(&list).Error; err != nil {
 		return nil, err
 	}
-	
+
 	return list, nil
 }
 
