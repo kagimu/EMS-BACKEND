@@ -51,8 +51,11 @@ func AllBillable(context *gin.Context) {
 	classNumber := context.Query("class_number")
 	studyPeriodNumber := context.Query("study_period_number")
 	academicYearNumber := context.Query("academic_year_number")
+	modeOfStudyNumber := context.Query("mode_of_study_number")
+	curriculumNumber := context.Query("curriculum_number")
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
 
-	all, err := billableService.FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status)
+	all, err := billableService.FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
