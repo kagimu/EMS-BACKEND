@@ -66,10 +66,10 @@ func (a admissionRequirementsRepository) FindAdmissionRequirements(
 	query := a.DB.Model(&models.AdmissionRequirement{}).
 		Joins("LEFT JOIN campus_classes ON campus_classes.number = admission_requirements.campus_class_number")
 	if schoolNumber != "" {
-		query = query.Where("school_number = ?", schoolNumber)
+		query = query.Where("admission_requirements.school_number = ?", schoolNumber)
 	}
 	if campusClassNumber != "" {
-		query = query.Where("campus_class_number = ?", campusClassNumber)
+		query = query.Where("admission_requirements.campus_class_number = ?", campusClassNumber)
 	}
 	if classNumber != "" {
 		query = query.Joins("LEFT JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
@@ -78,24 +78,34 @@ func (a admissionRequirementsRepository) FindAdmissionRequirements(
 	if campusNumber != "" {
 		query = query.Where("admission_requirements.campus_number = ?", campusNumber)
 	}
+	// campus_curriculum_number / campus_level_number: match denormalized columns on the row (POST),
+	// or resolve via campus_classes → campus_levels for legacy rows.
+	if campusCurriculumNumber != "" || campusLevelNumber != "" {
+		query = query.Joins("LEFT JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number")
+	}
 	if campusCurriculumNumber != "" {
-		query = query.Joins("LEFT JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number").
-			Where("campus_levels.campus_curriculum_number = ?", campusCurriculumNumber)
+		query = query.Where(
+			"(admission_requirements.campus_curriculum_number = ? OR campus_levels.campus_curriculum_number = ?)",
+			campusCurriculumNumber, campusCurriculumNumber,
+		)
 	}
 	if campusLevelNumber != "" {
-		query = query.Where("campus_classes.campus_level_number = ?", campusLevelNumber)
+		query = query.Where(
+			"(admission_requirements.campus_level_number = ? OR campus_classes.campus_level_number = ? OR campus_levels.number = ?)",
+			campusLevelNumber, campusLevelNumber, campusLevelNumber,
+		)
 	}
 	if studyPeriodNumber != "" {
-		query = query.Where("study_period_number = ?", studyPeriodNumber)
+		query = query.Where("admission_requirements.study_period_number = ?", studyPeriodNumber)
 	}
 	if academicYearNumber != "" {
-		query = query.Where("academic_year_number = ?", academicYearNumber)
+		query = query.Where("admission_requirements.academic_year_number = ?", academicYearNumber)
 	}
 	if itemNumber != "" {
-		query = query.Where("item_number = ?", itemNumber)
+		query = query.Where("admission_requirements.item_number = ?", itemNumber)
 	}
 	if modeOfStudyNumber != "" {
-		query = query.Where("mode_of_study_number = ?", modeOfStudyNumber)
+		query = query.Where("admission_requirements.mode_of_study_number = ?", modeOfStudyNumber)
 	}
 	if err := query.Order("admission_requirements.created_at DESC").Find(&list).Error; err != nil {
 		return nil, err
