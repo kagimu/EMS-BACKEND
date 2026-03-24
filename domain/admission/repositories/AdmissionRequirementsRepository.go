@@ -8,7 +8,7 @@ import (
 type AdmissionRequirementsRepository interface {
 	SaveAdmissionRequirements(admissionRequirement models.AdmissionRequirement) error
 	SaveAdmissionRequirementsBatch(requirements []models.AdmissionRequirement) error
-	FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber string) ([]models.AdmissionRequirement, error)
+	FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber string) ([]models.AdmissionRequirement, error)
 	DeleteAdmissionRequirementByNumber(number string) error
 	UpdateAdmissionRequirementStatus(number, status string) error
 }

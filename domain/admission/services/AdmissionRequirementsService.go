@@ -47,7 +47,7 @@ func UpdateAdmissionRequirementStatusService(number, status string) error {
 }
 
 // createAdmissionRequirementResponse maps a model to the API response with resolved names.
-func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolName, campusName, curriculumName, className, studyPeriodName, itemName string, itemCost float64) responses.AdmissionRequirementResponse {
+func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolName, campusName, curriculumName, className, studyPeriodName, itemName string, itemCost float64, modeOfStudyName string) responses.AdmissionRequirementResponse {
 	return responses.AdmissionRequirementResponse{
 		Number:             m.Number,
 		ItemNumber:         m.ItemNumber,
@@ -67,13 +67,15 @@ func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolNam
 		Status:             m.Status,
 		CreatedAt:          m.CreatedAt,
 		UpdatedAt:          m.UpdatedAt,
+		ModeOfStudyNumber:  m.ModeOfStudyNumber,
+		ModeOfStudyName:    modeOfStudyName,
 	}
 }
 
 // FetchAdmissionRequirementsService returns admission requirements filtered by non-empty params, as response DTOs.
-func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber string) ([]responses.AdmissionRequirementResponse, error) {
+func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber string) ([]responses.AdmissionRequirementResponse, error) {
 	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
-	list, err := repo.FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber)
+	list, err := repo.FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +121,13 @@ func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPer
 		if m.StudyPeriodNumber != "" {
 			if name, err := repositories6.GetStudyPeriodNameByStudyPeriodNumber(m.StudyPeriodNumber); err == nil {
 				studyPeriodName = name.Name
+			}
+		}
+
+		modeOfStudyName := ""
+		if m.ModeOfStudyNumber != "" {
+			if modeOfStudy, err := repositories5.GetModeOfStudyByNumber(m.ModeOfStudyNumber); err == nil && modeOfStudy.Number != "" {
+				modeOfStudyName = modeOfStudy.Name
 			}
 		}
 
