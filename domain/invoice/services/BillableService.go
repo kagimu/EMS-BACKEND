@@ -25,7 +25,7 @@ import (
 
 type BillableService interface {
 	NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error
-	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error)
+	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.BillableResponse, error)
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
 	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error)
 	DeleteBillable(billableNumber string) error
@@ -261,11 +261,11 @@ func createItemResponse(billableItem models.BillableItem) responses.InvoiceItemR
 	}
 }
 
-func (billableService *billableService) FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status string) ([]responses.BillableResponse, error) {
+func (billableService *billableService) FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.BillableResponse, error) {
 
 	var billsResponse = make([]responses.BillableResponse, 0)
 
-	bills, err := repositories.FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, academicYearNumber, status, billType)
+	bills, err := repositories.FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, academicYearNumber, status, billType, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
 		return billsResponse, errors.New("Error getting bills " + err.Error())
 	}
