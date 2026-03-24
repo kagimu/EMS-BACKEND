@@ -40,7 +40,7 @@ func NewAdmissionRequirementController(ctx *gin.Context) {
 }
 
 // GetAdmissionRequirementsController returns admission requirements with optional query filters.
-// Query params: school_number, campus_class_number, study_period_number, academic_year_number, item_number
+// Query params: school_number, campus_class_number, study_period_number, academic_year_number, item_number, mode_of_study_number
 func GetAdmissionRequirementsController(ctx *gin.Context) {
 	if _, err := commons.GetUserFromHeader(ctx); err != nil {
 		ctx.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
@@ -52,8 +52,9 @@ func GetAdmissionRequirementsController(ctx *gin.Context) {
 	studyPeriodNumber := ctx.Query("study_period_number")
 	academicYearNumber := ctx.Query("academic_year_number")
 	itemNumber := ctx.Query("item_number")
+	modeOfStudyNumber := ctx.Query("mode_of_study_number")
 
-	list, err := services.FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber)
+	list, err := services.FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch admission requirements: " + err.Error()})
 		return
