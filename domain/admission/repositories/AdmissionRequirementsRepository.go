@@ -39,7 +39,7 @@ func (a admissionRequirementsRepository) UpdateAdmissionRequirementStatus(number
 }
 
 // FindAdmissionRequirements returns admission requirements filtered by non-empty query params.
-func (a admissionRequirementsRepository) FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber string) ([]models.AdmissionRequirement, error) {
+func (a admissionRequirementsRepository) FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber, modeOfStudyNumber string) ([]models.AdmissionRequirement, error) {
 	var list []models.AdmissionRequirement
 	query := a.DB.Model(&models.AdmissionRequirement{})
 	if schoolNumber != "" {
@@ -57,9 +57,13 @@ func (a admissionRequirementsRepository) FindAdmissionRequirements(schoolNumber,
 	if itemNumber != "" {
 		query = query.Where("item_number = ?", itemNumber)
 	}
+	if modeOfStudyNumber != "" {
+		query = query.Where("mode_of_study_number = ?", modeOfStudyNumber)
+	}
 	if err := query.Order("created_at DESC").Find(&list).Error; err != nil {
 		return nil, err
 	}
+	
 	return list, nil
 }
 

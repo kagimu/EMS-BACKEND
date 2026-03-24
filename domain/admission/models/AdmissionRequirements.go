@@ -19,4 +19,5 @@ type AdmissionRequirement struct {
 	CreatedAt          time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt          time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	SchoolNumber       string    `json:"school_number" gorm:"size:36;"`
+	ModeOfStudyNumber string `json:"mode_of_study_number" gorm:"size:36;"`
 }
