@@ -122,7 +122,7 @@ func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPer
 			}
 		}
 
-		out = append(out, createAdmissionRequirementResponse(m, schoolName, campusName, curriculumName, className, studyPeriodName, itemName, itemCost))
+		out = append(out, createAdmissionRequirementResponse(m, schoolName, campusName, curriculumName, className, studyPeriodName, itemName, itemCost, modeOfStudyName))
 	}
 	return out, nil
 }
