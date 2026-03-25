@@ -26,6 +26,7 @@ import (
 type BillableService interface {
 	NewBillable(billableRequest requests.BillableRequest, currentUserNumber string) error
 	FindAllBillable(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.BillableResponse, error)
+	FindAllBillableWithItems(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.DetailedBillableResponse, error)
 	BillableDetails(billableNumber string) (responses.DetailedBillableResponse, error)
 	GetBill(studentNumber, campusNumber, classNumber, modeOfStudyNumber, studyPeriodNumber, campusCurriculumNumber string) (responses.DetailedBillableResponse, error)
 	DeleteBillable(billableNumber string) error
@@ -93,7 +94,7 @@ func (billableService *billableService) UpdateBillable(updateBillableRequest req
 			return errors.New("Checking duplicate billable error " + err.Error())
 		}
 		if checkDuplicate.Number != "" && checkDuplicate.Number != billable.Number {
-			return errors.New(fmt.Sprintf("You are updating to already existing billable with code: %d", checkDuplicate.Code))
+			return fmt.Errorf("You are updating to already existing billable with code: %d", checkDuplicate.Code)
 		}
 
 		checkCodeDuplicate, err := repositories.GetBillableByCode(billable.StudyPeriodNumber, billable.Code)
@@ -102,7 +103,7 @@ func (billableService *billableService) UpdateBillable(updateBillableRequest req
 		}
 
 		if checkCodeDuplicate.Number != "" && checkDuplicate.Number != billable.Number {
-			return errors.New(fmt.Sprintf("This code %d is already used for this study period on another bill", billable.Code))
+			return fmt.Errorf("This code %d is already used for this study period on another bill", billable.Code)
 		}
 	}
 
@@ -281,6 +282,26 @@ func (billableService *billableService) FindAllBillable(schoolNumber, campusNumb
 	return billsResponse, nil
 }
 
+func (billableService *billableService) FindAllBillableWithItems(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.DetailedBillableResponse, error) {
+
+	var billsResponse = make([]responses.DetailedBillableResponse, 0)
+
+	bills, err := repositories.FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, academicYearNumber, status, billType, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber)
+	if err != nil {
+		return billsResponse, errors.New("Error getting bills " + err.Error())
+	}
+
+	for _, bill := range bills {
+		bResponse, err := createDetailedBillableResponse(bill)
+		if err != nil {
+			return billsResponse, err
+		}
+		billsResponse = append(billsResponse, bResponse)
+	}
+
+	return billsResponse, nil
+}
+
 func createBillResponse(billable models.Billable) (responses.BillableResponse, error) {
 
 	studyPeriod, _ := repositories3.GetStudyPeriodByNumber(billable.StudyPeriodNumber)
@@ -379,7 +400,7 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 		return errors.New("Checking duplicate billable error " + err.Error())
 	}
 	if checkDuplicate.Number != "" {
-		return errors.New(fmt.Sprintf("Billable already exists with code %d", newBillable.Code))
+		return fmt.Errorf("Billable already exists with code %d", newBillable.Code)
 	}
 
 	checkCodeDuplicate, err := repositories.GetBillableByCode(newBillable.StudyPeriodNumber, newBillable.Code)
@@ -388,7 +409,7 @@ func (billableService *billableService) NewBillable(billableRequest requests.Bil
 	}
 
 	if checkCodeDuplicate.Number != "" {
-		return errors.New(fmt.Sprintf("This code %d is already used for this study period", newBillable.Code))
+		return fmt.Errorf("This code %d is already used for this study period", newBillable.Code)
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
