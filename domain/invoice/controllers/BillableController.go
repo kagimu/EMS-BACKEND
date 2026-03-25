@@ -64,6 +64,32 @@ func AllBillable(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"message": "All billable", "data": all})
 }
 
+func AllBillableWithItems(context *gin.Context) {
+	schoolNumber := context.Query("school_number")
+	if schoolNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Choose school"})
+		return
+	}
+
+	status := context.Query("status")
+	campusNumber := context.Query("campus_number")
+	billType := context.Query("type")
+	classNumber := context.Query("class_number")
+	studyPeriodNumber := context.Query("study_period_number")
+	academicYearNumber := context.Query("academic_year_number")
+	modeOfStudyNumber := context.Query("mode_of_study_number")
+	curriculumNumber := context.Query("curriculum_number")
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
+
+	all, err := billableService.FindAllBillableWithItems(schoolNumber, campusNumber, billType, classNumber, studyPeriodNumber, academicYearNumber, status, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "All billable", "data": all})
+}
+
 func BillableDetails(context *gin.Context) {
 	billableNumber := context.Query("billable_number")
 	if billableNumber == "" {

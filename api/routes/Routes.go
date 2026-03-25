@@ -543,6 +543,7 @@ func SetupRoutes() *gin.Engine {
 				billable.PUT("", invoiceController.UpdateBillable)
 				billable.DELETE("/:billable_number", invoiceController.DeleteBillable)
 				billable.GET("", invoiceController.AllBillable)
+			billable.GET("with-items", invoiceController.AllBillableWithItems)
 				billable.GET("details", invoiceController.BillableDetails)
 				billable.GET("determine", invoiceController.GetBill)
 			}
