@@ -3,6 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/grades/repository"
@@ -24,8 +27,6 @@ import (
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"strconv"
-	"time"
 )
 
 var assessmentMetricRepository = assessmentRepositories.NewAssessmentMetricRepository()
@@ -469,10 +470,14 @@ func InterviewStudents(assessmentMetricNumber, interviewNumber string) ([]respon
 		}
 
 		var assessment assessmentModel.Assessment
+		var studentScored bool = false
 		if assessmentMetricNumber != "" {
 			assessment, err = assessmentRepositories.GetAssessmentByStudentNumberAndAssessmentMetricNumber(student.Number, assessmentMetricNumber)
 			if err != nil {
 				return studentsList, errors.New("Failed to fetch assessments " + err.Error())
+			}
+			if assessment.Number != "" {
+				studentScored = true
 			}
 		}
 		studentsList = append(studentsList, responses2.SingleStudent{
@@ -487,6 +492,7 @@ func InterviewStudents(assessmentMetricNumber, interviewNumber string) ([]respon
 				Status:            student.Status,
 				ADN:               student.ADN,
 				APN:               student.APN,
+				StudentScored:     studentScored,
 			},
 			Assessments: asts,
 		})

@@ -12,6 +12,7 @@ type EnrolledStudent struct {
 	Comment           string  `json:"comment"`
 	Class             string  `json:"class"`
 	Status            string  `json:"status"`
+	StudentScored     bool    `json:"student_scored"`
 }
 
 type NarrativeEnrolledStudent struct {
