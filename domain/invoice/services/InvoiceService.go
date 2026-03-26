@@ -694,7 +694,7 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 		CampusNumber:  campus.Number,
 		UserNumber:    accountTopUpRequest.UserNumber,
 		Type:          constants.StatementTypeIn,
-		Description:   fmt.Sprintf("Top up received %s:\n %s", clientReference, description),
+		Description:   fmt.Sprintf("Credit received %s:\n %s", clientReference, description),
 		Amount:        accountTopUpRequest.Amount,
 		Balance:       nextBlc,
 		IssueDate:     paymentDate,
@@ -714,11 +714,11 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 
 		err := invoiceRepositories.SaveStatement(newStatement, tx)
 		if err != nil {
-			return errors.New("Creating top up statement error " + err.Error())
+			return errors.New("Creating credit statement error " + err.Error())
 		}
 
 		if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
-			return errors.New("Adding new top up entry error " + err.Error())
+			return errors.New("Adding new creditentry error " + err.Error())
 		}
 
 		return nil
