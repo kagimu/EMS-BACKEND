@@ -314,5 +314,5 @@ func AccountTopUpRequest(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Top up received successfully", "data": minInvoiceResponse})
+	c.JSON(http.StatusOK, gin.H{"message": "Credit received successfully", "data": minInvoiceResponse})
 }
