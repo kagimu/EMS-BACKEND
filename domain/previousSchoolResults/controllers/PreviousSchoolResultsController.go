@@ -87,6 +87,9 @@ func CreatePreviousSchoolResults(context *gin.Context) {
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("application_number = ? AND student_number = ?", applicationNumber, studentNumber).Delete(&models.PreviousSchoolResults{}).Error; err != nil {
+			return errors.New("Failed to replace previous school results: " + err.Error())
+		}
 
 		for i, subject := range subjects {
 			//score, _ := strconv.ParseFloat(scores[i], 64)
