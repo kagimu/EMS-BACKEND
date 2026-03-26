@@ -6,6 +6,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	admissionModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"gorm.io/gorm"
 )
@@ -38,6 +39,7 @@ func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, stud
 			filters.ByAnyField("admissions.stream_number", streamNumber),
 			filters.ByAnyField("admissions.school_number", schoolNumber),
 			filters.ByAnyField("admissions.campus_class_number", campusClassNumber),
+			filters.ByAnyField("admissions.status", constants.StatusPending),
 			filters.ByParent("applications.user_number", user),
 			paginateFunc,
 		).Find(&admissions).Error; err != nil {
