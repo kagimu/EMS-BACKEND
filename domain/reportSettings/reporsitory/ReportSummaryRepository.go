@@ -205,3 +205,21 @@ func BulkApproveReportSummaries(numbers []string, stage, status string, trn ...*
 			"stage":  stage,
 		}).Error
 }
+
+func SaveReportSummaryCorrespondence(corr models.ReportSummaryCorrespondence, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+	return db.Save(&corr).Error
+}
+
+func FetchReportSummaryCorrespondences(reportSummaryNumber string, trn ...*gorm.DB) ([]models.ReportSummaryCorrespondence, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+	var list []models.ReportSummaryCorrespondence
+	err := db.Where("report_summary_number = ?", reportSummaryNumber).Order("created_at asc").Find(&list).Error
+	return list, err
+}

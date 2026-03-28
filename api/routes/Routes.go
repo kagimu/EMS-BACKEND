@@ -793,6 +793,7 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
 			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)
 			reportSettings.POST("report-summary/approve", reportSettingsController.ApproveReportSummaries)
+			reportSettings.POST("report-summary/forward", reportSettingsController.ForwardReportSummary)
 			reportSettings.GET("report-summary-promotion-details/:report_summary_number", reportSettingsController.FetchReportPromotionDetails)
 			reportSettings.POST("add-head-teachers-comment/:report_setting_number", reportSettingsController.CreateHeadTeacherComment)
 			reportSettings.GET("head-teachers-comments", reportSettingsController.FetchHeadTeacherComments)
