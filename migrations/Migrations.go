@@ -236,6 +236,8 @@ func Init() error {
 		&admissionModel.AdmissionRequirement{},
 		&studentModels.StudentBioData{},
 		&admissionModel.AdmissionInterview{},
+		&reportSettings.SubjectTeacherReport{},
+		&reportSettings.SubjectTeacherReportComment{},
 	)
 
 	if err != nil {
