@@ -214,6 +214,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		reportSummary.StreamNumber = enrollment.StreamNumber
 		reportSummary.ReportTemplateName = reportTemplate.Name
 		reportSummary.HeadTeacherComment = headTeacherComment.Comment
+		reportSummary.Status = constants.StatusDraft
 
 		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 			tx.Rollback()
@@ -237,6 +238,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			ReportTemplateName:  reportTemplate.Name,
 			HeadTeacherComment:  headTeacherComment.Comment,
 			CreatedAt:           time.Now(),
+			Status:              constants.StatusDraft,
+			Stage:               constants.StageSubjectTeacher,
 		}
 
 		if err := reporsitory.CreateReportSummary(reportSummary, tx); err != nil {
@@ -435,9 +438,12 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			reportScoreSummary.Grade = grade.ShortName
 			reportScoreSummary.Summation = commons.RoundFloat(summation, 0)
 			reportScoreSummary.UserNumber = userNumber
-			reportScoreSummary.Comment = scale.Description
 			reportScoreSummary.Illustration = scale.Illustration
 			reportScoreSummary.TeacherInitial = teacherInitial
+
+			if payload.OverrideAssessmentScoreComments == "YES" {
+				reportScoreSummary.Comment = scale.Description
+			}
 
 			if err := repo.SaveReportScoreSummary(reportScoreSummary); err != nil {
 				tx.Rollback()
@@ -917,6 +923,8 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		PromotionStatus:     reportSummary.PromotionStatus,
 		Aggregate:           reportSummary.Aggregate,
 		TotalScore:          reportSummary.TotalScore,
+		Status:              reportSummary.Status,
+		Stage:               reportSummary.Stage,
 	}
 
 	/*if len(scalesUsed) > 0 {

@@ -543,7 +543,7 @@ func SetupRoutes() *gin.Engine {
 				billable.PUT("", invoiceController.UpdateBillable)
 				billable.DELETE("/:billable_number", invoiceController.DeleteBillable)
 				billable.GET("", invoiceController.AllBillable)
-			billable.GET("with-items", invoiceController.AllBillableWithItems)
+				billable.GET("with-items", invoiceController.AllBillableWithItems)
 				billable.GET("details", invoiceController.BillableDetails)
 				billable.GET("determine", invoiceController.GetBill)
 			}
@@ -819,6 +819,17 @@ func SetupRoutes() *gin.Engine {
 				subjectTeacherComment.DELETE("/:comment_number", reportSettingsController.DeleteSubjectTeacherComment)
 				subjectTeacherComment.POST("/:number", reportSettingsController.UpdateSubjectTeacherComment)
 
+			}
+
+			subjectTeacherReport := reportSettings.Group("subject-teacher-report")
+			{
+				subjectTeacherReport.POST("", reportSettingsController.CreateSubjectTeacherReport)
+				subjectTeacherReport.GET("all", reportSettingsController.FetchAllSubjectTeacherReports)
+				subjectTeacherReport.DELETE("/:number", reportSettingsController.RemoveSubjectTeacherReport)
+				subjectTeacherReport.PUT("/:number", reportSettingsController.UpdateSubjectTeacherReport)
+				subjectTeacherReport.POST("forward", reportSettingsController.ForwardSubjectTeacherReport)
+				subjectTeacherReport.POST("/:number/approve", reportSettingsController.ApproveSubjectTeacherReport)
+				subjectTeacherReport.GET("comments", reportSettingsController.FetchSubjectTeacherReportComments)
 			}
 
 			narrative := reportSettings.Group("narrative")

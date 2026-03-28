@@ -97,9 +97,10 @@ type ReportScoreRequest struct {
 }
 
 type GenerateReportSummaryRequest struct {
-	StudentNumber     string `json:"student_number"`
-	StudyPeriodNumber string `json:"study_period_number"`
-	CampusClassNumber string `json:"campus_class_number"`
+	StudentNumber                   string `json:"student_number"`
+	StudyPeriodNumber               string `json:"study_period_number"`
+	CampusClassNumber               string `json:"campus_class_number"`
+	OverrideAssessmentScoreComments string `json:"override_assessment_score_comments"`
 }
 
 func (reportSummary *ReportSummaryRequest) ValidateReportSummary() error {
@@ -270,6 +271,10 @@ func (rpt *GenerateReportSummaryRequest) ValidateGenerateReportSummary() error {
 	}
 	if rpt.CampusClassNumber == "" {
 		return errors.New("class number is required")
+	}
+
+	if rpt.OverrideAssessmentScoreComments == "" {
+		return errors.New("please specify if the existing comments against each score should be reset to be simmilar as those in the grading settings")
 	}
 	return nil
 }
