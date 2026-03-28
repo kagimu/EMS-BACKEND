@@ -325,6 +325,8 @@ func FetchReportSummaries(ctx *gin.Context) {
 			Position:        position,
 			Aggregate:       reportSummary.Aggregate,
 			TotalScore:      reportSummary.TotalScore,
+			Stage:           reportSummary.Stage,
+			Status:          reportSummary.Status,
 		})
 
 		position = position + 1
