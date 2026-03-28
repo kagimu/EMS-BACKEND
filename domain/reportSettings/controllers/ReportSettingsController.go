@@ -969,3 +969,29 @@ func UpdateReportScoreSummariesComments(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"message": "Class teacher comment updated successfully"})
 }
+
+func ApproveReportSummaries(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+		return
+	}
+
+	var payload requests.ApproveReportSummariesRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err := services3.ApproveReportSummaries(payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Report summaries approved successfully"))
+}
