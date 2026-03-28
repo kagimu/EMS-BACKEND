@@ -1187,3 +1187,7 @@ func checkIfDemoted(campusClassNumber string, studyPeriodNumber string, assessme
 
 	return models2.PromotionSetting{}, nil
 }
+
+func ApproveReportSummaries(payload requests.ApproveReportSummariesRequest) error {
+	return reporsitory.BulkApproveReportSummaries(payload.ReportSummaryNumbers, constants.StageHeadTeacher, constants.StatusFinal)
+}

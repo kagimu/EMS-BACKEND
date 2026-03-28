@@ -191,3 +191,17 @@ func GetReportSummaryByReportSettingNumber(number string) (models.ReportSummary,
 	return rs, nil
 
 }
+
+func BulkApproveReportSummaries(numbers []string, stage, status string, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	return db.Model(&models.ReportSummary{}).
+		Where("number IN ?", numbers).
+		Updates(map[string]interface{}{
+			"status": status,
+			"stage":  stage,
+		}).Error
+}

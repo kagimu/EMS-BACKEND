@@ -278,3 +278,14 @@ func (rpt *GenerateReportSummaryRequest) ValidateGenerateReportSummary() error {
 	}
 	return nil
 }
+
+type ApproveReportSummariesRequest struct {
+	ReportSummaryNumbers []string `json:"report_summary_numbers"`
+}
+
+func (r ApproveReportSummariesRequest) Validate() error {
+	if len(r.ReportSummaryNumbers) == 0 {
+		return errors.New("report_summary_numbers array cannot be empty")
+	}
+	return nil
+}
