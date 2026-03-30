@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/services"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func CreateSubjectTeacherReport(c *gin.Context) {
@@ -25,8 +26,12 @@ func CreateSubjectTeacherReport(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Failed to validate input: %s", err.Error())})
 		return
 	}
-
-	err := services.CreateSubjectTeacherReport(payload)
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	err = services.CreateSubjectTeacherReport(payload, user)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return

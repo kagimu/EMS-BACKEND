@@ -5,18 +5,11 @@ import (
 )
 
 type SubjectTeacherReportRequest struct {
-	SubjectTeacherName   string `json:"subject_teacher_name"`
-	Status               string `json:"status"`
-	ClassTeacherComment  string `json:"class_teacher_comment"`
 	AssessmentAreaNumber string `json:"assessment_area_number"`
 	StudyPeriodNumber    string `json:"study_period_number"`
-	Stage                string `json:"stage"`
 }
 
 func (r *SubjectTeacherReportRequest) Validate() error {
-	if r.SubjectTeacherName == "" {
-		return errors.New("subject teacher name is required")
-	}
 	if r.AssessmentAreaNumber == "" {
 		return errors.New("assessment area number is required")
 	}
