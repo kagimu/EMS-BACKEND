@@ -1191,3 +1191,47 @@ func checkIfDemoted(campusClassNumber string, studyPeriodNumber string, assessme
 func ApproveReportSummaries(payload requests.ApproveReportSummariesRequest) error {
 	return reporsitory.BulkApproveReportSummaries(payload.ReportSummaryNumbers, constants.StageHeadTeacher, constants.StatusFinal)
 }
+
+func ForwardReportSummary(payload requests.ForwardReportSummaryRequest, commenterName string) error {
+	summary, err := reporsitory.FindReportSummaryByNumber(payload.ReportSummaryNumber)
+	if err != nil {
+		return err
+	}
+	if summary.Number == "" {
+		return errors.New("report summary not found")
+	}
+
+	if summary.Status == constants.StatusFinal {
+		return errors.New("cannot forward a finalized report summary")
+	}
+
+	summary.Stage = payload.NextStage
+
+	tx := config.DB.Begin()
+	if err := reporsitory.SaveReportSummary(summary, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if payload.Comment != "" {
+		correspondence := models.ReportSummaryCorrespondence{
+			Number:              uuid.NewV4().String(),
+			ReportSummaryNumber: summary.Number,
+			Comment:             payload.Comment,
+			CommenterName:       commenterName,
+			CreatedAt:           time.Now(),
+		}
+		if err := reporsitory.SaveReportSummaryCorrespondence(correspondence, tx); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
+func GetReportSummaryCorrespondences(reportSummaryNumber string) ([]models.ReportSummaryCorrespondence, error) {
+	return reporsitory.FetchReportSummaryCorrespondences(reportSummaryNumber)
+}

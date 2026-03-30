@@ -289,3 +289,19 @@ func (r ApproveReportSummariesRequest) Validate() error {
 	}
 	return nil
 }
+
+type ForwardReportSummaryRequest struct {
+	ReportSummaryNumber string `json:"report_summary_number"`
+	NextStage           string `json:"nextStage"`
+	Comment             string `json:"comment"`
+}
+
+func (r ForwardReportSummaryRequest) Validate() error {
+	if r.ReportSummaryNumber == "" {
+		return errors.New("report_summary_number is required")
+	}
+	if r.NextStage == "" {
+		return errors.New("nextStage is required")
+	}
+	return nil
+}

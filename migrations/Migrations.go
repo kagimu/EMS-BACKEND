@@ -238,6 +238,7 @@ func Init() error {
 		&admissionModel.AdmissionInterview{},
 		&reportSettings.SubjectTeacherReport{},
 		&reportSettings.SubjectTeacherReportComment{},
+		&reportSettings.ReportSummaryCorrespondence{},
 	)
 
 	if err != nil {

@@ -995,3 +995,54 @@ func ApproveReportSummaries(c *gin.Context) {
 
 	c.JSON(http.StatusOK, commons.Feedback("Report summaries approved successfully"))
 }
+
+func ForwardReportSummary(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+		return
+	}
+
+	var payload requests.ForwardReportSummaryRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	commenterName := user.FirstName + " " + user.LastName
+	err = services3.ForwardReportSummary(payload, commenterName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Report summary forwarded successfully"))
+}
+
+func FetchReportSummaryCorrespondences(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+		return
+	}
+
+	reportSummaryNumber := c.Query("report_summary_number")
+	if reportSummaryNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide report_summary_number query param"})
+		return
+	}
+
+	correspondences, err := services3.GetReportSummaryCorrespondences(reportSummaryNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": correspondences,
+	})
+}

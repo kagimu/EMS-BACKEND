@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 
+	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
@@ -10,12 +11,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func CreateSubjectTeacherReport(req requests.SubjectTeacherReportRequest) error {
+func CreateSubjectTeacherReport(req requests.SubjectTeacherReportRequest, user *userModel.User) error {
+
 	report := models.SubjectTeacherReport{
 		Number:               uuid.NewV4().String(),
-		SubjectTeacherName:   req.SubjectTeacherName,
+		SubjectTeacherName:   user.FirstName + " " + user.LastName,
 		Status:               constants.StatusDraft,
-		ClassTeacherComment:  req.ClassTeacherComment,
+		ClassTeacherComment:  "",
 		AssessmentAreaNumber: req.AssessmentAreaNumber,
 		StudyPeriodNumber:    req.StudyPeriodNumber,
 		Stage:                constants.StageSubjectTeacher,
