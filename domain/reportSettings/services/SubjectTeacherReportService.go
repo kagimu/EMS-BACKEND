@@ -56,15 +56,18 @@ func GetSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, ass
 		}
 
 		resp = append(resp, responses.SubjectTeacherReportResponse{
-			Number:         report.Number,
-			SubjectTeacher: report.SubjectTeacherName,
-			Status:         report.Status,
-			Class:          class.Name,
-			AssessmentArea: assessmentArea.Name,
-			Stage:          report.Stage,
-			StudyPeriod:    studyPeriod.Name,
-			SubmittedOn:    report.CreatedAt.String(),
-			UpdatedOn:      report.UpdatedAt.String(),
+			Number:               report.Number,
+			SubjectTeacher:       report.SubjectTeacherName,
+			Status:               report.Status,
+			Class:                class.Name,
+			AssessmentArea:       assessmentArea.Name,
+			Stage:                report.Stage,
+			StudyPeriod:          studyPeriod.Name,
+			SubmittedOn:          report.CreatedAt.String(),
+			UpdatedOn:            report.UpdatedAt.String(),
+			AssessmentAreaNumber: report.AssessmentAreaNumber,
+			ClassNumber:          report.ClassNumber,
+			StudyPeriodNumber:    report.StudyPeriodNumber,
 		})
 	}
 
