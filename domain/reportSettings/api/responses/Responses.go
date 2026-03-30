@@ -1,6 +1,8 @@
 package responses
 
 import (
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 )
@@ -44,16 +46,23 @@ type ReportColumnAssessmentResponse struct {
 }
 
 type SubjectTeacherReportResponse struct {
-	Number         string `json:"number"`
-	AssessmentArea string `json:"assessment_area"`
-	SubmittedOn    string `json:"submitted_on"`
-	UpdatedOn      string `json:"updated_on"`
-	Class          string `json:"class"`
-	AcademicYear   string `json:"academic_year"`
-	StudyPeriod    string `json:"study_period"`
-	SubjectTeacher string `json:"subject_teacher"`
-	Status         string `json:"status"`
-	Stage          string `json:"stage"`
+	Number               string    `json:"number"`
+	AssessmentArea       string    `json:"assessment_area"`
+	SubmittedOn          string    `json:"submitted_on"`
+	UpdatedOn            string    `json:"updated_on"`
+	Class                string    `json:"class"`
+	AcademicYear         string    `json:"academic_year"`
+	StudyPeriod          string    `json:"study_period"`
+	SubjectTeacher       string    `json:"subject_teacher"`
+	Status               string    `json:"status"`
+	Stage                string    `json:"stage"`
+	SubjectTeacherName   string    `json:"subject_teacher_name"`
+	ClassTeacherComment  string    `json:"class_teacher_comment" `
+	AssessmentAreaNumber string    `json:"assessment_area_number"`
+	StudyPeriodNumber    string    `json:"study_period_number" `
+	ClassNumber          string    `json:"class_number" `
+	CreatedAt            time.Time `json:"created_at" `
+	UpdatedAt            time.Time `json:"updated_at" `
 }
 
 type SummarizedFinalReportResponse struct {
