@@ -47,10 +47,12 @@ func FetchAllSubjectTeacherReports(c *gin.Context) {
 	}
 
 	studyPeriodNumber := c.Query("study_period_number")
+	classNumber := c.Query("class_number")
 	stage := c.Query("stage")
 	status := c.Query("status")
+	assessmentAreaNumber := c.Query("assessment_area_number")
 
-	reports, err := services.GetSubjectTeacherReports(studyPeriodNumber, stage, status)
+	reports, err := services.GetSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return

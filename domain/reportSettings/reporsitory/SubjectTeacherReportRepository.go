@@ -2,7 +2,9 @@ package reporsitory
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	reportSettingsModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"gorm.io/gorm"
 )
@@ -30,7 +32,7 @@ func GetSubjectTeacherReportByNumber(number string, trn ...*gorm.DB) (reportSett
 	return report, nil
 }
 
-func FetchAllSubjectTeacherReports(studyPeriodNumber, stage, status string, trn ...*gorm.DB) ([]reportSettingsModel.SubjectTeacherReport, error) {
+func FetchAllSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber string, trn ...*gorm.DB) ([]reportSettingsModel.SubjectTeacherReport, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
@@ -39,17 +41,13 @@ func FetchAllSubjectTeacherReports(studyPeriodNumber, stage, status string, trn 
 	var reports []reportSettingsModel.SubjectTeacherReport
 	query := db.Model(&reportSettingsModel.SubjectTeacherReport{})
 
-	if studyPeriodNumber != "" {
-		query = query.Where("study_period_number = ?", studyPeriodNumber)
-	}
-	if stage != "" {
-		query = query.Where("stage = ?", stage)
-	}
-	if status != "" {
-		query = query.Where("status = ?", status)
-	}
-
-	if err := query.Find(&reports).Error; err != nil {
+	if err := query.Scopes(
+		filters.ByStatus(status),
+		filters.ByAnyField("stage", stage),
+		filters.ByAnyField("assessment_area_number", assessmentAreaNumber),
+		filters.ByAnyField("class_number", classNumber),
+		filters.ByAnyField("study_period_number", studyPeriodNumber),
+	).Find(&reports).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return make([]reportSettingsModel.SubjectTeacherReport, 0), nil
 		}
