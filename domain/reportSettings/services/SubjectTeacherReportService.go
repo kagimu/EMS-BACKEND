@@ -18,6 +18,7 @@ func CreateSubjectTeacherReport(req requests.SubjectTeacherReportRequest, user *
 		SubjectTeacherName:   user.FirstName + " " + user.LastName,
 		Status:               constants.StatusDraft,
 		ClassTeacherComment:  "",
+		ClassNumber:          req.ClassNumber,
 		AssessmentAreaNumber: req.AssessmentAreaNumber,
 		StudyPeriodNumber:    req.StudyPeriodNumber,
 		Stage:                constants.StageSubjectTeacher,
