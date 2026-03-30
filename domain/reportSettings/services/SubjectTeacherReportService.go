@@ -27,8 +27,8 @@ func CreateSubjectTeacherReport(req requests.SubjectTeacherReportRequest, user *
 	return reporsitory.SaveSubjectTeacherReport(report)
 }
 
-func GetSubjectTeacherReports(studyPeriodNumber, stage, status string) ([]models.SubjectTeacherReport, error) {
-	return reporsitory.FetchAllSubjectTeacherReports(studyPeriodNumber, stage, status)
+func GetSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber string) ([]models.SubjectTeacherReport, error) {
+	return reporsitory.FetchAllSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber)
 }
 
 func UpdateSubjectTeacherReport(number string, req requests.UpdateSubjectTeacherReportRequest) error {
