@@ -33,6 +33,9 @@ func CreateSubjectTeacherReport(req requests.SubjectTeacherReportRequest, user *
 
 func GetSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber string) ([]responses.SubjectTeacherReportResponse, error) {
 	all, err := reporsitory.FetchAllSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber)
+	if err != nil {
+		return nil, err
+	}
 	resp := make([]responses.SubjectTeacherReportResponse, 0)
 	for _, report := range all {
 
