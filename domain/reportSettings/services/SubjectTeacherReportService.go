@@ -4,10 +4,14 @@ import (
 	"errors"
 
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -27,8 +31,41 @@ func CreateSubjectTeacherReport(req requests.SubjectTeacherReportRequest, user *
 	return reporsitory.SaveSubjectTeacherReport(report)
 }
 
-func GetSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber string) ([]models.SubjectTeacherReport, error) {
-	return reporsitory.FetchAllSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber)
+func GetSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber string) ([]responses.SubjectTeacherReportResponse, error) {
+	all, err := reporsitory.FetchAllSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, assessmentAreaNumber)
+	resp := make([]responses.SubjectTeacherReportResponse, 0)
+	for _, report := range all {
+
+		studyPeriod, err := repositories.GetStudyPeriodNameByStudyPeriodNumber(report.StudyPeriodNumber)
+		if err != nil {
+			return nil, err
+		}
+
+		assessmentArea, err := repositories2.GetAssessmentAreaByNumber(report.AssessmentAreaNumber)
+
+		if err != nil {
+			return nil, err
+		}
+
+		class, err := repositories3.GetClassByNumber(report.ClassNumber)
+		if err != nil {
+			return nil, err
+		}
+
+		resp = append(resp, responses.SubjectTeacherReportResponse{
+			Number:         report.Number,
+			SubjectTeacher: report.SubjectTeacherName,
+			Status:         report.Status,
+			Class:          class.Name,
+			AssessmentArea: assessmentArea.Name,
+			Stage:          report.Stage,
+			StudyPeriod:    studyPeriod.Name,
+			SubmittedOn:    report.CreatedAt.String(),
+			UpdatedOn:      report.UpdatedAt.String(),
+		})
+	}
+
+	return resp, nil
 }
 
 func UpdateSubjectTeacherReport(number string, req requests.UpdateSubjectTeacherReportRequest) error {

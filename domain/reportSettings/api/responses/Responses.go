@@ -43,6 +43,19 @@ type ReportColumnAssessmentResponse struct {
 	Description      string `json:"description"`
 }
 
+type SubjectTeacherReportResponse struct {
+	Number         string `json:"number"`
+	AssessmentArea string `json:"assessment_area"`
+	SubmittedOn    string `json:"submitted_on"`
+	UpdatedOn      string `json:"updated_on"`
+	Class          string `json:"class"`
+	AcademicYear   string `json:"academic_year"`
+	StudyPeriod    string `json:"study_period"`
+	SubjectTeacher string `json:"subject_teacher"`
+	Status         string `json:"status"`
+	Stage          string `json:"stage"`
+}
+
 type SummarizedFinalReportResponse struct {
 	Student           string `json:"student"`
 	StudentNumber     string `json:"student_number"`
