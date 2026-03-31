@@ -134,7 +134,7 @@ func ForwardSubjectTeacherReport(c *gin.Context) {
 		return
 	}
 
-	commenterName := user.FirstName + " " + user.LastName
+	commenterName := user.FirstName + " " + user.LastName + " " + user.SecondName
 	err = services.ForwardSubjectTeacherReport(payload, commenterName)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
