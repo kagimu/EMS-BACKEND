@@ -16,6 +16,13 @@ import (
 )
 
 func CreateSubjectTeacherReport(req requests.SubjectTeacherReportRequest, user *userModel.User) error {
+	existingReports, err := reporsitory.FetchAllSubjectTeacherReports(req.StudyPeriodNumber, "", "", req.ClassNumber, req.AssessmentAreaNumber)
+	if err != nil {
+		return err
+	}
+	if len(existingReports) > 0 {
+		return errors.New("a report for this was already created")
+	}
 
 	report := models.SubjectTeacherReport{
 		Number:               uuid.NewV4().String(),
