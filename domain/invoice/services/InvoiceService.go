@@ -104,6 +104,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 		Balance:       0,
 		Type:          constants.StatementTypeOut,
 		AddedByNumber: currentUserNumber,
+		IssueDate:     issueDate,
 	}
 
 	newInvoice := models.Invoice{

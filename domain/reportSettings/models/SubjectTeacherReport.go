@@ -13,4 +13,5 @@ type SubjectTeacherReport struct {
 	Stage                string    `json:"stage" gorm:"column:stage"`
 	CreatedAt            time.Time `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt            time.Time `json:"updated_at" gorm:"column:updated_at"`
+	MetricNumber         string    `json:"metric_number" gorm:"column:metric_number"`
 }

@@ -57,6 +57,7 @@ type SubjectTeacherReportResponse struct {
 	AssessmentAreaNumber string `json:"assessment_area_number"`
 	StudyPeriodNumber    string `json:"study_period_number" `
 	ClassNumber          string `json:"class_number" `
+	MetricNumber         string `json:"metric_number" `
 }
 
 type SummarizedFinalReportResponse struct {
