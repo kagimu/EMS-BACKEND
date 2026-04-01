@@ -33,6 +33,7 @@ func CreateSubjectTeacherReport(req requests.SubjectTeacherReportRequest, user *
 		AssessmentAreaNumber: req.AssessmentAreaNumber,
 		StudyPeriodNumber:    req.StudyPeriodNumber,
 		Stage:                constants.StageSubjectTeacher,
+		MetricNumber:         req.MetricNumber,
 	}
 
 	return reporsitory.SaveSubjectTeacherReport(report)
@@ -75,6 +76,7 @@ func GetSubjectTeacherReports(studyPeriodNumber, stage, status, classNumber, ass
 			AssessmentAreaNumber: report.AssessmentAreaNumber,
 			ClassNumber:          report.ClassNumber,
 			StudyPeriodNumber:    report.StudyPeriodNumber,
+			MetricNumber:         report.MetricNumber,
 		})
 	}
 
