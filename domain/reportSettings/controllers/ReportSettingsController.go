@@ -841,12 +841,15 @@ func CreateSubjectTeacherComment(context *gin.Context) {
 
 func FetchSubjectTeacherComments(context *gin.Context) {
 	campusClassNumber := context.Query("campus_class_number")
+	academicYearNumber := context.Query("academic_year_number")
+	studyPeriodNumber := context.Query("study_period_number")
+	assessmentAreaNumber := context.Query("assessment_area_number")
 	if campusClassNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Please select a class to view comments"})
 		return
 	}
 
-	subjectTeacherComments, err := services3.FetchSubjectTeacherComments()
+	subjectTeacherComments, err := services3.FetchSubjectTeacherComments(campusClassNumber, academicYearNumber, studyPeriodNumber, assessmentAreaNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
