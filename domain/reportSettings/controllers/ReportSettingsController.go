@@ -844,6 +844,7 @@ func FetchSubjectTeacherComments(context *gin.Context) {
 	academicYearNumber := context.Query("academic_year_number")
 	studyPeriodNumber := context.Query("study_period_number")
 	assessmentAreaNumber := context.Query("assessment_area_number")
+	
 	if campusClassNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Please select a class to view comments"})
 		return
