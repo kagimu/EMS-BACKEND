@@ -841,10 +841,35 @@ func CreateSubjectTeacherComment(context *gin.Context) {
 
 func FetchSubjectTeacherComments(context *gin.Context) {
 	campusClassNumber := context.Query("campus_class_number")
+	classNumber := context.Query("class_number")
+	campusNumber := context.Query("campus_number")
+	curriculumNumber := context.Query("curriculum_number")
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
 	academicYearNumber := context.Query("academic_year_number")
 	studyPeriodNumber := context.Query("study_period_number")
 	assessmentAreaNumber := context.Query("assessment_area_number")
-	
+
+	// Backward compatibility: allow class_number and resolve to campus_class_number
+	if campusClassNumber == "" && classNumber != "" {
+		if campusNumber == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Please provide campus_number when using class_number"})
+			return
+		}
+
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if campusClass.Number == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "The selected class is not active on the selected campus"})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
+
 	if campusClassNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Please select a class to view comments"})
 		return
