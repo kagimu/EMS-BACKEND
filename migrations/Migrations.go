@@ -130,6 +130,8 @@ func Init() error {
 		&invoiceModel.Statement{},
 		&invoiceModel.Invoice{},
 		&invoiceModel.InvoiceItem{},
+		&invoiceModel.BillPaymentPlan{},
+		&invoiceModel.BillPaymentPlanInstallment{},
 		&serviceModel.Discount{},
 		&invoiceModel.Transaction{},
 		&invoiceModel.InvoiceTransaction{},
