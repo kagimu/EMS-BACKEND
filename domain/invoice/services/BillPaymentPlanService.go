@@ -1,0 +1,209 @@
+package services
+
+import (
+	"errors"
+	"time"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
+	invoiceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
+	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
+)
+
+func CreateBillPaymentPlan(payload requests.BillPaymentPlanRequest, currentUserNumber string) error {
+	startDate, installments, totalAmount, err := parsePlanInput(payload.StartDate, payload.Installments)
+	if err != nil {
+		return err
+	}
+
+	billable, err := invoiceRepositories.GetBillableByNumber(payload.BillableNumber)
+	if err != nil {
+		return errors.New("failed to fetch billable: " + err.Error())
+	}
+	if billable.Number == "" {
+		return errors.New("invalid billable number")
+	}
+
+	student, err := studentRepositories.FindStudentByNumber(payload.StudentNumber)
+	if err != nil {
+		return errors.New("failed to fetch student: " + err.Error())
+	}
+	if student.Number == "" {
+		return errors.New("invalid student number")
+	}
+
+	alreadyExists, err := invoiceRepositories.FindActiveBillPaymentPlanByStudentAndBillable(payload.StudentNumber, payload.BillableNumber)
+	if err != nil {
+		return errors.New("checking active payment plan failed: " + err.Error())
+	}
+	if alreadyExists.Number != "" {
+		return errors.New("an active payment plan already exists for this student and billable")
+	}
+
+	plan := models.BillPaymentPlan{
+		Number:            uuid.NewV4().String(),
+		BillableNumber:    payload.BillableNumber,
+		StudentNumber:     payload.StudentNumber,
+		StudyPeriodNumber: billable.StudyPeriodNumber,
+		TotalAmount:       totalAmount,
+		StartDate:         startDate,
+		Notes:             payload.Notes,
+		Status:            constants.StatusActive,
+		UserNumber:        currentUserNumber,
+	}
+
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		if err := invoiceRepositories.SaveBillPaymentPlan(plan, tx); err != nil {
+			return errors.New("failed to create bill payment plan: " + err.Error())
+		}
+
+		for _, installment := range installments {
+			if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installment, tx); err != nil {
+				return errors.New("failed to create installment: " + err.Error())
+			}
+		}
+
+		return nil
+	})
+}
+
+func GetBillPaymentPlans(planNumber, billableNumber, studentNumber, status string) ([]responses.BillPaymentPlanResponse, error) {
+	plans, err := invoiceRepositories.FindBillPaymentPlans(planNumber, billableNumber, studentNumber, status)
+	if err != nil {
+		return nil, errors.New("failed to fetch bill payment plans: " + err.Error())
+	}
+
+	response := make([]responses.BillPaymentPlanResponse, 0)
+	for _, plan := range plans {
+		response = append(response, buildBillPaymentPlanResponse(plan))
+	}
+
+	return response, nil
+}
+
+func UpdateBillPaymentPlan(planNumber string, payload requests.UpdateBillPaymentPlanRequest, currentUserNumber string) error {
+	plan, err := invoiceRepositories.FindBillPaymentPlanByNumber(planNumber)
+	if err != nil {
+		return errors.New("failed to fetch bill payment plan: " + err.Error())
+	}
+	if plan.Number == "" {
+		return errors.New("invalid bill payment plan number")
+	}
+
+	startDate, installments, totalAmount, err := parsePlanInput(payload.StartDate, payload.Installments)
+	if err != nil {
+		return err
+	}
+
+	billable, err := invoiceRepositories.GetBillableByNumber(payload.BillableNumber)
+	if err != nil {
+		return errors.New("failed to fetch billable: " + err.Error())
+	}
+	if billable.Number == "" {
+		return errors.New("invalid billable number")
+	}
+
+	student, err := studentRepositories.FindStudentByNumber(payload.StudentNumber)
+	if err != nil {
+		return errors.New("failed to fetch student: " + err.Error())
+	}
+	if student.Number == "" {
+		return errors.New("invalid student number")
+	}
+
+	plan.BillableNumber = payload.BillableNumber
+	plan.StudentNumber = payload.StudentNumber
+	plan.StudyPeriodNumber = billable.StudyPeriodNumber
+	plan.StartDate = startDate
+	plan.Notes = payload.Notes
+	plan.TotalAmount = totalAmount
+	plan.UserNumber = currentUserNumber
+	if payload.Status != "" {
+		plan.Status = payload.Status
+	}
+
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		if err := invoiceRepositories.SaveBillPaymentPlan(plan, tx); err != nil {
+			return errors.New("failed to update bill payment plan: " + err.Error())
+		}
+
+		if err := invoiceRepositories.DeleteBillPaymentPlanInstallmentsByPlanNumber(plan.Number, tx); err != nil {
+			return errors.New("failed to clear old installments: " + err.Error())
+		}
+
+		for _, installment := range installments {
+			if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installment, tx); err != nil {
+				return errors.New("failed to save installments: " + err.Error())
+			}
+		}
+
+		return nil
+	})
+}
+
+func parsePlanInput(startDate string, installmentRequests []requests.BillPaymentPlanInstallmentRequest) (time.Time, []models.BillPaymentPlanInstallment, float64, error) {
+	parsedStartDate, err := time.Parse(time.DateOnly, startDate)
+	if err != nil {
+		return time.Time{}, nil, 0, errors.New("invalid start date")
+	}
+
+	installments := make([]models.BillPaymentPlanInstallment, 0)
+	var totalAmount float64
+	var previousDueDate time.Time
+
+	for idx, installmentRequest := range installmentRequests {
+		dueDate, err := time.Parse(time.DateOnly, installmentRequest.DueDate)
+		if err != nil {
+			return time.Time{}, nil, 0, errors.New("invalid installment due date")
+		}
+
+		if idx > 0 && dueDate.Before(previousDueDate) {
+			return time.Time{}, nil, 0, errors.New("installment due dates must be in ascending order")
+		}
+
+		installments = append(installments, models.BillPaymentPlanInstallment{
+			Number:                uuid.NewV4().String(),
+			DueDate:               dueDate,
+			Amount:                installmentRequest.Amount,
+			PaidAmount:            0,
+			Status:                "PENDING",
+			Sequence:              idx + 1,
+		})
+		totalAmount += installmentRequest.Amount
+		previousDueDate = dueDate
+	}
+
+	return parsedStartDate, installments, totalAmount, nil
+}
+
+func buildBillPaymentPlanResponse(plan models.BillPaymentPlan) responses.BillPaymentPlanResponse {
+	installments := make([]responses.BillPaymentPlanInstallmentResponse, 0)
+	for _, installment := range plan.Installments {
+		installments = append(installments, responses.BillPaymentPlanInstallmentResponse{
+			Number:     installment.Number,
+			DueDate:    installment.DueDate.Format(time.DateOnly),
+			Amount:     installment.Amount,
+			PaidAmount: installment.PaidAmount,
+			Status:     installment.Status,
+			Sequence:   installment.Sequence,
+		})
+	}
+
+	return responses.BillPaymentPlanResponse{
+		Number:            plan.Number,
+		BillableNumber:    plan.BillableNumber,
+		StudentNumber:     plan.StudentNumber,
+		StudyPeriodNumber: plan.StudyPeriodNumber,
+		TotalAmount:       plan.TotalAmount,
+		StartDate:         plan.StartDate.Format(time.DateOnly),
+		Notes:             plan.Notes,
+		Status:            plan.Status,
+		Installments:      installments,
+	}
+}
+
