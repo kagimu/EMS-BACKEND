@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// ..
 // Initialize the timezone globally
 func init() {
 	loc, err := time.LoadLocation("Africa/Kampala")
