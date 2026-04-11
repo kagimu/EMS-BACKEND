@@ -13,6 +13,7 @@ import (
 	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	enrollmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/api/responses"
 )
@@ -40,8 +41,8 @@ func GetReport(req requests.StudentAssessmentAreaReportRequest) (*responses.Stud
 		return &responses.StudentAssessmentAreaReportResponse{
 			AssessmentAreaNumber: assessmentArea.Number,
 			AssessmentAreaName:   assessmentArea.Name,
-			Schedules:           []responses.AssessmentScheduleSummary{},
-			Students:            []responses.StudentWithScores{},
+			Schedules:            []responses.AssessmentScheduleSummary{},
+			Students:             []responses.StudentWithScores{},
 		}, nil
 	}
 
@@ -109,9 +110,9 @@ func GetReport(req requests.StudentAssessmentAreaReportRequest) (*responses.Stud
 		for _, m := range metrics {
 			row := responses.AssessmentScheduleScore{
 				AssessmentMetricNumber: m.Number,
-				Description:           m.Description,
-				ScheduledOn:          m.ScheduledOn.Format(time.RFC3339),
-				MaxScore:             m.MaxScore,
+				Description:            m.Description,
+				ScheduledOn:            m.ScheduledOn.Format(time.RFC3339),
+				MaxScore:               m.MaxScore,
 			}
 			if a, ok := scoreMap[studentNumber][m.Number]; ok {
 				row.ActualScore = a.ActualScore
@@ -135,7 +136,81 @@ func GetReport(req requests.StudentAssessmentAreaReportRequest) (*responses.Stud
 	return &responses.StudentAssessmentAreaReportResponse{
 		AssessmentAreaNumber: assessmentArea.Number,
 		AssessmentAreaName:   assessmentArea.Name,
-		Schedules:           scheduleSummaries,
-		Students:            studentsResp,
+		Schedules:            scheduleSummaries,
+		Students:             studentsResp,
 	}, nil
+}
+
+func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, reqStudyPeriodNumber string) (*[]responses.ClassStudentAssessmentReportResponse, error) {
+
+	var enrollments []enrollmentModels.Enrollment
+
+	if err := config.DB.Where("campus_class_number  =? AND status = ? AND study_period_number = ? ", reqCampusClassNumber, constants.StatusActive, reqStudyPeriodNumber).Find(&enrollments).Error; err != nil {
+		return nil, fmt.Errorf("fetching enrollments: %w", err)
+	}
+
+	allAssessmentSchedulesByClassAndStudyPeriod, err := assessmentMetricRepo.NewAssessmentMetricRepository().FindAssessmentMetricsByDistinctAssessmentAreasNumbers(
+		"",
+		reqStudyPeriodNumber,
+		reqCampusClassNumber,
+		"", "", "",
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch fetching assessment metrics: %w", err)
+	}
+
+	studentsResp := make([]responses.ClassStudentAssessmentReportResponse, 0)
+
+	for _, enrollment := range enrollments {
+
+		as := make([]responses.AssessmentArea, 0)
+		for _, amv := range allAssessmentSchedulesByClassAndStudyPeriod {
+
+			var AssessmentArea responses.AssessmentArea
+			AssessmentArea.Name = amv.AssessmentArea.Name
+
+			averageScore := 0.0
+			assessmentCount := 0
+			var schedules = make([]responses.Schedule, 0)
+			assessmentMetric, err := assessmentMetricRepo.NewAssessmentMetricRepository().AllAssessmentMetric(
+				amv.AssessmentAreaNumber,
+				reqStudyPeriodNumber,
+				reqCampusClassNumber,
+				"", "", "",
+			)
+			if err != nil {
+				return nil, fmt.Errorf("fetching assessment assessmentMetric: %w", err)
+			}
+
+			for _, amcv := range assessmentMetric {
+				assessmentCount++
+
+				assessments, err := assessmentRepo.FindAssessmentByStudentNumberAndAssessmentMetricNumber(enrollment.StudyPeriodNumber, amcv.Number)
+				if err != nil {
+					return nil, fmt.Errorf("fetching assessments: %w", err)
+				}
+
+				schedules = append(schedules, responses.Schedule{Name: amcv.Description, Score: assessments[0].Score})
+				AssessmentArea.Scores = schedules
+
+				averageScore += (assessments[0].Score / amcv.MaxScore)
+
+			}
+			averageScore = (averageScore / float64(assessmentCount)) * 100
+
+			as = append(as, AssessmentArea)
+		}
+		student, err := repositories.FindStudentByNumber(enrollment.StudentNumber)
+		if err != nil {
+			return nil, err
+		}
+		studentsResp = append(studentsResp, responses.ClassStudentAssessmentReportResponse{
+			StudentNumber: enrollment.StudentNumber,
+			StudentName:   student.Surname + " " + student.SecondName + " " + student.OtherName,
+			Assessments:   as,
+		})
+	}
+
+	return &studentsResp, nil
 }

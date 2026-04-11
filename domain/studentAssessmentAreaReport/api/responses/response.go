@@ -35,6 +35,23 @@ type AssessmentScheduleSummary struct {
 type StudentAssessmentAreaReportResponse struct {
 	AssessmentAreaNumber string                      `json:"assessment_area_number"`
 	AssessmentAreaName   string                      `json:"assessment_area_name"`
-	Schedules           []AssessmentScheduleSummary `json:"schedules"`
-	Students             []StudentWithScores        `json:"students"`
+	Schedules            []AssessmentScheduleSummary `json:"schedules"`
+	Students             []StudentWithScores         `json:"students"`
+}
+
+type ClassStudentAssessmentReportResponse struct {
+	StudentNumber string           `json:"student_number"`
+	StudentName   string           `json:"student_name"`
+	Assessments   []AssessmentArea `json:"assessments"`
+}
+
+type AssessmentArea struct {
+	Name    string     `json:"name"`
+	Average float64    `json:"average"`
+	Scores  []Schedule `json:"scores"`
+}
+
+type Schedule struct {
+	Name  string  `json:"name"`
+	Score float64 `json:"score"`
 }
