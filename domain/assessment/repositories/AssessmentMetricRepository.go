@@ -146,16 +146,10 @@ func (a *repository) FindAssessmentMetricsByDistinctAssessmentAreasNumbers(asses
 	var assessmentMetrics []assessmenModels.AssessmentMetric
 
 	if err := db.
-		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
-		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
 		Preload("AssessmentArea").
 		Scopes(
-			filters.ByAnyField("campus_classes.campus_number", campusNumber),
-			filters.ByAnyField("curriculum_classes.class_number", classNumber),
 			filters.ByStudyPeriodNumber(studyPeriodNumber),
-			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
 			filters.ByAnyField("assessment_metrics.campus_class_number", campusClassNumber),
-			filters.ByMetricNumber(metricNumber),
 		).
 		Group("assessment_metrics.assessment_area_number").
 		Find(&assessmentMetrics).Error; err != nil {
