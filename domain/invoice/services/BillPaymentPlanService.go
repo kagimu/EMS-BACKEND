@@ -62,8 +62,9 @@ func CreateBillPaymentPlan(payload requests.BillPaymentPlanRequest, currentUserN
 			return errors.New("failed to create bill payment plan: " + err.Error())
 		}
 
-		for _, installment := range installments {
-			if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installment, tx); err != nil {
+		for i := range installments {
+			installments[i].BillPaymentPlanNumber = plan.Number
+			if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installments[i], tx); err != nil {
 				return errors.New("failed to create installment: " + err.Error())
 			}
 		}
@@ -136,8 +137,9 @@ func UpdateBillPaymentPlan(planNumber string, payload requests.UpdateBillPayment
 			return errors.New("failed to clear old installments: " + err.Error())
 		}
 
-		for _, installment := range installments {
-			if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installment, tx); err != nil {
+		for i := range installments {
+			installments[i].BillPaymentPlanNumber = plan.Number
+			if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installments[i], tx); err != nil {
 				return errors.New("failed to save installments: " + err.Error())
 			}
 		}

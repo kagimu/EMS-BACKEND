@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assessmenModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
@@ -15,6 +16,7 @@ type AssessmentMetricRepository interface {
 	AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
 	SaveAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error
 	DeleteAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error
+	FindAssessmentMetricsByDistinctAssessmentAreasNumbers(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
 }
 
 type repository struct {
@@ -133,6 +135,40 @@ func (a *repository) SaveAssessmentMetric(assessmentMetric assessmenModels.Asses
 	}
 
 	return db.Save(&assessmentMetric).Error
+}
+
+func (a *repository) FindAssessmentMetricsByDistinctAssessmentAreasNumbers(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var assessmentMetrics []assessmenModels.AssessmentMetric
+
+	if err := db.
+		Joins("JOIN campus_classes ON campus_classes.number = assessment_metrics.campus_class_number").
+		Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+		Preload("AssessmentArea").
+		Scopes(
+			filters.ByAnyField("campus_classes.campus_number", campusNumber),
+			filters.ByAnyField("curriculum_classes.class_number", classNumber),
+			filters.ByStudyPeriodNumber(studyPeriodNumber),
+			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
+			filters.ByAnyField("assessment_metrics.campus_class_number", campusClassNumber),
+			filters.ByMetricNumber(metricNumber),
+		).
+		Group("assessment_metrics.assessment_area_number").
+		Find(&assessmentMetrics).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentMetrics, nil
+		}
+
+		return assessmentMetrics, err
+
+	}
+
+	return assessmentMetrics, nil
 }
 
 func NewAssessmentMetricRepository() AssessmentMetricRepository {

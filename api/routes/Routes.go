@@ -619,6 +619,7 @@ func SetupRoutes() *gin.Engine {
 			assessment.POST("", assessmentController.CreateAssessment)
 			assessment.GET("", assessmentController.FetchAssessmentByStudent)
 			assessment.GET("student-assessment-area-report", studentAssessmentAreaReportController.GetStudentAssessmentAreaReport)
+			assessment.GET("all-student-assessment-area-reports", studentAssessmentAreaReportController.GetAllStudentAssessmentAreaReportsByClassAndStudyPeriod)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.DELETE("assessment-metrics/:assessment_metric_number", assessmentController.DeleteAssessmentMetric)
