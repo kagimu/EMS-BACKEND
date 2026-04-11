@@ -9,6 +9,7 @@ import (
 	assessmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	assessmentMetricRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	assessmentRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	assessmentAreaRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/repositories"
 	enrollmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
@@ -148,6 +149,12 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 	if err := config.DB.Where("campus_class_number  =? AND status = ? AND study_period_number = ? ", reqCampusClassNumber, constants.StatusActive, reqStudyPeriodNumber).Find(&enrollments).Error; err != nil {
 		return nil, fmt.Errorf("fetching enrollments: %w", err)
 	}
+	CampusClassNumber, err := repositories2.GetCampusClassByClassNumberAndCampusNumber(reqCampusClassNumber, "", "", "")
+	if err != nil {
+		return nil, fmt.Errorf("fetching CampusClassByClassNumberAndCampusNumber: %w", err)
+	}
+
+	reqCampusClassNumber = CampusClassNumber[0].Number
 
 	allAssessmentSchedulesByClassAndStudyPeriod, err := assessmentMetricRepo.NewAssessmentMetricRepository().FindAssessmentMetricsByDistinctAssessmentAreasNumbers(
 		"",

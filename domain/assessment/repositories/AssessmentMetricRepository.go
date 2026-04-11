@@ -145,15 +145,15 @@ func (a *repository) FindAssessmentMetricsByDistinctAssessmentAreasNumbers(asses
 
 	var assessmentMetrics []assessmenModels.AssessmentMetric
 
-	subQuery := db.Model(&assessmenModels.AssessmentMetric{}).
+	subQuery := db.Table("assessment_metrics").
 		Select("MAX(id)").
 		Scopes(
 			filters.ByStudyPeriodNumber(studyPeriodNumber),
-			filters.ByAnyField("assessment_metrics.campus_class_number", campusClassNumber),
+			filters.ByAnyField("campus_class_number", campusClassNumber),
 		).
 		Group("assessment_area_number")
 
-	if err := db.
+	if err := db.Table("assessment_metrics am").
 		Preload("AssessmentArea").
 		Where("id IN (?)", subQuery).
 		Find(&assessmentMetrics).Error; err != nil {
