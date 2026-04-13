@@ -142,14 +142,14 @@ func GetReport(req requests.StudentAssessmentAreaReportRequest) (*responses.Stud
 	}, nil
 }
 
-func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, reqStudyPeriodNumber string) (*[]responses.ClassStudentAssessmentReportResponse, error) {
+func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, reqStudyPeriodNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) (*[]responses.ClassStudentAssessmentReportResponse, error) {
 
 	var enrollments []enrollmentModels.Enrollment
 
 	if err := config.DB.Where("campus_class_number  =? AND status = ? AND study_period_number = ? ", reqCampusClassNumber, constants.StatusActive, reqStudyPeriodNumber).Find(&enrollments).Error; err != nil {
 		return nil, fmt.Errorf("fetching enrollments: %w", err)
 	}
-	CampusClassNumber, err := repositories2.GetCampusClassByClassNumberAndCampusNumber(reqCampusClassNumber, "", "", "")
+	CampusClassNumber, err := repositories2.GetCampusClassByClassNumberAndCampusNumber(reqCampusClassNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
 		return nil, fmt.Errorf("fetching CampusClassByClassNumberAndCampusNumber: %w", err)
 	}
