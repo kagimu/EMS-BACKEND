@@ -50,6 +50,7 @@ func createAdmissionResponse(admission models.Admission) responses.AdmissionResp
 	admissionResponse := responses.AdmissionResponse{
 		AdmissionNumber: admission.Number,
 		Status:          admission.Status,
+		CreatedAt:       admission.CreatedAt,
 	}
 
 	profileCompleted := "NO"
