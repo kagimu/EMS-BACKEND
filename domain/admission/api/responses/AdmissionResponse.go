@@ -25,6 +25,8 @@ type AdmissionResponse struct {
 	StudyPeriodNumber      string                     `json:"study_period_number"`
 	CampusClassNumber      string                     `json:"campus_class_number"`
 	StreamNumber           string                     `json:"stream_number"`
+	ModeOfStudyNumber      string                     `json:"mode_of_study_number"`
+	ModeOfStudyName        string                     `json:"mode_of_study_name"`
 	CampusCurriculumNumber string                     `json:"campus_curriculum_number"`
 	ProfileCompleted       string                     `json:"profile_completed"`
 	CreatedAt              time.Time                  `json:"created_at"`
