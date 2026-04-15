@@ -14,6 +14,7 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
+	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
@@ -69,6 +70,7 @@ func createAdmissionResponse(admission models.Admission) responses.AdmissionResp
 	studyPeriod, _ := repositories4.GetStudyPeriodByNumber(admission.StudyPeriodNumber)
 	student, _ := studentRepository.GetStudentByNumber(admission.StudentNumber)
 	stream, _ := repositories2.GetStreamByNumber(admission.StreamNumber)
+	modeOfStudy, _ := schoolRepositories.GetModeOfStudyByNumber(student.ModeOfStudyNumber)
 
 	campusClass, _ := repositories2.GetCampusClassByNumber(admission.CampusClassNumber)
 
@@ -93,6 +95,8 @@ func createAdmissionResponse(admission models.Admission) responses.AdmissionResp
 	admissionResponse.StudyPeriodNumber = admission.StudyPeriodNumber
 	admissionResponse.CampusClassNumber = admission.CampusClassNumber
 	admissionResponse.StreamNumber = admission.StreamNumber
+	admissionResponse.ModeOfStudyNumber = student.ModeOfStudyNumber
+	admissionResponse.ModeOfStudyName = modeOfStudy.Name
 	admissionResponse.CampusCurriculumNumber = campusLevel.CampusCurriculumNumber
 
 	return admissionResponse
