@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	attachmentServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
@@ -75,13 +76,13 @@ func CreatePreviousSchoolResults(context *gin.Context) {
 		return
 	}
 
-	fileName, err := commons.HandleFileUpload(context, "attachment", "./fileRepo/uploads")
+	attachmentNumber, err := attachmentServices.UploadAttachment(context, "attachment")
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to handle file upload"})
 		return
 	}
 
-	if fileName == "" {
+	if attachmentNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "File did not upload successfully, tey again "})
 		return
 	}
@@ -101,7 +102,7 @@ func CreatePreviousSchoolResults(context *gin.Context) {
 				StudentNumber:     studentNumber,
 				Subject:           subject,
 				Score:             scores[i],
-				Attachment:        fileName,
+				Attachment:        attachmentNumber,
 				ApplicationNumber: applicationNumber,
 				UserNumber:        user.Number,
 			}
