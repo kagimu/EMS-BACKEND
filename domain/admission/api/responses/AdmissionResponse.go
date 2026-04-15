@@ -6,6 +6,7 @@ import (
 	responses3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/api/responses"
 	responses5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/api/responses"
 	responses4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
+	"time"
 )
 
 type AdmissionResponse struct {
@@ -26,4 +27,5 @@ type AdmissionResponse struct {
 	StreamNumber           string                     `json:"stream_number"`
 	CampusCurriculumNumber string                     `json:"campus_curriculum_number"`
 	ProfileCompleted       string                     `json:"profile_completed"`
+	CreatedAt              time.Time                  `json:"created_at"`
 }
