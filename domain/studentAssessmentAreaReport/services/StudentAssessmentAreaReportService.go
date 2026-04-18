@@ -149,7 +149,7 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 
 	var enrollments []enrollmentModels.Enrollment
 
-	if err := config.DB.Where("campus_class_number  =? AND status = ? AND study_period_number = ? ", reqCampusClassNumber, constants.StatusActive, reqStudyPeriodNumber).Find(&enrollments).Error; err != nil {
+	if err := config.DB.Where("campus_class_number  =? AND status = ? AND study_period_number = ? ", campusClassNumber, constants.StatusActive, reqStudyPeriodNumber).Find(&enrollments).Error; err != nil {
 		return nil, fmt.Errorf("fetching enrollments: %w", err)
 	}
 
