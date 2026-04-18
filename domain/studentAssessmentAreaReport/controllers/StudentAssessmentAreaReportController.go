@@ -38,7 +38,7 @@ func GetAllStudentAssessmentAreaReportsByClassAndStudyPeriod(c *gin.Context) {
 		return
 	}
 
-	report, err := services.GetAllStudentScoresReportByClassNumberAndStudyPeriod(c.Query("campus_class_number"), c.Query("study_period_number"), c.Query("campus_number"), c.Query("curriculum_number"), c.Query("campus_curriculum_number"))
+	report, err := services.GetAllStudentScoresReportByClassNumberAndStudyPeriod(c.Query("class_number"), c.Query("study_period_number"), c.Query("campus_number"), c.Query("curriculum_number"), c.Query("campus_curriculum_number"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
