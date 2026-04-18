@@ -3,9 +3,11 @@ package services
 import (
 	"fmt"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assessmentMetricRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	assessmentRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	enrollmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/api/requests"
@@ -138,17 +140,18 @@ func GetReport(req requests.StudentAssessmentAreaReportRequest) (*responses.Stud
 
 func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, reqStudyPeriodNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) (*[]responses.ClassStudentAssessmentReportResponse, error) {
 
-	var enrollments []enrollmentModels.Enrollment
-
-	//if err := config.DB.Where("campus_class_number  =? AND status = ? AND study_period_number = ? ", reqCampusClassNumber, constants.StatusActive, reqStudyPeriodNumber).Find(&enrollments).Error; err != nil {
-	//	return nil, fmt.Errorf("fetching enrollments: %w", err)
-	//}
 	CampusClasses, err := repositories2.GetCampusClassByClassNumberAndCampusNumber(reqCampusClassNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
 		return nil, fmt.Errorf("fetching CampusClassByClassNumberAndCampusNumber: %w", err)
 	}
 
 	campusClassNumber := CampusClasses[0].Number
+
+	var enrollments []enrollmentModels.Enrollment
+
+	if err := config.DB.Where("campus_class_number  =? AND status = ? AND study_period_number = ? ", reqCampusClassNumber, constants.StatusActive, reqStudyPeriodNumber).Find(&enrollments).Error; err != nil {
+		return nil, fmt.Errorf("fetching enrollments: %w", err)
+	}
 
 	allAssessmentSchedulesByClassAndStudyPeriod, err := assessmentMetricRepo.NewAssessmentMetricRepository().FindAssessmentMetricsByDistinctAssessmentAreasNumbers(
 		"",
