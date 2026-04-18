@@ -190,7 +190,7 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 			for _, amcv := range assessmentMetric {
 				assessmentCount++
 
-				assessments, err := assessmentRepo.FindAssessmentByStudentNumberAndAssessmentMetricNumber(enrollment.StudyPeriodNumber, amcv.Number)
+				assessments, err := assessmentRepo.FindAssessmentByStudentNumberAndAssessmentMetricNumber(enrollment.StudentNumber, amcv.Number)
 				if err != nil {
 					return nil, fmt.Errorf("fetching assessments: %w", err)
 				}
