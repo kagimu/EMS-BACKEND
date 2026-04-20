@@ -196,7 +196,7 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 				}
 				if len(assessments) > 0 {
 
-					schedules = append(schedules, responses.Schedule{Name: amcv.Description, Score: assessments[0].Score})
+					schedules = append(schedules, responses.Schedule{Name: amcv.Description, Score: assessments[0].Score, MaxScore: amcv.MaxScore})
 					AssessmentArea.Scores = schedules
 
 					averageScore += (assessments[0].Score / amcv.MaxScore)
@@ -205,6 +205,8 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 				}
 			}
 			averageScore = (averageScore / float64(assessmentCount)) * 100
+
+			AssessmentArea.Average = averageScore
 
 			as = append(as, AssessmentArea)
 		}

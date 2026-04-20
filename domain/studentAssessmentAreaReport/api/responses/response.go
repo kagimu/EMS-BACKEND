@@ -52,6 +52,7 @@ type AssessmentArea struct {
 }
 
 type Schedule struct {
-	Name  string  `json:"name"`
-	Score float64 `json:"score"`
+	Name     string  `json:"name"`
+	Score    float64 `json:"score"`
+	MaxScore float64 `json:"max_score"`
 }
