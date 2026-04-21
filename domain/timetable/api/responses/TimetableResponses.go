@@ -90,6 +90,7 @@ type TimetableTaskResponse struct {
 	Number           string `json:"number"`
 	Name             string `json:"name"`
 	Type             string `json:"type"`
+	Code			 int64  `json:"code"`
 	UserNumber       string `json:"user_number"`
 	ClassNumber      string `json:"class_number"`
 	StreamNumber     string `json:"stream_number"`
