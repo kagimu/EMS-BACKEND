@@ -22,6 +22,7 @@ type TimetableTask struct {
 	gorm.Model
 	Number       string `json:"number" gorm:"size:36;unique;not null"`
 	Name         string `json:"name" gorm:"size:100;not null"`
+	Code         int64  `json:"code" gorm:"size:100;not null"`
 	Type         string `json:"type" gorm:"size:36;not null"`
 	UserNumber   string `json:"user_number" gorm:"size:36;not null"`
 	ClassNumber  string `json:"class_number" gorm:"size:36;not null"`

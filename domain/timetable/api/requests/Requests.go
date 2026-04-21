@@ -31,6 +31,7 @@ type StudyPeriodRequest struct {
 
 type TimetableTaskItem struct {
 	Name string `json:"name" binding:"required"`
+	Code int64  `json:"code" binding:"required"`
 	Type string `json:"type" binding:"required"`
 }
 
