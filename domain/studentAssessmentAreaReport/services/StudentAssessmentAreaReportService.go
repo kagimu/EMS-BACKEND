@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -9,9 +10,11 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	enrollmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
+	reportSettingsRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/reporsitory"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/api/responses"
+	"gorm.io/gorm"
 )
 
 // GetReport returns students with their scores per assessment schedule for the given assessment area (and optional filters).
@@ -188,6 +191,17 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 			}
 
 			for _, amcv := range assessmentMetric {
+				rca, err := reportSettingsRepo.GetReportColumnAssessmentByAssessmentMetricNumber(amcv.Number)
+				if err != nil {
+					if !errors.Is(gorm.ErrRecordNotFound, err) {
+						return nil, fmt.Errorf("fetching report column assessment: %w", err)
+					}
+
+				}
+				if rca.Number == "" {
+					continue
+				}
+
 				assessmentCount++
 
 				assessments, err := assessmentRepo.FindAssessmentByStudentNumberAndAssessmentMetricNumber(enrollment.StudentNumber, amcv.Number)
