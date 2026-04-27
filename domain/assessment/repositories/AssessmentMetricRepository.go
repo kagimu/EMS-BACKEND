@@ -150,6 +150,7 @@ func (a *repository) FindAssessmentMetricsByDistinctAssessmentAreasNumbers(asses
 		Scopes(
 			filters.ByStudyPeriodNumber(studyPeriodNumber),
 			filters.ByAnyField("campus_class_number", campusClassNumber),
+			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
 		).
 		Group("assessment_area_number")
 

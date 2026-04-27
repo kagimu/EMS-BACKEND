@@ -141,7 +141,7 @@ func GetReport(req requests.StudentAssessmentAreaReportRequest) (*responses.Stud
 
 }
 
-func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, reqStudyPeriodNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) (*[]responses.ClassStudentAssessmentReportResponse, error) {
+func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, reqStudyPeriodNumber, campusNumber, curriculumNumber, campusCurriculumNumber, assessmentAreanNumber string) (*[]responses.ClassStudentAssessmentReportResponse, error) {
 
 	CampusClasses, err := repositories2.GetCampusClassByClassNumberAndCampusNumber(reqCampusClassNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
@@ -157,7 +157,7 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 	}
 
 	allAssessmentSchedulesByClassAndStudyPeriod, err := assessmentMetricRepo.NewAssessmentMetricRepository().FindAssessmentMetricsByDistinctAssessmentAreasNumbers(
-		"",
+		assessmentAreanNumber,
 		reqStudyPeriodNumber,
 		campusClassNumber,
 		"", "", "",
