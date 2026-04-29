@@ -38,7 +38,7 @@ func SaveInvoiceItem(invoiceItem invoiceModel.InvoiceItem, tx ...*gorm.DB) (invo
 		db = tx[0]
 	}
 
-	if err := db.Save(&invoiceItem).Error; err != nil {
+	if err := db.Omit("Invoice", "Item").Save(&invoiceItem).Error; err != nil {
 		return invoiceModel.InvoiceItem{}, err
 	}
 

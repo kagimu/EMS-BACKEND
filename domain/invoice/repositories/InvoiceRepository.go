@@ -159,7 +159,7 @@ func SaveInvoice(invoice invoiceModel.Invoice, txn ...*gorm.DB) error {
 		db = txn[0]
 	}
 
-	if err := db.Save(&invoice).Error; err != nil {
+	if err := db.Omit("Statement").Save(&invoice).Error; err != nil {
 		return err
 	}
 
@@ -174,7 +174,7 @@ func UpdateInvoice(invoice invoiceModel.Invoice, tx ...*gorm.DB) error {
 		db = tx[0]
 	}
 
-	if err := db.Save(&invoice).Error; err != nil {
+	if err := db.Omit("Statement").Save(&invoice).Error; err != nil {
 		return err
 	}
 

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
@@ -44,7 +45,7 @@ func (invoiceTransactionRepository *invoiceTransactionRepository) FindInvoiceTra
 }
 
 func (invoiceTransactionRepository *invoiceTransactionRepository) SaveInvoiceTransaction(invoiceTransaction models.InvoiceTransaction) error {
-	return invoiceTransactionRepository.Db.Save(&invoiceTransaction).Error
+	return invoiceTransactionRepository.Db.Omit("Invoice", "Transaction", "AddedBy").Save(&invoiceTransaction).Error
 }
 
 func (invoiceTransactionRepository *invoiceTransactionRepository) UseTx(tx *gorm.DB) *gorm.DB {
