@@ -871,6 +871,10 @@ func validatePaymentDateBefore(date string, dateOfIssue time.Time) (time.Time, e
 		))
 	}
 
+	fmt.Println("Validating payment date before issue date")
+	fmt.Println("Date of payment: ", paymentDate.Format(time.DateOnly))
+	fmt.Println("Date of issue: ", dateOfIssue.Format(time.DateOnly))
+
 	return paymentDate, nil
 }
 
