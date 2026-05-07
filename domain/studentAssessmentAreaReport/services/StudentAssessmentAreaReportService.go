@@ -141,7 +141,7 @@ func GetReport(req requests.StudentAssessmentAreaReportRequest) (*responses.Stud
 
 }
 
-func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, reqStudyPeriodNumber, campusNumber, curriculumNumber, campusCurriculumNumber, assessmentAreanNumber string) (*[]responses.ClassStudentAssessmentReportResponse, error) {
+func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, reqStudyPeriodNumber, campusNumber, curriculumNumber, campusCurriculumNumber, assessmentAreanNumber, appearingOnReport string) (*[]responses.ClassStudentAssessmentReportResponse, error) {
 
 	CampusClasses, err := repositories2.GetCampusClassByClassNumberAndCampusNumber(reqCampusClassNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
 	if err != nil {
@@ -191,15 +191,17 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 			}
 
 			for _, amcv := range assessmentMetric {
-				rca, err := reportSettingsRepo.GetReportColumnAssessmentByAssessmentMetricNumber(amcv.Number)
-				if err != nil {
-					if !errors.Is(gorm.ErrRecordNotFound, err) {
-						return nil, fmt.Errorf("fetching report column assessment: %w", err)
-					}
+				if appearingOnReport == "YES" {
+					rca, err := reportSettingsRepo.GetReportColumnAssessmentByAssessmentMetricNumber(amcv.Number)
+					if err != nil {
+						if !errors.Is(gorm.ErrRecordNotFound, err) {
+							return nil, fmt.Errorf("fetching report column assessment: %w", err)
+						}
 
-				}
-				if rca.Number == "" {
-					continue
+					}
+					if rca.Number == "" {
+						continue
+					}
 				}
 
 				assessmentCount++
