@@ -85,6 +85,7 @@ type LeanReportSummary struct {
 	TotalScore      float64 `json:"total_score"`
 	Status          string  `json:"status"`
 	Stage           string  `json:"stage"`
+	ADN             string  `json:"adn"`
 }
 type ClassLeanReportSummary struct {
 	Number          string `json:"number"`
