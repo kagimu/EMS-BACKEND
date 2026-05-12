@@ -21,12 +21,12 @@ func CreateBillPaymentPlan(payload requests.BillPaymentPlanRequest, currentUserN
 		return err
 	}
 
-	billable, err := invoiceRepositories.GetBillableByNumber(payload.BillableNumber)
+	invoiceByNumber, err := invoiceRepositories.FindInvoiceByNumber(payload.PromissoryNoteNumber)
 	if err != nil {
-		return errors.New("failed to fetch billable: " + err.Error())
+		return errors.New("failed to fetch promissory note: " + err.Error())
 	}
-	if billable.Number == "" {
-		return errors.New("invalid billable number")
+	if invoiceByNumber.Number == "" {
+		return errors.New("invalid promissory note number")
 	}
 
 	student, err := studentRepositories.FindStudentByNumber(payload.StudentNumber)
@@ -37,24 +37,32 @@ func CreateBillPaymentPlan(payload requests.BillPaymentPlanRequest, currentUserN
 		return errors.New("invalid student number")
 	}
 
-	alreadyExists, err := invoiceRepositories.FindActiveBillPaymentPlanByStudentAndBillable(payload.StudentNumber, payload.BillableNumber)
+	billable, err := invoiceRepositories.GetBillableByInvoiceNumber(invoiceByNumber.Number)
+	if err != nil {
+		return errors.New("failed to fetch invoice billable: " + err.Error())
+	}
+	if billable.Number == "" {
+		return errors.New("invalid invoice billable")
+	}
+
+	alreadyExists, err := invoiceRepositories.FindActiveBillPaymentPlanByStudentAndPromissoryNote(payload.StudentNumber, payload.PromissoryNoteNumber)
 	if err != nil {
 		return errors.New("checking active payment plan failed: " + err.Error())
 	}
 	if alreadyExists.Number != "" {
-		return errors.New("an active payment plan already exists for this student and billable")
+		return errors.New("an active payment plan already exists for this student and promissory note")
 	}
 
 	plan := models.BillPaymentPlan{
-		Number:            uuid.NewV4().String(),
-		BillableNumber:    payload.BillableNumber,
-		StudentNumber:     payload.StudentNumber,
-		StudyPeriodNumber: billable.StudyPeriodNumber,
-		TotalAmount:       totalAmount,
-		StartDate:         startDate,
-		Notes:             payload.Notes,
-		Status:            constants.StatusActive,
-		UserNumber:        currentUserNumber,
+		Number:               uuid.NewV4().String(),
+		PromissoryNoteNumber: stringPointer(payload.PromissoryNoteNumber),
+		StudentNumber:        payload.StudentNumber,
+		StudyPeriodNumber:    billable.StudyPeriodNumber,
+		TotalAmount:          totalAmount,
+		StartDate:            startDate,
+		Notes:                payload.Notes,
+		Status:               constants.StatusActive,
+		UserNumber:           currentUserNumber,
 	}
 
 	return config.DB.Transaction(func(tx *gorm.DB) error {
@@ -73,8 +81,8 @@ func CreateBillPaymentPlan(payload requests.BillPaymentPlanRequest, currentUserN
 	})
 }
 
-func GetBillPaymentPlans(planNumber, billableNumber, studentNumber, status string) ([]responses.BillPaymentPlanResponse, error) {
-	plans, err := invoiceRepositories.FindBillPaymentPlans(planNumber, billableNumber, studentNumber, status)
+func GetBillPaymentPlans(planNumber, promissoryNoteNumber, studentNumber, status string) ([]responses.BillPaymentPlanResponse, error) {
+	plans, err := invoiceRepositories.FindBillPaymentPlans(planNumber, promissoryNoteNumber, studentNumber, status)
 	if err != nil {
 		return nil, errors.New("failed to fetch bill payment plans: " + err.Error())
 	}
@@ -101,12 +109,12 @@ func UpdateBillPaymentPlan(planNumber string, payload requests.UpdateBillPayment
 		return err
 	}
 
-	billable, err := invoiceRepositories.GetBillableByNumber(payload.BillableNumber)
+	invoiceByNumber, err := invoiceRepositories.FindInvoiceByNumber(payload.PromissoryNoteNumber)
 	if err != nil {
-		return errors.New("failed to fetch billable: " + err.Error())
+		return errors.New("failed to fetch promissory note: " + err.Error())
 	}
-	if billable.Number == "" {
-		return errors.New("invalid billable number")
+	if invoiceByNumber.Number == "" {
+		return errors.New("invalid promissory note number")
 	}
 
 	student, err := studentRepositories.FindStudentByNumber(payload.StudentNumber)
@@ -117,7 +125,15 @@ func UpdateBillPaymentPlan(planNumber string, payload requests.UpdateBillPayment
 		return errors.New("invalid student number")
 	}
 
-	plan.BillableNumber = payload.BillableNumber
+	billable, err := invoiceRepositories.GetBillableByInvoiceNumber(invoiceByNumber.Number)
+	if err != nil {
+		return errors.New("failed to fetch invoice billable: " + err.Error())
+	}
+	if billable.Number == "" {
+		return errors.New("invalid invoice billable")
+	}
+
+	plan.PromissoryNoteNumber = stringPointer(payload.PromissoryNoteNumber)
 	plan.StudentNumber = payload.StudentNumber
 	plan.StudyPeriodNumber = billable.StudyPeriodNumber
 	plan.StartDate = startDate
@@ -169,12 +185,12 @@ func parsePlanInput(startDate string, installmentRequests []requests.BillPayment
 		}
 
 		installments = append(installments, models.BillPaymentPlanInstallment{
-			Number:                uuid.NewV4().String(),
-			DueDate:               dueDate,
-			Amount:                installmentRequest.Amount,
-			PaidAmount:            0,
-			Status:                "PENDING",
-			Sequence:              idx + 1,
+			Number:     uuid.NewV4().String(),
+			DueDate:    dueDate,
+			Amount:     installmentRequest.Amount,
+			PaidAmount: 0,
+			Status:     "PENDING",
+			Sequence:   idx + 1,
 		})
 		totalAmount += installmentRequest.Amount
 		previousDueDate = dueDate
@@ -196,16 +212,24 @@ func buildBillPaymentPlanResponse(plan models.BillPaymentPlan) responses.BillPay
 		})
 	}
 
+	promissoryNoteNumber := ""
+	if plan.PromissoryNoteNumber != nil {
+		promissoryNoteNumber = *plan.PromissoryNoteNumber
+	}
+
 	return responses.BillPaymentPlanResponse{
-		Number:            plan.Number,
-		BillableNumber:    plan.BillableNumber,
-		StudentNumber:     plan.StudentNumber,
-		StudyPeriodNumber: plan.StudyPeriodNumber,
-		TotalAmount:       plan.TotalAmount,
-		StartDate:         plan.StartDate.Format(time.DateOnly),
-		Notes:             plan.Notes,
-		Status:            plan.Status,
-		Installments:      installments,
+		Number:               plan.Number,
+		PromissoryNoteNumber: promissoryNoteNumber,
+		StudentNumber:        plan.StudentNumber,
+		StudyPeriodNumber:    plan.StudyPeriodNumber,
+		TotalAmount:          plan.TotalAmount,
+		StartDate:            plan.StartDate.Format(time.DateOnly),
+		Notes:                plan.Notes,
+		Status:               plan.Status,
+		Installments:         installments,
 	}
 }
 
+func stringPointer(value string) *string {
+	return &value
+}

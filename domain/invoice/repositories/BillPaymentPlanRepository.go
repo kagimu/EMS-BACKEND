@@ -45,7 +45,7 @@ func FindBillPaymentPlanByNumber(number string, trn ...*gorm.DB) (models.BillPay
 	return plan, nil
 }
 
-func FindBillPaymentPlans(planNumber, billableNumber, studentNumber, status string, trn ...*gorm.DB) ([]models.BillPaymentPlan, error) {
+func FindBillPaymentPlans(planNumber, promissoryNoteNumber, studentNumber, status string, trn ...*gorm.DB) ([]models.BillPaymentPlan, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
@@ -55,7 +55,7 @@ func FindBillPaymentPlans(planNumber, billableNumber, studentNumber, status stri
 	if err := db.
 		Scopes(
 			filters.ByAnyField("number", planNumber),
-			filters.ByAnyField("billable_number", billableNumber),
+			filters.ByAnyField("promissory_note_number", promissoryNoteNumber),
 			filters.ByAnyField("student_number", studentNumber),
 			filters.ByAnyField("status", status),
 		).
@@ -80,14 +80,14 @@ func DeleteBillPaymentPlanInstallmentsByPlanNumber(planNumber string, trn ...*go
 	return db.Where("bill_payment_plan_number = ?", planNumber).Delete(&models.BillPaymentPlanInstallment{}).Error
 }
 
-func FindActiveBillPaymentPlanByStudentAndBillable(studentNumber, billableNumber string, trn ...*gorm.DB) (models.BillPaymentPlan, error) {
+func FindActiveBillPaymentPlanByStudentAndPromissoryNote(studentNumber, promissoryNoteNumber string, trn ...*gorm.DB) (models.BillPaymentPlan, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
 	}
 
 	var plan models.BillPaymentPlan
-	if err := db.Where("student_number = ? AND billable_number = ? AND status = ?", studentNumber, billableNumber, "ACTIVE").First(&plan).Error; err != nil {
+	if err := db.Where("student_number = ? AND promissory_note_number = ? AND status = ?", studentNumber, promissoryNoteNumber, "ACTIVE").First(&plan).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return models.BillPaymentPlan{}, nil
 		}
@@ -96,4 +96,3 @@ func FindActiveBillPaymentPlanByStudentAndBillable(studentNumber, billableNumber
 
 	return plan, nil
 }
-

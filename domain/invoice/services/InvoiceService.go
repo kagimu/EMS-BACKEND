@@ -386,13 +386,14 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 
 	billable, err := invoiceRepositories.GetBillableByInvoiceNumber(invoice.Number)
 	if err != nil {
-		fmt.Println("Error getting student from user number " + err.Error())
+		fmt.Println("Error getting billable from promissory note number " + err.Error())
+		return responses.MinInvoiceResponse{}
 	}
 
 	campusName := ""
 	studyPeriodName := ""
 
-	if err != nil && billable.Number != "" {
+	if billable.Number != "" {
 		campus, err := repositories3.GetCampusByNumber(billable.CampusNumber)
 		if err == nil {
 			campusName = campus.Name

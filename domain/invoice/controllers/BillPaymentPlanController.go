@@ -42,11 +42,11 @@ func FetchBillPaymentPlans(c *gin.Context) {
 	}
 
 	planNumber := c.Query("bill_payment_plan_number")
-	billableNumber := c.Query("billable_number")
+	promissoryNoteNumber := c.Query("promissory_note_number")
 	studentNumber := c.Query("student_number")
 	status := c.Query("status")
 
-	data, err := services.GetBillPaymentPlans(planNumber, billableNumber, studentNumber, status)
+	data, err := services.GetBillPaymentPlans(planNumber, promissoryNoteNumber, studentNumber, status)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -86,4 +86,3 @@ func UpdateBillPaymentPlan(c *gin.Context) {
 
 	c.JSON(http.StatusOK, commons.Feedback("Bill payment plan updated successfully"))
 }
-
