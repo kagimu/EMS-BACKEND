@@ -29,7 +29,7 @@ import (
 )
 
 type EnrolmentService interface {
-	NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) error
+	NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) (responses.EnrollmentResponse, error)
 	Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
 	GetEnrollmentDetailsByNumber(number string) (responses.EnrollmentDetails, error)
 	UpdateEnrollmentItem(id uint, quantity float64, brought bool) error
@@ -245,21 +245,21 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		curriculum, err := repositories8.GetCurriculumByCampusCurriculumNumber(enrolmentRequest.CampusCurriculumNumber, enrolmentRequest.CampusNumber)
 		if err != nil {
-			return errors.New("Checking curriculum and campus error " + err.Error())
+			return enrolmentResponse, errors.New("Checking curriculum and campus error " + err.Error())
 		}
 
 		if curriculum.Number == "" {
-			return errors.New("Invalid Curriculum on campus ")
+			return enrolmentResponse, errors.New("Invalid Curriculum on campus ")
 		}
 
 		billable, err = repositories4.GetEnrollmentBill(enrolmentRequest.StudyPeriodNumber, class.Number, enrolmentRequest.CampusNumber, billType, enrolmentRequest.ModeOfStudyNumber, curriculum.Number, constants.StatusActive)
 		if err != nil {
-			return errors.New("Checking billable error " + err.Error())
+			return enrolmentResponse, errors.New("Checking billable error " + err.Error())
 		}
 	}
 
 	if billable.Number == "" {
-		return errors.New("This enrollment can not be invoiced, check billable configurations ")
+		return enrolmentResponse, errors.New("This enrollment can not be invoiced, check billable configurations ")
 	}
 
 	saveEnrollment := models.Enrollment{
@@ -284,7 +284,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 	if admission.Status != constants.StatusEnrolled {
 		requiredItems, err = repositories.FindAllAdmissionItem(admission.Number)
 		if err != nil {
-			return errors.New("Checking required items error: " + err.Error())
+			return enrolmentResponse, errors.New("Checking required items error: " + err.Error())
 		}
 	}
 
@@ -368,10 +368,10 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 	})
 
 	if err != nil {
-		return err
+		return enrolmentResponse, err
 	}
 
-	return nil
+	return enrolmentResponse, nil
 }
 
 func NewEnrolmentService() EnrolmentService {
