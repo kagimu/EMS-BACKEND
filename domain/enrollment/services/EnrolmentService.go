@@ -153,48 +153,49 @@ func (enrolment *enrolmentService) UpdateEnrollmentItem(id uint, quantity float6
 var enrolmentRepository = repository.NewEnrolmentRepository()
 var admissionRepository = repositories.NewAdmissionRepository()
 
-func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) error {
+func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) (responses.EnrollmentResponse, error) {
 
 	student, err := repositories2.FindStudentByNumber(enrolmentRequest.StudentNumber)
+	enrolmentResponse := responses.EnrollmentResponse{}
 	if err != nil {
-		return errors.New("Checking student number error: " + err.Error())
+		return enrolmentResponse, errors.New("Checking student number error: " + err.Error())
 	}
 
 	if student.Number == "" {
-		return errors.New("Invalid student number ")
+		return enrolmentResponse, errors.New("Invalid student number ")
 	}
 
 	emergencyInformationRepository := repositories2.NewEmergencyInformationRepository(config.DB)
 	emergencyInformation, err := emergencyInformationRepository.GetEmergencyInformationByStudentNumber(student.Number)
 	if err != nil {
-		return errors.New("Checking emergency information error: " + err.Error())
+		return enrolmentResponse, errors.New("Checking emergency information error: " + err.Error())
 	}
 
 	if emergencyInformation.StudentNumber != student.Number {
-		return errors.New("The student profile is incomplete ")
+		return enrolmentResponse, errors.New("The student profile is incomplete ")
 	}
 
 	admission, err := admissionRepository.FindAdmissionByStudentNumber(enrolmentRequest.StudentNumber)
 	if err != nil {
-		return errors.New("Error checking for student admission " + err.Error())
+		return enrolmentResponse, errors.New("Error checking for student admission " + err.Error())
 	}
 
 	if admission.Number == "" {
-		return errors.New("This student has no any admission! ")
+		return enrolmentResponse, errors.New("This student has no any admission! ")
 	}
 
 	currentEnrolment, err := enrolmentRepository.GetStudentEnrolment(enrolmentRequest.StudentNumber, enrolmentRequest.StudyPeriodNumber, enrolmentRequest.CampusClassNumber, "")
 	if err != nil {
-		return errors.New("Checking student current enrollment error: " + err.Error())
+		return enrolmentResponse, errors.New("Checking student current enrollment error: " + err.Error())
 	}
 
 	if currentEnrolment.Number != "" {
-		return errors.New("Student already enrolled for this study period ")
+		return enrolmentResponse, errors.New("Student already enrolled for this study period ")
 	}
 
 	allOtherEnrolments, err := enrolmentRepository.AllEnrolments(enrolmentRequest.StudentNumber, "", "", "", constants.StatusActive)
 	if err != nil {
-		return errors.New("Checking previous enrolments error: " + err.Error())
+		return enrolmentResponse, errors.New("Checking previous enrolments error: " + err.Error())
 	}
 
 	feedingGroup := models3.FeedingGroup{}
@@ -203,16 +204,16 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 	if enrolmentRequest.FeedingGroupNumber != "" {
 		feedingGroup, err = repositories3.GetFeedingGroupByNumber(enrolmentRequest.FeedingGroupNumber)
 		if err != nil {
-			return errors.New("Checking feeding group error: " + err.Error())
+			return enrolmentResponse, errors.New("Checking feeding group error: " + err.Error())
 		}
 
 		if feedingGroup.Number == "" {
-			return errors.New("Invalid feeding group number ")
+			return enrolmentResponse, errors.New("Invalid feeding group number ")
 		}
 
 		groupUser, err = repositories3.GetFeedingGroupUserByUserNumber(student.UserNumber)
 		if err != nil {
-			return errors.New("Checking current user feeding group error: " + err.Error())
+			return enrolmentResponse, errors.New("Checking current user feeding group error: " + err.Error())
 		}
 	}
 
@@ -229,15 +230,15 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		billable, err = repositories4.GetBillableByNumber(enrolmentRequest.BillableNumber)
 		if err != nil {
-			return errors.New("Checking billable by number error " + err.Error())
+			return enrolmentResponse, errors.New("Checking billable by number error " + err.Error())
 		}
 
 		if billable.Number == "" {
-			return errors.New("Invalid bill number ")
+			return enrolmentResponse, errors.New("Invalid bill number ")
 		}
 
 		if billable.Status != constants.StatusActive {
-			return errors.New("Selected bill is no longer active ")
+			return enrolmentResponse, errors.New("Selected bill is no longer active ")
 		}
 
 	} else {
@@ -275,6 +276,8 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		ContinuingStudent: enrolmentRequest.ContinuingStudent,
 		ModeOfStudyNumber: enrolmentRequest.ModeOfStudyNumber,
 	}
+
+	enrolmentResponse.EnrollmentNumber = saveEnrollment.Number
 
 	var requiredItems []models2.AdmissionCondition
 
@@ -348,6 +351,8 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		if err != nil {
 			return err
 		}
+
+		enrolmentResponse.PromissoryNoteNumber = invoice.Number
 
 		err = repositories4.SaveEnrollmentInvoice(models4.EnrollmentInvoice{
 			InvoiceNumber:    invoice.Number,
