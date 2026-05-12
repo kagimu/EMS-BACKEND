@@ -37,14 +37,14 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
-	err = enrolmentService.NewEnrolment(payload, user.Number)
+	enrolmentResponse, err := enrolmentService.NewEnrolment(payload, user.Number)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully", "data": enrolmentResponse})
 }
 
 func FetchEnrolledStudents(c *gin.Context) {
