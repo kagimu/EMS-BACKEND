@@ -57,9 +57,88 @@ import (
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+	"gorm.io/gorm"
 )
 
+type billPaymentPlanConstraint struct {
+	ConstraintName string
+}
+
+func migrateBillPaymentPlanPromissoryNote() error {
+	db := config.DB
+
+	if !db.Migrator().HasTable(&invoiceModel.BillPaymentPlan{}) {
+		return nil
+	}
+
+	return db.Transaction(func(tx *gorm.DB) error {
+
+		// Remove FK from billable_number
+		if tx.Migrator().HasColumn(&invoiceModel.BillPaymentPlan{}, "billable_number") {
+
+			var constraints []billPaymentPlanConstraint
+
+			if err := tx.Raw(`
+				SELECT CONSTRAINT_NAME AS constraint_name
+				FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+				WHERE TABLE_SCHEMA = DATABASE()
+					AND TABLE_NAME = 'bill_payment_plans'
+					AND COLUMN_NAME = 'billable_number'
+					AND REFERENCED_TABLE_NAME IS NOT NULL
+			`).Scan(&constraints).Error; err != nil {
+				return err
+			}
+
+			for _, constraint := range constraints {
+				if constraint.ConstraintName == "" {
+					continue
+				}
+
+				if err := tx.Exec(
+					"ALTER TABLE bill_payment_plans DROP FOREIGN KEY `" + constraint.ConstraintName + "`",
+				).Error; err != nil {
+					return err
+				}
+			}
+
+			if err := tx.Exec(`
+				ALTER TABLE bill_payment_plans
+				MODIFY COLUMN billable_number VARCHAR(36) NULL DEFAULT NULL
+			`).Error; err != nil {
+				return err
+			}
+		}
+
+		// Add promissory_note_number column
+		if !tx.Migrator().HasColumn(&invoiceModel.BillPaymentPlan{}, "promissory_note_number") {
+
+			if err := tx.Exec(`
+				ALTER TABLE bill_payment_plans
+				ADD COLUMN promissory_note_number VARCHAR(36) NULL DEFAULT NULL
+			`).Error; err != nil {
+				return err
+			}
+
+			// Add FK to invoices.number
+			if err := tx.Exec(`
+				ALTER TABLE bill_payment_plans
+				ADD CONSTRAINT fk_bill_payment_plans_promissory_note
+				FOREIGN KEY (promissory_note_number)
+				REFERENCES invoices(number)
+			`).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
 func Init() error {
+	if err := migrateBillPaymentPlanPromissoryNote(); err != nil {
+		return err
+	}
+
 	err := config.DB.AutoMigrate(
 		&authModels.User{},
 		&eosModels.Entity{},

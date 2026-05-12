@@ -8,11 +8,11 @@ type BillPaymentPlanInstallmentRequest struct {
 }
 
 type BillPaymentPlanRequest struct {
-	BillableNumber string                             `json:"billable_number"`
-	StudentNumber  string                             `json:"student_number"`
-	StartDate      string                             `json:"start_date"`
-	Notes          string                             `json:"notes"`
-	Installments   []BillPaymentPlanInstallmentRequest `json:"installments"`
+	PromissoryNoteNumber string                              `json:"promissory_note_number"`
+	StudentNumber        string                              `json:"student_number"`
+	StartDate            string                              `json:"start_date"`
+	Notes                string                              `json:"notes"`
+	Installments         []BillPaymentPlanInstallmentRequest `json:"installments"`
 }
 
 type UpdateBillPaymentPlanRequest struct {
@@ -21,8 +21,8 @@ type UpdateBillPaymentPlanRequest struct {
 }
 
 func (r *BillPaymentPlanRequest) Validate() error {
-	if r.BillableNumber == "" {
-		return errors.New("billable number is required")
+	if r.PromissoryNoteNumber == "" {
+		return errors.New("choose promissory note")
 	}
 	if r.StudentNumber == "" {
 		return errors.New("student number is required")
@@ -49,4 +49,3 @@ func (r *BillPaymentPlanRequest) Validate() error {
 func (r *UpdateBillPaymentPlanRequest) Validate() error {
 	return r.BillPaymentPlanRequest.Validate()
 }
-
