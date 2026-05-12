@@ -89,3 +89,8 @@ type EnrollmentDetails struct {
 	StreamNumber      string                   `json:"stream_number"`
 	EnrollmentItems   []EnrollmentItemWithName `json:"enrollment_items"`
 }
+
+type EnrollmentResponse struct {
+	PromissoryNoteNumber string `json:"promissory_note_number"`
+	EnrollmentNumber     string `json:"enrollment_number"`
+}
