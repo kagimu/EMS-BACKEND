@@ -121,3 +121,29 @@ func FindBillPaymentPlanInstallmentByNumber(number string, trn ...*gorm.DB) (mod
 
 	return installment, nil
 }
+
+func FindBillPaymentPlanInstallmentPaymentByNumber(number string, trn ...*gorm.DB) (models.BillPaymentPlanInstallmentPayment, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var payment models.BillPaymentPlanInstallmentPayment
+	if err := db.Where("number = ?", number).First(&payment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.BillPaymentPlanInstallmentPayment{}, nil
+		}
+		return models.BillPaymentPlanInstallmentPayment{}, err
+	}
+
+	return payment, nil
+}
+
+func DeleteBillPaymentPlanInstallmentPaymentByNumber(number string, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	return db.Where("number = ?", number).Delete(&models.BillPaymentPlanInstallmentPayment{}).Error
+}
