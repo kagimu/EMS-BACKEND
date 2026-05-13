@@ -31,20 +31,20 @@ var invoiceTransactionRepository = invoiceRepositories.NewInvoiceTransactionRepo
 
 var admissionRepository = repositories2.NewAdmissionRepository()
 
-func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) error {
+func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) (string, error) {
 
 	dueDate, err := commons.ConvertStringToDate(payload.DueDate)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	issueDate, err := commons.ConvertStringToDate(payload.IssueDate)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if dueDate.Before(issueDate) {
-		return errors.New("due date should be after the date of issue")
+		return "", errors.New("due date should be after the date of issue")
 	}
 
 	userNumber := payload.UserNumber
@@ -52,11 +52,11 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 	invoiceUser, err := repository.GetUserByNumber(userNumber)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if invoiceUser.Number == "" {
-		return errors.New("invalid user number")
+		return "", errors.New("invalid user number")
 	}
 
 	invoiceNumber := generateNewInvoiceNumber()
@@ -64,31 +64,31 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 	invoice, err := invoiceRepositories.FindInvoiceByRefNumber(invoiceNumber)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if invoice.Number != "" {
-		return errors.New("try again to generate a new promissory note number")
+		return "", errors.New("try again to generate a new promissory note number")
 	}
 
 	var student studentModel.Student
 
 	if student, err = repositories.FindStudentByUserNumber(userNumber); err != nil {
-		return err
+		return "", err
 	}
 
 	if student.Number == "" {
-		return errors.New("no student details found")
+		return "", errors.New("no student details found")
 	}
 
 	var admission admissionModel.Admission
 
 	if admission, err = admissionRepository.FindAdmissionByStudentNumber(student.Number); err != nil {
-		return err
+		return "", err
 	}
 
 	if admission.Number == "" {
-		return errors.New("no admission details found")
+		return "", errors.New("no admission details found")
 	}
 
 	invoiceTotal := newInvoiceTotalAmount(payload.Items)
@@ -145,7 +145,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) er
 		return nil
 	})
 
-	return err
+	return invoiceNumber, err
 }
 
 func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, balanceDueDate string, txn *gorm.DB) (models.Invoice, error) {
