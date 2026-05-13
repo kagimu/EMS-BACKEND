@@ -145,7 +145,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) (s
 		return nil
 	})
 
-	return invoiceNumber, err
+	return newInvoice.Number, err
 }
 
 func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, balanceDueDate string, txn *gorm.DB) (models.Invoice, error) {
