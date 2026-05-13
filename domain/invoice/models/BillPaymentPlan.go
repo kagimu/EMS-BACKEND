@@ -28,13 +28,24 @@ type BillPaymentPlan struct {
 }
 
 type BillPaymentPlanInstallment struct {
-	CreatedAt             time.Time `json:"created_at"`
-	UpdatedAt             time.Time `json:"updated_at"`
-	Number                string    `json:"number" gorm:"size:36;unique;not null;primaryKey"`
-	BillPaymentPlanNumber string    `json:"bill_payment_plan_number" gorm:"size:36;not null;index"`
-	DueDate               time.Time `json:"due_date" gorm:"type:date"`
-	Amount                float64   `json:"amount"`
-	PaidAmount            float64   `json:"paid_amount"`
-	Status                string    `json:"status" gorm:"size:36;not null;default:PENDING"`
-	Sequence              int       `json:"sequence"`
+	CreatedAt             time.Time                           `json:"created_at"`
+	UpdatedAt             time.Time                           `json:"updated_at"`
+	Number                string                              `json:"number" gorm:"size:36;unique;not null;primaryKey"`
+	BillPaymentPlanNumber string                              `json:"bill_payment_plan_number" gorm:"size:36;not null;index"`
+	DueDate               time.Time                           `json:"due_date" gorm:"type:date"`
+	Amount                float64                             `json:"amount"`
+	PaidAmount            float64                             `json:"paid_amount"`
+	Status                string                              `json:"status" gorm:"size:36;not null;default:PENDING"`
+	Sequence              int                                 `json:"sequence"`
+	Payments              []BillPaymentPlanInstallmentPayment `json:"bill_payment_plan_installment_payments" gorm:"foreignKey:InstallmentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+}
+
+type BillPaymentPlanInstallmentPayment struct {
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	Number            string    `json:"number" gorm:"size:36;unique;not null;primaryKey"`
+	InstallmentNumber string    `json:"installment_number" gorm:"size:36;not null;index"`
+	PaidAmount        float64   `json:"paid_amount"`
+	PaidOn            time.Time `json:"paid_on" gorm:"type:date"`
+	UserNumber        string    `json:"user_number" gorm:"size:36;not null"`
 }

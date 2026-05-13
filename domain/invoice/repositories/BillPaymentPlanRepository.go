@@ -25,6 +25,14 @@ func SaveBillPaymentPlanInstallment(installment models.BillPaymentPlanInstallmen
 	return db.Save(&installment).Error
 }
 
+func SaveBillPaymentPlanInstallmentPayment(payment models.BillPaymentPlanInstallmentPayment, trn ...*gorm.DB) error {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+	return db.Save(&payment).Error
+}
+
 func FindBillPaymentPlanByNumber(number string, trn ...*gorm.DB) (models.BillPaymentPlan, error) {
 	db := config.DB
 	if len(trn) > 0 {
@@ -33,7 +41,7 @@ func FindBillPaymentPlanByNumber(number string, trn ...*gorm.DB) (models.BillPay
 
 	var plan models.BillPaymentPlan
 	if err := db.
-		Preload("Installments").
+		Preload("Installments.Payments").
 		Where("number = ?", number).
 		First(&plan).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -59,7 +67,7 @@ func FindBillPaymentPlans(planNumber, promissoryNoteNumber, studentNumber, statu
 			filters.ByAnyField("student_number", studentNumber),
 			filters.ByAnyField("status", status),
 		).
-		Preload("Installments").
+		Preload("Installments.Payments").
 		Order("created_at desc").
 		Find(&plans).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

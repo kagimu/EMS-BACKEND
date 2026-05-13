@@ -213,6 +213,19 @@ func PayBillPaymentPlanInstallment(payload requests.PayInstallmentRequest, curre
 		installment.Status = "PARTIALLY_PAID"
 	}
 
+	paidOn, err := time.Parse(time.DateOnly, payload.PaidOn)
+	if err != nil {
+		return errors.New("invalid payment date format")
+	}
+
+	installmentPayment := models.BillPaymentPlanInstallmentPayment{
+		Number:            uuid.NewV4().String(),
+		InstallmentNumber: installment.Number,
+		PaidAmount:        payload.PaidAmount,
+		PaidOn:            paidOn,
+		UserNumber:        currentUserNumber,
+	}
+
 	plan.PaidAmount += payload.PaidAmount
 	// Check if all installments are paid to mark the entire plan as PAID
 	allPaid := true
@@ -235,6 +248,9 @@ func PayBillPaymentPlanInstallment(payload requests.PayInstallmentRequest, curre
 	}
 
 	return config.DB.Transaction(func(tx *gorm.DB) error {
+		if err := invoiceRepositories.SaveBillPaymentPlanInstallmentPayment(installmentPayment, tx); err != nil {
+			return errors.New("failed to save installment payment record: " + err.Error())
+		}
 		if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installment, tx); err != nil {
 			return errors.New("failed to save installment: " + err.Error())
 		}
@@ -283,6 +299,15 @@ func parsePlanInput(startDate string, installmentRequests []requests.BillPayment
 func buildBillPaymentPlanResponse(plan models.BillPaymentPlan) responses.BillPaymentPlanResponse {
 	installments := make([]responses.BillPaymentPlanInstallmentResponse, 0)
 	for _, installment := range plan.Installments {
+		payments := make([]responses.BillPaymentPlanInstallmentPaymentResponse, 0)
+		for _, pay := range installment.Payments {
+			payments = append(payments, responses.BillPaymentPlanInstallmentPaymentResponse{
+				Number:     pay.Number,
+				PaidAmount: pay.PaidAmount,
+				PaidOn:     pay.PaidOn.Format(time.DateOnly),
+			})
+		}
+
 		installments = append(installments, responses.BillPaymentPlanInstallmentResponse{
 			Number:     installment.Number,
 			DueDate:    installment.DueDate.Format(time.DateOnly),
@@ -290,6 +315,7 @@ func buildBillPaymentPlanResponse(plan models.BillPaymentPlan) responses.BillPay
 			PaidAmount: installment.PaidAmount,
 			Status:     installment.Status,
 			Sequence:   installment.Sequence,
+			Payments:   payments,
 		})
 	}
 

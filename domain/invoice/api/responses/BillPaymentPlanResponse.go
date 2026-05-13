@@ -1,12 +1,19 @@
 package responses
 
-type BillPaymentPlanInstallmentResponse struct {
+type BillPaymentPlanInstallmentPaymentResponse struct {
 	Number     string  `json:"number"`
-	DueDate    string  `json:"due_date"`
-	Amount     float64 `json:"amount"`
 	PaidAmount float64 `json:"paid_amount"`
-	Status     string  `json:"status"`
-	Sequence   int     `json:"sequence"`
+	PaidOn     string  `json:"paid_on"`
+}
+
+type BillPaymentPlanInstallmentResponse struct {
+	Number     string                                      `json:"number"`
+	DueDate    string                                      `json:"due_date"`
+	Amount     float64                                     `json:"amount"`
+	PaidAmount float64                                     `json:"paid_amount"`
+	Status     string                                      `json:"status"`
+	Sequence   int                                         `json:"sequence"`
+	Payments   []BillPaymentPlanInstallmentPaymentResponse `json:"bill_payment_plan_installment_payments"`
 }
 
 type BillPaymentPlanResponse struct {
