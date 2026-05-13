@@ -211,6 +211,7 @@ func Init() error {
 		&invoiceModel.InvoiceItem{},
 		&invoiceModel.BillPaymentPlan{},
 		&invoiceModel.BillPaymentPlanInstallment{},
+		&invoiceModel.BillPaymentPlanInstallmentPayment{},
 		&serviceModel.Discount{},
 		&invoiceModel.Transaction{},
 		&invoiceModel.InvoiceTransaction{},
