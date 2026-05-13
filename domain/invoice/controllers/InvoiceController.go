@@ -30,13 +30,13 @@ func CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	invoiceNumber, err := services.CreateInvoice(payload, user.Number)
+	invoiceUUID, err := services.CreateInvoice(payload, user.Number)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Promissory note created successfully", "number": invoiceNumber})
+	c.JSON(http.StatusOK, gin.H{"message": "Promissory note created successfully", "number": invoiceUUID})
 }
 
 func UpdateInvoice(c *gin.Context) {
