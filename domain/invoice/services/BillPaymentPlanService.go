@@ -189,6 +189,62 @@ func UpdateBillPaymentPlan(planNumber string, payload requests.UpdateBillPayment
 	})
 }
 
+func PayBillPaymentPlanInstallment(payload requests.PayInstallmentRequest, currentUserNumber string) error {
+	installment, err := invoiceRepositories.FindBillPaymentPlanInstallmentByNumber(payload.InstallmentNumber)
+	if err != nil {
+		return errors.New("failed to fetch installment: " + err.Error())
+	}
+	if installment.Number == "" {
+		return errors.New("invalid installment number")
+	}
+
+	plan, err := invoiceRepositories.FindBillPaymentPlanByNumber(installment.BillPaymentPlanNumber)
+	if err != nil {
+		return errors.New("failed to fetch payment plan: " + err.Error())
+	}
+	if plan.Number == "" {
+		return errors.New("invalid payment plan number")
+	}
+
+	installment.PaidAmount += payload.PaidAmount
+	if installment.PaidAmount >= installment.Amount {
+		installment.Status = "PAID"
+	} else if installment.PaidAmount > 0 {
+		installment.Status = "PARTIALLY_PAID"
+	}
+
+	plan.PaidAmount += payload.PaidAmount
+	// Check if all installments are paid to mark the entire plan as PAID
+	allPaid := true
+	for _, inst := range plan.Installments {
+		// We need to use the updated installment if it's the one we just modified
+		currentPaidAmount := inst.PaidAmount
+		if inst.Number == installment.Number {
+			currentPaidAmount = installment.PaidAmount
+		}
+		if currentPaidAmount < inst.Amount {
+			allPaid = false
+			break
+		}
+	}
+
+	if allPaid {
+		plan.Status = "PAID"
+	} else if plan.PaidAmount > 0 {
+		plan.Status = "PARTIALLY_PAID"
+	}
+
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installment, tx); err != nil {
+			return errors.New("failed to save installment: " + err.Error())
+		}
+		if err := invoiceRepositories.SaveBillPaymentPlan(plan, tx); err != nil {
+			return errors.New("failed to update payment plan: " + err.Error())
+		}
+		return nil
+	})
+}
+
 func parsePlanInput(startDate string, installmentRequests []requests.BillPaymentPlanInstallmentRequest) (time.Time, []models.BillPaymentPlanInstallment, float64, error) {
 	parsedStartDate, err := time.Parse(time.DateOnly, startDate)
 	if err != nil {
@@ -248,6 +304,7 @@ func buildBillPaymentPlanResponse(plan models.BillPaymentPlan) responses.BillPay
 		StudentNumber:        plan.StudentNumber,
 		StudyPeriodNumber:    plan.StudyPeriodNumber,
 		TotalAmount:          plan.TotalAmount,
+		PaidAmount:           plan.PaidAmount,
 		StartDate:            plan.StartDate.Format(time.DateOnly),
 		Notes:                plan.Notes,
 		Status:               plan.Status,

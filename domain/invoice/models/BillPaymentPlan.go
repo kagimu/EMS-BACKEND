@@ -18,6 +18,7 @@ type BillPaymentPlan struct {
 	Student              studentModel.Student         `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	StudyPeriodNumber    string                       `json:"study_period_number" gorm:"size:36;not null;index"`
 	TotalAmount          float64                      `json:"total_amount"`
+	PaidAmount           float64                      `json:"paid_amount"`
 	StartDate            time.Time                    `json:"start_date" gorm:"type:date"`
 	Notes                string                       `json:"notes" gorm:"type:text"`
 	Status               string                       `json:"status" gorm:"size:36;not null;default:ACTIVE;index"`

@@ -96,3 +96,20 @@ func FindActiveBillPaymentPlanByStudentAndPromissoryNote(studentNumber, promisso
 
 	return plan, nil
 }
+
+func FindBillPaymentPlanInstallmentByNumber(number string, trn ...*gorm.DB) (models.BillPaymentPlanInstallment, error) {
+	db := config.DB
+	if len(trn) > 0 {
+		db = trn[0]
+	}
+
+	var installment models.BillPaymentPlanInstallment
+	if err := db.Where("number = ?", number).First(&installment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.BillPaymentPlanInstallment{}, nil
+		}
+		return models.BillPaymentPlanInstallment{}, err
+	}
+
+	return installment, nil
+}
