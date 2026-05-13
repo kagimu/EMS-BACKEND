@@ -261,6 +261,82 @@ func PayBillPaymentPlanInstallment(payload requests.PayInstallmentRequest, curre
 	})
 }
 
+func CancelBillPaymentPlanInstallmentPayment(paymentNumber string) error {
+	payment, err := invoiceRepositories.FindBillPaymentPlanInstallmentPaymentByNumber(paymentNumber)
+	if err != nil {
+		return errors.New("failed to fetch payment: " + err.Error())
+	}
+	if payment.Number == "" {
+		return errors.New("invalid payment number")
+	}
+
+	installment, err := invoiceRepositories.FindBillPaymentPlanInstallmentByNumber(payment.InstallmentNumber)
+	if err != nil {
+		return errors.New("failed to fetch installment: " + err.Error())
+	}
+	if installment.Number == "" {
+		return errors.New("invalid installment number")
+	}
+
+	plan, err := invoiceRepositories.FindBillPaymentPlanByNumber(installment.BillPaymentPlanNumber)
+	if err != nil {
+		return errors.New("failed to fetch payment plan: " + err.Error())
+	}
+	if plan.Number == "" {
+		return errors.New("invalid payment plan number")
+	}
+
+	// Revert amounts
+	installment.PaidAmount -= payment.PaidAmount
+	if installment.PaidAmount <= 0 {
+		installment.PaidAmount = 0
+		installment.Status = "PENDING"
+	} else if installment.PaidAmount < installment.Amount {
+		installment.Status = "PARTIALLY_PAID"
+	}
+
+	plan.PaidAmount -= payment.PaidAmount
+	if plan.PaidAmount <= 0 {
+		plan.PaidAmount = 0
+	}
+
+	// Re-evaluate plan status
+	allPaid := true
+	for _, inst := range plan.Installments {
+		currentPaidAmount := inst.PaidAmount
+		if inst.Number == installment.Number {
+			currentPaidAmount = installment.PaidAmount
+		}
+		if currentPaidAmount < inst.Amount {
+			allPaid = false
+			break
+		}
+	}
+
+	if allPaid {
+		plan.Status = "PAID"
+	} else {
+		if plan.PaidAmount > 0 {
+			plan.Status = "PARTIALLY_PAID"
+		} else {
+			plan.Status = "ACTIVE"
+		}
+	}
+
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		if err := invoiceRepositories.DeleteBillPaymentPlanInstallmentPaymentByNumber(paymentNumber, tx); err != nil {
+			return errors.New("failed to delete payment record: " + err.Error())
+		}
+		if err := invoiceRepositories.SaveBillPaymentPlanInstallment(installment, tx); err != nil {
+			return errors.New("failed to save installment: " + err.Error())
+		}
+		if err := invoiceRepositories.SaveBillPaymentPlan(plan, tx); err != nil {
+			return errors.New("failed to update payment plan: " + err.Error())
+		}
+		return nil
+	})
+}
+
 func parsePlanInput(startDate string, installmentRequests []requests.BillPaymentPlanInstallmentRequest) (time.Time, []models.BillPaymentPlanInstallment, float64, error) {
 	parsedStartDate, err := time.Parse(time.DateOnly, startDate)
 	if err != nil {

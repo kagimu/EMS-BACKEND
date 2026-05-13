@@ -112,3 +112,23 @@ func PayBillPaymentPlanInstallment(c *gin.Context) {
 
 	c.JSON(http.StatusOK, commons.Feedback("Payment processed successfully"))
 }
+
+func CancelBillPaymentPlanInstallmentPayment(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	paymentNumber := c.Query("installment_payment_number")
+	if paymentNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "provide installment_payment_number"})
+		return
+	}
+
+	if err := services.CancelBillPaymentPlanInstallmentPayment(paymentNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Payment cancelled successfully"))
+}
