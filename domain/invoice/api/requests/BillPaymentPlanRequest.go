@@ -49,3 +49,22 @@ func (r *BillPaymentPlanRequest) Validate() error {
 func (r *UpdateBillPaymentPlanRequest) Validate() error {
 	return r.BillPaymentPlanRequest.Validate()
 }
+
+type PayInstallmentRequest struct {
+	InstallmentNumber string  `json:"installment_number"`
+	PaidAmount        float64 `json:"paid_amount"`
+	PaidOn            string  `json:"paid_on"`
+}
+
+func (r *PayInstallmentRequest) Validate() error {
+	if r.InstallmentNumber == "" {
+		return errors.New("installment number is required")
+	}
+	if r.PaidAmount <= 0 {
+		return errors.New("paid amount must be greater than zero")
+	}
+	if r.PaidOn == "" {
+		return errors.New("payment date is required")
+	}
+	return nil
+}

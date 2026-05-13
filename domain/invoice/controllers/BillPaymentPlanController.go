@@ -86,3 +86,29 @@ func UpdateBillPaymentPlan(c *gin.Context) {
 
 	c.JSON(http.StatusOK, commons.Feedback("Bill payment plan updated successfully"))
 }
+
+func PayBillPaymentPlanInstallment(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.PayInstallmentRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process input body: " + err.Error()})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := services.PayBillPaymentPlanInstallment(payload, user.Number); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Payment processed successfully"))
+}
