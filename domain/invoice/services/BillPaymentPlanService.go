@@ -11,9 +11,12 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	invoiceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	studentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
+	enrollmentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
+
+var enrollmentRepository = enrollmentRepositories.NewEnrolmentRepository()
 
 func CreateBillPaymentPlan(payload requests.BillPaymentPlanRequest, currentUserNumber string) error {
 	startDate, installments, totalAmount, err := parsePlanInput(payload.StartDate, payload.Installments)
@@ -41,8 +44,18 @@ func CreateBillPaymentPlan(payload requests.BillPaymentPlanRequest, currentUserN
 	if err != nil {
 		return errors.New("failed to fetch invoice billable: " + err.Error())
 	}
+
+	var studyPeriodNumber string
+	var billableNumber *string
 	if billable.Number == "" {
-		return errors.New("invalid invoice billable")
+		enrollments, err := enrollmentRepository.AllEnrolments(student.Number, "", "", "", constants.StatusActive)
+		if err != nil || len(enrollments) == 0 {
+			return errors.New("invalid invoice billable: unable to determine study period for payment plan")
+		}
+		studyPeriodNumber = enrollments[0].StudyPeriodNumber
+	} else {
+		studyPeriodNumber = billable.StudyPeriodNumber
+		billableNumber = stringPointer(billable.Number)
 	}
 
 	alreadyExists, err := invoiceRepositories.FindActiveBillPaymentPlanByStudentAndPromissoryNote(payload.StudentNumber, payload.PromissoryNoteNumber)
@@ -56,8 +69,9 @@ func CreateBillPaymentPlan(payload requests.BillPaymentPlanRequest, currentUserN
 	plan := models.BillPaymentPlan{
 		Number:               uuid.NewV4().String(),
 		PromissoryNoteNumber: stringPointer(payload.PromissoryNoteNumber),
+		BillableNumber:       billableNumber,
 		StudentNumber:        payload.StudentNumber,
-		StudyPeriodNumber:    billable.StudyPeriodNumber,
+		StudyPeriodNumber:    studyPeriodNumber,
 		TotalAmount:          totalAmount,
 		StartDate:            startDate,
 		Notes:                payload.Notes,
@@ -129,13 +143,24 @@ func UpdateBillPaymentPlan(planNumber string, payload requests.UpdateBillPayment
 	if err != nil {
 		return errors.New("failed to fetch invoice billable: " + err.Error())
 	}
+
+	var studyPeriodNumber string
+	var billableNumber *string
 	if billable.Number == "" {
-		return errors.New("invalid invoice billable")
+		enrollments, err := enrollmentRepository.AllEnrolments(student.Number, "", "", "", constants.StatusActive)
+		if err != nil || len(enrollments) == 0 {
+			return errors.New("invalid invoice billable: unable to determine study period for payment plan")
+		}
+		studyPeriodNumber = enrollments[0].StudyPeriodNumber
+	} else {
+		studyPeriodNumber = billable.StudyPeriodNumber
+		billableNumber = stringPointer(billable.Number)
 	}
 
 	plan.PromissoryNoteNumber = stringPointer(payload.PromissoryNoteNumber)
+	plan.BillableNumber = billableNumber
 	plan.StudentNumber = payload.StudentNumber
-	plan.StudyPeriodNumber = billable.StudyPeriodNumber
+	plan.StudyPeriodNumber = studyPeriodNumber
 	plan.StartDate = startDate
 	plan.Notes = payload.Notes
 	plan.TotalAmount = totalAmount
