@@ -41,6 +41,8 @@ type Enrollment struct {
 	StudyPeriod            string `json:"study_period"`
 	Status                 string `json:"status"`
 	EnrollmentDate         string `json:"enrollment_date"`
+	StudyPeriodStartDate   string `json:"study_period_start_date"`
+	StudyPeriodEndDate     string `json:"study_period_end_date"`
 	ContinuingStudent      bool   `json:"continuing_student"`
 	AcademicYear           string `json:"academic_year"`
 	CampusCurriculumNumber string `json:"campus_curriculum_number"`
@@ -81,6 +83,8 @@ type EnrollmentDetails struct {
 	StudyPeriod       string                   `json:"study_period"`
 	Status            string                   `json:"status"`
 	EnrollmentDate    string                   `json:"enrollment_date"`
+	StudyPeriodStartDate string                `json:"study_period_start_date"`
+	StudyPeriodEndDate   string                `json:"study_period_end_date"`
 	ContinuingStudent bool                     `json:"continuing_student"`
 	CampusClassNumber string                   `json:"campus_class_number"`
 	CampusNumber      string                   `json:"campus_number"`
