@@ -84,14 +84,50 @@ func (s *timetableTaskService) UpdateTimetableTask(taskNumber string, request re
 		return errors.New("timetable task not found")
 	}
 
-	if request.Name != "" {
-		task.Name = request.Name
+	name := request.Name
+	code := request.Code
+	taskType := request.Type
+	classNumber := request.ClassNumber
+
+	if len(request.Tasks) > 0 {
+		if name == "" {
+			name = request.Tasks[0].Name
+		}
+		if code == 0 {
+			code = request.Tasks[0].Code
+		}
+		if taskType == "" {
+			taskType = request.Tasks[0].Type
+		}
 	}
-	if request.Type != "" {
-		task.Type = request.Type
+
+	if len(request.ClassNumbers) > 0 && classNumber == "" {
+		classNumber = request.ClassNumbers[0]
 	}
-	if request.ClassNumber != "" {
-		task.ClassNumber = request.ClassNumber
+
+	if name != "" {
+		task.Name = name
+	}
+	if code != 0 {
+		task.Code = code
+	}
+	if taskType != "" {
+		task.Type = taskType
+	}
+	if classNumber != "" {
+		task.ClassNumber = classNumber
+	}
+	if request.SchoolNumber != "" {
+		task.SchoolNumber = request.SchoolNumber
+	}
+	if request.CampusNumber != "" {
+		task.CampusNumber = request.CampusNumber
+	}
+	if request.CampusCurriculumNumber != "" {
+		task.CampusCurriculumNumber = request.CampusCurriculumNumber
+	}
+	if request.LevelNumber != "" {
+		task.LevelNumber = request.LevelNumber
 	}
 
 	return s.repo.UpdateTimetableTask(&task)

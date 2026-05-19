@@ -45,9 +45,16 @@ type TimetableTaskRequest struct {
 }
 
 type UpdateTimetableTaskRequest struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	ClassNumber string `json:"class_number"`
+	Name                   string              `json:"name"`
+	Code                   int64               `json:"code"`
+	Type                   string              `json:"type"`
+	ClassNumber            string              `json:"class_number"`
+	Tasks                  []TimetableTaskItem `json:"tasks"`
+	ClassNumbers           []string            `json:"class_numbers"`
+	SchoolNumber           string              `json:"school_number"`
+	CampusNumber           string              `json:"campus_number"`
+	CampusCurriculumNumber string              `json:"campus_curriculum_number"`
+	LevelNumber            string              `json:"level_number"`
 }
 
 type TimetableSlotItem struct {
