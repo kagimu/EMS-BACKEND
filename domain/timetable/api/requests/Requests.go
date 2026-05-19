@@ -36,8 +36,12 @@ type TimetableTaskItem struct {
 }
 
 type TimetableTaskRequest struct {
-	Tasks        []TimetableTaskItem `json:"tasks" binding:"required,min=1,dive"`
-	ClassNumbers []string            `json:"class_numbers" binding:"required,min=1,dive,required"`
+	Tasks                  []TimetableTaskItem `json:"tasks" binding:"required,min=1,dive"`
+	ClassNumbers           []string            `json:"class_numbers" binding:"required,min=1,dive,required"`
+	SchoolNumber           string              `json:"school_number"`
+	CampusNumber           string              `json:"campus_number"`
+	CampusCurriculumNumber string              `json:"campus_curriculum_number"`
+	LevelNumber            string              `json:"level_number"`
 }
 
 type UpdateTimetableTaskRequest struct {
