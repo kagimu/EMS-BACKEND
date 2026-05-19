@@ -12,7 +12,7 @@ type TimetableSlotRepository interface {
 	DeleteTimetableSlot(slot models.TimetableSlots) error
 	FindTimetableSlotByNumber(number string) (models.TimetableSlots, error)
 	FindTimetableSlotByID(id uint) (models.TimetableSlots, error)
-	FindAllTimetableSlots(schoolNumber, levelNumber string) ([]models.TimetableSlots, error)
+	FindAllTimetableSlots(schoolNumber, levelNumber, streamNumber string) ([]models.TimetableSlots, error)
 }
 
 type timetableSlotRepository struct {
@@ -61,7 +61,7 @@ func (r *timetableSlotRepository) FindTimetableSlotByID(id uint) (models.Timetab
 	return slot, nil
 }
 
-func (r *timetableSlotRepository) FindAllTimetableSlots(schoolNumber, levelNumber string) ([]models.TimetableSlots, error) {
+func (r *timetableSlotRepository) FindAllTimetableSlots(schoolNumber, levelNumber, streamNumber string) ([]models.TimetableSlots, error) {
 	var slots []models.TimetableSlots
 
 	query := r.DB
@@ -70,6 +70,9 @@ func (r *timetableSlotRepository) FindAllTimetableSlots(schoolNumber, levelNumbe
 	}
 	if levelNumber != "" {
 		query = query.Where("level_number = ?", levelNumber)
+	}
+	if streamNumber != "" {
+		query = query.Where("stream_number = ?", streamNumber)
 	}
 
 	err := query.Find(&slots).Error

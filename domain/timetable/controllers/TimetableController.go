@@ -573,11 +573,12 @@ func GetTimetableSlots(c *gin.Context) {
 
 	schoolNumber := c.Query("school_number")
 	levelNumber := c.Query("level_number")
+	streamNumber := c.Query("stream_number")
 
 	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
 	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
 
-	slots, err := timetableSlotService.GetAllTimetableSlots(schoolNumber, levelNumber)
+	slots, err := timetableSlotService.GetAllTimetableSlots(schoolNumber, levelNumber, streamNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
