@@ -98,4 +98,9 @@ type TimetableTaskResponse struct {
 	CampusNumber     string `json:"campus_number"`
 	CurriculumNumber string `json:"curriculum_number"`
 	LevelNumber      string `json:"level_number"`
+	School           string `json:"school"`
+	Campus           string `json:"campus"`
+	Level            string `json:"level"`
+	Classes          string `json:"classes"`
+	Class            string `json:"class"`
 }

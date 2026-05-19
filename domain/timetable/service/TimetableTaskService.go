@@ -5,6 +5,7 @@ import (
 
 	campusRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	levelRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
@@ -129,6 +130,7 @@ func (s *timetableTaskService) GetAllTimetableTasks(classNumber string) ([]respo
 			Number:       task.Number,
 			Name:         task.Name,
 			Type:         task.Type,
+			Code:         task.Code,
 			UserNumber:   task.UserNumber,
 			ClassNumber:  task.ClassNumber,
 			StreamNumber: task.StreamNumber,
@@ -139,10 +141,18 @@ func (s *timetableTaskService) GetAllTimetableTasks(classNumber string) ([]respo
 			campusClass, err := repositories.GetCampusClassByNumber(task.ClassNumber)
 			if err == nil && campusClass.Number != "" {
 				res.CampusNumber = campusClass.CampusNumber
+				res.Classes = campusClass.ClassName
+				res.Class = campusClass.ClassName
 
 				campus, err := campusRepositories.GetCampusByNumber(campusClass.CampusNumber)
 				if err == nil && campus.Number != "" {
 					res.SchoolNumber = campus.SchoolNumber
+					res.Campus = campus.Name
+
+					school, err := schoolRepositories.GetSchoolByNumber(campus.SchoolNumber)
+					if err == nil && school.Number != "" {
+						res.School = school.Name
+					}
 				}
 
 				campusLevel, err := levelRepositories.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
@@ -151,6 +161,11 @@ func (s *timetableTaskService) GetAllTimetableTasks(classNumber string) ([]respo
 					if err == nil && curriculumLevel.Number != "" {
 						res.CurriculumNumber = curriculumLevel.CurriculumNumber
 						res.LevelNumber = curriculumLevel.LevelNumber
+
+						level, err := levelRepositories.GetLevelByNumber(curriculumLevel.LevelNumber)
+						if err == nil && level.Number != "" {
+							res.Level = level.Name
+						}
 					}
 				}
 			}
