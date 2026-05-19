@@ -9,11 +9,11 @@ import (
 
 type TimetableSlots struct {
 	gorm.Model
-	Name         string `json:"name" gorm:"size:100;not null"`
+	Name         string `json:"name" gorm:"size:100"`
 	Number       string `json:"number" gorm:"size:36;unique;not null"`
 	SchoolNumber string `json:"school_number" gorm:"size:36;not null"`
 	LevelNumber  string `json:"level_number" gorm:"size:36;not null"`
-	Type         string `json:"type" gorm:"size:36;not null"`
+	Type         string `json:"type" gorm:"size:36"`
 	StartTime    string `json:"start_time" gorm:"size:10;not null"`
 	EndTime      string `json:"end_time" gorm:"size:10;not null"`
 }

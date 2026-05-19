@@ -63,8 +63,8 @@ type TimetableSlotItem struct {
 }
 
 type TimetableSlotRequest struct {
-	Name         string              `json:"name" binding:"required"`
-	Type         string              `json:"type" binding:"required"`
+	Name         string              `json:"name"`
+	Type         string              `json:"type"`
 	SchoolNumber string              `json:"school_number" binding:"required"`
 	LevelNumber  string              `json:"level_number" binding:"required"`
 	Slots        []TimetableSlotItem `json:"slots" binding:"required,min=1,dive"`
