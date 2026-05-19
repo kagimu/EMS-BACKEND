@@ -9,13 +9,18 @@ import (
 
 type TimetableSlots struct {
 	gorm.Model
-	Name         string `json:"name" gorm:"size:100"`
-	Number       string `json:"number" gorm:"size:36;unique;not null"`
-	SchoolNumber string `json:"school_number" gorm:"size:36;not null"`
-	LevelNumber  string `json:"level_number" gorm:"size:36;not null"`
-	Type         string `json:"type" gorm:"size:36"`
-	StartTime    string `json:"start_time" gorm:"size:10;not null"`
-	EndTime      string `json:"end_time" gorm:"size:10;not null"`
+	Name                   string `json:"name" gorm:"size:100"`
+	Number                 string `json:"number" gorm:"size:36;unique;not null"`
+	SchoolNumber           string `json:"school_number" gorm:"size:36;not null"`
+	CampusNumber           string `json:"campus_number" gorm:"size:36"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number" gorm:"size:36"`
+	LevelNumber            string `json:"level_number" gorm:"size:36;not null"`
+	AcademicYearNumber     string `json:"academic_year_number" gorm:"size:36"`
+	ClassNumber            string `json:"class_number" gorm:"size:36"`
+	StreamNumber           string `json:"stream_number" gorm:"size:36"`
+	Type                   string `json:"type" gorm:"size:36"`
+	StartTime              string `json:"start_time" gorm:"size:10;not null"`
+	EndTime                string `json:"end_time" gorm:"size:10;not null"`
 }
 
 type TimetableTask struct {
