@@ -53,11 +53,16 @@ func (s *timetableTaskService) CreateTimetableTask(request requests.TimetableTas
 			}
 
 			task := models.TimetableTask{
-				Number:      uuid.NewV4().String(),
-				Name:        taskItem.Name,
-				Type:        taskItem.Type,
-				UserNumber:  userNumber,
-				ClassNumber: classNumber,
+				Number:                 uuid.NewV4().String(),
+				Name:                   taskItem.Name,
+				Code:                   taskItem.Code,
+				Type:                   taskItem.Type,
+				UserNumber:             userNumber,
+				ClassNumber:            classNumber,
+				SchoolNumber:           request.SchoolNumber,
+				CampusNumber:           request.CampusNumber,
+				CampusCurriculumNumber: request.CampusCurriculumNumber,
+				LevelNumber:            request.LevelNumber,
 			}
 
 			if err := s.repo.SaveTimetableTask(task); err != nil {
@@ -127,47 +132,78 @@ func (s *timetableTaskService) GetAllTimetableTasks(classNumber string) ([]respo
 	var response []responses.TimetableTaskResponse
 	for _, task := range tasks {
 		res := responses.TimetableTaskResponse{
-			Number:       task.Number,
-			Name:         task.Name,
-			Type:         task.Type,
-			Code:         task.Code,
-			UserNumber:   task.UserNumber,
-			ClassNumber:  task.ClassNumber,
-			StreamNumber: task.StreamNumber,
+			Number:           task.Number,
+			Name:             task.Name,
+			Type:             task.Type,
+			Code:             task.Code,
+			UserNumber:       task.UserNumber,
+			ClassNumber:      task.ClassNumber,
+			StreamNumber:     task.StreamNumber,
+			SchoolNumber:     task.SchoolNumber,
+			CampusNumber:     task.CampusNumber,
+			CurriculumNumber: task.CampusCurriculumNumber,
+			LevelNumber:      task.LevelNumber,
 		}
 
-		// Derive extra fields from task.ClassNumber (CampusClass Number)
-		if task.ClassNumber != "" {
-			campusClass, err := repositories.GetCampusClassByNumber(task.ClassNumber)
-			if err == nil && campusClass.Number != "" {
-				res.CampusNumber = campusClass.CampusNumber
-				res.Classes = campusClass.ClassName
-				res.Class = campusClass.ClassName
-
-				campus, err := campusRepositories.GetCampusByNumber(campusClass.CampusNumber)
-				if err == nil && campus.Number != "" {
-					res.SchoolNumber = campus.SchoolNumber
-					res.Campus = campus.Name
-
-					school, err := schoolRepositories.GetSchoolByNumber(campus.SchoolNumber)
-					if err == nil && school.Number != "" {
-						res.School = school.Name
+		// Fallback derivation for legacy tasks where DB fields are empty
+		if res.SchoolNumber == "" || res.CampusNumber == "" || res.CurriculumNumber == "" || res.LevelNumber == "" {
+			if task.ClassNumber != "" {
+				campusClass, err := repositories.GetCampusClassByNumber(task.ClassNumber)
+				if err == nil && campusClass.Number != "" {
+					if res.CampusNumber == "" {
+						res.CampusNumber = campusClass.CampusNumber
 					}
-				}
 
-				campusLevel, err := levelRepositories.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
-				if err == nil && campusLevel.Number != "" {
-					curriculumLevel, err := levelRepositories.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
-					if err == nil && curriculumLevel.Number != "" {
-						res.CurriculumNumber = curriculumLevel.CurriculumNumber
-						res.LevelNumber = curriculumLevel.LevelNumber
+					campus, err := campusRepositories.GetCampusByNumber(campusClass.CampusNumber)
+					if err == nil && campus.Number != "" {
+						if res.SchoolNumber == "" {
+							res.SchoolNumber = campus.SchoolNumber
+						}
+					}
 
-						level, err := levelRepositories.GetLevelByNumber(curriculumLevel.LevelNumber)
-						if err == nil && level.Number != "" {
-							res.Level = level.Name
+					campusLevel, err := levelRepositories.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
+					if err == nil && campusLevel.Number != "" {
+						curriculumLevel, err := levelRepositories.GetCurriculumLevelByNumber(campusLevel.CurriculumLevelNumber)
+						if err == nil && curriculumLevel.Number != "" {
+							if res.CurriculumNumber == "" {
+								res.CurriculumNumber = curriculumLevel.CurriculumNumber
+							}
+							if res.LevelNumber == "" {
+								res.LevelNumber = curriculumLevel.LevelNumber
+							}
 						}
 					}
 				}
+			}
+		}
+
+		// Query readable names/labels
+		if res.ClassNumber != "" {
+			campusClass, err := repositories.GetCampusClassByNumber(res.ClassNumber)
+			if err == nil && campusClass.Number != "" {
+				res.Classes = campusClass.ClassName
+				res.Class = campusClass.ClassName
+			}
+		}
+
+		if res.CampusNumber != "" {
+			campus, err := campusRepositories.GetCampusByNumber(res.CampusNumber)
+			if err == nil && campus.Number != "" {
+				res.Campus = campus.Name
+			}
+		}
+
+		if res.SchoolNumber != "" {
+			school, err := schoolRepositories.GetSchoolByNumber(res.SchoolNumber)
+			if err == nil && school.Number != "" {
+				res.School = school.Name
+			}
+		}
+
+		if res.LevelNumber != "" {
+			level, err := levelRepositories.GetLevelByNumber(res.LevelNumber)
+			if err == nil && level.Number != "" {
+				res.Level = level.Name
 			}
 		}
 
