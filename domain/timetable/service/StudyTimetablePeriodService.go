@@ -82,6 +82,16 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 		return err
 	}
 
+	// --- Within-request duplicate check (day + slot) ---
+	seenSlots := make(map[string]bool)
+	for _, periodItem := range request.Periods {
+		key := strings.ToUpper(periodItem.Day) + "|" + periodItem.SlotNumber
+		if seenSlots[key] {
+			return fmt.Errorf("duplicate period in request: day '%s' with slot '%s' appears more than once", periodItem.Day, periodItem.SlotNumber)
+		}
+		seenSlots[key] = true
+	}
+
 	studyTimetable := models.StudyTimetable{
 		Number:            uuid.NewV4().String(),
 		Name:              "StudyTimetablePeriod",
