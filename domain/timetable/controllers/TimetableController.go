@@ -212,11 +212,14 @@ func GetAllStudyTimetables(c *gin.Context) {
 	schoolNumber := c.Query("school_number")
 	levelNumber := c.Query("level_number")
 	campusNumber := c.Query("campus_number")
+	campusCurriculumNumber := c.Query("campus_curriculum_number")
+	academicYearNumber := c.Query("academic_year_number")
 	campusClassNumber := c.Query("campus_class_number")
+	classNumber := c.Query("class_number")
 	streamNumber := c.Query("stream_number")
 
 	timetableService := getStudyTimetableService()
-	timetables, err := timetableService.GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusClassNumber, streamNumber)
+	timetables, err := timetableService.GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
