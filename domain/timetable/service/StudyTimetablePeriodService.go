@@ -61,6 +61,16 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 		return errors.New("stream number is required")
 	}
 
+	// --- Within-request duplicate check (day + slot) ---
+	seenSlots := make(map[string]bool)
+	for _, periodItem := range request.Periods {
+		key := strings.ToUpper(periodItem.Day) + "|" + periodItem.SlotNumber
+		if seenSlots[key] {
+			return fmt.Errorf("duplicate period in request: day '%s' with slot '%s' appears more than once", periodItem.Day, periodItem.SlotNumber)
+		}
+		seenSlots[key] = true
+	}
+
 	studyTimetable := models.StudyTimetable{
 		Number:            uuid.NewV4().String(),
 		Name:              "StudyTimetablePeriod",
@@ -101,11 +111,26 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 			return errors.New("timetable task not found")
 		}
 
+		// --- DB-level duplicate check ---
+		exists, err := s.periodRepo.ExistsStudyTimetablePeriodByDayAndTime(
+			request.StreamNumber,
+			request.StudyPeriodNumber,
+			strings.ToUpper(periodItem.Day),
+			slot.StartTime,
+			slot.EndTime,
+		)
+		if err != nil {
+			return errors.New("error checking for duplicate period: " + err.Error())
+		}
+		if exists {
+			return fmt.Errorf("a period already exists for stream '%s' on '%s' at %s-%s", request.StreamNumber, periodItem.Day, slot.StartTime, slot.EndTime)
+		}
+
 		period := models.StudyTimetablePeriod{
 			Number:               uuid.NewV4().String(),
 			StudyTimetableNumber: studyTimetable.Number,
 			StreamNumber:         request.StreamNumber,
-			Day:                  periodItem.Day,
+			Day:                  strings.ToUpper(periodItem.Day),
 			DayCode:              mapDayToCode(periodItem.Day),
 			StartTime:            slot.StartTime,
 			EndTime:              slot.EndTime,

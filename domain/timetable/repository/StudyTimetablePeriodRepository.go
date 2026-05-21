@@ -13,6 +13,7 @@ type StudyTimetablePeriodRepository interface {
 	DeleteStudyTimetablePeriod(period models.StudyTimetablePeriod) error
 	FindStudyTimetablePeriodByNumber(number string) (models.StudyTimetablePeriod, error)
 	FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day string) ([]models.StudyTimetablePeriod, error)
+	ExistsStudyTimetablePeriodByDayAndTime(streamNumber, studyPeriodNumber, day, startTime, endTime string) (bool, error)
 }
 
 type studyTimetablePeriodRepository struct {
@@ -67,4 +68,20 @@ func (r *studyTimetablePeriodRepository) FindStudyTimetablePeriods(studyTimetabl
 	}
 
 	return periods, nil
+}
+
+func (r *studyTimetablePeriodRepository) ExistsStudyTimetablePeriodByDayAndTime(streamNumber, studyPeriodNumber, day, startTime, endTime string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&models.StudyTimetablePeriod{}).
+		Joins("JOIN study_timetables ON study_timetables.number = study_timetable_periods.study_timetable_number").
+		Where("study_timetable_periods.stream_number = ?", streamNumber).
+		Where("study_timetables.study_period_number = ?", studyPeriodNumber).
+		Where("study_timetable_periods.day = ?", day).
+		Where("study_timetable_periods.start_time = ?", startTime).
+		Where("study_timetable_periods.end_time = ?", endTime).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
