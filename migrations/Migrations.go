@@ -134,8 +134,38 @@ func migrateBillPaymentPlanPromissoryNote() error {
 	})
 }
 
+func migrateStudyTimetableClassNumber() error {
+	db := config.DB
+
+	if !db.Migrator().HasTable("study_timetables") {
+		return nil
+	}
+
+	// Make the old class_number column nullable so it no longer blocks inserts.
+	// campus_class_number is now the authoritative column (added by AutoMigrate).
+	// Use INFORMATION_SCHEMA because HasColumn checks the model struct, not the live DB.
+	var count int64
+	db.Raw(`
+		SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = 'study_timetables'
+		  AND COLUMN_NAME = 'class_number'
+		  AND IS_NULLABLE = 'NO'
+	`).Scan(&count)
+
+	if count > 0 {
+		return db.Exec(`ALTER TABLE study_timetables MODIFY COLUMN class_number VARCHAR(36) NULL DEFAULT NULL`).Error
+	}
+
+	return nil
+}
+
 func Init() error {
 	if err := migrateBillPaymentPlanPromissoryNote(); err != nil {
+		return err
+	}
+
+	if err := migrateStudyTimetableClassNumber(); err != nil {
 		return err
 	}
 
