@@ -228,6 +228,28 @@ func GetAllStudyTimetables(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": timetables})
 }
 
+func DeleteStudyTimetable(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	timetableNumber := c.Param("timetable_number")
+	if timetableNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Timetable number is required"})
+		return
+	}
+
+	timetableService := getStudyTimetableService()
+	if err := timetableService.DeleteStudyTimetable(timetableNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Study timetable deleted successfully"})
+}
+
 func AddPeriod(context *gin.Context) {
 	var timetable models.StudyTimetablePeriod
 	var timetableRequest requests.TimetableRequest
