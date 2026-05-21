@@ -13,8 +13,8 @@ type StudyTimetableRepository interface {
 	DeleteStudyTimetable(timetable models.StudyTimetable) error
 	FindStudyTimetableByNumber(number string) (models.StudyTimetable, error)
 	FindStudyTimetableByID(id uint) (models.StudyTimetable, error)
-	FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error)
-	ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, classNumber, streamNumber, studyPeriodNumber string) (bool, error)
+	FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusClassNumber, streamNumber string) ([]models.StudyTimetable, error)
+	ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, campusClassNumber, streamNumber, studyPeriodNumber string) (bool, error)
 }
 
 type studyTimetableRepository struct {
@@ -67,7 +67,7 @@ func (r *studyTimetableRepository) FindStudyTimetableByID(id uint) (models.Study
 	return timetable, nil
 }
 
-func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error) {
+func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusClassNumber, streamNumber string) ([]models.StudyTimetable, error) {
 	var timetables []models.StudyTimetable
 
 	query := r.DB
@@ -89,8 +89,8 @@ func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, use
 	if campusNumber != "" {
 		query = query.Where("campus_number = ?", campusNumber)
 	}
-	if classNumber != "" {
-		query = query.Where("class_number = ?", classNumber)
+	if campusClassNumber != "" {
+		query = query.Where("campus_class_number = ?", campusClassNumber)
 	}
 	if streamNumber != "" {
 		query = query.Where("stream_number = ?", streamNumber)
@@ -104,13 +104,13 @@ func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, use
 	return timetables, nil
 }
 
-func (r *studyTimetableRepository) ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, classNumber, streamNumber, studyPeriodNumber string) (bool, error) {
+func (r *studyTimetableRepository) ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, campusClassNumber, streamNumber, studyPeriodNumber string) (bool, error) {
 	var count int64
 	err := r.DB.Model(&models.StudyTimetable{}).
 		Where("school_number = ?", schoolNumber).
 		Where("campus_number = ?", campusNumber).
 		Where("level_number = ?", levelNumber).
-		Where("class_number = ?", classNumber).
+		Where("campus_class_number = ?", campusClassNumber).
 		Where("stream_number = ?", streamNumber).
 		Where("study_period_number = ?", studyPeriodNumber).
 		Count(&count).Error

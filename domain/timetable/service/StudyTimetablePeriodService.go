@@ -10,6 +10,8 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	settingsRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
+	studyPeriodRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
@@ -82,14 +84,26 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 		return err
 	}
 
+	// Fetch CampusLevel to get CampusCurriculumNumber
+	campusLevel, err := settingsRepositories.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
+	if err != nil {
+		return errors.New("error fetching campus level: " + err.Error())
+	}
+
+	// Fetch StudyPeriod to get AcademicYearNumber
+	studyPeriod, err := studyPeriodRepositories.GetStudyPeriodByNumber(request.StudyPeriodNumber)
+	if err != nil {
+		return errors.New("error fetching study period: " + err.Error())
+	}
+
 	// --- Timetable-level duplicate check ---
 	// Prevent creating a duplicate timetable for the same school, campus, level,
-	// class, stream, and study period combination.
+	// class (campus_class), stream, and study period combination.
 	exists, err := s.timetableRepo.ExistsStudyTimetable(
 		campus.SchoolNumber,
 		campusClass.CampusNumber,
 		campusClass.CampusLevelNumber,
-		campusClass.ClassNumber,
+		campusClass.Number,
 		request.StreamNumber,
 		request.StudyPeriodNumber,
 	)
@@ -101,16 +115,18 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 	}
 
 	studyTimetable := models.StudyTimetable{
-		Number:            uuid.NewV4().String(),
-		Name:              "StudyTimetablePeriod",
-		Status:            constants.StatusDraft,
-		UserNumber:        userNumber,
-		StreamNumber:      request.StreamNumber,
-		StudyPeriodNumber: request.StudyPeriodNumber,
-		CampusNumber:      campusClass.CampusNumber,
-		ClassNumber:       campusClass.ClassNumber,
-		LevelNumber:       campusClass.CampusLevelNumber,
-		SchoolNumber:      campus.SchoolNumber,
+		Number:                 uuid.NewV4().String(),
+		Name:                   "StudyTimetablePeriod",
+		Status:                 constants.StatusDraft,
+		UserNumber:             userNumber,
+		StreamNumber:           request.StreamNumber,
+		StudyPeriodNumber:      request.StudyPeriodNumber,
+		CampusNumber:           campusClass.CampusNumber,
+		CampusClassNumber:      campusClass.Number,
+		LevelNumber:            campusClass.CampusLevelNumber,
+		SchoolNumber:           campus.SchoolNumber,
+		CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
+		AcademicYearNumber:     studyPeriod.AcademicYearNumber,
 	}
 
 	return config.DB.Transaction(func(tx *gorm.DB) error {
