@@ -16,6 +16,7 @@ import (
 type StudyTimetableService interface {
 	GetStudyTimetableByNumber(timetableNumber string) (models.StudyTimetable, error)
 	GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber string) ([]responses.StudyTimetables, error)
+	DeleteStudyTimetable(timetableNumber string) error
 }
 
 type studyTimetableService struct {
@@ -111,4 +112,21 @@ func (s *studyTimetableService) GetAllStudyTimetables(studyPeriodNumber, userNum
 	}
 
 	return response, nil
+}
+
+func (s *studyTimetableService) DeleteStudyTimetable(timetableNumber string) error {
+	if timetableNumber == "" {
+		return errors.New("timetable number is required")
+	}
+
+	timetable, err := s.repo.FindStudyTimetableByNumber(timetableNumber)
+	if err != nil {
+		return errors.New("error finding study timetable: " + err.Error())
+	}
+
+	if timetable.Number == "" {
+		return errors.New("study timetable not found")
+	}
+
+	return s.repo.DeleteStudyTimetable(timetable)
 }
