@@ -1,12 +1,13 @@
 package filters
 
 import (
+	"strings"
+	"time"
+
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"strings"
-	"time"
 )
 
 func ByCurriculumLevelNumber(level string) func(db *gorm.DB) *gorm.DB {
@@ -132,6 +133,25 @@ func ByAnyField(fieldName string, fieldValue string) func(db *gorm.DB) *gorm.DB 
 			return db.Where(fieldName+" = ?", fieldValue)
 		}
 		return db
+	}
+}
+
+func BySearchingAnyField(fieldName []string, searchValue string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if searchValue == "" || len(fieldName) == 0 {
+			return db
+		}
+		pattern := "%" + searchValue + "%"
+		clause := ""
+		args := make([]interface{}, 0, len(fieldName))
+		for i, v := range fieldName {
+			if i > 0 {
+				clause += " OR "
+			}
+			clause += v + " LIKE ?"
+			args = append(args, pattern)
+		}
+		return db.Where("("+clause+")", args...)
 	}
 }
 

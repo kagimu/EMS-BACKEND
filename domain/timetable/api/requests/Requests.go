@@ -31,18 +31,30 @@ type StudyPeriodRequest struct {
 
 type TimetableTaskItem struct {
 	Name string `json:"name" binding:"required"`
+	Code int64  `json:"code" binding:"required"`
 	Type string `json:"type" binding:"required"`
 }
 
 type TimetableTaskRequest struct {
-	Tasks        []TimetableTaskItem `json:"tasks" binding:"required,min=1,dive"`
-	ClassNumbers []string            `json:"class_numbers" binding:"required,min=1,dive,required"`
+	Tasks                  []TimetableTaskItem `json:"tasks" binding:"required,min=1,dive"`
+	ClassNumbers           []string            `json:"class_numbers" binding:"required,min=1,dive,required"`
+	SchoolNumber           string              `json:"school_number"`
+	CampusNumber           string              `json:"campus_number"`
+	CampusCurriculumNumber string              `json:"campus_curriculum_number"`
+	LevelNumber            string              `json:"level_number"`
 }
 
 type UpdateTimetableTaskRequest struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	ClassNumber string `json:"class_number"`
+	Name                   string              `json:"name"`
+	Code                   int64               `json:"code"`
+	Type                   string              `json:"type"`
+	ClassNumber            string              `json:"class_number"`
+	Tasks                  []TimetableTaskItem `json:"tasks"`
+	ClassNumbers           []string            `json:"class_numbers"`
+	SchoolNumber           string              `json:"school_number"`
+	CampusNumber           string              `json:"campus_number"`
+	CampusCurriculumNumber string              `json:"campus_curriculum_number"`
+	LevelNumber            string              `json:"level_number"`
 }
 
 type TimetableSlotItem struct {
@@ -51,20 +63,30 @@ type TimetableSlotItem struct {
 }
 
 type TimetableSlotRequest struct {
-	Name         string              `json:"name" binding:"required"`
-	Type         string              `json:"type" binding:"required"`
-	SchoolNumber string              `json:"school_number" binding:"required"`
-	LevelNumber  string              `json:"level_number" binding:"required"`
-	Slots        []TimetableSlotItem `json:"slots" binding:"required,min=1,dive"`
+	Name                   string              `json:"name"`
+	Type                   string              `json:"type"`
+	SchoolNumber           string              `json:"school_number" binding:"required"`
+	CampusNumber           string              `json:"campus_number"`
+	CampusCurriculumNumber string              `json:"campus_curriculum_number"`
+	LevelNumber            string              `json:"level_number" binding:"required"`
+	AcademicYearNumber     string              `json:"academic_year_number"`
+	ClassNumber            string              `json:"class_number"`
+	StreamNumber           string              `json:"stream_number"`
+	Slots                  []TimetableSlotItem `json:"slots" binding:"required,min=1,dive"`
 }
 
 type UpdateTimetableSlotRequest struct {
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	SchoolNumber string `json:"school_number"`
-	LevelNumber  string `json:"level_number"`
-	StartTime    string `json:"start_time"`
-	EndTime      string `json:"end_time"`
+	Name                   string `json:"name"`
+	Type                   string `json:"type"`
+	SchoolNumber           string `json:"school_number"`
+	CampusNumber           string `json:"campus_number"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	LevelNumber            string `json:"level_number"`
+	AcademicYearNumber     string `json:"academic_year_number"`
+	ClassNumber            string `json:"class_number"`
+	StreamNumber           string `json:"stream_number"`
+	StartTime              string `json:"start_time"`
+	EndTime                string `json:"end_time"`
 }
 
 type StudyTimetablePeriodItem struct {

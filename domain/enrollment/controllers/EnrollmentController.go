@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
@@ -36,14 +37,14 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
-	err = enrolmentService.NewEnrolment(payload, user.Number)
+	enrolmentResponse, err := enrolmentService.NewEnrolment(payload, user.Number)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully", "data": enrolmentResponse})
 }
 
 func FetchEnrolledStudents(c *gin.Context) {
@@ -63,6 +64,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 	studyPeriodNumber := c.Query("study_period_number")
 	academicYear := c.Query("academic_year_number")
 	status := c.Query("status")
+	search := c.Query("search")
 
 	if user.Type != constants.TypeClient {
 		if schoolNumber == "" {
@@ -73,7 +75,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 
 	page := pagination.Paginate(c, &paginatedResponse)
 
-	students_, err := enrolmentService.Enrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
+	students_, err := enrolmentService.Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -131,5 +133,42 @@ func ReEnrollStudent(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Student re-enrolled successfully"})
+}
 
+func FetchEnrollmentDetails(c *gin.Context) {
+	enrollmentNumber := c.Param("enrollment_number")
+	if enrollmentNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "enrollment_number is required"})
+		return
+	}
+	details, err := enrolmentService.GetEnrollmentDetailsByNumber(enrollmentNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": details})
+}
+
+func UpdateEnrollmentItem(c *gin.Context) {
+	var req requests.UpdateEnrollmentItemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	idParam := c.Param("id")
+	if idParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "enrollment item id is required"})
+		return
+	}
+	parsed, parseErr := strconv.ParseUint(idParam, 10, 0)
+	if parseErr != nil || parsed == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid enrollment item id"})
+		return
+	}
+	id := uint(parsed)
+	if err := enrolmentService.UpdateEnrollmentItem(id, req.Quantity, req.Brought); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Enrollment item updated successfully"})
 }

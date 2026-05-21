@@ -214,6 +214,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		reportSummary.StreamNumber = enrollment.StreamNumber
 		reportSummary.ReportTemplateName = reportTemplate.Name
 		reportSummary.HeadTeacherComment = headTeacherComment.Comment
+		reportSummary.Status = constants.StatusDraft
 
 		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
 			tx.Rollback()
@@ -237,6 +238,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			ReportTemplateName:  reportTemplate.Name,
 			HeadTeacherComment:  headTeacherComment.Comment,
 			CreatedAt:           time.Now(),
+			Status:              constants.StatusDraft,
+			Stage:               constants.StageSubjectTeacher,
 		}
 
 		if err := reporsitory.CreateReportSummary(reportSummary, tx); err != nil {
@@ -262,6 +265,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	}
 	var finalAggregateScale aggregateSaceltModel.AggregateScale
 	var totalAggregates float64
+	var totalScore float64
 	for _, assessmentArea := range assessmentAreas {
 		var scale aggregateSaceltModel.AggregateScale
 		var grade gradesModels.Grade
@@ -383,6 +387,8 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 				finalAggregateScale = scale
 			}
 
+			totalScore = totalScore + score
+
 		}
 
 		var rs []models.ReportScore
@@ -432,9 +438,12 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 			reportScoreSummary.Grade = grade.ShortName
 			reportScoreSummary.Summation = commons.RoundFloat(summation, 0)
 			reportScoreSummary.UserNumber = userNumber
-			reportScoreSummary.Comment = scale.Description
 			reportScoreSummary.Illustration = scale.Illustration
 			reportScoreSummary.TeacherInitial = teacherInitial
+
+			if payload.OverrideAssessmentScoreComments == "YES" {
+				reportScoreSummary.Comment = scale.Description
+			}
 
 			if err := repo.SaveReportScoreSummary(reportScoreSummary); err != nil {
 				tx.Rollback()
@@ -483,6 +492,7 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 	reportSummary.AssessmentGradeScaleNumber = assessmentGrade.Number
 
 	reportSummary.Aggregate = totalAggregates
+	reportSummary.TotalScore = totalScore
 
 	headTeacherComment, err = GetProperHeadTeacherCommentByReportSettingNumberAndPoints(reportSettings.Number, totalAggregates)
 	if err != nil {
@@ -533,6 +543,13 @@ func GenerateReportSummary(payload requests.GenerateReportSummaryRequest, userNu
 		if err != nil {
 			tx.Rollback()
 			return errors.New("failed to save promotion " + err.Error())
+		}
+
+		reportSummary.PromotionStatus = finalStatus.Status
+
+		if err := reporsitory.SaveReportSummary(reportSummary, tx); err != nil {
+			tx.Rollback()
+			return errors.New("failed to update edit summary with promotional status" + err.Error())
 		}
 
 	}
@@ -903,9 +920,14 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		NextTermBegins:      studyPeriod.NextTermBeginsOn.Format("02-01-2006"),
 		ReportTemplate:      reportTemplate.Name,
 		TeachersComment:     reportSummary.Comment,
+		PromotionStatus:     reportSummary.PromotionStatus,
+		Aggregate:           reportSummary.Aggregate,
+		TotalScore:          reportSummary.TotalScore,
+		Status:              reportSummary.Status,
+		Stage:               reportSummary.Stage,
 	}
 
-	if len(scalesUsed) > 0 {
+	/*if len(scalesUsed) > 0 {
 		promo, err := repositories10.FindPromotionByReportSummaryNumber(reportSummaryNumber)
 		if err != nil {
 			return responses.FullReportSummary{}, errors.New("failed to find promotion status: " + err.Error())
@@ -916,7 +938,7 @@ func GetReportSummary(reportSummaryNumber string) (responses.FullReportSummary, 
 		}
 	} else {
 		response.PromotionStatus = "N/A"
-	}
+	}*/
 
 	return response, nil
 }
@@ -1164,4 +1186,52 @@ func checkIfDemoted(campusClassNumber string, studyPeriodNumber string, assessme
 	}
 
 	return models2.PromotionSetting{}, nil
+}
+
+func ApproveReportSummaries(payload requests.ApproveReportSummariesRequest) error {
+	return reporsitory.BulkApproveReportSummaries(payload.ReportSummaryNumbers, constants.StageHeadTeacher, constants.StatusFinal)
+}
+
+func ForwardReportSummary(payload requests.ForwardReportSummaryRequest, commenterName string) error {
+	summary, err := reporsitory.FindReportSummaryByNumber(payload.ReportSummaryNumber)
+	if err != nil {
+		return err
+	}
+	if summary.Number == "" {
+		return errors.New("report summary not found")
+	}
+
+	if summary.Status == constants.StatusFinal {
+		return errors.New("cannot forward a finalized report summary")
+	}
+
+	summary.Stage = payload.NextStage
+
+	tx := config.DB.Begin()
+	if err := reporsitory.SaveReportSummary(summary, tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if payload.Comment != "" {
+		correspondence := models.ReportSummaryCorrespondence{
+			Number:              uuid.NewV4().String(),
+			ReportSummaryNumber: summary.Number,
+			Comment:             payload.Comment,
+			CommenterName:       commenterName,
+			CreatedAt:           time.Now(),
+		}
+		if err := reporsitory.SaveReportSummaryCorrespondence(correspondence, tx); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
+func GetReportSummaryCorrespondences(reportSummaryNumber string) ([]models.ReportSummaryCorrespondence, error) {
+	return reporsitory.FetchReportSummaryCorrespondences(reportSummaryNumber)
 }

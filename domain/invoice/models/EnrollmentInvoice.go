@@ -7,4 +7,5 @@ type EnrollmentInvoice struct {
 	Enrollment       models.Enrollment `gorm:"foreignKey:EnrollmentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	InvoiceNumber    string            `json:"invoice_number" gorm:"size:36;not null;primaryKey;index:enrollment_invoice_pk,unique"`
 	Invoice          Invoice           `gorm:"foreignKey:InvoiceNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
+	BalanceDueDate   string            `json:"balance_due_date" gorm:"size:15;"`
 }

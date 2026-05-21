@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"gorm.io/gorm"
@@ -57,7 +58,7 @@ func GetCampusByCampusClassNumber(campusClassNumber string, tx ...*gorm.DB) (cam
 	var campus campusModel.Campus
 
 	if err := db.
-		Joins("JOIN campus_classes ON campus.number = campus_classes.campus_number").
+		Joins("JOIN campus_classes ON campuses.number = campus_classes.campus_number").
 		Where("campus_classes.number = ?", campusClassNumber).
 		First(&campus).Error; err != nil {
 

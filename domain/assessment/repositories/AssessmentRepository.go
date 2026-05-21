@@ -76,3 +76,22 @@ func GetAssessmentByNumber(assessmentNumber string, trn ...*gorm.DB) (assessment
 
 	return assessment, nil
 }
+
+// FindAssessmentsByMetricNumbersAndStudentNumbers returns all assessments for the given metric numbers and student numbers (batch).
+func FindAssessmentsByMetricNumbersAndStudentNumbers(metricNumbers, studentNumbers []string, tx ...*gorm.DB) ([]assessmentModel.Assessment, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+	if len(metricNumbers) == 0 || len(studentNumbers) == 0 {
+		return []assessmentModel.Assessment{}, nil
+	}
+	var assessments []assessmentModel.Assessment
+	if err := db.Where("assessment_metric_number IN ? AND student_number IN ?", metricNumbers, studentNumbers).Find(&assessments).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessments, nil
+		}
+		return nil, err
+	}
+	return assessments, nil
+}

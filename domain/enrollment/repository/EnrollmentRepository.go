@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
@@ -11,15 +12,16 @@ import (
 
 type EnrolmentRepository interface {
 	GetStudentEnrolment(studentNumber, studyPeriodNumber, campusClassNumber, status string, txn ...*gorm.DB) (models.Enrollment, error)
+	GetEnrollmentByNumber(number string, txn ...*gorm.DB) (models.Enrollment, error)
 	AllEnrolments(studentNumber, studyPeriodNumber, campusClassNumber, campusNumber, status string, txn ...*gorm.DB) ([]models.Enrollment, error)
 	SaveEnrolment(enrollment models.Enrollment, txn ...*gorm.DB) error
-	PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error)
+	PaginatedEnrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error)
 }
 
 type enrolmentRepository struct {
 }
 
-func (enrolmentRepository *enrolmentRepository) PaginatedEnrolments(schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error) {
+func (enrolmentRepository *enrolmentRepository) PaginatedEnrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]models.Enrollment, error) {
 	var enrolledStudents []models.Enrollment
 	if err := config.DB.
 		Joins("JOIN study_periods ON study_periods.number = enrollments.study_period_number").
@@ -35,6 +37,7 @@ func (enrolmentRepository *enrolmentRepository) PaginatedEnrolments(schoolNumber
 			filters.ByAnyField("enrollments.status", status),
 			filters.ByAnyField("study_periods.academic_year_number", academicYearNumber),
 			page,
+			filters.BySearchingAnyField([]string{"students.adn", "students.apn", "students.surname", "students.second_name", "students.other_name"}, search),
 		).
 		Preload("School").Preload("CampusClass").Preload("Campus").Preload("Student").Preload("StudyPeriod").Find(&enrolledStudents).Error; err != nil {
 
@@ -76,6 +79,25 @@ func (enrolmentRepository *enrolmentRepository) SaveEnrolment(enrollment models.
 	}
 
 	return db.Save(&enrollment).Error
+}
+
+func (enrolmentRepository *enrolmentRepository) GetEnrollmentByNumber(number string, txn ...*gorm.DB) (models.Enrollment, error) {
+	db := config.DB
+	if len(txn) > 0 {
+		db = txn[0]
+	}
+	var enrollment models.Enrollment
+	if err := db.
+		Preload("EnrollmentItems.Item").
+		Preload("Student").Preload("School").Preload("Campus").Preload("CampusClass").Preload("StudyPeriod").Preload("Stream").
+		Where("number = ?", number).
+		First(&enrollment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Enrollment{}, nil
+		}
+		return models.Enrollment{}, err
+	}
+	return enrollment, nil
 }
 
 func (enrolmentRepository *enrolmentRepository) GetStudentEnrolment(studentNumber, studyPeriodNumber, campusClassNumber, status string, txn ...*gorm.DB) (models.Enrollment, error) {

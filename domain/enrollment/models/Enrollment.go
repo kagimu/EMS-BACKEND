@@ -32,4 +32,5 @@ type Enrollment struct {
 	ContinuingStudent bool                    `json:"continuing_student"`
 	ModeOfStudyNumber string                  `json:"mode_of_study_number" gorm:"size:36;not null;"`
 	ModeOfStudy       schoolModel.ModeOfStudy `gorm:"foreignKey:ModeOfStudyNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	EnrollmentItems   []EnrollmentItem        `gorm:"foreignKey:EnrollmentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }

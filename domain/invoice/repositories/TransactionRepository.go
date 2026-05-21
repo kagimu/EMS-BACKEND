@@ -2,12 +2,13 @@ package repositories
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	invoiceModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
-	"time"
 )
 
 func SaveTransaction(transaction invoiceModels.Transaction, tx ...*gorm.DB) (invoiceModels.Transaction, error) {
@@ -157,6 +158,27 @@ func GetTransactionByNumber(transactionNumber string, tx ...*gorm.DB) (invoiceMo
 	}
 
 	return invoicePayment, nil
+}
+
+func GetTransactionByClientReference(clientReference, campusNumber string, tx ...*gorm.DB) (invoiceModels.Transaction, error) {
+
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var transaction invoiceModels.Transaction
+
+	if err := db.
+		Joins("JOIN statements ON statements.number = transactions.statement_number").
+		Where("client_reference = ? AND statements.campus_number = ?", clientReference, campusNumber).First(&transaction).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return transaction, nil
+		}
+		return transaction, err
+	}
+
+	return transaction, nil
 }
 
 func DeleteTransaction(transactionNumber invoiceModels.Transaction, tx ...*gorm.DB) error {

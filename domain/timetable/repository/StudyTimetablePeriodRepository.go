@@ -8,7 +8,7 @@ import (
 )
 
 type StudyTimetablePeriodRepository interface {
-	SaveStudyTimetablePeriod(period models.StudyTimetablePeriod) error
+	SaveStudyTimetablePeriod(period models.StudyTimetablePeriod, txs ...*gorm.DB) error
 	UpdateStudyTimetablePeriod(period *models.StudyTimetablePeriod) error
 	DeleteStudyTimetablePeriod(period models.StudyTimetablePeriod) error
 	FindStudyTimetablePeriodByNumber(number string) (models.StudyTimetablePeriod, error)
@@ -24,8 +24,12 @@ func NewStudyTimetablePeriodRepository(db *gorm.DB) StudyTimetablePeriodReposito
 	return &studyTimetablePeriodRepository{DB: db}
 }
 
-func (r *studyTimetablePeriodRepository) SaveStudyTimetablePeriod(period models.StudyTimetablePeriod) error {
-	return r.DB.Save(&period).Error
+func (r *studyTimetablePeriodRepository) SaveStudyTimetablePeriod(period models.StudyTimetablePeriod, txs ...*gorm.DB) error {
+	db := r.DB
+	if len(txs) > 0 {
+		db = txs[0]
+	}
+	return db.Save(&period).Error
 }
 
 func (r *studyTimetablePeriodRepository) UpdateStudyTimetablePeriod(period *models.StudyTimetablePeriod) error {

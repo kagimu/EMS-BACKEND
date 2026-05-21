@@ -22,6 +22,7 @@ type EnrollmentRequest struct {
 	Description            string           `json:"description"`
 	PaidAmount             float64          `json:"paid_amount"`
 	DatePaid               string           `json:"date_paid"`
+	BalanceDueDate         string           `json:"balance_due_date"`
 	CampusCurriculumNumber string           `json:"campus_curriculum_number"`
 }
 
@@ -29,6 +30,12 @@ type EnrollmentItem struct {
 	ItemNumber string  `json:"item_number"`
 	Quantity   float64 `json:"quantity"`
 	Brought    bool    `json:"brought"`
+}
+
+// UpdateEnrollmentItemRequest is the body for updating an enrollment item (quantity, brought).
+type UpdateEnrollmentItemRequest struct {
+	Quantity float64 `json:"quantity"`
+	Brought  bool    `json:"brought"`
 }
 
 func (e *EnrollmentRequest) Validate() error {

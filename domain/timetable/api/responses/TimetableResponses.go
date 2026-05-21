@@ -85,3 +85,46 @@ type TimetablePeriodsResponse struct {
 	Days                 []DayPeriods `json:"days"`
 	SLots                []string     `json:"slots"`
 }
+
+type TimetableTaskResponse struct {
+	Number           string `json:"number"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+	Code			 int64  `json:"code"`
+	UserNumber       string `json:"user_number"`
+	ClassNumber      string `json:"class_number"`
+	StreamNumber     string `json:"stream_number"`
+	SchoolNumber     string `json:"school_number"`
+	CampusNumber     string `json:"campus_number"`
+	CurriculumNumber string `json:"curriculum_number"`
+	LevelNumber      string `json:"level_number"`
+	School           string `json:"school"`
+	Campus           string `json:"campus"`
+	Level            string `json:"level"`
+	Classes          string `json:"classes"`
+	Class            string `json:"class"`
+}
+
+type TimetableSlotResponse struct {
+	ID                     uint   `json:"id"`
+	Number                 string `json:"number"`
+	Name                   string `json:"name"`
+	SchoolNumber           string `json:"school_number"`
+	CampusNumber           string `json:"campus_number"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	LevelNumber            string `json:"level_number"`
+	AcademicYearNumber     string `json:"academic_year_number"`
+	ClassNumber            string `json:"class_number"`
+	StreamNumber           string `json:"stream_number"`
+	Type                   string `json:"type"`
+	StartTime              string `json:"start_time"`
+	EndTime                string `json:"end_time"`
+	
+	// Display names
+	School                 string `json:"school"`
+	Campus                 string `json:"campus"`
+	Curriculum             string `json:"curriculum"`
+	Level                  string `json:"level"`
+	Class                  string `json:"class"`
+	Stream                 string `json:"stream"`
+}

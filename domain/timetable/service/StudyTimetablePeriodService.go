@@ -6,12 +6,16 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/repository"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 type StudyTimetablePeriodService interface {
@@ -60,6 +64,23 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 	if request.StreamNumber == "" {
 		return errors.New("stream number is required")
 	}
+	stream, err := repositories.GetStreamByNumber(request.StreamNumber)
+
+	if err != nil {
+		return err
+	}
+
+	campusClass, err := repositories.GetCampusClassByNumber(stream.CampusClassNumber)
+
+	if err != nil {
+		return err
+	}
+
+	campus, err := repositories2.GetCampusByNumber(campusClass.CampusNumber)
+
+	if err != nil {
+		return err
+	}
 
 	// --- Within-request duplicate check (day + slot) ---
 	seenSlots := make(map[string]bool)
@@ -78,73 +99,63 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 		UserNumber:        userNumber,
 		StreamNumber:      request.StreamNumber,
 		StudyPeriodNumber: request.StudyPeriodNumber,
+		CampusNumber:      campusClass.CampusNumber,
+		ClassNumber:       campusClass.ClassNumber,
+		SchoolNumber:      campus.SchoolNumber,
 	}
 
-	if err := s.timetableRepo.SaveStudyTimetable(studyTimetable); err != nil {
-		return errors.New("error saving study timetable: " + err.Error())
-	}
-
-	for _, periodItem := range request.Periods {
-		if periodItem.Day == "" {
-			return errors.New("period day is required")
-		}
-		if periodItem.SlotNumber == "" {
-			return errors.New("period slot number is required")
-		}
-		if periodItem.TaskNumber == "" {
-			return errors.New("period task number is required")
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		if err := s.timetableRepo.SaveStudyTimetable(studyTimetable, tx); err != nil {
+			return errors.New("error saving study timetable: " + err.Error())
 		}
 
-		slot, err := s.slotRepo.FindTimetableSlotByNumber(periodItem.SlotNumber)
-		if err != nil {
-			return errors.New("error finding timetable slot: " + err.Error())
-		}
-		if slot.Number == "" {
-			return errors.New("timetable slot not found")
+		for _, periodItem := range request.Periods {
+			if periodItem.Day == "" {
+				return errors.New("period day is required")
+			}
+			if periodItem.SlotNumber == "" {
+				return errors.New("period slot number is required")
+			}
+			if periodItem.TaskNumber == "" {
+				return errors.New("period task number is required")
+			}
+
+			slot, err := s.slotRepo.FindTimetableSlotByNumber(periodItem.SlotNumber)
+			if err != nil {
+				return errors.New("error finding timetable slot: " + err.Error())
+			}
+			if slot.Number == "" {
+				return errors.New("timetable slot not found")
+			}
+
+			task, err := s.taskRepo.FindTimetableTaskByNumber(periodItem.TaskNumber)
+			if err != nil {
+				return errors.New("error finding timetable task: " + err.Error())
+			}
+			if task.Number == "" {
+				return errors.New("timetable task not found")
+			}
+
+			period := models.StudyTimetablePeriod{
+				Number:               uuid.NewV4().String(),
+				StudyTimetableNumber: studyTimetable.Number,
+				StreamNumber:         request.StreamNumber,
+				Day:                  periodItem.Day,
+				DayCode:              mapDayToCode(periodItem.Day),
+				StartTime:            slot.StartTime,
+				EndTime:              slot.EndTime,
+				TaskType:             task.Type,
+				UserNumber:           userNumber,
+				Task:                 task.Name,
+			}
+
+			if err := s.periodRepo.SaveStudyTimetablePeriod(period, tx); err != nil {
+				return err
+			}
 		}
 
-		task, err := s.taskRepo.FindTimetableTaskByNumber(periodItem.TaskNumber)
-		if err != nil {
-			return errors.New("error finding timetable task: " + err.Error())
-		}
-		if task.Number == "" {
-			return errors.New("timetable task not found")
-		}
-
-		// --- DB-level duplicate check ---
-		exists, err := s.periodRepo.ExistsStudyTimetablePeriodByDayAndTime(
-			request.StreamNumber,
-			request.StudyPeriodNumber,
-			strings.ToUpper(periodItem.Day),
-			slot.StartTime,
-			slot.EndTime,
-		)
-		if err != nil {
-			return errors.New("error checking for duplicate period: " + err.Error())
-		}
-		if exists {
-			return fmt.Errorf("a period already exists for stream '%s' on '%s' at %s-%s", request.StreamNumber, periodItem.Day, slot.StartTime, slot.EndTime)
-		}
-
-		period := models.StudyTimetablePeriod{
-			Number:               uuid.NewV4().String(),
-			StudyTimetableNumber: studyTimetable.Number,
-			StreamNumber:         request.StreamNumber,
-			Day:                  strings.ToUpper(periodItem.Day),
-			DayCode:              mapDayToCode(periodItem.Day),
-			StartTime:            slot.StartTime,
-			EndTime:              slot.EndTime,
-			TaskType:             task.Type,
-			UserNumber:           userNumber,
-			Task:                 task.Name,
-		}
-
-		if err := s.periodRepo.SaveStudyTimetablePeriod(period); err != nil {
-			return err
-		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (s *studyTimetablePeriodService) UpdateStudyTimetablePeriod(periodNumber string, request requests.UpdateStudyTimetablePeriodRequest) error {

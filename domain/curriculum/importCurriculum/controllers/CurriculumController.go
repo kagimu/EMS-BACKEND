@@ -159,6 +159,7 @@ func ImportCurriculum(context *gin.Context) {
 	fileName := name + extension
 	path := "fileRepo/excelFile/" + fileName
 
+	fmt.Println("File Name:", fileName)
 	err = context.SaveUploadedFile(excelFile, path)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "Failed to save File"})
@@ -178,14 +179,20 @@ func ImportCurriculum(context *gin.Context) {
 	}
 	config.DB.Save(&saveFileData)
 
+	fmt.Println("File uploaded successfully!")
+
 	//read now the Excel file
 	readExcelFile(path, userNumber, curriculumNumber)
+
+	fmt.Println("Excel file read successfully!")
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Excel File uploaded Successfully!", "data": saveFileData})
 }
 
 func readExcelFile(filePath string, userNumber string, curriculumNumber string) {
+	fmt.Println("Reading Excel File")
 	//f, err := excelize.OpenFile("Book1.xlsx")
+
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -207,9 +214,15 @@ func readExcelFile(filePath string, userNumber string, curriculumNumber string) 
 		fmt.Println(err)
 		return
 	}
+	fmt.Println("Reading rows successfully!")
+	fmt.Println("Number of rows:", len(rows))
 
 	for idx, row := range rows {
 		if idx > 0 {
+			fmt.Println("Processing row:", idx)
+			fmt.Println("Teaching sequence code: ", getValueAtIndex(row, 13))
+			fmt.Println("Estimated time: ", getValueAtIndex(row, 16))
+			fmt.Println("Required materials: ", getValueAtIndex(row, 17))
 			curriculumInfo := models5.ExcelCurriculumInfo{
 				LearningAreaCode:     getValueAtIndex(row, 0),
 				LearningArea:         getValueAtIndex(row, 1),
@@ -535,6 +548,8 @@ func saveCurriculumData(info models5.ExcelCurriculumInfo, idx int, userNumber st
 			fmt.Println("Insertion failed:", err)
 			return
 		}
+
+		fmt.Println("Subtopic saved successfully")
 	}
 
 	//-------------
@@ -786,9 +801,10 @@ func CurriculumInfo(context *gin.Context) {
 func CurriculumEdit(context *gin.Context) {
 
 	var curriculumInfo responses.CurriculumResponse
-	err := context.BindJSON(&curriculumInfo)
-	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Internal sever error!"})
+	if err := context.ShouldBindJSON(&curriculumInfo); err != nil {
+		// Binding errors (wrong JSON types, empty body, invalid JSON, etc.) should be visible to the client;
+		// otherwise it looks like validation is "inconsistent" because Validate() never runs.
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request payload: " + err.Error()})
 		return
 	}
 
@@ -801,11 +817,16 @@ func CurriculumEdit(context *gin.Context) {
 
 	name := curriculumInfo.Name
 	curriculumNumber := curriculumInfo.CurriculumNumber
-
-	userNumber := context.Request.Header["User-Number"][0]
+	code := curriculumInfo.Code
 
 	if curriculumNumber == "" {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum is required!"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "curriculum_number is required"})
+		return
+	}
+
+	userNumber := context.GetHeader("User-Number")
+	if userNumber == "" {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
 
@@ -820,13 +841,47 @@ func CurriculumEdit(context *gin.Context) {
 		return
 	}
 
-	var duplicateSchool models5.Curriculum
-	if duplicate := config.DB.
+	entityNumber, _ := commons.GetUserEntityNumber(context)
+	if entityNumber == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Entity is required!"})
+		return
+	}
+
+	var existingCurriculum models5.Curriculum
+	if err := config.DB.
+		Where("number = ?", curriculumNumber).
+		First(&existingCurriculum).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			context.JSON(http.StatusNotFound, gin.H{"message": "Curriculum not found!"})
+		} else {
+			context.JSON(http.StatusInternalServerError, gin.H{"message": "Error retrieving curriculum", "error": err.Error()})
+		}
+		return
+	}
+
+	// Ensure the curriculum belongs to the same entity as the current user.
+	if existingCurriculum.EntityNumber != "" && existingCurriculum.EntityNumber != entityNumber {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Forbidden"})
+		return
+	}
+
+	var dupName models5.Curriculum
+	if err := config.DB.
 		Where("name = ?", name).
-		Where("user_number = ?", userNumber).
+		Where("entity_number = ?", entityNumber).
 		Where("number != ?", curriculumNumber).
-		First(&duplicateSchool).Error; duplicate == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum already exists!!!"})
+		First(&dupName).Error; err == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum with this name  already exists !!!"})
+		return
+	}
+
+	var dupCode models5.Curriculum
+	if err := config.DB.
+		Where("code = ?", code).
+		Where("entity_number = ?", entityNumber).
+		Where("number != ?", curriculumNumber).
+		First(&dupCode).Error; err == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Curriculum with this code  already exists !!!"})
 		return
 	}
 
@@ -836,10 +891,22 @@ func CurriculumEdit(context *gin.Context) {
 	var curriculumDataInfo models5.Curriculum
 	updateCurriculum := tx.Model(&curriculumDataInfo).
 		Where("number = ?", curriculumNumber).
-		Updates(models5.Curriculum{Name: name, UserNumber: userNumber, Code: curriculumInfo.Code})
+		Updates(models5.Curriculum{Name: name, Code: code})
 	if updateCurriculum.Error != nil {
 		tx.Rollback()
 		context.JSON(http.StatusNotFound, gin.H{"message": "Failed to update!"})
+		return
+	}
+	if updateCurriculum.RowsAffected < 1 {
+		tx.Rollback()
+		context.JSON(http.StatusNotFound, gin.H{"message": "Curriculum not found!"})
+		return
+	}
+
+	// Load the updated record so the API returns consistent data.
+	if err := tx.Where("number = ?", curriculumNumber).First(&curriculumDataInfo).Error; err != nil {
+		tx.Rollback()
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to load updated curriculum", "error": err.Error()})
 		return
 	}
 
@@ -847,7 +914,7 @@ func CurriculumEdit(context *gin.Context) {
 	if err := tx.Commit().Error; err != nil {
 		// Handle or return the error as needed
 		//context.JSON(http.StatusBadRequest, gin.H{"message": err})
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create Curriculum"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to update Curriculum"})
 		return
 	}
 
@@ -1163,7 +1230,7 @@ func ExportLessonPlanTemplate(ctx *gin.Context) (*excelize.File, string, error) 
 
 	defaultOpenSheet := -1
 
-	sheetName := fmt.Sprintf("Sheet-%d", "name")
+	sheetName := fmt.Sprintf("Sheet-%s", "name")
 
 	fmt.Println("Sheet Name: ", sheetName)
 

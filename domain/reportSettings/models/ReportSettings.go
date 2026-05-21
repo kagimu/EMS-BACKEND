@@ -68,6 +68,7 @@ type ReportSummary struct {
 	StudyPeriodNumber          string                  `json:"study_period_number" gorm:"size:36;not null;"`
 	Grade                      string                  `json:"grade" gorm:"type:text;not null;"`
 	Aggregate                  float64                 `json:"aggregate" gorm:"type:double precision;not null;"`
+	TotalScore                 float64                 `json:"total_score" gorm:"type:double precision;not null;column:total_score"`
 	Comment                    string                  `json:"comment" gorm:"type:text;not null;"`
 	ReportSetting              ReportSetting           `gorm:"foreignKey:ReportSettingNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Student                    studentModel.Student    `gorm:"foreignKey:StudentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
@@ -79,7 +80,10 @@ type ReportSummary struct {
 	Stream                     classModel.Stream       `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	HeadTeacherComment         string                  `json:"head_teacher_comment" gorm:"size:100"`
 	AggregateScaleUsed         string                  `json:"aggregate_scale_used" gorm:"size:100"`
+	PromotionStatus            string                  `json:"promotion_status" gorm:"size:100;column:promotion_status;default:'NOT_SET'"`
 	AssessmentGradeScaleNumber string                  `json:"assessment_grade_scale_number" gorm:"column:assessment_grade_scale_number;size:36;"`
+	Status                     string                  `json:"status" gorm:"size:100;"`
+	Stage                      string                  `json:"stage" gorm:"size:100;"`
 }
 
 type ReportScore struct {

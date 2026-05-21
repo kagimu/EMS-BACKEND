@@ -3,17 +3,19 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/responses"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/services"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
-	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assessmentMetricModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	classModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	classServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	enrollmentResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/api/request"
@@ -82,21 +84,116 @@ func EditStudent(c *gin.Context) {
 		return
 	}
 
-	savedStudent := models.Student{
-		Surname:                   payload.Surname,
-		OtherName:                 payload.OtherName,
-		SecondName:                payload.SecondName,
-		APNStatus:                 payload.APNStatus,
-		DateOfBirth:               payload.DateOfBirth,
-		ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
-		PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
-		CampusClassNumber:         payload.CampusClassNumber,
-		SchoolNumber:              payload.SchoolNumber,
-		Gender:                    payload.Gender,
+	// savedStudent := models.Student{
+	// 	Surname:                   payload.Surname,
+	// 	OtherName:                 payload.OtherName,
+	// 	SecondName:                payload.SecondName,
+	// 	APNStatus:                 payload.APNStatus,
+	// 	DateOfBirth:               payload.DateOfBirth,
+	// 	ReasonForChoosingSchool:   payload.ReasonForChoosingSchool,
+	// 	PreferredTypeOfEnrollment: payload.PreferredTypeOfEnrollment,
+	// 	CampusClassNumber:         payload.CampusClassNumber,
+	// 	SchoolNumber:              payload.SchoolNumber,
+	// 	Gender:                    payload.Gender,
+	// }
+
+	// Resolve the real `campus_classes.number` so updating `students.campus_class_number`
+	// won't break the FK constraint.
+	campusNumber := payload.CampusNumber
+	if campusNumber == "" {
+		campusNumber = payload.PreferredCampusNumber
 	}
 
+	// `class/services.ResolveCampusClass` needs `curriculumNumber` from
+	// `curriculum_levels.curriculum_number`. Your frontend sends `level`,
+	// which is (almost certainly) `curriculum_levels.number`.
+	// Translate `payload.Level` -> `curriculumNumber` when needed.
+	curriculumNumber := payload.CurriculumNumber
+	if curriculumNumber == "" && payload.Level != "" {
+		curriculumLevel, err := repositories4.GetCurriculumLevelByNumber(payload.Level)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid level/curriculum selection", "error": err.Error()})
+			return
+		}
+		curriculumNumber = curriculumLevel.CurriculumNumber
+	}
+
+	campusClass, err := classServices.ResolveCampusClass(
+		payload.ClassNumber,
+		campusNumber,
+		curriculumNumber,
+		payload.CampusCurriculumNumber,
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid class/campus selection", "error": err.Error()})
+		return
+	}
+	if campusClass.Number == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus class is not active on the selected campus"})
+		return
+	}
+
+	// Build an update struct (GORM will skip zero values), so empty/null payload fields
+	// won't overwrite existing DB values.
+	savedStudent := models.Student{
+		CampusClassNumber: campusClass.Number, // FK column
+	}
+	if payload.Surname != "" {
+		savedStudent.Surname = payload.Surname
+	}
+	if payload.OtherName != "" {
+		savedStudent.OtherName = payload.OtherName
+	}
+	if payload.SecondName != "" {
+		savedStudent.SecondName = payload.SecondName
+	}
+	if payload.APNStatus != "" {
+		savedStudent.APNStatus = payload.APNStatus
+	}
+	if payload.DateOfBirth != "" {
+		savedStudent.DateOfBirth = payload.DateOfBirth
+	}
+	if payload.ReasonForChoosingSchool != "" {
+		savedStudent.ReasonForChoosingSchool = payload.ReasonForChoosingSchool
+	}
+	if payload.PreferredTypeOfEnrollment != "" {
+		savedStudent.PreferredTypeOfEnrollment = payload.PreferredTypeOfEnrollment
+	}
+	if payload.SchoolNumber != "" {
+		savedStudent.SchoolNumber = payload.SchoolNumber
+	}
+	if payload.Gender != "" {
+		savedStudent.Gender = payload.Gender
+	}
+	if payload.PreferredCampusNumber != "" {
+		savedStudent.PreferredCampusNumber = payload.PreferredCampusNumber
+	}
+	if payload.SourceOfSchoolInfo != "" {
+		savedStudent.SourceOfSchoolInfo = payload.SourceOfSchoolInfo
+	}
+	if payload.ModeOfStudyNumber != "" {
+		savedStudent.ModeOfStudyNumber = payload.ModeOfStudyNumber
+	}
+	if payload.Lin != "" {
+		savedStudent.Lin = payload.Lin
+	}
+
+	// if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
+	// 	return
+	// }
+
 	if err := config.DB.Model(&student).Where("number = ?", studentNumber).Updates(savedStudent).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update student"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to update student",
+			"error":   err.Error(), // actual DB error
+		})
+		return
+	}
+
+	// Reload so the response includes the updated values.
+	if err := config.DB.First(&student, "number = ?", studentNumber).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Updated but failed to reload student", "error": err.Error()})
 		return
 	}
 

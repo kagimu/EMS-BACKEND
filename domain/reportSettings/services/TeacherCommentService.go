@@ -237,10 +237,10 @@ func SaveSubjectTeacherComment(payload requests.SubjectTeacherCommentRequest, us
 	return nil
 }
 
-func FetchSubjectTeacherComments() ([]responses.SubjectTeacherCommentResponse, error) {
+func FetchSubjectTeacherComments(campusClassNumber, academicYearNumber, studyPeriodNumber, assessmentAreaNumber string) ([]responses.SubjectTeacherCommentResponse, error) {
 	repo := reporsitory.NewClassTeacherCommentsRepository(config.DB)
 	var err error
-	subjectTeacherComments, err := repo.FindSubjectTeacherComments()
+	subjectTeacherComments, err := repo.FindSubjectTeacherComments(campusClassNumber, academicYearNumber, studyPeriodNumber, assessmentAreaNumber)
 	if err != nil {
 		return nil, err
 	}

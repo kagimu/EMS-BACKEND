@@ -366,6 +366,15 @@ func CreateTimetableTask(c *gin.Context) {
 		return
 	}
 
+	// Validate input code is required
+	for _, task := range payload.Tasks {
+		if task.Code == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Task code is required"})
+			return
+		}
+	}
+
+
 	timetableTaskRepo := repository.NewTimetableTaskRepository(config.DB)
 	timetableTaskService := service.NewTimetableTaskService(timetableTaskRepo)
 
@@ -564,11 +573,12 @@ func GetTimetableSlots(c *gin.Context) {
 
 	schoolNumber := c.Query("school_number")
 	levelNumber := c.Query("level_number")
+	streamNumber := c.Query("stream_number")
 
 	timetableSlotRepo := repository.NewTimetableSlotRepository(config.DB)
 	timetableSlotService := service.NewTimetableSlotService(timetableSlotRepo)
 
-	slots, err := timetableSlotService.GetAllTimetableSlots(schoolNumber, levelNumber)
+	slots, err := timetableSlotService.GetAllTimetableSlots(schoolNumber, levelNumber, streamNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

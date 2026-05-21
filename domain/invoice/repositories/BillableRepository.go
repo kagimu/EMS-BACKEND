@@ -18,7 +18,7 @@ func SaveBillable(billable models.Billable, trn ...*gorm.DB) error {
 	return db.Save(&billable).Error
 }
 
-func FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, academicYearNumber, status, billType string, trn ...*gorm.DB) ([]models.Billable, error) {
+func FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, academicYearNumber, status, billType, modeOfStudyNumber, curriculumNumber, campusCurriculumNumber string, trn ...*gorm.DB) ([]models.Billable, error) {
 	db := config.DB
 	if len(trn) > 0 {
 		db = trn[0]
@@ -26,12 +26,32 @@ func FindBillable(schoolNumber, studyPeriodNumber, classNumber, campusNumber, ac
 
 	var billable []models.Billable
 
-	if err := db.
-		Joins("JOIN study_periods ON study_periods.number = billables.study_period_number").
-		Scopes(filters.ByStatus(status), filters.ByAnyField("bill_type", billType), filters.ByCampusNumber(campusNumber), filters.ByAnyField("academic_year_number", academicYearNumber), filters.ByAnyField("study_period_number", studyPeriodNumber), filters.ByAnyField("class_number", classNumber)).
+	query := db.Model(&models.Billable{}).
+		Joins("JOIN study_periods ON study_periods.number = billables.study_period_number")
+
+	if campusCurriculumNumber != "" {
+		query = query.
+			Joins("JOIN academic_years ON academic_years.number = study_periods.academic_year_number").
+			Joins("JOIN campus_levels ON campus_levels.number = academic_years.campus_level_number").
+			Where("campus_levels.campus_curriculum_number = ?", campusCurriculumNumber)
+	}
+
+	query = query.
+		Scopes(
+			filters.ByAnyField("billables.status", status),
+			filters.ByAnyField("billables.bill_type", billType),
+			filters.ByAnyField("billables.campus_number", campusNumber),
+			filters.ByAnyField("study_periods.academic_year_number", academicYearNumber),
+			filters.ByAnyField("billables.study_period_number", studyPeriodNumber),
+			filters.ByAnyField("billables.class_number", classNumber),
+			filters.ByAnyField("billables.mode_of_study_number", modeOfStudyNumber),
+			filters.ByAnyField("billables.curriculum_number", curriculumNumber),
+		).
 		Distinct("billables.*").
 		Order("billables.code ASC").
-		Where("school_number = ?", schoolNumber).Find(&billable).Error; err != nil {
+		Where("billables.school_number = ?", schoolNumber)
+
+	if err := query.Find(&billable).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return billable, nil

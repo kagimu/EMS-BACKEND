@@ -1,0 +1,119 @@
+package repositories
+
+import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
+	"gorm.io/gorm"
+)
+
+type AdmissionRequirementsRepository interface {
+	SaveAdmissionRequirements(admissionRequirement models.AdmissionRequirement) error
+	SaveAdmissionRequirementsBatch(requirements []models.AdmissionRequirement) error
+	FindAdmissionRequirements(
+		schoolNumber,
+		campusClassNumber,
+		classNumber,
+		campusNumber,
+		campusCurriculumNumber,
+		campusLevelNumber,
+		studyPeriodNumber,
+		academicYearNumber,
+		itemNumber,
+		modeOfStudyNumber string,
+	) ([]models.AdmissionRequirement, error)
+	DeleteAdmissionRequirementByNumber(number string) error
+	UpdateAdmissionRequirementStatus(number, status string) error
+}
+
+type admissionRequirementsRepository struct {
+	DB *gorm.DB
+}
+
+func (a admissionRequirementsRepository) SaveAdmissionRequirements(admissionRequirement models.AdmissionRequirement) error {
+	return a.DB.Create(&admissionRequirement).Error
+}
+
+func (a admissionRequirementsRepository) SaveAdmissionRequirementsBatch(requirements []models.AdmissionRequirement) error {
+	if len(requirements) == 0 {
+		return nil
+	}
+	return a.DB.Create(&requirements).Error
+}
+
+func (a admissionRequirementsRepository) DeleteAdmissionRequirementByNumber(number string) error {
+	return a.DB.Where("number = ?", number).Delete(&models.AdmissionRequirement{}).Error
+}
+
+func (a admissionRequirementsRepository) UpdateAdmissionRequirementStatus(number, status string) error {
+	return a.DB.Model(&models.AdmissionRequirement{}).
+		Where("number = ?", number).
+		Update("status", status).Error
+}
+
+// FindAdmissionRequirements returns admission requirements filtered by non-empty query params.
+func (a admissionRequirementsRepository) FindAdmissionRequirements(
+	schoolNumber,
+	campusClassNumber,
+	classNumber,
+	campusNumber,
+	campusCurriculumNumber,
+	campusLevelNumber,
+	studyPeriodNumber,
+	academicYearNumber,
+	itemNumber,
+	modeOfStudyNumber string,
+) ([]models.AdmissionRequirement, error) {
+	var list []models.AdmissionRequirement
+	query := a.DB.Model(&models.AdmissionRequirement{}).
+		Joins("LEFT JOIN campus_classes ON campus_classes.number = admission_requirements.campus_class_number")
+	if schoolNumber != "" {
+		query = query.Where("admission_requirements.school_number = ?", schoolNumber)
+	}
+	if campusClassNumber != "" {
+		query = query.Where("admission_requirements.campus_class_number = ?", campusClassNumber)
+	}
+	if classNumber != "" {
+		query = query.Joins("LEFT JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+			Where("curriculum_classes.class_number = ?", classNumber)
+	}
+	if campusNumber != "" {
+		query = query.Where("admission_requirements.campus_number = ?", campusNumber)
+	}
+	// campus_curriculum_number / campus_level_number: match denormalized columns on the row (POST),
+	// or resolve via campus_classes → campus_levels for legacy rows.
+	if campusCurriculumNumber != "" || campusLevelNumber != "" {
+		query = query.Joins("LEFT JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number")
+	}
+	if campusCurriculumNumber != "" {
+		query = query.Where(
+			"(admission_requirements.campus_curriculum_number = ? OR campus_levels.campus_curriculum_number = ?)",
+			campusCurriculumNumber, campusCurriculumNumber,
+		)
+	}
+	if campusLevelNumber != "" {
+		query = query.Where(
+			"(admission_requirements.campus_level_number = ? OR campus_classes.campus_level_number = ? OR campus_levels.number = ?)",
+			campusLevelNumber, campusLevelNumber, campusLevelNumber,
+		)
+	}
+	if studyPeriodNumber != "" {
+		query = query.Where("admission_requirements.study_period_number = ?", studyPeriodNumber)
+	}
+	if academicYearNumber != "" {
+		query = query.Where("admission_requirements.academic_year_number = ?", academicYearNumber)
+	}
+	if itemNumber != "" {
+		query = query.Where("admission_requirements.item_number = ?", itemNumber)
+	}
+	if modeOfStudyNumber != "" {
+		query = query.Where("admission_requirements.mode_of_study_number = ?", modeOfStudyNumber)
+	}
+	if err := query.Order("admission_requirements.created_at DESC").Find(&list).Error; err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func NewAdmissionRequirementsRepository(db *gorm.DB) AdmissionRequirementsRepository {
+	return &admissionRequirementsRepository{DB: db}
+}
