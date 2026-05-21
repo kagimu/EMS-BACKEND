@@ -99,7 +99,13 @@ func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, use
 		query = query.Where("campus_class_number = ?", campusClassNumber)
 	}
 	if classNumber != "" {
-		query = query.Where("class_number = ?", classNumber)
+		// class_number is not a direct column on study_timetables.
+		// Resolve: campus_classes.curriculum_class_number → curriculum_classes.class_number
+		subQuery := r.DB.Table("campus_classes").
+			Select("campus_classes.number").
+			Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+			Where("curriculum_classes.class_number = ?", classNumber)
+		query = query.Where("campus_class_number IN (?)", subQuery)
 	}
 	if streamNumber != "" {
 		query = query.Where("stream_number = ?", streamNumber)
