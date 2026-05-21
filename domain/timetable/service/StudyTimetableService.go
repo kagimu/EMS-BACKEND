@@ -15,7 +15,7 @@ import (
 
 type StudyTimetableService interface {
 	GetStudyTimetableByNumber(timetableNumber string) (models.StudyTimetable, error)
-	GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusClassNumber, streamNumber string) ([]responses.StudyTimetables, error)
+	GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber string) ([]responses.StudyTimetables, error)
 }
 
 type studyTimetableService struct {
@@ -43,9 +43,9 @@ func (s *studyTimetableService) GetStudyTimetableByNumber(timetableNumber string
 	return timetable, nil
 }
 
-func (s *studyTimetableService) GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusClassNumber, streamNumber string) ([]responses.StudyTimetables, error) {
+func (s *studyTimetableService) GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber string) ([]responses.StudyTimetables, error) {
 	var err error
-	timetables, err := s.repo.FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusClassNumber, streamNumber)
+	timetables, err := s.repo.FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,7 @@ type StudyTimetableRepository interface {
 	DeleteStudyTimetable(timetable models.StudyTimetable) error
 	FindStudyTimetableByNumber(number string) (models.StudyTimetable, error)
 	FindStudyTimetableByID(id uint) (models.StudyTimetable, error)
-	FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusClassNumber, streamNumber string) ([]models.StudyTimetable, error)
+	FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error)
 	ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, campusClassNumber, streamNumber, studyPeriodNumber string) (bool, error)
 }
 
@@ -67,7 +67,7 @@ func (r *studyTimetableRepository) FindStudyTimetableByID(id uint) (models.Study
 	return timetable, nil
 }
 
-func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusClassNumber, streamNumber string) ([]models.StudyTimetable, error) {
+func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error) {
 	var timetables []models.StudyTimetable
 
 	query := r.DB
@@ -89,8 +89,17 @@ func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, use
 	if campusNumber != "" {
 		query = query.Where("campus_number = ?", campusNumber)
 	}
+	if campusCurriculumNumber != "" {
+		query = query.Where("campus_curriculum_number = ?", campusCurriculumNumber)
+	}
+	if academicYearNumber != "" {
+		query = query.Where("academic_year_number = ?", academicYearNumber)
+	}
 	if campusClassNumber != "" {
 		query = query.Where("campus_class_number = ?", campusClassNumber)
+	}
+	if classNumber != "" {
+		query = query.Where("class_number = ?", classNumber)
 	}
 	if streamNumber != "" {
 		query = query.Where("stream_number = ?", streamNumber)
