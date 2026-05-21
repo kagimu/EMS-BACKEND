@@ -14,6 +14,7 @@ type StudyTimetableRepository interface {
 	FindStudyTimetableByNumber(number string) (models.StudyTimetable, error)
 	FindStudyTimetableByID(id uint) (models.StudyTimetable, error)
 	FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error)
+	ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, classNumber, streamNumber, studyPeriodNumber string) (bool, error)
 }
 
 type studyTimetableRepository struct {
@@ -101,4 +102,20 @@ func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, use
 	}
 
 	return timetables, nil
+}
+
+func (r *studyTimetableRepository) ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, classNumber, streamNumber, studyPeriodNumber string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&models.StudyTimetable{}).
+		Where("school_number = ?", schoolNumber).
+		Where("campus_number = ?", campusNumber).
+		Where("level_number = ?", levelNumber).
+		Where("class_number = ?", classNumber).
+		Where("stream_number = ?", streamNumber).
+		Where("study_period_number = ?", studyPeriodNumber).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

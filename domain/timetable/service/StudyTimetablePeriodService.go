@@ -82,14 +82,22 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 		return err
 	}
 
-	// --- Within-request duplicate check (day + slot) ---
-	seenSlots := make(map[string]bool)
-	for _, periodItem := range request.Periods {
-		key := strings.ToUpper(periodItem.Day) + "|" + periodItem.SlotNumber
-		if seenSlots[key] {
-			return fmt.Errorf("duplicate period in request: day '%s' with slot '%s' appears more than once", periodItem.Day, periodItem.SlotNumber)
-		}
-		seenSlots[key] = true
+	// --- Timetable-level duplicate check ---
+	// Prevent creating a duplicate timetable for the same school, campus, level,
+	// class, stream, and study period combination.
+	exists, err := s.timetableRepo.ExistsStudyTimetable(
+		campus.SchoolNumber,
+		campusClass.CampusNumber,
+		campusClass.CampusLevelNumber,
+		campusClass.ClassNumber,
+		request.StreamNumber,
+		request.StudyPeriodNumber,
+	)
+	if err != nil {
+		return errors.New("error checking for duplicate timetable: " + err.Error())
+	}
+	if exists {
+		return errors.New("a timetable already exists for this school, campus, level, class, stream, and study period")
 	}
 
 	studyTimetable := models.StudyTimetable{
@@ -101,6 +109,7 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 		StudyPeriodNumber: request.StudyPeriodNumber,
 		CampusNumber:      campusClass.CampusNumber,
 		ClassNumber:       campusClass.ClassNumber,
+		LevelNumber:       campusClass.CampusLevelNumber,
 		SchoolNumber:      campus.SchoolNumber,
 	}
 

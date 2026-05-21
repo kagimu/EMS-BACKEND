@@ -47,6 +47,7 @@ type StudyTimetable struct {
 	UserNumber        string             `json:"user_number" gorm:"size:36;not null"`
 	SchoolNumber      string             `json:"school_number" gorm:"size:36;not null"`
 	CampusNumber      string             `json:"campus_number" gorm:"size:36;not null"`
+	LevelNumber       string             `json:"level_number" gorm:"size:36"`
 	ClassNumber       string             `json:"class_number" gorm:"size:36;not null"`
 	StreamNumber      string             `json:"stream_number" gorm:"size:36;not null"`
 	Stream            classModels.Stream `json:"stream" gorm:"foreignkey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
