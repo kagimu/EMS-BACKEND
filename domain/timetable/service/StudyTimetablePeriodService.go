@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	settingsRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	studyPeriodRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
@@ -235,7 +236,42 @@ func (s *studyTimetablePeriodService) ListStudyTimetablePeriods(studyTimetableNu
 }
 
 func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day string) (responses.TimetablePeriodsResponse, error) {
-	// Get all periods
+	// Look up the timetable to get its number fields
+	var (
+		schoolNumber, campusNumber, levelNumber string
+		classNumber, streamNum, academicYearNumber string
+		campusCurriculumNumber, curriculumNumber, studyPeriodNumber string
+	)
+
+	if studyTimetableNumber != "" {
+		timetable, err := s.timetableRepo.FindStudyTimetableByNumber(studyTimetableNumber)
+		if err == nil && timetable.Number != "" {
+			schoolNumber = timetable.SchoolNumber
+			campusNumber = timetable.CampusNumber
+			levelNumber = timetable.LevelNumber
+			streamNum = timetable.StreamNumber
+			academicYearNumber = timetable.AcademicYearNumber
+			campusCurriculumNumber = timetable.CampusCurriculumNumber
+			studyPeriodNumber = timetable.StudyPeriodNumber
+
+			// Resolve class_number via campus_class → curriculum_class → class
+			campusClass, err := repositories.GetCampusClassByNumber(timetable.CampusClassNumber)
+			if err == nil {
+				classNumber = campusClass.ClassNumber
+			}
+
+			// Resolve curriculum_number via campus_curriculum → school_curriculum
+			if campusCurriculumNumber != "" {
+				campusCurriculum, err := repositories2.GetCampusCurriculumByNumber(campusCurriculumNumber)
+				if err == nil && campusCurriculum.SchoolCurriculumNumber != "" {
+					schoolCurriculum, err := schoolRepositories.GetSchoolCurriculumByNumber(campusCurriculum.SchoolCurriculumNumber)
+					if err == nil {
+						curriculumNumber = schoolCurriculum.CurriculumNumber
+					}
+				}
+			}
+		}
+	}
 
 	// Convert to response structure
 	var days []responses.DayPeriods
@@ -284,8 +320,17 @@ func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetab
 	}
 
 	return responses.TimetablePeriodsResponse{
-		StudyTimetableNumber: studyTimetableNumber,
-		Days:                 days,
+		StudyTimetableNumber:   studyTimetableNumber,
+		Days:                   days,
+		SchoolNumber:           schoolNumber,
+		CampusNumber:           campusNumber,
+		LevelNumber:            levelNumber,
+		ClassNumber:            classNumber,
+		StreamNumber:           streamNum,
+		AcademicYearNumber:     academicYearNumber,
+		CampusCurriculumNumber: campusCurriculumNumber,
+		CurriculumNumber:       curriculumNumber,
+		StudyPeriodNumber:      studyPeriodNumber,
 	}, nil
 }
 

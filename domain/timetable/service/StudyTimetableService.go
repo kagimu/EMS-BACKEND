@@ -70,10 +70,24 @@ func (s *studyTimetableService) GetAllStudyTimetables(studyPeriodNumber, userNum
 			campusName = campus.Name
 		}
 
-		var className string
+		// Resolve class_number via campus_class → curriculum_class → class
+		var className, classNumber string
 		campusClass, err := repositories3.GetCampusClassByNumber(timetable.CampusClassNumber)
 		if err == nil {
 			className = campusClass.ClassName
+			classNumber = campusClass.ClassNumber
+		}
+
+		// Resolve curriculum_number via campus_curriculum → school_curriculum
+		var curriculumNumber string
+		if timetable.CampusCurriculumNumber != "" {
+			campusCurriculum, err := repositories2.GetCampusCurriculumByNumber(timetable.CampusCurriculumNumber)
+			if err == nil && campusCurriculum.SchoolCurriculumNumber != "" {
+				schoolCurriculum, err := repositories.GetSchoolCurriculumByNumber(campusCurriculum.SchoolCurriculumNumber)
+				if err == nil {
+					curriculumNumber = schoolCurriculum.CurriculumNumber
+				}
+			}
 		}
 
 		var streamName string
@@ -101,15 +115,25 @@ func (s *studyTimetableService) GetAllStudyTimetables(studyPeriodNumber, userNum
 		}
 
 		response = append(response, responses.StudyTimetables{
-			Name:         timetable.Name,
-			Number:       timetable.Number,
-			Status:       timetable.Status,
-			School:       schoolName,
-			Campus:       campusName,
-			CLass:        className,
-			Stream:       streamName,
-			StudyPeriod:  studyPeriodName.Name,
-			AcademicYear: academicYear.AcademicYearName,
+			Name:                   timetable.Name,
+			Number:                 timetable.Number,
+			Status:                 timetable.Status,
+			School:                 schoolName,
+			Campus:                 campusName,
+			CLass:                  className,
+			Stream:                 streamName,
+			StudyPeriod:            studyPeriodName.Name,
+			AcademicYear:           academicYear.AcademicYearName,
+			// Number fields
+			SchoolNumber:           timetable.SchoolNumber,
+			CampusNumber:           timetable.CampusNumber,
+			LevelNumber:            timetable.LevelNumber,
+			ClassNumber:            classNumber,
+			StreamNumber:           timetable.StreamNumber,
+			AcademicYearNumber:     timetable.AcademicYearNumber,
+			CampusCurriculumNumber: timetable.CampusCurriculumNumber,
+			CurriculumNumber:       curriculumNumber,
+			StudyPeriodNumber:      timetable.StudyPeriodNumber,
 		})
 	}
 
