@@ -141,7 +141,7 @@ func (s *studyTimetableService) DeleteStudyTimetable(timetableNumber string) err
 		return errors.New("error deleting timetable periods: " + err.Error())
 	}
 
-	if err := s.repo.DeleteStudyTimetable(timetable); err != nil {
+	if err := s.repo.DeleteStudyTimetable(timetable, tx); err != nil {
 		tx.Rollback()
 		return errors.New("error deleting study timetable: " + err.Error())
 	}

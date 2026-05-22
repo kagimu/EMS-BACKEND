@@ -10,7 +10,7 @@ import (
 type StudyTimetableRepository interface {
 	SaveStudyTimetable(timetable models.StudyTimetable, txs ...*gorm.DB) error
 	UpdateStudyTimetable(timetable *models.StudyTimetable) error
-	DeleteStudyTimetable(timetable models.StudyTimetable) error
+	DeleteStudyTimetable(timetable models.StudyTimetable, txs ...*gorm.DB) error
 	FindStudyTimetableByNumber(number string) (models.StudyTimetable, error)
 	FindStudyTimetableByID(id uint) (models.StudyTimetable, error)
 	FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error)
@@ -37,8 +37,12 @@ func (r *studyTimetableRepository) UpdateStudyTimetable(timetable *models.StudyT
 	return r.DB.Save(timetable).Error
 }
 
-func (r *studyTimetableRepository) DeleteStudyTimetable(timetable models.StudyTimetable) error {
-	return r.DB.Unscoped().Delete(&timetable).Error
+func (r *studyTimetableRepository) DeleteStudyTimetable(timetable models.StudyTimetable, txs ...*gorm.DB) error {
+	db := r.DB
+	if len(txs) > 0 {
+		db = txs[0]
+	}
+	return db.Unscoped().Delete(&timetable).Error
 }
 
 func (r *studyTimetableRepository) FindStudyTimetableByNumber(number string) (models.StudyTimetable, error) {
