@@ -40,7 +40,7 @@ func CreateStudyTimetablePeriod(c *gin.Context) {
 }
 
 func UpdateStudyTimetablePeriod(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
@@ -59,7 +59,7 @@ func UpdateStudyTimetablePeriod(c *gin.Context) {
 	}
 
 	periodService := getStudyTimetablePeriodService()
-	if err := periodService.UpdateStudyTimetablePeriod(periodNumber, payload); err != nil {
+	if err := periodService.UpdateStudyTimetablePeriod(periodNumber, payload, user.Number); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
