@@ -194,6 +194,39 @@ func (s *studyTimetablePeriodService) UpdateStudyTimetablePeriod(periodNumber st
 		return errors.New("error finding study timetable period: " + err.Error())
 	}
 
+	if period.Number == "" {
+		return errors.New("study timetable period not found")
+	}
+
+	if request.Day != "" {
+		period.Day = request.Day
+		period.DayCode = mapDayToCode(request.Day)
+	}
+
+	if request.SlotNumber != "" {
+		slot, err := s.slotRepo.FindTimetableSlotByNumber(request.SlotNumber)
+		if err != nil {
+			return errors.New("error finding timetable slot: " + err.Error())
+		}
+		if slot.Number == "" {
+			return errors.New("timetable slot not found")
+		}
+		period.StartTime = slot.StartTime
+		period.EndTime = slot.EndTime
+	}
+
+	if request.TaskNumber != "" {
+		task, err := s.taskRepo.FindTimetableTaskByNumber(request.TaskNumber)
+		if err != nil {
+			return errors.New("error finding timetable task: " + err.Error())
+		}
+		if task.Number == "" {
+			return errors.New("timetable task not found")
+		}
+		period.TaskType = task.Type
+		period.Task = task.Name
+	}
+
 	return s.periodRepo.UpdateStudyTimetablePeriod(&period)
 }
 
