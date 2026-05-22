@@ -171,6 +171,8 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 				StartTime:            slot.StartTime,
 				EndTime:              slot.EndTime,
 				TaskType:             task.Type,
+				TaskNumber:           periodItem.TaskNumber,
+				SlotNumber:           periodItem.SlotNumber,
 				UserNumber:           userNumber,
 				Task:                 task.Name,
 			}
@@ -248,6 +250,8 @@ func (s *studyTimetablePeriodService) UpdateStudyTimetablePeriod(studyTimetableN
 				EndTime:              slot.EndTime,
 				Task:                 task.Name,
 				TaskType:             task.Type,
+				TaskNumber:           periodItem.TaskNumber,
+				SlotNumber:           periodItem.SlotNumber,
 				UserNumber:           userNumber,
 			}
 
@@ -361,11 +365,11 @@ func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetab
 				PeriodNumber: period.Number,
 				TaskName:     period.Task,
 				TaskType:     period.TaskType,
-				TaskNumber:   period.Number,
+				TaskNumber:   period.TaskNumber,
 				StartTime:    period.StartTime,
 				EndTime:      period.EndTime,
 				TimeSlot:     timeSlot,
-				SlotNumber:   "", // We don't store slot number in period, would need model update
+				SlotNumber:   period.SlotNumber,
 				StreamNumber: period.StreamNumber,
 				UserNumber:   period.UserNumber,
 			}
