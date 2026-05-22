@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
@@ -20,11 +21,12 @@ type StudyTimetableService interface {
 }
 
 type studyTimetableService struct {
-	repo repository.StudyTimetableRepository
+	repo       repository.StudyTimetableRepository
+	periodRepo repository.StudyTimetablePeriodRepository
 }
 
-func NewStudyTimetableService(repo repository.StudyTimetableRepository) StudyTimetableService {
-	return &studyTimetableService{repo: repo}
+func NewStudyTimetableService(repo repository.StudyTimetableRepository, periodRepo repository.StudyTimetablePeriodRepository) StudyTimetableService {
+	return &studyTimetableService{repo: repo, periodRepo: periodRepo}
 }
 
 func (s *studyTimetableService) GetStudyTimetableByNumber(timetableNumber string) (models.StudyTimetable, error) {
@@ -128,5 +130,21 @@ func (s *studyTimetableService) DeleteStudyTimetable(timetableNumber string) err
 		return errors.New("study timetable not found")
 	}
 
-	return s.repo.DeleteStudyTimetable(timetable)
+	// Delete child periods and parent timetable in a single transaction
+	tx := config.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if err := s.periodRepo.DeletePeriodsByStudyTimetableNumber(timetableNumber, tx); err != nil {
+		tx.Rollback()
+		return errors.New("error deleting timetable periods: " + err.Error())
+	}
+
+	if err := s.repo.DeleteStudyTimetable(timetable); err != nil {
+		tx.Rollback()
+		return errors.New("error deleting study timetable: " + err.Error())
+	}
+
+	return tx.Commit().Error
 }

@@ -169,7 +169,8 @@ func getStudyTimetablePeriodService() service.StudyTimetablePeriodService {
 
 func getStudyTimetableService() service.StudyTimetableService {
 	timetableRepo := repository.NewStudyTimetableRepository(config.DB)
-	return service.NewStudyTimetableService(timetableRepo)
+	periodRepo := repository.NewStudyTimetablePeriodRepository(config.DB)
+	return service.NewStudyTimetableService(timetableRepo, periodRepo)
 }
 
 func GetStudyTimetable(c *gin.Context) {
