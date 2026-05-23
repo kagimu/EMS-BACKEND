@@ -10,6 +10,9 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	settingsRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
+	studyPeriodRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
+	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
@@ -20,7 +23,7 @@ import (
 
 type StudyTimetablePeriodService interface {
 	CreateStudyTimetablePeriod(request requests.CreateStudyTimetablePeriodRequest, userNumber string) error
-	UpdateStudyTimetablePeriod(periodNumber string, request requests.UpdateStudyTimetablePeriodRequest) error
+	UpdateStudyTimetablePeriod(studyTimetableNumber string, request requests.UpdateStudyTimetablePeriodRequest, userNumber string) error
 	DeleteStudyTimetablePeriod(periodNumber string) error
 	GetStudyTimetablePeriodByNumber(periodNumber string) (models.StudyTimetablePeriod, error)
 	ListStudyTimetablePeriods(studyTimetableNumber, streamNumber, day string) ([]models.StudyTimetablePeriod, error)
@@ -82,16 +85,49 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 		return err
 	}
 
+	// Fetch CampusLevel to get CampusCurriculumNumber
+	campusLevel, err := settingsRepositories.GetCampusLevelByNumber(campusClass.CampusLevelNumber)
+	if err != nil {
+		return errors.New("error fetching campus level: " + err.Error())
+	}
+
+	// Fetch StudyPeriod to get AcademicYearNumber
+	studyPeriod, err := studyPeriodRepositories.GetStudyPeriodByNumber(request.StudyPeriodNumber)
+	if err != nil {
+		return errors.New("error fetching study period: " + err.Error())
+	}
+
+	// --- Timetable-level duplicate check ---
+	// Prevent creating a duplicate timetable for the same school, campus, level,
+	// class (campus_class), stream, and study period combination.
+	exists, err := s.timetableRepo.ExistsStudyTimetable(
+		campus.SchoolNumber,
+		campusClass.CampusNumber,
+		campusClass.CampusLevelNumber,
+		campusClass.Number,
+		request.StreamNumber,
+		request.StudyPeriodNumber,
+	)
+	if err != nil {
+		return errors.New("error checking for duplicate timetable: " + err.Error())
+	}
+	if exists {
+		return errors.New("a timetable already exists for this school, campus, level, class, stream, and study period")
+	}
+
 	studyTimetable := models.StudyTimetable{
-		Number:            uuid.NewV4().String(),
-		Name:              "StudyTimetablePeriod",
-		Status:            constants.StatusDraft,
-		UserNumber:        userNumber,
-		StreamNumber:      request.StreamNumber,
-		StudyPeriodNumber: request.StudyPeriodNumber,
-		CampusNumber:      campusClass.CampusNumber,
-		ClassNumber:       campusClass.ClassNumber,
-		SchoolNumber:      campus.SchoolNumber,
+		Number:                 uuid.NewV4().String(),
+		Name:                   "StudyTimetablePeriod",
+		Status:                 constants.StatusDraft,
+		UserNumber:             userNumber,
+		StreamNumber:           request.StreamNumber,
+		StudyPeriodNumber:      request.StudyPeriodNumber,
+		CampusNumber:           campusClass.CampusNumber,
+		CampusClassNumber:      campusClass.Number,
+		LevelNumber:            campusClass.CampusLevelNumber,
+		SchoolNumber:           campus.SchoolNumber,
+		CampusCurriculumNumber: campusLevel.CampusCurriculumNumber,
+		AcademicYearNumber:     studyPeriod.AcademicYearNumber,
 	}
 
 	return config.DB.Transaction(func(tx *gorm.DB) error {
@@ -135,6 +171,8 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 				StartTime:            slot.StartTime,
 				EndTime:              slot.EndTime,
 				TaskType:             task.Type,
+				TaskNumber:           periodItem.TaskNumber,
+				SlotNumber:           periodItem.SlotNumber,
 				UserNumber:           userNumber,
 				Task:                 task.Name,
 			}
@@ -148,17 +186,82 @@ func (s *studyTimetablePeriodService) CreateStudyTimetablePeriod(request request
 	})
 }
 
-func (s *studyTimetablePeriodService) UpdateStudyTimetablePeriod(periodNumber string, request requests.UpdateStudyTimetablePeriodRequest) error {
-	if periodNumber == "" {
-		return errors.New("period number is required")
+func (s *studyTimetablePeriodService) UpdateStudyTimetablePeriod(studyTimetableNumber string, request requests.UpdateStudyTimetablePeriodRequest, userNumber string) error {
+	if studyTimetableNumber == "" {
+		return errors.New("study timetable number is required")
 	}
 
-	period, err := s.periodRepo.FindStudyTimetablePeriodByNumber(periodNumber)
+	timetable, err := s.timetableRepo.FindStudyTimetableByNumber(studyTimetableNumber)
 	if err != nil {
-		return errors.New("error finding study timetable period: " + err.Error())
+		return errors.New("error finding study timetable: " + err.Error())
+	}
+	if timetable.Number == "" {
+		return errors.New("study timetable not found")
 	}
 
-	return s.periodRepo.UpdateStudyTimetablePeriod(&period)
+	if request.StreamNumber == "" {
+		return errors.New("stream number is required")
+	}
+	if len(request.Periods) == 0 {
+		return errors.New("at least one study timetable period is required")
+	}
+
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		// Clear existing periods for this timetable
+		if err := s.periodRepo.DeletePeriodsByStudyTimetableNumber(studyTimetableNumber, tx); err != nil {
+			return errors.New("failed to remove existing periods: " + err.Error())
+		}
+
+		// Recreate periods
+		for _, periodItem := range request.Periods {
+			if periodItem.Day == "" {
+				return errors.New("period day is required")
+			}
+			if periodItem.SlotNumber == "" {
+				return errors.New("period slot number is required")
+			}
+			if periodItem.TaskNumber == "" {
+				return errors.New("period task number is required")
+			}
+
+			slot, err := s.slotRepo.FindTimetableSlotByNumber(periodItem.SlotNumber)
+			if err != nil {
+				return errors.New("error finding timetable slot: " + err.Error())
+			}
+			if slot.Number == "" {
+				return errors.New("timetable slot not found")
+			}
+
+			task, err := s.taskRepo.FindTimetableTaskByNumber(periodItem.TaskNumber)
+			if err != nil {
+				return errors.New("error finding timetable task: " + err.Error())
+			}
+			if task.Number == "" {
+				return errors.New("timetable task not found")
+			}
+
+			period := models.StudyTimetablePeriod{
+				Number:               uuid.NewV4().String(),
+				StudyTimetableNumber: timetable.Number,
+				StreamNumber:         request.StreamNumber,
+				Day:                  periodItem.Day,
+				DayCode:              mapDayToCode(periodItem.Day),
+				StartTime:            slot.StartTime,
+				EndTime:              slot.EndTime,
+				Task:                 task.Name,
+				TaskType:             task.Type,
+				TaskNumber:           periodItem.TaskNumber,
+				SlotNumber:           periodItem.SlotNumber,
+				UserNumber:           userNumber,
+			}
+
+			if err := s.periodRepo.SaveStudyTimetablePeriod(period, tx); err != nil {
+				return errors.New("error saving study timetable period: " + err.Error())
+			}
+		}
+
+		return nil
+	})
 }
 
 func (s *studyTimetablePeriodService) DeleteStudyTimetablePeriod(periodNumber string) error {
@@ -200,7 +303,42 @@ func (s *studyTimetablePeriodService) ListStudyTimetablePeriods(studyTimetableNu
 }
 
 func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetableNumber, streamNumber, day string) (responses.TimetablePeriodsResponse, error) {
-	// Get all periods
+	// Look up the timetable to get its number fields
+	var (
+		schoolNumber, campusNumber, levelNumber string
+		classNumber, streamNum, academicYearNumber string
+		campusCurriculumNumber, curriculumNumber, studyPeriodNumber string
+	)
+
+	if studyTimetableNumber != "" {
+		timetable, err := s.timetableRepo.FindStudyTimetableByNumber(studyTimetableNumber)
+		if err == nil && timetable.Number != "" {
+			schoolNumber = timetable.SchoolNumber
+			campusNumber = timetable.CampusNumber
+			levelNumber = timetable.LevelNumber
+			streamNum = timetable.StreamNumber
+			academicYearNumber = timetable.AcademicYearNumber
+			campusCurriculumNumber = timetable.CampusCurriculumNumber
+			studyPeriodNumber = timetable.StudyPeriodNumber
+
+			// Resolve class_number via campus_class → curriculum_class → class
+			campusClass, err := repositories.GetCampusClassByNumber(timetable.CampusClassNumber)
+			if err == nil {
+				classNumber = campusClass.ClassNumber
+			}
+
+			// Resolve curriculum_number via campus_curriculum → school_curriculum
+			if campusCurriculumNumber != "" {
+				campusCurriculum, err := repositories2.GetCampusCurriculumByNumber(campusCurriculumNumber)
+				if err == nil && campusCurriculum.SchoolCurriculumNumber != "" {
+					schoolCurriculum, err := schoolRepositories.GetSchoolCurriculumByNumber(campusCurriculum.SchoolCurriculumNumber)
+					if err == nil {
+						curriculumNumber = schoolCurriculum.CurriculumNumber
+					}
+				}
+			}
+		}
+	}
 
 	// Convert to response structure
 	var days []responses.DayPeriods
@@ -227,11 +365,11 @@ func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetab
 				PeriodNumber: period.Number,
 				TaskName:     period.Task,
 				TaskType:     period.TaskType,
-				TaskNumber:   period.Number,
+				TaskNumber:   period.TaskNumber,
 				StartTime:    period.StartTime,
 				EndTime:      period.EndTime,
 				TimeSlot:     timeSlot,
-				SlotNumber:   "", // We don't store slot number in period, would need model update
+				SlotNumber:   period.SlotNumber,
 				StreamNumber: period.StreamNumber,
 				UserNumber:   period.UserNumber,
 			}
@@ -249,8 +387,17 @@ func (s *studyTimetablePeriodService) GetStructuredTimetablePeriods(studyTimetab
 	}
 
 	return responses.TimetablePeriodsResponse{
-		StudyTimetableNumber: studyTimetableNumber,
-		Days:                 days,
+		StudyTimetableNumber:   studyTimetableNumber,
+		Days:                   days,
+		SchoolNumber:           schoolNumber,
+		CampusNumber:           campusNumber,
+		LevelNumber:            levelNumber,
+		ClassNumber:            classNumber,
+		StreamNumber:           streamNum,
+		AcademicYearNumber:     academicYearNumber,
+		CampusCurriculumNumber: campusCurriculumNumber,
+		CurriculumNumber:       curriculumNumber,
+		StudyPeriodNumber:      studyPeriodNumber,
 	}, nil
 }
 

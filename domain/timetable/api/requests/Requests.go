@@ -102,6 +102,6 @@ type CreateStudyTimetablePeriodRequest struct {
 }
 
 type UpdateStudyTimetablePeriodRequest struct {
-	StudyTimetableNumber string `json:"study_timetable_number" binding:"required"`
-	CreateStudyTimetablePeriodRequest
+	StreamNumber string                     `json:"stream_number" binding:"required"`
+	Periods      []StudyTimetablePeriodItem `json:"periods" binding:"required,min=1,dive"`
 }

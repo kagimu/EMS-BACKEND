@@ -521,7 +521,7 @@ func createPaymentResponse(invoiceTransaction models.InvoiceTransaction) respons
 func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) (responses.MinInvoiceResponse, error) {
 
 	if len(invoicePaymentRequest.Credits) >= 1 {
-		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits)
+		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits, invoicePaymentRequest)
 	}
 
 	var minInvoiceResponse responses.MinInvoiceResponse
@@ -664,17 +664,10 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 		return transactionResponse, err
 	}
 
-	trnRefNo := generateNewInvoiceNumber()
-
-	nextBlc, err := ComputeNextBalance(accountTopUpRequest.Amount, constants.StatementTypeIn, accountTopUpRequest.UserNumber)
-	if err != nil {
-		return transactionResponse, errors.New("computing next balance error: " + err.Error())
-	}
-
 	var clientReference, description string
 	if accountTopUpRequest.ClientReference != nil {
 		clientReference = *accountTopUpRequest.ClientReference
-		transaction, err := invoiceRepositories.GetTransactionByClientReference(clientReference, campus.Number)
+		transaction, err := invoiceRepositories.GetCreditByClientReference(clientReference, campus.Number)
 		if err != nil {
 			return transactionResponse, errors.New("Checking client reference error: " + err.Error())
 		}
@@ -688,52 +681,27 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 		description = *accountTopUpRequest.Description
 	}
 
-	newStatement := models.Statement{
-		Number:        uuid.NewV4().String(),
-		SchoolNumber:  student.SchoolNumber,
-		AddedByNumber: currentUserNumber,
-		RefNumber:     trnRefNo,
-		CampusNumber:  campus.Number,
-		UserNumber:    accountTopUpRequest.UserNumber,
-		Type:          constants.StatementTypeIn,
-		Description:   fmt.Sprintf("Credit received %s:\n %s", clientReference, description),
-		Amount:        accountTopUpRequest.Amount,
-		Balance:       nextBlc,
-		IssueDate:     paymentDate,
-	}
-
-	newTransaction := models.Transaction{
-		ClientReference: clientReference,
-		StatementNumber: newStatement.Number,
+	newTransaction := models.Credit{
 		Number:          uuid.NewV4().String(),
+		Amount:          accountTopUpRequest.Amount,
+		ClientReference: clientReference,
+		Description:     description,
 		Date:            paymentDate,
 		Status:          constants.StatusActive,
-		AmountInCredit:  accountTopUpRequest.Amount,
+		UserNumber:      accountTopUpRequest.UserNumber,
+		CampusNumber:    campus.Number,
+		SchoolNumber:    student.SchoolNumber,
+		AddedByNumber:   currentUserNumber,
 	}
 
-	err = config.DB.Transaction(func(tx *gorm.DB) error {
-		tx = invoiceTransactionRepository.UseTx(tx)
-
-		err := invoiceRepositories.SaveStatement(newStatement, tx)
-		if err != nil {
-			return errors.New("Creating credit statement error " + err.Error())
-		}
-
-		if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
-			return errors.New("Adding new creditentry error " + err.Error())
-		}
-
-		return nil
-	})
-
 	return responses.TransactionResponse{
-		Amount:            newStatement.Amount,
-		ReceiptNumber:     newStatement.RefNumber,
-		DateReceived:      newStatement.CreatedAt.Format(time.DateTime),
+		Amount:            newTransaction.Amount,
+		ReceiptNumber:     newTransaction.ClientReference,
+		DateReceived:      newTransaction.CreatedAt.Format(time.DateTime),
 		DatePaid:          newTransaction.Date.Format(time.DateOnly),
 		PaidBy:            student.Surname,
-		Description:       newStatement.Description,
-		AmountInCredit:    newTransaction.AmountInCredit,
+		Description:       newTransaction.Description,
+		AmountInCredit:    newTransaction.Amount,
 		TransactionNumber: newTransaction.Number,
 		Status:            newTransaction.Status,
 	}, err
@@ -742,7 +710,7 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string, tx *gorm.DB) (responses.MinInvoiceResponse, error) {
 
 	if len(invoicePaymentRequest.Credits) >= 1 {
-		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits)
+		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits, invoicePaymentRequest)
 	}
 
 	var minInvoiceResponse responses.MinInvoiceResponse
@@ -899,7 +867,7 @@ func validatePaymentDateAfter(date string, dateOfIssue time.Time) (time.Time, er
 	return paymentDate, nil
 }
 
-func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string) (responses.MinInvoiceResponse, error) {
+func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string, invoicePaymentRequest requests.InvoicePaymentRequest) (responses.MinInvoiceResponse, error) {
 
 	var minInvoiceResponse responses.MinInvoiceResponse
 
@@ -924,18 +892,18 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 
 	var totalCreditAmount float64
 
-	var creditTransactions = make([]models.Transaction, 0)
+	var creditTransactions = make([]models.Credit, 0)
 
 	for _, transactionNumber := range credits {
 
-		availableCredit, err := GetTransactionCredit(transactionNumber)
+		availableCredit, err := invoiceRepositories.FindCreditByNumber(transactionNumber)
 		if err != nil {
 			return minInvoiceResponse, err
 		}
 
-		if availableCredit.AmountInCredit > 0 {
+		if availableCredit.Amount > 0 {
 			creditTransactions = append(creditTransactions, availableCredit)
-			totalCreditAmount = totalCreditAmount + availableCredit.AmountInCredit
+			totalCreditAmount = totalCreditAmount + availableCredit.Amount
 		}
 
 	}
@@ -953,7 +921,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 	}
 
 	var payAmount float64
-
+	userNumber := invoice.Statement.UserNumber
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
 		tx = invoiceTransactionRepository.UseTx(tx)
@@ -962,8 +930,8 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 
 			payAmount = invoiceBalance
 
-			if creditTransaction.AmountInCredit < invoiceBalance {
-				payAmount = creditTransaction.AmountInCredit
+			if creditTransaction.Amount < invoiceBalance {
+				payAmount = creditTransaction.Amount
 			}
 
 			err = invoiceTransactionRepository.SaveInvoiceTransaction(models.InvoiceTransaction{
@@ -973,8 +941,84 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 				AddedByNumber:     currentUserNumber,
 			})
 
-			creditTransaction.AmountInCredit = creditTransaction.AmountInCredit - payAmount
-			_, err := invoiceRepositories.SaveTransaction(creditTransaction, tx)
+			// record the credit payment to appear on the statement and reduce the select credit
+
+			creditTransaction.Amount = creditTransaction.Amount - payAmount
+
+			_, err := invoiceRepositories.SaveCredit(creditTransaction, tx)
+
+			student, err := repositories.FindStudentByUserNumber(userNumber)
+			if err != nil {
+				return err
+			}
+
+			if student.Number == "" {
+				return errors.New("selected user is not a learner")
+			}
+
+			/*if student.Status != constants.StatusActive {
+				return transactionResponse, errors.New("the selected student is not active")
+			}*/
+
+			campus, err := repositories3.GetCampusByCampusClassNumber(student.CampusClassNumber)
+			if err != nil {
+				return errors.New("determine campus error: " + err.Error())
+			}
+
+			if campus.Number == "" {
+				return errors.New("could not determine campus for student: " + student.Surname)
+			}
+
+			paymentDate, err := validatePaymentDateAfter(invoicePaymentRequest.Date, time.Now())
+			if err != nil {
+				return err
+			}
+
+			trnRefNo := generateNewInvoiceNumber()
+
+			nextBlc, err := ComputeNextBalance(payAmount, constants.StatementTypeIn, userNumber)
+			if err != nil {
+				return errors.New("computing next balance error: " + err.Error())
+			}
+
+			newStatement := models.Statement{
+				Number:        uuid.NewV4().String(),
+				SchoolNumber:  student.SchoolNumber,
+				AddedByNumber: currentUserNumber,
+				RefNumber:     trnRefNo,
+				CampusNumber:  campus.Number,
+				UserNumber:    invoice.Statement.UserNumber,
+				Type:          constants.StatementTypeIn,
+				Description:   fmt.Sprintf("Credit applied from  %s:\n %s", creditTransaction.ClientReference, creditTransaction.Description),
+				Amount:        payAmount,
+				Balance:       nextBlc,
+				IssueDate:     paymentDate,
+			}
+
+			newTransaction := models.Transaction{
+				ClientReference: creditTransaction.ClientReference,
+				StatementNumber: newStatement.Number,
+				Number:          uuid.NewV4().String(),
+				Date:            paymentDate,
+				Status:          constants.StatusActive,
+				AmountInCredit:  payAmount,
+			}
+
+			err = config.DB.Transaction(func(tx *gorm.DB) error {
+				tx = invoiceTransactionRepository.UseTx(tx)
+
+				err := invoiceRepositories.SaveStatement(newStatement, tx)
+				if err != nil {
+					return errors.New("Creating credit statement error " + err.Error())
+				}
+
+				if _, err = invoiceRepositories.SaveTransaction(newTransaction, tx); err != nil {
+					return errors.New("Adding new creditentry error " + err.Error())
+				}
+
+				return nil
+			})
+
 			if err != nil {
 				return errors.New("Updating credit error ")
 			}

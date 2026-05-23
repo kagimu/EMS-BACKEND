@@ -10,10 +10,11 @@ import (
 type StudyTimetableRepository interface {
 	SaveStudyTimetable(timetable models.StudyTimetable, txs ...*gorm.DB) error
 	UpdateStudyTimetable(timetable *models.StudyTimetable) error
-	DeleteStudyTimetable(timetable models.StudyTimetable) error
+	DeleteStudyTimetable(timetable models.StudyTimetable, txs ...*gorm.DB) error
 	FindStudyTimetableByNumber(number string) (models.StudyTimetable, error)
 	FindStudyTimetableByID(id uint) (models.StudyTimetable, error)
-	FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error)
+	FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error)
+	ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, campusClassNumber, streamNumber, studyPeriodNumber string) (bool, error)
 }
 
 type studyTimetableRepository struct {
@@ -36,8 +37,12 @@ func (r *studyTimetableRepository) UpdateStudyTimetable(timetable *models.StudyT
 	return r.DB.Save(timetable).Error
 }
 
-func (r *studyTimetableRepository) DeleteStudyTimetable(timetable models.StudyTimetable) error {
-	return r.DB.Unscoped().Delete(&timetable).Error
+func (r *studyTimetableRepository) DeleteStudyTimetable(timetable models.StudyTimetable, txs ...*gorm.DB) error {
+	db := r.DB
+	if len(txs) > 0 {
+		db = txs[0]
+	}
+	return db.Unscoped().Delete(&timetable).Error
 }
 
 func (r *studyTimetableRepository) FindStudyTimetableByNumber(number string) (models.StudyTimetable, error) {
@@ -66,7 +71,7 @@ func (r *studyTimetableRepository) FindStudyTimetableByID(id uint) (models.Study
 	return timetable, nil
 }
 
-func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error) {
+func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber string) ([]models.StudyTimetable, error) {
 	var timetables []models.StudyTimetable
 
 	query := r.DB
@@ -88,8 +93,23 @@ func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, use
 	if campusNumber != "" {
 		query = query.Where("campus_number = ?", campusNumber)
 	}
+	if campusCurriculumNumber != "" {
+		query = query.Where("campus_curriculum_number = ?", campusCurriculumNumber)
+	}
+	if academicYearNumber != "" {
+		query = query.Where("academic_year_number = ?", academicYearNumber)
+	}
+	if campusClassNumber != "" {
+		query = query.Where("campus_class_number = ?", campusClassNumber)
+	}
 	if classNumber != "" {
-		query = query.Where("class_number = ?", classNumber)
+		// class_number is not a direct column on study_timetables.
+		// Resolve: campus_classes.curriculum_class_number → curriculum_classes.class_number
+		subQuery := r.DB.Table("campus_classes").
+			Select("campus_classes.number").
+			Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+			Where("curriculum_classes.class_number = ?", classNumber)
+		query = query.Where("campus_class_number IN (?)", subQuery)
 	}
 	if streamNumber != "" {
 		query = query.Where("stream_number = ?", streamNumber)
@@ -101,4 +121,20 @@ func (r *studyTimetableRepository) FindAllStudyTimetables(studyPeriodNumber, use
 	}
 
 	return timetables, nil
+}
+
+func (r *studyTimetableRepository) ExistsStudyTimetable(schoolNumber, campusNumber, levelNumber, campusClassNumber, streamNumber, studyPeriodNumber string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&models.StudyTimetable{}).
+		Where("school_number = ?", schoolNumber).
+		Where("campus_number = ?", campusNumber).
+		Where("level_number = ?", levelNumber).
+		Where("campus_class_number = ?", campusClassNumber).
+		Where("stream_number = ?", streamNumber).
+		Where("study_period_number = ?", studyPeriodNumber).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

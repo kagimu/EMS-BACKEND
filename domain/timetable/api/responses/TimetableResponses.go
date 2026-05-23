@@ -17,15 +17,26 @@ type ClassResponse struct {
 }
 
 type StudyTimetables struct {
-	Name         string `json:"name"`
-	Number       string `json:"number"`
-	Status       string `json:"status"`
-	School       string `json:"school"`
-	Campus       string `json:"campus"`
-	CLass        string `json:"class"`
-	Stream       string `json:"stream"`
-	StudyPeriod  string `json:"study_period"`
-	AcademicYear string `json:"academic_year"`
+	Name                   string `json:"name"`
+	Number                 string `json:"number"`
+	Status                 string `json:"status"`
+	// Display names
+	School                 string `json:"school"`
+	Campus                 string `json:"campus"`
+	CLass                  string `json:"class"`
+	Stream                 string `json:"stream"`
+	StudyPeriod            string `json:"study_period"`
+	AcademicYear           string `json:"academic_year"`
+	// Number fields
+	SchoolNumber           string `json:"school_number"`
+	CampusNumber           string `json:"campus_number"`
+	LevelNumber            string `json:"level_number"`
+	ClassNumber            string `json:"class_number"`
+	StreamNumber           string `json:"stream_number"`
+	AcademicYearNumber     string `json:"academic_year_number"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	CurriculumNumber       string `json:"curriculum_number"`
+	StudyPeriodNumber      string `json:"study_period_number"`
 }
 
 type StudyingTimeBlockResponse struct {
@@ -81,9 +92,19 @@ type DayPeriods struct {
 }
 
 type TimetablePeriodsResponse struct {
-	StudyTimetableNumber string       `json:"study_timetable_number"`
-	Days                 []DayPeriods `json:"days"`
-	SLots                []string     `json:"slots"`
+	StudyTimetableNumber   string       `json:"study_timetable_number"`
+	Days                   []DayPeriods `json:"days"`
+	SLots                  []string     `json:"slots"`
+	// Timetable-level number fields
+	SchoolNumber           string       `json:"school_number"`
+	CampusNumber           string       `json:"campus_number"`
+	LevelNumber            string       `json:"level_number"`
+	ClassNumber            string       `json:"class_number"`
+	StreamNumber           string       `json:"stream_number"`
+	AcademicYearNumber     string       `json:"academic_year_number"`
+	CampusCurriculumNumber string       `json:"campus_curriculum_number"`
+	CurriculumNumber       string       `json:"curriculum_number"`
+	StudyPeriodNumber      string       `json:"study_period_number"`
 }
 
 type TimetableTaskResponse struct {

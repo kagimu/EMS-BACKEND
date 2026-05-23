@@ -40,7 +40,7 @@ func CreateStudyTimetablePeriod(c *gin.Context) {
 }
 
 func UpdateStudyTimetablePeriod(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
+	user, err := commons.GetUserFromHeader(c)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
@@ -59,7 +59,7 @@ func UpdateStudyTimetablePeriod(c *gin.Context) {
 	}
 
 	periodService := getStudyTimetablePeriodService()
-	if err := periodService.UpdateStudyTimetablePeriod(periodNumber, payload); err != nil {
+	if err := periodService.UpdateStudyTimetablePeriod(periodNumber, payload, user.Number); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
@@ -169,7 +169,8 @@ func getStudyTimetablePeriodService() service.StudyTimetablePeriodService {
 
 func getStudyTimetableService() service.StudyTimetableService {
 	timetableRepo := repository.NewStudyTimetableRepository(config.DB)
-	return service.NewStudyTimetableService(timetableRepo)
+	periodRepo := repository.NewStudyTimetablePeriodRepository(config.DB)
+	return service.NewStudyTimetableService(timetableRepo, periodRepo)
 }
 
 func GetStudyTimetable(c *gin.Context) {
@@ -212,17 +213,42 @@ func GetAllStudyTimetables(c *gin.Context) {
 	schoolNumber := c.Query("school_number")
 	levelNumber := c.Query("level_number")
 	campusNumber := c.Query("campus_number")
+	campusCurriculumNumber := c.Query("campus_curriculum_number")
+	academicYearNumber := c.Query("academic_year_number")
+	campusClassNumber := c.Query("campus_class_number")
 	classNumber := c.Query("class_number")
 	streamNumber := c.Query("stream_number")
 
 	timetableService := getStudyTimetableService()
-	timetables, err := timetableService.GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, classNumber, streamNumber)
+	timetables, err := timetableService.GetAllStudyTimetables(studyPeriodNumber, userNumber, status, schoolNumber, levelNumber, campusNumber, campusCurriculumNumber, academicYearNumber, campusClassNumber, classNumber, streamNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": timetables})
+}
+
+func DeleteStudyTimetable(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	timetableNumber := c.Param("timetable_number")
+	if timetableNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Timetable number is required"})
+		return
+	}
+
+	timetableService := getStudyTimetableService()
+	if err := timetableService.DeleteStudyTimetable(timetableNumber); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Study timetable deleted successfully"})
 }
 
 func AddPeriod(context *gin.Context) {

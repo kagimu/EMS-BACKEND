@@ -361,6 +361,7 @@ func SetupRoutes() *gin.Engine {
 			// StudyTimetable endpoints
 			timetable.GET("study-timetables", timetableController.GetAllStudyTimetables)
 			timetable.GET("study-timetables/:timetable_number", timetableController.GetStudyTimetable)
+			timetable.DELETE("study-timetables/:timetable_number", timetableController.DeleteStudyTimetable)
 
 			// StudyTimetablePeriod endpoints
 			timetable.POST("study-timetable-periods", timetableController.CreateStudyTimetablePeriod)
@@ -537,6 +538,8 @@ func SetupRoutes() *gin.Engine {
 				payments.POST("delete", invoiceController.DeletePayment)
 				payments.POST("prepaid", invoiceController.PrepaidDeposit)
 				payments.GET("prepaid", invoiceController.GetPrepaidBalance)
+				payments.POST("credits-new", invoiceController.CreateCredit)
+				payments.GET("credits-new", invoiceController.GetCreditsByUser)
 			}
 
 			invoices.POST("delete", invoiceController.DeleteInvoice)

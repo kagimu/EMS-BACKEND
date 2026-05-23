@@ -71,3 +71,22 @@ func GetCampusByCampusClassNumber(campusClassNumber string, tx ...*gorm.DB) (cam
 
 	return campus, nil
 }
+
+// GetCampusCurriculumByNumber fetches a CampusCurriculum by its number.
+// The returned struct includes SchoolCurriculumNumber which links to school_curricula.curriculum_number.
+func GetCampusCurriculumByNumber(campusCurriculumNumber string, tx ...*gorm.DB) (campusModel.CampusCurriculum, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var campusCurriculum campusModel.CampusCurriculum
+	if err := db.Where("number = ?", campusCurriculumNumber).First(&campusCurriculum).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return campusCurriculum, nil
+		}
+		return campusCurriculum, err
+	}
+	return campusCurriculum, nil
+}
+

@@ -40,17 +40,20 @@ type TimetableTask struct {
 
 type StudyTimetable struct {
 	gorm.Model
-	Number            string             `json:"number" gorm:"size:36;unique;not null"`
-	Name              string             `json:"name"`
-	StudyPeriodNumber string             `json:"study_period_number" gorm:"size:36;not null"`
-	Status            string             `json:"status" gorm:"size:36;not null"`
-	UserNumber        string             `json:"user_number" gorm:"size:36;not null"`
-	SchoolNumber      string             `json:"school_number" gorm:"size:36;not null"`
-	CampusNumber      string             `json:"campus_number" gorm:"size:36;not null"`
-	ClassNumber       string             `json:"class_number" gorm:"size:36;not null"`
-	StreamNumber      string             `json:"stream_number" gorm:"size:36;not null"`
-	Stream            classModels.Stream `json:"stream" gorm:"foreignkey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	StudyPeriod       models.StudyPeriod `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	Number                 string             `json:"number" gorm:"size:36;unique;not null"`
+	Name                   string             `json:"name"`
+	StudyPeriodNumber      string             `json:"study_period_number" gorm:"size:36;not null"`
+	Status                 string             `json:"status" gorm:"size:36;not null"`
+	UserNumber             string             `json:"user_number" gorm:"size:36;not null"`
+	SchoolNumber           string             `json:"school_number" gorm:"size:36;not null"`
+	CampusNumber           string             `json:"campus_number" gorm:"size:36;not null"`
+	LevelNumber            string             `json:"level_number" gorm:"size:36"`
+	CampusClassNumber      string             `json:"campus_class_number" gorm:"size:36;not null"`
+	StreamNumber           string             `json:"stream_number" gorm:"size:36;not null"`
+	CampusCurriculumNumber string             `json:"campus_curriculum_number" gorm:"size:36"`
+	AcademicYearNumber     string             `json:"academic_year_number" gorm:"size:36"`
+	Stream                 classModels.Stream `json:"stream" gorm:"foreignkey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
+	StudyPeriod            models.StudyPeriod `gorm:"foreignKey:StudyPeriodNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 }
 
 type StudyTimetablePeriod struct {
@@ -64,6 +67,8 @@ type StudyTimetablePeriod struct {
 	EndTime              string             `json:"end_time" gorm:"size:10;not null"`
 	Task                 string             `json:"task" gorm:"size:200;not null"`
 	TaskType             string             `json:"task_type" gorm:"size:100;not null"`
+	TaskNumber           string             `json:"task_number" gorm:"size:36"`
+	SlotNumber           string             `json:"slot_number" gorm:"size:36"`
 	UserNumber           string             `json:"user_number" gorm:"size:36;not null"`
 	User                 authModels.User    `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Stream               classModels.Stream `gorm:"foreignKey:StreamNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

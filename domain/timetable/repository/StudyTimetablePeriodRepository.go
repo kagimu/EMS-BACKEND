@@ -11,8 +11,10 @@ type StudyTimetablePeriodRepository interface {
 	SaveStudyTimetablePeriod(period models.StudyTimetablePeriod, txs ...*gorm.DB) error
 	UpdateStudyTimetablePeriod(period *models.StudyTimetablePeriod) error
 	DeleteStudyTimetablePeriod(period models.StudyTimetablePeriod) error
+	DeletePeriodsByStudyTimetableNumber(studyTimetableNumber string, txs ...*gorm.DB) error
 	FindStudyTimetablePeriodByNumber(number string) (models.StudyTimetablePeriod, error)
 	FindStudyTimetablePeriods(studyTimetableNumber, streamNumber, day string) ([]models.StudyTimetablePeriod, error)
+	ExistsStudyTimetablePeriodByDayAndTime(streamNumber, studyPeriodNumber, day, startTime, endTime string) (bool, error)
 }
 
 type studyTimetablePeriodRepository struct {
@@ -37,6 +39,14 @@ func (r *studyTimetablePeriodRepository) UpdateStudyTimetablePeriod(period *mode
 
 func (r *studyTimetablePeriodRepository) DeleteStudyTimetablePeriod(period models.StudyTimetablePeriod) error {
 	return r.DB.Unscoped().Delete(&period).Error
+}
+
+func (r *studyTimetablePeriodRepository) DeletePeriodsByStudyTimetableNumber(studyTimetableNumber string, txs ...*gorm.DB) error {
+	db := r.DB
+	if len(txs) > 0 {
+		db = txs[0]
+	}
+	return db.Unscoped().Where("study_timetable_number = ?", studyTimetableNumber).Delete(&models.StudyTimetablePeriod{}).Error
 }
 
 func (r *studyTimetablePeriodRepository) FindStudyTimetablePeriodByNumber(number string) (models.StudyTimetablePeriod, error) {
@@ -71,4 +81,20 @@ func (r *studyTimetablePeriodRepository) FindStudyTimetablePeriods(studyTimetabl
 	}
 
 	return periods, nil
+}
+
+func (r *studyTimetablePeriodRepository) ExistsStudyTimetablePeriodByDayAndTime(streamNumber, studyPeriodNumber, day, startTime, endTime string) (bool, error) {
+	var count int64
+	err := r.DB.Model(&models.StudyTimetablePeriod{}).
+		Joins("JOIN study_timetables ON study_timetables.number = study_timetable_periods.study_timetable_number").
+		Where("study_timetable_periods.stream_number = ?", streamNumber).
+		Where("study_timetables.study_period_number = ?", studyPeriodNumber).
+		Where("study_timetable_periods.day = ?", day).
+		Where("study_timetable_periods.start_time = ?", startTime).
+		Where("study_timetable_periods.end_time = ?", endTime).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
