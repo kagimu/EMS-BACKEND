@@ -694,8 +694,14 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 		AddedByNumber:   currentUserNumber,
 	}
 
+	cre, err := invoiceRepositories.SaveCredit(newTransaction)
+
+	if err != nil {
+		return transactionResponse, errors.New("Saving credit error: " + err.Error())
+	}
+
 	return responses.TransactionResponse{
-		Amount:            newTransaction.Amount,
+		Amount:            cre.Amount,
 		ReceiptNumber:     newTransaction.ClientReference,
 		DateReceived:      newTransaction.CreatedAt.Format(time.DateTime),
 		DatePaid:          newTransaction.Date.Format(time.DateOnly),
