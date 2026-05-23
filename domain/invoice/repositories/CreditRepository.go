@@ -49,8 +49,6 @@ func FindCreditsByUserNumber(userNumber string, tx ...*gorm.DB) ([]invoiceModels
 
 	var credits []invoiceModels.Credit
 	if err := db.
-		Preload("User").
-		Preload("AddedBy").
 		Where("user_number = ?", userNumber).
 		Order("date desc").
 		Find(&credits).Error; err != nil {
