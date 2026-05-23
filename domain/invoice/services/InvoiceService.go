@@ -940,13 +940,6 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 				payAmount = creditTransaction.Amount
 			}
 
-			err = invoiceTransactionRepository.SaveInvoiceTransaction(models.InvoiceTransaction{
-				InvoiceNumber:     invoice.Number,
-				TransactionNumber: creditTransaction.Number,
-				AmountPaidOff:     payAmount,
-				AddedByNumber:     currentUserNumber,
-			})
-
 			// record the credit payment to appear on the statement and reduce the select credit
 
 			creditTransaction.Amount = creditTransaction.Amount - payAmount
@@ -1009,6 +1002,13 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 				Status:          constants.StatusActive,
 				AmountInCredit:  payAmount,
 			}
+
+			err = invoiceTransactionRepository.SaveInvoiceTransaction(models.InvoiceTransaction{
+				InvoiceNumber:     invoice.Number,
+				TransactionNumber: newTransaction.Number,
+				AmountPaidOff:     payAmount,
+				AddedByNumber:     currentUserNumber,
+			})
 
 			err = config.DB.Transaction(func(tx *gorm.DB) error {
 				tx = invoiceTransactionRepository.UseTx(tx)
