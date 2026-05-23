@@ -244,6 +244,7 @@ func Init() error {
 		&invoiceModel.BillPaymentPlanInstallmentPayment{},
 		&serviceModel.Discount{},
 		&invoiceModel.Transaction{},
+		&invoiceModel.Credit{},
 		&invoiceModel.InvoiceTransaction{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
@@ -351,6 +352,7 @@ func Init() error {
 		&reportSettings.SubjectTeacherReport{},
 		&reportSettings.SubjectTeacherReportComment{},
 		&reportSettings.ReportSummaryCorrespondence{},
+		invoiceModel.Credit{},
 	)
 
 	if err != nil {

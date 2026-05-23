@@ -538,6 +538,8 @@ func SetupRoutes() *gin.Engine {
 				payments.POST("delete", invoiceController.DeletePayment)
 				payments.POST("prepaid", invoiceController.PrepaidDeposit)
 				payments.GET("prepaid", invoiceController.GetPrepaidBalance)
+				payments.POST("credits-new", invoiceController.CreateCredit)
+				payments.GET("credits-new", invoiceController.GetCreditsByUser)
 			}
 
 			invoices.POST("delete", invoiceController.DeleteInvoice)
