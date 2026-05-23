@@ -1003,13 +1003,6 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 				AmountInCredit:  payAmount,
 			}
 
-			err = invoiceTransactionRepository.SaveInvoiceTransaction(models.InvoiceTransaction{
-				InvoiceNumber:     invoice.Number,
-				TransactionNumber: newTransaction.Number,
-				AmountPaidOff:     payAmount,
-				AddedByNumber:     currentUserNumber,
-			})
-
 			err = config.DB.Transaction(func(tx *gorm.DB) error {
 				tx = invoiceTransactionRepository.UseTx(tx)
 
@@ -1022,7 +1015,14 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 					return errors.New("Adding new creditentry error " + err.Error())
 				}
 
-				return nil
+				err = invoiceTransactionRepository.SaveInvoiceTransaction(models.InvoiceTransaction{
+					InvoiceNumber:     invoice.Number,
+					TransactionNumber: newTransaction.Number,
+					AmountPaidOff:     payAmount,
+					AddedByNumber:     currentUserNumber,
+				})
+
+				return err
 			})
 
 			if err != nil {
