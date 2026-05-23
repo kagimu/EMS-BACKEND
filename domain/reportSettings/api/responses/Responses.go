@@ -106,6 +106,7 @@ type LeanStudent struct {
 	OtherName   string `json:"other_name"`
 	Gender      string `json:"gender"`
 	DateOfBirth string `json:"date_of_birth"`
+	ADN         string `json:"adn"`
 }
 
 type Assessments struct {

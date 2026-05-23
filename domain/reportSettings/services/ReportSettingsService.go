@@ -951,6 +951,7 @@ func CreateLeanStudent(student studentModel.Student) responses.LeanStudent {
 		OtherName:   commons.CapitalizeFirst(student.OtherName),
 		Gender:      student.Gender,
 		DateOfBirth: student.DateOfBirth,
+		ADN:         student.ADN,
 	}
 }
 
