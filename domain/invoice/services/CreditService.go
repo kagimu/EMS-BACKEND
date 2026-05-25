@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
-	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
@@ -64,17 +64,17 @@ func CreateCredit(payload requests.CreateCreditRequest, addedByNumber string) (r
 	}
 
 	credit := models.Credit{
-		Number:          uuid.NewV4().String(),
-		UserNumber:      payload.UserNumber,
-		SchoolNumber:    student.SchoolNumber,
-		CampusNumber:    campus.Number,
-		Amount:          payload.Amount,
-		Balance:         payload.Amount, // initially the balance is same as amount
-		Date:            date,
-		Status:          constants.StatusActive,
-		Description:     desc,
-		ClientReference: clientRef,
-		AddedByNumber:   addedByNumber,
+		Number:                 uuid.NewV4().String(),
+		UserNumber:             payload.UserNumber,
+		SchoolNumber:           student.SchoolNumber,
+		CampusNumber:           campus.Number,
+		Amount:                 payload.Amount,
+		OriginalAmountInCredit: payload.Amount, // initially the balance is same as amount
+		Date:                   date,
+		Status:                 constants.StatusActive,
+		Description:            desc,
+		ClientReference:        clientRef,
+		AddedByNumber:          addedByNumber,
 	}
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
@@ -87,26 +87,26 @@ func CreateCredit(payload requests.CreateCreditRequest, addedByNumber string) (r
 	}
 
 	out = responses.CreditResponse{
-		Number:          credit.Number,
-		Date:            credit.Date.Format(time.DateOnly),
-		Amount:          credit.Amount,
-		Balance:         credit.Balance,
-		Status:          credit.Status,
-		ClientReference: credit.ClientReference,
-		Description:     credit.Description,
-		SchoolNumber:    credit.SchoolNumber,
-		CampusNumber:    credit.CampusNumber,
-		UserNumber:      credit.UserNumber,
-		AddedByNumber:   credit.AddedByNumber,
-		CreatedAt:       credit.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:       credit.UpdatedAt.Format(time.RFC3339),
+		Number:                 credit.Number,
+		Date:                   credit.Date.Format(time.DateOnly),
+		Amount:                 credit.Amount,
+		OriginalAmountInCredit: credit.OriginalAmountInCredit,
+		Status:                 credit.Status,
+		ClientReference:        credit.ClientReference,
+		Description:            credit.Description,
+		SchoolNumber:           credit.SchoolNumber,
+		CampusNumber:           credit.CampusNumber,
+		UserNumber:             credit.UserNumber,
+		AddedByNumber:          credit.AddedByNumber,
+		CreatedAt:              credit.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:              credit.UpdatedAt.Format(time.RFC3339),
 	}
 
 	return out, nil
 }
 
-func GetCreditsByUser(userNumber string) ([]responses.CreditResponse, error) {
-	var out []responses.CreditResponse
+func GetCreditsByUser(userNumber string) (responses.CreditReportResponse, error) {
+	var out responses.CreditReportResponse
 	if userNumber == "" {
 		return out, errors.New("user_number is required")
 	}
@@ -116,22 +116,34 @@ func GetCreditsByUser(userNumber string) ([]responses.CreditResponse, error) {
 		return out, err
 	}
 
+	var creditResponses []responses.CreditResponse
+	var totalCredits float64
+	var netBalance float64
+
 	for _, c := range credits {
-		out = append(out, responses.CreditResponse{
-			Number:          c.Number,
-			Date:            c.Date.Format(time.DateOnly),
-			Amount:          c.Amount,
-			Balance:         c.Balance,
-			Status:          c.Status,
-			ClientReference: c.ClientReference,
-			Description:     c.Description,
-			SchoolNumber:    c.SchoolNumber,
-			CampusNumber:    c.CampusNumber,
-			UserNumber:      c.UserNumber,
-			AddedByNumber:   c.AddedByNumber,
-			CreatedAt:       c.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:       c.UpdatedAt.Format(time.RFC3339),
+		creditResponses = append(creditResponses, responses.CreditResponse{
+			Number:                 c.Number,
+			Date:                   c.Date.Format(time.DateOnly),
+			Amount:                 c.Amount,
+			OriginalAmountInCredit: c.OriginalAmountInCredit,
+			Status:                 c.Status,
+			ClientReference:        c.ClientReference,
+			Description:            c.Description,
+			SchoolNumber:           c.SchoolNumber,
+			CampusNumber:           c.CampusNumber,
+			UserNumber:             c.UserNumber,
+			AddedByNumber:          c.AddedByNumber,
+			CreatedAt:              c.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:              c.UpdatedAt.Format(time.RFC3339),
 		})
+		totalCredits += c.OriginalAmountInCredit
+		netBalance += c.Amount
+	}
+
+	out = responses.CreditReportResponse{
+		Credits:      creditResponses,
+		NetBalance:   netBalance,
+		TotalCredits: totalCredits,
 	}
 
 	return out, nil
