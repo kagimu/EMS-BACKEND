@@ -682,16 +682,17 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 	}
 
 	newTransaction := models.Credit{
-		Number:          uuid.NewV4().String(),
-		Amount:          accountTopUpRequest.Amount,
-		ClientReference: clientReference,
-		Description:     description,
-		Date:            paymentDate,
-		Status:          constants.StatusActive,
-		UserNumber:      accountTopUpRequest.UserNumber,
-		CampusNumber:    campus.Number,
-		SchoolNumber:    student.SchoolNumber,
-		AddedByNumber:   currentUserNumber,
+		Number:                 uuid.NewV4().String(),
+		Amount:                 accountTopUpRequest.Amount,
+		OriginalAmountInCredit: accountTopUpRequest.Amount,
+		ClientReference:        clientReference,
+		Description:            description,
+		Date:                   paymentDate,
+		Status:                 constants.StatusActive,
+		UserNumber:             accountTopUpRequest.UserNumber,
+		CampusNumber:           campus.Number,
+		SchoolNumber:           student.SchoolNumber,
+		AddedByNumber:          currentUserNumber,
 	}
 
 	cre, err := invoiceRepositories.SaveCredit(newTransaction)
