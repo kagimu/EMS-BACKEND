@@ -1594,31 +1594,57 @@ func UpdateInvoice(updateInvoiceRequest requests.UpdateInvoiceRequest, currentUs
 	return nil
 }
 
-func UserStatement(userNumber string, startDate, endDate time.Time) ([]responses.StatementResponse, error) {
+func UserStatement(userNumber string, startDate, endDate time.Time) (responses.StatementReportResponse, error) {
 
-	var statementResponse = make([]responses.StatementResponse, 0)
+	var out responses.StatementReportResponse
 
 	allStatements, err := invoiceRepositories.FindAllStatements(userNumber, startDate, endDate)
 	if err != nil {
-		return statementResponse, errors.New("Error getting statements " + err.Error())
+		return out, errors.New("Error getting statements " + err.Error())
 	}
 
+	var statementResponses = make([]responses.StatementResponse, 0)
+
 	for _, statement := range allStatements {
-
 		receivedBy, _ := repository.GetUserByNumber(statement.AddedByNumber)
+		learner, _ := repository.GetUserByNumber(statement.UserNumber)
+		student, _ := repositories.FindStudentByUserNumber(statement.UserNumber)
 
-		statementResponse = append(statementResponse, responses.StatementResponse{
-			Amount:       statement.Amount,
-			Balance:      statement.Balance,
-			Type:         statement.Type,
-			Description:  statement.Description,
-			DateReceived: statement.CreatedAt.Format(time.DateTime),
-			ReceivedBy:   receivedBy.FirstName,
-			IssueDate:    statement.IssueDate.Format(time.DateTime),
+		statementResponses = append(statementResponses, responses.StatementResponse{
+			Amount:            statement.Amount,
+			Balance:           statement.Balance,
+			Type:              statement.Type,
+			Description:       statement.Description,
+			DateReceived:      statement.CreatedAt.Format(time.DateTime),
+			ReceivedBy:        receivedBy.FirstName,
+			LearnerName:       fmt.Sprintf("%s %s %s", learner.FirstName, learner.SecondName, learner.LastName),
+			LearnerUserNumber: statement.UserNumber,
+			StudentNumber:     student.Number,
+			IssueDate:         statement.IssueDate.Format(time.DateTime),
 		})
 	}
 
-	return statementResponse, nil
+	var totalAmountInCredits float64
+	credits, err := invoiceRepositories.FindCreditsByUserNumber(userNumber)
+	if err != nil {
+		return out, errors.New("Error getting credits " + err.Error())
+	}
+	for _, c := range credits {
+		totalAmountInCredits += c.Amount
+	}
+
+	var netBalance float64
+	if len(allStatements) > 0 {
+		netBalance = allStatements[len(allStatements)-1].Balance
+	}
+
+	out = responses.StatementReportResponse{
+		Statements:           statementResponses,
+		TotalAmountInCredits: totalAmountInCredits,
+		NetBalance:           netBalance + totalAmountInCredits,
+	}
+
+	return out, nil
 }
 
 func UserCredits(userNumber string) ([]responses.TransactionResponse, error) {
