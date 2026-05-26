@@ -1633,10 +1633,12 @@ func UserStatement(userNumber string, startDate, endDate time.Time) (responses.S
 		totalAmountInCredits += c.Amount
 	}
 
-	var netBalance float64
-	if len(allStatements) > 0 {
-		netBalance = allStatements[len(allStatements)-1].Balance
+	recentStatement, err := invoiceRepositories.GetRecentStatementByUserNumber(userNumber)
+	if err != nil {
+		return out, errors.New("Getting recent statement error " + err.Error())
 	}
+
+	netBalance := recentStatement.Balance
 
 	out = responses.StatementReportResponse{
 		Statements:           statementResponses,
