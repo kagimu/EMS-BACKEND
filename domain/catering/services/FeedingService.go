@@ -834,11 +834,11 @@ func createFeedingUserResponse(user models.FeedingGroupUser) responses.FeedingUs
 	}
 }
 
-func AvailableUser(schoolNumber string, userType string) ([]authResponse.UserResponse, error) {
+func AvailableUser(schoolNumber string, userType string, streamNumber string, campusNumber string, campusClassNumber string, studyPeriodNumber string, academicYearNumber string, search string) ([]authResponse.UserResponse, error) {
 
 	var response = make([]authResponse.UserResponse, 0)
 
-	users, err := cateringRepositories.AvailableUsers(schoolNumber, constants.StatusActive, userType)
+	users, err := cateringRepositories.AvailableUsers(schoolNumber, constants.StatusActive, userType, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, search)
 	if err != nil {
 		return nil, errors.New("Getting available users error: " + err.Error())
 	}
