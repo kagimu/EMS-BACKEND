@@ -48,32 +48,13 @@ func GetFeedingGroupUserByUserNumber(userNumber string) (models.FeedingGroupUser
 	return feedingGroupUser, nil
 }
 
-func AvailableUsers(schoolNumber string, status string, userType string, streamNumber string, campusNumber string, campusClassNumber string, studyPeriodNumber string, academicYearNumber string, search string) ([]userModel.User, error) {
+func AvailableUsers(schoolNumber string, status string, userType string) ([]userModel.User, error) {
 
 	db := config.DB
 
 	var users = make([]userModel.User, 0)
 
-	query := db.Scopes(filters.ByAnyField("users.status", status), filters.ByType(userType), notInGroupUsers())
-
-	if userType == "Student" {
-		query = query.
-			Distinct("users.*").
-			Joins("LEFT JOIN students ON students.user_number = users.number").
-			Joins("LEFT JOIN enrollments ON enrollments.student_number = students.number").
-			Joins("LEFT JOIN study_periods ON study_periods.number = enrollments.study_period_number").
-			Scopes(
-				filters.ByAnyField("students.school_number", schoolNumber),
-				filters.ByAnyField("enrollments.stream_number", streamNumber),
-				filters.ByAnyField("enrollments.campus_number", campusNumber),
-				filters.ByAnyField("enrollments.campus_class_number", campusClassNumber),
-				filters.ByAnyField("enrollments.study_period_number", studyPeriodNumber),
-				filters.ByAnyField("study_periods.academic_year_number", academicYearNumber),
-				filters.BySearchingAnyField([]string{"students.adn", "students.apn", "students.surname", "students.second_name", "students.other_name"}, search),
-			)
-	}
-
-	if err := query.Find(&users).Error; err != nil {
+	if err := db.Scopes(filters.ByAnyField("users.status", status), filters.ByType(userType), notInGroupUsers()).Find(&users).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return users, nil
@@ -104,4 +85,5 @@ func SaveFeedingGroupUser(fgu models.FeedingGroupUser, txn ...*gorm.DB) error {
 	}
 
 	return nil
+}
 }
