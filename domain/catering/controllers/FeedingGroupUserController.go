@@ -87,8 +87,14 @@ func FetchAvailableUsers(context *gin.Context) {
 
 	schoolNumber := context.Query("school_number")
 	userType := context.Query("type")
+	streamNumber := context.Query("stream_number")
+	campusNumber := context.Query("campus_number")
+	campusClassNumber := context.Query("campus_class_number")
+	studyPeriodNumber := context.Query("study_period_number")
+	academicYearNumber := context.Query("academic_year_number")
+	search := context.Query("search")
 
-	response, err := services.AvailableUser(schoolNumber, userType)
+	response, err := services.AvailableUser(schoolNumber, userType, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, search)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
