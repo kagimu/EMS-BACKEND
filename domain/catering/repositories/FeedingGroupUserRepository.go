@@ -58,11 +58,12 @@ func AvailableUsers(schoolNumber string, status string, userType string, streamN
 
 	if userType == "Student" {
 		query = query.
-			Joins("JOIN students ON students.user_number = users.number").
-			Joins("JOIN enrollments ON enrollments.student_number = students.number").
-			Joins("JOIN study_periods ON study_periods.number = enrollments.study_period_number").
+			Distinct("users.*").
+			Joins("LEFT JOIN students ON students.user_number = users.number").
+			Joins("LEFT JOIN enrollments ON enrollments.student_number = students.number").
+			Joins("LEFT JOIN study_periods ON study_periods.number = enrollments.study_period_number").
 			Scopes(
-				filters.ByAnyField("enrollments.school_number", schoolNumber),
+				filters.ByAnyField("students.school_number", schoolNumber),
 				filters.ByAnyField("enrollments.stream_number", streamNumber),
 				filters.ByAnyField("enrollments.campus_number", campusNumber),
 				filters.ByAnyField("enrollments.campus_class_number", campusClassNumber),
