@@ -86,3 +86,4 @@ func SaveFeedingGroupUser(fgu models.FeedingGroupUser, txn ...*gorm.DB) error {
 
 	return nil
 }
+}

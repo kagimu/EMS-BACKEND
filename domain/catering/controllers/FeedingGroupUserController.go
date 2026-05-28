@@ -66,10 +66,8 @@ func FetchFeedingGroupUsers(c *gin.Context) {
 	}
 
 	schoolNumber := c.Query("school_number")
-	groupNumber := c.Query("group_number")
-	campusNumber := c.Query("campus_number")
 
-	response, err := services.MealUsers(schoolNumber, campusNumber, groupNumber)
+	response, err := services.MealUsers(schoolNumber, "", "")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
