@@ -997,7 +997,6 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 
 			newTransaction := models.Transaction{
 				ClientReference: creditTransaction.ClientReference,
-				CreditReference: creditTransaction.Number,
 				StatementNumber: newStatement.Number,
 				Number:          uuid.NewV4().String(),
 				Date:            paymentDate,
@@ -1383,20 +1382,8 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 		}
 
 		if transaction.CreditReference != "" {
-			credit, err := invoiceRepositories.FindCreditByNumber(transaction.CreditReference, tx)
-			if err != nil {
-				return errors.New("Checking credit reference error: " + err.Error())
-			}
-			if credit.Number != "" {
-				credit.Amount = credit.Amount + creditAmountToRestore
-				credit.Status = constants.StatusActive
-				_, err = invoiceRepositories.SaveCredit(credit, tx)
-				if err != nil {
-					return errors.New("Updating credit failed: " + err.Error())
-				}
-			}
-		} else if transaction.ClientReference != "" {
-			credit, err := invoiceRepositories.GetCreditByClientReference(transaction.ClientReference, transactionStatement.CampusNumber, tx)
+			credit, err := invoiceRepositories.GetCreditByClientReference(transaction.CreditReference
+				, transactionStatement.CampusNumber, tx)
 			if err != nil {
 				return errors.New("Checking credit reference error: " + err.Error())
 			}
@@ -1490,32 +1477,6 @@ func DeletePayment(transactionNumber, currentUser string) error {
 			err = invoiceRepositories.SaveInvoice(invoice, tx)
 			if err != nil {
 				return errors.New("Updating promissory note status error " + err.Error())
-			}
-		if transaction.CreditReference != "" {
-			credit, err := invoiceRepositories.FindCreditByNumber(transaction.CreditReference, tx)
-			if err != nil {
-				return errors.New("Checking credit reference error: " + err.Error())
-			}
-			if credit.Number != "" {
-				credit.Amount = credit.Amount + transaction.AmountInCredit
-				credit.Status = constants.StatusActive
-				_, err = invoiceRepositories.SaveCredit(credit, tx)
-				if err != nil {
-					return errors.New("Updating credit failed: " + err.Error())
-				}
-			}
-		} else if transaction.ClientReference != "" {
-			credit, err := invoiceRepositories.GetCreditByClientReference(transaction.ClientReference, oldStatement.CampusNumber, tx)
-			if err != nil {
-				return errors.New("Checking credit reference error: " + err.Error())
-			}
-			if credit.Number != "" {
-				credit.Amount = credit.Amount + transaction.AmountInCredit
-				credit.Status = constants.StatusActive
-				_, err = invoiceRepositories.SaveCredit(credit, tx)
-				if err != nil {
-					return errors.New("Updating credit failed: " + err.Error())
-				}
 			}
 		}
 
