@@ -316,3 +316,52 @@ func AccountTopUpRequest(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Credit received successfully", "data": minInvoiceResponse})
 }
+
+func EditCredit(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.EditCreditRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request: " + err.Error()})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.EditCredit(payload, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Credit edited successfully"))
+}
+
+func DeleteCredit(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	creditNumber := c.Param("credit_number")
+	if creditNumber == "" {
+		c.JSON(http.StatusBadRequest, commons.Feedback("provide a credit number to delete"))
+		return
+	}
+
+	err = services.DeleteCredit(creditNumber, user.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Credit deleted successfully"))
+}

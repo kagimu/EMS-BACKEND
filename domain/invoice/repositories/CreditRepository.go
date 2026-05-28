@@ -78,3 +78,16 @@ func GetCreditByClientReference(clientReference, campusNumber string, tx ...*gor
 
 	return credit, nil
 }
+
+func DeleteCredit(credit invoiceModels.Credit, tx ...*gorm.DB) error {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	if err := db.Delete(&credit).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

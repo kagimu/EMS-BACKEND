@@ -4,6 +4,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/responses"
 	invoiceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 )
@@ -50,4 +53,70 @@ func GetCreditsByUser(userNumber string) (responses.CreditReportResponse, error)
 	}
 
 	return out, nil
+}
+
+func EditCredit(payload requests.EditCreditRequest, currentUser string) error {
+	credit, err := invoiceRepositories.FindCreditByNumber(payload.CreditNumber)
+	if err != nil {
+		return errors.New("checking credit error: " + err.Error())
+	}
+	if credit.Number == "" {
+		return errors.New("credit not found")
+	}
+
+	// Update fields if provided
+	if payload.Description != nil {
+		credit.Description = *payload.Description
+	}
+
+	if payload.ClientReference != nil {
+		credit.ClientReference = *payload.ClientReference
+	}
+
+	if payload.Date != nil {
+		parsedDate, err := commons.ConvertStringToDate(*payload.Date)
+		if err != nil {
+			return errors.New("invalid date format: " + err.Error())
+		}
+		credit.Date = parsedDate
+	}
+
+	if payload.Amount != nil {
+		newAmount := *payload.Amount
+		usedAmount := credit.OriginalAmountInCredit - credit.Amount
+		if newAmount < usedAmount {
+			return errors.New("cannot edit credit amount to less than what has already been used")
+		}
+		credit.OriginalAmountInCredit = newAmount
+		credit.Amount = newAmount - usedAmount
+	}
+
+	_, err = invoiceRepositories.SaveCredit(credit)
+	if err != nil {
+		return errors.New("failed to save edited credit: " + err.Error())
+	}
+
+	return nil
+}
+
+func DeleteCredit(creditNumber string, currentUser string) error {
+	credit, err := invoiceRepositories.FindCreditByNumber(creditNumber)
+	if err != nil {
+		return errors.New("checking credit error: " + err.Error())
+	}
+	if credit.Number == "" {
+		return errors.New("credit not found")
+	}
+
+	// Check if the credit has been used
+	if credit.Amount < credit.OriginalAmountInCredit {
+		return errors.New("cannot delete credit that has already been partially or fully used")
+	}
+
+	err = invoiceRepositories.DeleteCredit(credit)
+	if err != nil {
+		return errors.New("failed to delete credit: " + err.Error())
+	}
+
+	return nil
 }
