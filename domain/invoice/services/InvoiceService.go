@@ -1002,6 +1002,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 				Date:            paymentDate,
 				Status:          constants.StatusActive,
 				AmountInCredit:  payAmount,
+				CreditReference: creditTransaction.Number,
 			}
 
 			err = config.DB.Transaction(func(tx *gorm.DB) error {
@@ -1382,8 +1383,7 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 		}
 
 		if transaction.CreditReference != "" {
-			credit, err := invoiceRepositories.GetCreditByClientReference(transaction.CreditReference
-				, transactionStatement.CampusNumber, tx)
+			credit, err := invoiceRepositories.GetCreditByClientReference(transaction.CreditReference, transactionStatement.CampusNumber, tx)
 			if err != nil {
 				return errors.New("Checking credit reference error: " + err.Error())
 			}
