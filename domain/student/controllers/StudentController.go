@@ -244,14 +244,22 @@ func FetchStudentByNumber(c *gin.Context) {
 
 	var detailedStudent = responses.DetailedStudentProfile{}
 
-	detailedStudent.Surname = student.Surname
-	detailedStudent.OtherName = student.OtherName
-	detailedStudent.UserNumber = student.UserNumber
-	detailedStudent.SecondName = student.SecondName
+	detailedStudent.APN = student.APN
+	detailedStudent.ADN = student.ADN
+	detailedStudent.APNStatus = student.APNStatus
 	detailedStudent.ADNStatus = student.ADNStatus
-	detailedStudent.DateOfBirth = student.DateOfBirth
-	detailedStudent.ReasonForChoosingSchool = student.ReasonForChoosingSchool
+	detailedStudent.Surname = student.Surname
+	detailedStudent.SecondName = student.SecondName
+	detailedStudent.OtherName = student.OtherName
 	detailedStudent.Photo = commons.GenerateDownloadPath(student.Photo, true)
+	detailedStudent.AcademicReport = student.AcademicReport
+	detailedStudent.Gender = student.Gender
+	detailedStudent.ReasonForChoosingSchool = student.ReasonForChoosingSchool
+	detailedStudent.ApplicationNumber = student.ApplicationNumber
+	detailedStudent.ReasonForAdmissionDenial = student.ReasonForAdmissionDenial
+	detailedStudent.AttentionNeeded = student.AttentionNeeded
+	detailedStudent.DateOfBirth = student.DateOfBirth
+	detailedStudent.UserNumber = student.UserNumber
 
 	// find the latest enrollment for the student
 	var enrollment enrollmentModel.Enrollment
