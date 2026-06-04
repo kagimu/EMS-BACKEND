@@ -139,6 +139,34 @@ func FeedingSessionsToMealCourse(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, commons.Feedback("Feeding sessions successfully added"))
 }
 
+func DeleteMealCourseFeedingSession(ctx *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.DeleteMealCourseFeedingSessionRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.DeleteMealCourseFeedingSession(payload)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Deleting feeding session error: "+err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, commons.Feedback("Feeding session successfully deleted"))
+}
+
 func AllMealCourseFeedingSessions(ctx *gin.Context) {
 
 	_, err := commons.GetUserFromHeader(ctx)

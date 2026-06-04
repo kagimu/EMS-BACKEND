@@ -464,6 +464,27 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 	return err
 }
 
+func DeleteMealCourseFeedingSession(req requests.DeleteMealCourseFeedingSessionRequest) error {
+	mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(req.MealCourseNumber, req.FeedingSessionNumber)
+	if err != nil {
+		return errors.New("Getting session error " + err.Error())
+	}
+
+	if mealCourseFeedingSession.Number == "" {
+		return errors.New("feeding session is not associated with this meal course")
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		err := repositories.DeleteMealCourseFeedingSession(mealCourseFeedingSession, tx)
+		if err != nil {
+			return errors.New("Deleting session error " + err.Error())
+		}
+		return nil
+	})
+
+	return err
+}
+
 func MealCourseFeedingSessions(mealCourseNumber string) ([]responses.FeedingSessionResponse, error) {
 
 	var feedingSessionsResponse []responses.FeedingSessionResponse
