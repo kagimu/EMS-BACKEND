@@ -84,6 +84,11 @@ func ProcessNewStock(stockingRequest requests.StockingRequest, currentUserNumber
 
 func doRunOnTransaction(tx *gorm.DB, stockingRequest requests.StockingRequest, currentUserNumber string) error {
 
+	dateOfPurchase, err := time.Parse(time.DateOnly, stockingRequest.DateOfPurchase)
+	if err != nil {
+		return errors.New("invalid date of purchase format")
+	}
+
 	for _, stock := range stockingRequest.ItemPriceAndQuantity {
 
 		menuItem, err := repositories.GetMenuItemByNumber(stock.MenuItemNumber, tx)
@@ -111,9 +116,9 @@ func doRunOnTransaction(tx *gorm.DB, stockingRequest requests.StockingRequest, c
 		stock.PurchaseUnitCost = userUnitCost //Convert to usage unit cost
 
 		if menuItem.Type == constants.TypeAssembled {
-			err = assembleItem(tx, currentUserNumber, stock, stockingRequest.CampusNumber)
+			err = assembleItem(tx, currentUserNumber, stock, stockingRequest.CampusNumber, dateOfPurchase)
 		} else {
-			_, err = saveNonAssembled(tx, stockingRequest.CampusNumber, stock.PurchaseUnitCost, menuItem.Number, stock.Quantity, conversion, currentUserNumber, menuItem.UnitOfMeasureNumber)
+			_, err = saveNonAssembled(tx, stockingRequest.CampusNumber, stock.PurchaseUnitCost, menuItem.Number, stock.Quantity, conversion, currentUserNumber, menuItem.UnitOfMeasureNumber, dateOfPurchase)
 		}
 
 		return err
@@ -123,7 +128,7 @@ func doRunOnTransaction(tx *gorm.DB, stockingRequest requests.StockingRequest, c
 
 }
 
-func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests.ItemPriceAndQuantity, campusNumber string) error {
+func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests.ItemPriceAndQuantity, campusNumber string, dateOfPurchase time.Time) error {
 
 	itemAssembles, err := repositories.GetAssembledItemParts(stock.MenuItemNumber, transaction)
 	if err != nil {
@@ -166,7 +171,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 
 		unitCost = recentStock.UnitCost + unitCost
 
-		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, secondaryItem.ConversionToPurchaseUnit, currentUserNumber, secondaryItem.PurchaseUnitOfMeasureNumber)
+		negativeStock, err := saveNonAssembled(transaction, campusNumber, recentStock.UnitCost, itemAssemble.SecondaryItemNumber, -1*requiredQty, secondaryItem.ConversionToPurchaseUnit, currentUserNumber, secondaryItem.PurchaseUnitOfMeasureNumber, dateOfPurchase)
 		if err != nil {
 			return errors.New("first save of none assembled item error: " + err.Error())
 		}
@@ -177,7 +182,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 
 	menuItem, _ := repositories.GetMenuItemByNumber(stock.MenuItemNumber)
 
-	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, menuItem.ConversionToPurchaseUnit, currentUserNumber, menuItem.PurchaseUnitOfMeasureNumber)
+	newStock, err := saveNonAssembled(transaction, campusNumber, unitCost, stock.MenuItemNumber, stock.Quantity, menuItem.ConversionToPurchaseUnit, currentUserNumber, menuItem.PurchaseUnitOfMeasureNumber, dateOfPurchase)
 
 	if err != nil {
 		return errors.New("saving none assembled item error: " + err.Error())
@@ -201,7 +206,7 @@ func assembleItem(transaction *gorm.DB, currentUserNumber string, stock requests
 	return nil
 }
 
-func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItemNumber string, quantity, conversionToPurchaseUnitRate float64, currentUserNumber, unitOfMeasureNumber string) (models.Stocking, error) {
+func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float64, menuItemNumber string, quantity, conversionToPurchaseUnitRate float64, currentUserNumber, unitOfMeasureNumber string, dateOfPurchase time.Time) (models.Stocking, error) {
 
 	item, _ := repositories.GetMenuItemByNumber(menuItemNumber)
 
@@ -215,6 +220,7 @@ func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float6
 		PurchaseUnitOfMeasureNumber: unitOfMeasureNumber,
 		ConversionToPurchase:        conversionToPurchaseUnitRate,
 		UnitOfMeasureNumber:         item.UnitOfMeasureNumber,
+		DateOfPurchase:              &dateOfPurchase,
 	}
 
 	if _, err := repositories.SaveStockingEntry(saveStock, transaction); err != nil {
@@ -847,6 +853,11 @@ func createStockResponse(stocking models.Stocking) responses.StockingResponse {
 		purchaseUOM = models.UnitOfMeasure{}
 	}
 
+	dateOfPurchaseStr := ""
+	if stocking.DateOfPurchase != nil {
+		dateOfPurchaseStr = stocking.DateOfPurchase.Format(time.DateOnly)
+	}
+
 	return responses.StockingResponse{
 		Number:           stocking.Number,
 		Quantity:         stocking.Quantity,
@@ -857,6 +868,7 @@ func createStockResponse(stocking models.Stocking) responses.StockingResponse {
 		MenuItemName:     menuItem.Name,
 		MenuItemType:     menuItem.Type,
 		DateTime:         stocking.CreatedAt.Format(time.DateTime),
+		DateOfPurchase:   dateOfPurchaseStr,
 		PurchaseQuantity: purchaseQty,
 		PurchaseUnitCost: purchaseUnitCost,
 		UserUnitName:     userUOM.Name,
