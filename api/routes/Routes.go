@@ -1005,6 +1005,7 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("meal-projections", cateringController.MealsProjections)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
 			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
+			catering.PUT("meal-course-feeding-sessions", cateringController.UpdateFeedingSessionsToMealCourse)
 			catering.POST("meal-course-feeding-sessions/delete", cateringController.DeleteMealCourseFeedingSession)
 			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)
 			catering.POST("activate-meal-course", cateringController.ActivateMealCourse)
