@@ -435,7 +435,7 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 
 		for _, feedingSession := range mealCourseFeedingSessionRequest.FeedingSessions {
 
-			mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Number, feedingSession)
+			mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Number, feedingSession, tx)
 			if err != nil {
 				return errors.New("Checking duplicates error " + err.Error())
 			}

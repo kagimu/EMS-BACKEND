@@ -22,9 +22,12 @@ func SaveMealCourseFeedingSession(mealCourseFeedingSession models.MealCourseFeed
 
 }
 
-func GetMealCourseFeedingSession(mealCourseNumber string, feedingSessionNumber string) (models.MealCourseFeedingSession, error) {
+func GetMealCourseFeedingSession(mealCourseNumber string, feedingSessionNumber string, tx ...*gorm.DB) (models.MealCourseFeedingSession, error) {
 
 	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
 
 	var mealCourseFeedingSession models.MealCourseFeedingSession
 
