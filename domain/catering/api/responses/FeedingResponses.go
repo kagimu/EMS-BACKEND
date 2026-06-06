@@ -33,6 +33,11 @@ type FeedingUserGroupResponse struct {
 	FeedingGroupNumber string `json:"feeding_group_number"`
 	FeedingGroupName   string `json:"feeding_group_name"`
 	CampusName         string `json:"campus_name"`
+	ADN                string `json:"adn"`
+	Class              string `json:"class"`
+	Level              string `json:"level"`
+	AcademicYear       string `json:"academic_year"`
+	StudyPeriod        string `json:"study_period"`
 }
 
 type ItemAssemblyResponse struct {
