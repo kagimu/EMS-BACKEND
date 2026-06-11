@@ -913,23 +913,52 @@ func FeedingGroupLearners(schoolNumber, campusNumber, groupNumber, academicYearN
 		Gender             string
 		FirstName          string
 		LastName           string
+		Surname            string
+		SecondName         string
+		OtherName          string
+		Photo              string
 		FeedingGroupNumber string
 		FeedingGroupName   string
+		CampusNumber       string
 		CampusName         string
+		SchoolNumber       string
+		SchoolName         string
 		Adn                string
 		Class              string
 		Level              string
 		AcademicYear       string
 		StudyPeriod        string
+		EnrollmentNumber   string
+		EnrollmentStatus   string
+		EnrollmentDate     string
+		StudyPeriodStart   string
+		StudyPeriodEnd     string
+		ContinuingStudent  bool
+		CampusClassNumber  string
+		StudyPeriodNumber  string
+		StreamNumber       string
 	}
 
 	query := db.Table("feeding_group_users").
 		Select("feeding_group_users.user_number, feeding_group_users.number, users.gender, users.first_name, users.last_name, " +
-			"feeding_group_users.feeding_group_number, feeding_groups.name as feeding_group_name, campuses.name as campus_name, " +
-			"students.adn as adn, classes.name as class, levels.name as level, academic_years.name as academic_year, study_period_names.name as study_period").
+			"students.surname, students.second_name, students.other_name, students.photo, " +
+			"feeding_group_users.feeding_group_number, feeding_groups.name as feeding_group_name, " +
+			"feeding_group_users.campus_number as campus_number, campuses.name as campus_name, " +
+			"feeding_groups.school_number as school_number, schools.name as school_name, " +
+			"students.adn as adn, classes.name as class, levels.name as level, " +
+			"academic_years.name as academic_year, study_period_names.name as study_period, " +
+			"enrollments.number as enrollment_number, enrollments.status as enrollment_status, " +
+			"enrollments.enrollment_date as enrollment_date, " +
+			"study_periods.study_period_start_date as study_period_start, " +
+			"study_periods.study_period_end_date as study_period_end, " +
+			"enrollments.continuing_student as continuing_student, " +
+			"enrollments.campus_class_number as campus_class_number, " +
+			"enrollments.study_period_number as study_period_number, " +
+			"enrollments.stream_number as stream_number").
 		Joins("JOIN users ON feeding_group_users.user_number = users.number").
 		Joins("JOIN feeding_groups ON feeding_group_users.feeding_group_number = feeding_groups.number").
 		Joins("JOIN campuses ON feeding_group_users.campus_number = campuses.number").
+		Joins("JOIN schools ON feeding_groups.school_number = schools.number").
 		Joins("JOIN students ON students.user_number = users.number").
 		Joins("LEFT JOIN enrollments ON enrollments.student_number = students.number AND enrollments.status = 'ACTIVE'").
 		Joins("LEFT JOIN campus_classes ON campus_classes.number = enrollments.campus_class_number").
@@ -969,18 +998,38 @@ func FeedingGroupLearners(schoolNumber, campusNumber, groupNumber, academicYearN
 
 	for _, r := range results {
 		response = append(response, responses.FeedingUserGroupResponse{
-			UserNumber:         r.UserNumber,
-			Number:             r.Number,
-			Gender:             r.Gender,
-			Name:               r.FirstName + " " + r.LastName,
+			// Feeding group
 			FeedingGroupNumber: r.FeedingGroupNumber,
 			FeedingGroupName:   r.FeedingGroupName,
-			CampusName:         r.CampusName,
-			ADN:                r.Adn,
-			Class:              r.Class,
-			Level:              r.Level,
-			AcademicYear:       r.AcademicYear,
-			StudyPeriod:        r.StudyPeriod,
+			// User / student identity
+			UserNumber:        r.UserNumber,
+			Number:            r.Number,
+			Gender:            r.Gender,
+			Name:              r.FirstName + " " + r.LastName,
+			StudentSurname:    r.Surname,
+			StudentSecondName: r.SecondName,
+			StudentOtherName:  r.OtherName,
+			ADN:               r.Adn,
+			Photo:             commons.GenerateDownloadPath(r.Photo, true),
+			// Enrollment
+			EnrollmentNumber:     r.EnrollmentNumber,
+			EnrollmentStatus:     r.EnrollmentStatus,
+			EnrollmentDate:       r.EnrollmentDate,
+			StudyPeriodStartDate: r.StudyPeriodStart,
+			StudyPeriodEndDate:   r.StudyPeriodEnd,
+			ContinuingStudent:    r.ContinuingStudent,
+			// Location / class
+			SchoolNumber:      r.SchoolNumber,
+			School:            r.SchoolName,
+			CampusNumber:      r.CampusNumber,
+			CampusName:        r.CampusName,
+			CampusClassNumber: r.CampusClassNumber,
+			StudyPeriodNumber: r.StudyPeriodNumber,
+			StreamNumber:      r.StreamNumber,
+			Class:             r.Class,
+			Level:             r.Level,
+			AcademicYear:      r.AcademicYear,
+			StudyPeriod:       r.StudyPeriod,
 		})
 	}
 
