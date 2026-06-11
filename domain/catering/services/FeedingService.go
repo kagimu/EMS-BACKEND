@@ -902,6 +902,91 @@ func AvailableUser(schoolNumber string, userType string) ([]authResponse.UserRes
 	return response, nil
 }
 
+func FeedingGroupLearners(schoolNumber, campusNumber, groupNumber, academicYearNumber, studyPeriodNumber, classNumber, levelNumber string) ([]responses.FeedingUserGroupResponse, error) {
+	db := config.DB
+
+	var response = make([]responses.FeedingUserGroupResponse, 0)
+
+	var results []struct {
+		UserNumber         string
+		Number             string
+		Gender             string
+		FirstName          string
+		LastName           string
+		FeedingGroupNumber string
+		FeedingGroupName   string
+		CampusName         string
+		Adn                string
+		Class              string
+		Level              string
+		AcademicYear       string
+		StudyPeriod        string
+	}
+
+	query := db.Table("feeding_group_users").
+		Select("feeding_group_users.user_number, feeding_group_users.number, users.gender, users.first_name, users.last_name, " +
+			"feeding_group_users.feeding_group_number, feeding_groups.name as feeding_group_name, campuses.name as campus_name, " +
+			"students.adn as adn, classes.name as class, levels.name as level, academic_years.name as academic_year, study_period_names.name as study_period").
+		Joins("JOIN users ON feeding_group_users.user_number = users.number").
+		Joins("JOIN feeding_groups ON feeding_group_users.feeding_group_number = feeding_groups.number").
+		Joins("JOIN campuses ON feeding_group_users.campus_number = campuses.number").
+		Joins("JOIN students ON students.user_number = users.number").
+		Joins("LEFT JOIN enrollments ON enrollments.student_number = students.number AND enrollments.status = 'ACTIVE'").
+		Joins("LEFT JOIN campus_classes ON campus_classes.number = enrollments.campus_class_number").
+		Joins("LEFT JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+		Joins("LEFT JOIN classes ON classes.number = curriculum_classes.class_number").
+		Joins("LEFT JOIN levels ON levels.number = classes.level_number").
+		Joins("LEFT JOIN study_periods ON study_periods.number = enrollments.study_period_number").
+		Joins("LEFT JOIN study_period_names ON study_period_names.number = study_periods.study_period_name_number").
+		Joins("LEFT JOIN academic_years ON academic_years.number = study_periods.academic_year_number").
+		Where("users.type = ?", "Student")
+
+	if schoolNumber != "" {
+		query = query.Where("feeding_groups.school_number = ?", schoolNumber)
+	}
+	if campusNumber != "" {
+		query = query.Where("feeding_group_users.campus_number = ?", campusNumber)
+	}
+	if groupNumber != "" {
+		query = query.Where("feeding_group_users.feeding_group_number = ?", groupNumber)
+	}
+	if academicYearNumber != "" {
+		query = query.Where("study_periods.academic_year_number = ?", academicYearNumber)
+	}
+	if studyPeriodNumber != "" {
+		query = query.Where("enrollments.study_period_number = ?", studyPeriodNumber)
+	}
+	if classNumber != "" {
+		query = query.Where("curriculum_classes.class_number = ?", classNumber)
+	}
+	if levelNumber != "" {
+		query = query.Where("classes.level_number = ?", levelNumber)
+	}
+
+	if err := query.Scan(&results).Error; err != nil {
+		return nil, err
+	}
+
+	for _, r := range results {
+		response = append(response, responses.FeedingUserGroupResponse{
+			UserNumber:         r.UserNumber,
+			Number:             r.Number,
+			Gender:             r.Gender,
+			Name:               r.FirstName + " " + r.LastName,
+			FeedingGroupNumber: r.FeedingGroupNumber,
+			FeedingGroupName:   r.FeedingGroupName,
+			CampusName:         r.CampusName,
+			ADN:                r.Adn,
+			Class:              r.Class,
+			Level:              r.Level,
+			AcademicYear:       r.AcademicYear,
+			StudyPeriod:        r.StudyPeriod,
+		})
+	}
+
+	return response, nil
+}
+
 func DeleteFeedingGroup(feedingGroupNumber string) error {
 
 	group, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
