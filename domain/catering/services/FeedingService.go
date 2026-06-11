@@ -827,7 +827,7 @@ func MealUsers(schoolNumber string, campusNumber string, groupNumber string) ([]
 		}
 
 		err := config.DB.Table("students").
-			Select("students.user_number as user_number, students.adn as adn, classes.name as class, levels.name as level, academic_years.name as academic_year, study_period_names.name as study_period").
+			Select("students.user_number as user_number, students.adn as adn, classes.name as class, levels.name as level, academic_years.academic_year_name as academic_year, study_period_names.name as study_period").
 			Joins("LEFT JOIN enrollments ON enrollments.student_number = students.number AND enrollments.status = ?", constants.StatusActive).
 			Joins("LEFT JOIN campus_classes ON campus_classes.number = enrollments.campus_class_number").
 			Joins("LEFT JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
@@ -946,7 +946,7 @@ func FeedingGroupLearners(schoolNumber, campusNumber, groupNumber, academicYearN
 			"feeding_group_users.campus_number as campus_number, campuses.name as campus_name, " +
 			"feeding_groups.school_number as school_number, schools.name as school_name, " +
 			"students.adn as adn, classes.name as class, levels.name as level, " +
-			"academic_years.name as academic_year, study_period_names.name as study_period, " +
+			"academic_years.academic_year_name as academic_year, study_period_names.name as study_period, " +
 			"enrollments.number as enrollment_number, enrollments.status as enrollment_status, " +
 			"enrollments.enrollment_date as enrollment_date, " +
 			"study_periods.study_period_start_date as study_period_start, " +
