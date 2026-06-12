@@ -561,6 +561,149 @@ func GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPe
 	return mealsResponse, nil
 }
 
+// GetLearnerMealsHistory retrieves the meal delivery history for enrolled learners on a specific date.
+func GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, queryDate string) ([]responses.LearnerMealHistoryResponse, error) {
+
+	historyResponse := make([]responses.LearnerMealHistoryResponse, 0)
+
+	targetDate, err := time.Parse(time.DateOnly, queryDate)
+	if err != nil {
+		return historyResponse, errors.New("invalid date format, expected YYYY-MM-DD")
+	}
+
+	day := targetDate.Format("Mon")
+	checkDay := commons.CheckDay(day)
+	if checkDay != "" {
+		return historyResponse, errors.New("selected date is not a valid feeding day: " + checkDay)
+	}
+
+	campus, err := campusRepositories.GetCampusByNumber(campusNumber)
+	if err != nil {
+		return historyResponse, err
+	}
+	if campus.Number == "" {
+		return historyResponse, errors.New("invalid campus number")
+	}
+
+	mealCourse, err := cateringRepositories.GetMealCourseByNumber(mealCourseNumber)
+	if err != nil {
+		return historyResponse, err
+	}
+	if mealCourse.Status != constants.StatusActive {
+		return historyResponse, errors.New("meal course is: '" + mealCourse.Status + "'")
+	}
+
+	checkSchool, err := cateringRepositories.GetMealCourseByNumberAndSchool(mealCourse.Number, campus.SchoolNumber)
+	if err != nil {
+		return historyResponse, err
+	}
+	if checkSchool.Number == "" {
+		return historyResponse, errors.New("meal course can not be used on the selected campus")
+	}
+
+	mealCourseFeedingSession, err := cateringRepositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
+	if err != nil {
+		return historyResponse, err
+	}
+	if mealCourseFeedingSession.Number == "" {
+		return historyResponse, errors.New("menu not set up for this meal course on '" + day + "'")
+	}
+
+	var feedingGroups []models.FeedingGroup
+
+	if feedingGroupNumber != "" {
+		checkGroup, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
+		if err != nil {
+			return historyResponse, err
+		}
+		if checkGroup.Number == "" || checkGroup.SchoolNumber != campus.SchoolNumber {
+			return historyResponse, errors.New("invalid group number")
+		}
+		checkAllowedToHaveMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber, day, feedingGroupNumber)
+		if err != nil {
+			return historyResponse, err
+		}
+		if checkAllowedToHaveMeal.Number == "" {
+			return historyResponse, errors.New("this group should not be served on this date")
+		}
+		feedingGroups = append(feedingGroups, checkGroup)
+	} else {
+		allFeedingGroupsForMealAndDay, err := cateringRepositories.GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber, day)
+		if err != nil {
+			return historyResponse, err
+		}
+		for _, fg := range allFeedingGroupsForMealAndDay {
+			feedingGroups = append(feedingGroups, fg.FeedingGroup)
+		}
+	}
+
+	db := config.DB
+
+	for _, feedingGroup := range feedingGroups {
+
+		var learnerRows []struct {
+			UserNumber string
+			FirstName  string
+			LastName   string
+		}
+
+		q := db.Table("feeding_group_users").
+			Select("feeding_group_users.user_number, users.first_name, users.last_name").
+			Joins("JOIN users ON feeding_group_users.user_number = users.number").
+			Joins("JOIN students ON students.user_number = users.number").
+			Joins("JOIN enrollments ON enrollments.student_number = students.number AND enrollments.status = 'ACTIVE'").
+			Joins("LEFT JOIN study_periods ON study_periods.number = enrollments.study_period_number").
+			Where("feeding_group_users.feeding_group_number = ?", feedingGroup.Number).
+			Where("feeding_group_users.campus_number = ?", campusNumber).
+			Where("users.type = ?", "Student")
+
+		if studyPeriodNumber != "" {
+			q = q.Where("enrollments.study_period_number = ?", studyPeriodNumber)
+		}
+		if academicYearNumber != "" {
+			q = q.Where("study_periods.academic_year_number = ?", academicYearNumber)
+		}
+		if campusClassNumber != "" {
+			q = q.Where("enrollments.campus_class_number = ?", campusClassNumber)
+		}
+		if streamNumber != "" {
+			q = q.Where("enrollments.stream_number = ?", streamNumber)
+		}
+
+		if err := q.Scan(&learnerRows).Error; err != nil {
+			return historyResponse, err
+		}
+
+		for _, row := range learnerRows {
+			
+			mealRecord, err := cateringRepositories.GetMealByMealNumberAndDateAndUserNumber(mealCourse.Number, targetDate, row.UserNumber)
+			if err != nil {
+				return historyResponse, err
+			}
+
+			historyItem := responses.LearnerMealHistoryResponse{
+				Name:             row.FirstName + " " + row.LastName,
+				FeedingGroupName: feedingGroup.Name,
+				MealName:         mealCourse.Name,
+			}
+
+			if mealRecord.Number != "" {
+				historyItem.Served = true
+				historyItem.Date = mealRecord.Date.Format(time.DateOnly)
+				historyItem.Time = mealRecord.Time
+			} else {
+				historyItem.Served = false
+				historyItem.Date = queryDate
+				historyItem.Time = "-"
+			}
+
+			historyResponse = append(historyResponse, historyItem)
+		}
+	}
+
+	return historyResponse, nil
+}
+
 func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSessionItem, mealCourse string) []responses.SingleUserMealItem {
 
 	var items []responses.SingleUserMealItem

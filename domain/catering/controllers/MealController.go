@@ -325,6 +325,48 @@ func FetchLearnersMeals(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": learnersMeal})
 }
 
+// FetchLearnersMealsHistory returns historical meal delivery data for enrolled learners
+// for a specific date, along with the same filtering capabilities as FetchLearnersMeals.
+func FetchLearnersMealsHistory(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	campusNumber := c.Query("campus_number")
+	if campusNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose campus"})
+		return
+	}
+
+	mealCourseNumber := c.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a meal course"})
+		return
+	}
+
+	date := c.Query("date")
+	if date == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Date is required"})
+		return
+	}
+
+	feedingGroupNumber := c.Query("feeding_group_number")
+	studyPeriodNumber := c.Query("study_period_number")
+	academicYearNumber := c.Query("academic_year_number")
+	campusClassNumber := c.Query("campus_class_number")
+	streamNumber := c.Query("stream_number")
+
+	learnersMealHistory, err := services.GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": learnersMealHistory})
+}
 
 
 func AddMeal(c *gin.Context) {

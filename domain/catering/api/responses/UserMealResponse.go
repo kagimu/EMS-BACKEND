@@ -51,3 +51,14 @@ type LearnerMealResponse struct {
 	CampusName   string `json:"campus_name"`
 	SchoolNumber string `json:"school_number"`
 }
+
+// LearnerMealHistoryResponse is used for the GET catering/meals/learners/history endpoint.
+// It returns exactly the data needed for the Meal Delivery History table.
+type LearnerMealHistoryResponse struct {
+	Name               string `json:"name"`
+	FeedingGroupName   string `json:"feeding_group_name"`
+	MealName           string `json:"meal_name"`
+	Date               string `json:"date"`
+	Time               string `json:"time"`
+	Served             bool   `json:"served"`
+}
