@@ -279,6 +279,54 @@ func FetUsersMeals(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": usersMeal})
 }
 
+// FetchLearnersMeals mirrors FetUsersMeals but only returns enrolled learners (students
+// with an active enrollment).  Each record includes full enrollment details just like
+// the enrollment GET endpoint, and the list can be narrowed down with the optional filters:
+//
+//	campus_number          (required)
+//	meal_course_number     (required)
+//	feeding_group_number   (optional)
+//	study_period_number    (optional)
+//	academic_year_number   (optional)
+//	campus_class_number    (optional)
+//	stream_number          (optional)
+func FetchLearnersMeals(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	campusNumber := c.Query("campus_number")
+	if campusNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose campus"})
+		return
+	}
+
+	mealCourseNumber := c.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a meal course"})
+		return
+	}
+
+	feedingGroupNumber := c.Query("feeding_group_number")
+	studyPeriodNumber := c.Query("study_period_number")
+	academicYearNumber := c.Query("academic_year_number")
+	campusClassNumber := c.Query("campus_class_number")
+	streamNumber := c.Query("stream_number")
+
+	learnersMeal, err := services.GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": learnersMeal})
+}
+
+
+
 func AddMeal(c *gin.Context) {
 	loggedInUser, err := commons.GetUserFromHeader(c)
 	if err != nil {

@@ -347,6 +347,220 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 	return mealsResponse, nil
 }
 
+// GetLearnerMeals is a variant of GetUserMeals that restricts results to enrolled learners only
+// and enriches each entry with full enrollment details (class, level, study period, academic year, etc.).
+// Supported filters: mealCourseNumber (required), campusNumber (required), feedingGroupNumber (optional),
+// studyPeriodNumber (optional), academicYearNumber (optional), campusClassNumber (optional), streamNumber (optional).
+func GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber string, weekDay ...string) ([]responses.LearnerMealResponse, error) {
+
+	mealsResponse := make([]responses.LearnerMealResponse, 0)
+
+	currentTime := time.Now()
+	day := currentTime.Format("Mon")
+
+	if len(weekDay) > 0 {
+		day = weekDay[0]
+	} else {
+		checkDay := commons.CheckDay(day)
+		if checkDay != "" {
+			return mealsResponse, errors.New(checkDay)
+		}
+	}
+
+	campus, err := campusRepositories.GetCampusByNumber(campusNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if campus.Number == "" {
+		return mealsResponse, errors.New("invalid campus number")
+	}
+
+	mealCourse, err := cateringRepositories.GetMealCourseByNumber(mealCourseNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if mealCourse.Status != constants.StatusActive {
+		return mealsResponse, errors.New("meal course is: '" + mealCourse.Status + "'")
+	}
+
+	checkSchool, err := cateringRepositories.GetMealCourseByNumberAndSchool(mealCourse.Number, campus.SchoolNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if checkSchool.Number == "" {
+		return mealsResponse, errors.New("meal course can not be used on the selected campus")
+	}
+
+	mealCourseFeedingSession, err := cateringRepositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if mealCourseFeedingSession.Number == "" {
+		return mealsResponse, errors.New("menu not set up for this meal course on '" + day + "'")
+	}
+
+	feedingSession := mealCourseFeedingSession.FeedingSession
+
+	feedItems, err := cateringRepositories.GetFeedingSessionItems(feedingSession.Number)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if len(feedItems) == 0 {
+		return mealsResponse, errors.New("no items set to '" + feedingSession.Number + "' session")
+	}
+
+	var feedingGroups []models.FeedingGroup
+
+	if feedingGroupNumber != "" {
+		checkGroup, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+		if checkGroup.Number == "" || checkGroup.SchoolNumber != campus.SchoolNumber {
+			return mealsResponse, errors.New("invalid group number")
+		}
+		checkAllowedToHaveMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber, day, feedingGroupNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+		if checkAllowedToHaveMeal.Number == "" {
+			return mealsResponse, errors.New("this group should not be served today")
+		}
+		feedingGroups = append(feedingGroups, checkGroup)
+	} else {
+		allFeedingGroupsForMealAndDay, err := cateringRepositories.GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber, day)
+		if err != nil {
+			return mealsResponse, err
+		}
+		for _, fg := range allFeedingGroupsForMealAndDay {
+			feedingGroups = append(feedingGroups, fg.FeedingGroup)
+		}
+	}
+
+	db := config.DB
+
+	for _, feedingGroup := range feedingGroups {
+
+		// Query learners that are in this feeding group AND have an active enrollment,
+		// joined with all enrollment/class/study-period details.
+		var learnerRows []struct {
+			UserNumber           string
+			Gender               string
+			FirstName            string
+			LastName             string
+			Surname              string
+			SecondName           string
+			OtherName            string
+			Photo                string
+			Adn                  string
+			EnrollmentNumber     string
+			EnrollmentStatus     string
+			EnrollmentDate       string
+			ContinuingStudent    bool
+			CampusClassNumber    string
+			StudyPeriodNumber    string
+			StreamNumber         string
+			Class                string
+			Level                string
+			AcademicYear         string
+			StudyPeriod          string
+			StudyPeriodStart     string
+			StudyPeriodEnd       string
+		}
+
+		q := db.Table("feeding_group_users").
+			Select("feeding_group_users.user_number, users.gender, users.first_name, users.last_name, "+
+				"students.surname, students.second_name, students.other_name, students.photo, students.adn, "+
+				"enrollments.number as enrollment_number, enrollments.status as enrollment_status, "+
+				"enrollments.enrollment_date as enrollment_date, enrollments.continuing_student, "+
+				"enrollments.campus_class_number, enrollments.study_period_number, enrollments.stream_number, "+
+				"classes.name as class, levels.name as level, "+
+				"academic_years.academic_year_name as academic_year, study_period_names.name as study_period, "+
+				"study_periods.study_period_start_date as study_period_start, "+
+				"study_periods.study_period_end_date as study_period_end").
+			Joins("JOIN users ON feeding_group_users.user_number = users.number").
+			Joins("JOIN students ON students.user_number = users.number").
+			Joins("JOIN enrollments ON enrollments.student_number = students.number AND enrollments.status = 'ACTIVE'").
+			Joins("LEFT JOIN campus_classes ON campus_classes.number = enrollments.campus_class_number").
+			Joins("LEFT JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+			Joins("LEFT JOIN classes ON classes.number = curriculum_classes.class_number").
+			Joins("LEFT JOIN levels ON levels.number = classes.level_number").
+			Joins("LEFT JOIN study_periods ON study_periods.number = enrollments.study_period_number").
+			Joins("LEFT JOIN study_period_names ON study_period_names.number = study_periods.study_period_name_number").
+			Joins("LEFT JOIN academic_years ON academic_years.number = study_periods.academic_year_number").
+			Where("feeding_group_users.feeding_group_number = ?", feedingGroup.Number).
+			Where("feeding_group_users.campus_number = ?", campusNumber).
+			Where("users.type = ?", "Student")
+
+		if studyPeriodNumber != "" {
+			q = q.Where("enrollments.study_period_number = ?", studyPeriodNumber)
+		}
+		if academicYearNumber != "" {
+			q = q.Where("study_periods.academic_year_number = ?", academicYearNumber)
+		}
+		if campusClassNumber != "" {
+			q = q.Where("enrollments.campus_class_number = ?", campusClassNumber)
+		}
+		if streamNumber != "" {
+			q = q.Where("enrollments.stream_number = ?", streamNumber)
+		}
+
+		if err := q.Scan(&learnerRows).Error; err != nil {
+			return mealsResponse, err
+		}
+
+		for _, row := range learnerRows {
+
+			learnerMeal := responses.LearnerMealResponse{
+				// Meal / session fields
+				FeedingGroupNumber:   feedingGroup.Number,
+				FeedingGroupName:     feedingGroup.Name,
+				FeedingSessionNumber: feedingSession.Number,
+				// Learner identity
+				UserNumber:        row.UserNumber,
+				Name:              row.FirstName + " " + row.LastName,
+				StudentSurname:    row.Surname,
+				StudentSecondName: row.SecondName,
+				StudentOtherName:  row.OtherName,
+				Gender:            row.Gender,
+				ADN:               row.Adn,
+				Photo:             commons.GenerateDownloadPath(row.Photo, true),
+				// Enrollment details
+				EnrollmentNumber:     row.EnrollmentNumber,
+				EnrollmentStatus:     row.EnrollmentStatus,
+				EnrollmentDate:       row.EnrollmentDate,
+				ContinuingStudent:    row.ContinuingStudent,
+				StudyPeriodStartDate: row.StudyPeriodStart,
+				StudyPeriodEndDate:   row.StudyPeriodEnd,
+				CampusClassNumber:    row.CampusClassNumber,
+				StudyPeriodNumber:    row.StudyPeriodNumber,
+				StreamNumber:         row.StreamNumber,
+				Class:                row.Class,
+				Level:                row.Level,
+				AcademicYear:         row.AcademicYear,
+				StudyPeriod:          row.StudyPeriod,
+				// Campus / school
+				CampusNumber: campusNumber,
+				CampusName:   campus.Name,
+				SchoolNumber: campus.SchoolNumber,
+			}
+
+			meals := findUserMeal(row.UserNumber, feedItems, mealCourse.Number)
+
+			for _, meal := range meals {
+				if meal.ServedQuantity != 0 {
+					learnerMeal.Served = true
+				}
+			}
+			learnerMeal.Meals = meals
+
+			mealsResponse = append(mealsResponse, learnerMeal)
+		}
+	}
+
+	return mealsResponse, nil
+}
+
 func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSessionItem, mealCourse string) []responses.SingleUserMealItem {
 
 	var items []responses.SingleUserMealItem
