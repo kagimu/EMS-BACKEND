@@ -230,7 +230,7 @@ func saveNonAssembled(transaction *gorm.DB, campusNumber string, unitCost float6
 	return saveStock, nil
 }
 
-func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate time.Time) (responses.ProjectionCalenderResponse, error) {
+func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate time.Time, mealCourseNumber string) (responses.ProjectionCalenderResponse, error) {
 
 	var projectionCalenderResponse responses.ProjectionCalenderResponse
 
@@ -252,6 +252,16 @@ func MenuProjectedCalender(startDate time.Time, campusNumber string, endDate tim
 	mealCourses, err := repositories.GetAllMealCoursesByMealCourseCount(mealCourseCount.Number, constants.StatusActive)
 	if err != nil {
 		return projectionCalenderResponse, err
+	}
+
+	if mealCourseNumber != "" {
+		var filteredCourses []models.MealCourse
+		for _, course := range mealCourses {
+			if course.Number == mealCourseNumber {
+				filteredCourses = append(filteredCourses, course)
+			}
+		}
+		mealCourses = filteredCourses
 	}
 
 	calenderDays := make([]responses.ProjectionCalender, 0)

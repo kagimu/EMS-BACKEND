@@ -468,7 +468,9 @@ func MealsProjections(context *gin.Context) {
 		return
 	}
 
-	response, err := services.MenuProjectedCalender(startDate, campusNumber, endDate)
+	mealCourseNumber := context.Query("meal_course_number")
+
+	response, err := services.MenuProjectedCalender(startDate, campusNumber, endDate, mealCourseNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Getting projections error: " + err.Error()})
 		return
