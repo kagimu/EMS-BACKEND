@@ -350,8 +350,8 @@ func GetUserMeals(mealCourseNumber string, campusNumber string, feedingGroupNumb
 // GetLearnerMeals is a variant of GetUserMeals that restricts results to enrolled learners only
 // and enriches each entry with full enrollment details (class, level, study period, academic year, etc.).
 // Supported filters: mealCourseNumber (required), campusNumber (required), feedingGroupNumber (optional),
-// studyPeriodNumber (optional), academicYearNumber (optional), campusClassNumber (optional), streamNumber (optional).
-func GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber string, weekDay ...string) ([]responses.LearnerMealResponse, error) {
+// studyPeriodNumber (optional), academicYearNumber (optional), campusClassNumber (optional), streamNumber (optional), classNumber (optional).
+func GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber string, classNumber string, weekDay ...string) ([]responses.LearnerMealResponse, error) {
 
 	mealsResponse := make([]responses.LearnerMealResponse, 0)
 
@@ -504,6 +504,9 @@ func GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPe
 		if streamNumber != "" {
 			q = q.Where("enrollments.stream_number = ?", streamNumber)
 		}
+		if classNumber != "" {
+			q = q.Where("classes.number = ?", classNumber)
+		}
 
 		if err := q.Scan(&learnerRows).Error; err != nil {
 			return mealsResponse, err
@@ -562,7 +565,7 @@ func GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPe
 }
 
 // GetLearnerMealsHistory retrieves the meal delivery history for enrolled learners on a specific date.
-func GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, queryDate string) ([]responses.LearnerMealHistoryResponse, error) {
+func GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, classNumber, queryDate string) ([]responses.LearnerMealHistoryResponse, error) {
 
 	historyResponse := make([]responses.LearnerMealHistoryResponse, 0)
 
@@ -652,6 +655,9 @@ func GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, 
 			Joins("JOIN users ON feeding_group_users.user_number = users.number").
 			Joins("JOIN students ON students.user_number = users.number").
 			Joins("JOIN enrollments ON enrollments.student_number = students.number AND enrollments.status = 'ACTIVE'").
+			Joins("LEFT JOIN campus_classes ON campus_classes.number = enrollments.campus_class_number").
+			Joins("LEFT JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number").
+			Joins("LEFT JOIN classes ON classes.number = curriculum_classes.class_number").
 			Joins("LEFT JOIN study_periods ON study_periods.number = enrollments.study_period_number").
 			Where("feeding_group_users.feeding_group_number = ?", feedingGroup.Number).
 			Where("feeding_group_users.campus_number = ?", campusNumber).
@@ -668,6 +674,9 @@ func GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, 
 		}
 		if streamNumber != "" {
 			q = q.Where("enrollments.stream_number = ?", streamNumber)
+		}
+		if classNumber != "" {
+			q = q.Where("classes.number = ?", classNumber)
 		}
 
 		if err := q.Scan(&learnerRows).Error; err != nil {

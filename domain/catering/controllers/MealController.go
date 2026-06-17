@@ -315,8 +315,9 @@ func FetchLearnersMeals(c *gin.Context) {
 	academicYearNumber := c.Query("academic_year_number")
 	campusClassNumber := c.Query("campus_class_number")
 	streamNumber := c.Query("stream_number")
+	classNumber := c.Query("class_number")
 
-	learnersMeal, err := services.GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber)
+	learnersMeal, err := services.GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, classNumber)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -358,8 +359,9 @@ func FetchLearnersMealsHistory(c *gin.Context) {
 	academicYearNumber := c.Query("academic_year_number")
 	campusClassNumber := c.Query("campus_class_number")
 	streamNumber := c.Query("stream_number")
+	classNumber := c.Query("class_number")
 
-	learnersMealHistory, err := services.GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, date)
+	learnersMealHistory, err := services.GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, classNumber, date)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
