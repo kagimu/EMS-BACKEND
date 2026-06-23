@@ -48,6 +48,7 @@ import (
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	departmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/departments/models"
+	jobPositionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
@@ -355,6 +356,7 @@ func Init() error {
 		&reportSettings.ReportSummaryCorrespondence{},
 		invoiceModel.Credit{},
 		&departmentModels.Department{},
+		&jobPositionModels.JobPosition{},
 	)
 
 	if err != nil {

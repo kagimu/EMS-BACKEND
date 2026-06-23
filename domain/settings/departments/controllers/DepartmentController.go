@@ -46,7 +46,7 @@ func FetchAllDepartments(ctx *gin.Context) {
 	// You might want to filter by school if school_number is provided in query params
 	schoolNumber := ctx.Query("school_number")
 	
-	query := config.DB.Model(&models.Department{})
+	query := config.DB.Model(&models.Department{}).Preload("School")
 	if schoolNumber != "" {
 		query = query.Where("school_number = ?", schoolNumber)
 	}

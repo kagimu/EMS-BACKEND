@@ -63,6 +63,7 @@ import (
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
+	jobPositionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/controllers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -1056,6 +1057,14 @@ func SetupRoutes() *gin.Engine {
 		{
 			landingPage.POST("new", controllers2.CreateLandingPage)
 			landingPage.GET("all", controllers2.GetLandingPage)
+		}
+
+		staffMembers := main.Group("staffMembers")
+		{
+			staffMembers.POST("job-position", jobPositionController.CreateJobPosition)
+			staffMembers.GET("job-positions", jobPositionController.FetchJobPositions)
+			staffMembers.PUT("job-position/edit", jobPositionController.EditJobPosition)
+			staffMembers.DELETE("job-position/:id", jobPositionController.DeleteJobPosition)
 		}
 
 		curriculumDelivery := main.Group("curriculum-delivery")
