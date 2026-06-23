@@ -1070,6 +1070,11 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.GET("vacancies", staffMembersControllers.FetchJobVacancies)
 			staffMembers.PUT("vacancy/edit", staffMembersControllers.EditJobVacancy)
 			staffMembers.DELETE("vacancy/:id", staffMembersControllers.DeleteJobVacancy)
+
+			staffMembers.POST("application", staffMembersControllers.CreateJobApplication)
+			staffMembers.GET("applications", staffMembersControllers.FetchJobApplications)
+			staffMembers.PUT("application/edit", staffMembersControllers.EditJobApplication)
+			staffMembers.DELETE("application/:id", staffMembersControllers.DeleteJobApplication)
 		}
 
 		curriculumDelivery := main.Group("curriculum-delivery")
