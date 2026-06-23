@@ -63,7 +63,7 @@ import (
 	studyPeriodController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/controllers"
 	subjectController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/controllers"
 	timetableController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/controllers"
-	jobPositionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/controllers"
+	staffMembersControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/controllers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -1061,10 +1061,15 @@ func SetupRoutes() *gin.Engine {
 
 		staffMembers := main.Group("staffMembers")
 		{
-			staffMembers.POST("job-position", jobPositionController.CreateJobPosition)
-			staffMembers.GET("job-positions", jobPositionController.FetchJobPositions)
-			staffMembers.PUT("job-position/edit", jobPositionController.EditJobPosition)
-			staffMembers.DELETE("job-position/:id", jobPositionController.DeleteJobPosition)
+			staffMembers.POST("job-position", staffMembersControllers.CreateJobPosition)
+			staffMembers.GET("job-positions", staffMembersControllers.FetchJobPositions)
+			staffMembers.PUT("job-position/edit", staffMembersControllers.EditJobPosition)
+			staffMembers.DELETE("job-position/:id", staffMembersControllers.DeleteJobPosition)
+
+			staffMembers.POST("vacancy", staffMembersControllers.CreateJobVacancy)
+			staffMembers.GET("vacancies", staffMembersControllers.FetchJobVacancies)
+			staffMembers.PUT("vacancy/edit", staffMembersControllers.EditJobVacancy)
+			staffMembers.DELETE("vacancy/:id", staffMembersControllers.DeleteJobVacancy)
 		}
 
 		curriculumDelivery := main.Group("curriculum-delivery")

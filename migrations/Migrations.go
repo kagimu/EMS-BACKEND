@@ -357,6 +357,7 @@ func Init() error {
 		invoiceModel.Credit{},
 		&departmentModels.Department{},
 		&jobPositionModels.JobPosition{},
+		&jobPositionModels.JobVacancy{},
 	)
 
 	if err != nil {
