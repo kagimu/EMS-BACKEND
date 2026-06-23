@@ -51,6 +51,7 @@ import (
 	reportTemplate "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	departmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/departments/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
@@ -710,6 +711,18 @@ func SetupRoutes() *gin.Engine {
 			{
 				scopes.POST("", permissionController.CreateScope)
 				scopes.GET("", permissionController.FetchScopes)
+			}
+
+			departments := settings.Group("departments")
+			{
+				departments.GET("", departmentController.FetchAllDepartments)
+				departments.DELETE("delete/:id", departmentController.DeleteDepartment)
+			}
+
+			department := settings.Group("department")
+			{
+				department.POST("", departmentController.CreateDepartment)
+				department.PUT("edit", departmentController.EditDepartment)
 			}
 		}
 
