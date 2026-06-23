@@ -62,7 +62,23 @@ func FetchJobPositions(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": jobPositions})
+	var responseData []map[string]interface{}
+	for _, jp := range jobPositions {
+		responseData = append(responseData, map[string]interface{}{
+			"number":            jp.Number,
+			"post_code":         jp.PostCode,
+			"post_name":         jp.PostName,
+			"school_number":     jp.SchoolNumber,
+			"department_number": jp.DepartmentNumber,
+			"department_name":   jp.Department.Name,
+		})
+	}
+
+	if len(responseData) == 0 {
+		responseData = []map[string]interface{}{}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": responseData})
 }
 
 func EditJobPosition(ctx *gin.Context) {
