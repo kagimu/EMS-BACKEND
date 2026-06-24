@@ -1165,3 +1165,87 @@ func EditReferencesBioData(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "References bio data updated successfully!"})
 }
+
+func FetchFullStaffProfileBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	response := gin.H{
+		"personal":   nil,
+		"contact":    nil,
+		"medical":    nil,
+		"family":     nil,
+		"education":  nil,
+		"languages":  nil,
+		"references": nil,
+	}
+
+	var personal models.StaffBioDataPersonal
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&personal).Error; err == nil {
+		response["personal"] = personal
+	}
+
+	var contact models.StaffBioDataContact
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&contact).Error; err == nil {
+		response["contact"] = contact
+	}
+
+	var medical models.StaffBioDataMedical
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&medical).Error; err == nil {
+		response["medical"] = medical
+	}
+
+	var family models.StaffBioDataFamily
+	if err := config.DB.Preload("Children").Where("job_offer_number = ?", jobOfferNumber).First(&family).Error; err == nil {
+		response["family"] = family
+	}
+
+	var education models.StaffBioDataEducation
+	if err := config.DB.Preload("Items").Where("job_offer_number = ?", jobOfferNumber).First(&education).Error; err == nil {
+		var primary []requests.EducationItemBasic
+		var secondary []requests.EducationItemBasic
+		var highSchool []requests.EducationItemBasic
+		var postHighSchool []requests.EducationItemAdvanced
+
+		for _, item := range education.Items {
+			switch item.Level {
+			case "Primary":
+				primary = append(primary, requests.EducationItemBasic{Institution: item.Institution, StartYear: item.StartYear, EndYear: item.EndYear, Award: item.Award})
+			case "Secondary":
+				secondary = append(secondary, requests.EducationItemBasic{Institution: item.Institution, StartYear: item.StartYear, EndYear: item.EndYear, Award: item.Award})
+			case "HighSchool":
+				highSchool = append(highSchool, requests.EducationItemBasic{Institution: item.Institution, StartYear: item.StartYear, EndYear: item.EndYear, Award: item.Award})
+			case "PostHighSchool":
+				postHighSchool = append(postHighSchool, requests.EducationItemAdvanced{Institution: item.Institution, StartDate: item.StartDate, EndDate: item.EndDate, AwardDate: item.AwardDate, Award: item.Award})
+			}
+		}
+		response["education"] = requests.StaffBioDataEducationRequest{
+			PrimaryEducation: primary, SecondaryEducation: secondary, HighSchoolEducation: highSchool, PostHighSchoolEducation: postHighSchool,
+		}
+	}
+
+	var language models.StaffBioDataLanguage
+	if err := config.DB.Preload("Items").Where("job_offer_number = ?", jobOfferNumber).First(&language).Error; err == nil {
+		var items []requests.LanguageItemRequest
+		for _, item := range language.Items {
+			items = append(items, requests.LanguageItemRequest{Language: item.Language, Speaking: item.Speaking, Reading: item.Reading, Writing: item.Writing})
+		}
+		response["languages"] = requests.StaffBioDataLanguageRequest{Languages: items}
+	}
+
+	var references models.StaffBioDataReferences
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&references).Error; err == nil {
+		response["references"] = requests.StaffBioDataReferencesRequest{
+			Guarantor1: requests.GuarantorRequest{Name: references.Guarantor1Name, Address: references.Guarantor1Address, Email: references.Guarantor1Email, Phone: references.Guarantor1Phone, Relationship: references.Guarantor1Relationship},
+			Guarantor2: requests.GuarantorRequest{Name: references.Guarantor2Name, Address: references.Guarantor2Address, Email: references.Guarantor2Email, Phone: references.Guarantor2Phone, Relationship: references.Guarantor2Relationship},
+			NextOfKin:  requests.NextOfKinRequest{Name: references.NextOfKinName, Address: references.NextOfKinAddress, Email: references.NextOfKinEmail, Phone: references.NextOfKinPhone},
+			Referee1:   requests.RefereeRequest{Name: references.Referee1Name, Address: references.Referee1Address, Email: references.Referee1Email, Phone: references.Referee1Phone, Relationship: references.Referee1Relationship, YearKnown: references.Referee1YearKnown},
+			Referee2:   requests.RefereeRequest{Name: references.Referee2Name, Address: references.Referee2Address, Email: references.Referee2Email, Phone: references.Referee2Phone, Relationship: references.Referee2Relationship, YearKnown: references.Referee2YearKnown},
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
