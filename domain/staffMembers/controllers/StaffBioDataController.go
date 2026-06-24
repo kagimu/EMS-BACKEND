@@ -1174,13 +1174,19 @@ func FetchFullStaffProfileBioData(ctx *gin.Context) {
 	}
 
 	response := gin.H{
-		"personal":   nil,
-		"contact":    nil,
-		"medical":    nil,
-		"family":     nil,
-		"education":  nil,
-		"languages":  nil,
-		"references": nil,
+		"staff_id_number": nil,
+		"personal":        nil,
+		"contact":         nil,
+		"medical":         nil,
+		"family":          nil,
+		"education":       nil,
+		"languages":       nil,
+		"references":      nil,
+	}
+
+	var deployment models.StaffDeployment
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&deployment).Error; err == nil {
+		response["staff_id_number"] = deployment.StaffIdNumber
 	}
 
 	var personal models.StaffBioDataPersonal
