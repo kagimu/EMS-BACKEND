@@ -362,6 +362,7 @@ func Init() error {
 		&jobPositionModels.JobInterview{},
 		&jobPositionModels.JobInterviewSchedule{},
 		&jobPositionModels.JobOffer{},
+		&jobPositionModels.StaffDeployment{},
 	)
 
 	if err != nil {

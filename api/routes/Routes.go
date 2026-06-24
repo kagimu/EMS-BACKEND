@@ -1088,6 +1088,11 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.POST("job-offer", staffMembersControllers.CreateJobOffer)
 			staffMembers.GET("job-offer", staffMembersControllers.FetchJobOffers)
 			staffMembers.GET("job-offers", staffMembersControllers.FetchJobOffers)
+
+			staffMembers.POST("deployment", staffMembersControllers.CreateStaffDeployment)
+			staffMembers.GET("deployments", staffMembersControllers.FetchStaffDeployments)
+			staffMembers.PUT("deployment/edit", staffMembersControllers.EditStaffDeployment)
+			staffMembers.DELETE("deployment/:id", staffMembersControllers.DeleteStaffDeployment)
 		}
 
 		curriculumDelivery := main.Group("curriculum-delivery")
