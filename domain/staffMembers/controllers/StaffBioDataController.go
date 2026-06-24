@@ -1,0 +1,143 @@
+package controllers
+
+import (
+	"net/http"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/api/requests"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
+	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+)
+
+func CreatePersonalBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataPersonalRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Verify Job Offer exists
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+		return
+	}
+
+	bioData := models.StaffBioDataPersonal{
+		Number:             uuid.NewV4().String(),
+		JobOfferNumber:     jobOfferNumber,
+		Surname:            request.Surname,
+		SecondName:         request.SecondName,
+		OtherNames:         request.OtherNames,
+		DateCompleted:      request.DateCompleted,
+		DateOfBirth:        request.DateOfBirth,
+		Sex:                request.Sex,
+		BirthCertificateNo: request.BirthCertificateNo,
+		Religion:           request.Religion,
+		NationalIdNo:       request.NationalIdNo,
+		CountryOfBirth:     request.CountryOfBirth,
+		HomeCountry:        request.HomeCountry,
+		HomeDistrict:       request.HomeDistrict,
+		HomeCounty:         request.HomeCounty,
+		HomeSubCounty:      request.HomeSubCounty,
+		HomeParish:         request.HomeParish,
+		HomeVillage:        request.HomeVillage,
+		VillageOfResidence: request.VillageOfResidence,
+		TaxIdNo:            request.TaxIdNo,
+		UserNumber:         ctx.Request.Header.Get("User-Number"),
+	}
+
+	if err := config.DB.Create(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Bio data not saved."})
+		return
+	}
+
+	// Update JobOffer status
+	jobOffer.Status = "Filling Bio Data"
+	config.DB.Save(&jobOffer)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Personal bio data saved successfully!", "data": bioData})
+}
+
+func FetchPersonalBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var bioData models.StaffBioDataPersonal
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Personal bio data not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": bioData})
+}
+
+func EditPersonalBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataPersonalRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var bioData models.StaffBioDataPersonal
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Personal bio data not found"})
+		return
+	}
+
+	bioData.Surname = request.Surname
+	bioData.SecondName = request.SecondName
+	bioData.OtherNames = request.OtherNames
+	bioData.DateCompleted = request.DateCompleted
+	bioData.DateOfBirth = request.DateOfBirth
+	bioData.Sex = request.Sex
+	bioData.BirthCertificateNo = request.BirthCertificateNo
+	bioData.Religion = request.Religion
+	bioData.NationalIdNo = request.NationalIdNo
+	bioData.CountryOfBirth = request.CountryOfBirth
+	bioData.HomeCountry = request.HomeCountry
+	bioData.HomeDistrict = request.HomeDistrict
+	bioData.HomeCounty = request.HomeCounty
+	bioData.HomeSubCounty = request.HomeSubCounty
+	bioData.HomeParish = request.HomeParish
+	bioData.HomeVillage = request.HomeVillage
+	bioData.VillageOfResidence = request.VillageOfResidence
+	bioData.TaxIdNo = request.TaxIdNo
+
+	if err := config.DB.Save(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Bio data not updated."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Personal bio data updated successfully!"})
+}
