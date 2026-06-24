@@ -67,3 +67,19 @@ func (r *ScheduleInterviewRequest) Validate() error {
 	}
 	return nil
 }
+
+type ScoreInterviewRequest struct {
+	ScheduledInterviewNumber string `json:"scheduled_interview_number"`
+	Comment                  string `json:"comment"`
+	Status                   string `json:"status"`
+}
+
+func (r *ScoreInterviewRequest) Validate() error {
+	if r.ScheduledInterviewNumber == "" {
+		return errors.New("scheduled_interview_number is required")
+	}
+	if r.Status == "" {
+		return errors.New("status is required")
+	}
+	return nil
+}

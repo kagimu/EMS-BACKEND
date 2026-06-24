@@ -217,6 +217,80 @@ func FetchScheduledInterviews(ctx *gin.Context) {
 			"interview_date":         sch.JobInterview.InterviewDate,
 			"interview_time":         sch.JobInterview.InterviewTime,
 			"location_or_link":       sch.JobInterview.LocationOrLink,
+			"comment":                sch.Comment,
+			"status":                 sch.Status,
+			"created_at":             sch.CreatedAt,
+		})
+	}
+
+	if len(responseData) == 0 {
+		responseData = []map[string]interface{}{}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": responseData})
+}
+
+func ScoreInterview(ctx *gin.Context) {
+	var request requests.ScoreInterviewRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var schedule models.JobInterviewSchedule
+	if err := config.DB.Where("number = ?", request.ScheduledInterviewNumber).First(&schedule).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Scheduled interview not found"})
+		return
+	}
+
+	schedule.Comment = request.Comment
+	schedule.Status = request.Status
+
+	if err := config.DB.Save(&schedule).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Score not saved."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Interview scored successfully!"})
+}
+
+func FetchCompletedInterviews(ctx *gin.Context) {
+	var schedules []models.JobInterviewSchedule
+
+	query := config.DB.Model(&models.JobInterviewSchedule{}).
+		Preload("JobApplication").
+		Preload("JobInterview").
+		Where("status = ?", "completed")
+
+	if err := query.Find(&schedules).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch completed interviews"})
+		return
+	}
+
+	var responseData []map[string]interface{}
+	for _, sch := range schedules {
+		responseData = append(responseData, map[string]interface{}{
+			"number":                 sch.Number,
+			"job_application_number": sch.JobApplicationNumber,
+			"job_interview_number":   sch.JobInterviewNumber,
+			"remarks":                sch.Remarks,
+			"comment":                sch.Comment,
+			"status":                 sch.Status,
+			"application_no":         sch.JobApplication.ApplicationNumber,
+			"applicant_name":         sch.JobApplication.FirstName + " " + sch.JobApplication.LastName,
+			"applicant_email":        sch.JobApplication.Email,
+			"applicant_phone":        sch.JobApplication.PhoneNumber,
+			"interview_title":        sch.JobInterview.InterviewTitle,
+			"interview_date":         sch.JobInterview.InterviewDate,
+			"interview_time":         sch.JobInterview.InterviewTime,
+			"location_or_link":       sch.JobInterview.LocationOrLink,
 			"created_at":             sch.CreatedAt,
 		})
 	}
