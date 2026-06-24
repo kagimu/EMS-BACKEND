@@ -1075,6 +1075,13 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.GET("applications", staffMembersControllers.FetchJobApplications)
 			staffMembers.PUT("application/edit", staffMembersControllers.EditJobApplication)
 			staffMembers.DELETE("application/:id", staffMembersControllers.DeleteJobApplication)
+
+			staffMembers.POST("interview", staffMembersControllers.CreateJobInterview)
+			staffMembers.GET("interviews", staffMembersControllers.FetchJobInterviews)
+			staffMembers.PUT("interview/edit", staffMembersControllers.EditJobInterview)
+			staffMembers.DELETE("interview/:id", staffMembersControllers.DeleteJobInterview)
+			staffMembers.POST("schedule-interview", staffMembersControllers.ScheduleInterview)
+			staffMembers.GET("scheduled-interviews", staffMembersControllers.FetchScheduledInterviews)
 		}
 
 		curriculumDelivery := main.Group("curriculum-delivery")
