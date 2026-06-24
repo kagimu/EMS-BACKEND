@@ -141,3 +141,111 @@ func EditPersonalBioData(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Personal bio data updated successfully!"})
 }
+
+func CreateContactBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataContactRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Verify Job Offer exists
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+		return
+	}
+
+	bioData := models.StaffBioDataContact{
+		Number:          uuid.NewV4().String(),
+		JobOfferNumber:  jobOfferNumber,
+		MainEmail:       request.MainEmail,
+		SecondEmail:     request.SecondEmail,
+		AltEmail:        request.AltEmail,
+		MainPhone:       request.MainPhone,
+		SecondPhone:     request.SecondPhone,
+		AltPhone:        request.AltPhone,
+		PostMailAddress: request.PostMailAddress,
+		PhysicalAddress: request.PhysicalAddress,
+		UserNumber:      ctx.Request.Header.Get("User-Number"),
+	}
+
+	if err := config.DB.Create(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Contact bio data not saved."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Contact bio data saved successfully!", "data": bioData})
+}
+
+func FetchContactBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var bioData models.StaffBioDataContact
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Contact bio data not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": bioData})
+}
+
+func EditContactBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataContactRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var bioData models.StaffBioDataContact
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Contact bio data not found"})
+		return
+	}
+
+	bioData.MainEmail = request.MainEmail
+	bioData.SecondEmail = request.SecondEmail
+	bioData.AltEmail = request.AltEmail
+	bioData.MainPhone = request.MainPhone
+	bioData.SecondPhone = request.SecondPhone
+	bioData.AltPhone = request.AltPhone
+	bioData.PostMailAddress = request.PostMailAddress
+	bioData.PhysicalAddress = request.PhysicalAddress
+
+	if err := config.DB.Save(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Contact bio data not updated."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Contact bio data updated successfully!"})
+}
