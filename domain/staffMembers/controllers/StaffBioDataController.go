@@ -969,3 +969,199 @@ func EditLanguageBioData(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Language bio data updated successfully!"})
 }
+
+func CreateReferencesBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataReferencesRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+		return
+	}
+
+	bioData := models.StaffBioDataReferences{
+		Number:                 uuid.NewV4().String(),
+		JobOfferNumber:         jobOfferNumber,
+		Guarantor1Name:         request.Guarantor1.Name,
+		Guarantor1Address:      request.Guarantor1.Address,
+		Guarantor1Email:        request.Guarantor1.Email,
+		Guarantor1Phone:        request.Guarantor1.Phone,
+		Guarantor1Relationship: request.Guarantor1.Relationship,
+		Guarantor2Name:         request.Guarantor2.Name,
+		Guarantor2Address:      request.Guarantor2.Address,
+		Guarantor2Email:        request.Guarantor2.Email,
+		Guarantor2Phone:        request.Guarantor2.Phone,
+		Guarantor2Relationship: request.Guarantor2.Relationship,
+		NextOfKinName:          request.NextOfKin.Name,
+		NextOfKinAddress:       request.NextOfKin.Address,
+		NextOfKinEmail:         request.NextOfKin.Email,
+		NextOfKinPhone:         request.NextOfKin.Phone,
+		Referee1Name:           request.Referee1.Name,
+		Referee1Address:        request.Referee1.Address,
+		Referee1Email:          request.Referee1.Email,
+		Referee1Phone:          request.Referee1.Phone,
+		Referee1Relationship:   request.Referee1.Relationship,
+		Referee1YearKnown:      request.Referee1.YearKnown,
+		Referee2Name:           request.Referee2.Name,
+		Referee2Address:        request.Referee2.Address,
+		Referee2Email:          request.Referee2.Email,
+		Referee2Phone:          request.Referee2.Phone,
+		Referee2Relationship:   request.Referee2.Relationship,
+		Referee2YearKnown:      request.Referee2.YearKnown,
+		UserNumber:             ctx.Request.Header.Get("User-Number"),
+	}
+
+	if err := config.DB.Create(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. References bio data not saved."})
+		return
+	}
+
+	// Update Job Offer status since this is the final step
+	jobOffer.Status = "Bio Data Completed"
+	config.DB.Save(&jobOffer)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "References bio data saved successfully!", "data": bioData})
+}
+
+func FetchReferencesBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var bioData models.StaffBioDataReferences
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "References bio data not found"})
+		return
+	}
+
+	response := requests.StaffBioDataReferencesRequest{
+		Guarantor1: requests.GuarantorRequest{
+			Name:         bioData.Guarantor1Name,
+			Address:      bioData.Guarantor1Address,
+			Email:        bioData.Guarantor1Email,
+			Phone:        bioData.Guarantor1Phone,
+			Relationship: bioData.Guarantor1Relationship,
+		},
+		Guarantor2: requests.GuarantorRequest{
+			Name:         bioData.Guarantor2Name,
+			Address:      bioData.Guarantor2Address,
+			Email:        bioData.Guarantor2Email,
+			Phone:        bioData.Guarantor2Phone,
+			Relationship: bioData.Guarantor2Relationship,
+		},
+		NextOfKin: requests.NextOfKinRequest{
+			Name:    bioData.NextOfKinName,
+			Address: bioData.NextOfKinAddress,
+			Email:   bioData.NextOfKinEmail,
+			Phone:   bioData.NextOfKinPhone,
+		},
+		Referee1: requests.RefereeRequest{
+			Name:         bioData.Referee1Name,
+			Address:      bioData.Referee1Address,
+			Email:        bioData.Referee1Email,
+			Phone:        bioData.Referee1Phone,
+			Relationship: bioData.Referee1Relationship,
+			YearKnown:    bioData.Referee1YearKnown,
+		},
+		Referee2: requests.RefereeRequest{
+			Name:         bioData.Referee2Name,
+			Address:      bioData.Referee2Address,
+			Email:        bioData.Referee2Email,
+			Phone:        bioData.Referee2Phone,
+			Relationship: bioData.Referee2Relationship,
+			YearKnown:    bioData.Referee2YearKnown,
+		},
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
+
+func EditReferencesBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataReferencesRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var bioData models.StaffBioDataReferences
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "References bio data not found"})
+		return
+	}
+
+	bioData.Guarantor1Name = request.Guarantor1.Name
+	bioData.Guarantor1Address = request.Guarantor1.Address
+	bioData.Guarantor1Email = request.Guarantor1.Email
+	bioData.Guarantor1Phone = request.Guarantor1.Phone
+	bioData.Guarantor1Relationship = request.Guarantor1.Relationship
+
+	bioData.Guarantor2Name = request.Guarantor2.Name
+	bioData.Guarantor2Address = request.Guarantor2.Address
+	bioData.Guarantor2Email = request.Guarantor2.Email
+	bioData.Guarantor2Phone = request.Guarantor2.Phone
+	bioData.Guarantor2Relationship = request.Guarantor2.Relationship
+
+	bioData.NextOfKinName = request.NextOfKin.Name
+	bioData.NextOfKinAddress = request.NextOfKin.Address
+	bioData.NextOfKinEmail = request.NextOfKin.Email
+	bioData.NextOfKinPhone = request.NextOfKin.Phone
+
+	bioData.Referee1Name = request.Referee1.Name
+	bioData.Referee1Address = request.Referee1.Address
+	bioData.Referee1Email = request.Referee1.Email
+	bioData.Referee1Phone = request.Referee1.Phone
+	bioData.Referee1Relationship = request.Referee1.Relationship
+	bioData.Referee1YearKnown = request.Referee1.YearKnown
+
+	bioData.Referee2Name = request.Referee2.Name
+	bioData.Referee2Address = request.Referee2.Address
+	bioData.Referee2Email = request.Referee2.Email
+	bioData.Referee2Phone = request.Referee2.Phone
+	bioData.Referee2Relationship = request.Referee2.Relationship
+	bioData.Referee2YearKnown = request.Referee2.YearKnown
+
+	if err := config.DB.Save(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. References bio data not updated."})
+		return
+	}
+
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err == nil {
+		jobOffer.Status = "Bio Data Completed"
+		config.DB.Save(&jobOffer)
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "References bio data updated successfully!"})
+}

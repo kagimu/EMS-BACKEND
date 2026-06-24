@@ -372,6 +372,7 @@ func Init() error {
 		&jobPositionModels.StaffBioDataEducationItem{},
 		&jobPositionModels.StaffBioDataLanguage{},
 		&jobPositionModels.StaffBioDataLanguageItem{},
+		&jobPositionModels.StaffBioDataReferences{},
 	)
 
 	if err != nil {
