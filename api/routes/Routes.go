@@ -1084,6 +1084,10 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.GET("scheduled-interviews", staffMembersControllers.FetchScheduledInterviews)
 			staffMembers.POST("interview-score", staffMembersControllers.ScoreInterview)
 			staffMembers.GET("completed-interviews", staffMembersControllers.FetchCompletedInterviews)
+
+			staffMembers.POST("job-offer", staffMembersControllers.CreateJobOffer)
+			staffMembers.GET("job-offer", staffMembersControllers.FetchJobOffers)
+			staffMembers.GET("job-offers", staffMembersControllers.FetchJobOffers)
 		}
 
 		curriculumDelivery := main.Group("curriculum-delivery")
