@@ -1101,6 +1101,10 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.POST("biodata/:job_offer_number/contact", staffMembersControllers.CreateContactBioData)
 			staffMembers.GET("biodata/:job_offer_number/contact", staffMembersControllers.FetchContactBioData)
 			staffMembers.PUT("biodata/:job_offer_number/contact", staffMembersControllers.EditContactBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/medical", staffMembersControllers.CreateMedicalBioData)
+			staffMembers.GET("biodata/:job_offer_number/medical", staffMembersControllers.FetchMedicalBioData)
+			staffMembers.PUT("biodata/:job_offer_number/medical", staffMembersControllers.EditMedicalBioData)
 		}
 
 		curriculumDelivery := main.Group("curriculum-delivery")

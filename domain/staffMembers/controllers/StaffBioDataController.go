@@ -249,3 +249,116 @@ func EditContactBioData(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Contact bio data updated successfully!"})
 }
+
+func CreateMedicalBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataMedicalRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+		return
+	}
+
+	bioData := models.StaffBioDataMedical{
+		Number:              uuid.NewV4().String(),
+		JobOfferNumber:      jobOfferNumber,
+		Height:              request.Height,
+		Weight:              request.Weight,
+		Complexion:          request.Complexion,
+		BloodType:           request.BloodType,
+		Allergies:           request.Allergies,
+		MedicalConditions:   request.MedicalConditions,
+		RegularMedications:  request.RegularMedications,
+		PhysicalImpairments: request.PhysicalImpairments,
+		DoctorName:          request.DoctorName,
+		DoctorPhone:         request.DoctorPhone,
+		DoctorFacility:      request.DoctorFacility,
+		UserNumber:          ctx.Request.Header.Get("User-Number"),
+	}
+
+	if err := config.DB.Create(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Medical bio data not saved."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Medical bio data saved successfully!", "data": bioData})
+}
+
+func FetchMedicalBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var bioData models.StaffBioDataMedical
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Medical bio data not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": bioData})
+}
+
+func EditMedicalBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataMedicalRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var bioData models.StaffBioDataMedical
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Medical bio data not found"})
+		return
+	}
+
+	bioData.Height = request.Height
+	bioData.Weight = request.Weight
+	bioData.Complexion = request.Complexion
+	bioData.BloodType = request.BloodType
+	bioData.Allergies = request.Allergies
+	bioData.MedicalConditions = request.MedicalConditions
+	bioData.RegularMedications = request.RegularMedications
+	bioData.PhysicalImpairments = request.PhysicalImpairments
+	bioData.DoctorName = request.DoctorName
+	bioData.DoctorPhone = request.DoctorPhone
+	bioData.DoctorFacility = request.DoctorFacility
+
+	if err := config.DB.Save(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Medical bio data not updated."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Medical bio data updated successfully!"})
+}

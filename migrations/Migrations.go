@@ -365,6 +365,7 @@ func Init() error {
 		&jobPositionModels.StaffDeployment{},
 		&jobPositionModels.StaffBioDataPersonal{},
 		&jobPositionModels.StaffBioDataContact{},
+		&jobPositionModels.StaffBioDataMedical{},
 	)
 
 	if err != nil {
