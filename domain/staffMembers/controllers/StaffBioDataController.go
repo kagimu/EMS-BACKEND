@@ -555,3 +555,274 @@ func EditFamilyBioData(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Family bio data updated successfully!"})
 }
+
+func CreateEducationBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataEducationRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+		return
+	}
+
+	educationNumber := uuid.NewV4().String()
+
+	bioData := models.StaffBioDataEducation{
+		Number:         educationNumber,
+		JobOfferNumber: jobOfferNumber,
+		UserNumber:     ctx.Request.Header.Get("User-Number"),
+	}
+
+	var items []models.StaffBioDataEducationItem
+	
+	// Primary
+	for _, reqItem := range request.PrimaryEducation {
+		if reqItem.Institution != "" || reqItem.Award != "" {
+			items = append(items, models.StaffBioDataEducationItem{
+				Number:          uuid.NewV4().String(),
+				EducationNumber: educationNumber,
+				Level:           "Primary",
+				Institution:     reqItem.Institution,
+				StartYear:       reqItem.StartYear,
+				EndYear:         reqItem.EndYear,
+				Award:           reqItem.Award,
+			})
+		}
+	}
+
+	// Secondary
+	for _, reqItem := range request.SecondaryEducation {
+		if reqItem.Institution != "" || reqItem.Award != "" {
+			items = append(items, models.StaffBioDataEducationItem{
+				Number:          uuid.NewV4().String(),
+				EducationNumber: educationNumber,
+				Level:           "Secondary",
+				Institution:     reqItem.Institution,
+				StartYear:       reqItem.StartYear,
+				EndYear:         reqItem.EndYear,
+				Award:           reqItem.Award,
+			})
+		}
+	}
+
+	// HighSchool
+	for _, reqItem := range request.HighSchoolEducation {
+		if reqItem.Institution != "" || reqItem.Award != "" {
+			items = append(items, models.StaffBioDataEducationItem{
+				Number:          uuid.NewV4().String(),
+				EducationNumber: educationNumber,
+				Level:           "HighSchool",
+				Institution:     reqItem.Institution,
+				StartYear:       reqItem.StartYear,
+				EndYear:         reqItem.EndYear,
+				Award:           reqItem.Award,
+			})
+		}
+	}
+
+	// PostHighSchool
+	for _, reqItem := range request.PostHighSchoolEducation {
+		if reqItem.Institution != "" || reqItem.Award != "" {
+			items = append(items, models.StaffBioDataEducationItem{
+				Number:          uuid.NewV4().String(),
+				EducationNumber: educationNumber,
+				Level:           "PostHighSchool",
+				Institution:     reqItem.Institution,
+				StartDate:       reqItem.StartDate,
+				EndDate:         reqItem.EndDate,
+				AwardDate:       reqItem.AwardDate,
+				Award:           reqItem.Award,
+			})
+		}
+	}
+
+	bioData.Items = items
+
+	if err := config.DB.Create(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Education bio data not saved."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Education bio data saved successfully!", "data": bioData})
+}
+
+func FetchEducationBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var bioData models.StaffBioDataEducation
+	if err := config.DB.Preload("Items").Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Education bio data not found"})
+		return
+	}
+
+	// Map it back to the request structure for the frontend
+	var primary []requests.EducationItemBasic
+	var secondary []requests.EducationItemBasic
+	var highSchool []requests.EducationItemBasic
+	var postHighSchool []requests.EducationItemAdvanced
+
+	for _, item := range bioData.Items {
+		switch item.Level {
+		case "Primary":
+			primary = append(primary, requests.EducationItemBasic{
+				Institution: item.Institution,
+				StartYear:   item.StartYear,
+				EndYear:     item.EndYear,
+				Award:       item.Award,
+			})
+		case "Secondary":
+			secondary = append(secondary, requests.EducationItemBasic{
+				Institution: item.Institution,
+				StartYear:   item.StartYear,
+				EndYear:     item.EndYear,
+				Award:       item.Award,
+			})
+		case "HighSchool":
+			highSchool = append(highSchool, requests.EducationItemBasic{
+				Institution: item.Institution,
+				StartYear:   item.StartYear,
+				EndYear:     item.EndYear,
+				Award:       item.Award,
+			})
+		case "PostHighSchool":
+			postHighSchool = append(postHighSchool, requests.EducationItemAdvanced{
+				Institution: item.Institution,
+				StartDate:   item.StartDate,
+				EndDate:     item.EndDate,
+				AwardDate:   item.AwardDate,
+				Award:       item.Award,
+			})
+		}
+	}
+
+	response := requests.StaffBioDataEducationRequest{
+		PrimaryEducation:        primary,
+		SecondaryEducation:      secondary,
+		HighSchoolEducation:     highSchool,
+		PostHighSchoolEducation: postHighSchool,
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
+
+func EditEducationBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataEducationRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var bioData models.StaffBioDataEducation
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Education bio data not found"})
+		return
+	}
+
+	// Delete old items
+	config.DB.Where("education_number = ?", bioData.Number).Delete(&models.StaffBioDataEducationItem{})
+
+	// Create new items
+	var items []models.StaffBioDataEducationItem
+	
+	for _, reqItem := range request.PrimaryEducation {
+		if reqItem.Institution != "" || reqItem.Award != "" {
+			items = append(items, models.StaffBioDataEducationItem{
+				Number:          uuid.NewV4().String(),
+				EducationNumber: bioData.Number,
+				Level:           "Primary",
+				Institution:     reqItem.Institution,
+				StartYear:       reqItem.StartYear,
+				EndYear:         reqItem.EndYear,
+				Award:           reqItem.Award,
+			})
+		}
+	}
+
+	for _, reqItem := range request.SecondaryEducation {
+		if reqItem.Institution != "" || reqItem.Award != "" {
+			items = append(items, models.StaffBioDataEducationItem{
+				Number:          uuid.NewV4().String(),
+				EducationNumber: bioData.Number,
+				Level:           "Secondary",
+				Institution:     reqItem.Institution,
+				StartYear:       reqItem.StartYear,
+				EndYear:         reqItem.EndYear,
+				Award:           reqItem.Award,
+			})
+		}
+	}
+
+	for _, reqItem := range request.HighSchoolEducation {
+		if reqItem.Institution != "" || reqItem.Award != "" {
+			items = append(items, models.StaffBioDataEducationItem{
+				Number:          uuid.NewV4().String(),
+				EducationNumber: bioData.Number,
+				Level:           "HighSchool",
+				Institution:     reqItem.Institution,
+				StartYear:       reqItem.StartYear,
+				EndYear:         reqItem.EndYear,
+				Award:           reqItem.Award,
+			})
+		}
+	}
+
+	for _, reqItem := range request.PostHighSchoolEducation {
+		if reqItem.Institution != "" || reqItem.Award != "" {
+			items = append(items, models.StaffBioDataEducationItem{
+				Number:          uuid.NewV4().String(),
+				EducationNumber: bioData.Number,
+				Level:           "PostHighSchool",
+				Institution:     reqItem.Institution,
+				StartDate:       reqItem.StartDate,
+				EndDate:         reqItem.EndDate,
+				AwardDate:       reqItem.AwardDate,
+				Award:           reqItem.Award,
+			})
+		}
+	}
+
+	if len(items) > 0 {
+		config.DB.Create(&items)
+	}
+
+	if err := config.DB.Save(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Education bio data not updated."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Education bio data updated successfully!"})
+}
