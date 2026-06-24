@@ -1113,6 +1113,10 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.POST("biodata/:job_offer_number/education", staffMembersControllers.CreateEducationBioData)
 			staffMembers.GET("biodata/:job_offer_number/education", staffMembersControllers.FetchEducationBioData)
 			staffMembers.PUT("biodata/:job_offer_number/education", staffMembersControllers.EditEducationBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/languages", staffMembersControllers.CreateLanguageBioData)
+			staffMembers.GET("biodata/:job_offer_number/languages", staffMembersControllers.FetchLanguageBioData)
+			staffMembers.PUT("biodata/:job_offer_number/languages", staffMembersControllers.EditLanguageBioData)
 		}
 
 		curriculumDelivery := main.Group("curriculum-delivery")

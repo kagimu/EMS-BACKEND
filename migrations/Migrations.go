@@ -370,6 +370,8 @@ func Init() error {
 		&jobPositionModels.StaffBioDataFamilyChild{},
 		&jobPositionModels.StaffBioDataEducation{},
 		&jobPositionModels.StaffBioDataEducationItem{},
+		&jobPositionModels.StaffBioDataLanguage{},
+		&jobPositionModels.StaffBioDataLanguageItem{},
 	)
 
 	if err != nil {

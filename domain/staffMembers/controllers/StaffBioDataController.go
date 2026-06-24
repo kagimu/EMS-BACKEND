@@ -826,3 +826,146 @@ func EditEducationBioData(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Education bio data updated successfully!"})
 }
+
+func CreateLanguageBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataLanguageRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+		return
+	}
+
+	recordNumber := uuid.NewV4().String()
+
+	bioData := models.StaffBioDataLanguage{
+		Number:         recordNumber,
+		JobOfferNumber: jobOfferNumber,
+		UserNumber:     ctx.Request.Header.Get("User-Number"),
+	}
+
+	var items []models.StaffBioDataLanguageItem
+	for _, reqItem := range request.Languages {
+		if reqItem.Language != "" {
+			items = append(items, models.StaffBioDataLanguageItem{
+				Number:               uuid.NewV4().String(),
+				LanguageRecordNumber: recordNumber,
+				Language:             reqItem.Language,
+				Speaking:             reqItem.Speaking,
+				Reading:              reqItem.Reading,
+				Writing:              reqItem.Writing,
+			})
+		}
+	}
+	bioData.Items = items
+
+	if err := config.DB.Create(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Language bio data not saved."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Language bio data saved successfully!", "data": bioData})
+}
+
+func FetchLanguageBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var bioData models.StaffBioDataLanguage
+	if err := config.DB.Preload("Items").Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Language bio data not found"})
+		return
+	}
+
+	var items []requests.LanguageItemRequest
+	for _, item := range bioData.Items {
+		items = append(items, requests.LanguageItemRequest{
+			Language: item.Language,
+			Speaking: item.Speaking,
+			Reading:  item.Reading,
+			Writing:  item.Writing,
+		})
+	}
+
+	response := requests.StaffBioDataLanguageRequest{
+		Languages: items,
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": response})
+}
+
+func EditLanguageBioData(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var request requests.StaffBioDataLanguageRequest
+	err := ctx.BindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		return
+	}
+
+	err = request.Validate()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var bioData models.StaffBioDataLanguage
+	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Language bio data not found"})
+		return
+	}
+
+	// Delete old items
+	config.DB.Where("language_record_number = ?", bioData.Number).Delete(&models.StaffBioDataLanguageItem{})
+
+	// Create new items
+	var items []models.StaffBioDataLanguageItem
+	for _, reqItem := range request.Languages {
+		if reqItem.Language != "" {
+			items = append(items, models.StaffBioDataLanguageItem{
+				Number:               uuid.NewV4().String(),
+				LanguageRecordNumber: bioData.Number,
+				Language:             reqItem.Language,
+				Speaking:             reqItem.Speaking,
+				Reading:              reqItem.Reading,
+				Writing:              reqItem.Writing,
+			})
+		}
+	}
+
+	if len(items) > 0 {
+		config.DB.Create(&items)
+	}
+
+	if err := config.DB.Save(&bioData).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Language bio data not updated."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Language bio data updated successfully!"})
+}
