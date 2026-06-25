@@ -66,7 +66,7 @@ func CreateJobPosition(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Job position created successfully!", "data": jobPosition})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Job position created successfully", "data": jobPosition})
 }
 
 func FetchJobPositions(ctx *gin.Context) {
