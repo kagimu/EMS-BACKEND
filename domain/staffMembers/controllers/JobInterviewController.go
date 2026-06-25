@@ -134,6 +134,20 @@ func DeleteJobInterview(ctx *gin.Context) {
 		return
 	}
 
+	var relatedSchedulesCount int64
+	config.DB.Model(&models.JobInterviewSchedule{}).Where("job_interview_number = ?", id).Count(&relatedSchedulesCount)
+	if relatedSchedulesCount > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job interview. It has scheduled candidates."})
+		return
+	}
+
+	var relatedOffersCount int64
+	config.DB.Model(&models.JobOffer{}).Where("job_interview_number = ?", id).Count(&relatedOffersCount)
+	if relatedOffersCount > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job interview. It has associated job offers."})
+		return
+	}
+
 	if err := config.DB.Delete(&jobInterview).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job interview not deleted. Try again."})
 		return

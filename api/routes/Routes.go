@@ -1088,6 +1088,7 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.POST("job-offer", staffMembersControllers.CreateJobOffer)
 			staffMembers.GET("job-offer", staffMembersControllers.FetchJobOffers)
 			staffMembers.GET("job-offers", staffMembersControllers.FetchJobOffers)
+			staffMembers.DELETE("job-offer/:id", staffMembersControllers.DeleteJobOffer)
 
 			staffMembers.POST("deployment", staffMembersControllers.CreateStaffDeployment)
 			staffMembers.GET("deployments", staffMembersControllers.FetchStaffDeployments)

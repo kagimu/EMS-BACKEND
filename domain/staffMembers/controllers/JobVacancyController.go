@@ -94,6 +94,7 @@ func FetchJobVacancies(ctx *gin.Context) {
 			"number":              jv.Number,
 			"job_position_number": jv.JobPositionNumber,
 			"job_position_name":   jv.JobPosition.PostName,
+			"job_code":            jv.JobPosition.JobCode,
 			"vacancy_title":       jv.VacancyTitle,
 			"reference_number":    jv.ReferenceNumber,
 			"school_number":       jv.SchoolNumber,
@@ -175,6 +176,20 @@ func DeleteJobVacancy(ctx *gin.Context) {
 	var jobVacancy models.JobVacancy
 	if err := config.DB.Where("number = ?", id).First(&jobVacancy).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job vacancy not found"})
+		return
+	}
+
+	var relatedAppsCount int64
+	config.DB.Model(&models.JobApplication{}).Where("job_vacancy_number = ?", id).Count(&relatedAppsCount)
+	if relatedAppsCount > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job vacancy. It has associated applications."})
+		return
+	}
+
+	var relatedInterviewsCount int64
+	config.DB.Model(&models.JobInterview{}).Where("job_vacancy_number = ?", id).Count(&relatedInterviewsCount)
+	if relatedInterviewsCount > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job vacancy. It has associated interviews."})
 		return
 	}
 

@@ -100,3 +100,38 @@ func FetchJobOffers(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": responseData})
 }
+
+func DeleteJobOffer(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", id).First(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+		return
+	}
+
+	var relatedDeploymentsCount int64
+	config.DB.Model(&models.StaffDeployment{}).Where("job_offer_number = ?", id).Count(&relatedDeploymentsCount)
+	if relatedDeploymentsCount > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job offer. It has associated staff deployments."})
+		return
+	}
+
+	var relatedBioDataCount int64
+	config.DB.Model(&models.StaffBioDataPersonal{}).Where("job_offer_number = ?", id).Count(&relatedBioDataCount)
+	if relatedBioDataCount > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job offer. It has associated biodata records."})
+		return
+	}
+
+	if err := config.DB.Delete(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job offer not deleted. Try again."})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Job offer deleted successfully!"})
+}

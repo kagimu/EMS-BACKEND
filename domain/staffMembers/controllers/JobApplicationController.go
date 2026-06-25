@@ -153,6 +153,20 @@ func DeleteJobApplication(ctx *gin.Context) {
 		return
 	}
 
+	var relatedSchedulesCount int64
+	config.DB.Model(&models.JobInterviewSchedule{}).Where("job_application_number = ?", id).Count(&relatedSchedulesCount)
+	if relatedSchedulesCount > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job application. It is scheduled for an interview."})
+		return
+	}
+
+	var relatedOffersCount int64
+	config.DB.Model(&models.JobOffer{}).Where("job_application_number = ?", id).Count(&relatedOffersCount)
+	if relatedOffersCount > 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job application. It has been offered a job."})
+		return
+	}
+
 	if err := config.DB.Delete(&jobApplication).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job application not deleted. Try again."})
 		return
