@@ -11,7 +11,7 @@ type JobPosition struct {
 	gorm.Model
 	Number           string                      `json:"number" gorm:"size:36;unique;index;not null"`
 	PostName         string                      `json:"post_name" form:"post_name" binding:"required" gorm:"size:100;not null"`
-	PostCode         string                      `json:"post_code" form:"post_code" binding:"required" gorm:"size:50;not null"`
+
 	JobCode          string                      `json:"job_code" gorm:"size:50;unique;index"`
 	SchoolNumber     string                      `json:"school_number" gorm:"size:36;not null"`
 	School           schoolModels.School         `gorm:"foreignKey:SchoolNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

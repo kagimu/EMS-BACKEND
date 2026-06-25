@@ -55,7 +55,6 @@ func CreateJobPosition(ctx *gin.Context) {
 	jobPosition := models.JobPosition{
 		Number:           uuid.NewV4().String(),
 		PostName:         request.PostName,
-		PostCode:         request.PostCode,
 		JobCode:          generateJobCode(),
 		SchoolNumber:     request.SchoolNumber,
 		DepartmentNumber: request.DepartmentNumber,
@@ -95,7 +94,6 @@ func FetchJobPositions(ctx *gin.Context) {
 	for _, jp := range jobPositions {
 		responseData = append(responseData, map[string]interface{}{
 			"number":            jp.Number,
-			"post_code":         jp.PostCode,
 			"post_name":         jp.PostName,
 			"job_code":          jp.JobCode,
 			"school_number":     jp.SchoolNumber,
@@ -132,7 +130,6 @@ func EditJobPosition(ctx *gin.Context) {
 	}
 
 	jobPosition.PostName = request.PostName
-	jobPosition.PostCode = request.PostCode
 	jobPosition.SchoolNumber = request.SchoolNumber
 	jobPosition.DepartmentNumber = request.DepartmentNumber
 	
