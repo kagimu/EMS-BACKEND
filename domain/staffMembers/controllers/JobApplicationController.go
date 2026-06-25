@@ -69,11 +69,17 @@ func FetchJobApplications(ctx *gin.Context) {
 	var jobApplications []models.JobApplication
 
 	jobVacancyNumber := ctx.Query("job_vacancy_number")
+	schoolNumber := ctx.Query("school_number")
 
 	query := config.DB.Model(&models.JobApplication{}).Preload("JobVacancy").Preload("JobVacancy.JobPosition")
 
 	if jobVacancyNumber != "" {
 		query = query.Where("job_vacancy_number = ?", jobVacancyNumber)
+	}
+
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_vacancies ON job_vacancies.number = job_applications.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
 	}
 
 	if err := query.Find(&jobApplications).Error; err != nil {

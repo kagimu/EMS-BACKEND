@@ -64,11 +64,19 @@ func CreateJobOffer(ctx *gin.Context) {
 func FetchJobOffers(ctx *gin.Context) {
 	var jobOffers []models.JobOffer
 
+	schoolNumber := ctx.Query("school_number")
+
 	query := config.DB.Model(&models.JobOffer{}).
 		Preload("JobApplication").
 		Preload("JobInterview").
 		Preload("JobInterview.JobVacancy").
 		Preload("JobInterview.JobVacancy.JobPosition")
+
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_applications ON job_applications.number = job_offers.job_application_number").
+			Joins("JOIN job_vacancies ON job_vacancies.number = job_applications.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
 
 	if err := query.Find(&jobOffers).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch job offers"})
