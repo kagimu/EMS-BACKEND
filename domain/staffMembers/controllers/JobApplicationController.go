@@ -143,7 +143,7 @@ func EditJobApplication(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Job application updated successfully!"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Job application details updated successfully!"})
 }
 
 func DeleteJobApplication(ctx *gin.Context) {
