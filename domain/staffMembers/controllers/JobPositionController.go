@@ -62,7 +62,7 @@ func CreateJobPosition(ctx *gin.Context) {
 	}
 
 	if err := config.DB.Create(&jobPosition).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job position not saved."})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job position not saved. Details: " + err.Error()})
 		return
 	}
 
