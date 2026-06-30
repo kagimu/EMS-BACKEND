@@ -162,7 +162,29 @@ func migrateStudyTimetableClassNumber() error {
 	return nil
 }
 
+func migrateJobPositionPostCode() error {
+	db := config.DB
+
+	var count int64
+	db.Raw(`
+		SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = 'job_positions'
+		  AND COLUMN_NAME = 'post_code'
+	`).Scan(&count)
+
+	if count > 0 {
+		return db.Exec(`ALTER TABLE job_positions DROP COLUMN post_code`).Error
+	}
+
+	return nil
+}
+
 func Init() error {
+	if err := migrateJobPositionPostCode(); err != nil {
+		return err
+	}
+
 	if err := migrateBillPaymentPlanPromissoryNote(); err != nil {
 		return err
 	}
