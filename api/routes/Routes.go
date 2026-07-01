@@ -1006,6 +1006,11 @@ func SetupRoutes() *gin.Engine {
 			{
 				feedingGroupStaffs.POST("", cateringController.CreateFeedingGroupStaff)
 				feedingGroupStaffs.GET("", cateringController.FetchFeedingGroupStaffs)
+				feedingGroupStaffs.PUT("", cateringController.UpdateFeedingGroupStaff)
+				feedingGroupStaffs.POST("update", cateringController.UpdateFeedingGroupStaff)
+				feedingGroupStaffs.DELETE("", cateringController.DeleteFeedingGroupStaff)
+				feedingGroupStaffs.DELETE("/:number", cateringController.DeleteFeedingGroupStaff)
+				feedingGroupStaffs.POST("delete", cateringController.DeleteFeedingGroupStaff)
 			}
 			catering.GET("feeding-group-learners", cateringController.FetchFeedingGroupLearners)
 
