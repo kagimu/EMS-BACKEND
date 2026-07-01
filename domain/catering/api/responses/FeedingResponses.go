@@ -63,6 +63,26 @@ type FeedingUserGroupResponse struct {
 	StudyPeriod       string `json:"study_period"`
 }
 
+type FeedingStaffGroupResponse struct {
+	Number             string `json:"number"`
+	StaffNumber        string `json:"staff_number"`
+	UserNumber         string `json:"user_number"`
+	Name               string `json:"name"`
+	Gender             string `json:"gender"`
+	STN                string `json:"stn"`
+	ADN                string `json:"adn"`
+	Email              string `json:"email"`
+	PhoneNumber        string `json:"phone_number"`
+	JobPosition        string `json:"job_position"`
+	FeedingGroupNumber string `json:"feeding_group_number"`
+	FeedingGroupName   string `json:"feeding_group_name"`
+	CampusNumber       string `json:"campus_number"`
+	CampusName         string `json:"campus_name"`
+	SchoolNumber       string `json:"school_number"`
+	SchoolName         string `json:"school_name"`
+	Status             string `json:"status"`
+}
+
 type ItemAssemblyResponse struct {
 	Number              string  `json:"number"`
 	PrimaryItemNumber   string  `json:"primary_item_number"`

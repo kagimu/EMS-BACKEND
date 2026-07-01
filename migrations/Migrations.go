@@ -313,6 +313,7 @@ func Init() error {
 		&cateringModels.Feeding{},
 		&cateringModels.FeedingSessionItem{},
 		&cateringModels.FeedingGroupUser{},
+		&cateringModels.FeedingGroupStaff{},
 		&cateringModels.FeedingGroupSession{},
 		&cateringModels.FeedingAllGroups{},
 		&cateringModels.Meal{},
