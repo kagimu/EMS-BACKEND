@@ -1030,6 +1030,7 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("meals/learners", cateringController.FetchLearnersMeals)
 			catering.GET("meals/learners/history", cateringController.FetchLearnersMealsHistory)
 			catering.GET("meals/staff", cateringController.FetchStaffMeals)
+			catering.GET("meals/staff/history", cateringController.FetchStaffMealsHistory)
 			catering.POST("meals/staff", cateringController.AddStaffMeal)
 			catering.GET("meal-projections", cateringController.MealsProjections)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)

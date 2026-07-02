@@ -91,3 +91,15 @@ type StaffMealResponse struct {
 	CampusNumber string `json:"campus_number"`
 	CampusName   string `json:"campus_name"`
 }
+
+// StaffMealHistoryResponse is used for GET /catering/meals/staff/history.
+type StaffMealHistoryResponse struct {
+	STN              string `json:"stn"`
+	Name             string `json:"name"`
+	Position         string `json:"position"`
+	FeedingGroupName string `json:"feeding_group_name"`
+	MealName         string `json:"meal_name"`
+	Date             string `json:"date"`
+	Time             string `json:"time"`
+	Served           bool   `json:"served"`
+}
