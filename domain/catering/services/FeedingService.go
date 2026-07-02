@@ -779,11 +779,14 @@ func GetStaffMeals(mealCourseNumber, schoolNumber, feedingGroupNumber string) ([
 		if err != nil {
 			return mealsResponse, err
 		}
+		fmt.Printf("[GetStaffMeals] day=%s, meal=%s → %d feeding group meal courses found\n", day, mealCourseNumber, len(allFeedingGroupsForMealAndDay))
 		for _, fg := range allFeedingGroupsForMealAndDay {
+			fmt.Printf("[GetStaffMeals]   group=%s schoolNumber=%s (want %s)\n", fg.FeedingGroup.Number, fg.FeedingGroup.SchoolNumber, schoolNumber)
 			if fg.FeedingGroup.SchoolNumber == schoolNumber {
 				feedingGroups = append(feedingGroups, fg.FeedingGroup)
 			}
 		}
+		fmt.Printf("[GetStaffMeals] feeding groups after school filter: %d\n", len(feedingGroups))
 	}
 
 	// --- 5. Process each feeding group ---
@@ -808,6 +811,7 @@ func GetStaffMeals(mealCourseNumber, schoolNumber, feedingGroupNumber string) ([
 			return mealsResponse, err
 		}
 
+		fmt.Printf("[GetStaffMeals] group=%s → %d staff rows\n", feedingGroup.Number, len(staffRows))
 		if len(staffRows) == 0 {
 			continue
 		}
@@ -817,12 +821,14 @@ func GetStaffMeals(mealCourseNumber, schoolNumber, feedingGroupNumber string) ([
 		campusNumber := staffRows[0].CampusNumber
 		campus := staffRows[0].Campus
 
+		fmt.Printf("[GetStaffMeals] group=%s → campus=%s, looking for session day=%s meal=%s\n", feedingGroup.Number, campusNumber, day, mealCourseNumber)
+
 		mealCourseFeedingSession, err := cateringRepositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
 		if err != nil {
 			return mealsResponse, err
 		}
 		if mealCourseFeedingSession.Number == "" {
-			// No session configured for this group's campus on this day — skip silently.
+			fmt.Printf("[GetStaffMeals] group=%s → NO feeding session found for campus=%s day=%s — skipping\n", feedingGroup.Number, campusNumber, day)
 			continue
 		}
 
