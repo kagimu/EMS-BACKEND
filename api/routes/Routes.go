@@ -1107,6 +1107,7 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.GET("deployments", staffMembersControllers.FetchStaffDeployments)
 			staffMembers.PUT("deployment/edit", staffMembersControllers.EditStaffDeployment)
 			staffMembers.DELETE("deployment/:id", staffMembersControllers.DeleteStaffDeployment)
+			staffMembers.PUT("deployment/assign-role", staffMembersControllers.AssignStaffRole)
 
 			staffMembers.POST("biodata/:job_offer_number/personal", staffMembersControllers.CreatePersonalBioData)
 			staffMembers.GET("biodata/:job_offer_number/personal", staffMembersControllers.FetchPersonalBioData)

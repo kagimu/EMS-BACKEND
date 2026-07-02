@@ -29,3 +29,32 @@ func (r *EditStaffDeploymentRequest) Validate() error {
 	}
 	return nil
 }
+
+type StaffRoleItem struct {
+	RoleNumber string `json:"role_number"`
+	ExpiryDate string `json:"expiry_date"`
+}
+
+type AssignStaffRoleRequest struct {
+	DeploymentNumber string          `json:"deployment_number"`
+	Roles            []StaffRoleItem `json:"roles"`
+}
+
+func (r *AssignStaffRoleRequest) Validate() error {
+	if r.DeploymentNumber == "" {
+		return errors.New("deployment_number is required")
+	}
+	if len(r.Roles) == 0 {
+		return errors.New("at least one role is required")
+	}
+	for _, role := range r.Roles {
+		if role.RoleNumber == "" {
+			return errors.New("role_number is required for each role")
+		}
+		if role.ExpiryDate == "" {
+			return errors.New("expiry_date is required for each role")
+		}
+	}
+	return nil
+}
+

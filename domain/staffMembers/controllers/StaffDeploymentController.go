@@ -7,6 +7,12 @@ import (
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
+	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	"github.com/gin-gonic/gin"
@@ -166,3 +172,160 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Deployment deleted successfully!"})
 }
+
+func AssignStaffRole(ctx *gin.Context) {
+	var request requests.AssignStaffRoleRequest
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request: " + err.Error()})
+		return
+	}
+	if err := request.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	var deployment models.StaffDeployment
+	if err := tx.Preload("JobOffer.JobApplication").Where("number = ?", request.DeploymentNumber).First(&deployment).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Staff deployment not found"})
+		return
+	}
+
+	var userNumber string
+	var applicantEmail = deployment.JobOffer.JobApplication.Email
+	var applicantPhone = deployment.JobOffer.JobApplication.PhoneNumber
+	var applicantFirstName = deployment.JobOffer.JobApplication.FirstName
+	var applicantLastName = deployment.JobOffer.JobApplication.LastName
+
+	if deployment.JobOffer.JobApplication.UserNumber != "" {
+		userNumber = deployment.JobOffer.JobApplication.UserNumber
+	} else {
+		// Check if user already exists by email in contacts
+		var contact authModels.Contact
+		if err := tx.Where("contact = ?", applicantEmail).First(&contact).Error; err == nil {
+			userNumber = contact.UserNumber
+			tx.Model(&deployment.JobOffer.JobApplication).Update("user_number", userNumber)
+		} else {
+			// Create new user profile
+			userNumber = uuid.NewV4().String()
+			userObj := authModels.User{
+				Number:     userNumber,
+				FirstName:  applicantFirstName,
+				SecondName: applicantFirstName,
+				LastName:   applicantLastName,
+				Type:       constants.TypeStaff,
+				Status:     "Active",
+			}
+			if err := tx.Create(&userObj).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create staff user profile"})
+				return
+			}
+			// Save Email contact
+			emailContact := authModels.Contact{
+				Contact:     applicantEmail,
+				ContactType: "Email",
+				UserNumber:  userNumber,
+			}
+			if err := tx.Create(&emailContact).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save email contact"})
+				return
+			}
+			// Save Phone contact if present
+			if applicantPhone != "" {
+				phoneContact := authModels.Contact{
+					Contact:     applicantPhone,
+					ContactType: "Phone",
+					UserNumber:  userNumber,
+				}
+				if err := tx.Create(&phoneContact).Error; err != nil {
+					tx.Rollback()
+					ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save phone contact"})
+					return
+				}
+			}
+			// Attach to entity if available
+			entityNumber, _ := commons.GetUserEntityNumber(ctx)
+			if entityNumber != "" {
+				entityUser := eosModels.EntityUser{
+					EntityNumber:  entityNumber,
+					UserNumber:    userNumber,
+					AddedByNumber: ctx.GetHeader("User-Number"),
+				}
+				tx.Create(&entityUser)
+			}
+			// Update JobApplication UserNumber
+			tx.Model(&deployment.JobOffer.JobApplication).Update("user_number", userNumber)
+
+			// Generate password reset token and send email activation
+			resetToken := uuid.NewV4().String()
+			pwReset := authModels.PasswordReset{
+				Number:     uuid.NewV4().String(),
+				UserNumber: userNumber,
+				Token:      resetToken,
+				Status:     "Inactive",
+			}
+			if err := tx.Create(&pwReset).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create password reset token"})
+				return
+			}
+			// Send activation email
+			mailInfo := emailSender.Info{
+				Email:       applicantEmail,
+				Token:       resetToken,
+				MailType:    "WholesomeEd: Staff Account Confirmation",
+				UserName:    applicantFirstName,
+				CurrentYear: time.Now().Year(),
+				Type:        "registration",
+			}
+			if err := mailInfo.SendEmail(); err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to send account activation email: " + err.Error()})
+				return
+			}
+		}
+	}
+
+	for _, roleItem := range request.Roles {
+		date, err := commons.ConvertStringToDate(roleItem.ExpiryDate)
+		if err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid date format for role expiry date"})
+			return
+		}
+		var existingRole permissionModels.UserRole
+		err = tx.Where("user_number = ? AND role_number = ?", userNumber, roleItem.RoleNumber).First(&existingRole).Error
+		if err == nil {
+			existingRole.ExpiryDate = date
+			if err := tx.Save(&existingRole).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update role assignment"})
+				return
+			}
+		} else {
+			newRole := permissionModels.UserRole{
+				UserNumber: userNumber,
+				RoleNumber: roleItem.RoleNumber,
+				AddedBy:    ctx.Request.Header.Get("User-Number"),
+				ExpiryDate: date,
+			}
+			if err := tx.Create(&newRole).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to assign role"})
+				return
+			}
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Staff role assigned successfully and account activated if new!"})
+}
+
