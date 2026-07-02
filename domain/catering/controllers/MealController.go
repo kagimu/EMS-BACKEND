@@ -436,6 +436,33 @@ func AddMeal(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Meal created successfully"})
 }
 
+func AddStaffMeal(c *gin.Context) {
+	loggedInUser, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.StaffMealRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.AddStaffMeal(payload, loggedInUser.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Staff meal recorded successfully"})
+}
+
 func UpdateMealCourseItem(ctx *gin.Context) {
 
 	user, err := commons.GetUserFromHeader(ctx)

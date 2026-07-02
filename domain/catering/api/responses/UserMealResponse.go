@@ -71,6 +71,7 @@ type LearnerMealHistoryResponse struct {
 type StaffMealResponse struct {
 	// Meal / session fields (mirrors UserMealResponse)
 	UserNumber           string               `json:"user_number"`
+	StaffNumber          string               `json:"staff_number"`
 	Name                 string               `json:"name"`
 	FeedingGroupNumber   string               `json:"feeding_group_number"`
 	FeedingGroupName     string               `json:"feeding_group_name"`

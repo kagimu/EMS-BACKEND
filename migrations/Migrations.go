@@ -329,6 +329,8 @@ func Init() error {
 		&cateringModels.CampusMealCourse{},
 		&cateringModels.FeedingGroupMealCourse{},
 		&cateringModels.MealStock{},
+		&cateringModels.StaffMeal{},
+		&cateringModels.StaffMealStock{},
 		&eosModels.EntityUser{},
 		&reportSettings.HeadTeacherComment{},
 		&reportingActivityModels.Indicator{},
