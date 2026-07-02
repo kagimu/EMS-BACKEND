@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -194,101 +196,106 @@ func AssignStaffRole(ctx *gin.Context) {
 	}
 
 	var userNumber string
-	var applicantEmail = deployment.JobOffer.JobApplication.Email
-	var applicantPhone = deployment.JobOffer.JobApplication.PhoneNumber
+	var applicantEmail = strings.TrimSpace(deployment.JobOffer.JobApplication.Email)
+	var applicantPhone = strings.TrimSpace(deployment.JobOffer.JobApplication.PhoneNumber)
 	var applicantFirstName = deployment.JobOffer.JobApplication.FirstName
 	var applicantLastName = deployment.JobOffer.JobApplication.LastName
 
-	if deployment.JobOffer.JobApplication.UserNumber != "" {
-		userNumber = deployment.JobOffer.JobApplication.UserNumber
+	if applicantEmail == "" {
+		tx.Rollback()
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Staff applicant email is empty, cannot send activation email"})
+		return
+	}
+
+	// Look up user by main email in contacts table first to get their true user number (avoiding admin ID)
+	var contact authModels.Contact
+	if err := tx.Where("contact = ?", applicantEmail).First(&contact).Error; err == nil {
+		userNumber = contact.UserNumber
 	} else {
-		// Check if user already exists by email in contacts
-		var contact authModels.Contact
-		if err := tx.Where("contact = ?", applicantEmail).First(&contact).Error; err == nil {
-			userNumber = contact.UserNumber
-			tx.Model(&deployment.JobOffer.JobApplication).Update("user_number", userNumber)
-		} else {
-			// Create new user profile
-			userNumber = uuid.NewV4().String()
-			userObj := authModels.User{
-				Number:     userNumber,
-				FirstName:  applicantFirstName,
-				SecondName: applicantFirstName,
-				LastName:   applicantLastName,
-				Type:       constants.TypeStaff,
-				Status:     "Active",
-			}
-			if err := tx.Create(&userObj).Error; err != nil {
-				tx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create staff user profile"})
-				return
-			}
-			// Save Email contact
-			emailContact := authModels.Contact{
-				Contact:     applicantEmail,
-				ContactType: "Email",
+		// Create new user profile
+		userNumber = uuid.NewV4().String()
+		userObj := authModels.User{
+			Number:     userNumber,
+			FirstName:  applicantFirstName,
+			SecondName: applicantFirstName,
+			LastName:   applicantLastName,
+			Type:       constants.TypeStaff,
+			Status:     "Active",
+		}
+		if err := tx.Create(&userObj).Error; err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create staff user profile"})
+			return
+		}
+		// Save Email contact
+		emailContact := authModels.Contact{
+			Contact:     applicantEmail,
+			ContactType: "Email",
+			UserNumber:  userNumber,
+		}
+		if err := tx.Create(&emailContact).Error; err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save email contact"})
+			return
+		}
+		// Save Phone contact if present
+		if applicantPhone != "" {
+			phoneContact := authModels.Contact{
+				Contact:     applicantPhone,
+				ContactType: "Phone",
 				UserNumber:  userNumber,
 			}
-			if err := tx.Create(&emailContact).Error; err != nil {
+			if err := tx.Create(&phoneContact).Error; err != nil {
 				tx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save email contact"})
-				return
-			}
-			// Save Phone contact if present
-			if applicantPhone != "" {
-				phoneContact := authModels.Contact{
-					Contact:     applicantPhone,
-					ContactType: "Phone",
-					UserNumber:  userNumber,
-				}
-				if err := tx.Create(&phoneContact).Error; err != nil {
-					tx.Rollback()
-					ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save phone contact"})
-					return
-				}
-			}
-			// Attach to entity if available
-			entityNumber, _ := commons.GetUserEntityNumber(ctx)
-			if entityNumber != "" {
-				entityUser := eosModels.EntityUser{
-					EntityNumber:  entityNumber,
-					UserNumber:    userNumber,
-					AddedByNumber: ctx.GetHeader("User-Number"),
-				}
-				tx.Create(&entityUser)
-			}
-			// Update JobApplication UserNumber
-			tx.Model(&deployment.JobOffer.JobApplication).Update("user_number", userNumber)
-
-			// Generate password reset token and send email activation
-			resetToken := uuid.NewV4().String()
-			pwReset := authModels.PasswordReset{
-				Number:     uuid.NewV4().String(),
-				UserNumber: userNumber,
-				Token:      resetToken,
-				Status:     "Inactive",
-			}
-			if err := tx.Create(&pwReset).Error; err != nil {
-				tx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create password reset token"})
-				return
-			}
-			// Send activation email
-			mailInfo := emailSender.Info{
-				Email:       applicantEmail,
-				Token:       resetToken,
-				MailType:    "WholesomeEd: Staff Account Confirmation",
-				UserName:    applicantFirstName,
-				CurrentYear: time.Now().Year(),
-				Type:        "registration",
-			}
-			if err := mailInfo.SendEmail(); err != nil {
-				tx.Rollback()
-				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to send account activation email: " + err.Error()})
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save phone contact"})
 				return
 			}
 		}
+		// Attach to entity if available
+		entityNumber, _ := commons.GetUserEntityNumber(ctx)
+		if entityNumber != "" {
+			entityUser := eosModels.EntityUser{
+				EntityNumber:  entityNumber,
+				UserNumber:    userNumber,
+				AddedByNumber: ctx.GetHeader("User-Number"),
+			}
+			tx.Create(&entityUser)
+		}
 	}
+
+	// Ensure user type is set to Staff and link to JobApplication
+	tx.Model(&authModels.User{}).Where("number = ?", userNumber).Update("type", constants.TypeStaff)
+	tx.Model(&deployment.JobOffer.JobApplication).Update("user_number", userNumber)
+
+	// Always generate password reset token and send activation/welcome email to main email of deployed staff
+	resetToken := uuid.NewV4().String()
+	pwReset := authModels.PasswordReset{
+		Number:     uuid.NewV4().String(),
+		UserNumber: userNumber,
+		Token:      resetToken,
+		Status:     "Inactive",
+	}
+	if err := tx.Create(&pwReset).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create password reset token"})
+		return
+	}
+
+	// Send welcome/activation email to the main email of the deployed staff
+	mailInfo := emailSender.Info{
+		Email:       applicantEmail,
+		Token:       resetToken,
+		MailType:    "WholesomeEd: Staff Account Confirmation",
+		UserName:    applicantFirstName,
+		CurrentYear: time.Now().Year(),
+		Type:        "registration",
+	}
+	if err := mailInfo.SendEmail(); err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to send account activation email: " + err.Error()})
+		return
+	}
+
 
 	for _, roleItem := range request.Roles {
 		date, err := commons.ConvertStringToDate(roleItem.ExpiryDate)
