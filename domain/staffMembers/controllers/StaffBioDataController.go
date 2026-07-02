@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	attachmentServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	"github.com/gin-gonic/gin"
@@ -1255,3 +1256,40 @@ func FetchFullStaffProfileBioData(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
+
+func UploadStaffPhoto(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	attachmentNumber, err := attachmentServices.UploadAttachment(ctx, "file")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to upload photo: " + err.Error()})
+		return
+	}
+
+	var personal models.StaffBioDataPersonal
+	err = config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&personal).Error
+	if err != nil {
+		personal = models.StaffBioDataPersonal{
+			Number:         uuid.NewV4().String(),
+			JobOfferNumber: jobOfferNumber,
+			Photo:          attachmentNumber,
+		}
+		if err := config.DB.Create(&personal).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save photo to personal profile"})
+			return
+		}
+	} else {
+		personal.Photo = attachmentNumber
+		if err := config.DB.Save(&personal).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update photo in personal profile"})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Photo uploaded successfully", "data": personal, "photo": attachmentNumber})
+}
+

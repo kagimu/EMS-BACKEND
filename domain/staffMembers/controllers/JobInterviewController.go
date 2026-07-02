@@ -58,6 +58,12 @@ func FetchJobInterviews(ctx *gin.Context) {
 		query = query.Where("job_vacancy_number = ?", jobVacancyNumber)
 	}
 
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_vacancies ON job_vacancies.number = job_interviews.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
+
 	if err := query.Find(&jobInterviews).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch job interviews"})
 		return
@@ -211,6 +217,13 @@ func FetchScheduledInterviews(ctx *gin.Context) {
 		query = query.Where("job_application_number = ?", applicationNumber)
 	}
 
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_interviews ON job_interviews.number = job_interview_schedules.job_interview_number").
+			Joins("JOIN job_vacancies ON job_vacancies.number = job_interviews.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
+
 	if err := query.Find(&schedules).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch scheduled interviews"})
 		return
@@ -281,7 +294,14 @@ func FetchCompletedInterviews(ctx *gin.Context) {
 	query := config.DB.Model(&models.JobInterviewSchedule{}).
 		Preload("JobApplication").
 		Preload("JobInterview").
-		Where("status = ?", "completed")
+		Where("job_interview_schedules.status = ?", "completed")
+
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_interviews ON job_interviews.number = job_interview_schedules.job_interview_number").
+			Joins("JOIN job_vacancies ON job_vacancies.number = job_interviews.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
 
 	if err := query.Find(&schedules).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch completed interviews"})

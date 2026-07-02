@@ -38,14 +38,12 @@ type StaffRoleItem struct {
 type AssignStaffRoleRequest struct {
 	DeploymentNumber string          `json:"deployment_number"`
 	Roles            []StaffRoleItem `json:"roles"`
+	UserStatus       string          `json:"user_status"`
 }
 
 func (r *AssignStaffRoleRequest) Validate() error {
 	if r.DeploymentNumber == "" {
 		return errors.New("deployment_number is required")
-	}
-	if len(r.Roles) == 0 {
-		return errors.New("at least one role is required")
 	}
 	for _, role := range r.Roles {
 		if role.RoleNumber == "" {

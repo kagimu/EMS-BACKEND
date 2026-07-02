@@ -90,12 +90,21 @@ func CreateStaffDeployment(ctx *gin.Context) {
 func FetchStaffDeployments(ctx *gin.Context) {
 	var deployments []models.StaffDeployment
 
+	schoolNumber := ctx.Query("school_number")
+
 	query := config.DB.Model(&models.StaffDeployment{}).
 		Preload("JobOffer").
 		Preload("JobOffer.JobApplication").
 		Preload("JobOffer.JobInterview").
 		Preload("JobOffer.JobInterview.JobVacancy").
 		Preload("JobOffer.JobInterview.JobVacancy.JobPosition")
+
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_offers ON job_offers.number = staff_deployments.job_offer_number").
+			Joins("JOIN job_applications ON job_applications.number = job_offers.job_application_number").
+			Joins("JOIN job_vacancies ON job_vacancies.number = job_applications.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
 
 	if err := query.Find(&deployments).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch staff deployments"})
@@ -104,11 +113,48 @@ func FetchStaffDeployments(ctx *gin.Context) {
 
 	var responseData []map[string]interface{}
 	for _, dep := range deployments {
+		var userStatus string = "No Account"
+		var assignedRoles []map[string]interface{}
+		var userNumber string
+		var contact authModels.Contact
+		if err := config.DB.Preload("User").Where("contact = ?", dep.JobOffer.JobApplication.Email).First(&contact).Error; err == nil {
+			userNumber = contact.UserNumber
+			if contact.User.Status != "" {
+				userStatus = contact.User.Status
+			} else {
+				userStatus = "Active"
+			}
+		} else if dep.JobOffer.JobApplication.UserNumber != "" {
+			var u authModels.User
+			if err := config.DB.Where("number = ?", dep.JobOffer.JobApplication.UserNumber).First(&u).Error; err == nil {
+				userNumber = u.Number
+				userStatus = u.Status
+			}
+		}
+
+		if userNumber != "" {
+			var userRoles []permissionModels.UserRole
+			if err := config.DB.Preload("Role").Where("user_number = ?", userNumber).Find(&userRoles).Error; err == nil {
+				for _, ur := range userRoles {
+					assignedRoles = append(assignedRoles, map[string]interface{}{
+						"role_number": ur.RoleNumber,
+						"role_name":   ur.Role.Name,
+						"expiry_date": ur.ExpiryDate.Format("2006-01-02"),
+					})
+				}
+			}
+		}
+		if assignedRoles == nil {
+			assignedRoles = []map[string]interface{}{}
+		}
+
 		responseData = append(responseData, map[string]interface{}{
 			"number":           dep.Number,
 			"job_offer_number": dep.JobOfferNumber,
 			"staff_id_number":  dep.StaffIdNumber,
 			"status":           dep.Status,
+			"user_status":      userStatus,
+			"assigned_roles":   assignedRoles,
 			"applicant_name":   dep.JobOffer.JobApplication.FirstName + " " + dep.JobOffer.JobApplication.LastName,
 			"applicant_email":  dep.JobOffer.JobApplication.Email,
 			"applicant_phone":  dep.JobOffer.JobApplication.PhoneNumber,
@@ -267,36 +313,39 @@ func AssignStaffRole(ctx *gin.Context) {
 	tx.Model(&authModels.User{}).Where("number = ?", userNumber).Update("type", constants.TypeStaff)
 	tx.Model(&deployment.JobOffer.JobApplication).Update("user_number", userNumber)
 
-	// Always generate password reset token and send activation/welcome email to main email of deployed staff
-	resetToken := uuid.NewV4().String()
-	pwReset := authModels.PasswordReset{
-		Number:     uuid.NewV4().String(),
-		UserNumber: userNumber,
-		Token:      resetToken,
-		Status:     "Inactive",
-	}
-	if err := tx.Create(&pwReset).Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create password reset token"})
-		return
+	// Check if user has a password set already. If not, generate password reset token and send activation/welcome email
+	var up authModels.UserPassword
+	if err := tx.Where("user_number = ?", userNumber).First(&up).Error; err != nil {
+		resetToken := uuid.NewV4().String()
+		pwReset := authModels.PasswordReset{
+			Number:     uuid.NewV4().String(),
+			UserNumber: userNumber,
+			Token:      resetToken,
+			Status:     "Inactive",
+		}
+		if err := tx.Create(&pwReset).Error; err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create password reset token"})
+			return
+		}
+
+		// Send welcome/activation email to the main email of the deployed staff
+		mailInfo := emailSender.Info{
+			Email:       applicantEmail,
+			Token:       resetToken,
+			MailType:    "WholesomeEd: Staff Account Confirmation",
+			UserName:    applicantFirstName,
+			CurrentYear: time.Now().Year(),
+			Type:        "registration",
+		}
+		if err := mailInfo.SendEmail(); err != nil {
+			tx.Rollback()
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to send account activation email: " + err.Error()})
+			return
+		}
 	}
 
-	// Send welcome/activation email to the main email of the deployed staff
-	mailInfo := emailSender.Info{
-		Email:       applicantEmail,
-		Token:       resetToken,
-		MailType:    "WholesomeEd: Staff Account Confirmation",
-		UserName:    applicantFirstName,
-		CurrentYear: time.Now().Year(),
-		Type:        "registration",
-	}
-	if err := mailInfo.SendEmail(); err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to send account activation email: " + err.Error()})
-		return
-	}
-
-
+	var assignedRoleNumbers []string
 	for _, roleItem := range request.Roles {
 		date, err := commons.ConvertStringToDate(roleItem.ExpiryDate)
 		if err != nil {
@@ -304,6 +353,7 @@ func AssignStaffRole(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid date format for role expiry date"})
 			return
 		}
+		assignedRoleNumbers = append(assignedRoleNumbers, roleItem.RoleNumber)
 		var existingRole permissionModels.UserRole
 		err = tx.Where("user_number = ? AND role_number = ?", userNumber, roleItem.RoleNumber).First(&existingRole).Error
 		if err == nil {
@@ -328,11 +378,21 @@ func AssignStaffRole(ctx *gin.Context) {
 		}
 	}
 
+	if len(assignedRoleNumbers) > 0 {
+		tx.Where("user_number = ? AND role_number NOT IN (?)", userNumber, assignedRoleNumbers).Delete(&permissionModels.UserRole{})
+	} else {
+		tx.Where("user_number = ?", userNumber).Delete(&permissionModels.UserRole{})
+	}
+
+	if request.UserStatus != "" {
+		tx.Model(&authModels.User{}).Where("number = ?", userNumber).Update("status", request.UserStatus)
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction: " + err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Staff role assigned successfully and account activated if new!"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Staff role and access details updated successfully!"})
 }
 

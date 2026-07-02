@@ -1137,6 +1137,7 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.GET("biodata/:job_offer_number/references", staffMembersControllers.FetchReferencesBioData)
 			staffMembers.PUT("biodata/:job_offer_number/references", staffMembersControllers.EditReferencesBioData)
 
+			staffMembers.POST("biodata/:job_offer_number/photo", staffMembersControllers.UploadStaffPhoto)
 			staffMembers.GET("biodata/:job_offer_number/full-profile", staffMembersControllers.FetchFullStaffProfileBioData)
 		}
 

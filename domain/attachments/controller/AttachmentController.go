@@ -32,6 +32,18 @@ func DownloadAttachment(context *gin.Context) {
 		contentType = "application/pdf"
 	case ".doc", ".docx":
 		contentType = "application/msword"
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+		context.Header("Content-Disposition", "inline; filename="+fileDetails.FileName)
+	case ".png":
+		contentType = "image/png"
+		context.Header("Content-Disposition", "inline; filename="+fileDetails.FileName)
+	case ".gif":
+		contentType = "image/gif"
+		context.Header("Content-Disposition", "inline; filename="+fileDetails.FileName)
+	case ".webp":
+		contentType = "image/webp"
+		context.Header("Content-Disposition", "inline; filename="+fileDetails.FileName)
 	}
 
 	context.Header("Content-Type", contentType)
