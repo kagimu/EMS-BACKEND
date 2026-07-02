@@ -713,6 +713,193 @@ func GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, 
 	return historyResponse, nil
 }
 
+// GetStaffMeals is the staff counterpart of GetLearnerMeals.
+// It returns staff members that belong to feeding groups for the given school and meal course,
+// together with their served status for today's meal.
+//
+// Required: mealCourseNumber, schoolNumber
+// Optional: feedingGroupNumber
+func GetStaffMeals(mealCourseNumber, schoolNumber, feedingGroupNumber string) ([]responses.StaffMealResponse, error) {
+
+	mealsResponse := make([]responses.StaffMealResponse, 0)
+
+	// --- 1. Resolve current day-of-week ---
+	currentTime := time.Now()
+	day := currentTime.Format("Mon")
+	if checkDay := commons.CheckDay(day); checkDay != "" {
+		return mealsResponse, errors.New(checkDay)
+	}
+
+	// --- 2. Validate school ---
+	school, err := schoolRepositories.GetSchoolByNumber(schoolNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if school.Number == "" {
+		return mealsResponse, errors.New("invalid school number")
+	}
+
+	// --- 3. Validate meal course (must be active and belong to this school) ---
+	mealCourse, err := cateringRepositories.GetMealCourseByNumber(mealCourseNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if mealCourse.Status != constants.StatusActive {
+		return mealsResponse, errors.New("meal course is: '" + mealCourse.Status + "'")
+	}
+	checkSchool, err := cateringRepositories.GetMealCourseByNumberAndSchool(mealCourse.Number, schoolNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if checkSchool.Number == "" {
+		return mealsResponse, errors.New("meal course does not belong to the selected school")
+	}
+
+	// --- 4. Resolve feeding groups ---
+	var feedingGroups []models.FeedingGroup
+
+	if feedingGroupNumber != "" {
+		checkGroup, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+		if checkGroup.Number == "" || checkGroup.SchoolNumber != schoolNumber {
+			return mealsResponse, errors.New("invalid group number")
+		}
+		checkAllowedToHaveMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber, day, feedingGroupNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+		if checkAllowedToHaveMeal.Number == "" {
+			return mealsResponse, errors.New("this group should not be served today")
+		}
+		feedingGroups = append(feedingGroups, checkGroup)
+	} else {
+		allFeedingGroupsForMealAndDay, err := cateringRepositories.GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber, day)
+		if err != nil {
+			return mealsResponse, err
+		}
+		for _, fg := range allFeedingGroupsForMealAndDay {
+			if fg.FeedingGroup.SchoolNumber == schoolNumber {
+				feedingGroups = append(feedingGroups, fg.FeedingGroup)
+			}
+		}
+	}
+
+	// --- 5. Process each feeding group ---
+	db := config.DB
+
+	for _, feedingGroup := range feedingGroups {
+
+		// 5a. Fetch all staff assigned to this group with full deployment preloads.
+		var staffRows []models.FeedingGroupStaff
+		if err := db.
+			Preload("Campus").
+			Preload("FeedingGroup").
+			Preload("StaffDeployment").
+			Preload("StaffDeployment.JobOffer").
+			Preload("StaffDeployment.JobOffer.JobApplication").
+			Preload("StaffDeployment.JobOffer.JobInterview").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy.JobPosition").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy.Campus").
+			Where("feeding_group_number = ?", feedingGroup.Number).
+			Find(&staffRows).Error; err != nil {
+			return mealsResponse, err
+		}
+
+		if len(staffRows) == 0 {
+			continue
+		}
+
+		// 5b. Resolve the feeding session using the campus stored on the first staff record
+		//     for this group (all staff in a group share the same campus).
+		campusNumber := staffRows[0].CampusNumber
+		campus := staffRows[0].Campus
+
+		mealCourseFeedingSession, err := cateringRepositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+		if mealCourseFeedingSession.Number == "" {
+			// No session configured for this group's campus on this day — skip silently.
+			continue
+		}
+
+		feedingSession := mealCourseFeedingSession.FeedingSession
+
+		feedItems, err := cateringRepositories.GetFeedingSessionItems(feedingSession.Number)
+		if err != nil {
+			return mealsResponse, err
+		}
+
+		// 5c. Build a response record per staff member.
+		for _, s := range staffRows {
+			dep := s.StaffDeployment
+			app := dep.JobOffer.JobApplication
+
+			// Resolve display name.
+			name := app.FirstName
+			if app.LastName != "" {
+				name += " " + app.LastName
+			}
+			if name == "" {
+				name = "Staff Member"
+			}
+
+			// Resolve job position.
+			position := ""
+			if dep.JobOffer.JobInterview.JobVacancy.JobPosition.PostName != "" {
+				position = dep.JobOffer.JobInterview.JobVacancy.JobPosition.PostName
+			}
+
+			// Resolve campus name (fall back to vacancy campus if own campus is missing).
+			campusName := campus.Name
+			if campusName == "" {
+				campusName = dep.JobOffer.JobInterview.JobVacancy.Campus.Name
+			}
+
+			// Resolve user_number for served-status look-up.
+			// Staff deployments link to a user account; fall back to application's user.
+			userNumber := dep.UserNumber
+			if userNumber == "" {
+				userNumber = app.UserNumber
+			}
+
+			staffMeal := responses.StaffMealResponse{
+				UserNumber:           userNumber,
+				Name:                 name,
+				FeedingGroupNumber:   feedingGroup.Number,
+				FeedingGroupName:     feedingGroup.Name,
+				FeedingSessionNumber: feedingSession.Number,
+				Gender:               "",
+				STN:                  dep.StaffIdNumber,
+				Email:                app.Email,
+				PhoneNumber:          app.PhoneNumber,
+				JobPosition:          position,
+				SchoolNumber:         schoolNumber,
+				CampusNumber:         campusNumber,
+				CampusName:           campusName,
+			}
+
+			// Check served status (only meaningful when user_number is linked).
+			if userNumber != "" {
+				meals := findUserMeal(userNumber, feedItems, mealCourse.Number)
+				for _, meal := range meals {
+					if meal.ServedQuantity != 0 {
+						staffMeal.Served = true
+					}
+				}
+				staffMeal.Meals = meals
+			}
+
+			mealsResponse = append(mealsResponse, staffMeal)
+		}
+	}
+
+	return mealsResponse, nil
+}
+
 func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSessionItem, mealCourse string) []responses.SingleUserMealItem {
 
 	var items []responses.SingleUserMealItem

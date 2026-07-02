@@ -62,3 +62,31 @@ type LearnerMealHistoryResponse struct {
 	Time               string `json:"time"`
 	Served             bool   `json:"served"`
 }
+
+// StaffMealResponse is used by GET /catering/meals/staff.
+// It mirrors UserMealResponse but targets feeding_group_staffs and includes
+// staff-specific identity fields (STN, job position, contact info).
+// Required filters: school_number, meal_course_number.
+// Optional filter:  feeding_group_number.
+type StaffMealResponse struct {
+	// Meal / session fields (mirrors UserMealResponse)
+	UserNumber           string               `json:"user_number"`
+	Name                 string               `json:"name"`
+	FeedingGroupNumber   string               `json:"feeding_group_number"`
+	FeedingGroupName     string               `json:"feeding_group_name"`
+	Meals                []SingleUserMealItem `json:"meals"`
+	FeedingSessionNumber string               `json:"feeding_session_number"`
+	Served               bool                 `json:"served"`
+
+	// Staff identity
+	Gender      string `json:"gender"`
+	STN         string `json:"stn"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phone_number"`
+	JobPosition string `json:"job_position"`
+
+	// Campus / school
+	SchoolNumber string `json:"school_number"`
+	CampusNumber string `json:"campus_number"`
+	CampusName   string `json:"campus_name"`
+}

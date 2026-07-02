@@ -370,6 +370,44 @@ func FetchLearnersMealsHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": learnersMealHistory})
 }
 
+// FetchStaffMeals returns meal eligibility and served status for staff members
+// that are assigned to feeding groups for the given school and meal course.
+//
+// Query params:
+//
+//	school_number        (required)
+//	meal_course_number   (required)
+//	feeding_group_number (optional)
+func FetchStaffMeals(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+	if schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school"})
+		return
+	}
+
+	mealCourseNumber := c.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a meal course"})
+		return
+	}
+
+	feedingGroupNumber := c.Query("feeding_group_number")
+
+	staffMeals, err := services.GetStaffMeals(mealCourseNumber, schoolNumber, feedingGroupNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": staffMeals})
+}
 
 func AddMeal(c *gin.Context) {
 	loggedInUser, err := commons.GetUserFromHeader(c)
