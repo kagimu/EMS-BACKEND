@@ -2,6 +2,7 @@ package scopes
 
 import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	staffMembersModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	"github.com/gin-gonic/gin"
@@ -104,24 +105,53 @@ func GetStaffAllowedSchools(staffIDs []string) []string {
 	return allowed
 }
 
-// FilterSchoolsByStaffScope is a GORM scope that strictly enforces school access for staff members.
+// GetCallerUserType inspects the gin context or users table to determine the caller's User.Type.
+func GetCallerUserType(ctx *gin.Context, callerNumber string) string {
+	if ctx != nil {
+		if userObj, exists := ctx.Get("user"); exists {
+			if user, ok := userObj.(authModels.User); ok {
+				return user.Type
+			}
+		}
+	}
+
+	if callerNumber != "" {
+		var u authModels.User
+		if err := config.DB.Where("number = ?", callerNumber).First(&u).Error; err == nil {
+			return u.Type
+		}
+	}
+
+	return ""
+}
+
+// FilterSchoolsByStaffScope is a GORM scope that enforces school access for staff members.
 func FilterSchoolsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		callerNumber := ctx.GetHeader("User-Number")
+		callerNumber := ""
+		if ctx != nil {
+			callerNumber = ctx.GetHeader("User-Number")
+		}
 		if callerNumber == "" {
+			return db
+		}
+
+		userType := GetCallerUserType(ctx, callerNumber)
+		if userType != "Staff" {
+			// Scoping should not affect Admin or any non-Staff usertype
 			return db
 		}
 
 		staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
 		if !isStaff {
-			// Caller is not a staff member -> allow all schools (Entity Owner / Admin)
+			// Caller is Staff usertype but has no staff deployment records -> allow bypassing
 			return db
 		}
 
 		allowedSchools := GetStaffAllowedSchools(staffIDs)
 		if len(allowedSchools) == 0 {
-			// Staff member has no schools assigned -> strictly return 0 schools
-			return db.Where("1 = 0")
+			// Staff member has no schools assigned -> allow bypassing
+			return db
 		}
 
 		return db.Where("number IN (?)", allowedSchools)
@@ -130,22 +160,47 @@ func FilterSchoolsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 
 // GetDebugInfo returns diagnostic information about the caller and their resolved scope.
 func GetDebugInfo(ctx *gin.Context) gin.H {
-	callerNumber := ctx.GetHeader("User-Number")
+	callerNumber := ""
+	if ctx != nil {
+		callerNumber = ctx.GetHeader("User-Number")
+	}
+	userType := GetCallerUserType(ctx, callerNumber)
+
+	if userType != "Staff" {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Scoping bypassed: caller is not Staff usertype (user_type: " + userType + ").",
+		}
+	}
+
 	staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
 	if !isStaff {
 		return gin.H{
 			"caller_number": callerNumber,
+			"user_type":     userType,
 			"is_staff":      false,
-			"debug_message": "Caller was not found across staff_deployments, staffs, job_offers, or job_applications.",
+			"is_scoped":     false,
+			"debug_message": "Scoping bypassed: Caller is Staff usertype but has no staff records setup.",
 		}
 	}
 
 	allowed := GetStaffAllowedSchools(staffIDs)
+	isScoped := len(allowed) > 0
+	msg := "Caller identified as Staff usertype and scoped to assigned schools."
+	if !isScoped {
+		msg = "Scoping bypassed: Staff member has no schools assigned in their scope."
+	}
+
 	return gin.H{
 		"caller_number":      callerNumber,
+		"user_type":          userType,
 		"is_staff":           true,
+		"is_scoped":          isScoped,
 		"resolved_staff_ids": staffIDs,
 		"allowed_schools":    allowed,
-		"debug_message":      "Caller identified as staff member across staff tables.",
+		"debug_message":      msg,
 	}
 }
