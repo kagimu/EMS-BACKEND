@@ -55,3 +55,28 @@ func GetStaffScope(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": scopeTree})
 }
+
+func UpdateStaffScope(c *gin.Context) {
+	SaveStaffScope(c)
+}
+
+func DeleteStaffScope(c *gin.Context) {
+	staffNumber := c.Param("staff_number")
+	if staffNumber == "" {
+		staffNumber = c.Query("staff_number")
+	}
+	if staffNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "staff_number is required"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+
+	if err := services.ClearStaffScope(staffNumber, schoolNumber); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to clear staff scope: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Staff scope has been successfully cleared"})
+}
+

@@ -9,6 +9,7 @@ type StaffScopeRepository interface {
 	ReplaceStaffScopes(staffNumber, schoolNumber string, scopes []models.StaffScope) error
 	GetStaffScopes(staffNumber, schoolNumber string) ([]models.StaffScope, error)
 	GetStaffScopesByUserNumber(userNumber string) ([]models.StaffScope, error)
+	ClearStaffScope(staffNumber, schoolNumber string) error
 }
 
 type staffScopeRepo struct {
@@ -17,6 +18,14 @@ type staffScopeRepo struct {
 
 func NewStaffScopeRepository(db *gorm.DB) StaffScopeRepository {
 	return &staffScopeRepo{DB: db}
+}
+
+func (s *staffScopeRepo) ClearStaffScope(staffNumber, schoolNumber string) error {
+	query := s.DB.Where("staff_number = ?", staffNumber)
+	if schoolNumber != "" {
+		query = query.Where("school_number = ?", schoolNumber)
+	}
+	return query.Delete(&models.StaffScope{}).Error
 }
 
 func (s *staffScopeRepo) ReplaceStaffScopes(staffNumber, schoolNumber string, scopes []models.StaffScope) error {
@@ -48,3 +57,4 @@ func (s *staffScopeRepo) GetStaffScopesByUserNumber(userNumber string) ([]models
 	err := s.DB.Where("user_number = ? OR staff_number = ?", userNumber, userNumber).Find(&scopes).Error
 	return scopes, err
 }
+

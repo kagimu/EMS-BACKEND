@@ -230,3 +230,9 @@ func GetStaffScopeTree(staffNumber, schoolNumber string) (*requests.StaffScopeRe
 
 	return result, nil
 }
+
+func ClearStaffScope(staffNumber, schoolNumber string) error {
+	repo := repository.NewStaffScopeRepository(config.DB)
+	return repo.ClearStaffScope(staffNumber, schoolNumber)
+}
+
