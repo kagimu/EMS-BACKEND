@@ -5,14 +5,15 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/repository"
+	staffMembersModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	uuid "github.com/satori/go.uuid"
 )
 
 func SaveStaffScope(req *requests.StaffScopeRequest, addedBy string) error {
-	var staff models.Staff
+	var deployment staffMembersModels.StaffDeployment
 	userNumber := req.StaffNumber
-	if err := config.DB.Where("number = ? OR user_number = ?", req.StaffNumber, req.StaffNumber).First(&staff).Error; err == nil && staff.UserNumber != "" {
-		userNumber = staff.UserNumber
+	if err := config.DB.Where("number = ? OR user_number = ?", req.StaffNumber, req.StaffNumber).First(&deployment).Error; err == nil && deployment.UserNumber != "" {
+		userNumber = deployment.UserNumber
 	}
 
 	var rows []models.StaffScope
