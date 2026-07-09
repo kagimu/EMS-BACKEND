@@ -8,46 +8,82 @@ import (
 	"gorm.io/gorm"
 )
 
-// ResolveStaffDeployments checks if the caller is an active Staff member in staff_deployments table.
-// It matches against both StaffDeployment.Number and StaffDeployment.UserNumber.
-func ResolveStaffDeployments(callerNumber string) ([]staffMembersModels.StaffDeployment, bool) {
+// ResolveAllStaffIDs looks up a staff member across staff_deployments, staffs, job_offers, and job_applications.
+// Returns all known staff identifiers (deployment numbers, staff numbers, user numbers) for the caller.
+func ResolveAllStaffIDs(callerNumber string) ([]string, bool) {
 	if callerNumber == "" {
 		return nil, false
 	}
-	var deployments []staffMembersModels.StaffDeployment
-	err := config.DB.Where("number = ? OR user_number = ?", callerNumber, callerNumber).Find(&deployments).Error
-	if err != nil || len(deployments) == 0 {
-		return nil, false
-	}
-	return deployments, true
-}
-
-// GetStaffAllowedSchools retrieves all unique SchoolNumbers assigned to a staff member
-// across both staff_scopes and stream_teachers tables.
-func GetStaffAllowedSchools(deployments []staffMembersModels.StaffDeployment) []string {
+	seen := make(map[string]bool)
 	var ids []string
-	seenId := make(map[string]bool)
-
-	for _, dep := range deployments {
-		if dep.Number != "" && !seenId[dep.Number] {
-			seenId[dep.Number] = true
-			ids = append(ids, dep.Number)
+	addID := func(id string) {
+		if id != "" && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
 		}
-		if dep.UserNumber != "" && !seenId[dep.UserNumber] {
-			seenId[dep.UserNumber] = true
-			ids = append(ids, dep.UserNumber)
+	}
+
+	// 1. Check staff_deployments directly
+	var deployments []staffMembersModels.StaffDeployment
+	config.DB.Where("number = ? OR user_number = ?", callerNumber, callerNumber).Find(&deployments)
+	for _, d := range deployments {
+		addID(d.Number)
+		addID(d.UserNumber)
+	}
+
+	// 2. Check staffs table directly
+	var staffs []models.Staff
+	config.DB.Where("number = ? OR user_number = ?", callerNumber, callerNumber).Find(&staffs)
+	for _, s := range staffs {
+		addID(s.Number)
+		addID(s.UserNumber)
+	}
+
+	// 3. Check job_offers by user_number
+	var offers []staffMembersModels.JobOffer
+	config.DB.Where("user_number = ?", callerNumber).Find(&offers)
+	for _, o := range offers {
+		var deps []staffMembersModels.StaffDeployment
+		config.DB.Where("job_offer_number = ?", o.Number).Find(&deps)
+		for _, d := range deps {
+			addID(d.Number)
+			addID(d.UserNumber)
+		}
+	}
+
+	// 4. Check job_applications by user_number
+	var apps []staffMembersModels.JobApplication
+	config.DB.Where("user_number = ?", callerNumber).Find(&apps)
+	for _, a := range apps {
+		var offs []staffMembersModels.JobOffer
+		config.DB.Where("job_application_number = ?", a.Number).Find(&offs)
+		for _, o := range offs {
+			var deps []staffMembersModels.StaffDeployment
+			config.DB.Where("job_offer_number = ?", o.Number).Find(&deps)
+			for _, d := range deps {
+				addID(d.Number)
+				addID(d.UserNumber)
+			}
 		}
 	}
 
 	if len(ids) == 0 {
+		return nil, false
+	}
+	return ids, true
+}
+
+// GetStaffAllowedSchools retrieves all unique SchoolNumbers assigned to any of the resolved staff IDs.
+func GetStaffAllowedSchools(staffIDs []string) []string {
+	if len(staffIDs) == 0 {
 		return nil
 	}
 
 	var staffScopes []models.StaffScope
-	config.DB.Where("staff_number IN (?) OR user_number IN (?)", ids, ids).Find(&staffScopes)
+	config.DB.Where("staff_number IN (?) OR user_number IN (?)", staffIDs, staffIDs).Find(&staffScopes)
 
 	var st []models.StreamTeacher
-	config.DB.Where("user_number IN (?)", ids).Find(&st)
+	config.DB.Where("user_number IN (?)", staffIDs).Find(&st)
 
 	seen := make(map[string]bool)
 	var allowed []string
@@ -69,9 +105,6 @@ func GetStaffAllowedSchools(deployments []staffMembersModels.StaffDeployment) []
 }
 
 // FilterSchoolsByStaffScope is a GORM scope that strictly enforces school access for staff members.
-// - If the caller is not found in staff_deployments (e.g. Entity Owner / Admin), it allows all schools.
-// - If the caller is found in staff_deployments with 0 allowed schools, it returns WHERE 1 = 0 (0 schools).
-// - If the caller is found in staff_deployments with allowed schools, it returns WHERE number IN (...).
 func FilterSchoolsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		callerNumber := ctx.GetHeader("User-Number")
@@ -79,13 +112,13 @@ func FilterSchoolsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 			return db
 		}
 
-		deployments, isStaff := ResolveStaffDeployments(callerNumber)
+		staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
 		if !isStaff {
-			// Not in staff_deployments -> allow all schools (Entity Owner / Admin)
+			// Caller is not a staff member -> allow all schools (Entity Owner / Admin)
 			return db
 		}
 
-		allowedSchools := GetStaffAllowedSchools(deployments)
+		allowedSchools := GetStaffAllowedSchools(staffIDs)
 		if len(allowedSchools) == 0 {
 			// Staff member has no schools assigned -> strictly return 0 schools
 			return db.Where("1 = 0")
@@ -98,29 +131,21 @@ func FilterSchoolsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 // GetDebugInfo returns diagnostic information about the caller and their resolved scope.
 func GetDebugInfo(ctx *gin.Context) gin.H {
 	callerNumber := ctx.GetHeader("User-Number")
-	deployments, isStaff := ResolveStaffDeployments(callerNumber)
+	staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
 	if !isStaff {
 		return gin.H{
 			"caller_number": callerNumber,
 			"is_staff":      false,
-			"debug_message": "Caller was not found in 'staff_deployments' table matching number or user_number.",
+			"debug_message": "Caller was not found across staff_deployments, staffs, job_offers, or job_applications.",
 		}
 	}
 
-	var depNumbers []string
-	var depUserNumbers []string
-	for _, d := range deployments {
-		depNumbers = append(depNumbers, d.Number)
-		depUserNumbers = append(depUserNumbers, d.UserNumber)
-	}
-
-	allowed := GetStaffAllowedSchools(deployments)
+	allowed := GetStaffAllowedSchools(staffIDs)
 	return gin.H{
-		"caller_number":             callerNumber,
-		"is_staff":                  true,
-		"staff_deployment_numbers":  depNumbers,
-		"staff_user_numbers":        depUserNumbers,
-		"allowed_schools":           allowed,
-		"debug_message":             "Caller identified in 'staff_deployments' table.",
+		"caller_number":      callerNumber,
+		"is_staff":           true,
+		"resolved_staff_ids": staffIDs,
+		"allowed_schools":    allowed,
+		"debug_message":      "Caller identified as staff member across staff tables.",
 	}
 }
