@@ -83,5 +83,10 @@ func GetUserScopedItems(ctx *gin.Context, category string, userNumber ...string)
 		}
 	}
 
+	isStaff := len(staffList) > 0 || len(staffScopes) > 0 || len(st) > 0
+	if isStaff && len(cleanItems) == 0 {
+		return []string{"__NONE__"}
+	}
+
 	return cleanItems
 }
