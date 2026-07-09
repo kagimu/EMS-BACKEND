@@ -105,6 +105,37 @@ func GetStaffAllowedSchools(staffIDs []string) []string {
 	return allowed
 }
 
+// GetStaffAllowedCampuses retrieves all unique CampusNumbers assigned to any of the resolved staff IDs.
+func GetStaffAllowedCampuses(staffIDs []string) []string {
+	if len(staffIDs) == 0 {
+		return nil
+	}
+
+	var staffScopes []models.StaffScope
+	config.DB.Where("staff_number IN (?) OR user_number IN (?)", staffIDs, staffIDs).Find(&staffScopes)
+
+	var st []models.StreamTeacher
+	config.DB.Where("user_number IN (?)", staffIDs).Find(&st)
+
+	seen := make(map[string]bool)
+	var allowed []string
+
+	for _, sc := range staffScopes {
+		if sc.CampusNumber != "" && !seen[sc.CampusNumber] {
+			seen[sc.CampusNumber] = true
+			allowed = append(allowed, sc.CampusNumber)
+		}
+	}
+	for _, teacher := range st {
+		if teacher.CampusNumber != "" && !seen[teacher.CampusNumber] {
+			seen[teacher.CampusNumber] = true
+			allowed = append(allowed, teacher.CampusNumber)
+		}
+	}
+
+	return allowed
+}
+
 // GetCallerUserType inspects the gin context or users table to determine the caller's User.Type.
 func GetCallerUserType(ctx *gin.Context, callerNumber string) string {
 	if ctx != nil {
@@ -158,7 +189,40 @@ func FilterSchoolsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-// GetDebugInfo returns diagnostic information about the caller and their resolved scope.
+// FilterCampusesByStaffScope is a GORM scope that enforces campus access for staff members.
+func FilterCampusesByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		callerNumber := ""
+		if ctx != nil {
+			callerNumber = ctx.GetHeader("User-Number")
+		}
+		if callerNumber == "" {
+			return db
+		}
+
+		userType := GetCallerUserType(ctx, callerNumber)
+		if userType != "Staff" {
+			// Scoping should not affect Admin or any non-Staff usertype
+			return db
+		}
+
+		staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
+		if !isStaff {
+			// Caller is Staff usertype but has no staff deployment records -> allow bypassing
+			return db
+		}
+
+		allowedCampuses := GetStaffAllowedCampuses(staffIDs)
+		if len(allowedCampuses) == 0 {
+			// Staff member has no campuses assigned -> allow bypassing
+			return db
+		}
+
+		return db.Where("number IN (?)", allowedCampuses)
+	}
+}
+
+// GetDebugInfo returns diagnostic information about the caller and their resolved school/campus scope.
 func GetDebugInfo(ctx *gin.Context) gin.H {
 	callerNumber := ""
 	if ctx != nil {
@@ -187,11 +251,12 @@ func GetDebugInfo(ctx *gin.Context) gin.H {
 		}
 	}
 
-	allowed := GetStaffAllowedSchools(staffIDs)
-	isScoped := len(allowed) > 0
-	msg := "Caller identified as Staff usertype and scoped to assigned schools."
+	allowedSchools := GetStaffAllowedSchools(staffIDs)
+	allowedCampuses := GetStaffAllowedCampuses(staffIDs)
+	isScoped := len(allowedSchools) > 0 || len(allowedCampuses) > 0
+	msg := "Caller identified as Staff usertype and scoped to assigned schools/campuses."
 	if !isScoped {
-		msg = "Scoping bypassed: Staff member has no schools assigned in their scope."
+		msg = "Scoping bypassed: Staff member has no schools or campuses assigned in their scope."
 	}
 
 	return gin.H{
@@ -200,7 +265,55 @@ func GetDebugInfo(ctx *gin.Context) gin.H {
 		"is_staff":           true,
 		"is_scoped":          isScoped,
 		"resolved_staff_ids": staffIDs,
-		"allowed_schools":    allowed,
+		"allowed_schools":    allowedSchools,
+		"allowed_campuses":   allowedCampuses,
+		"debug_message":      msg,
+	}
+}
+
+// GetCampusDebugInfo returns diagnostic information about the caller and their resolved campus scope.
+func GetCampusDebugInfo(ctx *gin.Context) gin.H {
+	callerNumber := ""
+	if ctx != nil {
+		callerNumber = ctx.GetHeader("User-Number")
+	}
+	userType := GetCallerUserType(ctx, callerNumber)
+
+	if userType != "Staff" {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Campus scoping bypassed: caller is not Staff usertype (user_type: " + userType + ").",
+		}
+	}
+
+	staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
+	if !isStaff {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Campus scoping bypassed: Caller is Staff usertype but has no staff records setup.",
+		}
+	}
+
+	allowedCampuses := GetStaffAllowedCampuses(staffIDs)
+	isScoped := len(allowedCampuses) > 0
+	msg := "Caller identified as Staff usertype and scoped to assigned campuses."
+	if !isScoped {
+		msg = "Campus scoping bypassed: Staff member has no campuses assigned in their scope."
+	}
+
+	return gin.H{
+		"caller_number":      callerNumber,
+		"user_type":          userType,
+		"is_staff":           true,
+		"is_scoped":          isScoped,
+		"resolved_staff_ids": staffIDs,
+		"allowed_campuses":   allowedCampuses,
 		"debug_message":      msg,
 	}
 }

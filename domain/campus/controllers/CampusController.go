@@ -13,6 +13,7 @@ import (
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	schoolLevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/scopes"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -390,7 +391,7 @@ func FetchCampuses(context *gin.Context) {
 	if err := config.DB.
 		Scopes(
 			filters.BySchoolNumber(schoolNumber),
-			//filters.ByScopedItems("campus", context),
+			scopes.FilterCampusesByStaffScope(context),
 		).
 		Order("created_at desc").
 		Find(&campuses).Error; err != nil {
@@ -431,7 +432,11 @@ func FetchCampuses(context *gin.Context) {
 		})
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": campuses_})
+	context.JSON(http.StatusOK, gin.H{
+		"status":      http.StatusOK,
+		"data":        campuses_,
+		"debug_scope": scopes.GetCampusDebugInfo(context),
+	})
 }
 
 func CampusInfo(context *gin.Context) {
