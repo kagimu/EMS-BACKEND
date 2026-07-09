@@ -80,3 +80,26 @@ func FilterSchoolsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 		return db.Where("number IN (?)", allowedSchools)
 	}
 }
+
+// GetDebugInfo returns diagnostic information about the caller and their resolved scope.
+func GetDebugInfo(ctx *gin.Context) gin.H {
+	callerNumber := ctx.GetHeader("User-Number")
+	staff, isStaff := ResolveStaffInfo(callerNumber)
+	if !isStaff {
+		return gin.H{
+			"caller_number": callerNumber,
+			"is_staff":      false,
+			"debug_message": "Caller was not found in 'staffs' table matching number or user_number.",
+		}
+	}
+	allowed := GetStaffAllowedSchools(staff)
+	return gin.H{
+		"caller_number":     callerNumber,
+		"is_staff":          true,
+		"staff_number":      staff.Number,
+		"staff_user_number": staff.UserNumber,
+		"allowed_schools":   allowed,
+		"debug_message":     "Caller identified as staff member.",
+	}
+}
+
