@@ -135,7 +135,7 @@ func DeleteJobInterview(ctx *gin.Context) {
 	}
 
 	var jobInterview models.JobInterview
-	if err := config.DB.Where("number = ?", id).First(&jobInterview).Error; err != nil {
+	if err := config.DB.Unscoped().Where("number = ?", id).First(&jobInterview).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job interview not found"})
 		return
 	}
@@ -154,7 +154,7 @@ func DeleteJobInterview(ctx *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Delete(&jobInterview).Error; err != nil {
+	if err := config.DB.Unscoped().Delete(&jobInterview).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job interview not deleted. Try again."})
 		return
 	}

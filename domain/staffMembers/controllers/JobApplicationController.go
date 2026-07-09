@@ -154,7 +154,7 @@ func DeleteJobApplication(ctx *gin.Context) {
 	}
 
 	var jobApplication models.JobApplication
-	if err := config.DB.Where("number = ?", id).First(&jobApplication).Error; err != nil {
+	if err := config.DB.Unscoped().Where("number = ?", id).First(&jobApplication).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job application not found"})
 		return
 	}
@@ -173,7 +173,7 @@ func DeleteJobApplication(ctx *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Delete(&jobApplication).Error; err != nil {
+	if err := config.DB.Unscoped().Delete(&jobApplication).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job application not deleted. Try again."})
 		return
 	}

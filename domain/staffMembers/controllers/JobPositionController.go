@@ -149,7 +149,7 @@ func DeleteJobPosition(ctx *gin.Context) {
 	}
 
 	var jobPosition models.JobPosition
-	if err := config.DB.Where("number = ?", id).First(&jobPosition).Error; err != nil {
+	if err := config.DB.Unscoped().Where("number = ?", id).First(&jobPosition).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job position not found"})
 		return
 	}
@@ -161,7 +161,7 @@ func DeleteJobPosition(ctx *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Delete(&jobPosition).Error; err != nil {
+	if err := config.DB.Unscoped().Delete(&jobPosition).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job position not deleted. Try again."})
 		return
 	}

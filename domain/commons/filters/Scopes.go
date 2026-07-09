@@ -12,15 +12,16 @@ func GetUserScopedItems(ctx *gin.Context, category string, userNumber ...string)
 	var uNumber string
 	if len(userNumber) > 0 {
 		uNumber = userNumber[0]
-	} else {
+	} else if len(ctx.Request.Header["User-Number"]) > 0 {
 		uNumber = ctx.Request.Header["User-Number"][0]
 	}
 
-	var st []models.StreamTeacher
-	err := db.Where("user_number = ?", uNumber).First(&st).Error
-	if err != nil {
+	if uNumber == "" {
 		return items
 	}
+
+	var st []models.StreamTeacher
+	db.Where("user_number = ?", uNumber).Find(&st)
 
 	for _, streamTeacher := range st {
 		switch category {
@@ -30,7 +31,7 @@ func GetUserScopedItems(ctx *gin.Context, category string, userNumber ...string)
 			items = append(items, streamTeacher.CurriculumNumber)
 		case "campus":
 			items = append(items, streamTeacher.CampusNumber)
-		case "campusClass":
+		case "campusClass", "class":
 			items = append(items, streamTeacher.CampusClassNumber)
 		case "stream":
 			items = append(items, streamTeacher.StreamNumber)
@@ -39,23 +40,36 @@ func GetUserScopedItems(ctx *gin.Context, category string, userNumber ...string)
 		}
 	}
 
-	// remove duplicates from the items slice using
-	for i := 0; i < len(items); i++ {
-		for j := i + 1; j < len(items); j++ {
-			if items[i] == items[j] {
-				items = append(items[:j], items[j+1:]...)
-				j--
-			}
+	var staffScopes []models.StaffScope
+	db.Where("user_number = ? OR staff_number = ?", uNumber, uNumber).Find(&staffScopes)
+
+	for _, scope := range staffScopes {
+		switch category {
+		case "school":
+			items = append(items, scope.SchoolNumber)
+		case "curriculum":
+			items = append(items, scope.CurriculumNumber)
+		case "campus":
+			items = append(items, scope.CampusNumber)
+		case "campusLevel":
+			items = append(items, scope.CampusLevelNumber)
+		case "campusClass", "class":
+			items = append(items, scope.ClassNumber)
+		case "stream":
+			items = append(items, scope.StreamNumber)
+		case "assessmentArea":
+			items = append(items, scope.AssessmentAreaNumber)
 		}
 	}
 
-	// remove empty strings item from the items slice
-	//for i := 0; i < len(items); i++ {
-	//	if items[i] != "" {
-	//		items = append(items[:i], items[i+1:]...)
-	//		i--
-	//	}
-	//}
+	cleanItems := make([]string, 0, len(items))
+	seen := make(map[string]bool)
+	for _, val := range items {
+		if val != "" && !seen[val] {
+			seen[val] = true
+			cleanItems = append(cleanItems, val)
+		}
+	}
 
-	return items
+	return cleanItems
 }

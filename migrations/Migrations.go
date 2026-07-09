@@ -354,6 +354,7 @@ func Init() error {
 		&studentDetails.StudentPhoto{},
 		&models3.Attachment{},
 		&staffModel.StreamTeacher{},
+		&staffModel.StaffScope{},
 		&assessmentModel.ScriptMarkingGuide{},
 		&currDelivery.CurriculumDelivery{},
 		&currDelivery.StudentCurriculumDelivery{},
