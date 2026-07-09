@@ -40,8 +40,20 @@ func GetUserScopedItems(ctx *gin.Context, category string, userNumber ...string)
 		}
 	}
 
+	var staffList []models.Staff
+	db.Where("user_number = ? OR number = ?", uNumber, uNumber).Find(&staffList)
+	numbers := []string{uNumber}
+	for _, s := range staffList {
+		if s.Number != "" {
+			numbers = append(numbers, s.Number)
+		}
+		if s.UserNumber != "" {
+			numbers = append(numbers, s.UserNumber)
+		}
+	}
+
 	var staffScopes []models.StaffScope
-	db.Where("user_number = ? OR staff_number = ?", uNumber, uNumber).Find(&staffScopes)
+	db.Where("user_number IN (?) OR staff_number IN (?)", numbers, numbers).Find(&staffScopes)
 
 	for _, scope := range staffScopes {
 		switch category {

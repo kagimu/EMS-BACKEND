@@ -11,11 +11,21 @@ import (
 func SaveStaffScope(req *requests.StaffScopeRequest, addedBy string) error {
 	var staff models.Staff
 	userNumber := req.StaffNumber
-	if err := config.DB.Where("number = ?", req.StaffNumber).First(&staff).Error; err == nil && staff.UserNumber != "" {
+	if err := config.DB.Where("number = ? OR user_number = ?", req.StaffNumber, req.StaffNumber).First(&staff).Error; err == nil && staff.UserNumber != "" {
 		userNumber = staff.UserNumber
 	}
 
 	var rows []models.StaffScope
+
+	if len(req.Campuses) == 0 && req.SchoolNumber != "" {
+		rows = append(rows, models.StaffScope{
+			Number:       uuid.NewV4().String(),
+			StaffNumber:  req.StaffNumber,
+			UserNumber:   userNumber,
+			SchoolNumber: req.SchoolNumber,
+			AddedBy:      addedBy,
+		})
+	}
 
 	for _, campus := range req.Campuses {
 		if len(campus.Curriculums) == 0 {
