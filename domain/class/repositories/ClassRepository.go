@@ -128,7 +128,7 @@ func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, cu
 		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
 		Joins("JOIN campuses ON campuses.number = campus_classes.campus_number").
 		Scopes(
-			scopes.FilterClassesByStaffScope(ctx, "campus_classes"),
+			scopes.FilterClassesByStaffScope(ctx, "classes", "campus_classes", "curriculum_classes"),
 			filters.ByAnyField("campuses.school_number", schoolNumber),
 			filters.ByAnyField("campus_levels.campus_curriculum_number", campusCurriculumNumber),
 			filters.ByAnyField("campus_levels.number", campusLevelNumber),

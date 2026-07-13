@@ -368,6 +368,26 @@ func GetStaffAllowedClasses(staffIDs []string) []string {
 		}
 	}
 
+	// Expand allowed list to include all matching CampusClass.Number, Class.Number, and CurriculumClass.Number
+	if len(allowed) > 0 {
+		type classTrio struct {
+			CampusClassNumber     string
+			ClassNumber           string
+			CurriculumClassNumber string
+		}
+		var trios []classTrio
+		config.DB.Table("campus_classes").
+			Joins("JOIN curriculum_classes ON curriculum_classes.number = campus_classes.curriculum_class_number AND curriculum_classes.deleted_at IS NULL").
+			Where("campus_classes.number IN (?) OR curriculum_classes.class_number IN (?) OR curriculum_classes.number IN (?)", allowed, allowed, allowed).
+			Select("campus_classes.number AS campus_class_number, curriculum_classes.class_number AS class_number, curriculum_classes.number AS curriculum_class_number").
+			Scan(&trios)
+		for _, t := range trios {
+			addClass(t.CampusClassNumber)
+			addClass(t.ClassNumber)
+			addClass(t.CurriculumClassNumber)
+		}
+	}
+
 	return allowed
 }
 
@@ -626,8 +646,7 @@ func FilterLevelsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 }
 
 // FilterClassesByStaffScope is a GORM scope that enforces campus class access for staff members.
-// FilterClassesByStaffScope is a GORM scope that enforces campus class access for staff members.
-func FilterClassesByStaffScope(ctx *gin.Context, tablePrefix ...string) func(db *gorm.DB) *gorm.DB {
+func FilterClassesByStaffScope(ctx *gin.Context, tablePrefixes ...string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		callerNumber := ""
 		if ctx != nil {
@@ -652,16 +671,34 @@ func FilterClassesByStaffScope(ctx *gin.Context, tablePrefix ...string) func(db 
 			return db
 		}
 
-		col := "number"
-		if len(tablePrefix) > 0 && tablePrefix[0] != "" {
-			col = tablePrefix[0] + ".number"
+		if len(tablePrefixes) == 0 || (len(tablePrefixes) == 1 && tablePrefixes[0] == "") {
+			return db.Where("number IN (?)", allowedClasses)
 		}
-		return db.Where(col+" IN (?)", allowedClasses)
+
+		var conds []string
+		var args []interface{}
+		for _, prefix := range tablePrefixes {
+			if prefix != "" {
+				conds = append(conds, prefix+".number IN (?)")
+				args = append(args, allowedClasses)
+			}
+		}
+		if len(conds) == 0 {
+			return db.Where("number IN (?)", allowedClasses)
+		}
+		query := ""
+		for i, c := range conds {
+			if i > 0 {
+				query += " OR "
+			}
+			query += c
+		}
+		return db.Where("("+query+")", args...)
 	}
 }
 
 // FilterStreamsByStaffScope is a GORM scope that enforces stream access for staff members.
-func FilterStreamsByStaffScope(ctx *gin.Context, tablePrefix ...string) func(db *gorm.DB) *gorm.DB {
+func FilterStreamsByStaffScope(ctx *gin.Context, tablePrefixes ...string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		callerNumber := ""
 		if ctx != nil {
@@ -686,11 +723,29 @@ func FilterStreamsByStaffScope(ctx *gin.Context, tablePrefix ...string) func(db 
 			return db
 		}
 
-		col := "number"
-		if len(tablePrefix) > 0 && tablePrefix[0] != "" {
-			col = tablePrefix[0] + ".number"
+		if len(tablePrefixes) == 0 || (len(tablePrefixes) == 1 && tablePrefixes[0] == "") {
+			return db.Where("number IN (?)", allowedStreams)
 		}
-		return db.Where(col+" IN (?)", allowedStreams)
+
+		var conds []string
+		var args []interface{}
+		for _, prefix := range tablePrefixes {
+			if prefix != "" {
+				conds = append(conds, prefix+".number IN (?)")
+				args = append(args, allowedStreams)
+			}
+		}
+		if len(conds) == 0 {
+			return db.Where("number IN (?)", allowedStreams)
+		}
+		query := ""
+		for i, c := range conds {
+			if i > 0 {
+				query += " OR "
+			}
+			query += c
+		}
+		return db.Where("("+query+")", args...)
 	}
 }
 
