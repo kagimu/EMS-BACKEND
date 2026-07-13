@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/scopes"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -31,7 +32,7 @@ func FetchStreamByCampusClassNumber(campusClassNumber, status string, ctx *gin.C
 
 	if err := db.Scopes(
 		filters.ByAnyField("status", status),
-		//filters.ByScopedItems("stream", ctx),
+		scopes.FilterStreamsByStaffScope(ctx),
 	).Where("campus_class_number = ?", campusClassNumber).Find(&streams).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {

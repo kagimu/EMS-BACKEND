@@ -290,6 +290,195 @@ func GetStaffAllowedLevels(staffIDs []string) []string {
 	return allowed
 }
 
+// GetStaffAllowedClasses retrieves all unique CampusClass numbers (CampusClass.Number) allowed for any of the resolved staff IDs.
+func GetStaffAllowedClasses(staffIDs []string) []string {
+	if len(staffIDs) == 0 {
+		return nil
+	}
+
+	var staffScopes []models.StaffScope
+	config.DB.Where("staff_number IN (?) OR user_number IN (?)", staffIDs, staffIDs).Find(&staffScopes)
+
+	var st []models.StreamTeacher
+	config.DB.Where("user_number IN (?)", staffIDs).Find(&st)
+
+	seen := make(map[string]bool)
+	var allowed []string
+
+	addClass := func(num string) {
+		if num != "" && !seen[num] {
+			seen[num] = true
+			allowed = append(allowed, num)
+		}
+	}
+
+	// 1. Classes from staff_scopes or broader scopes
+	for _, sc := range staffScopes {
+		if sc.ClassNumber != "" {
+			addClass(sc.ClassNumber)
+		} else if sc.CampusLevelNumber != "" {
+			type ccResult struct {
+				Number string
+			}
+			var ccs []ccResult
+			config.DB.Table("campus_classes").Where("campus_level_number = ? AND deleted_at IS NULL", sc.CampusLevelNumber).Select("number").Scan(&ccs)
+			for _, cc := range ccs {
+				addClass(cc.Number)
+			}
+		} else if sc.CurriculumNumber != "" {
+			type ccResult struct {
+				Number string
+			}
+			var ccs []ccResult
+			config.DB.Table("campus_classes").
+				Joins("JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number AND campus_levels.deleted_at IS NULL").
+				Where("campus_levels.campus_curriculum_number = ? AND campus_classes.deleted_at IS NULL", sc.CurriculumNumber).
+				Select("campus_classes.number").Scan(&ccs)
+			for _, cc := range ccs {
+				addClass(cc.Number)
+			}
+		} else if sc.CampusNumber != "" {
+			type ccResult struct {
+				Number string
+			}
+			var ccs []ccResult
+			config.DB.Table("campus_classes").Where("campus_number = ? AND deleted_at IS NULL", sc.CampusNumber).Select("number").Scan(&ccs)
+			for _, cc := range ccs {
+				addClass(cc.Number)
+			}
+		} else if sc.SchoolNumber != "" {
+			type ccResult struct {
+				Number string
+			}
+			var ccs []ccResult
+			config.DB.Table("campus_classes").
+				Joins("JOIN campuses ON campuses.number = campus_classes.campus_number AND campuses.deleted_at IS NULL").
+				Where("campuses.school_number = ? AND campus_classes.deleted_at IS NULL", sc.SchoolNumber).
+				Select("campus_classes.number").Scan(&ccs)
+			for _, cc := range ccs {
+				addClass(cc.Number)
+			}
+		}
+	}
+
+	// 2. Classes from stream_teachers
+	for _, teacher := range st {
+		if teacher.CampusClassNumber != "" {
+			addClass(teacher.CampusClassNumber)
+		}
+	}
+
+	return allowed
+}
+
+// GetStaffAllowedStreams retrieves all unique Stream numbers (Stream.Number) allowed for any of the resolved staff IDs.
+func GetStaffAllowedStreams(staffIDs []string) []string {
+	if len(staffIDs) == 0 {
+		return nil
+	}
+
+	var staffScopes []models.StaffScope
+	config.DB.Where("staff_number IN (?) OR user_number IN (?)", staffIDs, staffIDs).Find(&staffScopes)
+
+	var st []models.StreamTeacher
+	config.DB.Where("user_number IN (?)", staffIDs).Find(&st)
+
+	seen := make(map[string]bool)
+	var allowed []string
+
+	addStream := func(num string) {
+		if num != "" && !seen[num] {
+			seen[num] = true
+			allowed = append(allowed, num)
+		}
+	}
+
+	// 1. Streams from staff_scopes or broader scopes
+	for _, sc := range staffScopes {
+		if sc.StreamNumber != "" {
+			addStream(sc.StreamNumber)
+		} else if sc.ClassNumber != "" {
+			type sResult struct {
+				Number string
+			}
+			var ss []sResult
+			config.DB.Table("streams").Where("campus_class_number = ? AND deleted_at IS NULL", sc.ClassNumber).Select("number").Scan(&ss)
+			for _, s := range ss {
+				addStream(s.Number)
+			}
+		} else if sc.CampusLevelNumber != "" {
+			type sResult struct {
+				Number string
+			}
+			var ss []sResult
+			config.DB.Table("streams").
+				Joins("JOIN campus_classes ON campus_classes.number = streams.campus_class_number AND campus_classes.deleted_at IS NULL").
+				Where("campus_classes.campus_level_number = ? AND streams.deleted_at IS NULL", sc.CampusLevelNumber).
+				Select("streams.number").Scan(&ss)
+			for _, s := range ss {
+				addStream(s.Number)
+			}
+		} else if sc.CurriculumNumber != "" {
+			type sResult struct {
+				Number string
+			}
+			var ss []sResult
+			config.DB.Table("streams").
+				Joins("JOIN campus_classes ON campus_classes.number = streams.campus_class_number AND campus_classes.deleted_at IS NULL").
+				Joins("JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number AND campus_levels.deleted_at IS NULL").
+				Where("campus_levels.campus_curriculum_number = ? AND streams.deleted_at IS NULL", sc.CurriculumNumber).
+				Select("streams.number").Scan(&ss)
+			for _, s := range ss {
+				addStream(s.Number)
+			}
+		} else if sc.CampusNumber != "" {
+			type sResult struct {
+				Number string
+			}
+			var ss []sResult
+			config.DB.Table("streams").
+				Joins("JOIN campus_classes ON campus_classes.number = streams.campus_class_number AND campus_classes.deleted_at IS NULL").
+				Where("campus_classes.campus_number = ? AND streams.deleted_at IS NULL", sc.CampusNumber).
+				Select("streams.number").Scan(&ss)
+			for _, s := range ss {
+				addStream(s.Number)
+			}
+		} else if sc.SchoolNumber != "" {
+			type sResult struct {
+				Number string
+			}
+			var ss []sResult
+			config.DB.Table("streams").
+				Joins("JOIN campus_classes ON campus_classes.number = streams.campus_class_number AND campus_classes.deleted_at IS NULL").
+				Joins("JOIN campuses ON campuses.number = campus_classes.campus_number AND campuses.deleted_at IS NULL").
+				Where("campuses.school_number = ? AND streams.deleted_at IS NULL", sc.SchoolNumber).
+				Select("streams.number").Scan(&ss)
+			for _, s := range ss {
+				addStream(s.Number)
+			}
+		}
+	}
+
+	// 2. Streams from stream_teachers
+	for _, teacher := range st {
+		if teacher.StreamNumber != "" {
+			addStream(teacher.StreamNumber)
+		} else if teacher.CampusClassNumber != "" {
+			type sResult struct {
+				Number string
+			}
+			var ss []sResult
+			config.DB.Table("streams").Where("campus_class_number = ? AND deleted_at IS NULL", teacher.CampusClassNumber).Select("number").Scan(&ss)
+			for _, s := range ss {
+				addStream(s.Number)
+			}
+		}
+	}
+
+	return allowed
+}
+
+
 // GetCallerUserType inspects the gin context or users table to determine the caller's User.Type.
 func GetCallerUserType(ctx *gin.Context, callerNumber string) string {
 	if ctx != nil {
@@ -436,6 +625,66 @@ func FilterLevelsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
+// FilterClassesByStaffScope is a GORM scope that enforces campus class access for staff members.
+func FilterClassesByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		callerNumber := ""
+		if ctx != nil {
+			callerNumber = ctx.GetHeader("User-Number")
+		}
+		if callerNumber == "" {
+			return db
+		}
+
+		userType := GetCallerUserType(ctx, callerNumber)
+		if userType != "Staff" {
+			return db
+		}
+
+		staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
+		if !isStaff {
+			return db
+		}
+
+		allowedClasses := GetStaffAllowedClasses(staffIDs)
+		if len(allowedClasses) == 0 {
+			return db
+		}
+
+		return db.Where("number IN (?)", allowedClasses)
+	}
+}
+
+// FilterStreamsByStaffScope is a GORM scope that enforces stream access for staff members.
+func FilterStreamsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		callerNumber := ""
+		if ctx != nil {
+			callerNumber = ctx.GetHeader("User-Number")
+		}
+		if callerNumber == "" {
+			return db
+		}
+
+		userType := GetCallerUserType(ctx, callerNumber)
+		if userType != "Staff" {
+			return db
+		}
+
+		staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
+		if !isStaff {
+			return db
+		}
+
+		allowedStreams := GetStaffAllowedStreams(staffIDs)
+		if len(allowedStreams) == 0 {
+			return db
+		}
+
+		return db.Where("number IN (?)", allowedStreams)
+	}
+}
+
 // GetDebugInfo returns diagnostic information about the caller and their resolved school/campus scope.
 func GetDebugInfo(ctx *gin.Context) gin.H {
 	callerNumber := ""
@@ -469,10 +718,12 @@ func GetDebugInfo(ctx *gin.Context) gin.H {
 	allowedCampuses := GetStaffAllowedCampuses(staffIDs)
 	allowedCurriculums := GetStaffAllowedCurriculums(staffIDs)
 	allowedLevels := GetStaffAllowedLevels(staffIDs)
-	isScoped := len(allowedSchools) > 0 || len(allowedCampuses) > 0 || len(allowedCurriculums) > 0 || len(allowedLevels) > 0
-	msg := "Caller identified as Staff usertype and scoped to assigned schools/campuses/curriculums/levels."
+	allowedClasses := GetStaffAllowedClasses(staffIDs)
+	allowedStreams := GetStaffAllowedStreams(staffIDs)
+	isScoped := len(allowedSchools) > 0 || len(allowedCampuses) > 0 || len(allowedCurriculums) > 0 || len(allowedLevels) > 0 || len(allowedClasses) > 0 || len(allowedStreams) > 0
+	msg := "Caller is Staff and scoped."
 	if !isScoped {
-		msg = "Scoping bypassed: Staff member has no schools, campuses, curriculums, or levels assigned in their scope."
+		msg = "Scoping bypassed: Staff member has no schools, campuses, curriculums, levels, classes, or streams assigned in their scope."
 	}
 
 	return gin.H{
@@ -485,6 +736,8 @@ func GetDebugInfo(ctx *gin.Context) gin.H {
 		"allowed_campuses":    allowedCampuses,
 		"allowed_curriculums": allowedCurriculums,
 		"allowed_levels":      allowedLevels,
+		"allowed_classes":     allowedClasses,
+		"allowed_streams":     allowedStreams,
 		"debug_message":       msg,
 	}
 }
@@ -627,6 +880,101 @@ func GetLevelDebugInfo(ctx *gin.Context) gin.H {
 		"is_scoped":          isScoped,
 		"resolved_staff_ids": staffIDs,
 		"allowed_levels":     allowedLevels,
+		"debug_message":      msg,
+	}
+}
+
+
+// GetClassDebugInfo returns diagnostic information about the caller and their resolved class scope.
+func GetClassDebugInfo(ctx *gin.Context) gin.H {
+	callerNumber := ""
+	if ctx != nil {
+		callerNumber = ctx.GetHeader("User-Number")
+	}
+	userType := GetCallerUserType(ctx, callerNumber)
+
+	if userType != "Staff" {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Class scoping bypassed: caller is not Staff usertype (user_type: " + userType + ").",
+		}
+	}
+
+	staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
+	if !isStaff {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Class scoping bypassed: Caller is Staff usertype but has no staff records setup.",
+		}
+	}
+
+	allowedClasses := GetStaffAllowedClasses(staffIDs)
+	isScoped := len(allowedClasses) > 0
+	msg := "Caller identified as Staff usertype and scoped to assigned campus classes."
+	if !isScoped {
+		msg = "Class scoping bypassed: Staff member has no campus classes assigned in their scope."
+	}
+
+	return gin.H{
+		"caller_number":      callerNumber,
+		"user_type":          userType,
+		"is_staff":           true,
+		"is_scoped":          isScoped,
+		"resolved_staff_ids": staffIDs,
+		"allowed_classes":    allowedClasses,
+		"debug_message":      msg,
+	}
+}
+
+// GetStreamDebugInfo returns diagnostic information about the caller and their resolved stream scope.
+func GetStreamDebugInfo(ctx *gin.Context) gin.H {
+	callerNumber := ""
+	if ctx != nil {
+		callerNumber = ctx.GetHeader("User-Number")
+	}
+	userType := GetCallerUserType(ctx, callerNumber)
+
+	if userType != "Staff" {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Stream scoping bypassed: caller is not Staff usertype (user_type: " + userType + ").",
+		}
+	}
+
+	staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
+	if !isStaff {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Stream scoping bypassed: Caller is Staff usertype but has no staff records setup.",
+		}
+	}
+
+	allowedStreams := GetStaffAllowedStreams(staffIDs)
+	isScoped := len(allowedStreams) > 0
+	msg := "Caller identified as Staff usertype and scoped to assigned streams."
+	if !isScoped {
+		msg = "Stream scoping bypassed: Staff member has no streams assigned in their scope."
+	}
+
+	return gin.H{
+		"caller_number":      callerNumber,
+		"user_type":          userType,
+		"is_staff":           true,
+		"is_scoped":          isScoped,
+		"resolved_staff_ids": staffIDs,
+		"allowed_streams":    allowedStreams,
 		"debug_message":      msg,
 	}
 }

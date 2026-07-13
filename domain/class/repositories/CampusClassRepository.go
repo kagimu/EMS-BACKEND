@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusClassModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/scopes"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -111,7 +112,7 @@ func FetchCampusClasses(ctx *gin.Context) ([]campusClassModel.CampusClass, error
 
 	err := config.DB.
 		Scopes(
-			//filters.ByScopedItems("campusClass", ctx),
+			scopes.FilterClassesByStaffScope(ctx),
 			filters.ByCampusNumber(ctx.Param("campus_number")),
 		).
 		Find(&campusClasses).Error
