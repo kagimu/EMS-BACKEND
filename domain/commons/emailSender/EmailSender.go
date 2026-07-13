@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/gomail.v2"
@@ -29,6 +30,18 @@ func resolveTemplatePath(path string) string {
 		path,
 		"./" + cleanPath,
 	}
+
+	if exePath, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exePath)
+		candidates = append(candidates, filepath.Join(exeDir, cleanPath))
+	}
+
+	for i := 1; i <= 4; i++ {
+		candidates = append(candidates, strings.Repeat("../", i)+cleanPath)
+	}
+
+	candidates = append(candidates, filepath.Join("c:/workspace/go/wholesomeEdBackEnd", cleanPath))
+
 	for _, c := range candidates {
 		if _, err := os.Stat(c); err == nil {
 			return c
