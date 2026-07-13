@@ -129,12 +129,14 @@ func DeleteJobOffer(ctx *gin.Context) {
 		return
 	}
 
-	var relatedBioDataCount int64
-	config.DB.Model(&models.StaffBioDataPersonal{}).Where("job_offer_number = ?", id).Count(&relatedBioDataCount)
-	if relatedBioDataCount > 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job offer. It has associated biodata records."})
-		return
-	}
+	// Force delete associated biodata records since staff is not deployed
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataPersonal{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataContact{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataFamily{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataEducation{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataMedical{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataLanguage{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataReferences{})
 
 	if err := config.DB.Unscoped().Delete(&jobOffer).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job offer not deleted. Try again."})
