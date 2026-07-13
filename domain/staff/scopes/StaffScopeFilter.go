@@ -939,7 +939,6 @@ func GetDebugInfo(ctx *gin.Context) gin.H {
 	}
 }
 
-
 // GetCampusDebugInfo returns diagnostic information about the caller and their resolved campus scope.
 func GetCampusDebugInfo(ctx *gin.Context) gin.H {
 	callerNumber := ""
@@ -1081,7 +1080,6 @@ func GetLevelDebugInfo(ctx *gin.Context) gin.H {
 	}
 }
 
-
 // GetClassDebugInfo returns diagnostic information about the caller and their resolved class scope.
 func GetClassDebugInfo(ctx *gin.Context) gin.H {
 	callerNumber := ""
@@ -1222,4 +1220,3 @@ func GetAssessmentAreaDebugInfo(ctx *gin.Context) gin.H {
 		"debug_message":            msg,
 	}
 }
-
