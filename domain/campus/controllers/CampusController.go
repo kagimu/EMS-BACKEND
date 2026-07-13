@@ -405,6 +405,7 @@ func FetchCampuses(context *gin.Context) {
 		var curriculum_ []responses.CurriculumDataList
 		if err := config.DB.
 			Where("campus_number = ?", item.Number).
+			Scopes(scopes.FilterCurriculumsByStaffScope(context)).
 			Preload("SchoolCurriculum.Curriculum").
 			Preload("SchoolCurriculum").
 			Find(&campusCurriculum).Error; err != nil {
@@ -462,6 +463,7 @@ func CampusInfo(context *gin.Context) {
 	var curriculum_ []responses.CurriculumDataList
 	if err := config.DB.
 		Where("campus_number = ?", campus.Number).
+		Scopes(scopes.FilterCurriculumsByStaffScope(context)).
 		Preload("SchoolCurriculum.Curriculum").
 		Preload("SchoolCurriculum").
 		Find(&campusCurriculum).Error; err != nil {
@@ -505,6 +507,7 @@ func CampusLevelList(context *gin.Context) {
 	var campusLevel_ []responses.CampusLevelDataList
 	if err := config.DB.
 		Where("campus_curriculum_number = ?", campusCurriculumNumber).
+		Scopes(scopes.FilterLevelsByStaffScope(context)).
 		Preload("CurriculumLevel.Level").
 		Preload("CurriculumLevel").
 		Find(&campusLevel).Error; err != nil {
@@ -538,6 +541,7 @@ func CampusCurriculum(context *gin.Context) {
 	var curriculum_ []responses.CurriculumDataList
 	if err := config.DB.
 		Where("campus_number = ?", campusNumber).
+		Scopes(scopes.FilterCurriculumsByStaffScope(context)).
 		Preload("SchoolCurriculum.Curriculum").
 		Preload("SchoolCurriculum").
 		Find(&campusCurriculum).Error; err != nil {
@@ -637,6 +641,7 @@ func FetchCampusLevelList(context *gin.Context) {
 	var levelInfo_ []schoolLevelModels.LevelDataInfo
 	if err := config.DB.
 		Where("campus_number = ?", campusNumber).
+		Scopes(scopes.FilterLevelsByStaffScope(context)).
 		Preload("CurriculumLevel.Level").
 		Preload("CurriculumLevel").
 		Order("code asc").
