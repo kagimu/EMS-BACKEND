@@ -42,6 +42,73 @@ func generateStaffIdNumber() string {
 	return fmt.Sprintf("%s%03d", prefix, sequence)
 }
 
+func ensureStaffUserAndSendWelcomeEmail(applicant models.JobApplication) {
+	applicantEmail := strings.TrimSpace(applicant.Email)
+	applicantPhone := strings.TrimSpace(applicant.PhoneNumber)
+	if applicantEmail == "" {
+		return
+	}
+
+	var userNumber string
+	var contact authModels.Contact
+	if err := config.DB.Where("contact = ?", applicantEmail).First(&contact).Error; err == nil {
+		userNumber = contact.UserNumber
+	} else {
+		userNumber = uuid.NewV4().String()
+		userObj := authModels.User{
+			Number:     userNumber,
+			FirstName:  applicant.FirstName,
+			SecondName: applicant.FirstName,
+			LastName:   applicant.LastName,
+			Type:       constants.TypeStaff,
+			Status:     "Active",
+		}
+		if err := config.DB.Create(&userObj).Error; err != nil {
+			return
+		}
+		emailContact := authModels.Contact{
+			Contact:     applicantEmail,
+			ContactType: "Email",
+			UserNumber:  userNumber,
+		}
+		config.DB.Create(&emailContact)
+
+		if applicantPhone != "" {
+			phoneContact := authModels.Contact{
+				Contact:     applicantPhone,
+				ContactType: "Phone",
+				UserNumber:  userNumber,
+			}
+			config.DB.Create(&phoneContact)
+		}
+	}
+
+	config.DB.Model(&authModels.User{}).Where("number = ?", userNumber).Update("type", constants.TypeStaff)
+	config.DB.Model(&applicant).Update("user_number", userNumber)
+
+	var up authModels.UserPassword
+	if err := config.DB.Where("user_number = ?", userNumber).First(&up).Error; err != nil {
+		resetToken := uuid.NewV4().String()
+		pwReset := authModels.PasswordReset{
+			Number:     uuid.NewV4().String(),
+			UserNumber: userNumber,
+			Token:      resetToken,
+			Status:     "Inactive",
+		}
+		if err := config.DB.Create(&pwReset).Error; err == nil {
+			mailInfo := emailSender.Info{
+				Email:       applicantEmail,
+				Token:       resetToken,
+				MailType:    "WholesomeEd: Staff Account Confirmation",
+				UserName:    applicant.FirstName,
+				CurrentYear: time.Now().Year(),
+				Type:        "registration",
+			}
+			mailInfo.SendEmail()
+		}
+	}
+}
+
 func CreateStaffDeployment(ctx *gin.Context) {
 	var request requests.StaffDeploymentRequest
 	err := ctx.BindJSON(&request)
@@ -58,7 +125,7 @@ func CreateStaffDeployment(ctx *gin.Context) {
 
 	// 1. Verify Job Offer exists
 	var jobOffer models.JobOffer
-	if err := config.DB.Where("number = ?", request.JobOfferNumber).First(&jobOffer).Error; err != nil {
+	if err := config.DB.Preload("JobApplication").Where("number = ?", request.JobOfferNumber).First(&jobOffer).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
 		return
 	}
@@ -83,6 +150,9 @@ func CreateStaffDeployment(ctx *gin.Context) {
 	// 4. Update JobOffer Status
 	jobOffer.Status = "DEPLOYED"
 	config.DB.Save(&jobOffer)
+
+	// 5. Ensure user account exists and send confirmation/welcome email
+	ensureStaffUserAndSendWelcomeEmail(jobOffer.JobApplication)
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Staff deployed successfully!", "data": deployment})
 }
