@@ -5,7 +5,6 @@ import (
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	staffMembersModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
-	"strings"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -521,48 +520,56 @@ func GetStaffAllowedAssessmentAreas(staffIDs []string) []string {
 		}
 	}
 
-	// 1. Direct assessment area assignments from staff_scopes
+	// 1. Specific AssessmentArea assignments from staff_scopes or stream_teachers
 	for _, sc := range staffScopes {
 		if sc.AssessmentAreaNumber != "" {
 			addAA(sc.AssessmentAreaNumber)
 		}
 	}
-
-	// 2. Direct assessment area assignments from stream_teachers
 	for _, teacher := range st {
 		if teacher.AssessmentAreaNumber != "" {
 			addAA(teacher.AssessmentAreaNumber)
+		} else if teacher.CampusClassNumber != "" {
+			// Teacher teaches all assessment areas in this campus class
+			type aaResult struct{ Number string }
+			var aas []aaResult
+			config.DB.Table("assessment_areas").
+				Joins("JOIN campus_classes ON campus_classes.curriculum_class_number = assessment_areas.curriculum_class_number AND campus_classes.deleted_at IS NULL").
+				Where("campus_classes.number = ? AND assessment_areas.deleted_at IS NULL", teacher.CampusClassNumber).
+				Select("assessment_areas.number").Scan(&aas)
+			for _, aa := range aas {
+				addAA(aa.Number)
+			}
 		}
 	}
 
-	// 3. Inherited assessment areas from allowed classes or curriculums
-	allowedClasses := GetStaffAllowedClasses(staffIDs)
-	allowedCurriculums := GetStaffAllowedCurriculums(staffIDs)
-
-	if len(allowedClasses) > 0 || len(allowedCurriculums) > 0 {
-		type aaResult struct {
-			Number string
+	// 2. Inherited assessment areas ONLY from unrestricted staff_scopes (where sc.AssessmentAreaNumber == "")
+	for _, sc := range staffScopes {
+		if sc.AssessmentAreaNumber != "" {
+			continue
 		}
+		type aaResult struct{ Number string }
 		var aas []aaResult
 		query := config.DB.Table("assessment_areas").
 			Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number AND curriculum_classes.deleted_at IS NULL").
-			Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number AND curriculum_levels.deleted_at IS NULL").
+			Joins("JOIN campus_classes ON campus_classes.curriculum_class_number = curriculum_classes.number AND campus_classes.deleted_at IS NULL").
+			Joins("JOIN campus_levels ON campus_levels.number = campus_classes.campus_level_number AND campus_levels.deleted_at IS NULL").
+			Joins("JOIN campuses ON campuses.number = campus_classes.campus_number AND campuses.deleted_at IS NULL").
 			Where("assessment_areas.deleted_at IS NULL")
 
-		var conds []string
-		var args []interface{}
-		if len(allowedClasses) > 0 {
-			conds = append(conds, "assessment_areas.curriculum_class_number IN (?)")
-			args = append(args, allowedClasses)
-			conds = append(conds, "curriculum_classes.class_number IN (?)")
-			args = append(args, allowedClasses)
-		}
-		if len(allowedCurriculums) > 0 {
-			conds = append(conds, "curriculum_levels.curriculum_number IN (?)")
-			args = append(args, allowedCurriculums)
-		}
-		if len(conds) > 0 {
-			query = query.Where("("+strings.Join(conds, " OR ")+")", args...)
+		if sc.StreamNumber != "" {
+			query = query.Joins("JOIN streams ON streams.campus_class_number = campus_classes.number AND streams.deleted_at IS NULL").
+				Where("streams.number = ?", sc.StreamNumber)
+		} else if sc.ClassNumber != "" {
+			query = query.Where("campus_classes.number = ? OR curriculum_classes.class_number = ? OR curriculum_classes.number = ?", sc.ClassNumber, sc.ClassNumber, sc.ClassNumber)
+		} else if sc.CampusLevelNumber != "" {
+			query = query.Where("campus_levels.number = ?", sc.CampusLevelNumber)
+		} else if sc.CurriculumNumber != "" {
+			query = query.Where("campus_levels.campus_curriculum_number = ?", sc.CurriculumNumber)
+		} else if sc.CampusNumber != "" {
+			query = query.Where("campus_classes.campus_number = ?", sc.CampusNumber)
+		} else if sc.SchoolNumber != "" {
+			query = query.Where("campuses.school_number = ?", sc.SchoolNumber)
 		}
 		query.Select("assessment_areas.number").Scan(&aas)
 		for _, aa := range aas {
