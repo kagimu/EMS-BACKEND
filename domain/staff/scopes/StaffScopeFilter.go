@@ -626,7 +626,8 @@ func FilterLevelsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 }
 
 // FilterClassesByStaffScope is a GORM scope that enforces campus class access for staff members.
-func FilterClassesByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
+// FilterClassesByStaffScope is a GORM scope that enforces campus class access for staff members.
+func FilterClassesByStaffScope(ctx *gin.Context, tablePrefix ...string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		callerNumber := ""
 		if ctx != nil {
@@ -651,12 +652,16 @@ func FilterClassesByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 			return db
 		}
 
-		return db.Where("number IN (?)", allowedClasses)
+		col := "number"
+		if len(tablePrefix) > 0 && tablePrefix[0] != "" {
+			col = tablePrefix[0] + ".number"
+		}
+		return db.Where(col+" IN (?)", allowedClasses)
 	}
 }
 
 // FilterStreamsByStaffScope is a GORM scope that enforces stream access for staff members.
-func FilterStreamsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
+func FilterStreamsByStaffScope(ctx *gin.Context, tablePrefix ...string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		callerNumber := ""
 		if ctx != nil {
@@ -681,7 +686,11 @@ func FilterStreamsByStaffScope(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
 			return db
 		}
 
-		return db.Where("number IN (?)", allowedStreams)
+		col := "number"
+		if len(tablePrefix) > 0 && tablePrefix[0] != "" {
+			col = tablePrefix[0] + ".number"
+		}
+		return db.Where(col+" IN (?)", allowedStreams)
 	}
 }
 

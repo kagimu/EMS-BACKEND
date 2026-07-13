@@ -5,6 +5,8 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/scopes"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -111,10 +113,10 @@ func GetClassByAbbreviation(abbreviation, entityNumber string, trn ...*gorm.DB) 
 	return class, nil
 }
 
-func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string, trn ...*gorm.DB) ([]models.Class, error) {
+func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string, ctx *gin.Context, trn ...*gorm.DB) ([]models.Class, error) {
 	db := config.DB
 	if len(trn) > 0 {
-		db = trn[1]
+		db = trn[0]
 	}
 
 	var classes []models.Class
@@ -126,6 +128,7 @@ func FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, cu
 		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
 		Joins("JOIN campuses ON campuses.number = campus_classes.campus_number").
 		Scopes(
+			scopes.FilterClassesByStaffScope(ctx, "campus_classes"),
 			filters.ByAnyField("campuses.school_number", schoolNumber),
 			filters.ByAnyField("campus_levels.campus_curriculum_number", campusCurriculumNumber),
 			filters.ByAnyField("campus_levels.number", campusLevelNumber),

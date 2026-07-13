@@ -926,7 +926,7 @@ func FetchClassesBySchoolNumber(context *gin.Context) {
 		}
 	}
 
-	classes, err := services.FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+	classes, err := services.FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber, context)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
 		return
