@@ -5,6 +5,7 @@ import (
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
 	staffMembersModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
+	"strings"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -498,6 +499,79 @@ func GetStaffAllowedStreams(staffIDs []string) []string {
 	return allowed
 }
 
+// GetStaffAllowedAssessmentAreas retrieves all unique AssessmentArea numbers allowed for any of the resolved staff IDs.
+func GetStaffAllowedAssessmentAreas(staffIDs []string) []string {
+	if len(staffIDs) == 0 {
+		return nil
+	}
+
+	var staffScopes []models.StaffScope
+	config.DB.Where("staff_number IN (?) OR user_number IN (?)", staffIDs, staffIDs).Find(&staffScopes)
+
+	var st []models.StreamTeacher
+	config.DB.Where("user_number IN (?)", staffIDs).Find(&st)
+
+	seen := make(map[string]bool)
+	var allowed []string
+
+	addAA := func(num string) {
+		if num != "" && !seen[num] {
+			seen[num] = true
+			allowed = append(allowed, num)
+		}
+	}
+
+	// 1. Direct assessment area assignments from staff_scopes
+	for _, sc := range staffScopes {
+		if sc.AssessmentAreaNumber != "" {
+			addAA(sc.AssessmentAreaNumber)
+		}
+	}
+
+	// 2. Direct assessment area assignments from stream_teachers
+	for _, teacher := range st {
+		if teacher.AssessmentAreaNumber != "" {
+			addAA(teacher.AssessmentAreaNumber)
+		}
+	}
+
+	// 3. Inherited assessment areas from allowed classes or curriculums
+	allowedClasses := GetStaffAllowedClasses(staffIDs)
+	allowedCurriculums := GetStaffAllowedCurriculums(staffIDs)
+
+	if len(allowedClasses) > 0 || len(allowedCurriculums) > 0 {
+		type aaResult struct {
+			Number string
+		}
+		var aas []aaResult
+		query := config.DB.Table("assessment_areas").
+			Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number AND curriculum_classes.deleted_at IS NULL").
+			Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number AND curriculum_levels.deleted_at IS NULL").
+			Where("assessment_areas.deleted_at IS NULL")
+
+		var conds []string
+		var args []interface{}
+		if len(allowedClasses) > 0 {
+			conds = append(conds, "assessment_areas.curriculum_class_number IN (?)")
+			args = append(args, allowedClasses)
+			conds = append(conds, "curriculum_classes.class_number IN (?)")
+			args = append(args, allowedClasses)
+		}
+		if len(allowedCurriculums) > 0 {
+			conds = append(conds, "curriculum_levels.curriculum_number IN (?)")
+			args = append(args, allowedCurriculums)
+		}
+		if len(conds) > 0 {
+			query = query.Where("("+strings.Join(conds, " OR ")+")", args...)
+		}
+		query.Select("assessment_areas.number").Scan(&aas)
+		for _, aa := range aas {
+			addAA(aa.Number)
+		}
+	}
+
+	return allowed
+}
 
 // GetCallerUserType inspects the gin context or users table to determine the caller's User.Type.
 func GetCallerUserType(ctx *gin.Context, callerNumber string) string {
@@ -737,6 +811,58 @@ func FilterStreamsByStaffScope(ctx *gin.Context, tablePrefixes ...string) func(d
 		}
 		if len(conds) == 0 {
 			return db.Where("number IN (?)", allowedStreams)
+		}
+		query := ""
+		for i, c := range conds {
+			if i > 0 {
+				query += " OR "
+			}
+			query += c
+		}
+		return db.Where("("+query+")", args...)
+	}
+}
+
+// FilterAssessmentAreasByStaffScope is a GORM scope that enforces assessment area access for staff members.
+func FilterAssessmentAreasByStaffScope(ctx *gin.Context, tablePrefixes ...string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		callerNumber := ""
+		if ctx != nil {
+			callerNumber = ctx.GetHeader("User-Number")
+		}
+		if callerNumber == "" {
+			return db
+		}
+
+		userType := GetCallerUserType(ctx, callerNumber)
+		if userType != "Staff" {
+			return db
+		}
+
+		staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
+		if !isStaff {
+			return db
+		}
+
+		allowedAAs := GetStaffAllowedAssessmentAreas(staffIDs)
+		if len(allowedAAs) == 0 {
+			return db
+		}
+
+		if len(tablePrefixes) == 0 || (len(tablePrefixes) == 1 && tablePrefixes[0] == "") {
+			return db.Where("number IN (?)", allowedAAs)
+		}
+
+		var conds []string
+		var args []interface{}
+		for _, prefix := range tablePrefixes {
+			if prefix != "" {
+				conds = append(conds, prefix+".number IN (?)")
+				args = append(args, allowedAAs)
+			}
+		}
+		if len(conds) == 0 {
+			return db.Where("number IN (?)", allowedAAs)
 		}
 		query := ""
 		for i, c := range conds {
@@ -1040,6 +1166,53 @@ func GetStreamDebugInfo(ctx *gin.Context) gin.H {
 		"resolved_staff_ids": staffIDs,
 		"allowed_streams":    allowedStreams,
 		"debug_message":      msg,
+	}
+}
+
+// GetAssessmentAreaDebugInfo returns diagnostic information about the caller and their resolved assessment area scope.
+func GetAssessmentAreaDebugInfo(ctx *gin.Context) gin.H {
+	callerNumber := ""
+	if ctx != nil {
+		callerNumber = ctx.GetHeader("User-Number")
+	}
+	userType := GetCallerUserType(ctx, callerNumber)
+
+	if userType != "Staff" {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Assessment area scoping bypassed: caller is not Staff usertype (user_type: " + userType + ").",
+		}
+	}
+
+	staffIDs, isStaff := ResolveAllStaffIDs(callerNumber)
+	if !isStaff {
+		return gin.H{
+			"caller_number": callerNumber,
+			"user_type":     userType,
+			"is_staff":      false,
+			"is_scoped":     false,
+			"debug_message": "Assessment area scoping bypassed: Caller is Staff usertype but has no staff records setup.",
+		}
+	}
+
+	allowedAAs := GetStaffAllowedAssessmentAreas(staffIDs)
+	isScoped := len(allowedAAs) > 0
+	msg := "Caller identified as Staff usertype and scoped to assigned assessment areas."
+	if !isScoped {
+		msg = "Assessment area scoping bypassed: Staff member has no assessment areas assigned in their scope."
+	}
+
+	return gin.H{
+		"caller_number":            callerNumber,
+		"user_type":                userType,
+		"is_staff":                 true,
+		"is_scoped":                isScoped,
+		"resolved_staff_ids":       staffIDs,
+		"allowed_assessment_areas": allowedAAs,
+		"debug_message":            msg,
 	}
 }
 

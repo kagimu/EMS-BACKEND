@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	assessmentAreaModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/scopes"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -116,7 +117,8 @@ func FindAllAssessmentAreas(curriculumClassNumber, classNumber, curriculumNumber
 	if err := db.
 		Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number").
 		Joins("JOIN curriculum_levels ON curriculum_levels.number = curriculum_classes.curriculum_level_number").
-		Scopes(filters.ByAnyField("curriculum_class_number", curriculumClassNumber),
+		Scopes(scopes.FilterAssessmentAreasByStaffScope(ctx, "assessment_areas"),
+			filters.ByAnyField("curriculum_class_number", curriculumClassNumber),
 			filters.ByAnyField("curriculum_classes.curriculum_level_number", curriculumLevelNumber),
 			filters.ByAnyField("curriculum_levels.level_number", levelNumber),
 			filters.ByAnyField("curriculum_classes.class_number", classNumber),
