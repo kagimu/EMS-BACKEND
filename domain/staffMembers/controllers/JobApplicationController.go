@@ -48,7 +48,7 @@ func CreateJobApplication(ctx *gin.Context) {
 	var request requests.JobApplicationRequest
 	err := ctx.BindJSON(&request)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications !"})
 		return
 	}
 
