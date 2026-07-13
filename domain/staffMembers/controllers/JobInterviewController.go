@@ -24,6 +24,12 @@ func CreateJobInterview(ctx *gin.Context) {
 		return
 	}
 
+	var existingInterview models.JobInterview
+	if err := config.DB.Where("job_vacancy_number = ? AND LOWER(interview_title) = LOWER(?)", request.JobVacancyNumber, request.InterviewTitle).First(&existingInterview).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "A job interview with this title already exists for this vacancy!"})
+		return
+	}
+
 	status := request.Status
 	if status == "" {
 		status = "Scheduled"
@@ -109,6 +115,12 @@ func EditJobInterview(ctx *gin.Context) {
 	var jobInterview models.JobInterview
 	if err := config.DB.Where("number = ?", request.Number).First(&jobInterview).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job interview not found"})
+		return
+	}
+
+	var existingInterview models.JobInterview
+	if err := config.DB.Where("job_vacancy_number = ? AND LOWER(interview_title) = LOWER(?) AND number != ?", request.JobVacancyNumber, request.InterviewTitle, request.Number).First(&existingInterview).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "A job interview with this title already exists for this vacancy!"})
 		return
 	}
 

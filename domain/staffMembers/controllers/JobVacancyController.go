@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -10,6 +12,33 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+func generateVacancyReferenceNumber(schoolNumber string) string {
+	year := time.Now().Year()
+	prefix := fmt.Sprintf("JOBVAC%d", year)
+
+	var lastVacancy models.JobVacancy
+	query := config.DB.Where("reference_number LIKE ?", prefix+"%")
+	if schoolNumber != "" {
+		query = query.Where("school_number = ?", schoolNumber)
+	}
+	result := query.Order("reference_number desc").First(&lastVacancy)
+
+	if result.Error == nil && len(lastVacancy.ReferenceNumber) == len(prefix)+3 {
+		numStr := lastVacancy.ReferenceNumber[len(prefix):]
+		if num, err := strconv.Atoi(numStr); err == nil {
+			return fmt.Sprintf("%s%03d", prefix, num+1)
+		}
+	}
+
+	var count int64
+	countQuery := config.DB.Model(&models.JobVacancy{}).Where("reference_number LIKE ?", prefix+"%")
+	if schoolNumber != "" {
+		countQuery = countQuery.Where("school_number = ?", schoolNumber)
+	}
+	countQuery.Count(&count)
+	return fmt.Sprintf("%s%03d", prefix, count+1)
+}
 
 func CreateJobVacancy(ctx *gin.Context) {
 	var request requests.JobVacancyRequest
@@ -25,11 +54,22 @@ func CreateJobVacancy(ctx *gin.Context) {
 		return
 	}
 
+	var existingVacancy models.JobVacancy
+	if err := config.DB.Where("school_number = ? AND job_position_number = ? AND LOWER(vacancy_title) = LOWER(?)", request.SchoolNumber, request.JobPositionNumber, request.VacancyTitle).First(&existingVacancy).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "A job vacancy with this title already exists for this job position in this school!"})
+		return
+	}
+
+	refNum := request.ReferenceNumber
+	if refNum == "" {
+		refNum = generateVacancyReferenceNumber(request.SchoolNumber)
+	}
+
 	jobVacancy := models.JobVacancy{
 		Number:            uuid.NewV4().String(),
 		JobPositionNumber: request.JobPositionNumber,
 		VacancyTitle:      request.VacancyTitle,
-		ReferenceNumber:   request.ReferenceNumber,
+		ReferenceNumber:   refNum,
 		DepartmentNumber:  request.DepartmentNumber,
 		SchoolNumber:      request.SchoolNumber,
 		BranchLocation:    request.BranchLocation,
@@ -38,6 +78,7 @@ func CreateJobVacancy(ctx *gin.Context) {
 		Status:            request.Status,
 		UserNumber:        ctx.Request.Header.Get("User-Number"),
 	}
+
 
 	if request.OpeningDate != "" {
 		parsedDate, _ := time.Parse("2006-01-02", request.OpeningDate)
@@ -135,6 +176,12 @@ func EditJobVacancy(ctx *gin.Context) {
 	var jobVacancy models.JobVacancy
 	if err := config.DB.Where("number = ?", request.Number).First(&jobVacancy).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job vacancy not found"})
+		return
+	}
+
+	var existingVacancy models.JobVacancy
+	if err := config.DB.Where("school_number = ? AND job_position_number = ? AND LOWER(vacancy_title) = LOWER(?) AND number != ?", request.SchoolNumber, request.JobPositionNumber, request.VacancyTitle, request.Number).First(&existingVacancy).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "A job vacancy with this title already exists for this job position in this school!"})
 		return
 	}
 
