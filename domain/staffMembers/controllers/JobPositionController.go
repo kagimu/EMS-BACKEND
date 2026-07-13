@@ -75,7 +75,7 @@ func CreateJobPosition(ctx *gin.Context) {
 		UserNumber:       ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&jobPosition).Error; err != nil {
+	if err := config.DB.Omit("School", "Department", "User").Create(&jobPosition).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job position not saved. Details: " + err.Error()})
 		return
 	}

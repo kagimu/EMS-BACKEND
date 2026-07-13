@@ -46,8 +46,8 @@ func CreateJobInterview(ctx *gin.Context) {
 		UserNumber:       ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&jobInterview).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job interview not saved."})
+	if err := config.DB.Omit("JobVacancy").Create(&jobInterview).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job interview not saved: " + err.Error()})
 		return
 	}
 
@@ -197,17 +197,13 @@ func ScheduleInterview(ctx *gin.Context) {
 		UserNumber:           ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&schedule).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Could not schedule the interview."})
+	if err := config.DB.Omit("JobApplication", "JobInterview").Create(&schedule).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Could not schedule the interview: " + err.Error()})
 		return
 	}
 
 	// 2. Update JobApplication Status to "INTERVIEW_SCHEDULED"
-	var application models.JobApplication
-	if err := config.DB.Where("number = ?", request.ApplicationNumber).First(&application).Error; err == nil {
-		application.Status = "INTERVIEW_SCHEDULED"
-		config.DB.Save(&application)
-	}
+	config.DB.Model(&models.JobApplication{}).Where("number = ?", request.ApplicationNumber).Update("status", "INTERVIEW_SCHEDULED")
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Candidate successfully scheduled for interview!"})
 }

@@ -41,22 +41,16 @@ func CreateJobOffer(ctx *gin.Context) {
 		UserNumber:            ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&jobOffer).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job offer not saved."})
+	if err := config.DB.Omit("JobApplication", "JobInterview").Create(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job offer not saved: " + err.Error()})
 		return
 	}
 
 	// 3. Update JobApplication status to OFFERED (or request.Status)
-	application.Status = "OFFERED"
-	config.DB.Save(&application)
+	config.DB.Model(&models.JobApplication{}).Where("number = ?", application.Number).Update("status", "OFFERED")
 
 	// 4. Update JobInterviewSchedule status to OFFERED
-	// Looking up by application UUID and interview pool UUID
-	var schedule models.JobInterviewSchedule
-	if err := config.DB.Where("job_application_number = ? AND job_interview_number = ?", application.Number, request.InterviewNumber).First(&schedule).Error; err == nil {
-		schedule.Status = "OFFERED"
-		config.DB.Save(&schedule)
-	}
+	config.DB.Model(&models.JobInterviewSchedule{}).Where("job_application_number = ? AND job_interview_number = ?", application.Number, request.InterviewNumber).Update("status", "OFFERED")
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Job offer created successfully!", "data": jobOffer})
 }

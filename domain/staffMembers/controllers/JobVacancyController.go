@@ -90,8 +90,8 @@ func CreateJobVacancy(ctx *gin.Context) {
 		jobVacancy.ClosingDate = parsedDate
 	}
 
-	if err := config.DB.Create(&jobVacancy).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job vacancy not saved."})
+	if err := config.DB.Omit("JobPosition", "Department", "School", "Campus", "User").Create(&jobVacancy).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job vacancy not saved: " + err.Error()})
 		return
 	}
 

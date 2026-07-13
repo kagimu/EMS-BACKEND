@@ -26,7 +26,7 @@ func generateStaffIdNumber() string {
 	year := time.Now().Year()
 	prefix := fmt.Sprintf("STN%d", year)
 
-	config.DB.Where("staff_id_number LIKE ?", prefix+"%").Order("created_at desc").First(&lastDeployment)
+	config.DB.Where("staff_id_number LIKE ?", prefix+"%").Order("staff_id_number desc").First(&lastDeployment)
 
 	if lastDeployment.StaffIdNumber == "" {
 		return fmt.Sprintf("%s001", prefix)
@@ -60,10 +60,11 @@ func ensureStaffUserAndSendWelcomeEmail(applicant models.JobApplication) {
 			FirstName:  applicant.FirstName,
 			SecondName: applicant.FirstName,
 			LastName:   applicant.LastName,
+			Gender:     "Other",
 			Type:       constants.TypeStaff,
 			Status:     "Active",
 		}
-		if err := config.DB.Create(&userObj).Error; err != nil {
+		if err := config.DB.Omit("Contacts").Create(&userObj).Error; err != nil {
 			return
 		}
 		emailContact := authModels.Contact{
@@ -84,7 +85,7 @@ func ensureStaffUserAndSendWelcomeEmail(applicant models.JobApplication) {
 	}
 
 	config.DB.Model(&authModels.User{}).Where("number = ?", userNumber).Update("type", constants.TypeStaff)
-	config.DB.Model(&applicant).Update("user_number", userNumber)
+	config.DB.Model(&models.JobApplication{}).Where("number = ?", applicant.Number).Update("user_number", userNumber)
 
 	var up authModels.UserPassword
 	if err := config.DB.Where("user_number = ?", userNumber).First(&up).Error; err != nil {
@@ -133,26 +134,32 @@ func CreateStaffDeployment(ctx *gin.Context) {
 	// 2. Generate new STN ID
 	staffIdNumber := generateStaffIdNumber()
 
+	userNumber := ctx.Request.Header.Get("User-Number")
+	if userNumber == "" {
+		userNumber = jobOffer.UserNumber
+	}
+
 	// 3. Create Deployment
 	deployment := models.StaffDeployment{
 		Number:         uuid.NewV4().String(),
 		JobOfferNumber: jobOffer.Number,
 		StaffIdNumber:  staffIdNumber,
 		Status:         "Deployed",
-		UserNumber:     ctx.Request.Header.Get("User-Number"),
+		UserNumber:     userNumber,
 	}
 
-	if err := config.DB.Create(&deployment).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Staff deployment not saved."})
+	if err := config.DB.Omit("JobOffer").Create(&deployment).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Staff deployment not saved: " + err.Error()})
 		return
 	}
 
 	// 4. Update JobOffer Status
-	jobOffer.Status = "DEPLOYED"
-	config.DB.Save(&jobOffer)
+	config.DB.Model(&models.JobOffer{}).Where("number = ?", jobOffer.Number).Update("status", "DEPLOYED")
 
 	// 5. Ensure user account exists and send confirmation/welcome email
 	ensureStaffUserAndSendWelcomeEmail(jobOffer.JobApplication)
+
+	deployment.JobOffer = jobOffer
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Staff deployed successfully!", "data": deployment})
 }
@@ -262,8 +269,8 @@ func EditStaffDeployment(ctx *gin.Context) {
 
 	deployment.Status = request.Status
 
-	if err := config.DB.Save(&deployment).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Deployment not updated."})
+	if err := config.DB.Model(&deployment).Update("status", request.Status).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Deployment not updated: " + err.Error()})
 		return
 	}
 
@@ -335,10 +342,11 @@ func AssignStaffRole(ctx *gin.Context) {
 			FirstName:  applicantFirstName,
 			SecondName: applicantFirstName,
 			LastName:   applicantLastName,
+			Gender:     "Other",
 			Type:       constants.TypeStaff,
 			Status:     "Active",
 		}
-		if err := tx.Create(&userObj).Error; err != nil {
+		if err := tx.Omit("Contacts").Create(&userObj).Error; err != nil {
 			tx.Rollback()
 			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create staff user profile"})
 			return

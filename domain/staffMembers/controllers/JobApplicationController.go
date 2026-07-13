@@ -82,8 +82,8 @@ func CreateJobApplication(ctx *gin.Context) {
 		UserNumber:        ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&jobApplication).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job application not saved."})
+	if err := config.DB.Omit("JobVacancy").Create(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job application not saved: " + err.Error()})
 		return
 	}
 
