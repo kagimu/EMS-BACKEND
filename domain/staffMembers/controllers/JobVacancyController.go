@@ -19,9 +19,6 @@ func generateVacancyReferenceNumber(schoolNumber string) string {
 
 	var lastVacancy models.JobVacancy
 	query := config.DB.Where("reference_number LIKE ?", prefix+"%")
-	if schoolNumber != "" {
-		query = query.Where("school_number = ?", schoolNumber)
-	}
 	result := query.Order("reference_number desc").First(&lastVacancy)
 
 	if result.Error == nil && len(lastVacancy.ReferenceNumber) == len(prefix)+3 {
@@ -33,9 +30,6 @@ func generateVacancyReferenceNumber(schoolNumber string) string {
 
 	var count int64
 	countQuery := config.DB.Model(&models.JobVacancy{}).Where("reference_number LIKE ?", prefix+"%")
-	if schoolNumber != "" {
-		countQuery = countQuery.Where("school_number = ?", schoolNumber)
-	}
 	countQuery.Count(&count)
 	return fmt.Sprintf("%s%03d", prefix, count+1)
 }

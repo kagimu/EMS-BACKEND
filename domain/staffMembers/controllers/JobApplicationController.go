@@ -19,10 +19,6 @@ func generateApplicationNumber(schoolNumber string) string {
 
 	var lastApplication models.JobApplication
 	query := config.DB.Model(&models.JobApplication{})
-	if schoolNumber != "" {
-		query = query.Joins("JOIN job_vacancies ON job_vacancies.number = job_applications.job_vacancy_number").
-			Where("job_vacancies.school_number = ?", schoolNumber)
-	}
 	result := query.Where("job_applications.application_number LIKE ?", prefix+"%").
 		Order("job_applications.application_number desc").
 		First(&lastApplication)
@@ -36,10 +32,6 @@ func generateApplicationNumber(schoolNumber string) string {
 
 	var count int64
 	countQuery := config.DB.Model(&models.JobApplication{})
-	if schoolNumber != "" {
-		countQuery = countQuery.Joins("JOIN job_vacancies ON job_vacancies.number = job_applications.job_vacancy_number").
-			Where("job_vacancies.school_number = ?", schoolNumber)
-	}
 	countQuery.Where("job_applications.application_number LIKE ?", prefix+"%").Count(&count)
 	return fmt.Sprintf("%s%03d", prefix, count+1)
 }

@@ -19,9 +19,6 @@ func generateJobCode(schoolNumber string) string {
 
 	var lastPosition models.JobPosition
 	query := config.DB.Where("job_code LIKE ?", prefix+"%")
-	if schoolNumber != "" {
-		query = query.Where("school_number = ?", schoolNumber)
-	}
 	result := query.Order("job_code desc").First(&lastPosition)
 
 	if result.Error != nil {
@@ -39,9 +36,6 @@ func generateJobCode(schoolNumber string) string {
 
 	var count int64
 	countQuery := config.DB.Model(&models.JobPosition{}).Where("job_code LIKE ?", prefix+"%")
-	if schoolNumber != "" {
-		countQuery = countQuery.Where("school_number = ?", schoolNumber)
-	}
 	countQuery.Count(&count)
 	return fmt.Sprintf("%s%03d", prefix, count+1)
 }
