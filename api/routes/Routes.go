@@ -97,6 +97,24 @@ func SetupRoutes() *gin.Engine {
 	landingPage := router.Group("/landing-page")
 	{
 		landingPage.GET("", controllers2.GetLandingPage)
+		landingPage.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+		landingPage.POST("application", staffMembersControllers.CreateJobApplication)
+		landingCareers := landingPage.Group("/careers")
+		{
+			landingCareers.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+			landingCareers.POST("application", staffMembersControllers.CreateJobApplication)
+		}
+	}
+
+	public := router.Group("/public")
+	{
+		public.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+		public.POST("application", staffMembersControllers.CreateJobApplication)
+		careers := public.Group("/careers")
+		{
+			careers.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+			careers.POST("application", staffMembersControllers.CreateJobApplication)
+		}
 	}
 
 	auth := router.Group("/auth")

@@ -153,6 +153,96 @@ func FetchJobVacancies(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"data": responseData})
 }
 
+func FetchPublicJobVacancies(ctx *gin.Context) {
+	var jobVacancies []models.JobVacancy
+
+	query := config.DB.Model(&models.JobVacancy{}).Preload("School").Preload("Department").Preload("JobPosition").Preload("Campus")
+
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber != "" {
+		query = query.Where("school_number = ?", schoolNumber)
+	} else if school := ctx.Query("school"); school != "" {
+		query = query.Where("school_number = ? OR school_number IN (SELECT number FROM schools WHERE LOWER(name) LIKE LOWER(?))", school, "%"+school+"%")
+	}
+
+	departmentNumber := ctx.Query("department_number")
+	if departmentNumber != "" {
+		query = query.Where("department_number = ?", departmentNumber)
+	} else if department := ctx.Query("department"); department != "" {
+		query = query.Where("department_number = ? OR department_number IN (SELECT number FROM departments WHERE LOWER(name) LIKE LOWER(?))", department, "%"+department+"%")
+	}
+
+	terms := ctx.Query("appointment_terms")
+	if terms == "" {
+		terms = ctx.Query("terms")
+	}
+	if terms != "" {
+		query = query.Where("appointment_terms = ?", terms)
+	}
+
+	status := ctx.Query("status")
+	if status == "" {
+		query = query.Where("status = ?", "Open")
+	} else if status != "all" {
+		query = query.Where("status = ?", status)
+	}
+
+	search := ctx.Query("search")
+	if search == "" {
+		search = ctx.Query("q")
+	}
+	if search == "" {
+		search = ctx.Query("query")
+	}
+	if search != "" {
+		query = query.Where("LOWER(vacancy_title) LIKE LOWER(?) OR LOWER(reference_number) LIKE LOWER(?) OR job_position_number IN (SELECT number FROM job_positions WHERE LOWER(post_name) LIKE LOWER(?) OR LOWER(job_code) LIKE LOWER(?))", "%"+search+"%", "%"+search+"%", "%"+search+"%", "%"+search+"%")
+	}
+
+	if err := query.Find(&jobVacancies).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch job vacancies"})
+		return
+	}
+
+	var responseData []map[string]interface{}
+	for _, jv := range jobVacancies {
+		openingDate := ""
+		if !jv.OpeningDate.IsZero() {
+			openingDate = jv.OpeningDate.Format("2006-01-02")
+		}
+
+		closingDate := ""
+		if !jv.ClosingDate.IsZero() {
+			closingDate = jv.ClosingDate.Format("2006-01-02")
+		}
+
+		responseData = append(responseData, map[string]interface{}{
+			"number":              jv.Number,
+			"job_position_number": jv.JobPositionNumber,
+			"job_position_name":   jv.JobPosition.PostName,
+			"job_code":            jv.JobPosition.JobCode,
+			"vacancy_title":       jv.VacancyTitle,
+			"reference_number":    jv.ReferenceNumber,
+			"school_number":       jv.SchoolNumber,
+			"school_name":         jv.School.Name,
+			"department_number":   jv.DepartmentNumber,
+			"department_name":     jv.Department.Name,
+			"branch_location":     jv.BranchLocation,
+			"campus_name":         jv.Campus.Name,
+			"number_of_positions": jv.NumberOfPositions,
+			"appointment_terms":   jv.AppointmentTerms,
+			"opening_date":        openingDate,
+			"closing_date":        closingDate,
+			"status":              jv.Status,
+		})
+	}
+
+	if len(responseData) == 0 {
+		responseData = []map[string]interface{}{}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": responseData})
+}
+
 func EditJobVacancy(ctx *gin.Context) {
 	var request requests.EditJobVacancyRequest
 	err := ctx.BindJSON(&request)
