@@ -361,7 +361,7 @@ func Register(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create user"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create user: " + err.Error()})
 		return
 	}
 

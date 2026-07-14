@@ -405,5 +405,14 @@ func Init() error {
 		return err
 	}
 
+	if err := migrateUserTypeColumn(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func migrateUserTypeColumn() error {
+	db := config.DB
+	return db.Exec(`ALTER TABLE users MODIFY COLUMN type VARCHAR(32) NOT NULL`).Error
 }
