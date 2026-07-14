@@ -59,6 +59,8 @@ func (i Info) SendEmail() error {
 		templateUrl = "fileRepo/templates/notifyInterview.html"
 	} else if i.Type == "application-submitted" {
 		templateUrl = "fileRepo/templates/applicationSubmittedTemplate.html"
+	} else if i.Type == "staff-deployed" {
+		templateUrl = "fileRepo/templates/staffDeployedTemplate.html"
 	} else {
 		templateUrl = "fileRepo/templates/resetPasswordTemplate.html"
 	}

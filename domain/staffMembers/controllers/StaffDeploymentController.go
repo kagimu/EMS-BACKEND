@@ -87,27 +87,14 @@ func ensureStaffUserAndSendWelcomeEmail(applicant models.JobApplication) {
 	config.DB.Model(&authModels.User{}).Where("number = ?", userNumber).Update("type", constants.TypeStaff)
 	config.DB.Model(&models.JobApplication{}).Where("number = ?", applicant.Number).Update("user_number", userNumber)
 
-	var up authModels.UserPassword
-	if err := config.DB.Where("user_number = ?", userNumber).First(&up).Error; err != nil {
-		resetToken := uuid.NewV4().String()
-		pwReset := authModels.PasswordReset{
-			Number:     uuid.NewV4().String(),
-			UserNumber: userNumber,
-			Token:      resetToken,
-			Status:     "Inactive",
-		}
-		if err := config.DB.Create(&pwReset).Error; err == nil {
-			mailInfo := emailSender.Info{
-				Email:       applicantEmail,
-				Token:       resetToken,
-				MailType:    "WholesomeEd: Staff Account Confirmation",
-				UserName:    applicant.FirstName,
-				CurrentYear: time.Now().Year(),
-				Type:        "registration",
-			}
-			mailInfo.SendEmail()
-		}
+	mailInfo := emailSender.Info{
+		Email:       applicantEmail,
+		MailType:    "WholesomeEd: Congratulations on your Job Deployment!",
+		UserName:    applicant.FirstName,
+		CurrentYear: time.Now().Year(),
+		Type:        "staff-deployed",
 	}
+	mailInfo.SendEmail()
 }
 
 func CreateStaffDeployment(ctx *gin.Context) {
