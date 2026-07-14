@@ -51,7 +51,9 @@ func ensureStaffUserAndSendWelcomeEmail(applicant models.JobApplication) {
 
 	var userNumber string
 	var contact authModels.Contact
-	if err := config.DB.Where("contact = ?", applicantEmail).First(&contact).Error; err == nil {
+	if applicant.UserNumber != "" {
+		userNumber = applicant.UserNumber
+	} else if err := config.DB.Where("contact = ?", applicantEmail).First(&contact).Error; err == nil {
 		userNumber = contact.UserNumber
 	} else {
 		userNumber = uuid.NewV4().String()
@@ -317,9 +319,11 @@ func AssignStaffRole(ctx *gin.Context) {
 		return
 	}
 
-	// Look up user by main email in contacts table first to get their true user number (avoiding admin ID)
+	// Check JobApplication.UserNumber or look up user by email in contacts table first to get their true user number
 	var contact authModels.Contact
-	if err := tx.Where("contact = ?", applicantEmail).First(&contact).Error; err == nil {
+	if deployment.JobOffer.JobApplication.UserNumber != "" {
+		userNumber = deployment.JobOffer.JobApplication.UserNumber
+	} else if err := tx.Where("contact = ?", applicantEmail).First(&contact).Error; err == nil {
 		userNumber = contact.UserNumber
 	} else {
 		// Create new user profile

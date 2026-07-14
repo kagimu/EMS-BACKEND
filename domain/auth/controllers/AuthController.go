@@ -332,6 +332,9 @@ func Register(context *gin.Context) {
 	//first time registration user type must be admin
 	var user models.User
 	userType := "User"
+	if userPostData.Type != "" {
+		userType = userPostData.Type
+	}
 	userStatus := "Inactive"
 
 	if userTypeChecker := config.DB.

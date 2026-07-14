@@ -232,6 +232,15 @@ func FetchScheduledInterviews(ctx *gin.Context) {
 			Where("job_vacancies.school_number = ?", schoolNumber)
 	}
 
+	userNumber := ctx.Query("user_number")
+	if userNumber == "" && ctx.Query("mine") == "true" {
+		userNumber = ctx.GetHeader("user-number")
+	}
+	if userNumber != "" {
+		query = query.Joins("JOIN job_applications ON job_applications.number = job_interview_schedules.job_application_number").
+			Where("job_applications.user_number = ?", userNumber)
+	}
+
 	if err := query.Find(&schedules).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch scheduled interviews"})
 		return

@@ -62,6 +62,15 @@ func CreateJobApplication(ctx *gin.Context) {
 		schoolNumber = jobVacancy.SchoolNumber
 	}
 
+	userNumber := ctx.Request.Header.Get("User-Number")
+	if userNumber == "" {
+		userNumber = ctx.GetHeader("user-number")
+	}
+	if userNumber == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Please log in or create an account as a Job Applicant before submitting your job application."})
+		return
+	}
+
 	jobApplication := models.JobApplication{
 		Number:            uuid.NewV4().String(),
 		ApplicationNumber: generateApplicationNumber(schoolNumber),
@@ -71,7 +80,7 @@ func CreateJobApplication(ctx *gin.Context) {
 		Email:             request.Email,
 		PhoneNumber:       request.PhoneNumber,
 		Status:            "Pending",
-		UserNumber:        ctx.Request.Header.Get("User-Number"),
+		UserNumber:        userNumber,
 	}
 
 	if err := config.DB.Omit("JobVacancy").Create(&jobApplication).Error; err != nil {
@@ -87,6 +96,10 @@ func FetchJobApplications(ctx *gin.Context) {
 
 	jobVacancyNumber := ctx.Query("job_vacancy_number")
 	schoolNumber := ctx.Query("school_number")
+	userNumber := ctx.Query("user_number")
+	if userNumber == "" && ctx.Query("mine") == "true" {
+		userNumber = ctx.GetHeader("user-number")
+	}
 
 	query := config.DB.Model(&models.JobApplication{}).Preload("JobVacancy").Preload("JobVacancy.JobPosition")
 
@@ -97,6 +110,10 @@ func FetchJobApplications(ctx *gin.Context) {
 	if schoolNumber != "" {
 		query = query.Joins("JOIN job_vacancies ON job_vacancies.number = job_applications.job_vacancy_number").
 			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
+
+	if userNumber != "" {
+		query = query.Where("job_applications.user_number = ?", userNumber)
 	}
 
 	if err := query.Find(&jobApplications).Error; err != nil {
