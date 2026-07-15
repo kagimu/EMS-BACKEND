@@ -70,3 +70,33 @@ func DeleteAttachment(context *gin.Context) {
 	}
 	context.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
 }
+
+func UploadAttachment(context *gin.Context) {
+	attachmentNumber, err := services.UploadAttachment(context, "file")
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Attachment uploaded successfully", "attachment_number": attachmentNumber})
+}
+
+func GetAttachmentsByOwner(context *gin.Context) {
+	ownerNumber := context.Param("owner_number")
+	attachmentsList, err := services.GetAttachmentsByOwner(ownerNumber)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": err.Error()})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"data": attachmentsList})
+}
+
+func DeleteAttachmentByParam(context *gin.Context) {
+	attachmentNumber := context.Param("attachment_number")
+	err := services.DeleteAttachment(attachmentNumber, "")
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "File not found " + err.Error()})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
+}
+

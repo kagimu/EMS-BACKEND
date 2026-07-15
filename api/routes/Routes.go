@@ -1177,7 +1177,10 @@ func SetupRoutes() *gin.Engine {
 	attachments := router.Group("attachments")
 	{
 		attachments.GET("download/:attachment_number", controller.DownloadAttachment)
+		attachments.GET("by-owner/:owner_number", controller.GetAttachmentsByOwner)
+		attachments.POST("upload", controller.UploadAttachment)
 		attachments.POST("delete", controller.DeleteAttachment)
+		attachments.POST("delete/:attachment_number", controller.DeleteAttachmentByParam)
 	}
 
 	return router
