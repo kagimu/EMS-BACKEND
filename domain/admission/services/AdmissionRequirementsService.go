@@ -71,6 +71,7 @@ func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolNam
 		UpdatedAt:          m.UpdatedAt,
 		ModeOfStudyNumber:  m.ModeOfStudyNumber,
 		ModeOfStudyName:    modeOfStudyName,
+		StudentType:        m.StudentType,
 	}
 }
 
@@ -85,7 +86,8 @@ func FetchAdmissionRequirementsService(
 	studyPeriodNumber,
 	academicYearNumber,
 	itemNumber,
-	modeOfStudyNumber string,
+	modeOfStudyNumber,
+	studentType string,
 ) ([]responses.AdmissionRequirementResponse, error) {
 	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
 	list, err := repo.FindAdmissionRequirements(
@@ -99,6 +101,7 @@ func FetchAdmissionRequirementsService(
 		academicYearNumber,
 		itemNumber,
 		modeOfStudyNumber,
+		studentType,
 	)
 	if err != nil {
 		return nil, err

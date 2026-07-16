@@ -19,6 +19,7 @@ type AdmissionRequirementsRequest struct {
 	SchoolNumber       string   `json:"school_number" binding:"required"`
 	Status             string   `json:"status"`
 	ModeOfStudyNumber  string   `json:"mode_of_study_number" binding:"required"`
+	StudentType        string   `json:"student_type"`
 }
 
 func (a *AdmissionRequirementsRequest) Validate() error {
@@ -55,6 +56,15 @@ func (a *AdmissionRequirementsRequest) Validate() error {
 	if a.Status != constants.StatusActive && a.Status != constants.StatusInactive {
 		return errors.New("status must be ACTIVE or INACTIVE")
 	}
+	if a.StudentType == "" {
+		a.StudentType = "NEW_STUDENT"
+	}
+	if a.StudentType == "CONTINUIUING_STUDENT" {
+		a.StudentType = "CONTINUING_STUDENT"
+	}
+	if a.StudentType != "NEW_STUDENT" && a.StudentType != "CONTINUING_STUDENT" {
+		return errors.New("student type must be NEW_STUDENT or CONTINUING_STUDENT")
+	}
 	return nil
 }
 
@@ -75,6 +85,7 @@ func (a *AdmissionRequirementsRequest) ToModels(userNumber string) []models.Admi
 			UserNumber:         userNumber,
 			Status:             a.Status,
 			ModeOfStudyNumber:  a.ModeOfStudyNumber,
+			StudentType:        a.StudentType,
 		})
 	}
 	return out

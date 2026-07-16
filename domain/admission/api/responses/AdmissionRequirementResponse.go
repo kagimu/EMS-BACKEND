@@ -26,4 +26,5 @@ type AdmissionRequirementResponse struct {
 	UpdatedAt           time.Time `json:"updated_at"`
 	ModeOfStudyNumber   string    `json:"mode_of_study_number"`
 	ModeOfStudyName     string    `json:"mode_of_study_name"`
+	StudentType         string    `json:"student_type"`
 }

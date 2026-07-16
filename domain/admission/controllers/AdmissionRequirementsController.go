@@ -58,6 +58,7 @@ func GetAdmissionRequirementsController(ctx *gin.Context) {
 	academicYearNumber := ctx.Query("academic_year_number")
 	itemNumber := ctx.Query("item_number")
 	modeOfStudyNumber := ctx.Query("mode_of_study_number")
+	studentType := ctx.Query("student_type")
 
 	list, err := services.FetchAdmissionRequirementsService(
 		schoolNumber,
@@ -70,6 +71,7 @@ func GetAdmissionRequirementsController(ctx *gin.Context) {
 		academicYearNumber,
 		itemNumber,
 		modeOfStudyNumber,
+		studentType,
 	)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch admission requirements: " + err.Error()})
