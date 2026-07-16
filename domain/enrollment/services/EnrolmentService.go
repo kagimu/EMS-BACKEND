@@ -298,7 +298,7 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 			return errors.New("Saving enrolment error: " + err.Error())
 		}
 
-		if len(requiredItems) > 0 {
+		if len(enrolmentRequest.Items) > 0 {
 
 			for _, item := range enrolmentRequest.Items {
 				var enrolmentItem models.EnrollmentItem
