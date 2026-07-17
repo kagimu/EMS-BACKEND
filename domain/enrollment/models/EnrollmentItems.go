@@ -12,7 +12,8 @@ type EnrollmentItem struct {
 	Enrollment       Enrollment      `gorm:"foreignKey:EnrollmentNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	ItemNumber       string          `json:"item_number" gorm:"size:36; not null"`
 	Item             itemModels.Item `gorm:"foreignKey:ItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
-	Quantity         float64         `json:"quantity"`
+	RequiredQuantity float64         `json:"required_quantity" gorm:"type:decimal(10,2);default:0"`
+	Quantity         float64         `json:"quantity" gorm:"type:decimal(10,2);default:0"`
 	Brought          bool            `json:"brought"`
 	UserNumber       string          `json:"user_number" gorm:"size:36; not null"`
 	User             userModel.User  `gorm:"foreignKey:UserNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

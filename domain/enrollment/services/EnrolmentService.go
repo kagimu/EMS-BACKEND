@@ -105,11 +105,16 @@ func (enrolment *enrolmentService) GetEnrollmentDetailsByNumber(number string) (
 		if ei.Item.Number != "" {
 			itemName = ei.Item.Name
 		}
+		reqQty := ei.RequiredQuantity
+		if reqQty == 0 {
+			reqQty = ei.Quantity
+		}
 		items = append(items, responses.EnrollmentItemWithName{
 			ID:               ei.ID,
 			EnrollmentNumber: ei.EnrollmentNumber,
 			ItemNumber:       ei.ItemNumber,
 			ItemName:         itemName,
+			RequiredQuantity: reqQty,
 			Quantity:         ei.Quantity,
 			Brought:          ei.Brought,
 		})
@@ -301,6 +306,11 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 				var enrolmentItem models.EnrollmentItem
 				enrolmentItem.ItemNumber = item.ItemNumber
 				enrolmentItem.EnrollmentNumber = saveEnrollment.Number
+				reqQty := item.RequiredQuantity
+				if reqQty == 0 && item.Quantity > 0 {
+					reqQty = item.Quantity
+				}
+				enrolmentItem.RequiredQuantity = reqQty
 				enrolmentItem.Quantity = item.Quantity
 				enrolmentItem.Brought = item.Brought
 				enrolmentItem.UserNumber = currentUserNumber

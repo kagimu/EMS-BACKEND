@@ -64,6 +64,7 @@ type EnrollmentItemWithName struct {
 	EnrollmentNumber string  `json:"enrollment_number"`
 	ItemNumber       string  `json:"item_number"`
 	ItemName         string  `json:"item_name"`
+	RequiredQuantity float64 `json:"required_quantity"`
 	Quantity         float64 `json:"quantity"`
 	Brought          bool    `json:"brought"`
 }
