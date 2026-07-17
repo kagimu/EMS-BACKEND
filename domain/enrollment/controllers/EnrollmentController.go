@@ -150,6 +150,11 @@ func FetchEnrollmentDetails(c *gin.Context) {
 }
 
 func UpdateEnrollmentItem(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
 	var req requests.UpdateEnrollmentItemRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -166,9 +171,25 @@ func UpdateEnrollmentItem(c *gin.Context) {
 		return
 	}
 	id := uint(parsed)
-	if err := enrolmentService.UpdateEnrollmentItem(id, req.Quantity, req.Brought); err != nil {
+	if err := enrolmentService.UpdateEnrollmentItem(id, req.Quantity, req.Brought, req.DateBrought, req.Remarks, user.Number); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Enrollment item updated successfully"})
 }
+
+func FetchClearanceLogs(c *gin.Context) {
+	enrollmentNumber := c.Query("enrollment_number")
+	itemNumber := c.Query("item_number")
+	dateFrom := c.Query("date_from")
+	dateTo := c.Query("date_to")
+	staffNumber := c.Query("staff_number")
+
+	logs, err := enrolmentService.GetRequirementClearanceLogs(enrollmentNumber, itemNumber, dateFrom, dateTo, staffNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": logs})
+}
+

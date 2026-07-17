@@ -325,6 +325,7 @@ func Init() error {
 		&cateringModels.MealCourseCount{},
 		&cateringModels.MealCourse{},
 		&enrollmentModel.EnrollmentItem{},
+		&enrollmentModel.RequirementClearanceLog{},
 		&cateringModels.MealCourseFeedingSession{},
 		&cateringModels.CampusMealCourse{},
 		&cateringModels.FeedingGroupMealCourse{},

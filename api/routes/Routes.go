@@ -780,6 +780,7 @@ func SetupRoutes() *gin.Engine {
 			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
 			enrollment.GET("/:enrollment_number", enrollmentController.FetchEnrollmentDetails)
 			enrollment.PUT("/enrollment-items/:id", enrollmentController.UpdateEnrollmentItem)
+			enrollment.GET("/clearance-logs", enrollmentController.FetchClearanceLogs)
 			enrollment.POST("terminate-student/:student_number", enrollmentController.TerminateStudentEnrollment)
 			enrollment.POST("re-enroll-student/:student_number", enrollmentController.ReEnrollStudent)
 		}
