@@ -48,11 +48,16 @@ func UpdateAdmissionRequirementStatusService(number, status string) error {
 
 // createAdmissionRequirementResponse maps a model to the API response with resolved names.
 func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolName, campusName, curriculumName, className, studyPeriodName, itemName string, itemCost float64, modeOfStudyName string) responses.AdmissionRequirementResponse {
+	qty := m.Quantity
+	if qty <= 0 {
+		qty = 1
+	}
 	return responses.AdmissionRequirementResponse{
 		Number:             m.Number,
 		ItemNumber:         m.ItemNumber,
 		ItemName:           itemName,
 		ItemCost:           itemCost,
+		Quantity:           qty,
 		CampusClassNumber:        m.CampusClassNumber,
 		CampusNumber:             m.CampusNumber,
 		CampusCurriculumNumber:   m.CampusCurriculumNumber,
