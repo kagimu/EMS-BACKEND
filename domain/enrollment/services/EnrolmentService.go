@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
@@ -283,10 +282,8 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 	enrolmentResponse.EnrollmentNumber = saveEnrollment.Number
 
-	var requiredItems []models2.AdmissionCondition
-
 	if admission.Status != constants.StatusEnrolled {
-		requiredItems, err = repositories.FindAllAdmissionItem(admission.Number)
+		_, err = repositories.FindAllAdmissionItem(admission.Number)
 		if err != nil {
 			return enrolmentResponse, errors.New("Checking required items error: " + err.Error())
 		}
