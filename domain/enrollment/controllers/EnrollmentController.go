@@ -193,3 +193,28 @@ func FetchClearanceLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": logs})
 }
 
+func DeleteClearanceLog(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	idParam := c.Param("id")
+	if idParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "clearance log id is required"})
+		return
+	}
+	parsed, parseErr := strconv.ParseUint(idParam, 10, 0)
+	if parseErr != nil || parsed == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid clearance log id"})
+		return
+	}
+
+	if err := enrolmentService.DeleteClearanceLog(uint(parsed)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Clearance log deleted and item quantity recalculated successfully"})
+}

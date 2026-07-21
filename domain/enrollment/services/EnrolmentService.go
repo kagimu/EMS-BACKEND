@@ -35,6 +35,7 @@ type EnrolmentService interface {
 	GetEnrollmentDetailsByNumber(number string) (responses.EnrollmentDetails, error)
 	UpdateEnrollmentItem(id uint, quantity float64, brought bool, dateBrought string, remarks string, currentUserNumber string) error
 	GetRequirementClearanceLogs(enrollmentNumber, itemNumber, dateFrom, dateTo, staffNumber string) ([]responses.RequirementClearanceLogResponse, error)
+	DeleteClearanceLog(logID uint) error
 }
 
 type enrolmentService struct {
@@ -226,6 +227,48 @@ func (enrolment *enrolmentService) GetRequirementClearanceLogs(enrollmentNumber,
 		})
 	}
 	return res, nil
+}
+
+func (enrolment *enrolmentService) DeleteClearanceLog(logID uint) error {
+	// 1. Fetch the log to know which enrollment item it belongs to.
+	log, err := repository.GetClearanceLogByID(logID)
+	if err != nil {
+		return errors.New("clearance log not found: " + err.Error())
+	}
+	if log.ID == 0 {
+		return errors.New("clearance log not found")
+	}
+
+	// 2. Fetch the parent enrollment item.
+	item, err := repository.GetEnrollmentItemByID(log.EnrollmentItemID)
+	if err != nil || item.ID == 0 {
+		return errors.New("enrollment item not found")
+	}
+
+	// 3. Run delete + item recalculation in a single transaction.
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		// Delete the log record permanently.
+		if err := repository.DeleteRequirementClearanceLogByID(logID, tx); err != nil {
+			return errors.New("failed to delete clearance log: " + err.Error())
+		}
+
+		// Recalculate the total quantity from the remaining logs for this item.
+		newTotal, err := repository.SumClearanceLogQuantityByItemID(log.EnrollmentItemID, tx)
+		if err != nil {
+			return errors.New("failed to recalculate quantity: " + err.Error())
+		}
+		if newTotal < 0 {
+			newTotal = 0
+		}
+
+		// Update the enrollment item with recalculated quantity and brought flag.
+		item.Quantity = newTotal
+		item.Brought = newTotal >= item.RequiredQuantity && newTotal > 0
+		if err := repository.SaveEnrollmentItem(item, tx); err != nil {
+			return errors.New("failed to update enrollment item: " + err.Error())
+		}
+		return nil
+	})
 }
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
