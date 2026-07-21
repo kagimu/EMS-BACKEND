@@ -22,6 +22,7 @@ import (
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
+	itemRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
@@ -163,7 +164,7 @@ func (enrolment *enrolmentService) UpdateEnrollmentItem(id uint, quantity float6
 
 	item.Quantity = quantity
 	item.Brought = brought
-	if err := repository.SaveEnrollmentItem(item); err != nil {
+	if err := repository.SaveEnrollmentItem(&item); err != nil {
 		return err
 	}
 
@@ -264,7 +265,7 @@ func (enrolment *enrolmentService) DeleteClearanceLog(logID uint) error {
 		// Update the enrollment item with recalculated quantity and brought flag.
 		item.Quantity = newTotal
 		item.Brought = newTotal >= item.RequiredQuantity && newTotal > 0
-		if err := repository.SaveEnrollmentItem(item, tx); err != nil {
+		if err := repository.SaveEnrollmentItem(&item, tx); err != nil {
 			return errors.New("failed to update enrollment item: " + err.Error())
 		}
 		return nil
@@ -414,6 +415,19 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 		}
 
 		if len(enrolmentRequest.Items) > 0 {
+			var staffName string
+			user, userErr := authRepo.GetUserByNumber(currentUserNumber)
+			if userErr == nil && user.ID != 0 {
+				staffName = user.FirstName + " " + user.SecondName
+				if user.LastName != "" {
+					staffName += " " + user.LastName
+				}
+			}
+
+			dateBrought := enrolmentRequest.EnrollmentDate
+			if dateBrought == "" {
+				dateBrought = time.Now().Format("2006-01-02")
+			}
 
 			for _, item := range enrolmentRequest.Items {
 				var enrolmentItem models.EnrollmentItem
@@ -428,9 +442,35 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 				enrolmentItem.Brought = item.Brought
 				enrolmentItem.UserNumber = currentUserNumber
 
-				err = repository.SaveEnrollmentItem(enrolmentItem, tx)
+				err = repository.SaveEnrollmentItem(&enrolmentItem, tx)
 				if err != nil {
 					return errors.New("Saving enrolment items error: " + err.Error())
+				}
+
+				if item.Quantity > 0 {
+					itemObj, _ := itemRepositories.GetItemByNumber(item.ItemNumber, tx)
+					remaining := reqQty - item.Quantity
+					if remaining < 0 {
+						remaining = 0
+					}
+
+					log := models.RequirementClearanceLog{
+						EnrollmentNumber:     saveEnrollment.Number,
+						EnrollmentItemID:     enrolmentItem.ID,
+						ItemNumber:           item.ItemNumber,
+						ItemName:             itemObj.Name,
+						DateCleared:          dateBrought,
+						QuantityCleared:      item.Quantity,
+						TotalQuantityBrought: item.Quantity,
+						RequiredQuantity:     reqQty,
+						RemainingQuantity:    remaining,
+						ClearedByStaffNumber: currentUserNumber,
+						ClearedByStaffName:   staffName,
+						Remarks:              "Initial clearance at enrolment",
+					}
+					if err := repository.SaveRequirementClearanceLog(log, tx); err != nil {
+						return errors.New("Saving clearance log error: " + err.Error())
+					}
 				}
 			}
 

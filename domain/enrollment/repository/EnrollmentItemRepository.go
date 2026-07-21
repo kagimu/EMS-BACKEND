@@ -8,13 +8,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func SaveEnrollmentItem(enrollmentItem models.EnrollmentItem, txn ...*gorm.DB) error {
+func SaveEnrollmentItem(enrollmentItem *models.EnrollmentItem, txn ...*gorm.DB) error {
 
 	db := config.DB
 	if len(txn) > 0 {
 		db = txn[0]
 	}
-	return db.Save(&enrollmentItem).Error
+	return db.Save(enrollmentItem).Error
 }
 
 func GetEnrollmentItemByID(id uint, txn ...*gorm.DB) (models.EnrollmentItem, error) {
@@ -104,4 +104,3 @@ func SumClearanceLogQuantityByItemID(enrollmentItemID uint, txn ...*gorm.DB) (fl
 		Scan(&total).Error
 	return total, err
 }
-
