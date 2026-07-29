@@ -340,11 +340,13 @@ func CreateUserAcc(c *gin.Context) {
 	//userService := services.NewUserService(userRepo)
 }
 
-// FetchPendingUsers returns a paginated list of users who have registered
+// FetchPendingUsers returns a paginated list of Staff users who have registered
 // but have not yet activated their account (status = "Inactive").
+// Results are scoped to the calling user's entity.
 // Supports ?page, ?per_page, and ?search query parameters.
 func FetchPendingUsers(c *gin.Context) {
 
+	entityNumber, _ := commons.GetUserEntityNumber(c)
 	search := c.Query("search")
 
 	var paginatedResponse = pagination.PaginatedResponse{}
@@ -352,9 +354,11 @@ func FetchPendingUsers(c *gin.Context) {
 
 	if err := config.DB.Scopes(
 		filters.ByStatus("Inactive"),
+		filters.ByType(constants.TypeStaff),
+		filters.ByAnyField("entity_users.entity_number", entityNumber),
 		filters.ByUserNamesLike(search),
 		pagination.Paginate(c, &paginatedResponse),
-	).Find(&users).Error; err != nil {
+	).Joins("JOIN entity_users ON entity_users.user_number = users.number").Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch pending users"})
 		return
 	}
