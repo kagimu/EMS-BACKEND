@@ -355,10 +355,11 @@ func FetchPendingUsers(c *gin.Context) {
 	if err := config.DB.Scopes(
 		filters.ByStatus("Inactive"),
 		filters.ByValueIn("users.type", []string{constants.TypeStaff, "JobApplicant"}),
-		filters.ByAnyField("entity_users.entity_number", entityNumber),
-		filters.ByUserNamesLike(search),
+		filters.BySearchingAnyField([]string{"users.first_name", "users.second_name", "users.last_name"}, search),
 		pagination.Paginate(c, &paginatedResponse),
-	).Joins("JOIN entity_users ON entity_users.user_number = users.number").Find(&users).Error; err != nil {
+	).Where(
+		"users.number IN (SELECT user_number FROM entity_users WHERE entity_number = ?)", entityNumber,
+	).Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch pending users"})
 		return
 	}
