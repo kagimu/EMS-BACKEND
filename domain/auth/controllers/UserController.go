@@ -346,20 +346,26 @@ func CreateUserAcc(c *gin.Context) {
 // Supports ?page, ?per_page, and ?search query parameters.
 func FetchPendingUsers(c *gin.Context) {
 
-	entityNumber, _ := commons.GetUserEntityNumber(c)
+	schoolNumber := c.Query("school_number")
 	search := c.Query("search")
 
 	var paginatedResponse = pagination.PaginatedResponse{}
 	var users []models.User
 
-	if err := config.DB.Scopes(
+	query := config.DB.Scopes(
 		filters.ByStatus("Inactive"),
 		filters.ByValueIn("users.type", []string{constants.TypeStaff, "JobApplicant"}),
 		filters.BySearchingAnyField([]string{"users.first_name", "users.second_name", "users.last_name"}, search),
 		pagination.Paginate(c, &paginatedResponse),
-	).Where(
-		"users.number IN (SELECT user_number FROM entity_users WHERE entity_number = ?)", entityNumber,
-	).Find(&users).Error; err != nil {
+	)
+
+	if schoolNumber != "" {
+		query = query.Where(
+			"users.number IN (SELECT user_number FROM entity_users WHERE entity_number = ?)", schoolNumber,
+		)
+	}
+
+	if err := query.Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch pending users"})
 		return
 	}
