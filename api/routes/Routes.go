@@ -749,8 +749,11 @@ func SetupRoutes() *gin.Engine {
 		{
 			users.GET("", authController.FetchUsers)
 			users.GET("all", authController.FetchAllUsers)
+			users.GET("pending", authController.FetchPendingUsers)
+			users.POST("resend-activation", authController.ResendActivationEmail)
 			users.GET(":user_number", authController.FetchUser)
 			users.POST("", authController.CreateUser)
+			users.DELETE(":user_number", authController.DeletePendingUser)
 			users.GET("meals", cateringController.FetchUserMeals)
 		}
 
