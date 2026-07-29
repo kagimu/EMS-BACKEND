@@ -354,7 +354,7 @@ func FetchPendingUsers(c *gin.Context) {
 
 	if err := config.DB.Scopes(
 		filters.ByStatus("Inactive"),
-		filters.ByType(constants.TypeStaff),
+		filters.ByValueIn("users.type", []string{constants.TypeStaff, "JobApplicant"}),
 		filters.ByAnyField("entity_users.entity_number", entityNumber),
 		filters.ByUserNamesLike(search),
 		pagination.Paginate(c, &paginatedResponse),
