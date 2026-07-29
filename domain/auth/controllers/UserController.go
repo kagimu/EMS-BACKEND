@@ -354,7 +354,7 @@ func FetchPendingUsers(c *gin.Context) {
 
 	query := config.DB.Model(&models.User{}).Scopes(
 		filters.ByStatus("Inactive"),
-		filters.ByValueIn("users.type", []string{constants.TypeStaff, "JobApplicant"}),
+		filters.ByType("JobApplicant"),
 		filters.BySearchingAnyField([]string{"users.first_name", "users.second_name", "users.last_name"}, search),
 	)
 
