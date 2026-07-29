@@ -352,11 +352,10 @@ func FetchPendingUsers(c *gin.Context) {
 	var paginatedResponse = pagination.PaginatedResponse{}
 	var users []models.User
 
-	query := config.DB.Scopes(
+	query := config.DB.Model(&models.User{}).Scopes(
 		filters.ByStatus("Inactive"),
 		filters.ByValueIn("users.type", []string{constants.TypeStaff, "JobApplicant"}),
 		filters.BySearchingAnyField([]string{"users.first_name", "users.second_name", "users.last_name"}, search),
-		pagination.Paginate(c, &paginatedResponse),
 	)
 
 	if schoolNumber != "" {
@@ -365,7 +364,8 @@ func FetchPendingUsers(c *gin.Context) {
 		)
 	}
 
-	if err := query.Find(&users).Error; err != nil {
+	// Apply pagination AFTER all filters so the count is accurate
+	if err := query.Scopes(pagination.Paginate(c, &paginatedResponse)).Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch pending users"})
 		return
 	}
