@@ -13,29 +13,34 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func generateApplicationNumber() string {
+func generateApplicationNumber(schoolNumber string) string {
 	currentYear := time.Now().Format("2006")
 	prefix := "JOBAPLN" + currentYear
 
 	var lastApplication models.JobApplication
-	config.DB.Where("application_number LIKE ?", prefix+"%").Order("created_at desc").First(&lastApplication)
+	query := config.DB.Model(&models.JobApplication{})
+	result := query.Where("job_applications.application_number LIKE ?", prefix+"%").
+		Order("job_applications.application_number desc").
+		First(&lastApplication)
 
-	nextNumber := 1
-	if lastApplication.ApplicationNumber != "" && len(lastApplication.ApplicationNumber) > len(prefix) {
+	if result.Error == nil && len(lastApplication.ApplicationNumber) == len(prefix)+3 {
 		lastSuffix := lastApplication.ApplicationNumber[len(prefix):]
 		if num, err := strconv.Atoi(lastSuffix); err == nil {
-			nextNumber = num + 1
+			return fmt.Sprintf("%s%03d", prefix, num+1)
 		}
 	}
 
-	return fmt.Sprintf("%s%03d", prefix, nextNumber)
+	var count int64
+	countQuery := config.DB.Model(&models.JobApplication{})
+	countQuery.Where("job_applications.application_number LIKE ?", prefix+"%").Count(&count)
+	return fmt.Sprintf("%s%03d", prefix, count+1)
 }
 
 func CreateJobApplication(ctx *gin.Context) {
 	var request requests.JobApplicationRequest
 	err := ctx.BindJSON(&request)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications!"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Please structure the response according to specifications !"})
 		return
 	}
 
@@ -45,20 +50,41 @@ func CreateJobApplication(ctx *gin.Context) {
 		return
 	}
 
+	var existingApp models.JobApplication
+	if err := config.DB.Where("job_vacancy_number = ? AND (LOWER(email) = LOWER(?) OR phone_number = ?)", request.JobVacancyNumber, request.Email, request.PhoneNumber).First(&existingApp).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "An application with this email or phone number already exists for this job vacancy!"})
+		return
+	}
+
+	var jobVacancy models.JobVacancy
+	schoolNumber := ""
+	if err := config.DB.Where("number = ?", request.JobVacancyNumber).First(&jobVacancy).Error; err == nil {
+		schoolNumber = jobVacancy.SchoolNumber
+	}
+
+	userNumber := ctx.Request.Header.Get("User-Number")
+	if userNumber == "" {
+		userNumber = ctx.GetHeader("user-number")
+	}
+	if userNumber == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Please log in or create an account as a Job Applicant before submitting your job application."})
+		return
+	}
+
 	jobApplication := models.JobApplication{
 		Number:            uuid.NewV4().String(),
-		ApplicationNumber: generateApplicationNumber(),
+		ApplicationNumber: generateApplicationNumber(schoolNumber),
 		JobVacancyNumber:  request.JobVacancyNumber,
 		FirstName:         request.FirstName,
 		LastName:          request.LastName,
 		Email:             request.Email,
 		PhoneNumber:       request.PhoneNumber,
 		Status:            "Pending",
-		UserNumber:        ctx.Request.Header.Get("User-Number"),
+		UserNumber:        userNumber,
 	}
 
-	if err := config.DB.Create(&jobApplication).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job application not saved."})
+	if err := config.DB.Omit("JobVacancy").Create(&jobApplication).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job application not saved: " + err.Error()})
 		return
 	}
 
@@ -70,6 +96,10 @@ func FetchJobApplications(ctx *gin.Context) {
 
 	jobVacancyNumber := ctx.Query("job_vacancy_number")
 	schoolNumber := ctx.Query("school_number")
+	userNumber := ctx.Query("user_number")
+	if userNumber == "" && ctx.Query("mine") == "true" {
+		userNumber = ctx.GetHeader("user-number")
+	}
 
 	query := config.DB.Model(&models.JobApplication{}).Preload("JobVacancy").Preload("JobVacancy.JobPosition")
 
@@ -80,6 +110,10 @@ func FetchJobApplications(ctx *gin.Context) {
 	if schoolNumber != "" {
 		query = query.Joins("JOIN job_vacancies ON job_vacancies.number = job_applications.job_vacancy_number").
 			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
+
+	if userNumber != "" {
+		query = query.Where("job_applications.user_number = ?", userNumber)
 	}
 
 	if err := query.Find(&jobApplications).Error; err != nil {
@@ -154,7 +188,7 @@ func DeleteJobApplication(ctx *gin.Context) {
 	}
 
 	var jobApplication models.JobApplication
-	if err := config.DB.Where("number = ?", id).First(&jobApplication).Error; err != nil {
+	if err := config.DB.Unscoped().Where("number = ?", id).First(&jobApplication).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job application not found"})
 		return
 	}
@@ -173,7 +207,7 @@ func DeleteJobApplication(ctx *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Delete(&jobApplication).Error; err != nil {
+	if err := config.DB.Unscoped().Delete(&jobApplication).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job application not deleted. Try again."})
 		return
 	}

@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	authResponse "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/responses"
@@ -19,7 +21,6 @@ import (
 	schoolRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"time"
 )
 
 func AddMealCoursesToFeedingGroup(courseToFeedingGroupRequest requests.MealCourseToFeedingGroupRequest, currentUser string) error {
@@ -444,28 +445,28 @@ func GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPe
 		// Query learners that are in this feeding group AND have an active enrollment,
 		// joined with all enrollment/class/study-period details.
 		var learnerRows []struct {
-			UserNumber           string
-			Gender               string
-			FirstName            string
-			LastName             string
-			Surname              string
-			SecondName           string
-			OtherName            string
-			Photo                string
-			Adn                  string
-			EnrollmentNumber     string
-			EnrollmentStatus     string
-			EnrollmentDate       string
-			ContinuingStudent    bool
-			CampusClassNumber    string
-			StudyPeriodNumber    string
-			StreamNumber         string
-			Class                string
-			Level                string
-			AcademicYear         string
-			StudyPeriod          string
-			StudyPeriodStart     string
-			StudyPeriodEnd       string
+			UserNumber        string
+			Gender            string
+			FirstName         string
+			LastName          string
+			Surname           string
+			SecondName        string
+			OtherName         string
+			Photo             string
+			Adn               string
+			EnrollmentNumber  string
+			EnrollmentStatus  string
+			EnrollmentDate    string
+			ContinuingStudent bool
+			CampusClassNumber string
+			StudyPeriodNumber string
+			StreamNumber      string
+			Class             string
+			Level             string
+			AcademicYear      string
+			StudyPeriod       string
+			StudyPeriodStart  string
+			StudyPeriodEnd    string
 		}
 
 		q := db.Table("feeding_group_users").
@@ -684,7 +685,7 @@ func GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, 
 		}
 
 		for _, row := range learnerRows {
-			
+
 			mealRecord, err := cateringRepositories.GetMealByMealNumberAndDateAndUserNumber(mealCourse.Number, targetDate, row.UserNumber)
 			if err != nil {
 				return historyResponse, err
@@ -692,6 +693,334 @@ func GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, 
 
 			historyItem := responses.LearnerMealHistoryResponse{
 				Name:             row.FirstName + " " + row.LastName,
+				FeedingGroupName: feedingGroup.Name,
+				MealName:         mealCourse.Name,
+			}
+
+			if mealRecord.Number != "" {
+				historyItem.Served = true
+				historyItem.Date = mealRecord.Date.Format(time.DateOnly)
+				historyItem.Time = mealRecord.Time
+			} else {
+				historyItem.Served = false
+				historyItem.Date = queryDate
+				historyItem.Time = "-"
+			}
+
+			historyResponse = append(historyResponse, historyItem)
+		}
+	}
+
+	return historyResponse, nil
+}
+
+// GetStaffMeals is the staff counterpart of GetLearnerMeals.
+// It returns staff members that belong to feeding groups for the given school and meal course,
+// together with their served status for today's meal.
+//
+// Required: mealCourseNumber, schoolNumber
+// Optional: feedingGroupNumber
+func GetStaffMeals(mealCourseNumber, schoolNumber, feedingGroupNumber string) ([]responses.StaffMealResponse, error) {
+
+	mealsResponse := make([]responses.StaffMealResponse, 0)
+
+	// --- 1. Resolve current day-of-week ---
+	currentTime := time.Now()
+	day := currentTime.Format("Mon")
+	if checkDay := commons.CheckDay(day); checkDay != "" {
+		return mealsResponse, errors.New(checkDay)
+	}
+
+	// --- 2. Validate school ---
+	school, err := schoolRepositories.GetSchoolByNumber(schoolNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if school.Number == "" {
+		return mealsResponse, errors.New("invalid school number")
+	}
+
+	// --- 3. Validate meal course (must be active and belong to this school) ---
+	mealCourse, err := cateringRepositories.GetMealCourseByNumber(mealCourseNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if mealCourse.Status != constants.StatusActive {
+		return mealsResponse, errors.New("meal course is: '" + mealCourse.Status + "'")
+	}
+	checkSchool, err := cateringRepositories.GetMealCourseByNumberAndSchool(mealCourse.Number, schoolNumber)
+	if err != nil {
+		return mealsResponse, err
+	}
+	if checkSchool.Number == "" {
+		return mealsResponse, errors.New("meal course does not belong to the selected school")
+	}
+
+	// --- 4. Resolve feeding groups ---
+	var feedingGroups []models.FeedingGroup
+
+	if feedingGroupNumber != "" {
+		checkGroup, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+		if checkGroup.Number == "" || checkGroup.SchoolNumber != schoolNumber {
+			return mealsResponse, errors.New("invalid group number")
+		}
+		checkAllowedToHaveMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber, day, feedingGroupNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+		if checkAllowedToHaveMeal.Number == "" {
+			return mealsResponse, errors.New("this group should not be served today")
+		}
+		feedingGroups = append(feedingGroups, checkGroup)
+	} else {
+		allFeedingGroupsForMealAndDay, err := cateringRepositories.GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber, day)
+		if err != nil {
+			return mealsResponse, err
+		}
+		fmt.Printf("[GetStaffMeals] day=%s, meal=%s → %d feeding group meal courses found\n", day, mealCourseNumber, len(allFeedingGroupsForMealAndDay))
+		for _, fg := range allFeedingGroupsForMealAndDay {
+			fmt.Printf("[GetStaffMeals]   group=%s schoolNumber=%s (want %s)\n", fg.FeedingGroup.Number, fg.FeedingGroup.SchoolNumber, schoolNumber)
+			if fg.FeedingGroup.SchoolNumber == schoolNumber {
+				feedingGroups = append(feedingGroups, fg.FeedingGroup)
+			}
+		}
+		fmt.Printf("[GetStaffMeals] feeding groups after school filter: %d\n", len(feedingGroups))
+	}
+
+	// --- 5. Process each feeding group ---
+	db := config.DB
+
+	for _, feedingGroup := range feedingGroups {
+
+		// 5a. Fetch all staff assigned to this group with full deployment preloads.
+		var staffRows []models.FeedingGroupStaff
+		if err := db.
+			Preload("Campus").
+			Preload("FeedingGroup").
+			Preload("StaffDeployment").
+			Preload("StaffDeployment.JobOffer").
+			Preload("StaffDeployment.JobOffer.JobApplication").
+			Preload("StaffDeployment.JobOffer.JobInterview").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy.JobPosition").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy.Campus").
+			Where("feeding_group_number = ?", feedingGroup.Number).
+			Find(&staffRows).Error; err != nil {
+			return mealsResponse, err
+		}
+
+		fmt.Printf("[GetStaffMeals] group=%s → %d staff rows\n", feedingGroup.Number, len(staffRows))
+		if len(staffRows) == 0 {
+			continue
+		}
+
+		// 5b. Resolve the feeding session using the campus stored on the first staff record
+		//     for this group (all staff in a group share the same campus).
+		campusNumber := staffRows[0].CampusNumber
+		campus := staffRows[0].Campus
+
+		fmt.Printf("[GetStaffMeals] group=%s → campus=%s, looking for session day=%s meal=%s\n", feedingGroup.Number, campusNumber, day, mealCourseNumber)
+
+		mealCourseFeedingSession, err := cateringRepositories.GetFeedingSessionForCampusAndMealCourseAndDay(day, mealCourseNumber, campusNumber)
+		if err != nil {
+			return mealsResponse, err
+		}
+		if mealCourseFeedingSession.Number == "" {
+			fmt.Printf("[GetStaffMeals] group=%s → NO feeding session found for campus=%s day=%s — skipping\n", feedingGroup.Number, campusNumber, day)
+			continue
+		}
+
+		feedingSession := mealCourseFeedingSession.FeedingSession
+
+		feedItems, err := cateringRepositories.GetFeedingSessionItems(feedingSession.Number)
+		if err != nil {
+			return mealsResponse, err
+		}
+
+		// 5c. Build a response record per staff member.
+		for _, s := range staffRows {
+			dep := s.StaffDeployment
+			app := dep.JobOffer.JobApplication
+
+			// Resolve display name.
+			name := app.FirstName
+			if app.LastName != "" {
+				name += " " + app.LastName
+			}
+			if name == "" {
+				name = "Staff Member"
+			}
+
+			// Resolve job position.
+			position := ""
+			if dep.JobOffer.JobInterview.JobVacancy.JobPosition.PostName != "" {
+				position = dep.JobOffer.JobInterview.JobVacancy.JobPosition.PostName
+			}
+
+			// Resolve campus name (fall back to vacancy campus if own campus is missing).
+			campusName := campus.Name
+			if campusName == "" {
+				campusName = dep.JobOffer.JobInterview.JobVacancy.Campus.Name
+			}
+
+			// Resolve user_number for served-status look-up.
+			// Staff deployments link to a user account; fall back to application's user.
+			userNumber := dep.UserNumber
+			if userNumber == "" {
+				userNumber = app.UserNumber
+			}
+
+			staffMeal := responses.StaffMealResponse{
+				UserNumber:           userNumber,
+				StaffNumber:          s.StaffNumber,
+				Name:                 name,
+				FeedingGroupNumber:   feedingGroup.Number,
+				FeedingGroupName:     feedingGroup.Name,
+				FeedingSessionNumber: feedingSession.Number,
+				Gender:               "",
+				STN:                  dep.StaffIdNumber,
+				Email:                app.Email,
+				PhoneNumber:          app.PhoneNumber,
+				JobPosition:          position,
+				SchoolNumber:         schoolNumber,
+				CampusNumber:         campusNumber,
+				CampusName:           campusName,
+			}
+
+			meals := findStaffMeal(s.StaffNumber, feedItems, mealCourse.Number)
+			for _, meal := range meals {
+				if meal.ServedQuantity != 0 {
+					staffMeal.Served = true
+				}
+			}
+			staffMeal.Meals = meals
+
+			mealsResponse = append(mealsResponse, staffMeal)
+		}
+	}
+
+	return mealsResponse, nil
+}
+
+// GetStaffMealsHistory retrieves historical meal delivery data for staff members on a specific date.
+func GetStaffMealsHistory(mealCourseNumber, schoolNumber, feedingGroupNumber, queryDate string) ([]responses.StaffMealHistoryResponse, error) {
+
+	historyResponse := make([]responses.StaffMealHistoryResponse, 0)
+
+	targetDate, err := time.Parse(time.DateOnly, queryDate)
+	if err != nil {
+		return historyResponse, errors.New("invalid date format, expected YYYY-MM-DD")
+	}
+
+	day := targetDate.Format("Mon")
+	checkDay := commons.CheckDay(day)
+	if checkDay != "" {
+		return historyResponse, errors.New("selected date is not a valid feeding day: " + checkDay)
+	}
+
+	school, err := schoolRepositories.GetSchoolByNumber(schoolNumber)
+	if err != nil {
+		return historyResponse, err
+	}
+	if school.Number == "" {
+		return historyResponse, errors.New("invalid school number")
+	}
+
+	mealCourse, err := cateringRepositories.GetMealCourseByNumber(mealCourseNumber)
+	if err != nil {
+		return historyResponse, err
+	}
+	if mealCourse.Status != constants.StatusActive {
+		return historyResponse, errors.New("meal course is: '" + mealCourse.Status + "'")
+	}
+
+	checkSchool, err := cateringRepositories.GetMealCourseByNumberAndSchool(mealCourse.Number, schoolNumber)
+	if err != nil {
+		return historyResponse, err
+	}
+	if checkSchool.Number == "" {
+		return historyResponse, errors.New("meal course does not belong to the selected school")
+	}
+
+	var feedingGroups []models.FeedingGroup
+
+	if feedingGroupNumber != "" {
+		checkGroup, err := cateringRepositories.GetFeedingGroupByNumber(feedingGroupNumber)
+		if err != nil {
+			return historyResponse, err
+		}
+		if checkGroup.Number == "" || checkGroup.SchoolNumber != schoolNumber {
+			return historyResponse, errors.New("invalid group number")
+		}
+		checkAllowedToHaveMeal, err := cateringRepositories.GetFeedingGroupMealCourseByMealAndGroup(mealCourseNumber, day, feedingGroupNumber)
+		if err != nil {
+			return historyResponse, err
+		}
+		if checkAllowedToHaveMeal.Number == "" {
+			return historyResponse, errors.New("this group should not be served on this date")
+		}
+		feedingGroups = append(feedingGroups, checkGroup)
+	} else {
+		allFeedingGroupsForMealAndDay, err := cateringRepositories.GetAllFeedingGroupMealCourseByMealAndDay(mealCourseNumber, day)
+		if err != nil {
+			return historyResponse, err
+		}
+		for _, fg := range allFeedingGroupsForMealAndDay {
+			if fg.FeedingGroup.SchoolNumber == schoolNumber {
+				feedingGroups = append(feedingGroups, fg.FeedingGroup)
+			}
+		}
+	}
+
+	db := config.DB
+
+	for _, feedingGroup := range feedingGroups {
+
+		var staffRows []models.FeedingGroupStaff
+		if err := db.
+			Preload("Campus").
+			Preload("FeedingGroup").
+			Preload("StaffDeployment").
+			Preload("StaffDeployment.JobOffer").
+			Preload("StaffDeployment.JobOffer.JobApplication").
+			Preload("StaffDeployment.JobOffer.JobInterview").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy.JobPosition").
+			Preload("StaffDeployment.JobOffer.JobInterview.JobVacancy.Campus").
+			Where("feeding_group_number = ?", feedingGroup.Number).
+			Find(&staffRows).Error; err != nil {
+			return historyResponse, err
+		}
+
+		for _, s := range staffRows {
+			dep := s.StaffDeployment
+			app := dep.JobOffer.JobApplication
+
+			name := app.FirstName
+			if app.LastName != "" {
+				name += " " + app.LastName
+			}
+			if name == "" {
+				name = "Staff Member"
+			}
+
+			position := ""
+			if dep.JobOffer.JobInterview.JobVacancy.JobPosition.PostName != "" {
+				position = dep.JobOffer.JobInterview.JobVacancy.JobPosition.PostName
+			}
+
+			mealRecord, err := cateringRepositories.GetStaffMealByCourseDateAndStaff(mealCourse.Number, targetDate, s.StaffNumber)
+			if err != nil {
+				return historyResponse, err
+			}
+
+			historyItem := responses.StaffMealHistoryResponse{
+				STN:              dep.StaffIdNumber,
+				Name:             name,
+				Position:         position,
 				FeedingGroupName: feedingGroup.Name,
 				MealName:         mealCourse.Name,
 			}
@@ -747,6 +1076,66 @@ func findUserMeal(userNumber string, feedingSessionItems []models.FeedingSession
 		var served float64
 
 		servedStock, err := cateringRepositories.GetMealStockingByMealNumberAndDateUserNumber(mealCourse, date_, userNumber, menuItem.Number)
+
+		if err != nil {
+			fmt.Println("Error getting menu item served quantity: " + err.Error())
+			return items
+		}
+
+		if servedStock.Number != "" {
+			served = -1 * servedStock.Quantity
+		} else {
+			served = 0
+		}
+
+		singleUserMenu := responses.SingleUserMealItem{
+			Quantity:       feedingSessionItem.Quantity,
+			ServedQuantity: served,
+			MenuItemNumber: menuItem.Number,
+			MenuItemName:   menuItem.Name,
+			UnitOfMeasure:  unitOfMeasureName,
+		}
+
+		items = append(items, singleUserMenu)
+	}
+
+	return items
+}
+
+func findStaffMeal(staffNumber string, feedingSessionItems []models.FeedingSessionItem, mealCourse string) []responses.SingleUserMealItem {
+
+	var items []responses.SingleUserMealItem
+
+	currentTime := time.Now()
+	currentDate := currentTime.Format("2006-01-02")
+
+	date_, err := time.Parse(time.DateOnly, currentDate)
+	if err != nil {
+		fmt.Println("Error formatting today's date: " + currentDate)
+	}
+
+	for _, feedingSessionItem := range feedingSessionItems {
+
+		menuItem, err := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber)
+		if err != nil {
+			fmt.Println("Error getting menu item from feeding session")
+			return items
+		}
+
+		unitOfMeasure, err := cateringRepositories.GetUnitOfMeasureByNumber(menuItem.UnitOfMeasureNumber)
+		if err != nil {
+			fmt.Println("Error getting unit of measure" + err.Error())
+			unitOfMeasure = models.UnitOfMeasure{}
+		}
+
+		unitOfMeasureName := "None"
+		if unitOfMeasure.Number != "" {
+			unitOfMeasureName = unitOfMeasure.Name
+		}
+
+		var served float64
+
+		servedStock, err := cateringRepositories.GetStaffMealStockingByMealNumberAndDateStaffNumber(mealCourse, date_, staffNumber, menuItem.Number)
 
 		if err != nil {
 			fmt.Println("Error getting menu item served quantity: " + err.Error())
@@ -946,6 +1335,139 @@ func processSingleItem(tx *gorm.DB, day string, formatDate time.Time, feedingSes
 	err = cateringRepositories.SaveMealStocking(mealStocking, tx)
 	if err != nil {
 		return errors.New("error mapping stock with meal taken: " + err.Error())
+	}
+
+	return nil
+}
+
+func AddStaffMeal(mealRequest requests.StaffMealRequest, currentUser string) error {
+
+	formatDate, err := time.Parse(time.DateOnly, mealRequest.Date)
+	if err != nil {
+		return err
+	}
+
+	day := formatDate.Format("Mon")
+	checkDay := commons.CheckDay(day)
+	if checkDay != "" {
+		return errors.New(checkDay)
+	}
+
+	newMeal, err := cateringRepositories.GetStaffMealByCourseDateAndStaff(mealRequest.MealCourseNumber, formatDate, mealRequest.StaffNumber)
+	if err != nil {
+		return errors.New("Checking if staff meal served error: " + err.Error())
+	}
+
+	groupStaff, err := cateringRepositories.GetFeedingGroupStaffByStaffNumber(mealRequest.StaffNumber)
+	if err != nil {
+		return err
+	}
+
+	if groupStaff.Number == "" && groupStaff.StaffNumber == "" {
+		return errors.New("staff not added to any feeding group")
+	}
+
+	campusNumber := mealRequest.CampusNumber
+	if campusNumber == "" {
+		campusNumber = groupStaff.CampusNumber
+	}
+
+	sessionItems, err := cateringRepositories.GetFeedingSessionItems(mealRequest.FeedingSessionNumber)
+	if err != nil {
+		return errors.New("Fetching session items error: " + err.Error())
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+
+		for _, sessionItem := range sessionItems {
+			err = processSingleStaffItem(tx, day, formatDate, sessionItem, mealRequest, newMeal, groupStaff, campusNumber, currentUser)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func processSingleStaffItem(tx *gorm.DB, day string, formatDate time.Time, feedingSessionItem models.FeedingSessionItem, mealRequest requests.StaffMealRequest, newMeal models.StaffMeal, groupStaff models.FeedingGroupStaff, campusNumber string, currentUser string) error {
+
+	currentStock, err := cateringRepositories.GetMenuItemCurrentStock(feedingSessionItem.MenuItemNumber, tx)
+	if err != nil {
+		return err
+	}
+
+	if currentStock < feedingSessionItem.Quantity {
+		menu, _ := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber, tx)
+		return errors.New("not enough stock for '" + menu.Name + "'")
+	}
+
+	if newMeal.Number == "" {
+		newMeal.Number = uuid.NewV4().String()
+		newMeal.MealCourseNumber = mealRequest.MealCourseNumber
+		newMeal.FeedingSessionNumber = feedingSessionItem.FeedingSessionNumber
+		newMeal.StaffNumber = mealRequest.StaffNumber
+		newMeal.Date = formatDate
+		newMeal.Time = mealRequest.Time
+		newMeal.AddedByNumber = currentUser
+		newMeal.Day = day
+		newMeal.CampusNumber = campusNumber
+		newMeal.FeedingGroupNumber = groupStaff.FeedingGroupNumber
+	} else {
+		newMeal.CampusNumber = campusNumber
+		newMeal.FeedingSessionNumber = feedingSessionItem.FeedingSessionNumber
+		newMeal.FeedingGroupNumber = groupStaff.FeedingGroupNumber
+	}
+
+	err = cateringRepositories.SaveStaffMeal(newMeal, tx)
+	if err != nil {
+		return errors.New("error creating staff meal: " + err.Error())
+	}
+
+	stocking, err := cateringRepositories.GetStaffMealStockByMealAndMenuItem(newMeal.Number, feedingSessionItem.MenuItemNumber, tx)
+	if err != nil {
+		return err
+	}
+
+	if stocking.Number == "" {
+		stocking.Number = uuid.NewV4().String()
+		stocking.MenuItemNumber = feedingSessionItem.MenuItemNumber
+	}
+
+	item, err := cateringRepositories.GetMenuItemByNumber(feedingSessionItem.MenuItemNumber, tx)
+	if err != nil {
+		return errors.New("Error checking item " + err.Error())
+	}
+
+	stocking.Quantity = feedingSessionItem.Quantity * -1
+	stocking.CampusNumber = campusNumber
+	stocking.UserNumber = currentUser
+	stocking.PurchaseUnitOfMeasureNumber = item.PurchaseUnitOfMeasureNumber
+	stocking.UnitOfMeasureNumber = item.UnitOfMeasureNumber
+
+	if item.PurchaseUnitOfMeasureNumber == "" {
+		stocking.PurchaseUnitOfMeasureNumber = item.UnitOfMeasureNumber
+	}
+
+	if stocking.PurchaseUnitOfMeasureNumber == "" {
+		return errors.New("Set a base unit of measure for " + item.Name)
+	}
+
+	err = cateringRepositories.SaveStocking(stocking, tx)
+	if err != nil {
+		return errors.New("error reducing stock: " + err.Error())
+	}
+
+	mealStocking := models.StaffMealStock{
+		StaffMealNumber: newMeal.Number,
+		StockingNumber:  stocking.Number,
+	}
+
+	err = cateringRepositories.SaveStaffMealStock(mealStocking, tx)
+	if err != nil {
+		return errors.New("error mapping stock with staff meal taken: " + err.Error())
 	}
 
 	return nil
@@ -1306,20 +1828,20 @@ func FeedingGroupLearners(schoolNumber, campusNumber, groupNumber, academicYearN
 	}
 
 	query := db.Table("feeding_group_users").
-		Select("feeding_group_users.user_number, feeding_group_users.number, users.gender, users.first_name, users.last_name, " +
-			"students.surname, students.second_name, students.other_name, students.photo, " +
-			"feeding_group_users.feeding_group_number, feeding_groups.name as feeding_group_name, " +
-			"feeding_group_users.campus_number as campus_number, campuses.name as campus_name, " +
-			"feeding_groups.school_number as school_number, schools.name as school_name, " +
-			"students.adn as adn, classes.name as class, levels.name as level, " +
-			"academic_years.academic_year_name as academic_year, study_period_names.name as study_period, " +
-			"enrollments.number as enrollment_number, enrollments.status as enrollment_status, " +
-			"enrollments.enrollment_date as enrollment_date, " +
-			"study_periods.study_period_start_date as study_period_start, " +
-			"study_periods.study_period_end_date as study_period_end, " +
-			"enrollments.continuing_student as continuing_student, " +
-			"enrollments.campus_class_number as campus_class_number, " +
-			"enrollments.study_period_number as study_period_number, " +
+		Select("feeding_group_users.user_number, feeding_group_users.number, users.gender, users.first_name, users.last_name, "+
+			"students.surname, students.second_name, students.other_name, students.photo, "+
+			"feeding_group_users.feeding_group_number, feeding_groups.name as feeding_group_name, "+
+			"feeding_group_users.campus_number as campus_number, campuses.name as campus_name, "+
+			"feeding_groups.school_number as school_number, schools.name as school_name, "+
+			"students.adn as adn, classes.name as class, levels.name as level, "+
+			"academic_years.academic_year_name as academic_year, study_period_names.name as study_period, "+
+			"enrollments.number as enrollment_number, enrollments.status as enrollment_status, "+
+			"enrollments.enrollment_date as enrollment_date, "+
+			"study_periods.study_period_start_date as study_period_start, "+
+			"study_periods.study_period_end_date as study_period_end, "+
+			"enrollments.continuing_student as continuing_student, "+
+			"enrollments.campus_class_number as campus_class_number, "+
+			"enrollments.study_period_number as study_period_number, "+
 			"enrollments.stream_number as stream_number").
 		Joins("JOIN users ON feeding_group_users.user_number = users.number").
 		Joins("JOIN feeding_groups ON feeding_group_users.feeding_group_number = feeding_groups.number").

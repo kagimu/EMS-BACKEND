@@ -326,6 +326,7 @@ func updateItemOrAppend(items []responses.ProjectionMenuItem, newItem responses.
 
 		if item.MenuItemNumber == newItem.MenuItemNumber {
 			items[index].Quantity += newItem.Quantity
+			items[index].UserQuantity += newItem.UserQuantity
 			items[index].TotalCost += newItem.TotalCost
 			items[index].PurchaseQuantity += newItem.RateToPurchaseUnit * newItem.Quantity
 			return items
@@ -389,9 +390,17 @@ func getMealItemsAndQuantitiesPerDayForAllUsers(day string, courses []models.Mea
 
 func createProjectionMenuItem(menuItem models.MenuItem, totalQuantity float64) responses.ProjectionMenuItem {
 
+	var userQty float64
+	if menuItem.ConversionToPurchaseUnit > 0 {
+		userQty = commons.RoundFloat(totalQuantity/menuItem.ConversionToPurchaseUnit, 4)
+	} else {
+		userQty = totalQuantity
+	}
+
 	projectionMenuItem := responses.ProjectionMenuItem{
 		Name:               menuItem.Name,
 		Quantity:           totalQuantity,
+		UserQuantity:       userQty,
 		RateToPurchaseUnit: menuItem.ConversionToPurchaseUnit,
 		PurchaseQuantity:   totalQuantity * menuItem.ConversionToPurchaseUnit,
 		MenuItemNumber:     menuItem.Number,

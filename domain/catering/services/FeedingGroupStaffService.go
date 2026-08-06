@@ -47,6 +47,66 @@ func CreateFeedingGroupStaff(staffNumber, campusNumber, feedingGroupNumber, stat
 	return nil
 }
 
+func UpdateFeedingGroupStaffByNumber(number, campusNumber, feedingGroupNumber, status string, txn *gorm.DB) error {
+	fgs, err := repositories.GetFeedingGroupStaffByNumber(number)
+	if err != nil {
+		return errors.New("finding staff assignment error: " + err.Error())
+	}
+	if fgs.Number == "" {
+		return errors.New("staff feeding group assignment not found")
+	}
+
+	if feedingGroupNumber != "" {
+		fgs.FeedingGroupNumber = feedingGroupNumber
+	}
+	if campusNumber != "" {
+		fgs.CampusNumber = campusNumber
+	}
+	if status != "" {
+		fgs.Status = status
+	}
+
+	if err := repositories.SaveFeedingGroupStaff(fgs, txn); err != nil {
+		return errors.New("failed to update staff feeding group assignment")
+	}
+	return nil
+}
+
+func UpdateFeedingGroupStaffByStaffNumber(staffNumber, campusNumber, feedingGroupNumber, status string, txn *gorm.DB) error {
+	fgs, err := repositories.GetFeedingGroupStaffByStaffNumber(staffNumber)
+	if err != nil {
+		return errors.New("finding staff assignment error: " + err.Error())
+	}
+	if fgs.Number == "" {
+		if feedingGroupNumber == "" {
+			return errors.New("feeding group number is required to assign staff")
+		}
+		if status == "" {
+			status = "ACTIVE"
+		}
+		return CreateFeedingGroupStaff(staffNumber, campusNumber, feedingGroupNumber, status, txn)
+	}
+
+	if feedingGroupNumber != "" {
+		fgs.FeedingGroupNumber = feedingGroupNumber
+	}
+	if campusNumber != "" {
+		fgs.CampusNumber = campusNumber
+	}
+	if status != "" {
+		fgs.Status = status
+	}
+
+	if err := repositories.SaveFeedingGroupStaff(fgs, txn); err != nil {
+		return errors.New("failed to update staff feeding group assignment")
+	}
+	return nil
+}
+
+func DeleteFeedingGroupStaff(number, staffNumber string) error {
+	return repositories.DeleteFeedingGroupStaff(number, staffNumber)
+}
+
 func MealStaffs(schoolNumber string, campusNumber string, groupNumber string) ([]responses.FeedingStaffGroupResponse, error) {
 	var response = make([]responses.FeedingStaffGroupResponse, 0)
 

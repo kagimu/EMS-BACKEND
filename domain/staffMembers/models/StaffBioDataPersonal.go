@@ -28,4 +28,5 @@ type StaffBioDataPersonal struct {
 	VillageOfResidence string   `json:"villageOfResidence" gorm:"size:255;not null"`
 	TaxIdNo            string   `json:"taxIdNo" gorm:"size:255;not null"`
 	UserNumber         string   `json:"user_number" gorm:"size:36;not null"`
+	Photo              string   `json:"photo" gorm:"size:255"`
 }

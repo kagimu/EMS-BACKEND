@@ -8,6 +8,7 @@ type AdmissionRequirementResponse struct {
 	ItemNumber          string    `json:"item_number"`
 	ItemName            string    `json:"item_name"`
 	ItemCost            float64   `json:"item_cost"`
+	Quantity            float64   `json:"quantity"`
 	CampusClassNumber   string    `json:"campus_class_number"`
 	CampusNumber              string    `json:"campus_number"`
 	CampusCurriculumNumber    string    `json:"campus_curriculum_number"`
@@ -26,4 +27,5 @@ type AdmissionRequirementResponse struct {
 	UpdatedAt           time.Time `json:"updated_at"`
 	ModeOfStudyNumber   string    `json:"mode_of_study_number"`
 	ModeOfStudyName     string    `json:"mode_of_study_name"`
+	StudentType         string    `json:"student_type"`
 }

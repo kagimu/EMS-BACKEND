@@ -64,6 +64,7 @@ type EnrollmentItemWithName struct {
 	EnrollmentNumber string  `json:"enrollment_number"`
 	ItemNumber       string  `json:"item_number"`
 	ItemName         string  `json:"item_name"`
+	RequiredQuantity float64 `json:"required_quantity"`
 	Quantity         float64 `json:"quantity"`
 	Brought          bool    `json:"brought"`
 }
@@ -98,3 +99,21 @@ type EnrollmentResponse struct {
 	PromissoryNoteNumber string `json:"promissory_note_number"`
 	EnrollmentNumber     string `json:"enrollment_number"`
 }
+
+type RequirementClearanceLogResponse struct {
+	ID                   uint    `json:"id"`
+	EnrollmentNumber     string  `json:"enrollment_number"`
+	EnrollmentItemID     uint    `json:"enrollment_item_id"`
+	ItemNumber           string  `json:"item_number"`
+	ItemName             string  `json:"item_name"`
+	DateCleared          string  `json:"date_cleared"`
+	QuantityCleared      float64 `json:"quantity_cleared"`
+	TotalQuantityBrought float64 `json:"total_quantity_brought"`
+	RequiredQuantity     float64 `json:"required_quantity"`
+	RemainingQuantity    float64 `json:"remaining_quantity"`
+	ClearedByStaffNumber string  `json:"cleared_by_staff_number"`
+	ClearedByStaffName   string  `json:"cleared_by_staff_name"`
+	Remarks              string  `json:"remarks"`
+	CreatedAt            string  `json:"created_at"`
+}
+

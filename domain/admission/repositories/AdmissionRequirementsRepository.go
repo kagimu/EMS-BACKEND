@@ -18,7 +18,8 @@ type AdmissionRequirementsRepository interface {
 		studyPeriodNumber,
 		academicYearNumber,
 		itemNumber,
-		modeOfStudyNumber string,
+		modeOfStudyNumber,
+		studentType string,
 	) ([]models.AdmissionRequirement, error)
 	DeleteAdmissionRequirementByNumber(number string) error
 	UpdateAdmissionRequirementStatus(number, status string) error
@@ -60,7 +61,8 @@ func (a admissionRequirementsRepository) FindAdmissionRequirements(
 	studyPeriodNumber,
 	academicYearNumber,
 	itemNumber,
-	modeOfStudyNumber string,
+	modeOfStudyNumber,
+	studentType string,
 ) ([]models.AdmissionRequirement, error) {
 	var list []models.AdmissionRequirement
 	query := a.DB.Model(&models.AdmissionRequirement{}).
@@ -106,6 +108,9 @@ func (a admissionRequirementsRepository) FindAdmissionRequirements(
 	}
 	if modeOfStudyNumber != "" {
 		query = query.Where("admission_requirements.mode_of_study_number = ?", modeOfStudyNumber)
+	}
+	if studentType != "" {
+		query = query.Where("admission_requirements.student_type = ?", studentType)
 	}
 	if err := query.Order("admission_requirements.created_at DESC").Find(&list).Error; err != nil {
 		return nil, err

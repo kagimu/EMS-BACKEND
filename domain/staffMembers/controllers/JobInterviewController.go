@@ -24,6 +24,12 @@ func CreateJobInterview(ctx *gin.Context) {
 		return
 	}
 
+	var existingInterview models.JobInterview
+	if err := config.DB.Where("job_vacancy_number = ? AND LOWER(interview_title) = LOWER(?)", request.JobVacancyNumber, request.InterviewTitle).First(&existingInterview).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "A job interview with this title already exists for this vacancy!"})
+		return
+	}
+
 	status := request.Status
 	if status == "" {
 		status = "Scheduled"
@@ -40,8 +46,8 @@ func CreateJobInterview(ctx *gin.Context) {
 		UserNumber:       ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&jobInterview).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job interview not saved."})
+	if err := config.DB.Omit("JobVacancy").Create(&jobInterview).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job interview not saved: " + err.Error()})
 		return
 	}
 
@@ -56,6 +62,12 @@ func FetchJobInterviews(ctx *gin.Context) {
 	jobVacancyNumber := ctx.Query("job_vacancy_number")
 	if jobVacancyNumber != "" {
 		query = query.Where("job_vacancy_number = ?", jobVacancyNumber)
+	}
+
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_vacancies ON job_vacancies.number = job_interviews.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
 	}
 
 	if err := query.Find(&jobInterviews).Error; err != nil {
@@ -106,6 +118,12 @@ func EditJobInterview(ctx *gin.Context) {
 		return
 	}
 
+	var existingInterview models.JobInterview
+	if err := config.DB.Where("job_vacancy_number = ? AND LOWER(interview_title) = LOWER(?) AND number != ?", request.JobVacancyNumber, request.InterviewTitle, request.Number).First(&existingInterview).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "A job interview with this title already exists for this vacancy!"})
+		return
+	}
+
 	jobInterview.JobVacancyNumber = request.JobVacancyNumber
 	jobInterview.InterviewTitle = request.InterviewTitle
 	jobInterview.InterviewDate = request.InterviewDate
@@ -129,7 +147,7 @@ func DeleteJobInterview(ctx *gin.Context) {
 	}
 
 	var jobInterview models.JobInterview
-	if err := config.DB.Where("number = ?", id).First(&jobInterview).Error; err != nil {
+	if err := config.DB.Unscoped().Where("number = ?", id).First(&jobInterview).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job interview not found"})
 		return
 	}
@@ -148,7 +166,7 @@ func DeleteJobInterview(ctx *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Delete(&jobInterview).Error; err != nil {
+	if err := config.DB.Unscoped().Delete(&jobInterview).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job interview not deleted. Try again."})
 		return
 	}
@@ -179,17 +197,13 @@ func ScheduleInterview(ctx *gin.Context) {
 		UserNumber:           ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&schedule).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Could not schedule the interview."})
+	if err := config.DB.Omit("JobApplication", "JobInterview").Create(&schedule).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Could not schedule the interview: " + err.Error()})
 		return
 	}
 
 	// 2. Update JobApplication Status to "INTERVIEW_SCHEDULED"
-	var application models.JobApplication
-	if err := config.DB.Where("number = ?", request.ApplicationNumber).First(&application).Error; err == nil {
-		application.Status = "INTERVIEW_SCHEDULED"
-		config.DB.Save(&application)
-	}
+	config.DB.Model(&models.JobApplication{}).Where("number = ?", request.ApplicationNumber).Update("status", "INTERVIEW_SCHEDULED")
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Candidate successfully scheduled for interview!"})
 }
@@ -209,6 +223,22 @@ func FetchScheduledInterviews(ctx *gin.Context) {
 	applicationNumber := ctx.Query("application_number")
 	if applicationNumber != "" {
 		query = query.Where("job_application_number = ?", applicationNumber)
+	}
+
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_interviews ON job_interviews.number = job_interview_schedules.job_interview_number").
+			Joins("JOIN job_vacancies ON job_vacancies.number = job_interviews.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
+
+	userNumber := ctx.Query("user_number")
+	if userNumber == "" && ctx.Query("mine") == "true" {
+		userNumber = ctx.GetHeader("user-number")
+	}
+	if userNumber != "" {
+		query = query.Joins("JOIN job_applications ON job_applications.number = job_interview_schedules.job_application_number").
+			Where("job_applications.user_number = ?", userNumber)
 	}
 
 	if err := query.Find(&schedules).Error; err != nil {
@@ -281,7 +311,14 @@ func FetchCompletedInterviews(ctx *gin.Context) {
 	query := config.DB.Model(&models.JobInterviewSchedule{}).
 		Preload("JobApplication").
 		Preload("JobInterview").
-		Where("status = ?", "completed")
+		Where("job_interview_schedules.status = ?", "completed")
+
+	schoolNumber := ctx.Query("school_number")
+	if schoolNumber != "" {
+		query = query.Joins("JOIN job_interviews ON job_interviews.number = job_interview_schedules.job_interview_number").
+			Joins("JOIN job_vacancies ON job_vacancies.number = job_interviews.job_vacancy_number").
+			Where("job_vacancies.school_number = ?", schoolNumber)
+	}
 
 	if err := query.Find(&schedules).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch completed interviews"})

@@ -13,12 +13,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func generateJobCode() string {
+func generateJobCode(schoolNumber string) string {
 	year := time.Now().Year()
 	prefix := fmt.Sprintf("JOBCODE%d", year)
 
 	var lastPosition models.JobPosition
-	result := config.DB.Where("job_code LIKE ?", prefix+"%").Order("job_code desc").First(&lastPosition)
+	query := config.DB.Where("job_code LIKE ?", prefix+"%")
+	result := query.Order("job_code desc").First(&lastPosition)
 
 	if result.Error != nil {
 		return fmt.Sprintf("%s001", prefix)
@@ -34,7 +35,8 @@ func generateJobCode() string {
 	}
 
 	var count int64
-	config.DB.Model(&models.JobPosition{}).Where("job_code LIKE ?", prefix+"%").Count(&count)
+	countQuery := config.DB.Model(&models.JobPosition{}).Where("job_code LIKE ?", prefix+"%")
+	countQuery.Count(&count)
 	return fmt.Sprintf("%s%03d", prefix, count+1)
 }
 
@@ -52,16 +54,22 @@ func CreateJobPosition(ctx *gin.Context) {
 		return
 	}
 
+	var existingPos models.JobPosition
+	if err := config.DB.Where("school_number = ? AND LOWER(post_name) = LOWER(?)", request.SchoolNumber, request.PostName).First(&existingPos).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "A job position with this name already exists in this school!"})
+		return
+	}
+
 	jobPosition := models.JobPosition{
 		Number:           uuid.NewV4().String(),
 		PostName:         request.PostName,
-		JobCode:          generateJobCode(),
+		JobCode:          generateJobCode(request.SchoolNumber),
 		SchoolNumber:     request.SchoolNumber,
 		DepartmentNumber: request.DepartmentNumber,
 		UserNumber:       ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&jobPosition).Error; err != nil {
+	if err := config.DB.Omit("School", "Department", "User").Create(&jobPosition).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job position not saved. Details: " + err.Error()})
 		return
 	}
@@ -129,6 +137,12 @@ func EditJobPosition(ctx *gin.Context) {
 		return
 	}
 
+	var existingPos models.JobPosition
+	if err := config.DB.Where("school_number = ? AND LOWER(post_name) = LOWER(?) AND number != ?", request.SchoolNumber, request.PostName, request.Number).First(&existingPos).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "A job position with this name already exists in this school!"})
+		return
+	}
+
 	jobPosition.PostName = request.PostName
 	jobPosition.SchoolNumber = request.SchoolNumber
 	jobPosition.DepartmentNumber = request.DepartmentNumber
@@ -149,7 +163,7 @@ func DeleteJobPosition(ctx *gin.Context) {
 	}
 
 	var jobPosition models.JobPosition
-	if err := config.DB.Where("number = ?", id).First(&jobPosition).Error; err != nil {
+	if err := config.DB.Unscoped().Where("number = ?", id).First(&jobPosition).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job position not found"})
 		return
 	}
@@ -161,7 +175,7 @@ func DeleteJobPosition(ctx *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Delete(&jobPosition).Error; err != nil {
+	if err := config.DB.Unscoped().Delete(&jobPosition).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job position not deleted. Try again."})
 		return
 	}

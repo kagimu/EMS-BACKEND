@@ -59,3 +59,29 @@ func SaveFeedingGroupStaff(fgs models.FeedingGroupStaff, txn ...*gorm.DB) error 
 
 	return db.Save(&fgs).Error
 }
+
+func GetFeedingGroupStaffByNumber(number string) (models.FeedingGroupStaff, error) {
+	db := config.DB
+	var feedingGroupStaff models.FeedingGroupStaff
+
+	if err := db.Where("number = ?", number).First(&feedingGroupStaff).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return feedingGroupStaff, nil
+		}
+		return feedingGroupStaff, err
+	}
+
+	return feedingGroupStaff, nil
+}
+
+func DeleteFeedingGroupStaff(number, staffNumber string) error {
+	db := config.DB
+	query := db.Model(&models.FeedingGroupStaff{})
+	if number != "" {
+		query = query.Where("number = ?", number)
+	}
+	if staffNumber != "" {
+		query = query.Where("staff_number = ?", staffNumber)
+	}
+	return query.Delete(&models.FeedingGroupStaff{}).Error
+}

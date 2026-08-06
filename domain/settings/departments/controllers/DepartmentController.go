@@ -24,6 +24,18 @@ func CreateDepartment(ctx *gin.Context) {
 		return
 	}
 
+	var existingCode models.Department
+	if err := config.DB.Where("school_number = ? AND code = ?", request.SchoolNumber, request.Code).First(&existingCode).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Department with this code already exists in this school!"})
+		return
+	}
+
+	var existingName models.Department
+	if err := config.DB.Where("school_number = ? AND LOWER(name) = LOWER(?)", request.SchoolNumber, request.Name).First(&existingName).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Department with this name already exists in this school!"})
+		return
+	}
+
 	department := models.Department{
 		Number:       uuid.NewV4().String(),
 		Name:         request.Name,
@@ -76,6 +88,18 @@ func EditDepartment(ctx *gin.Context) {
 	var department models.Department
 	if err := config.DB.Where("number = ?", request.Number).First(&department).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Department not found"})
+		return
+	}
+
+	var existingCode models.Department
+	if err := config.DB.Where("school_number = ? AND code = ? AND number != ?", request.SchoolNumber, request.Code, request.Number).First(&existingCode).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Department with this code already exists in this school!"})
+		return
+	}
+
+	var existingName models.Department
+	if err := config.DB.Where("school_number = ? AND LOWER(name) = LOWER(?) AND number != ?", request.SchoolNumber, request.Name, request.Number).First(&existingName).Error; err == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Department with this name already exists in this school!"})
 		return
 	}
 

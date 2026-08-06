@@ -8,6 +8,7 @@ import (
 type AttachmentRepository interface {
 	CreateAttachment(attachment *models.Attachment) error
 	GetAttachmentByNumber(number string) (*models.Attachment, error)
+	GetAttachmentsByOwner(ownerNumber string) ([]models.Attachment, error)
 	DeleteAttachmentByNumber(number string) error
 }
 
@@ -34,4 +35,13 @@ func (a *AttachmentRepositoryImpl) GetAttachmentByNumber(number string) (*models
 		return nil, err
 	}
 	return &attachment, nil
+}
+
+func (a *AttachmentRepositoryImpl) GetAttachmentsByOwner(ownerNumber string) ([]models.Attachment, error) {
+	var attachments []models.Attachment
+	err := a.DB.Where("owner_number = ?", ownerNumber).Order("created_at desc").Find(&attachments).Error
+	if err != nil {
+		return nil, err
+	}
+	return attachments, nil
 }

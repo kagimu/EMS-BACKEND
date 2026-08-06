@@ -41,22 +41,16 @@ func CreateJobOffer(ctx *gin.Context) {
 		UserNumber:            ctx.Request.Header.Get("User-Number"),
 	}
 
-	if err := config.DB.Create(&jobOffer).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job offer not saved."})
+	if err := config.DB.Omit("JobApplication", "JobInterview").Create(&jobOffer).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "An error occurred. Job offer not saved: " + err.Error()})
 		return
 	}
 
 	// 3. Update JobApplication status to OFFERED (or request.Status)
-	application.Status = "OFFERED"
-	config.DB.Save(&application)
+	config.DB.Model(&models.JobApplication{}).Where("number = ?", application.Number).Update("status", "OFFERED")
 
 	// 4. Update JobInterviewSchedule status to OFFERED
-	// Looking up by application UUID and interview pool UUID
-	var schedule models.JobInterviewSchedule
-	if err := config.DB.Where("job_application_number = ? AND job_interview_number = ?", application.Number, request.InterviewNumber).First(&schedule).Error; err == nil {
-		schedule.Status = "OFFERED"
-		config.DB.Save(&schedule)
-	}
+	config.DB.Model(&models.JobInterviewSchedule{}).Where("job_application_number = ? AND job_interview_number = ?", application.Number, request.InterviewNumber).Update("status", "OFFERED")
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Job offer created successfully!", "data": jobOffer})
 }
@@ -117,7 +111,7 @@ func DeleteJobOffer(ctx *gin.Context) {
 	}
 
 	var jobOffer models.JobOffer
-	if err := config.DB.Where("number = ?", id).First(&jobOffer).Error; err != nil {
+	if err := config.DB.Unscoped().Where("number = ?", id).First(&jobOffer).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
 		return
 	}
@@ -129,14 +123,16 @@ func DeleteJobOffer(ctx *gin.Context) {
 		return
 	}
 
-	var relatedBioDataCount int64
-	config.DB.Model(&models.StaffBioDataPersonal{}).Where("job_offer_number = ?", id).Count(&relatedBioDataCount)
-	if relatedBioDataCount > 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot delete job offer. It has associated biodata records."})
-		return
-	}
+	// Force delete associated biodata records since staff is not deployed
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataPersonal{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataContact{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataFamily{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataEducation{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataMedical{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataLanguage{})
+	config.DB.Unscoped().Where("job_offer_number = ?", id).Delete(&models.StaffBioDataReferences{})
 
-	if err := config.DB.Delete(&jobOffer).Error; err != nil {
+	if err := config.DB.Unscoped().Delete(&jobOffer).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Job offer not deleted. Try again."})
 		return
 	}

@@ -11,6 +11,7 @@ import (
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/scopes"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -154,7 +155,7 @@ func FetchSchoolsByEntityNumber(entityNumber string, ctx *gin.Context) ([]respon
 		Preload("SchoolCurriculum").
 		Order("created_at desc").
 		Scopes(
-			//filters.ByScopedItems("school", ctx),
+			scopes.FilterSchoolsByStaffScope(ctx),
 			filters.ByEntityNumber(entityNumber),
 		).
 		Find(&schools).Error; err != nil {

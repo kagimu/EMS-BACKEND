@@ -2,11 +2,12 @@ package services
 
 import (
 	"errors"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	models2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	authRepo "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	models3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/repositories"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/services"
@@ -21,6 +22,7 @@ import (
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
+	itemRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/repositories"
 	repositories7 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
@@ -32,7 +34,9 @@ type EnrolmentService interface {
 	NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) (responses.EnrollmentResponse, error)
 	Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
 	GetEnrollmentDetailsByNumber(number string) (responses.EnrollmentDetails, error)
-	UpdateEnrollmentItem(id uint, quantity float64, brought bool) error
+	UpdateEnrollmentItem(id uint, quantity float64, brought bool, dateBrought string, remarks string, currentUserNumber string) error
+	GetRequirementClearanceLogs(enrollmentNumber, itemNumber, dateFrom, dateTo, staffNumber string) ([]responses.RequirementClearanceLogResponse, error)
+	DeleteClearanceLog(logID uint) error
 }
 
 type enrolmentService struct {
@@ -106,11 +110,16 @@ func (enrolment *enrolmentService) GetEnrollmentDetailsByNumber(number string) (
 		if ei.Item.Number != "" {
 			itemName = ei.Item.Name
 		}
+		reqQty := ei.RequiredQuantity
+		if reqQty == 0 {
+			reqQty = ei.Quantity
+		}
 		items = append(items, responses.EnrollmentItemWithName{
 			ID:               ei.ID,
 			EnrollmentNumber: ei.EnrollmentNumber,
 			ItemNumber:       ei.ItemNumber,
 			ItemName:         itemName,
+			RequiredQuantity: reqQty,
 			Quantity:         ei.Quantity,
 			Brought:          ei.Brought,
 		})
@@ -141,7 +150,7 @@ func (enrolment *enrolmentService) GetEnrollmentDetailsByNumber(number string) (
 	}, nil
 }
 
-func (enrolment *enrolmentService) UpdateEnrollmentItem(id uint, quantity float64, brought bool) error {
+func (enrolment *enrolmentService) UpdateEnrollmentItem(id uint, quantity float64, brought bool, dateBrought string, remarks string, currentUserNumber string) error {
 	item, err := repository.GetEnrollmentItemByID(id)
 	if err != nil {
 		return err
@@ -149,9 +158,118 @@ func (enrolment *enrolmentService) UpdateEnrollmentItem(id uint, quantity float6
 	if item.ID == 0 {
 		return errors.New("enrollment item not found")
 	}
+
+	oldQuantity := item.Quantity
+	quantityCleared := quantity - oldQuantity
+
 	item.Quantity = quantity
 	item.Brought = brought
-	return repository.SaveEnrollmentItem(item)
+	if err := repository.SaveEnrollmentItem(&item); err != nil {
+		return err
+	}
+
+	var staffName string
+	user, userErr := authRepo.GetUserByNumber(currentUserNumber)
+	if userErr == nil && user.ID != 0 {
+		staffName = user.FirstName + " " + user.SecondName
+		if user.LastName != "" {
+			staffName += " " + user.LastName
+		}
+	}
+
+	if dateBrought == "" {
+		dateBrought = time.Now().Format("2006-01-02")
+	}
+
+	remaining := item.RequiredQuantity - quantity
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	log := models.RequirementClearanceLog{
+		EnrollmentNumber:     item.EnrollmentNumber,
+		EnrollmentItemID:     item.ID,
+		ItemNumber:           item.ItemNumber,
+		ItemName:             item.Item.Name,
+		DateCleared:          dateBrought,
+		QuantityCleared:      quantityCleared,
+		TotalQuantityBrought: quantity,
+		RequiredQuantity:     item.RequiredQuantity,
+		RemainingQuantity:    remaining,
+		ClearedByStaffNumber: currentUserNumber,
+		ClearedByStaffName:   staffName,
+		Remarks:              remarks,
+	}
+	return repository.SaveRequirementClearanceLog(log)
+}
+
+func (enrolment *enrolmentService) GetRequirementClearanceLogs(enrollmentNumber, itemNumber, dateFrom, dateTo, staffNumber string) ([]responses.RequirementClearanceLogResponse, error) {
+	logs, err := repository.FindRequirementClearanceLogs(enrollmentNumber, itemNumber, dateFrom, dateTo, staffNumber)
+	if err != nil {
+		return nil, err
+	}
+	var res []responses.RequirementClearanceLogResponse
+	for _, l := range logs {
+		res = append(res, responses.RequirementClearanceLogResponse{
+			ID:                   l.ID,
+			EnrollmentNumber:     l.EnrollmentNumber,
+			EnrollmentItemID:     l.EnrollmentItemID,
+			ItemNumber:           l.ItemNumber,
+			ItemName:             l.ItemName,
+			DateCleared:          l.DateCleared,
+			QuantityCleared:      l.QuantityCleared,
+			TotalQuantityBrought: l.TotalQuantityBrought,
+			RequiredQuantity:     l.RequiredQuantity,
+			RemainingQuantity:    l.RemainingQuantity,
+			ClearedByStaffNumber: l.ClearedByStaffNumber,
+			ClearedByStaffName:   l.ClearedByStaffName,
+			Remarks:              l.Remarks,
+			CreatedAt:            l.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return res, nil
+}
+
+func (enrolment *enrolmentService) DeleteClearanceLog(logID uint) error {
+	// 1. Fetch the log to know which enrollment item it belongs to.
+	log, err := repository.GetClearanceLogByID(logID)
+	if err != nil {
+		return errors.New("clearance log not found: " + err.Error())
+	}
+	if log.ID == 0 {
+		return errors.New("clearance log not found")
+	}
+
+	// 2. Fetch the parent enrollment item.
+	item, err := repository.GetEnrollmentItemByID(log.EnrollmentItemID)
+	if err != nil || item.ID == 0 {
+		return errors.New("enrollment item not found")
+	}
+
+	// 3. Run delete + item recalculation in a single transaction.
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		// Delete the log record permanently.
+		if err := repository.DeleteRequirementClearanceLogByID(logID, tx); err != nil {
+			return errors.New("failed to delete clearance log: " + err.Error())
+		}
+
+		// Recalculate the total quantity from the remaining logs for this item.
+		newTotal, err := repository.SumClearanceLogQuantityByItemID(log.EnrollmentItemID, tx)
+		if err != nil {
+			return errors.New("failed to recalculate quantity: " + err.Error())
+		}
+		if newTotal < 0 {
+			newTotal = 0
+		}
+
+		// Update the enrollment item with recalculated quantity and brought flag.
+		item.Quantity = newTotal
+		item.Brought = newTotal >= item.RequiredQuantity && newTotal > 0
+		if err := repository.SaveEnrollmentItem(&item, tx); err != nil {
+			return errors.New("failed to update enrollment item: " + err.Error())
+		}
+		return nil
+	})
 }
 
 var enrolmentRepository = repository.NewEnrolmentRepository()
@@ -283,10 +401,8 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 	enrolmentResponse.EnrollmentNumber = saveEnrollment.Number
 
-	var requiredItems []models2.AdmissionCondition
-
 	if admission.Status != constants.StatusEnrolled {
-		requiredItems, err = repositories.FindAllAdmissionItem(admission.Number)
+		_, err = repositories.FindAllAdmissionItem(admission.Number)
 		if err != nil {
 			return enrolmentResponse, errors.New("Checking required items error: " + err.Error())
 		}
@@ -298,19 +414,63 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 			return errors.New("Saving enrolment error: " + err.Error())
 		}
 
-		if len(requiredItems) > 0 {
+		if len(enrolmentRequest.Items) > 0 {
+			var staffName string
+			user, userErr := authRepo.GetUserByNumber(currentUserNumber)
+			if userErr == nil && user.ID != 0 {
+				staffName = user.FirstName + " " + user.SecondName
+				if user.LastName != "" {
+					staffName += " " + user.LastName
+				}
+			}
+
+			dateBrought := enrolmentRequest.EnrollmentDate
+			if dateBrought == "" {
+				dateBrought = time.Now().Format("2006-01-02")
+			}
 
 			for _, item := range enrolmentRequest.Items {
 				var enrolmentItem models.EnrollmentItem
 				enrolmentItem.ItemNumber = item.ItemNumber
 				enrolmentItem.EnrollmentNumber = saveEnrollment.Number
+				reqQty := item.RequiredQuantity
+				if reqQty == 0 && item.Quantity > 0 {
+					reqQty = item.Quantity
+				}
+				enrolmentItem.RequiredQuantity = reqQty
 				enrolmentItem.Quantity = item.Quantity
 				enrolmentItem.Brought = item.Brought
 				enrolmentItem.UserNumber = currentUserNumber
 
-				err = repository.SaveEnrollmentItem(enrolmentItem, tx)
+				err = repository.SaveEnrollmentItem(&enrolmentItem, tx)
 				if err != nil {
 					return errors.New("Saving enrolment items error: " + err.Error())
+				}
+
+				if item.Quantity > 0 {
+					itemObj, _ := itemRepositories.GetItemByNumber(item.ItemNumber, tx)
+					remaining := reqQty - item.Quantity
+					if remaining < 0 {
+						remaining = 0
+					}
+
+					log := models.RequirementClearanceLog{
+						EnrollmentNumber:     saveEnrollment.Number,
+						EnrollmentItemID:     enrolmentItem.ID,
+						ItemNumber:           item.ItemNumber,
+						ItemName:             itemObj.Name,
+						DateCleared:          dateBrought,
+						QuantityCleared:      item.Quantity,
+						TotalQuantityBrought: item.Quantity,
+						RequiredQuantity:     reqQty,
+						RemainingQuantity:    remaining,
+						ClearedByStaffNumber: currentUserNumber,
+						ClearedByStaffName:   staffName,
+						Remarks:              "Initial clearance at enrolment",
+					}
+					if err := repository.SaveRequirementClearanceLog(log, tx); err != nil {
+						return errors.New("Saving clearance log error: " + err.Error())
+					}
 				}
 			}
 

@@ -20,11 +20,15 @@ import (
 
 var admissionRepository = repositories4.NewAdmissionRepository()
 
-func FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string) ([]responses.ClassResponse, error) {
+func FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber string, ctx ...*gin.Context) ([]responses.ClassResponse, error) {
+	var ginCtx *gin.Context
+	if len(ctx) > 0 {
+		ginCtx = ctx[0]
+	}
 
 	var classesResponse = make([]responses.ClassResponse, 0)
 
-	classes, err := repositories.FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+	classes, err := repositories.FindClassesBySchoolNumber(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber, ginCtx)
 	if err != nil {
 		return classesResponse, errors.New("getting classes error: " + err.Error())
 	}

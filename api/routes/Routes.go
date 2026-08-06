@@ -97,6 +97,24 @@ func SetupRoutes() *gin.Engine {
 	landingPage := router.Group("/landing-page")
 	{
 		landingPage.GET("", controllers2.GetLandingPage)
+		landingPage.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+		landingPage.POST("application", staffMembersControllers.CreateJobApplication)
+		landingCareers := landingPage.Group("/careers")
+		{
+			landingCareers.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+			landingCareers.POST("application", staffMembersControllers.CreateJobApplication)
+		}
+	}
+
+	public := router.Group("/public")
+	{
+		public.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+		public.POST("application", staffMembersControllers.CreateJobApplication)
+		careers := public.Group("/careers")
+		{
+			careers.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+			careers.POST("application", staffMembersControllers.CreateJobApplication)
+		}
 	}
 
 	auth := router.Group("/auth")
@@ -731,8 +749,11 @@ func SetupRoutes() *gin.Engine {
 		{
 			users.GET("", authController.FetchUsers)
 			users.GET("all", authController.FetchAllUsers)
+			users.GET("pending", authController.FetchPendingUsers)
+			users.POST("resend-activation", authController.ResendActivationEmail)
 			users.GET(":user_number", authController.FetchUser)
 			users.POST("", authController.CreateUser)
+			users.DELETE(":user_number", authController.DeletePendingUser)
 			users.GET("meals", cateringController.FetchUserMeals)
 		}
 
@@ -762,6 +783,8 @@ func SetupRoutes() *gin.Engine {
 			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
 			enrollment.GET("/:enrollment_number", enrollmentController.FetchEnrollmentDetails)
 			enrollment.PUT("/enrollment-items/:id", enrollmentController.UpdateEnrollmentItem)
+			enrollment.GET("/clearance-logs", enrollmentController.FetchClearanceLogs)
+			enrollment.DELETE("/clearance-logs-delete/:id", enrollmentController.DeleteClearanceLog)
 			enrollment.POST("terminate-student/:student_number", enrollmentController.TerminateStudentEnrollment)
 			enrollment.POST("re-enroll-student/:student_number", enrollmentController.ReEnrollStudent)
 		}
@@ -771,6 +794,10 @@ func SetupRoutes() *gin.Engine {
 			staff.POST("attach-staff-to-stream", staffController.AttachStaffToStream)
 			staff.GET("", staffController.GetStaffOnStream)
 			staff.DELETE("", staffController.DetachStaffFromStream)
+			staff.POST("staff-scope", staffController.SaveStaffScope)
+			staff.PUT("staff-scope", staffController.UpdateStaffScope)
+			staff.GET("staff-scope/:staff_number", staffController.GetStaffScope)
+			staff.DELETE("staff-scope/:staff_number", staffController.DeleteStaffScope)
 
 			salaryScale := staff.Group("salary-scale")
 			{
@@ -1006,6 +1033,11 @@ func SetupRoutes() *gin.Engine {
 			{
 				feedingGroupStaffs.POST("", cateringController.CreateFeedingGroupStaff)
 				feedingGroupStaffs.GET("", cateringController.FetchFeedingGroupStaffs)
+				feedingGroupStaffs.PUT("", cateringController.UpdateFeedingGroupStaff)
+				feedingGroupStaffs.POST("update", cateringController.UpdateFeedingGroupStaff)
+				feedingGroupStaffs.DELETE("", cateringController.DeleteFeedingGroupStaff)
+				feedingGroupStaffs.DELETE("/:number", cateringController.DeleteFeedingGroupStaff)
+				feedingGroupStaffs.POST("delete", cateringController.DeleteFeedingGroupStaff)
 			}
 			catering.GET("feeding-group-learners", cateringController.FetchFeedingGroupLearners)
 
@@ -1024,6 +1056,9 @@ func SetupRoutes() *gin.Engine {
 			catering.GET("meals", cateringController.FetUsersMeals)
 			catering.GET("meals/learners", cateringController.FetchLearnersMeals)
 			catering.GET("meals/learners/history", cateringController.FetchLearnersMealsHistory)
+			catering.GET("meals/staff", cateringController.FetchStaffMeals)
+			catering.GET("meals/staff/history", cateringController.FetchStaffMealsHistory)
+			catering.POST("meals/staff", cateringController.AddStaffMeal)
 			catering.GET("meal-projections", cateringController.MealsProjections)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
 			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
@@ -1099,6 +1134,7 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.GET("deployments", staffMembersControllers.FetchStaffDeployments)
 			staffMembers.PUT("deployment/edit", staffMembersControllers.EditStaffDeployment)
 			staffMembers.DELETE("deployment/:id", staffMembersControllers.DeleteStaffDeployment)
+			staffMembers.PUT("deployment/assign-role", staffMembersControllers.AssignStaffRole)
 
 			staffMembers.POST("biodata/:job_offer_number/personal", staffMembersControllers.CreatePersonalBioData)
 			staffMembers.GET("biodata/:job_offer_number/personal", staffMembersControllers.FetchPersonalBioData)
@@ -1128,6 +1164,7 @@ func SetupRoutes() *gin.Engine {
 			staffMembers.GET("biodata/:job_offer_number/references", staffMembersControllers.FetchReferencesBioData)
 			staffMembers.PUT("biodata/:job_offer_number/references", staffMembersControllers.EditReferencesBioData)
 
+			staffMembers.POST("biodata/:job_offer_number/photo", staffMembersControllers.UploadStaffPhoto)
 			staffMembers.GET("biodata/:job_offer_number/full-profile", staffMembersControllers.FetchFullStaffProfileBioData)
 		}
 
@@ -1145,7 +1182,10 @@ func SetupRoutes() *gin.Engine {
 	attachments := router.Group("attachments")
 	{
 		attachments.GET("download/:attachment_number", controller.DownloadAttachment)
+		attachments.GET("by-owner/:owner_number", controller.GetAttachmentsByOwner)
+		attachments.POST("upload", controller.UploadAttachment)
 		attachments.POST("delete", controller.DeleteAttachment)
+		attachments.POST("delete/:attachment_number", controller.DeleteAttachmentByParam)
 	}
 
 	return router

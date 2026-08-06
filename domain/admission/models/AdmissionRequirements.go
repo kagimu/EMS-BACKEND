@@ -10,6 +10,7 @@ type AdmissionRequirement struct {
 	gorm.Model
 	Number             string    `json:"number" gorm:"size:36;primaryKey"`
 	ItemNumber         string    `json:"item_number" gorm:"size:36;not null"`
+	Quantity           float64   `json:"quantity" gorm:"default:1"`
 	CampusClassNumber  string    `json:"campus_class_number" gorm:"size:36;"`
 	CampusNumber       string    `json:"campus_number" gorm:"size:36;"`
 	CampusCurriculumNumber string `json:"campus_curriculum_number" gorm:"size:36;"`
@@ -21,5 +22,6 @@ type AdmissionRequirement struct {
 	CreatedAt          time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt          time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	SchoolNumber       string    `json:"school_number" gorm:"size:36;"`
-	ModeOfStudyNumber string    `json:"mode_of_study_number" gorm:"size:36;"`
+	ModeOfStudyNumber  string    `json:"mode_of_study_number" gorm:"size:36;"`
+	StudentType        string    `json:"student_type" gorm:"size:36;"`
 }

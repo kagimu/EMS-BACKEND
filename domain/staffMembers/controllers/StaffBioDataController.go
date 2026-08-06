@@ -4,11 +4,64 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	attachmentServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/services"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+func getBioDataLookupNumbers(paramNumber string) []string {
+	if paramNumber == "" {
+		return []string{}
+	}
+	numbers := []string{paramNumber}
+	var jobOffer models.JobOffer
+	if err := config.DB.Preload("JobApplication").Where("number = ?", paramNumber).First(&jobOffer).Error; err == nil {
+		if jobOffer.JobApplicationNumber != "" {
+			numbers = append(numbers, jobOffer.JobApplicationNumber)
+		}
+		if jobOffer.JobApplication.UserNumber != "" {
+			numbers = append(numbers, jobOffer.JobApplication.UserNumber)
+		}
+	} else {
+		var jobApp models.JobApplication
+		if err := config.DB.Where("number = ?", paramNumber).First(&jobApp).Error; err == nil {
+			if jobApp.UserNumber != "" {
+				numbers = append(numbers, jobApp.UserNumber)
+			}
+			var jo models.JobOffer
+			if err := config.DB.Where("job_application_number = ?", paramNumber).First(&jo).Error; err == nil && jo.Number != "" {
+				numbers = append(numbers, jo.Number)
+			}
+		} else {
+			var apps []models.JobApplication
+			config.DB.Where("user_number = ?", paramNumber).Find(&apps)
+			for _, app := range apps {
+				numbers = append(numbers, app.Number)
+				var jo models.JobOffer
+				if err := config.DB.Where("job_application_number = ?", app.Number).First(&jo).Error; err == nil && jo.Number != "" {
+					numbers = append(numbers, jo.Number)
+				}
+			}
+		}
+	}
+	return numbers
+}
+
+func verifyBioDataTargetExists(paramNumber string) bool {
+	if err := config.DB.Where("number = ?", paramNumber).First(&models.JobOffer{}).Error; err == nil {
+		return true
+	}
+	if err := config.DB.Where("number = ?", paramNumber).First(&authModels.User{}).Error; err == nil {
+		return true
+	}
+	if err := config.DB.Where("number = ?", paramNumber).First(&models.JobApplication{}).Error; err == nil {
+		return true
+	}
+	return false
+}
 
 func CreatePersonalBioData(ctx *gin.Context) {
 	jobOfferNumber := ctx.Param("job_offer_number")
@@ -30,10 +83,8 @@ func CreatePersonalBioData(ctx *gin.Context) {
 		return
 	}
 
-	// Verify Job Offer exists
-	var jobOffer models.JobOffer
-	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+	if !verifyBioDataTargetExists(jobOfferNumber) {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer, User, or Application record not found"})
 		return
 	}
 
@@ -66,9 +117,11 @@ func CreatePersonalBioData(ctx *gin.Context) {
 		return
 	}
 
-	// Update JobOffer status
-	jobOffer.Status = "Filling Bio Data"
-	config.DB.Save(&jobOffer)
+	var jobOffer models.JobOffer
+	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err == nil && jobOffer.Number != "" {
+		jobOffer.Status = "Filling Bio Data"
+		config.DB.Save(&jobOffer)
+	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Personal bio data saved successfully!", "data": bioData})
 }
@@ -81,7 +134,7 @@ func FetchPersonalBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataPersonal
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Personal bio data not found"})
 		return
 	}
@@ -110,7 +163,7 @@ func EditPersonalBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataPersonal
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Personal bio data not found"})
 		return
 	}
@@ -161,11 +214,8 @@ func CreateContactBioData(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-
-	// Verify Job Offer exists
-	var jobOffer models.JobOffer
-	if err := config.DB.Where("number = ?", jobOfferNumber).First(&jobOffer).Error; err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer not found"})
+	if !verifyBioDataTargetExists(jobOfferNumber) {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Job offer, User, or Application record not found"})
 		return
 	}
 
@@ -199,7 +249,7 @@ func FetchContactBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataContact
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Contact bio data not found"})
 		return
 	}
@@ -228,7 +278,7 @@ func EditContactBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataContact
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Contact bio data not found"})
 		return
 	}
@@ -309,7 +359,7 @@ func FetchMedicalBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataMedical
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Medical bio data not found"})
 		return
 	}
@@ -338,7 +388,7 @@ func EditMedicalBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataMedical
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Medical bio data not found"})
 		return
 	}
@@ -460,7 +510,7 @@ func FetchFamilyBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataFamily
-	if err := config.DB.Preload("Children").Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Preload("Children").Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Family bio data not found"})
 		return
 	}
@@ -489,7 +539,7 @@ func EditFamilyBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataFamily
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Family bio data not found"})
 		return
 	}
@@ -671,7 +721,7 @@ func FetchEducationBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataEducation
-	if err := config.DB.Preload("Items").Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Preload("Items").Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Education bio data not found"})
 		return
 	}
@@ -747,7 +797,7 @@ func EditEducationBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataEducation
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Education bio data not found"})
 		return
 	}
@@ -892,7 +942,7 @@ func FetchLanguageBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataLanguage
-	if err := config.DB.Preload("Items").Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Preload("Items").Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Language bio data not found"})
 		return
 	}
@@ -935,7 +985,7 @@ func EditLanguageBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataLanguage
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Language bio data not found"})
 		return
 	}
@@ -1048,7 +1098,7 @@ func FetchReferencesBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataReferences
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "References bio data not found"})
 		return
 	}
@@ -1116,7 +1166,7 @@ func EditReferencesBioData(ctx *gin.Context) {
 	}
 
 	var bioData models.StaffBioDataReferences
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&bioData).Error; err != nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&bioData).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "References bio data not found"})
 		return
 	}
@@ -1185,32 +1235,32 @@ func FetchFullStaffProfileBioData(ctx *gin.Context) {
 	}
 
 	var deployment models.StaffDeployment
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&deployment).Error; err == nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&deployment).Error; err == nil {
 		response["staff_id_number"] = deployment.StaffIdNumber
 	}
 
 	var personal models.StaffBioDataPersonal
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&personal).Error; err == nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&personal).Error; err == nil {
 		response["personal"] = personal
 	}
 
 	var contact models.StaffBioDataContact
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&contact).Error; err == nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&contact).Error; err == nil {
 		response["contact"] = contact
 	}
 
 	var medical models.StaffBioDataMedical
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&medical).Error; err == nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&medical).Error; err == nil {
 		response["medical"] = medical
 	}
 
 	var family models.StaffBioDataFamily
-	if err := config.DB.Preload("Children").Where("job_offer_number = ?", jobOfferNumber).First(&family).Error; err == nil {
+	if err := config.DB.Preload("Children").Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&family).Error; err == nil {
 		response["family"] = family
 	}
 
 	var education models.StaffBioDataEducation
-	if err := config.DB.Preload("Items").Where("job_offer_number = ?", jobOfferNumber).First(&education).Error; err == nil {
+	if err := config.DB.Preload("Items").Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&education).Error; err == nil {
 		var primary []requests.EducationItemBasic
 		var secondary []requests.EducationItemBasic
 		var highSchool []requests.EducationItemBasic
@@ -1234,7 +1284,7 @@ func FetchFullStaffProfileBioData(ctx *gin.Context) {
 	}
 
 	var language models.StaffBioDataLanguage
-	if err := config.DB.Preload("Items").Where("job_offer_number = ?", jobOfferNumber).First(&language).Error; err == nil {
+	if err := config.DB.Preload("Items").Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&language).Error; err == nil {
 		var items []requests.LanguageItemRequest
 		for _, item := range language.Items {
 			items = append(items, requests.LanguageItemRequest{Language: item.Language, Speaking: item.Speaking, Reading: item.Reading, Writing: item.Writing})
@@ -1243,7 +1293,7 @@ func FetchFullStaffProfileBioData(ctx *gin.Context) {
 	}
 
 	var references models.StaffBioDataReferences
-	if err := config.DB.Where("job_offer_number = ?", jobOfferNumber).First(&references).Error; err == nil {
+	if err := config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&references).Error; err == nil {
 		response["references"] = requests.StaffBioDataReferencesRequest{
 			Guarantor1: requests.GuarantorRequest{Name: references.Guarantor1Name, Address: references.Guarantor1Address, Email: references.Guarantor1Email, Phone: references.Guarantor1Phone, Relationship: references.Guarantor1Relationship},
 			Guarantor2: requests.GuarantorRequest{Name: references.Guarantor2Name, Address: references.Guarantor2Address, Email: references.Guarantor2Email, Phone: references.Guarantor2Phone, Relationship: references.Guarantor2Relationship},
@@ -1255,3 +1305,40 @@ func FetchFullStaffProfileBioData(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": response})
 }
+
+func UploadStaffPhoto(ctx *gin.Context) {
+	jobOfferNumber := ctx.Param("job_offer_number")
+	if jobOfferNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
+		return
+	}
+
+	attachmentNumber, err := attachmentServices.UploadAttachment(ctx, "file")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to upload photo: " + err.Error()})
+		return
+	}
+
+	var personal models.StaffBioDataPersonal
+	err = config.DB.Where("job_offer_number IN ?", getBioDataLookupNumbers(jobOfferNumber)).First(&personal).Error
+	if err != nil {
+		personal = models.StaffBioDataPersonal{
+			Number:         uuid.NewV4().String(),
+			JobOfferNumber: jobOfferNumber,
+			Photo:          attachmentNumber,
+		}
+		if err := config.DB.Create(&personal).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to save photo to personal profile"})
+			return
+		}
+	} else {
+		personal.Photo = attachmentNumber
+		if err := config.DB.Save(&personal).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update photo in personal profile"})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Photo uploaded successfully", "data": personal, "photo": attachmentNumber})
+}
+

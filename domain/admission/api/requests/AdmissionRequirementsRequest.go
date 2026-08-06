@@ -8,17 +8,24 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+type AdmissionRequirementItemRequest struct {
+	ItemNumber string  `json:"item_number"`
+	Quantity   float64 `json:"quantity"`
+}
+
 type AdmissionRequirementsRequest struct {
-	ItemNumbers        []string `json:"item_numbers" binding:"required"`
-	ClassNumber        string   `json:"class_number" binding:"required"`
-	CampusNumber       string   `json:"campus_number" binding:"required"`
-	CampusCurriculumNumber string `json:"campus_curriculum_number" binding:"required"`
-	CampusLevelNumber      string `json:"campus_level_number" binding:"required"`
-	StudyPeriodNumber      string `json:"study_period_number" binding:"required"`
-	AcademicYearNumber string   `json:"academic_year_number" binding:"required"`
-	SchoolNumber       string   `json:"school_number" binding:"required"`
-	Status             string   `json:"status"`
-	ModeOfStudyNumber  string   `json:"mode_of_study_number" binding:"required"`
+	ItemNumbers            []string                          `json:"item_numbers"`
+	Items                  []AdmissionRequirementItemRequest `json:"items"`
+	ClassNumber            string                            `json:"class_number" binding:"required"`
+	CampusNumber           string                            `json:"campus_number" binding:"required"`
+	CampusCurriculumNumber string                            `json:"campus_curriculum_number" binding:"required"`
+	CampusLevelNumber      string                            `json:"campus_level_number" binding:"required"`
+	StudyPeriodNumber      string                            `json:"study_period_number" binding:"required"`
+	AcademicYearNumber     string                            `json:"academic_year_number" binding:"required"`
+	SchoolNumber           string                            `json:"school_number" binding:"required"`
+	Status                 string                            `json:"status"`
+	ModeOfStudyNumber      string                            `json:"mode_of_study_number" binding:"required"`
+	StudentType            string                            `json:"student_type"`
 }
 
 func (a *AdmissionRequirementsRequest) Validate() error {
@@ -43,8 +50,8 @@ func (a *AdmissionRequirementsRequest) Validate() error {
 	if a.AcademicYearNumber == "" {
 		return errors.New("academic year number is required")
 	}
-	if len(a.ItemNumbers) == 0 {
-		return errors.New("at least one item number is required")
+	if len(a.ItemNumbers) == 0 && len(a.Items) == 0 {
+		return errors.New("at least one item or item_number is required")
 	}
 	if a.Status == "" {
 		a.Status = constants.StatusActive
@@ -55,26 +62,56 @@ func (a *AdmissionRequirementsRequest) Validate() error {
 	if a.Status != constants.StatusActive && a.Status != constants.StatusInactive {
 		return errors.New("status must be ACTIVE or INACTIVE")
 	}
+	if a.StudentType == "" {
+		a.StudentType = "NEW_STUDENT"
+	}
+	if a.StudentType == "CONTINUIUING_STUDENT" {
+		a.StudentType = "CONTINUING_STUDENT"
+	}
+	if a.StudentType != "NEW_STUDENT" && a.StudentType != "CONTINUING_STUDENT" {
+		return errors.New("student type must be NEW_STUDENT or CONTINUING_STUDENT")
+	}
 	return nil
 }
 
-// ToModels builds one AdmissionRequirement per item_number, with shared class/period/year/school and given user.
+// ToModels builds one AdmissionRequirement per item, with shared class/period/year/school and given user.
 func (a *AdmissionRequirementsRequest) ToModels(userNumber string) []models.AdmissionRequirement {
-	out := make([]models.AdmissionRequirement, 0, len(a.ItemNumbers))
-	for _, itemNumber := range a.ItemNumbers {
+	var list []AdmissionRequirementItemRequest
+	if len(a.Items) > 0 {
+		list = append(list, a.Items...)
+	} else {
+		for _, num := range a.ItemNumbers {
+			list = append(list, AdmissionRequirementItemRequest{
+				ItemNumber: num,
+				Quantity:   1,
+			})
+		}
+	}
+
+	out := make([]models.AdmissionRequirement, 0, len(list))
+	for _, item := range list {
+		if item.ItemNumber == "" {
+			continue
+		}
+		qty := item.Quantity
+		if qty <= 0 {
+			qty = 1
+		}
 		out = append(out, models.AdmissionRequirement{
-			Number:             uuid.NewV4().String(),
-			ItemNumber:         itemNumber,
-			CampusClassNumber:  a.ClassNumber,
-			CampusNumber:       a.CampusNumber,
+			Number:                 uuid.NewV4().String(),
+			ItemNumber:             item.ItemNumber,
+			Quantity:               qty,
+			CampusClassNumber:      a.ClassNumber,
+			CampusNumber:           a.CampusNumber,
 			CampusCurriculumNumber: a.CampusCurriculumNumber,
 			CampusLevelNumber:      a.CampusLevelNumber,
 			StudyPeriodNumber:      a.StudyPeriodNumber,
-			AcademicYearNumber: a.AcademicYearNumber,
-			SchoolNumber:       a.SchoolNumber,
-			UserNumber:         userNumber,
-			Status:             a.Status,
-			ModeOfStudyNumber:  a.ModeOfStudyNumber,
+			AcademicYearNumber:     a.AcademicYearNumber,
+			SchoolNumber:           a.SchoolNumber,
+			UserNumber:             userNumber,
+			Status:                 a.Status,
+			ModeOfStudyNumber:      a.ModeOfStudyNumber,
+			StudentType:            a.StudentType,
 		})
 	}
 	return out

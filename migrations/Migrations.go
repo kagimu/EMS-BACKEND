@@ -325,10 +325,13 @@ func Init() error {
 		&cateringModels.MealCourseCount{},
 		&cateringModels.MealCourse{},
 		&enrollmentModel.EnrollmentItem{},
+		&enrollmentModel.RequirementClearanceLog{},
 		&cateringModels.MealCourseFeedingSession{},
 		&cateringModels.CampusMealCourse{},
 		&cateringModels.FeedingGroupMealCourse{},
 		&cateringModels.MealStock{},
+		&cateringModels.StaffMeal{},
+		&cateringModels.StaffMealStock{},
 		&eosModels.EntityUser{},
 		&reportSettings.HeadTeacherComment{},
 		&reportingActivityModels.Indicator{},
@@ -352,6 +355,7 @@ func Init() error {
 		&studentDetails.StudentPhoto{},
 		&models3.Attachment{},
 		&staffModel.StreamTeacher{},
+		&staffModel.StaffScope{},
 		&assessmentModel.ScriptMarkingGuide{},
 		&currDelivery.CurriculumDelivery{},
 		&currDelivery.StudentCurriculumDelivery{},
@@ -402,5 +406,14 @@ func Init() error {
 		return err
 	}
 
+	if err := migrateUserTypeColumn(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func migrateUserTypeColumn() error {
+	db := config.DB
+	return db.Exec(`ALTER TABLE users MODIFY COLUMN type VARCHAR(32) NOT NULL`).Error
 }

@@ -7,7 +7,7 @@ import (
 type JobApplication struct {
 	gorm.Model
 	Number            string     `json:"number" gorm:"size:36;unique;index;not null"`
-	ApplicationNumber string     `json:"application_number" gorm:"size:100;unique;not null"`
+	ApplicationNumber string     `json:"application_number" gorm:"size:100;index;not null"`
 	JobVacancyNumber  string     `json:"job_vacancy_number" gorm:"size:36;not null"`
 	JobVacancy        JobVacancy `gorm:"foreignKey:JobVacancyNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	FirstName         string     `json:"first_name" gorm:"size:100;not null"`
