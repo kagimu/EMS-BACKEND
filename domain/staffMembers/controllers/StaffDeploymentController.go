@@ -390,9 +390,13 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 	}
 
 	// ── STEP 2: JobInterviewSchedule ──
-	if err := tx.Unscoped().
-		Where("job_application_number = ? AND job_interview_number = ?", jobApplicationNumber, jobInterviewNumber).
-		Delete(&models.JobInterviewSchedule{}).Error; err != nil {
+	// Use OR so we catch all rows even if one of the IDs resolved to an empty string.
+	// Also catch any schedules linked via job_application_number alone (the most reliable key).
+	if err := tx.Exec(`
+		DELETE FROM job_interview_schedules
+		WHERE job_application_number = ?
+		   OR (job_interview_number != '' AND job_interview_number = ?)`,
+		jobApplicationNumber, jobInterviewNumber).Error; err != nil {
 		rollbackWithError("Failed to delete job interview schedules", err)
 		return
 	}
