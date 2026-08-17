@@ -273,18 +273,205 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		return
 	}
 
+	// Load the deployment with all relations needed to resolve IDs
 	var deployment models.StaffDeployment
-	if err := config.DB.Where("number = ?", id).First(&deployment).Error; err != nil {
+	if err := config.DB.
+		Preload("JobOffer").
+		Preload("JobOffer.JobApplication").
+		Preload("JobOffer.JobInterview").
+		Where("number = ?", id).
+		First(&deployment).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Deployment not found"})
 		return
 	}
 
-	if err := config.DB.Delete(&deployment).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Deployment not deleted. Try again."})
+	jobOfferNumber := deployment.JobOfferNumber
+	jobApplicationNumber := deployment.JobOffer.JobApplicationNumber
+	jobInterviewNumber := deployment.JobOffer.JobInterviewNumber
+
+	// Resolve the user number: prefer from deployment, fallback to job application
+	userNumber := deployment.UserNumber
+	if userNumber == "" {
+		userNumber = deployment.JobOffer.JobApplication.UserNumber
+	}
+	// If still empty, try to find via contact email
+	if userNumber == "" && deployment.JobOffer.JobApplication.Email != "" {
+		var contact authModels.Contact
+		if err := config.DB.Where("contact = ?", strings.TrimSpace(deployment.JobOffer.JobApplication.Email)).First(&contact).Error; err == nil {
+			userNumber = contact.UserNumber
+		}
+	}
+
+	// --- Begin single atomic transaction ---
+	tx := config.DB.Begin()
+	if tx.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to start transaction: " + tx.Error.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Deployment deleted successfully!"})
+	// Helper to rollback and respond on error
+	rollbackWithError := func(msg string, err error) {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": msg + ": " + err.Error()})
+	}
+
+	// ── STEP 1: BioData children (leaf tables) ──
+
+	// 1a. StaffBioDataFamilyChild — keyed via family_number
+	if err := tx.Exec(`
+		DELETE FROM staff_bio_data_family_children
+		WHERE family_number IN (
+			SELECT number FROM staff_bio_data_families WHERE job_offer_number = ?
+		)`, jobOfferNumber).Error; err != nil {
+		rollbackWithError("Failed to delete bio data family children", err)
+		return
+	}
+
+	// 1b. StaffBioDataFamily
+	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataFamily{}).Error; err != nil {
+		rollbackWithError("Failed to delete bio data family", err)
+		return
+	}
+
+	// 1c. StaffBioDataEducationItem — keyed via education_number
+	if err := tx.Exec(`
+		DELETE FROM staff_bio_data_education_items
+		WHERE education_number IN (
+			SELECT number FROM staff_bio_data_educations WHERE job_offer_number = ?
+		)`, jobOfferNumber).Error; err != nil {
+		rollbackWithError("Failed to delete bio data education items", err)
+		return
+	}
+
+	// 1d. StaffBioDataEducation
+	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataEducation{}).Error; err != nil {
+		rollbackWithError("Failed to delete bio data education", err)
+		return
+	}
+
+	// 1e. StaffBioDataLanguageItem — keyed via language_record_number
+	if err := tx.Exec(`
+		DELETE FROM staff_bio_data_language_items
+		WHERE language_record_number IN (
+			SELECT number FROM staff_bio_data_languages WHERE job_offer_number = ?
+		)`, jobOfferNumber).Error; err != nil {
+		rollbackWithError("Failed to delete bio data language items", err)
+		return
+	}
+
+	// 1f. StaffBioDataLanguage
+	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataLanguage{}).Error; err != nil {
+		rollbackWithError("Failed to delete bio data language", err)
+		return
+	}
+
+	// 1g. StaffBioDataContact
+	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataContact{}).Error; err != nil {
+		rollbackWithError("Failed to delete bio data contact", err)
+		return
+	}
+
+	// 1h. StaffBioDataMedical
+	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataMedical{}).Error; err != nil {
+		rollbackWithError("Failed to delete bio data medical", err)
+		return
+	}
+
+	// 1i. StaffBioDataReferences
+	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataReferences{}).Error; err != nil {
+		rollbackWithError("Failed to delete bio data references", err)
+		return
+	}
+
+	// 1j. StaffBioDataPersonal
+	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataPersonal{}).Error; err != nil {
+		rollbackWithError("Failed to delete bio data personal", err)
+		return
+	}
+
+	// ── STEP 2: JobInterviewSchedule ──
+	if err := tx.Unscoped().
+		Where("job_application_number = ? AND job_interview_number = ?", jobApplicationNumber, jobInterviewNumber).
+		Delete(&models.JobInterviewSchedule{}).Error; err != nil {
+		rollbackWithError("Failed to delete job interview schedules", err)
+		return
+	}
+
+	// ── STEP 3: StaffDeployment itself ──
+	if err := tx.Unscoped().Where("number = ?", id).Delete(&models.StaffDeployment{}).Error; err != nil {
+		rollbackWithError("Failed to delete staff deployment", err)
+		return
+	}
+
+	// ── STEP 4: JobOffer ──
+	if err := tx.Unscoped().Where("number = ?", jobOfferNumber).Delete(&models.JobOffer{}).Error; err != nil {
+		rollbackWithError("Failed to delete job offer", err)
+		return
+	}
+
+	// ── STEP 5: JobApplication ──
+	if err := tx.Unscoped().Where("number = ?", jobApplicationNumber).Delete(&models.JobApplication{}).Error; err != nil {
+		rollbackWithError("Failed to delete job application", err)
+		return
+	}
+
+	// ── STEP 6: JobInterview ──
+	if err := tx.Unscoped().Where("number = ?", jobInterviewNumber).Delete(&models.JobInterview{}).Error; err != nil {
+		rollbackWithError("Failed to delete job interview", err)
+		return
+	}
+
+	// ── STEP 7: User-related records (only if a user was created for this staff) ──
+	if userNumber != "" {
+		// 7a. UserRoles (permissions)
+		if err := tx.Unscoped().Where("user_number = ?", userNumber).Delete(&permissionModels.UserRole{}).Error; err != nil {
+			rollbackWithError("Failed to delete user roles", err)
+			return
+		}
+
+		// 7b. EntityUsers (EOS)
+		if err := tx.Exec("DELETE FROM entity_users WHERE user_number = ?", userNumber).Error; err != nil {
+			rollbackWithError("Failed to delete entity users", err)
+			return
+		}
+
+		// 7c. PasswordResets
+		if err := tx.Unscoped().Where("user_number = ?", userNumber).Delete(&authModels.PasswordReset{}).Error; err != nil {
+			rollbackWithError("Failed to delete password resets", err)
+			return
+		}
+
+		// 7d. UserPasswords
+		if err := tx.Unscoped().Where("user_number = ?", userNumber).Delete(&authModels.UserPassword{}).Error; err != nil {
+			rollbackWithError("Failed to delete user passwords", err)
+			return
+		}
+
+		// 7e. Contacts
+		if err := tx.Unscoped().Where("user_number = ?", userNumber).Delete(&authModels.Contact{}).Error; err != nil {
+			rollbackWithError("Failed to delete user contacts", err)
+			return
+		}
+
+		// 7f. User row — only delete if user type is Staff to protect shared accounts
+		var user authModels.User
+		if err := tx.Where("number = ?", userNumber).First(&user).Error; err == nil {
+			if user.Type == "Staff" {
+				if err := tx.Unscoped().Where("number = ?", userNumber).Delete(&authModels.User{}).Error; err != nil {
+					rollbackWithError("Failed to delete user", err)
+					return
+				}
+			}
+		}
+	}
+
+	// ── COMMIT ──
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit deletion transaction: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Staff deployment and all related records permanently deleted."})
 }
 
 func AssignStaffRole(ctx *gin.Context) {
