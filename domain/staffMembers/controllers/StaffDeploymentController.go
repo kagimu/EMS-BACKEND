@@ -302,24 +302,28 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		}
 	}
 
-	// --- Begin single atomic transaction ---
+	// ── PRE-FLIGHT CONSTRAINT CHECKS ──
+	// Block deletion if any records exist that must be removed first by the user.
+
+	// Scheduled interviews must be deleted first
+	var scheduledCount int64
+	config.DB.Model(&models.JobInterviewSchedule{}).Where("job_application_number = ?", jobApplicationNumber).Count(&scheduledCount)
+	if scheduledCount > 0 {
+		ctx.JSON(http.StatusConflict, gin.H{
+			"message": "Cannot delete deployment. Please delete the scheduled interview(s) for this staff member first.",
+			"hint":    "Go to Scheduled Interviews and remove all entries for this applicant.",
+		})
+		return
+	}
+
+	// ── ALL CHECKS PASSED — proceed with deletion in a transaction ──
 	tx := config.DB.Begin()
 	if tx.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to start transaction: " + tx.Error.Error()})
 		return
 	}
 
-	// Disable FK checks for this session so delete order never causes constraint violations.
-	// Safe here because we remove ALL related rows — no orphans remain after commit.
-	if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 0").Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to disable FK checks: " + err.Error()})
-		return
-	}
-
-	// Helper to rollback (also re-enables FK checks) and respond on error
 	rollbackWithError := func(msg string, err error) {
-		tx.Exec("SET FOREIGN_KEY_CHECKS = 1")
 		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": msg + ": " + err.Error()})
 	}
@@ -398,11 +402,7 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		return
 	}
 
-	// ── STEP 2: JobInterviewSchedule (all schedules for this application) ──
-	if err := tx.Exec("DELETE FROM job_interview_schedules WHERE job_application_number = ?", jobApplicationNumber).Error; err != nil {
-		rollbackWithError("Failed to delete job interview schedules", err)
-		return
-	}
+	// NOTE: Scheduled interviews were already confirmed absent by the pre-flight check above.
 
 	// ── STEP 3: StaffDeployment itself ──
 	if err := tx.Exec("DELETE FROM staff_deployments WHERE number = ?", id).Error; err != nil {
@@ -474,12 +474,6 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		}
 	}
 
-	// Re-enable FK checks before committing
-	if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 1").Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to re-enable FK checks: " + err.Error()})
-		return
-	}
 
 	// ── COMMIT ──
 	if err := tx.Commit().Error; err != nil {
