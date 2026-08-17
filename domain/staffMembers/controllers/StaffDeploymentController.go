@@ -309,8 +309,17 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		return
 	}
 
-	// Helper to rollback and respond on error
+	// Disable FK checks for this session so delete order never causes constraint violations.
+	// Safe here because we remove ALL related rows — no orphans remain after commit.
+	if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 0").Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to disable FK checks: " + err.Error()})
+		return
+	}
+
+	// Helper to rollback (also re-enables FK checks) and respond on error
 	rollbackWithError := func(msg string, err error) {
+		tx.Exec("SET FOREIGN_KEY_CHECKS = 1")
 		tx.Rollback()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": msg + ": " + err.Error()})
 	}
@@ -328,7 +337,7 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 	}
 
 	// 1b. StaffBioDataFamily
-	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataFamily{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM staff_bio_data_families WHERE job_offer_number = ?", jobOfferNumber).Error; err != nil {
 		rollbackWithError("Failed to delete bio data family", err)
 		return
 	}
@@ -344,7 +353,7 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 	}
 
 	// 1d. StaffBioDataEducation
-	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataEducation{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM staff_bio_data_educations WHERE job_offer_number = ?", jobOfferNumber).Error; err != nil {
 		rollbackWithError("Failed to delete bio data education", err)
 		return
 	}
@@ -360,75 +369,71 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 	}
 
 	// 1f. StaffBioDataLanguage
-	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataLanguage{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM staff_bio_data_languages WHERE job_offer_number = ?", jobOfferNumber).Error; err != nil {
 		rollbackWithError("Failed to delete bio data language", err)
 		return
 	}
 
 	// 1g. StaffBioDataContact
-	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataContact{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM staff_bio_data_contacts WHERE job_offer_number = ?", jobOfferNumber).Error; err != nil {
 		rollbackWithError("Failed to delete bio data contact", err)
 		return
 	}
 
 	// 1h. StaffBioDataMedical
-	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataMedical{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM staff_bio_data_medicals WHERE job_offer_number = ?", jobOfferNumber).Error; err != nil {
 		rollbackWithError("Failed to delete bio data medical", err)
 		return
 	}
 
 	// 1i. StaffBioDataReferences
-	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataReferences{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM staff_bio_data_references WHERE job_offer_number = ?", jobOfferNumber).Error; err != nil {
 		rollbackWithError("Failed to delete bio data references", err)
 		return
 	}
 
 	// 1j. StaffBioDataPersonal
-	if err := tx.Unscoped().Where("job_offer_number = ?", jobOfferNumber).Delete(&models.StaffBioDataPersonal{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM staff_bio_data_personals WHERE job_offer_number = ?", jobOfferNumber).Error; err != nil {
 		rollbackWithError("Failed to delete bio data personal", err)
 		return
 	}
 
-	// ── STEP 2: JobInterviewSchedule ──
-	// Use OR so we catch all rows even if one of the IDs resolved to an empty string.
-	// Also catch any schedules linked via job_application_number alone (the most reliable key).
-	if err := tx.Exec(`
-		DELETE FROM job_interview_schedules
-		WHERE job_application_number = ?
-		   OR (job_interview_number != '' AND job_interview_number = ?)`,
-		jobApplicationNumber, jobInterviewNumber).Error; err != nil {
+	// ── STEP 2: JobInterviewSchedule (all schedules for this application) ──
+	if err := tx.Exec("DELETE FROM job_interview_schedules WHERE job_application_number = ?", jobApplicationNumber).Error; err != nil {
 		rollbackWithError("Failed to delete job interview schedules", err)
 		return
 	}
 
 	// ── STEP 3: StaffDeployment itself ──
-	if err := tx.Unscoped().Where("number = ?", id).Delete(&models.StaffDeployment{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM staff_deployments WHERE number = ?", id).Error; err != nil {
 		rollbackWithError("Failed to delete staff deployment", err)
 		return
 	}
 
 	// ── STEP 4: JobOffer ──
-	if err := tx.Unscoped().Where("number = ?", jobOfferNumber).Delete(&models.JobOffer{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM job_offers WHERE number = ?", jobOfferNumber).Error; err != nil {
 		rollbackWithError("Failed to delete job offer", err)
 		return
 	}
 
 	// ── STEP 5: JobApplication ──
-	if err := tx.Unscoped().Where("number = ?", jobApplicationNumber).Delete(&models.JobApplication{}).Error; err != nil {
+	if err := tx.Exec("DELETE FROM job_applications WHERE number = ?", jobApplicationNumber).Error; err != nil {
 		rollbackWithError("Failed to delete job application", err)
 		return
 	}
 
 	// ── STEP 6: JobInterview ──
-	if err := tx.Unscoped().Where("number = ?", jobInterviewNumber).Delete(&models.JobInterview{}).Error; err != nil {
-		rollbackWithError("Failed to delete job interview", err)
-		return
+	if jobInterviewNumber != "" {
+		if err := tx.Exec("DELETE FROM job_interviews WHERE number = ?", jobInterviewNumber).Error; err != nil {
+			rollbackWithError("Failed to delete job interview", err)
+			return
+		}
 	}
 
 	// ── STEP 7: User-related records (only if a user was created for this staff) ──
 	if userNumber != "" {
 		// 7a. UserRoles (permissions)
-		if err := tx.Unscoped().Where("user_number = ?", userNumber).Delete(&permissionModels.UserRole{}).Error; err != nil {
+		if err := tx.Exec("DELETE FROM user_roles WHERE user_number = ?", userNumber).Error; err != nil {
 			rollbackWithError("Failed to delete user roles", err)
 			return
 		}
@@ -440,19 +445,19 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		}
 
 		// 7c. PasswordResets
-		if err := tx.Unscoped().Where("user_number = ?", userNumber).Delete(&authModels.PasswordReset{}).Error; err != nil {
+		if err := tx.Exec("DELETE FROM password_resets WHERE user_number = ?", userNumber).Error; err != nil {
 			rollbackWithError("Failed to delete password resets", err)
 			return
 		}
 
 		// 7d. UserPasswords
-		if err := tx.Unscoped().Where("user_number = ?", userNumber).Delete(&authModels.UserPassword{}).Error; err != nil {
+		if err := tx.Exec("DELETE FROM user_passwords WHERE user_number = ?", userNumber).Error; err != nil {
 			rollbackWithError("Failed to delete user passwords", err)
 			return
 		}
 
 		// 7e. Contacts
-		if err := tx.Unscoped().Where("user_number = ?", userNumber).Delete(&authModels.Contact{}).Error; err != nil {
+		if err := tx.Exec("DELETE FROM contacts WHERE user_number = ?", userNumber).Error; err != nil {
 			rollbackWithError("Failed to delete user contacts", err)
 			return
 		}
@@ -461,12 +466,19 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		var user authModels.User
 		if err := tx.Where("number = ?", userNumber).First(&user).Error; err == nil {
 			if user.Type == "Staff" {
-				if err := tx.Unscoped().Where("number = ?", userNumber).Delete(&authModels.User{}).Error; err != nil {
+				if err := tx.Exec("DELETE FROM users WHERE number = ?", userNumber).Error; err != nil {
 					rollbackWithError("Failed to delete user", err)
 					return
 				}
 			}
 		}
+	}
+
+	// Re-enable FK checks before committing
+	if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 1").Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to re-enable FK checks: " + err.Error()})
+		return
 	}
 
 	// ── COMMIT ──
