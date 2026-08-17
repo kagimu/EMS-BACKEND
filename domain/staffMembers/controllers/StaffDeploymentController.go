@@ -301,18 +301,7 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 	}
 
 	// ── PRE-FLIGHT CHECK ──
-	// The job offer must be deleted first (which also deletes all bio-data).
-	if deployment.JobOfferNumber != "" {
-		var offerExists int64
-		config.DB.Model(&models.JobOffer{}).Where("number = ?", deployment.JobOfferNumber).Count(&offerExists)
-		if offerExists > 0 {
-			ctx.JSON(http.StatusConflict, gin.H{
-				"message": "Cannot delete deployment. Please delete the job offer first.",
-				"hint":    "Delete the job offer (and its bio-data) before removing the deployment.",
-			})
-			return
-		}
-	}
+	// None needed here. The deployment is a leaf in the business logic tree.
 
 	// ── ALL CHECKS PASSED — proceed with deletion in a transaction ──
 	tx := config.DB.Begin()
@@ -332,23 +321,15 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		return
 	}
 
-	// ── Delete the job application ──
-	if jobApplicationNumber != "" {
-		if err := tx.Unscoped().Where("number = ?", jobApplicationNumber).Delete(&models.JobApplication{}).Error; err != nil {
-			rollbackWithError("Failed to delete job application", err)
+	// ── Revert the job offer status ──
+	if deployment.JobOfferNumber != "" {
+		if err := tx.Model(&models.JobOffer{}).Where("number = ?", deployment.JobOfferNumber).Update("status", "OFFERED").Error; err != nil {
+			rollbackWithError("Failed to revert job offer status", err)
 			return
 		}
 	}
 
-	// ── Delete the job interview ──
-	if jobInterviewNumber != "" {
-		if err := tx.Unscoped().Where("number = ?", jobInterviewNumber).Delete(&models.JobInterview{}).Error; err != nil {
-			rollbackWithError("Failed to delete job interview", err)
-			return
-		}
-	}
-
-	// ── Delete the user account (belongs solely to this staff deployment) ──
+	// ── Clean up staff access (but keep the user account) ──
 	if userNumber != "" {
 		if err := tx.Exec("DELETE FROM user_roles WHERE user_number = ?", userNumber).Error; err != nil {
 			rollbackWithError("Failed to delete user roles", err)
@@ -358,27 +339,10 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 			rollbackWithError("Failed to delete entity users", err)
 			return
 		}
-		if err := tx.Exec("DELETE FROM password_resets WHERE user_number = ?", userNumber).Error; err != nil {
-			rollbackWithError("Failed to delete password resets", err)
+		// Revert the user back to Applicant
+		if err := tx.Model(&authModels.User{}).Where("number = ? AND type = ?", userNumber, constants.TypeStaff).Update("type", "Applicant").Error; err != nil {
+			rollbackWithError("Failed to revert user type", err)
 			return
-		}
-		if err := tx.Exec("DELETE FROM user_passwords WHERE user_number = ?", userNumber).Error; err != nil {
-			rollbackWithError("Failed to delete user passwords", err)
-			return
-		}
-		if err := tx.Exec("DELETE FROM contacts WHERE user_number = ?", userNumber).Error; err != nil {
-			rollbackWithError("Failed to delete user contacts", err)
-			return
-		}
-		// Only delete the user row if they are Staff-typed
-		var user authModels.User
-		if err := tx.Where("number = ?", userNumber).First(&user).Error; err == nil {
-			if user.Type == "Staff" {
-				if err := tx.Unscoped().Where("number = ?", userNumber).Delete(&authModels.User{}).Error; err != nil {
-					rollbackWithError("Failed to delete user account", err)
-					return
-				}
-			}
 		}
 	}
 
@@ -387,7 +351,7 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Staff deployment, user account, application and interview permanently deleted."})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Staff deployment deleted and job offer reverted to OFFERED."})
 }
 
 func AssignStaffRole(ctx *gin.Context) {
