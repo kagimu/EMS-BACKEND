@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	"github.com/gin-gonic/gin"
@@ -366,10 +367,43 @@ func DeleteScheduledInterview(ctx *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Unscoped().Where("number = ?", id).Delete(&models.JobInterviewSchedule{}).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete scheduled interview: " + err.Error()})
+	tx := config.DB.Begin()
+	if tx.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to start transaction"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Scheduled interview deleted successfully."})
+	rollbackWithError := func(msg string, err error) {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": msg + ": " + err.Error()})
+	}
+
+	// 1. Delete the scheduled interview row
+	if err := tx.Unscoped().Where("number = ?", id).Delete(&models.JobInterviewSchedule{}).Error; err != nil {
+		rollbackWithError("Failed to delete scheduled interview", err)
+		return
+	}
+
+	// 2. Revert user type back to Applicant (reverse of AssignStaffRole)
+	if schedule.UserNumber != "" {
+		if err := tx.Model(&authModels.User{}).Where("number = ? AND type = 'Staff'", schedule.UserNumber).Update("type", "Applicant").Error; err != nil {
+			rollbackWithError("Failed to revert user type", err)
+			return
+		}
+	}
+
+	// 3. Reset job application status back to 'Interviewed'
+	if schedule.JobApplicationNumber != "" {
+		if err := tx.Model(&models.JobApplication{}).Where("number = ?", schedule.JobApplicationNumber).Update("status", "Interviewed").Error; err != nil {
+			rollbackWithError("Failed to reset application status", err)
+			return
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Scheduled interview deleted. Staff user reverted to Applicant."})
 }
