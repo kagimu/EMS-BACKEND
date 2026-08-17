@@ -352,3 +352,24 @@ func FetchCompletedInterviews(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"data": responseData})
 }
+
+func DeleteScheduledInterview(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Scheduled interview number is required"})
+		return
+	}
+
+	var schedule models.JobInterviewSchedule
+	if err := config.DB.Where("number = ?", id).First(&schedule).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Scheduled interview not found"})
+		return
+	}
+
+	if err := config.DB.Unscoped().Where("number = ?", id).Delete(&models.JobInterviewSchedule{}).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete scheduled interview: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Scheduled interview deleted successfully."})
+}
