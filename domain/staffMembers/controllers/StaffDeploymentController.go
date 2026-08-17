@@ -285,8 +285,7 @@ func DeleteStaffDeployment(ctx *gin.Context) {
 		return
 	}
 
-	jobApplicationNumber := deployment.JobOffer.JobApplicationNumber
-	jobInterviewNumber := deployment.JobOffer.JobInterviewNumber
+
 
 	// Resolve the user number
 	userNumber := deployment.UserNumber
