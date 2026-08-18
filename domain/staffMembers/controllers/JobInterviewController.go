@@ -367,6 +367,17 @@ func DeleteScheduledInterview(ctx *gin.Context) {
 		return
 	}
 
+	// Block if a job offer has already been made for this applicant
+	var offerCount int64
+	config.DB.Model(&models.JobOffer{}).Where("job_application_number = ?", schedule.JobApplicationNumber).Count(&offerCount)
+	if offerCount > 0 {
+		ctx.JSON(http.StatusConflict, gin.H{
+			"message": "Cannot delete scheduled interview. A job offer has already been made for this applicant.",
+			"hint":    "Delete the job offer first.",
+		})
+		return
+	}
+
 	tx := config.DB.Begin()
 	if tx.Error != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to start transaction"})
@@ -392,9 +403,9 @@ func DeleteScheduledInterview(ctx *gin.Context) {
 		}
 	}
 
-	// 3. Reset job application status back to 'Interviewed'
+	// 3. Reset job application status back to 'Pending'
 	if schedule.JobApplicationNumber != "" {
-		if err := tx.Model(&models.JobApplication{}).Where("number = ?", schedule.JobApplicationNumber).Update("status", "Interviewed").Error; err != nil {
+		if err := tx.Model(&models.JobApplication{}).Where("number = ?", schedule.JobApplicationNumber).Update("status", "Pending").Error; err != nil {
 			rollbackWithError("Failed to reset application status", err)
 			return
 		}

@@ -129,16 +129,6 @@ func DeleteJobOffer(ctx *gin.Context) {
 		return
 	}
 
-	// Block if scheduled interviews still exist for this offer's application
-	var scheduledCount int64
-	config.DB.Model(&models.JobInterviewSchedule{}).Where("job_application_number = ?", jobOffer.JobApplicationNumber).Count(&scheduledCount)
-	if scheduledCount > 0 {
-		ctx.JSON(http.StatusConflict, gin.H{
-			"message": "Cannot delete job offer. There are scheduled interview(s) linked to this applicant.",
-			"hint":    "Delete the scheduled interview(s) first.",
-		})
-		return
-	}
 
 	// ── ALL CHECKS PASSED — delete in a transaction ──
 	tx := config.DB.Begin()
