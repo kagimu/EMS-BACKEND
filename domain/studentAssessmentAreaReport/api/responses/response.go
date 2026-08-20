@@ -43,6 +43,7 @@ type ClassStudentAssessmentReportResponse struct {
 	StudentNumber string           `json:"student_number"`
 	StudentName   string           `json:"student_name"`
 	Assessments   []AssessmentArea `json:"assessments"`
+	TotalAverage  float64          `json:"total_average"`
 }
 
 type AssessmentArea struct {

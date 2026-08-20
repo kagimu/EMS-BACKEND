@@ -227,10 +227,26 @@ func GetAllStudentScoresReportByClassNumberAndStudyPeriod(reqCampusClassNumber, 
 		if err != nil {
 			return nil, err
 		}
+
+		var totalAverage float64 = 0
+		var validSubjectsCount int = 0
+		
+		for _, assessmentArea := range as {
+			if len(assessmentArea.Scores) > 0 {
+				totalAverage += assessmentArea.Average
+				validSubjectsCount++
+			}
+		}
+		
+		if validSubjectsCount > 0 {
+			totalAverage = totalAverage / float64(validSubjectsCount)
+		}
+
 		studentsResp = append(studentsResp, responses.ClassStudentAssessmentReportResponse{
 			StudentNumber: enrollment.StudentNumber,
 			StudentName:   student.Surname + " " + student.SecondName + " " + student.OtherName,
 			Assessments:   as,
+			TotalAverage:  totalAverage,
 		})
 	}
 
