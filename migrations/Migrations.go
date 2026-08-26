@@ -46,6 +46,7 @@ import (
 	reportSettings "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
+	paymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/payments/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	departmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/departments/models"
 	jobPositionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
@@ -400,6 +401,7 @@ func Init() error {
 		&jobPositionModels.StaffBioDataLanguage{},
 		&jobPositionModels.StaffBioDataLanguageItem{},
 		&jobPositionModels.StaffBioDataReferences{},
+		&paymentModels.PaymentMethod{},
 	)
 
 	if err != nil {

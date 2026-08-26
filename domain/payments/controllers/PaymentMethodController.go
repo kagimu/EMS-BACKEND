@@ -21,6 +21,7 @@ func CreatePaymentMethod(c *gin.Context) {
 		Name         string `json:"name"`
 		Account      string `json:"account"`
 		OtherDetails string `json:"other_details"`
+		CampusNumber string `json:"campus_number"`
 	}
 
 	var payload Payload
@@ -29,9 +30,12 @@ func CreatePaymentMethod(c *gin.Context) {
 		return
 	}
 
-	campusNumber := c.Request.Header.Get("Campus-Number")
+	campusNumber := payload.CampusNumber
 	if campusNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus Number is required in header"})
+		campusNumber = c.Request.Header.Get("Campus-Number")
+	}
+	if campusNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus is required"})
 		return
 	}
 
@@ -69,6 +73,7 @@ func EditPaymentMethod(c *gin.Context) {
 		Name         string `json:"name"`
 		Account      string `json:"account"`
 		OtherDetails string `json:"other_details"`
+		CampusNumber string `json:"campus_number"`
 	}
 
 	var payload Payload
@@ -86,6 +91,9 @@ func EditPaymentMethod(c *gin.Context) {
 	method.Name = payload.Name
 	method.Account = payload.Account
 	method.OtherDetails = payload.OtherDetails
+	if payload.CampusNumber != "" {
+		method.CampusNumber = payload.CampusNumber
+	}
 
 	if err := config.DB.Save(&method).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update payment method"})
