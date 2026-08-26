@@ -129,6 +129,7 @@ func FetchPaymentMethods(c *gin.Context) {
 		OtherDetails string `json:"other_details"`
 		CampusName   string `json:"campus_name"`
 		CampusNumber string `json:"campus_number"`
+		SchoolNumber string `json:"school_number"`
 	}
 
 	var response []PaymentMethodResponse
@@ -140,6 +141,7 @@ func FetchPaymentMethods(c *gin.Context) {
 			OtherDetails: paymentMethod.OtherDetails,
 			CampusName:   paymentMethod.Campus.Name,
 			CampusNumber: paymentMethod.Campus.Number,
+			SchoolNumber: paymentMethod.Campus.SchoolNumber,
 		})
 	}
 
