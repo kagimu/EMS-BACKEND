@@ -204,3 +204,41 @@ func CancelInvoice(context *gin.Context) {
 
 	context.JSON(http.StatusOK, commons.Feedback("Promissory note cancelled successfully"))
 }
+
+func GetInvoiceItemTransactionsHistory(context *gin.Context) {
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	invoiceNumber := context.Query("invoice_number")
+	if invoiceNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide promissory note number"))
+		return
+	}
+
+	history, err := services.GetInvoiceItemTransactionHistory(invoiceNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Item transaction history", "data": history})
+}
+
+func GetAllItemTransactionsHistory(context *gin.Context) {
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	campusNumber := context.Query("campus_number")
+
+	history, err := services.GetAllItemTransactionHistory(campusNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "All item transactions history", "data": history})
+}

@@ -125,3 +125,48 @@ func DeleteInvoiceItem(item invoiceModel.InvoiceItem, tx *gorm.DB) error {
 	}
 	return nil
 }
+
+func GetInvoiceItemTransactionsHistory(invoiceNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItemTransaction, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var history []invoiceModel.InvoiceItemTransaction
+	err := db.Preload("Transaction.Statement.AddedBy").
+		Preload("InvoiceItem.Item").
+		Joins("JOIN invoice_items on invoice_items.number = invoice_item_transactions.invoice_item_number").
+		Where("invoice_items.invoice_number = ?", invoiceNumber).
+		Find(&history).Error
+
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return history, err
+	}
+
+	return history, nil
+}
+
+func GetAllItemTransactionsHistory(campusNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItemTransaction, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var history []invoiceModel.InvoiceItemTransaction
+	query := db.Preload("Transaction.Statement.AddedBy").
+		Preload("InvoiceItem.Item")
+
+	if campusNumber != "" {
+		query = query.Joins("JOIN transactions on transactions.number = invoice_item_transactions.transaction_number").
+			Joins("JOIN statements on statements.number = transactions.statement_number").
+			Where("statements.campus_number = ?", campusNumber)
+	}
+
+	err := query.Find(&history).Error
+
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return history, err
+	}
+
+	return history, nil
+}

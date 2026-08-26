@@ -1847,3 +1847,70 @@ func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest
 	return nil
 }
 
+func GetInvoiceItemTransactionHistory(invoiceNumber string) ([]responses.ItemTransactionHistoryResponse, error) {
+	var response []responses.ItemTransactionHistoryResponse
+	history, err := invoiceRepositories.GetInvoiceItemTransactionsHistory(invoiceNumber)
+	if err != nil {
+		return response, err
+	}
+
+	for _, h := range history {
+		addedByName := ""
+		if h.Transaction.Statement.AddedBy.Number != "" {
+			addedByName = h.Transaction.Statement.AddedBy.FirstName + " " + h.Transaction.Statement.AddedBy.LastName
+		}
+		
+		studentDetails := ""
+		if h.Transaction.Statement.UserNumber != "" {
+			student, err := repositories.FindStudentByUserNumber(h.Transaction.Statement.UserNumber)
+			if err == nil {
+				studentDetails = student.Surname + student.SecondName + student.ADN
+			}
+		}
+
+		response = append(response, responses.ItemTransactionHistoryResponse{
+			Date:             h.CreatedAt.Format(time.DateOnly),
+			ItemName:         h.InvoiceItem.Item.Name,
+			Amount:           h.AmountPaidOff,
+			PaymentMethod:    h.Transaction.PaymentMethod,
+			PaymentReference: h.Transaction.ClientReference,
+			RecordedBy:       addedByName,
+			StudentDetails:   studentDetails,
+		})
+	}
+	return response, nil
+}
+
+func GetAllItemTransactionHistory(campusNumber string) ([]responses.ItemTransactionHistoryResponse, error) {
+	var response []responses.ItemTransactionHistoryResponse
+	history, err := invoiceRepositories.GetAllItemTransactionsHistory(campusNumber)
+	if err != nil {
+		return response, err
+	}
+
+	for _, h := range history {
+		addedByName := ""
+		if h.Transaction.Statement.AddedBy.Number != "" {
+			addedByName = h.Transaction.Statement.AddedBy.FirstName + " " + h.Transaction.Statement.AddedBy.LastName
+		}
+		
+		studentDetails := ""
+		if h.Transaction.Statement.UserNumber != "" {
+			student, err := repositories.FindStudentByUserNumber(h.Transaction.Statement.UserNumber)
+			if err == nil {
+				studentDetails = student.Surname + student.SecondName + student.ADN
+			}
+		}
+
+		response = append(response, responses.ItemTransactionHistoryResponse{
+			Date:             h.CreatedAt.Format(time.DateOnly),
+			ItemName:         h.InvoiceItem.Item.Name,
+			Amount:           h.AmountPaidOff,
+			PaymentMethod:    h.Transaction.PaymentMethod,
+			PaymentReference: h.Transaction.ClientReference,
+			RecordedBy:       addedByName,
+			StudentDetails:   studentDetails,
+		})
+	}
+	return response, nil
+}

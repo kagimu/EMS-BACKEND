@@ -8,11 +8,13 @@ type ItemPayment struct {
 }
 
 type InvoicePaymentRequest struct {
-	InvoiceNumber string        `json:"invoice_number"`
-	Amount        float64       `json:"amount"`
-	Date          string        `json:"date"`
-	Credits       []string      `json:"credits"`
-	ItemPayments  []ItemPayment `json:"item_payments,omitempty"`
+	InvoiceNumber    string        `json:"invoice_number"`
+	Amount           float64       `json:"amount"`
+	Date             string        `json:"date"`
+	Credits          []string      `json:"credits"`
+	ItemPayments     []ItemPayment `json:"item_payments,omitempty"`
+	PaymentMethod    string        `json:"payment_method,omitempty"`
+	PaymentReference string        `json:"payment_reference,omitempty"`
 }
 
 type AccountTopUpRequest struct {
