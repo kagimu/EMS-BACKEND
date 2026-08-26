@@ -10,6 +10,8 @@ type PaymentMethod struct {
 	gorm.Model
 	Number       string              `json:"number" gorm:"size:36;unique;not null"`
 	Name         string              `json:"name" gorm:"size:50;"`
+	Account      string              `json:"account" gorm:"size:50;"`
+	OtherDetails string              `json:"other_details" gorm:"type:text;"`
 	CampusNumber string              `json:"campus_number" gorm:"size:36;index;not null"`
 	Campus       campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	UserNumber   string              `json:"user_number" gorm:"size:36;index;not null"`

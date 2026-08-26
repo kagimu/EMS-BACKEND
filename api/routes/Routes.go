@@ -250,6 +250,15 @@ func SetupRoutes() *gin.Engine {
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
 		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 
+		//payment methods
+		paymentMethods := main.Group("/payment-methods")
+		{
+			paymentMethods.GET("", paymentsController.FetchPaymentMethods)
+			paymentMethods.POST("", paymentsController.CreatePaymentMethod)
+			paymentMethods.PUT("/edit", paymentsController.EditPaymentMethod)
+			paymentMethods.DELETE("/delete", paymentsController.DeletePaymentMethod)
+		}
+
 		//subject cluster
 		subjectCluster := main.Group("/subject-cluster")
 		{
