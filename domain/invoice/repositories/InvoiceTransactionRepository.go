@@ -12,6 +12,7 @@ import (
 type InvoiceTransactionRepository interface {
 	UseTx(tx *gorm.DB) *gorm.DB
 	SaveInvoiceTransaction(invoiceTransaction models.InvoiceTransaction) error
+	SaveInvoiceItemTransaction(invoiceItemTransaction models.InvoiceItemTransaction) error
 	FindInvoiceTransactions(invoiceNumber, transactionNumber string) ([]models.InvoiceTransaction, error)
 	DeleteTransaction(invoiceTransaction models.InvoiceTransaction) error
 }
@@ -46,6 +47,10 @@ func (invoiceTransactionRepository *invoiceTransactionRepository) FindInvoiceTra
 
 func (invoiceTransactionRepository *invoiceTransactionRepository) SaveInvoiceTransaction(invoiceTransaction models.InvoiceTransaction) error {
 	return invoiceTransactionRepository.Db.Omit("Invoice", "Transaction", "AddedBy").Save(&invoiceTransaction).Error
+}
+
+func (invoiceTransactionRepository *invoiceTransactionRepository) SaveInvoiceItemTransaction(invoiceItemTransaction models.InvoiceItemTransaction) error {
+	return invoiceTransactionRepository.Db.Omit("Transaction", "InvoiceItem").Save(&invoiceItemTransaction).Error
 }
 
 func (invoiceTransactionRepository *invoiceTransactionRepository) UseTx(tx *gorm.DB) *gorm.DB {

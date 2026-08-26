@@ -2,11 +2,17 @@ package requests
 
 import "errors"
 
+type ItemPayment struct {
+	InvoiceItemNumber string  `json:"invoice_item_number"`
+	Amount            float64 `json:"amount"`
+}
+
 type InvoicePaymentRequest struct {
-	InvoiceNumber string   `json:"invoice_number"`
-	Amount        float64  `json:"amount"`
-	Date          string   `json:"date"`
-	Credits       []string `json:"credits"`
+	InvoiceNumber string        `json:"invoice_number"`
+	Amount        float64       `json:"amount"`
+	Date          string        `json:"date"`
+	Credits       []string      `json:"credits"`
+	ItemPayments  []ItemPayment `json:"item_payments,omitempty"`
 }
 
 type AccountTopUpRequest struct {

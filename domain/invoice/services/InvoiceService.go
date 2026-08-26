@@ -463,12 +463,17 @@ func InvoiceDetails(refNumber string) (responses.InvoiceResponse, error) {
 	for _, item := range items {
 		_item := item.Item
 
+		itemPaidAmount, _ := invoiceRepositories.GetInvoiceItemPaidAmount(item.Number)
+		itemTotal := item.UnitPrice * item.Quantity
+
 		itemResponse := responses.InvoiceItemResponse{
 			ItemName:   _item.Name,
 			ItemNumber: item.Number,
 			UnitCost:   item.UnitPrice,
 			Quantity:   item.Quantity,
-			TotalCost:  item.UnitPrice * item.Quantity,
+			TotalCost:  itemTotal,
+			PaidAmount: itemPaidAmount,
+			Balance:    itemTotal - itemPaidAmount,
 		}
 
 		invoiceItemsResponse = append(invoiceItemsResponse, itemResponse)
@@ -618,6 +623,10 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
 		if err != nil {
 			return errors.New("Attaching transaction to promissory note error " + err.Error())
+		}
+
+		if err = distributeItemPayments(invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
+			return errors.New("Distributing item payments error " + err.Error())
 		}
 
 		if newStatus != invoice.Status {
@@ -814,6 +823,10 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 	err = invoiceTransactionRepository.SaveInvoiceTransaction(newInvoiceTransaction)
 	if err != nil {
 		return minInvoiceResponse, errors.New("Attaching transaction to promissory note error " + err.Error())
+	}
+
+	if err = distributeItemPayments(invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
+		return minInvoiceResponse, errors.New("Distributing item payments error " + err.Error())
 	}
 
 	if newStatus != invoice.Status {
@@ -1738,3 +1751,99 @@ func GeneralStatement(userNumber string, minAmount, maxAmount float64) ([]respon
 
 	return statementResponse, nil
 }
+
+
+func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest, invoice models.Invoice, newTransaction models.Transaction, payAmount float64, tx *gorm.DB) error {
+
+	invoiceItems, err := invoiceRepositories.GetInvoiceItems(invoice.Number, tx)
+	if err != nil {
+		return errors.New("Getting promissory note items error " + err.Error())
+	}
+
+	type itemBalance struct {
+		Item    models.InvoiceItem
+		Balance float64
+	}
+	var balances []itemBalance
+	var totalUnpaidBalance float64
+
+	for _, item := range invoiceItems {
+		itemPaid, _ := invoiceRepositories.GetInvoiceItemPaidAmount(item.Number, tx)
+		balance := (item.Quantity * item.UnitPrice) - itemPaid
+		if balance > 0 {
+			balances = append(balances, itemBalance{Item: item, Balance: balance})
+			totalUnpaidBalance += balance
+		}
+	}
+
+	if len(invoicePaymentRequest.ItemPayments) > 0 {
+		for _, itemPayment := range invoicePaymentRequest.ItemPayments {
+			if itemPayment.Amount <= 0 {
+				continue
+			}
+			var matchedItem itemBalance
+			var found bool
+			for _, b := range balances {
+				if b.Item.Number == itemPayment.InvoiceItemNumber {
+					matchedItem = b
+					found = true
+					break
+				}
+			}
+			if !found {
+				return errors.New("invalid item number in item_payments or item is fully paid")
+			}
+			
+			amountToPay := itemPayment.Amount
+			if amountToPay > matchedItem.Balance {
+				amountToPay = matchedItem.Balance
+			}
+
+			newItemTx := models.InvoiceItemTransaction{
+				Number:            uuid.NewV4().String(),
+				TransactionNumber: newTransaction.Number,
+				InvoiceItemNumber: matchedItem.Item.Number,
+				AmountPaidOff:     amountToPay,
+			}
+			if err := invoiceTransactionRepository.SaveInvoiceItemTransaction(newItemTx); err != nil {
+				return errors.New("Failed to save item payment: " + err.Error())
+			}
+		}
+	} else {
+		if totalUnpaidBalance > 0 && payAmount > 0 {
+			remainingToDistribute := payAmount
+			for i, b := range balances {
+				if remainingToDistribute <= 0 {
+					break
+				}
+				
+				amountToPay := (b.Balance / totalUnpaidBalance) * payAmount
+				
+				if i == len(balances)-1 {
+					amountToPay = remainingToDistribute
+				}
+				
+				if amountToPay > b.Balance {
+					amountToPay = b.Balance
+				}
+				if amountToPay > remainingToDistribute {
+					amountToPay = remainingToDistribute
+				}
+
+				newItemTx := models.InvoiceItemTransaction{
+					Number:            uuid.NewV4().String(),
+					TransactionNumber: newTransaction.Number,
+					InvoiceItemNumber: b.Item.Number,
+					AmountPaidOff:     amountToPay,
+				}
+				if err := invoiceTransactionRepository.SaveInvoiceItemTransaction(newItemTx); err != nil {
+					return errors.New("Failed to save item payment: " + err.Error())
+				}
+				remainingToDistribute -= amountToPay
+			}
+		}
+	}
+
+	return nil
+}
+

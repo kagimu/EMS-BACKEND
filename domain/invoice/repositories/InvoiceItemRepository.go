@@ -71,6 +71,31 @@ func GetInvoiceAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error) {
 	return totalAmount, nil
 }
 
+func GetInvoiceItemPaidAmount(invoiceItemNumber string, tx ...*gorm.DB) (float64, error) {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var paidAmount float64
+
+	if err := db.Model(&invoiceModel.InvoiceItemTransaction{}).
+		Where("invoice_item_number = ? ", invoiceItemNumber).
+		Select("COALESCE(sum(amount_paid_off),0)").
+		Scan(&paidAmount).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+
+		return paidAmount, err
+	}
+
+	return paidAmount, nil
+}
+
 func GetInvoiceItems(invoiceNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItem, error) {
 
 	db := config.DB

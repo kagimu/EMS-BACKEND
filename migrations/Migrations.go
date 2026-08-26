@@ -270,6 +270,7 @@ func Init() error {
 		&invoiceModel.Transaction{},
 		&invoiceModel.Credit{},
 		&invoiceModel.InvoiceTransaction{},
+		&invoiceModel.InvoiceItemTransaction{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
