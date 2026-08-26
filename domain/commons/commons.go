@@ -179,7 +179,7 @@ func PermissionGroups() []PermissionGroup {
 			"view_general_class_report",
 			"view_report_summary", "manage_student_assessment", "view_numerical_assessment",
 			"view_narrative_assessment", "view_final_learners_report", "view_draft_learners_reports",
-			"view_learner_promotions", "view_promotions",
+			"view_learner_promotions", "view_promotions", "re_enrol",
 		}},
 		{"ADMISSION": []string{"admit_student", "view_admissions", "cancel_admission", "view_offer_admission", "view_interview_score"}},
 		{"ENROLLMENT": []string{"enroll_student", "view_enrollments", "view_manage_re_enrollment", "terminate_enrollment", "re-instate_enrollment"}},
