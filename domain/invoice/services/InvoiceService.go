@@ -591,6 +591,8 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		Date:            paymentDate,
 		Status:          constants.StatusActive,
 		AmountInCredit:  payRequestAmount - payAmount,
+		PaymentMethod:   invoicePaymentRequest.PaymentMethod,
+		ClientReference: invoicePaymentRequest.PaymentReference,
 	}
 
 	newInvoiceTransaction := models.InvoiceTransaction{
@@ -791,6 +793,8 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 		Date:            dateTimePaid,
 		Status:          constants.StatusActive,
 		AmountInCredit:  payRequestAmount - payAmount,
+		PaymentMethod:   invoicePaymentRequest.PaymentMethod,
+		ClientReference: invoicePaymentRequest.PaymentReference,
 	}
 
 	newInvoiceTransaction := models.InvoiceTransaction{
@@ -1016,6 +1020,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 				Status:          constants.StatusActive,
 				AmountInCredit:  payAmount,
 				CreditReference: creditTransaction.Number,
+				PaymentMethod:   "Credits",
 			}
 
 			err = config.DB.Transaction(func(tx *gorm.DB) error {
