@@ -1782,7 +1782,7 @@ func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest
 	}
 
 	if len(invoicePaymentRequest.ItemPayments) > 0 {
-		for _, itemPayment := range invoicePaymentRequest.ItemPayments {
+		for i, itemPayment := range invoicePaymentRequest.ItemPayments {
 			if itemPayment.Amount <= 0 {
 				continue
 			}
@@ -1809,6 +1809,7 @@ func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest
 				TransactionNumber: newTransaction.Number,
 				InvoiceItemNumber: matchedItem.Item.Number,
 				AmountPaidOff:     amountToPay,
+				ItemReceiptNumber: fmt.Sprintf("%s-%d", generateNewInvoiceNumber(), i),
 			}
 			if err := invoiceTransactionRepository.SaveInvoiceItemTransaction(newItemTx); err != nil {
 				return errors.New("Failed to save item payment: " + err.Error())
@@ -1840,6 +1841,7 @@ func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest
 					TransactionNumber: newTransaction.Number,
 					InvoiceItemNumber: b.Item.Number,
 					AmountPaidOff:     amountToPay,
+					ItemReceiptNumber: fmt.Sprintf("%s-%d", generateNewInvoiceNumber(), i),
 				}
 				if err := invoiceTransactionRepository.SaveInvoiceItemTransaction(newItemTx); err != nil {
 					return errors.New("Failed to save item payment: " + err.Error())
@@ -1881,6 +1883,11 @@ func GetInvoiceItemTransactionHistory(invoiceNumber string) ([]responses.ItemTra
 			PaymentReference: h.Transaction.ClientReference,
 			RecordedBy:       addedByName,
 			StudentDetails:   studentDetails,
+			ItemReceiptNo:    h.ItemReceiptNumber,
+			ItemCode:         h.InvoiceItem.Item.Code,
+			ItemSerialNumber: h.InvoiceItem.Item.SerialCode,
+			Campus:           h.Transaction.Statement.Campus.Name,
+			School:           h.Transaction.Statement.School.Name,
 		})
 	}
 	return response, nil
@@ -1915,6 +1922,11 @@ func GetAllItemTransactionHistory(campusNumber string) ([]responses.ItemTransact
 			PaymentReference: h.Transaction.ClientReference,
 			RecordedBy:       addedByName,
 			StudentDetails:   studentDetails,
+			ItemReceiptNo:    h.ItemReceiptNumber,
+			ItemCode:         h.InvoiceItem.Item.Code,
+			ItemSerialNumber: h.InvoiceItem.Item.SerialCode,
+			Campus:           h.Transaction.Statement.Campus.Name,
+			School:           h.Transaction.Statement.School.Name,
 		})
 	}
 	return response, nil

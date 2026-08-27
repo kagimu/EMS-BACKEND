@@ -134,6 +134,8 @@ func GetInvoiceItemTransactionsHistory(invoiceNumber string, tx ...*gorm.DB) ([]
 
 	var history []invoiceModel.InvoiceItemTransaction
 	err := db.Preload("Transaction.Statement.AddedBy").
+		Preload("Transaction.Statement.Campus").
+		Preload("Transaction.Statement.School").
 		Preload("InvoiceItem.Item").
 		Joins("JOIN invoice_items on invoice_items.number = invoice_item_transactions.invoice_item_number").
 		Where("invoice_items.invoice_number = ?", invoiceNumber).
@@ -154,6 +156,8 @@ func GetAllItemTransactionsHistory(campusNumber string, tx ...*gorm.DB) ([]invoi
 
 	var history []invoiceModel.InvoiceItemTransaction
 	query := db.Preload("Transaction.Statement.AddedBy").
+		Preload("Transaction.Statement.Campus").
+		Preload("Transaction.Statement.School").
 		Preload("InvoiceItem.Item")
 
 	if campusNumber != "" {

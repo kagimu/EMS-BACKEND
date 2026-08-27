@@ -12,6 +12,7 @@ type InvoiceItemTransaction struct {
 	InvoiceItem       InvoiceItem `gorm:"foreignKey:InvoiceItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:CASCADE;"`
 	AmountPaidOff     float64     `json:"amount_paid_off" gorm:"not null"`
 	CreatedAt         time.Time   `json:"createdAt" gorm:"not null"`
+	ItemReceiptNumber string      `json:"item_receipt_no" gorm:"size:36;unique"`
 }
 
 func (u *InvoiceItemTransaction) TableName() string {

@@ -8,4 +8,9 @@ type ItemTransactionHistoryResponse struct {
 	PaymentReference string  `json:"payment_reference"`
 	RecordedBy       string  `json:"recorded_by"`
 	StudentDetails   string  `json:"student_details"`
+	ItemReceiptNo    string  `json:"item_receipt_no"`
+	ItemCode         int64   `json:"item_code"`
+	ItemSerialNumber string  `json:"item_serial_number"`
+	Campus           string  `json:"campus"`
+	School           string  `json:"school"`
 }
