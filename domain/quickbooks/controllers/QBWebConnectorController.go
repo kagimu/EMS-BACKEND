@@ -2,12 +2,18 @@ package controllers
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
+	qbModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/services"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 )
 
 // Simplified SOAP Envelope
@@ -142,7 +148,67 @@ func QueueTransaction(c *gin.Context) {
 		return
 	}
 
-	// This is a stub for now. We would generate the qbXML for the transaction and insert into QBSyncQueue
-	// models.QBSyncQueue{ ... }
+	var itemTx invoiceModel.InvoiceItemTransaction
+	if err := config.DB.Preload("Transaction.Statement.Student.StudentDetails").
+		Preload("InvoiceItem.Item").
+		Where("item_receipt_number = ?", req.TransactionNumber).
+		First(&itemTx).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Transaction not found"})
+		return
+	}
+
+	// Generate SalesReceiptAddRq qbXML
+	// Mapping:
+	// CustomerRef -> Student Name
+	// TxnDate -> Transaction Date
+	// RefNumber -> Item Receipt Number
+	// ItemRef -> Item Code
+	// Rate -> Amount Paid Off
+	// DepositToAccountRef -> "Undeposited Funds" (default mapping)
+
+	studentName := "Unknown Student"
+	if itemTx.Transaction.Statement.Student.StudentDetails.Number != "" {
+		studentName = itemTx.Transaction.Statement.Student.StudentDetails.FirstName + " " + itemTx.Transaction.Statement.Student.StudentDetails.LastName
+	}
+	
+	itemCode := itemTx.InvoiceItem.Item.Code
+	if itemCode == "" {
+		itemCode = itemTx.InvoiceItem.Item.Name // fallback
+	}
+
+	dateStr := itemTx.Transaction.CreatedAt.Format("2006-01-02")
+	amount := fmt.Sprintf("%.2f", itemTx.AmountPaidOff)
+
+	qbxml := `
+	<SalesReceiptAdd>
+		<CustomerRef>
+			<FullName>` + escapeXML(studentName) + `</FullName>
+		</CustomerRef>
+		<TxnDate>` + dateStr + `</TxnDate>
+		<RefNumber>` + escapeXML(itemTx.ItemReceiptNumber) + `</RefNumber>
+		<DepositToAccountRef>
+			<FullName>Undeposited Funds</FullName>
+		</DepositToAccountRef>
+		<SalesReceiptLineAdd>
+			<ItemRef>
+				<FullName>` + escapeXML(itemCode) + `</FullName>
+			</ItemRef>
+			<Rate>` + amount + `</Rate>
+			<Amount>` + amount + `</Amount>
+		</SalesReceiptLineAdd>
+	</SalesReceiptAdd>`
+
+	queue := qbModels.QBSyncQueue{
+		Number:            uuid.NewV4().String(),
+		TransactionNumber: req.TransactionNumber,
+		Status:            "QUEUED",
+		QbXmlPayload:      qbxml,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue transaction"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Transaction queued for QuickBooks sync successfully."})
 }

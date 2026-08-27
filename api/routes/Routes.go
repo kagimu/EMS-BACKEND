@@ -1196,6 +1196,9 @@ func SetupRoutes() *gin.Engine {
 			quickbooks.POST("soap", quickbooksController.HandleQBWC)
 			quickbooks.GET("download-qwc", quickbooksController.DownloadQWC)
 			quickbooks.POST("queue-transaction", quickbooksController.QueueTransaction)
+			quickbooks.GET("settings", quickbooksController.GetSettings)
+			quickbooks.POST("settings", quickbooksController.UpdateSettings)
+			quickbooks.GET("queue-status", quickbooksController.GetQueueStatus)
 		}
 
 	}
