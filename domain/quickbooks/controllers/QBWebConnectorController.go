@@ -114,14 +114,24 @@ func escapeXML(s string) string {
 }
 
 func DownloadQWC(c *gin.Context) {
+	// Determine protocol (default to https since QB Web Connector requires it in production unless using localhost)
+	proto := c.GetHeader("X-Forwarded-Proto")
+	if proto == "" {
+		proto = "https"
+		if c.Request.TLS == nil && strings.Contains(c.Request.Host, "localhost") {
+			proto = "http"
+		}
+	}
+	baseURL := fmt.Sprintf("%s://%s", proto, c.Request.Host)
+
 	// A minimal standard qwc file template
-	qwc := `<?xml version="1.0"?>
+	qwc := fmt.Sprintf(`<?xml version="1.0"?>
 <QBWCXML>
    <AppName>WholesomeEd QB Sync</AppName>
    <AppID></AppID>
-   <AppURL>https://YOUR_DOMAIN/api/quickbooks/soap</AppURL>
+   <AppURL>%s/api/quickbooks/soap</AppURL>
    <AppDescription>Sync payments to QuickBooks Desktop</AppDescription>
-   <AppSupport>https://YOUR_DOMAIN/support</AppSupport>
+   <AppSupport>%s/support</AppSupport>
    <UserName>admin</UserName>
    <OwnerID>{90A44FB7-33D9-4815-AC85-BC87A7E7D1EB}</OwnerID>
    <FileID>{57F3B9B1-86F1-4fcc-B1EE-566DE1813D20}</FileID>
@@ -130,7 +140,7 @@ func DownloadQWC(c *gin.Context) {
       <RunEveryNMinutes>5</RunEveryNMinutes>
    </Scheduler>
    <IsReadOnly>false</IsReadOnly>
-</QBWCXML>`
+</QBWCXML>`, baseURL, baseURL)
 
 	c.Header("Content-Disposition", `attachment; filename="wholesome_ed.qwc"`)
 	c.Data(http.StatusOK, "application/x-qbwc", []byte(qwc))
