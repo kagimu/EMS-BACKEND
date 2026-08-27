@@ -46,6 +46,7 @@ import (
 	previousSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/controllers"
 	previousSchoolResultsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/controllers"
 	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
+	quickbooksController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/controllers"
 	promotionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/controllers"
 	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
 	reportTemplate "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/controllers"
@@ -1188,6 +1189,13 @@ func SetupRoutes() *gin.Engine {
 			curriculumDelivery.GET("students/:curriculum_delivery_number", controllers3.GetStudentsBySession)
 			curriculumDelivery.PUT("update-session", controllers3.UpdateSession)
 			curriculumDelivery.GET("percentage-by-stream/:stream_number", controllers3.GetCurriculumDeliveryProgressByStream)
+		}
+
+		quickbooks := main.Group("quickbooks")
+		{
+			quickbooks.POST("soap", quickbooksController.HandleQBWC)
+			quickbooks.GET("download-qwc", quickbooksController.DownloadQWC)
+			quickbooks.POST("queue-transaction", quickbooksController.QueueTransaction)
 		}
 
 	}

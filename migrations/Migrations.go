@@ -42,6 +42,7 @@ import (
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	previousSchoolResultsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
 	progressReportModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/models"
+	quickbooksModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	promotionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	reportSettings "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
@@ -277,6 +278,8 @@ func Init() error {
 		&assessmentModel.Metric{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
+		&quickbooksModels.QBSyncQueue{},
+		&quickbooksModels.QBSettings{},
 		&models4.Attendance{},
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
