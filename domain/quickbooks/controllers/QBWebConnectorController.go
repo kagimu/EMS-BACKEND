@@ -148,7 +148,7 @@ func QueueTransaction(c *gin.Context) {
 	}
 
 	var itemTx invoiceModel.InvoiceItemTransaction
-	if err := config.DB.Preload("Transaction.Statement.Student.StudentDetails").
+	if err := config.DB.Preload("Transaction.Statement.User").
 		Preload("InvoiceItem.Item").
 		Where("item_receipt_number = ?", req.TransactionNumber).
 		First(&itemTx).Error; err != nil {
@@ -166,16 +166,16 @@ func QueueTransaction(c *gin.Context) {
 	// DepositToAccountRef -> "Undeposited Funds" (default mapping)
 
 	studentName := "Unknown Student"
-	if itemTx.Transaction.Statement.Student.StudentDetails.Number != "" {
-		studentName = itemTx.Transaction.Statement.Student.StudentDetails.FirstName + " " + itemTx.Transaction.Statement.Student.StudentDetails.LastName
+	if itemTx.Transaction.Statement.User.Number != "" {
+		studentName = itemTx.Transaction.Statement.User.FirstName + " " + itemTx.Transaction.Statement.User.LastName
 	}
 	
-	itemCode := itemTx.InvoiceItem.Item.Code
-	if itemCode == "" {
+	itemCode := fmt.Sprintf("%d", itemTx.InvoiceItem.Item.Code)
+	if itemTx.InvoiceItem.Item.Code == 0 {
 		itemCode = itemTx.InvoiceItem.Item.Name // fallback
 	}
 
-	dateStr := itemTx.Transaction.CreatedAt.Format("2006-01-02")
+	dateStr := itemTx.Transaction.Date.Format("2006-01-02")
 	amount := fmt.Sprintf("%.2f", itemTx.AmountPaidOff)
 
 	qbxml := `
