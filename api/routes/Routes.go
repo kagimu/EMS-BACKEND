@@ -1210,6 +1210,11 @@ func SetupRoutes() *gin.Engine {
 		attachments.POST("delete/:attachment_number", controller.DeleteAttachmentByParam)
 	}
 
+	// Support URL for QuickBooks Web Connector
+	router.GET("/support", func(c *gin.Context) {
+		c.String(200, "Support page for WholesomeEd QuickBooks Integration.")
+	})
+
 	// QuickBooks Web Connector SOAP Endpoints (Unauthenticated, uses SOAP Auth)
 	qbwc := router.Group("/api/quickbooks")
 	{
