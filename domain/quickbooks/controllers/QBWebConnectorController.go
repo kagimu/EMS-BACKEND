@@ -81,25 +81,25 @@ func HandleQBWC(c *gin.Context) {
 	var responseXML string
 
 	if env.Body.ServerVersion != nil {
-		responseXML = `<serverVersionResult>1.0</serverVersionResult>`
+		responseXML = `<serverVersionResponse xmlns="http://developer.intuit.com/"><serverVersionResult>1.0</serverVersionResult></serverVersionResponse>`
 	} else if env.Body.ClientVersion != nil {
-		responseXML = `<clientVersionResult></clientVersionResult>`
+		responseXML = `<clientVersionResponse xmlns="http://developer.intuit.com/"><clientVersionResult></clientVersionResult></clientVersionResponse>`
 	} else if env.Body.Authenticate != nil {
 		res := services.Authenticate(env.Body.Authenticate.UserName, env.Body.Authenticate.Password)
-		responseXML = `<authenticateResult><string>` + res.Ticket + `</string><string>` + res.Status + `</string></authenticateResult>`
+		responseXML = `<authenticateResponse xmlns="http://developer.intuit.com/"><authenticateResult><string>` + res.Ticket + `</string><string>` + res.Status + `</string></authenticateResult></authenticateResponse>`
 	} else if env.Body.SendRequestXML != nil {
 		reqXML := services.SendRequestXML(env.Body.SendRequestXML.Ticket)
-		responseXML = `<sendRequestXMLResult>` + escapeXML(reqXML) + `</sendRequestXMLResult>`
+		responseXML = `<sendRequestXMLResponse xmlns="http://developer.intuit.com/"><sendRequestXMLResult>` + escapeXML(reqXML) + `</sendRequestXMLResult></sendRequestXMLResponse>`
 	} else if env.Body.ReceiveResponseXML != nil {
 		progress := services.ReceiveResponseXML(env.Body.ReceiveResponseXML.Ticket, env.Body.ReceiveResponseXML.Response, env.Body.ReceiveResponseXML.HResult, env.Body.ReceiveResponseXML.Message)
-		responseXML = `<receiveResponseXMLResult>` + progress + `</receiveResponseXMLResult>`
+		responseXML = `<receiveResponseXMLResponse xmlns="http://developer.intuit.com/"><receiveResponseXMLResult>` + progress + `</receiveResponseXMLResult></receiveResponseXMLResponse>`
 	} else if env.Body.ConnectionError != nil {
-		responseXML = `<connectionErrorResult>done</connectionErrorResult>`
+		responseXML = `<connectionErrorResponse xmlns="http://developer.intuit.com/"><connectionErrorResult>done</connectionErrorResult></connectionErrorResponse>`
 	} else if env.Body.GetLastError != nil {
-		responseXML = `<getLastErrorResult>Error occurred</getLastErrorResult>`
+		responseXML = `<getLastErrorResponse xmlns="http://developer.intuit.com/"><getLastErrorResult>Error occurred</getLastErrorResult></getLastErrorResponse>`
 	} else if env.Body.CloseConnection != nil {
 		services.CloseConnection(env.Body.CloseConnection.Ticket)
-		responseXML = `<closeConnectionResult>OK</closeConnectionResult>`
+		responseXML = `<closeConnectionResponse xmlns="http://developer.intuit.com/"><closeConnectionResult>OK</closeConnectionResult></closeConnectionResponse>`
 	} else {
 		c.String(http.StatusBadRequest, "Unknown SOAP Action")
 		return
