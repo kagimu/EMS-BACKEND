@@ -1193,7 +1193,6 @@ func SetupRoutes() *gin.Engine {
 
 		quickbooks := main.Group("quickbooks")
 		{
-			quickbooks.POST("soap", quickbooksController.HandleQBWC)
 			quickbooks.GET("download-qwc", quickbooksController.DownloadQWC)
 			quickbooks.POST("queue-transaction", quickbooksController.QueueTransaction)
 			quickbooks.GET("settings", quickbooksController.GetSettings)
@@ -1209,6 +1208,13 @@ func SetupRoutes() *gin.Engine {
 		attachments.POST("upload", controller.UploadAttachment)
 		attachments.POST("delete", controller.DeleteAttachment)
 		attachments.POST("delete/:attachment_number", controller.DeleteAttachmentByParam)
+	}
+
+	// QuickBooks Web Connector SOAP Endpoints (Unauthenticated, uses SOAP Auth)
+	qbwc := router.Group("/api/quickbooks")
+	{
+		qbwc.POST("soap", quickbooksController.HandleQBWC)
+		qbwc.GET("soap", quickbooksController.HandleQBWC)
 	}
 
 	return router

@@ -60,6 +60,11 @@ type GetLastError struct {
 }
 
 func HandleQBWC(c *gin.Context) {
+	if c.Request.Method == "GET" {
+		c.String(http.StatusOK, "QuickBooks Web Connector SOAP Endpoint is Active.")
+		return
+	}
+
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Invalid request")
