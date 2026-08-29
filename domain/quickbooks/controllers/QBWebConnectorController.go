@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	qbModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/services"
@@ -225,4 +226,66 @@ func QueueTransaction(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Transaction queued for QuickBooks sync successfully."})
+}
+
+type QueueCustomerRequest struct {
+	UserNumber string `json:"user_number" binding:"required"`
+}
+
+func QueueCustomerAdd(c *gin.Context) {
+	var req QueueCustomerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user authModels.User
+	if err := config.DB.Where("number = ?", req.UserNumber).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	fullName := user.FirstName + " " + user.LastName
+	
+	qbxml := `
+	<CustomerAdd>
+		<Name>` + escapeXML(fullName) + `</Name>
+		<FirstName>` + escapeXML(user.FirstName) + `</FirstName>
+		<LastName>` + escapeXML(user.LastName) + `</LastName>
+	</CustomerAdd>`
+
+	queue := qbModels.QBSyncQueue{
+		Number:       uuid.NewV4().String(),
+		ActionType:   "CUSTOMER_ADD",
+		Status:       "QUEUED",
+		QbXmlPayload: qbxml,
+		UserNumber:   req.UserNumber,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue customer addition"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Customer addition queued for QuickBooks sync successfully."})
+}
+
+func QueueCustomerQuery(c *gin.Context) {
+	qbxml := `
+	<CustomerQueryRq>
+	</CustomerQueryRq>`
+
+	queue := qbModels.QBSyncQueue{
+		Number:       uuid.NewV4().String(),
+		ActionType:   "CUSTOMER_QUERY",
+		Status:       "QUEUED",
+		QbXmlPayload: qbxml,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue customer query"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Customer query queued for QuickBooks sync successfully."})
 }

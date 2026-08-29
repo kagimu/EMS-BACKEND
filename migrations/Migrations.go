@@ -279,6 +279,7 @@ func Init() error {
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
 		&quickbooksModels.QBSyncQueue{},
+		&quickbooksModels.QBCustomerMapping{},
 		&quickbooksModels.QBSettings{},
 		&models4.Attendance{},
 		&permissionModels.Role{},

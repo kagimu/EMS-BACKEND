@@ -1,13 +1,44 @@
 package services
 
 import (
+	"encoding/xml"
 	"fmt"
 	"strings"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	uuid "github.com/satori/go.uuid"
 )
+
+type QBCustomerRet struct {
+	ListID       string `xml:"ListID"`
+	EditSequence string `xml:"EditSequence"`
+	FullName     string `xml:"FullName"`
+	Name         string `xml:"Name"`
+	FirstName    string `xml:"FirstName"`
+	LastName     string `xml:"LastName"`
+}
+
+type QBCustomerQueryRs struct {
+	XMLName     xml.Name        `xml:"CustomerQueryRs"`
+	StatusCode  string          `xml:"statusCode,attr"`
+	CustomerRet []QBCustomerRet `xml:"CustomerRet"`
+}
+
+type QBCustomerAddRs struct {
+	XMLName     xml.Name      `xml:"CustomerAddRs"`
+	StatusCode  string        `xml:"statusCode,attr"`
+	CustomerRet QBCustomerRet `xml:"CustomerRet"`
+}
+
+type QBXMLResponse struct {
+	XMLName     xml.Name `xml:"QBXML"`
+	QBXMLMsgsRs struct {
+		CustomerQueryRs *QBCustomerQueryRs `xml:"CustomerQueryRs"`
+		CustomerAddRs   *QBCustomerAddRs   `xml:"CustomerAddRs"`
+	} `xml:"QBXMLMsgsRs"`
+}
 
 type AuthResponse struct {
 	Ticket string
@@ -69,6 +100,60 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 	if err == nil {
 		if strings.Contains(response, `statusCode="0"`) {
 			queueItem.Status = "SUCCESS"
+
+			if queueItem.ActionType == "CUSTOMER_ADD" || queueItem.ActionType == "CUSTOMER_QUERY" {
+				var qbxml QBXMLResponse
+				xml.Unmarshal([]byte(response), &qbxml)
+
+				if queueItem.ActionType == "CUSTOMER_ADD" && qbxml.QBXMLMsgsRs.CustomerAddRs != nil {
+					ret := qbxml.QBXMLMsgsRs.CustomerAddRs.CustomerRet
+					mapping := models.QBCustomerMapping{
+						UserNumber:     queueItem.UserNumber,
+						QbListID:       ret.ListID,
+						QbEditSequence: ret.EditSequence,
+						QbFullName:     ret.FullName,
+					}
+					config.DB.Create(&mapping)
+				} else if queueItem.ActionType == "CUSTOMER_QUERY" && qbxml.QBXMLMsgsRs.CustomerQueryRs != nil {
+					for _, ret := range qbxml.QBXMLMsgsRs.CustomerQueryRs.CustomerRet {
+						var mapping models.QBCustomerMapping
+						err := config.DB.Where("qb_list_id = ?", ret.ListID).First(&mapping).Error
+						if err != nil {
+							userNumber := uuid.NewV4().String()
+							firstName := ret.FirstName
+							lastName := ret.LastName
+							if firstName == "" {
+								firstName = ret.Name
+							}
+							if lastName == "" {
+								lastName = "QB Sync"
+							}
+
+							newUser := authModels.User{
+								Number:     userNumber,
+								FirstName:  firstName,
+								LastName:   lastName,
+								Gender:     "Unknown",
+								Type:       "Student",
+								Status:     "Active",
+							}
+							config.DB.Create(&newUser)
+							
+							mapping = models.QBCustomerMapping{
+								UserNumber:     userNumber,
+								QbListID:       ret.ListID,
+								QbEditSequence: ret.EditSequence,
+								QbFullName:     ret.FullName,
+							}
+							config.DB.Create(&mapping)
+						} else {
+							mapping.QbEditSequence = ret.EditSequence
+							mapping.QbFullName = ret.FullName
+							config.DB.Save(&mapping)
+						}
+					}
+				}
+			}
 		} else {
 			queueItem.Status = "FAILED"
 			queueItem.ErrorMessage = message
