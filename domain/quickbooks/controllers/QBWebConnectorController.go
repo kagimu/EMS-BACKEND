@@ -262,12 +262,13 @@ func QueueCustomerAdd(c *gin.Context) {
 		fullName = fullName + " - " + student.ADN
 	}
 	
-	qbxml := `
-	<CustomerAdd>
-		<Name>` + escapeXML(fullName) + `</Name>
-		<FirstName>` + escapeXML(user.FirstName) + `</FirstName>
-		<LastName>` + escapeXML(user.LastName) + `</LastName>
-	</CustomerAdd>`
+	qbxml := `<CustomerAddRq>
+		<CustomerAdd>
+			<Name>` + escapeXML(fullName) + `</Name>
+			<FirstName>` + escapeXML(user.FirstName) + `</FirstName>
+			<LastName>` + escapeXML(user.LastName) + `</LastName>
+		</CustomerAdd>
+	</CustomerAddRq>`
 
 	queue := qbModels.QBSyncQueue{
 		Number:       uuid.NewV4().String(),
@@ -286,9 +287,7 @@ func QueueCustomerAdd(c *gin.Context) {
 }
 
 func QueueCustomerQuery(c *gin.Context) {
-	qbxml := `
-	<CustomerQueryRq>
-	</CustomerQueryRq>`
+	qbxml := `<CustomerQueryRq></CustomerQueryRq>`
 
 	queue := qbModels.QBSyncQueue{
 		Number:       uuid.NewV4().String(),

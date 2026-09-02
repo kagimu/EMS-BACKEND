@@ -97,7 +97,11 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 	// Find the item we just processed
 	err := config.DB.Where("status = ?", "PROCESSING").Order("created_at asc").First(&queueItem).Error
 	if err == nil {
-		if strings.Contains(response, `statusCode="0"`) {
+		if hresult != "" && hresult != "0x00000000" {
+			// QB itself returned a COM-level error (e.g. bad XML)
+			queueItem.Status = "FAILED"
+			queueItem.ErrorMessage = message
+		} else if strings.Contains(response, `statusCode="0"`) {
 			queueItem.Status = "SUCCESS"
 
 			if queueItem.ActionType == "CUSTOMER_ADD" || queueItem.ActionType == "CUSTOMER_QUERY" {
@@ -127,6 +131,7 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 				}
 			}
 		} else {
+			// QB returned a non-zero statusCode in the XML body (e.g. duplicate name)
 			queueItem.Status = "FAILED"
 			queueItem.ErrorMessage = message
 		}
