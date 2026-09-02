@@ -36,9 +36,22 @@ type QBSalesReceiptRet struct {
 }
 
 type QBSalesReceiptAddRs struct {
-	XMLName        xml.Name           `xml:"SalesReceiptAddRs"`
-	StatusCode     string             `xml:"statusCode,attr"`
+	XMLName         xml.Name          `xml:"SalesReceiptAddRs"`
+	StatusCode      string            `xml:"statusCode,attr"`
 	SalesReceiptRet QBSalesReceiptRet `xml:"SalesReceiptRet"`
+}
+
+type QBItemServiceRet struct {
+	ListID       string `xml:"ListID"`
+	EditSequence string `xml:"EditSequence"`
+	Name         string `xml:"Name"`
+	FullName     string `xml:"FullName"`
+}
+
+type QBItemServiceAddRs struct {
+	XMLName        xml.Name         `xml:"ItemServiceAddRs"`
+	StatusCode     string           `xml:"statusCode,attr"`
+	ItemServiceRet QBItemServiceRet `xml:"ItemServiceRet"`
 }
 
 type QBXMLResponse struct {
@@ -47,6 +60,7 @@ type QBXMLResponse struct {
 		CustomerQueryRs   *QBCustomerQueryRs   `xml:"CustomerQueryRs"`
 		CustomerAddRs     *QBCustomerAddRs     `xml:"CustomerAddRs"`
 		SalesReceiptAddRs *QBSalesReceiptAddRs `xml:"SalesReceiptAddRs"`
+		ItemServiceAddRs  *QBItemServiceAddRs  `xml:"ItemServiceAddRs"`
 	} `xml:"QBXMLMsgsRs"`
 }
 
@@ -115,7 +129,7 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 		} else if strings.Contains(response, `statusCode="0"`) {
 			queueItem.Status = "SUCCESS"
 
-			if queueItem.ActionType == "CUSTOMER_ADD" || queueItem.ActionType == "CUSTOMER_QUERY" || queueItem.ActionType == "SALES_RECEIPT_ADD" {
+			if queueItem.ActionType == "CUSTOMER_ADD" || queueItem.ActionType == "CUSTOMER_QUERY" || queueItem.ActionType == "SALES_RECEIPT_ADD" || queueItem.ActionType == "ITEM_SERVICE_ADD" {
 				var qbxml QBXMLResponse
 				xml.Unmarshal([]byte(response), &qbxml)
 
@@ -142,6 +156,15 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 				} else if queueItem.ActionType == "SALES_RECEIPT_ADD" && qbxml.QBXMLMsgsRs.SalesReceiptAddRs != nil {
 					// Fix 4: Store QB TxnID for tracking
 					queueItem.QbTxnID = qbxml.QBXMLMsgsRs.SalesReceiptAddRs.SalesReceiptRet.TxnID
+				} else if queueItem.ActionType == "ITEM_SERVICE_ADD" && qbxml.QBXMLMsgsRs.ItemServiceAddRs != nil {
+					ret := qbxml.QBXMLMsgsRs.ItemServiceAddRs.ItemServiceRet
+					mapping := models.QBItemMapping{
+						ItemNumber:     queueItem.ItemNumber,
+						QbListID:       ret.ListID,
+						QbEditSequence: ret.EditSequence,
+						QbFullName:     ret.FullName,
+					}
+					config.DB.Create(&mapping)
 				}
 			}
 		} else {

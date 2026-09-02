@@ -190,9 +190,14 @@ func QueueTransaction(c *gin.Context) {
 		}
 	}
 
-	itemCode := itemTx.InvoiceItem.Item.Name
-	if itemTx.InvoiceItem.Item.Code != 0 {
-		itemCode = fmt.Sprintf("%d", itemTx.InvoiceItem.Item.Code)
+	var itemCode string
+	var itemMapping qbModels.QBItemMapping
+	if err := config.DB.Where("item_number = ?", itemTx.InvoiceItem.Item.Number).First(&itemMapping).Error; err == nil {
+		itemCode = itemMapping.QbFullName
+	} else {
+		// Fix 5: Reject transaction if item has not been exported to QB
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' has not been exported to QuickBooks yet."})
+		return
 	}
 
 	dateStr := itemTx.Transaction.Date.Format("2006-01-02")
@@ -344,4 +349,111 @@ func GetSyncedCustomers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": responses})
+}
+
+type QueueItemRequest struct {
+	ItemNumber string `json:"item_number" binding:"required"`
+}
+
+func QueueItemAdd(c *gin.Context) {
+	var req QueueItemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if already mapped
+	var mapping qbModels.QBItemMapping
+	if err := config.DB.Where("item_number = ?", req.ItemNumber).First(&mapping).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This item is already exported to QuickBooks"})
+		return
+	}
+
+	// Check if already queued
+	var existing qbModels.QBSyncQueue
+	if err := config.DB.Where("item_number = ? AND status IN ?", req.ItemNumber, []string{"QUEUED", "PROCESSING", "SUCCESS"}).First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This item has already been queued for QuickBooks (status: " + existing.Status + ")"})
+		return
+	}
+
+	var item itemModels.Item
+	if err := config.DB.Where("number = ?", req.ItemNumber).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
+		return
+	}
+
+	itemCode := item.Name
+	if item.Code != 0 {
+		itemCode = fmt.Sprintf("%d", item.Code)
+	}
+	
+	desc := item.Description
+	if desc == "" {
+		desc = item.Name
+	}
+	price := fmt.Sprintf("%.2f", item.Cost)
+
+	// Hardcoded Option A: "Service Income" account
+	accountName := "Service Income"
+
+	qbxml := `<ItemServiceAddRq>
+	<ItemServiceAdd>
+		<Name>` + escapeXML(itemCode) + `</Name>
+		<IsActive>true</IsActive>
+		<SalesOrPurchase>
+			<Desc>` + escapeXML(desc) + `</Desc>
+			<Price>` + price + `</Price>
+			<AccountRef>
+				<FullName>` + escapeXML(accountName) + `</FullName>
+			</AccountRef>
+		</SalesOrPurchase>
+	</ItemServiceAdd>
+</ItemServiceAddRq>`
+
+	queue := qbModels.QBSyncQueue{
+		Number:       uuid.NewV4().String(),
+		ActionType:   "ITEM_SERVICE_ADD",
+		Status:       "QUEUED",
+		QbXmlPayload: qbxml,
+		ItemNumber:   req.ItemNumber,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue item addition"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Item addition queued for QuickBooks sync successfully."})
+}
+
+type SyncedItemResponse struct {
+	ItemNumber string  `json:"item_number"`
+	ItemName   string  `json:"item_name"`
+	QBListID   string  `json:"qb_list_id"`
+	QBFullName string  `json:"qb_full_name"`
+	Cost       float64 `json:"cost"`
+}
+
+func GetSyncedItems(c *gin.Context) {
+	var mappings []qbModels.QBItemMapping
+	if err := config.DB.Find(&mappings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch synced items"})
+		return
+	}
+
+	var responses []SyncedItemResponse
+	for _, mapping := range mappings {
+		var item itemModels.Item
+		config.DB.Where("number = ?", mapping.ItemNumber).First(&item)
+		
+		responses = append(responses, SyncedItemResponse{
+			ItemNumber: mapping.ItemNumber,
+			ItemName:   item.Name,
+			QBListID:   mapping.QbListID,
+			QBFullName: mapping.QbFullName,
+			Cost:       item.Cost,
+		})
+	}
+
+	c.JSON(http.StatusOK, responses)
 }

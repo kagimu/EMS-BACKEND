@@ -280,6 +280,7 @@ func Init() error {
 		&assessmentModel.AssessmentMetric{},
 		&quickbooksModels.QBSyncQueue{},
 		&quickbooksModels.QBCustomerMapping{},
+		&quickbooksModels.QBItemMapping{},
 		&quickbooksModels.QBSettings{},
 		&models4.Attendance{},
 		&permissionModels.Role{},

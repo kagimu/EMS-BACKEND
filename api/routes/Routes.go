@@ -1201,6 +1201,8 @@ func SetupRoutes() *gin.Engine {
 			quickbooks.POST("customers", quickbooksController.QueueCustomerAdd)
 			quickbooks.GET("customers", quickbooksController.QueueCustomerQuery)
 			quickbooks.GET("synced-customers", quickbooksController.GetSyncedCustomers)
+			quickbooks.POST("items", quickbooksController.QueueItemAdd)
+			quickbooks.GET("synced-items", quickbooksController.GetSyncedItems)
 		}
 
 	}

@@ -17,6 +17,7 @@ type (
 		ErrorMessage      string     `json:"error_message" gorm:"type:text"`
 		SchoolNumber      string     `json:"school_number" gorm:"size:36"`
 		UserNumber        string     `json:"user_number" gorm:"size:36"`
+		ItemNumber        string     `json:"item_number" gorm:"size:36"`
 		QbTxnID           string     `json:"qb_txn_id" gorm:"size:36"`
 		ProcessedAt       *time.Time `json:"processed_at"`
 	}
