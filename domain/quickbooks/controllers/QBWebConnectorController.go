@@ -388,10 +388,8 @@ func QueueItemAdd(c *gin.Context) {
 		itemCode = fmt.Sprintf("%d", item.Code)
 	}
 	
-	desc := item.Description
-	if desc == "" {
-		desc = item.Name
-	}
+	// Always use the item Name as the description in QuickBooks
+	desc := item.Name
 	price := fmt.Sprintf("%.2f", item.Cost)
 
 	// Hardcoded Option A: "Service Income" account
