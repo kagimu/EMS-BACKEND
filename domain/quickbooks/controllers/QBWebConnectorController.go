@@ -465,3 +465,16 @@ func GetQueueErrors(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, items)
 }
+
+// GetSyncedReceipts returns all queued/processing/success sales receipt transactions
+// so the UI can show which payments have already been sent to QuickBooks.
+func GetSyncedReceipts(c *gin.Context) {
+	var items []qbModels.QBSyncQueue
+	if err := config.DB.
+		Where("action_type = ? AND status IN ?", "SALES_RECEIPT_ADD", []string{"QUEUED", "PROCESSING", "SUCCESS"}).
+		Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch synced receipts"})
+		return
+	}
+	c.JSON(http.StatusOK, items)
+}

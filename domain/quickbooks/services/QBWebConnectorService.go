@@ -26,9 +26,10 @@ type QBCustomerQueryRs struct {
 }
 
 type QBCustomerAddRs struct {
-	XMLName     xml.Name      `xml:"CustomerAddRs"`
-	StatusCode  string        `xml:"statusCode,attr"`
-	CustomerRet QBCustomerRet `xml:"CustomerRet"`
+	XMLName       xml.Name      `xml:"CustomerAddRs"`
+	StatusCode    string        `xml:"statusCode,attr"`
+	StatusMessage string        `xml:"statusMessage,attr"`
+	CustomerRet   QBCustomerRet `xml:"CustomerRet"`
 }
 
 type QBSalesReceiptRet struct {
@@ -38,6 +39,7 @@ type QBSalesReceiptRet struct {
 type QBSalesReceiptAddRs struct {
 	XMLName         xml.Name          `xml:"SalesReceiptAddRs"`
 	StatusCode      string            `xml:"statusCode,attr"`
+	StatusMessage   string            `xml:"statusMessage,attr"`
 	SalesReceiptRet QBSalesReceiptRet `xml:"SalesReceiptRet"`
 }
 
@@ -51,6 +53,7 @@ type QBItemServiceRet struct {
 type QBItemServiceAddRs struct {
 	XMLName        xml.Name         `xml:"ItemServiceAddRs"`
 	StatusCode     string           `xml:"statusCode,attr"`
+	StatusMessage  string           `xml:"statusMessage,attr"`
 	ItemServiceRet QBItemServiceRet `xml:"ItemServiceRet"`
 }
 
@@ -168,9 +171,20 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 				}
 			}
 		} else {
-			// QB returned a non-zero statusCode in the XML body (e.g. duplicate name)
+			// QB returned a non-zero statusCode — extract the actual error from the XML
+			var qbxml QBXMLResponse
+			xml.Unmarshal([]byte(response), &qbxml)
+			
+			errMsg := message // fallback to SOAP message
+			if qbxml.QBXMLMsgsRs.SalesReceiptAddRs != nil && qbxml.QBXMLMsgsRs.SalesReceiptAddRs.StatusMessage != "" {
+				errMsg = fmt.Sprintf("[%s] %s", qbxml.QBXMLMsgsRs.SalesReceiptAddRs.StatusCode, qbxml.QBXMLMsgsRs.SalesReceiptAddRs.StatusMessage)
+			} else if qbxml.QBXMLMsgsRs.ItemServiceAddRs != nil && qbxml.QBXMLMsgsRs.ItemServiceAddRs.StatusMessage != "" {
+				errMsg = fmt.Sprintf("[%s] %s", qbxml.QBXMLMsgsRs.ItemServiceAddRs.StatusCode, qbxml.QBXMLMsgsRs.ItemServiceAddRs.StatusMessage)
+			} else if qbxml.QBXMLMsgsRs.CustomerAddRs != nil && qbxml.QBXMLMsgsRs.CustomerAddRs.StatusMessage != "" {
+				errMsg = fmt.Sprintf("[%s] %s", qbxml.QBXMLMsgsRs.CustomerAddRs.StatusCode, qbxml.QBXMLMsgsRs.CustomerAddRs.StatusMessage)
+			}
 			queueItem.Status = "FAILED"
-			queueItem.ErrorMessage = message
+			queueItem.ErrorMessage = errMsg
 		}
 		config.DB.Save(&queueItem)
 	}
