@@ -181,14 +181,21 @@ func QueueTransaction(c *gin.Context) {
 		return
 	}
 
-	// Fix 2: Use the QB-known customer name from QBCustomerMapping, not just the user name
+	// Require customer to be exported to QB first
 	userNumber := itemTx.Transaction.Statement.User.Number
-	customerRef := itemTx.Transaction.Statement.User.FirstName + " " + itemTx.Transaction.Statement.User.LastName
+	studentName := itemTx.Transaction.Statement.User.FirstName + " " + itemTx.Transaction.Statement.User.LastName
+	var customerRef string
 	if userNumber != "" {
 		var mapping qbModels.QBCustomerMapping
 		if err := config.DB.Where("user_number = ?", userNumber).First(&mapping).Error; err == nil {
 			customerRef = mapping.QbFullName
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' has not been exported to QuickBooks yet. Please export the student first from the Enrollment page."})
+			return
 		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot identify student for this transaction."})
+		return
 	}
 
 	var itemCode string
@@ -196,8 +203,7 @@ func QueueTransaction(c *gin.Context) {
 	if err := config.DB.Where("item_number = ?", itemTx.InvoiceItem.Item.Number).First(&itemMapping).Error; err == nil {
 		itemCode = itemMapping.QbFullName
 	} else {
-		// Fix 5: Reject transaction if item has not been exported to QB
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' has not been exported to QuickBooks yet."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' has not been exported to QuickBooks yet. Please export the item first from the Services page."})
 		return
 	}
 
