@@ -13,6 +13,7 @@ import (
 	qbModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/services"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
