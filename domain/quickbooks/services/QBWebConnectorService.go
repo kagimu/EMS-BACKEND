@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
-	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	uuid "github.com/satori/go.uuid"
 )
@@ -118,35 +117,8 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 					for _, ret := range qbxml.QBXMLMsgsRs.CustomerQueryRs.CustomerRet {
 						var mapping models.QBCustomerMapping
 						err := config.DB.Where("qb_list_id = ?", ret.ListID).First(&mapping).Error
-						if err != nil {
-							userNumber := uuid.NewV4().String()
-							firstName := ret.FirstName
-							lastName := ret.LastName
-							if firstName == "" {
-								firstName = ret.Name
-							}
-							if lastName == "" {
-								lastName = "QB Sync"
-							}
-
-							newUser := authModels.User{
-								Number:     userNumber,
-								FirstName:  firstName,
-								LastName:   lastName,
-								Gender:     "Unknown",
-								Type:       "Student",
-								Status:     "Active",
-							}
-							config.DB.Create(&newUser)
-							
-							mapping = models.QBCustomerMapping{
-								UserNumber:     userNumber,
-								QbListID:       ret.ListID,
-								QbEditSequence: ret.EditSequence,
-								QbFullName:     ret.FullName,
-							}
-							config.DB.Create(&mapping)
-						} else {
+						if err == nil {
+							// Only update if it already exists. Do not create missing students from QB.
 							mapping.QbEditSequence = ret.EditSequence
 							mapping.QbFullName = ret.FullName
 							config.DB.Save(&mapping)

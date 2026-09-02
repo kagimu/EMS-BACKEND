@@ -12,6 +12,7 @@ import (
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	qbModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/services"
+	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -239,13 +240,27 @@ func QueueCustomerAdd(c *gin.Context) {
 		return
 	}
 
+	// Check if already mapped
+	var mapping qbModels.QBCustomerMapping
+	if err := config.DB.Where("user_number = ?", req.UserNumber).First(&mapping).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This user is already exported to QuickBooks"})
+		return
+	}
+
 	var user authModels.User
 	if err := config.DB.Where("number = ?", req.UserNumber).First(&user).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
+	// Fetch student for ADN
+	var student studentModels.Student
+	config.DB.Where("user_number = ?", req.UserNumber).First(&student)
+
 	fullName := user.FirstName + " " + user.LastName
+	if student.ADN != "" {
+		fullName = fullName + " - " + student.ADN
+	}
 	
 	qbxml := `
 	<CustomerAdd>
@@ -288,4 +303,39 @@ func QueueCustomerQuery(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Customer query queued for QuickBooks sync successfully."})
+}
+
+type SyncedCustomerResponse struct {
+	UserNumber string `json:"user_number"`
+	FullName   string `json:"full_name"`
+	ADN        string `json:"adn"`
+	QBListID   string `json:"qb_list_id"`
+}
+
+func GetSyncedCustomers(c *gin.Context) {
+	var mappings []qbModels.QBCustomerMapping
+	if err := config.DB.Find(&mappings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch synced customers"})
+		return
+	}
+
+	var responses []SyncedCustomerResponse
+	for _, mapping := range mappings {
+		var user authModels.User
+		var student studentModels.Student
+		
+		config.DB.Where("number = ?", mapping.UserNumber).First(&user)
+		config.DB.Where("user_number = ?", mapping.UserNumber).First(&student)
+
+		fullName := user.FirstName + " " + user.SecondName + " " + user.LastName
+		
+		responses = append(responses, SyncedCustomerResponse{
+			UserNumber: mapping.UserNumber,
+			FullName:   strings.TrimSpace(fullName),
+			ADN:        student.ADN,
+			QBListID:   mapping.QbListID,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": responses})
 }
