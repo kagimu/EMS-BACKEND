@@ -143,6 +143,7 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 					// Fix 4: Store QB TxnID for tracking
 					queueItem.QbTxnID = qbxml.QBXMLMsgsRs.SalesReceiptAddRs.SalesReceiptRet.TxnID
 				}
+			}
 		} else {
 			// QB returned a non-zero statusCode in the XML body (e.g. duplicate name)
 			queueItem.Status = "FAILED"
