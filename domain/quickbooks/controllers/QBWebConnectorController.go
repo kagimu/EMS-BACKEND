@@ -458,3 +458,12 @@ func GetSyncedItems(c *gin.Context) {
 
 	c.JSON(http.StatusOK, responses)
 }
+
+func GetQueueErrors(c *gin.Context) {
+	var items []qbModels.QBSyncQueue
+	if err := config.DB.Where("status = ?", "FAILED").Order("created_at desc").Limit(10).Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch errors"})
+		return
+	}
+	c.JSON(http.StatusOK, items)
+}
