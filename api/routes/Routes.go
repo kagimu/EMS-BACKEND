@@ -1205,6 +1205,9 @@ func SetupRoutes() *gin.Engine {
 			quickbooks.GET("synced-items", quickbooksController.GetSyncedItems)
 			quickbooks.GET("queue-errors", quickbooksController.GetQueueErrors)
 			quickbooks.GET("synced-receipts", quickbooksController.GetSyncedReceipts)
+			quickbooks.GET("customer-queue-status", quickbooksController.GetCustomerQueueStatus)
+			quickbooks.GET("item-queue-status", quickbooksController.GetItemQueueStatus)
+			quickbooks.DELETE("queue/:number", quickbooksController.DeleteQueueEntry)
 		}
 
 	}

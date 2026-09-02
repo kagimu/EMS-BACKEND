@@ -472,15 +472,82 @@ func GetQueueErrors(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
-// GetSyncedReceipts returns all queued/processing/success sales receipt transactions
-// so the UI can show which payments have already been sent to QuickBooks.
+// GetSyncedReceipts returns ALL sales receipt transactions with any status
+// so the UI can show QUEUED, PROCESSING, SUCCESS, and FAILED badges.
 func GetSyncedReceipts(c *gin.Context) {
 	var items []qbModels.QBSyncQueue
 	if err := config.DB.
-		Where("action_type = ? AND status IN ?", "SALES_RECEIPT_ADD", []string{"QUEUED", "PROCESSING", "SUCCESS"}).
+		Where("action_type = ?", "SALES_RECEIPT_ADD").
 		Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch synced receipts"})
 		return
 	}
 	c.JSON(http.StatusOK, items)
+}
+
+type QueueStatusEntry struct {
+	QueueNumber  string `json:"queue_number"`
+	Status       string `json:"status"`
+	ErrorMessage string `json:"error_message"`
+}
+
+// GetCustomerQueueStatus returns a map of user_number → queue status for CUSTOMER_ADD entries.
+func GetCustomerQueueStatus(c *gin.Context) {
+	var items []qbModels.QBSyncQueue
+	config.DB.Where("action_type = ?", "CUSTOMER_ADD").Find(&items)
+
+	result := make(map[string]QueueStatusEntry)
+	for _, item := range items {
+		result[item.UserNumber] = QueueStatusEntry{
+			QueueNumber:  item.Number,
+			Status:       item.Status,
+			ErrorMessage: item.ErrorMessage,
+		}
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+// GetItemQueueStatus returns a map of item_number → queue status for ITEM_SERVICE_ADD entries.
+func GetItemQueueStatus(c *gin.Context) {
+	var items []qbModels.QBSyncQueue
+	config.DB.Where("action_type = ?", "ITEM_SERVICE_ADD").Find(&items)
+
+	result := make(map[string]QueueStatusEntry)
+	for _, item := range items {
+		result[item.ItemNumber] = QueueStatusEntry{
+			QueueNumber:  item.Number,
+			Status:       item.Status,
+			ErrorMessage: item.ErrorMessage,
+		}
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+// DeleteQueueEntry deletes a QUEUED or FAILED queue entry.
+// SUCCESS and PROCESSING entries cannot be deleted.
+func DeleteQueueEntry(c *gin.Context) {
+	number := c.Param("number")
+
+	var item qbModels.QBSyncQueue
+	if err := config.DB.Where("number = ?", number).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Queue entry not found"})
+		return
+	}
+
+	if item.Status == "SUCCESS" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot delete a successfully synced entry — it already exists in QuickBooks."})
+		return
+	}
+	if item.Status == "PROCESSING" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot delete an entry that is currently being processed by the Web Connector."})
+		return
+	}
+
+	// Hard delete the queue entry so the entity can be re-exported
+	if err := config.DB.Unscoped().Delete(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete queue entry"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Queue entry deleted. You can now re-export this record."})
 }
