@@ -31,11 +31,22 @@ type QBCustomerAddRs struct {
 	CustomerRet QBCustomerRet `xml:"CustomerRet"`
 }
 
+type QBSalesReceiptRet struct {
+	TxnID string `xml:"TxnID"`
+}
+
+type QBSalesReceiptAddRs struct {
+	XMLName        xml.Name           `xml:"SalesReceiptAddRs"`
+	StatusCode     string             `xml:"statusCode,attr"`
+	SalesReceiptRet QBSalesReceiptRet `xml:"SalesReceiptRet"`
+}
+
 type QBXMLResponse struct {
 	XMLName     xml.Name `xml:"QBXML"`
 	QBXMLMsgsRs struct {
-		CustomerQueryRs *QBCustomerQueryRs `xml:"CustomerQueryRs"`
-		CustomerAddRs   *QBCustomerAddRs   `xml:"CustomerAddRs"`
+		CustomerQueryRs   *QBCustomerQueryRs   `xml:"CustomerQueryRs"`
+		CustomerAddRs     *QBCustomerAddRs     `xml:"CustomerAddRs"`
+		SalesReceiptAddRs *QBSalesReceiptAddRs `xml:"SalesReceiptAddRs"`
 	} `xml:"QBXMLMsgsRs"`
 }
 
@@ -104,7 +115,7 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 		} else if strings.Contains(response, `statusCode="0"`) {
 			queueItem.Status = "SUCCESS"
 
-			if queueItem.ActionType == "CUSTOMER_ADD" || queueItem.ActionType == "CUSTOMER_QUERY" {
+			if queueItem.ActionType == "CUSTOMER_ADD" || queueItem.ActionType == "CUSTOMER_QUERY" || queueItem.ActionType == "SALES_RECEIPT_ADD" {
 				var qbxml QBXMLResponse
 				xml.Unmarshal([]byte(response), &qbxml)
 
@@ -128,8 +139,10 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 							config.DB.Save(&mapping)
 						}
 					}
+				} else if queueItem.ActionType == "SALES_RECEIPT_ADD" && qbxml.QBXMLMsgsRs.SalesReceiptAddRs != nil {
+					// Fix 4: Store QB TxnID for tracking
+					queueItem.QbTxnID = qbxml.QBXMLMsgsRs.SalesReceiptAddRs.SalesReceiptRet.TxnID
 				}
-			}
 		} else {
 			// QB returned a non-zero statusCode in the XML body (e.g. duplicate name)
 			queueItem.Status = "FAILED"

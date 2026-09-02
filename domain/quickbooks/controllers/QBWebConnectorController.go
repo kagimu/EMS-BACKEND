@@ -164,6 +164,13 @@ func QueueTransaction(c *gin.Context) {
 		return
 	}
 
+	// Fix 3: Duplicate check — prevent queueing the same receipt twice
+	var existing qbModels.QBSyncQueue
+	if err := config.DB.Where("transaction_number = ? AND status IN ?", req.TransactionNumber, []string{"QUEUED", "PROCESSING", "SUCCESS"}).First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This transaction has already been queued or synced to QuickBooks (status: " + existing.Status + ")"})
+		return
+	}
+
 	var itemTx invoiceModel.InvoiceItemTransaction
 	if err := config.DB.Preload("Transaction.Statement.User").
 		Preload("InvoiceItem.Item").
@@ -173,32 +180,29 @@ func QueueTransaction(c *gin.Context) {
 		return
 	}
 
-	// Generate SalesReceiptAddRq qbXML
-	// Mapping:
-	// CustomerRef -> Student Name
-	// TxnDate -> Transaction Date
-	// RefNumber -> Item Receipt Number
-	// ItemRef -> Item Code
-	// Rate -> Amount Paid Off
-	// DepositToAccountRef -> "Undeposited Funds" (default mapping)
-
-	studentName := "Unknown Student"
-	if itemTx.Transaction.Statement.User.Number != "" {
-		studentName = itemTx.Transaction.Statement.User.FirstName + " " + itemTx.Transaction.Statement.User.LastName
+	// Fix 2: Use the QB-known customer name from QBCustomerMapping, not just the user name
+	userNumber := itemTx.Transaction.Statement.User.Number
+	customerRef := itemTx.Transaction.Statement.User.FirstName + " " + itemTx.Transaction.Statement.User.LastName
+	if userNumber != "" {
+		var mapping qbModels.QBCustomerMapping
+		if err := config.DB.Where("user_number = ?", userNumber).First(&mapping).Error; err == nil {
+			customerRef = mapping.QbFullName
+		}
 	}
-	
-	itemCode := fmt.Sprintf("%d", itemTx.InvoiceItem.Item.Code)
-	if itemTx.InvoiceItem.Item.Code == 0 {
-		itemCode = itemTx.InvoiceItem.Item.Name // fallback
+
+	itemCode := itemTx.InvoiceItem.Item.Name
+	if itemTx.InvoiceItem.Item.Code != 0 {
+		itemCode = fmt.Sprintf("%d", itemTx.InvoiceItem.Item.Code)
 	}
 
 	dateStr := itemTx.Transaction.Date.Format("2006-01-02")
 	amount := fmt.Sprintf("%.2f", itemTx.AmountPaidOff)
 
-	qbxml := `
+	// Fix 1: Wrap payload in <SalesReceiptAddRq>
+	qbxml := `<SalesReceiptAddRq>
 	<SalesReceiptAdd>
 		<CustomerRef>
-			<FullName>` + escapeXML(studentName) + `</FullName>
+			<FullName>` + escapeXML(customerRef) + `</FullName>
 		</CustomerRef>
 		<TxnDate>` + dateStr + `</TxnDate>
 		<RefNumber>` + escapeXML(itemTx.ItemReceiptNumber) + `</RefNumber>
@@ -212,13 +216,16 @@ func QueueTransaction(c *gin.Context) {
 			<Rate>` + amount + `</Rate>
 			<Amount>` + amount + `</Amount>
 		</SalesReceiptLineAdd>
-	</SalesReceiptAdd>`
+	</SalesReceiptAdd>
+</SalesReceiptAddRq>`
 
 	queue := qbModels.QBSyncQueue{
 		Number:            uuid.NewV4().String(),
 		TransactionNumber: req.TransactionNumber,
+		ActionType:        "SALES_RECEIPT_ADD",
 		Status:            "QUEUED",
 		QbXmlPayload:      qbxml,
+		UserNumber:        userNumber,
 	}
 
 	if err := config.DB.Create(&queue).Error; err != nil {
