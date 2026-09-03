@@ -148,7 +148,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) (s
 	return newInvoice.Number, err
 }
 
-func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, balanceDueDate string, itemPayments []requests.ItemPayment, txn *gorm.DB) (models.Invoice, error) {
+func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, balanceDueDate string, paymentMethod string, paymentReference string, itemPayments []requests.ItemPayment, txn *gorm.DB) (models.Invoice, error) {
 
 	invoiceNumber := generateNewInvoiceNumber()
 
@@ -230,19 +230,21 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if paidAmount > 0 {
-		err = addTransactionToInvoice(invoiceStatement, paidAmount, newInvoice, currentUserNumber, clientReference, description, datePaid, itemPayments, txn)
+		err = addTransactionToInvoice(invoiceStatement, paidAmount, newInvoice, currentUserNumber, clientReference, description, datePaid, paymentMethod, paymentReference, itemPayments, txn)
 	}
 
 	return newInvoice, err
 }
 
-func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description, datePaid string, itemPayments []requests.ItemPayment, txn *gorm.DB) error {
+func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description, datePaid, paymentMethod, paymentReference string, itemPayments []requests.ItemPayment, txn *gorm.DB) error {
 
 	_, err := ReceiveEnrollmentInvoicePayment(requests.InvoicePaymentRequest{
-		InvoiceNumber: invoice.Number,
-		Amount:        paidAmount,
-		Date:          datePaid,
-		ItemPayments:  itemPayments,
+		InvoiceNumber:    invoice.Number,
+		Amount:           paidAmount,
+		Date:             datePaid,
+		ItemPayments:     itemPayments,
+		PaymentMethod:    paymentMethod,
+		PaymentReference: paymentReference,
 	}, currentUserNumber, txn)
 
 	return err

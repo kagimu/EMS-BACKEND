@@ -25,6 +25,8 @@ type EnrollmentRequest struct {
 	BalanceDueDate         string           `json:"balance_due_date"`
 	CampusCurriculumNumber string           `json:"campus_curriculum_number"`
 	ItemPayments           []ItemPayment    `json:"item_payments,omitempty"`
+	PaymentMethod          string           `json:"payment_method,omitempty"`
+	PaymentReference       string           `json:"payment_reference,omitempty"`
 }
 
 type ItemPayment struct {

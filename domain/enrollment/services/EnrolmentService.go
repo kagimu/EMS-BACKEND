@@ -19,6 +19,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/repository"
+	invoiceRequests "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/api/requests"
 	models4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
@@ -511,7 +512,15 @@ func (enrolment *enrolmentService) NewEnrolment(enrolmentRequest requests.Enroll
 
 		}
 
-		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, enrolmentRequest.DatePaid, enrolmentRequest.BalanceDueDate, enrolmentRequest.ItemPayments, tx)
+		var invoiceItemPayments []invoiceRequests.ItemPayment
+		for _, ip := range enrolmentRequest.ItemPayments {
+			invoiceItemPayments = append(invoiceItemPayments, invoiceRequests.ItemPayment{
+				InvoiceItemNumber: ip.ItemNumber,
+				Amount:            ip.Amount,
+			})
+		}
+
+		invoice, err := services2.CreateInvoiceFromBillable(billable, student, enrolmentRequest.ClientReference, enrolmentRequest.Description, currentUserNumber, enrolmentRequest.PaidAmount, enrolmentRequest.DatePaid, enrolmentRequest.BalanceDueDate, enrolmentRequest.PaymentMethod, enrolmentRequest.PaymentReference, invoiceItemPayments, tx)
 		if err != nil {
 			return err
 		}
