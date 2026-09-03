@@ -1792,7 +1792,7 @@ func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest
 			var matchedItem itemBalance
 			var found bool
 			for _, b := range balances {
-				if b.Item.Number == itemPayment.InvoiceItemNumber {
+				if b.Item.Number == itemPayment.InvoiceItemNumber || b.Item.ItemNumber == itemPayment.InvoiceItemNumber {
 					matchedItem = b
 					found = true
 					break
