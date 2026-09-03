@@ -9,11 +9,12 @@ import (
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
+	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	qbModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/services"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
-	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -110,7 +111,7 @@ func HandleQBWC(c *gin.Context) {
 
 	// Wrap in SOAP Envelope
 	finalResponse := `<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body>` + responseXML + `</soap:Body></soap:Envelope>`
-	
+
 	c.Data(http.StatusOK, "text/xml; charset=utf-8", []byte(finalResponse))
 }
 
@@ -210,7 +211,13 @@ func QueueTransaction(c *gin.Context) {
 	dateStr := itemTx.Transaction.Date.Format("2006-01-02")
 	amount := fmt.Sprintf("%.2f", itemTx.AmountPaidOff)
 
-	// Fix 1: Wrap payload in <SalesReceiptAddRq>
+	// Load deposit account from settings (fallback: Undeposited Funds)
+	depositAccount := "Undeposited Funds"
+	var qbSettings qbModels.QBSettings
+	if err := config.DB.First(&qbSettings).Error; err == nil && qbSettings.DepositToAccount != "" {
+		depositAccount = qbSettings.DepositToAccount
+	}
+
 	qbxml := `<SalesReceiptAddRq>
 	<SalesReceiptAdd>
 		<CustomerRef>
@@ -219,7 +226,7 @@ func QueueTransaction(c *gin.Context) {
 		<TxnDate>` + dateStr + `</TxnDate>
 		<RefNumber>` + escapeXML(itemTx.ItemReceiptNumber) + `</RefNumber>
 		<DepositToAccountRef>
-			<FullName>Undeposited Funds</FullName>
+			<FullName>` + escapeXML(depositAccount) + `</FullName>
 		</DepositToAccountRef>
 		<SalesReceiptLineAdd>
 			<ItemRef>
@@ -272,7 +279,7 @@ func QueueCustomerAdd(c *gin.Context) {
 		return
 	}
 
-	// Fetch student for ADN
+	// Fetch student for ADN and campus
 	var student studentModels.Student
 	config.DB.Where("user_number = ?", req.UserNumber).First(&student)
 
@@ -280,10 +287,25 @@ func QueueCustomerAdd(c *gin.Context) {
 	if student.ADN != "" {
 		fullName = fullName + " - " + student.ADN
 	}
-	
+
+	// Fetch campus name to use as CompanyName in QB
+	companyName := ""
+	if student.PreferredCampusNumber != "" {
+		var campus campusModels.Campus
+		if err := config.DB.Where("number = ?", student.PreferredCampusNumber).First(&campus).Error; err == nil {
+			companyName = campus.Name
+		}
+	}
+
+	companyNameXML := ""
+	if companyName != "" {
+		companyNameXML = `
+			<CompanyName>` + escapeXML(companyName) + `</CompanyName>`
+	}
+
 	qbxml := `<CustomerAddRq>
 		<CustomerAdd>
-			<Name>` + escapeXML(fullName) + `</Name>
+			<Name>` + escapeXML(fullName) + `</Name>` + companyNameXML + `
 			<FirstName>` + escapeXML(user.FirstName) + `</FirstName>
 			<LastName>` + escapeXML(user.LastName) + `</LastName>
 		</CustomerAdd>
@@ -328,9 +350,13 @@ type SyncedCustomerResponse struct {
 	FullName   string `json:"full_name"`
 	ADN        string `json:"adn"`
 	QBListID   string `json:"qb_list_id"`
+	CampusName string `json:"campus_name"`
 }
 
 func GetSyncedCustomers(c *gin.Context) {
+	schoolNumber := c.Query("school_number")
+	campusNumber := c.Query("campus_number")
+
 	var mappings []qbModels.QBCustomerMapping
 	if err := config.DB.Find(&mappings).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch synced customers"})
@@ -341,21 +367,40 @@ func GetSyncedCustomers(c *gin.Context) {
 	for _, mapping := range mappings {
 		var user authModels.User
 		var student studentModels.Student
-		
+
 		config.DB.Where("number = ?", mapping.UserNumber).First(&user)
 		config.DB.Where("user_number = ?", mapping.UserNumber).First(&student)
 
+		// Apply school filter
+		if schoolNumber != "" && student.SchoolNumber != schoolNumber {
+			continue
+		}
+		// Apply campus filter
+		if campusNumber != "" && student.PreferredCampusNumber != campusNumber {
+			continue
+		}
+
+		// Resolve campus name for display
+		campusName := ""
+		if student.PreferredCampusNumber != "" {
+			var campus campusModels.Campus
+			if err := config.DB.Where("number = ?", student.PreferredCampusNumber).First(&campus).Error; err == nil {
+				campusName = campus.Name
+			}
+		}
+
 		fullName := user.FirstName + " " + user.SecondName + " " + user.LastName
-		
+
 		responses = append(responses, SyncedCustomerResponse{
 			UserNumber: mapping.UserNumber,
 			FullName:   strings.TrimSpace(fullName),
 			ADN:        student.ADN,
 			QBListID:   mapping.QbListID,
+			CampusName: campusName,
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": responses})
+	c.JSON(http.StatusOK, responses)
 }
 
 type QueueItemRequest struct {
@@ -393,13 +438,17 @@ func QueueItemAdd(c *gin.Context) {
 	if item.Code != 0 {
 		itemCode = fmt.Sprintf("%d", item.Code)
 	}
-	
+
 	// Always use the item Name as the description in QuickBooks
 	desc := item.Name
 	price := fmt.Sprintf("%.2f", item.Cost)
 
-	// Hardcoded Option A: "Service Income" account
+	// Load income account from settings (fallback: Service Income)
 	accountName := "Service Income"
+	var qbSettingsForItem qbModels.QBSettings
+	if err := config.DB.First(&qbSettingsForItem).Error; err == nil && qbSettingsForItem.IncomeAccount != "" {
+		accountName = qbSettingsForItem.IncomeAccount
+	}
 
 	qbxml := `<ItemServiceAddRq>
 	<ItemServiceAdd>
@@ -450,7 +499,7 @@ func GetSyncedItems(c *gin.Context) {
 	for _, mapping := range mappings {
 		var item itemModels.Item
 		config.DB.Where("number = ?", mapping.ItemNumber).First(&item)
-		
+
 		responses = append(responses, SyncedItemResponse{
 			ItemNumber: mapping.ItemNumber,
 			ItemName:   item.Name,
