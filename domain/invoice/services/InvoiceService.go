@@ -148,7 +148,7 @@ func CreateInvoice(payload requests.InvoiceRequest, currentUserNumber string) (s
 	return newInvoice.Number, err
 }
 
-func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, balanceDueDate string, txn *gorm.DB) (models.Invoice, error) {
+func CreateInvoiceFromBillable(billable models.Billable, student studentModel.Student, clientReference, description, currentUserNumber string, paidAmount float64, datePaid string, balanceDueDate string, itemPayments []requests.ItemPayment, txn *gorm.DB) (models.Invoice, error) {
 
 	invoiceNumber := generateNewInvoiceNumber()
 
@@ -230,18 +230,19 @@ func CreateInvoiceFromBillable(billable models.Billable, student studentModel.St
 	}
 
 	if paidAmount > 0 {
-		err = addTransactionToInvoice(invoiceStatement, paidAmount, newInvoice, currentUserNumber, clientReference, description, datePaid, txn)
+		err = addTransactionToInvoice(invoiceStatement, paidAmount, newInvoice, currentUserNumber, clientReference, description, datePaid, itemPayments, txn)
 	}
 
 	return newInvoice, err
 }
 
-func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description, datePaid string, txn *gorm.DB) error {
+func addTransactionToInvoice(invoiceStatement models.Statement, paidAmount float64, invoice models.Invoice, currentUserNumber, clientReference, description, datePaid string, itemPayments []requests.ItemPayment, txn *gorm.DB) error {
 
 	_, err := ReceiveEnrollmentInvoicePayment(requests.InvoicePaymentRequest{
 		InvoiceNumber: invoice.Number,
 		Amount:        paidAmount,
 		Date:          datePaid,
+		ItemPayments:  itemPayments,
 	}, currentUserNumber, txn)
 
 	return err
