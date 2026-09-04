@@ -630,7 +630,7 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 			return errors.New("Attaching transaction to promissory note error " + err.Error())
 		}
 
-		if err = distributeItemPayments(invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
+		if err = distributeItemPayments(&invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
 			return errors.New("Distributing item payments error " + err.Error())
 		}
 
@@ -1044,8 +1044,16 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 					AmountPaidOff:     payAmount,
 					AddedByNumber:     currentUserNumber,
 				})
+				
+				if err != nil {
+					return errors.New("Attaching transaction to promissory note error " + err.Error())
+				}
 
-				return err
+				if err = distributeItemPayments(&invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
+					return errors.New("Distributing item payments error " + err.Error())
+				}
+
+				return nil
 			})
 
 			if err != nil {
@@ -1761,7 +1769,7 @@ func GeneralStatement(userNumber string, minAmount, maxAmount float64) ([]respon
 }
 
 
-func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest, invoice models.Invoice, newTransaction models.Transaction, payAmount float64, tx *gorm.DB) error {
+func distributeItemPayments(invoicePaymentRequest *requests.InvoicePaymentRequest, invoice models.Invoice, newTransaction models.Transaction, payAmount float64, tx *gorm.DB) error {
 
 	invoiceItems, err := invoiceRepositories.GetInvoiceItems(invoice.Number, tx)
 	if err != nil {
@@ -1785,8 +1793,9 @@ func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest
 	}
 
 	if len(invoicePaymentRequest.ItemPayments) > 0 {
+		remainingPayAmount := payAmount
 		for i, itemPayment := range invoicePaymentRequest.ItemPayments {
-			if itemPayment.Amount <= 0 {
+			if itemPayment.Amount <= 0 || remainingPayAmount <= 0 {
 				continue
 			}
 			var matchedItem itemBalance
@@ -1806,6 +1815,13 @@ func distributeItemPayments(invoicePaymentRequest requests.InvoicePaymentRequest
 			if amountToPay > matchedItem.Balance {
 				amountToPay = matchedItem.Balance
 			}
+			if amountToPay > remainingPayAmount {
+				amountToPay = remainingPayAmount
+			}
+			
+			// Mutate so next credit transaction (if any) doesn't overpay
+			invoicePaymentRequest.ItemPayments[i].Amount -= amountToPay
+			remainingPayAmount -= amountToPay
 
 			newItemTx := models.InvoiceItemTransaction{
 				Number:            uuid.NewV4().String(),
