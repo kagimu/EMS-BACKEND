@@ -962,11 +962,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 
 	var newStatus string
 
-	if totalCreditAmount >= invoiceBalance {
-		newStatus = constants.StatusPaid
-	} else {
-		newStatus = constants.StatusPartiallyPaid
-	}
+
 
 	var payAmount float64
 	userNumber := invoice.Statement.UserNumber
@@ -1098,6 +1094,12 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 
 		if err != nil {
 			return errors.New("Attaching transaction to promissory note error " + err.Error())
+		}
+
+		if invoiceBalance <= 0 {
+			newStatus = constants.StatusPaid
+		} else {
+			newStatus = constants.StatusPartiallyPaid
 		}
 
 		if newStatus != invoice.Status {
