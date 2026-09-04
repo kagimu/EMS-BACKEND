@@ -528,11 +528,21 @@ func createPaymentResponse(invoiceTransaction models.InvoiceTransaction) respons
 
 func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string) (responses.MinInvoiceResponse, error) {
 
-	if len(invoicePaymentRequest.Credits) >= 1 {
-		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits, invoicePaymentRequest)
-	}
-
 	var minInvoiceResponse responses.MinInvoiceResponse
+	var err error
+
+	if len(invoicePaymentRequest.Credits) >= 1 {
+		minInvoiceResponse, appliedCredit, err := ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits, &invoicePaymentRequest)
+		if err != nil {
+			return minInvoiceResponse, err
+		}
+
+		if invoicePaymentRequest.Amount <= appliedCredit {
+			return minInvoiceResponse, nil
+		}
+
+		invoicePaymentRequest.Amount -= appliedCredit
+	}
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber)
 	if err != nil {
@@ -730,11 +740,21 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 
 func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest, currentUserNumber string, tx *gorm.DB) (responses.MinInvoiceResponse, error) {
 
-	if len(invoicePaymentRequest.Credits) >= 1 {
-		return ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits, invoicePaymentRequest)
-	}
-
 	var minInvoiceResponse responses.MinInvoiceResponse
+	var err error
+
+	if len(invoicePaymentRequest.Credits) >= 1 {
+		minInvoiceResponse, appliedCredit, err := ReceiveInvoicePaymentByCredit(invoicePaymentRequest.InvoiceNumber, currentUserNumber, invoicePaymentRequest.Credits, &invoicePaymentRequest)
+		if err != nil {
+			return minInvoiceResponse, err
+		}
+
+		if invoicePaymentRequest.Amount <= appliedCredit {
+			return minInvoiceResponse, nil
+		}
+
+		invoicePaymentRequest.Amount -= appliedCredit
+	}
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoicePaymentRequest.InvoiceNumber, tx)
 	if err != nil {
@@ -894,17 +914,18 @@ func validatePaymentDateAfter(date string, dateOfIssue time.Time) (time.Time, er
 	return paymentDate, nil
 }
 
-func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string, invoicePaymentRequest requests.InvoicePaymentRequest) (responses.MinInvoiceResponse, error) {
+func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, credits []string, invoicePaymentRequest *requests.InvoicePaymentRequest) (responses.MinInvoiceResponse, float64, error) {
 
 	var minInvoiceResponse responses.MinInvoiceResponse
+	var totalAppliedCredit float64
 
 	invoice, err := invoiceRepositories.FindInvoiceByNumber(invoiceNumber)
 	if err != nil {
-		return minInvoiceResponse, err
+		return minInvoiceResponse, totalAppliedCredit, err
 	}
 
 	if invoice.Number == "" {
-		return minInvoiceResponse, errors.New("invalid promissory note number: " + invoiceNumber)
+		return minInvoiceResponse, totalAppliedCredit, errors.New("invalid promissory note number: " + invoiceNumber)
 	}
 
 	invoiceAmount, _ := invoiceRepositories.GetInvoiceAmount(invoice.Number)
@@ -912,7 +933,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 	paidAmount, _ := invoiceRepositories.GetInvoicePaidAmount(invoice.Number)
 
 	if paidAmount >= invoiceAmount {
-		return minInvoiceResponse, errors.New("This promissory note is fully paid ")
+		return minInvoiceResponse, totalAppliedCredit, errors.New("This promissory note is fully paid ")
 	}
 
 	invoiceBalance := invoiceAmount - paidAmount
@@ -925,7 +946,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 
 		availableCredit, err := invoiceRepositories.FindCreditByNumber(transactionNumber)
 		if err != nil {
-			return minInvoiceResponse, err
+			return minInvoiceResponse, totalAppliedCredit, err
 		}
 
 		if availableCredit.Amount > 0 {
@@ -936,7 +957,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 	}
 
 	if totalCreditAmount <= 0 {
-		return minInvoiceResponse, errors.New("All the selected transactions have no credit ")
+		return minInvoiceResponse, totalAppliedCredit, errors.New("All the selected transactions have no credit ")
 	}
 
 	var newStatus string
@@ -955,11 +976,23 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 
 		for _, creditTransaction := range creditTransactions {
 
+			remainingRequestAmount := invoicePaymentRequest.Amount - totalAppliedCredit
+
 			payAmount = invoiceBalance
 
-			if creditTransaction.Amount < invoiceBalance {
+			if remainingRequestAmount < payAmount {
+				payAmount = remainingRequestAmount
+			}
+
+			if creditTransaction.Amount < payAmount {
 				payAmount = creditTransaction.Amount
 			}
+
+			if payAmount <= 0 {
+				break
+			}
+
+			totalAppliedCredit += payAmount
 
 			// record the credit payment to appear on the statement and reduce the select credit
 
@@ -1044,12 +1077,12 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 					AmountPaidOff:     payAmount,
 					AddedByNumber:     currentUserNumber,
 				})
-				
+
 				if err != nil {
 					return errors.New("Attaching transaction to promissory note error " + err.Error())
 				}
 
-				if err = distributeItemPayments(&invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
+				if err = distributeItemPayments(invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
 					return errors.New("Distributing item payments error " + err.Error())
 				}
 
@@ -1077,7 +1110,7 @@ func ReceiveInvoicePaymentByCredit(invoiceNumber, currentUserNumber string, cred
 		return nil
 	})
 
-	return createMinInvoiceResponse(invoice), err
+	return createMinInvoiceResponse(invoice), totalAppliedCredit, err
 }
 
 func GetFinancialSummary(userNumber string) (responses.FinancialSummaryResponse, error) {
@@ -1768,7 +1801,6 @@ func GeneralStatement(userNumber string, minAmount, maxAmount float64) ([]respon
 	return statementResponse, nil
 }
 
-
 func distributeItemPayments(invoicePaymentRequest *requests.InvoicePaymentRequest, invoice models.Invoice, newTransaction models.Transaction, payAmount float64, tx *gorm.DB) error {
 
 	invoiceItems, err := invoiceRepositories.GetInvoiceItems(invoice.Number, tx)
@@ -1810,7 +1842,7 @@ func distributeItemPayments(invoicePaymentRequest *requests.InvoicePaymentReques
 			if !found {
 				return errors.New("invalid item number in item_payments or item is fully paid")
 			}
-			
+
 			amountToPay := itemPayment.Amount
 			if amountToPay > matchedItem.Balance {
 				amountToPay = matchedItem.Balance
@@ -1818,7 +1850,7 @@ func distributeItemPayments(invoicePaymentRequest *requests.InvoicePaymentReques
 			if amountToPay > remainingPayAmount {
 				amountToPay = remainingPayAmount
 			}
-			
+
 			// Mutate so next credit transaction (if any) doesn't overpay
 			invoicePaymentRequest.ItemPayments[i].Amount -= amountToPay
 			remainingPayAmount -= amountToPay
@@ -1841,13 +1873,13 @@ func distributeItemPayments(invoicePaymentRequest *requests.InvoicePaymentReques
 				if remainingToDistribute <= 0 {
 					break
 				}
-				
+
 				amountToPay := (b.Balance / totalUnpaidBalance) * payAmount
-				
+
 				if i == len(balances)-1 {
 					amountToPay = remainingToDistribute
 				}
-				
+
 				if amountToPay > b.Balance {
 					amountToPay = b.Balance
 				}
@@ -1885,7 +1917,7 @@ func GetInvoiceItemTransactionHistory(invoiceNumber string) ([]responses.ItemTra
 		if h.Transaction.Statement.AddedBy.Number != "" {
 			addedByName = h.Transaction.Statement.AddedBy.FirstName + " " + h.Transaction.Statement.AddedBy.LastName
 		}
-		
+
 		studentDetails := ""
 		if h.Transaction.Statement.UserNumber != "" {
 			student, err := repositories.FindStudentByUserNumber(h.Transaction.Statement.UserNumber)
@@ -1924,7 +1956,7 @@ func GetAllItemTransactionHistory(campusNumber string) ([]responses.ItemTransact
 		if h.Transaction.Statement.AddedBy.Number != "" {
 			addedByName = h.Transaction.Statement.AddedBy.FirstName + " " + h.Transaction.Statement.AddedBy.LastName
 		}
-		
+
 		studentDetails := ""
 		if h.Transaction.Statement.UserNumber != "" {
 			student, err := repositories.FindStudentByUserNumber(h.Transaction.Statement.UserNumber)
