@@ -832,7 +832,7 @@ func ReceiveEnrollmentInvoicePayment(invoicePaymentRequest requests.InvoicePayme
 		return minInvoiceResponse, errors.New("Attaching transaction to promissory note error " + err.Error())
 	}
 
-	if err = distributeItemPayments(invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
+	if err = distributeItemPayments(&invoicePaymentRequest, invoice, newTransaction, payAmount, tx); err != nil {
 		return minInvoiceResponse, errors.New("Distributing item payments error " + err.Error())
 	}
 
