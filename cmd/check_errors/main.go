@@ -21,7 +21,7 @@ func main() {
 	}
 	
 	var items []models.QBSyncQueue
-	err := config.DB.Where("status = ?", "FAILED").Order("created_at desc").Limit(5).Find(&items).Error
+	err = config.DB.Where("status = ?", "FAILED").Order("created_at desc").Limit(5).Find(&items).Error
 	if err != nil {
 		log.Fatal(err)
 	}
