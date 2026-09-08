@@ -1208,6 +1208,16 @@ func SetupRoutes() *gin.Engine {
 			quickbooks.GET("customer-queue-status", quickbooksController.GetCustomerQueueStatus)
 			quickbooks.GET("item-queue-status", quickbooksController.GetItemQueueStatus)
 			quickbooks.DELETE("queue/:number", quickbooksController.DeleteQueueEntry)
+
+			quickbooks.POST("account-types", quickbooksController.CreateAccountType)
+			quickbooks.GET("account-types", quickbooksController.GetAccountTypes)
+			quickbooks.PUT("account-types/:id", quickbooksController.UpdateAccountType)
+			quickbooks.DELETE("account-types/:id", quickbooksController.DeleteAccountType)
+
+			quickbooks.POST("chart-of-accounts", quickbooksController.CreateChartOfAccount)
+			quickbooks.GET("chart-of-accounts", quickbooksController.GetChartOfAccounts)
+			quickbooks.PUT("chart-of-accounts/:id", quickbooksController.UpdateChartOfAccount)
+			quickbooks.DELETE("chart-of-accounts/:id", quickbooksController.DeleteChartOfAccount)
 		}
 
 	}

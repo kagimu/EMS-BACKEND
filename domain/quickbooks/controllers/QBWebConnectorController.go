@@ -405,6 +405,7 @@ func GetSyncedCustomers(c *gin.Context) {
 
 type QueueItemRequest struct {
 	ItemNumber string `json:"item_number" binding:"required"`
+	AccountID  string `json:"account_id"`
 }
 
 func QueueItemAdd(c *gin.Context) {
@@ -443,11 +444,18 @@ func QueueItemAdd(c *gin.Context) {
 	desc := item.Name
 	price := fmt.Sprintf("%.2f", item.Cost)
 
-	// Load income account from settings (fallback: Service Income)
+	// Load income account from request or fallback to settings
 	accountName := "Service Income"
-	var qbSettingsForItem qbModels.QBSettings
-	if err := config.DB.First(&qbSettingsForItem).Error; err == nil && qbSettingsForItem.IncomeAccount != "" {
-		accountName = qbSettingsForItem.IncomeAccount
+	if req.AccountID != "" {
+		var chartOfAccount qbModels.QBChartOfAccount
+		if err := config.DB.Where("number = ?", req.AccountID).First(&chartOfAccount).Error; err == nil {
+			accountName = chartOfAccount.Name
+		}
+	} else {
+		var qbSettingsForItem qbModels.QBSettings
+		if err := config.DB.First(&qbSettingsForItem).Error; err == nil && qbSettingsForItem.IncomeAccount != "" {
+			accountName = qbSettingsForItem.IncomeAccount
+		}
 	}
 
 	qbxml := `<ItemServiceAddRq>

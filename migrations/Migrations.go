@@ -282,6 +282,8 @@ func Init() error {
 		&quickbooksModels.QBCustomerMapping{},
 		&quickbooksModels.QBItemMapping{},
 		&quickbooksModels.QBSettings{},
+		&quickbooksModels.QBAccountType{},
+		&quickbooksModels.QBChartOfAccount{},
 		&models4.Attendance{},
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
