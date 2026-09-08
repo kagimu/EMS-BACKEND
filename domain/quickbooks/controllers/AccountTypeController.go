@@ -4,7 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
@@ -20,7 +20,7 @@ func CreateAccountType(c *gin.Context) {
 	}
 
 	accountType := models.QBAccountType{
-		Number:      uuid.New().String(),
+		Number:      uuid.NewV4().String(),
 		Name:        input.Name,
 		Description: input.Description,
 		IsActive:    true,

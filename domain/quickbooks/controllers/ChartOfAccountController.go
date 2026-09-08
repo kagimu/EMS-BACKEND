@@ -4,7 +4,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
 
@@ -21,7 +21,7 @@ func CreateChartOfAccount(c *gin.Context) {
 	}
 
 	chartOfAccount := models.QBChartOfAccount{
-		Number:        uuid.New().String(),
+		Number:        uuid.NewV4().String(),
 		Name:          input.Name,
 		AccountTypeID: input.AccountTypeID,
 		Description:   input.Description,
