@@ -18,6 +18,7 @@ type Credit struct {
 	Status                 string              `json:"status" gorm:"size:36;not null;default:ACTIVE"`
 	ClientReference        string              `json:"client_reference" gorm:"size:62"`
 	Description            string              `json:"description" gorm:"size:500"`
+	DepositAccountNumber   string              `json:"deposit_account_number" gorm:"size:36"`
 	SchoolNumber           string              `json:"school_number" gorm:"size:36;not null"`
 	School                 schoolModel.School  `gorm:"foreignKey:SchoolNumber;references:Number;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CampusNumber           string              `json:"campus_number" gorm:"size:36;not null"`

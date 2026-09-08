@@ -1,0 +1,93 @@
+package controllers
+
+import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
+	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+	"net/http"
+)
+
+func CreateDepositAccount(c *gin.Context) {
+	var input struct {
+		Name    string `json:"name" binding:"required"`
+		Details string `json:"details"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	depositAccount := models.QBDepositAccount{
+		Number:   uuid.NewV4().String(),
+		Name:     input.Name,
+		Details:  input.Details,
+		IsActive: true,
+	}
+
+	if err := config.DB.Create(&depositAccount).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create deposit account"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, depositAccount)
+}
+
+func GetDepositAccounts(c *gin.Context) {
+	var depositAccounts []models.QBDepositAccount
+	if err := config.DB.Find(&depositAccounts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch deposit accounts"})
+		return
+	}
+	c.JSON(http.StatusOK, depositAccounts)
+}
+
+func UpdateDepositAccount(c *gin.Context) {
+	id := c.Param("id")
+	var depositAccount models.QBDepositAccount
+
+	if err := config.DB.Where("number = ?", id).First(&depositAccount).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Deposit account not found"})
+		return
+	}
+
+	var input struct {
+		Name     string `json:"name" binding:"required"`
+		Details  string `json:"details"`
+		IsActive bool   `json:"is_active"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	depositAccount.Name = input.Name
+	depositAccount.Details = input.Details
+	depositAccount.IsActive = input.IsActive
+
+	if err := config.DB.Save(&depositAccount).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update deposit account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, depositAccount)
+}
+
+func DeleteDepositAccount(c *gin.Context) {
+	id := c.Param("id")
+	var depositAccount models.QBDepositAccount
+
+	if err := config.DB.Where("number = ?", id).First(&depositAccount).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Deposit account not found"})
+		return
+	}
+
+	if err := config.DB.Delete(&depositAccount).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete deposit account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Deposit account deleted successfully"})
+}

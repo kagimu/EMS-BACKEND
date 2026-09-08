@@ -603,9 +603,10 @@ func ReceiveInvoicePayment(invoicePaymentRequest requests.InvoicePaymentRequest,
 		Number:          uuid.NewV4().String(),
 		Date:            paymentDate,
 		Status:          constants.StatusActive,
-		AmountInCredit:  payRequestAmount - payAmount,
-		PaymentMethod:   invoicePaymentRequest.PaymentMethod,
-		ClientReference: invoicePaymentRequest.PaymentReference,
+		AmountInCredit:       payRequestAmount - payAmount,
+		PaymentMethod:        invoicePaymentRequest.PaymentMethod,
+		ClientReference:      invoicePaymentRequest.PaymentReference,
+		DepositAccountNumber: invoicePaymentRequest.DepositAccountNumber,
 	}
 
 	newInvoiceTransaction := models.InvoiceTransaction{
@@ -717,6 +718,7 @@ func ReceiveAccountTopUp(accountTopUpRequest requests.AccountTopUpRequest, curre
 		CampusNumber:           campus.Number,
 		SchoolNumber:           student.SchoolNumber,
 		AddedByNumber:          currentUserNumber,
+		DepositAccountNumber:   accountTopUpRequest.DepositAccountNumber,
 	}
 
 	cre, err := invoiceRepositories.SaveCredit(newTransaction)

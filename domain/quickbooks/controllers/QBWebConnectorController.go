@@ -211,11 +211,18 @@ func QueueTransaction(c *gin.Context) {
 	dateStr := itemTx.Transaction.Date.Format("2006-01-02")
 	amount := fmt.Sprintf("%.2f", itemTx.AmountPaidOff)
 
-	// Load deposit account from settings (fallback: Undeposited Funds)
 	depositAccount := "Undeposited Funds"
-	var qbSettings qbModels.QBSettings
-	if err := config.DB.First(&qbSettings).Error; err == nil && qbSettings.DepositToAccount != "" {
-		depositAccount = qbSettings.DepositToAccount
+	
+	if itemTx.Transaction.DepositAccountNumber != "" {
+		var qbDepositAccount qbModels.QBDepositAccount
+		if err := config.DB.Where("number = ?", itemTx.Transaction.DepositAccountNumber).First(&qbDepositAccount).Error; err == nil && qbDepositAccount.Name != "" {
+			depositAccount = qbDepositAccount.Name
+		}
+	} else {
+		var qbSettings qbModels.QBSettings
+		if err := config.DB.First(&qbSettings).Error; err == nil && qbSettings.DepositToAccount != "" {
+			depositAccount = qbSettings.DepositToAccount
+		}
 	}
 
 	qbxml := `<SalesReceiptAddRq>
