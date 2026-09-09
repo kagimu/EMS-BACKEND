@@ -305,14 +305,19 @@ func QueueCustomerAdd(c *gin.Context) {
 	}
 
 	companyNameXML := ""
+	classRefXML := ""
 	if companyName != "" {
 		companyNameXML = `
 			<CompanyName>` + escapeXML(companyName) + `</CompanyName>`
+		classRefXML = `
+			<ClassRef>
+				<FullName>` + escapeXML(companyName) + `</FullName>
+			</ClassRef>`
 	}
 
 	qbxml := `<CustomerAddRq>
 		<CustomerAdd>
-			<Name>` + escapeXML(fullName) + `</Name>` + companyNameXML + `
+			<Name>` + escapeXML(fullName) + `</Name>` + companyNameXML + classRefXML + `
 			<FirstName>` + escapeXML(user.FirstName) + `</FirstName>
 			<LastName>` + escapeXML(user.LastName) + `</LastName>
 		</CustomerAdd>
