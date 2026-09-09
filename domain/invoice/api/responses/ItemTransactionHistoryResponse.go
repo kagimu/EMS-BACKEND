@@ -13,4 +13,5 @@ type ItemTransactionHistoryResponse struct {
 	ItemSerialNumber string  `json:"item_serial_number"`
 	Campus           string  `json:"campus"`
 	School           string  `json:"school"`
+	PaidOn           string  `json:"paid_on"`
 }

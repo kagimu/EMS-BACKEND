@@ -1943,6 +1943,7 @@ func GetInvoiceItemTransactionHistory(invoiceNumber string) ([]responses.ItemTra
 			ItemSerialNumber: h.InvoiceItem.Item.SerialCode,
 			Campus:           h.Transaction.Statement.Campus.Name,
 			School:           h.Transaction.Statement.School.Name,
+			PaidOn:           h.Transaction.Date.Format(time.DateOnly),
 		})
 	}
 	return response, nil
@@ -1982,6 +1983,7 @@ func GetAllItemTransactionHistory(campusNumber string) ([]responses.ItemTransact
 			ItemSerialNumber: h.InvoiceItem.Item.SerialCode,
 			Campus:           h.Transaction.Statement.Campus.Name,
 			School:           h.Transaction.Statement.School.Name,
+			PaidOn:           h.Transaction.Date.Format(time.DateOnly),
 		})
 	}
 	return response, nil
