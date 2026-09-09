@@ -226,6 +226,27 @@ func GetInvoiceItemTransactionsHistory(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"message": "Item transaction history", "data": history})
 }
 
+func GetInvoiceItemTransactionsHistoryByTransaction(context *gin.Context) {
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	transactionNumber := context.Query("transaction_number")
+	if transactionNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide transaction number"))
+		return
+	}
+
+	history, err := services.GetInvoiceItemTransactionHistoryByTransaction(transactionNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Item transaction history", "data": history})
+}
+
 func GetAllItemTransactionsHistory(context *gin.Context) {
 	if _, err := commons.GetUserFromHeader(context); err != nil {
 		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})

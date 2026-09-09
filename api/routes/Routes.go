@@ -559,6 +559,7 @@ func SetupRoutes() *gin.Engine {
 			invoices.GET("general-statement", invoiceController.GeneralStatement)
 			invoices.GET("item-transactions", invoiceController.GetInvoiceItemTransactionsHistory)
 			invoices.GET("all-item-transactions", invoiceController.GetAllItemTransactionsHistory)
+			invoices.GET("transaction-item-transactions", invoiceController.GetInvoiceItemTransactionsHistoryByTransaction)
 
 			payments := invoices.Group("/payments")
 			{

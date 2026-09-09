@@ -148,6 +148,27 @@ func GetInvoiceItemTransactionsHistory(invoiceNumber string, tx ...*gorm.DB) ([]
 	return history, nil
 }
 
+func GetInvoiceItemTransactionsHistoryByTransaction(transactionNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItemTransaction, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var history []invoiceModel.InvoiceItemTransaction
+	err := db.Preload("Transaction.Statement.AddedBy").
+		Preload("Transaction.Statement.Campus").
+		Preload("Transaction.Statement.School").
+		Preload("InvoiceItem.Item").
+		Where("transaction_number = ?", transactionNumber).
+		Find(&history).Error
+
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return history, err
+	}
+
+	return history, nil
+}
+
 func GetAllItemTransactionsHistory(campusNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItemTransaction, error) {
 	db := config.DB
 	if len(tx) > 0 {

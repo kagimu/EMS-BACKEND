@@ -1418,6 +1418,11 @@ func CancelPayment(transactionNumber string, currentUser string) error {
 
 	err = config.DB.Transaction(func(tx *gorm.DB) error {
 
+		// Delete associated item payments
+		if err := tx.Where("transaction_number = ?", transactionNumber).Delete(&models.InvoiceItemTransaction{}).Error; err != nil {
+			return errors.New("deleting invoice item transactions error: " + err.Error())
+		}
+
 		invoiceTransactionRepository.UseTx(tx)
 
 		invoiceTransactions, err := invoiceTransactionRepository.FindInvoiceTransactions("", transactionNumber)
@@ -1927,6 +1932,46 @@ func GetInvoiceItemTransactionHistory(invoiceNumber string) ([]responses.ItemTra
 			student, err := repositories.FindStudentByUserNumber(h.Transaction.Statement.UserNumber)
 			if err == nil {
 				studentDetails = student.Surname + student.SecondName + student.ADN
+			}
+		}
+
+		response = append(response, responses.ItemTransactionHistoryResponse{
+			Date:             h.CreatedAt.Format(time.DateOnly),
+			ItemName:         h.InvoiceItem.Item.Name,
+			Amount:           h.AmountPaidOff,
+			PaymentMethod:    h.Transaction.PaymentMethod,
+			PaymentReference: h.Transaction.ClientReference,
+			RecordedBy:       addedByName,
+			StudentDetails:   studentDetails,
+			ItemReceiptNo:    h.ItemReceiptNumber,
+			ItemCode:         h.InvoiceItem.Item.Code,
+			ItemSerialNumber: h.InvoiceItem.Item.SerialCode,
+			Campus:           h.Transaction.Statement.Campus.Name,
+			School:           h.Transaction.Statement.School.Name,
+			PaidOn:           h.Transaction.Date.Format(time.DateOnly),
+		})
+	}
+	return response, nil
+}
+
+func GetInvoiceItemTransactionHistoryByTransaction(transactionNumber string) ([]responses.ItemTransactionHistoryResponse, error) {
+	var response []responses.ItemTransactionHistoryResponse
+	history, err := invoiceRepositories.GetInvoiceItemTransactionsHistoryByTransaction(transactionNumber)
+	if err != nil {
+		return response, err
+	}
+
+	for _, h := range history {
+		addedByName := ""
+		if h.Transaction.Statement.AddedBy.Number != "" {
+			addedByName = h.Transaction.Statement.AddedBy.FirstName + " " + h.Transaction.Statement.AddedBy.LastName
+		}
+
+		studentDetails := ""
+		if h.Transaction.Statement.UserNumber != "" {
+			student, err := repositories.FindStudentByUserNumber(h.Transaction.Statement.UserNumber)
+			if err == nil {
+				studentDetails = student.Surname + " " + student.SecondName + " " + student.ADN
 			}
 		}
 
