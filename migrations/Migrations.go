@@ -58,6 +58,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails"
 	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
+	uuid "github.com/satori/go.uuid"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
 	"gorm.io/gorm"
@@ -282,6 +283,7 @@ func Init() error {
 		&quickbooksModels.QBCustomerMapping{},
 		&quickbooksModels.QBItemMapping{},
 		&quickbooksModels.QBSettings{},
+		&quickbooksModels.QBProfile{},
 		&quickbooksModels.QBAccountType{},
 		&quickbooksModels.QBDepositAccountType{},
 		&quickbooksModels.QBDepositAccount{},
@@ -421,6 +423,8 @@ func Init() error {
 		return err
 	}
 
+	seedDefaultQBProfile()
+
 	return nil
 }
 
@@ -428,3 +432,49 @@ func migrateUserTypeColumn() error {
 	db := config.DB
 	return db.Exec(`ALTER TABLE users MODIFY COLUMN type VARCHAR(32) NOT NULL`).Error
 }
+
+func seedDefaultQBProfile() {
+	var count int64
+	config.DB.Model(&quickbooksModels.QBProfile{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	var settings quickbooksModels.QBSettings
+	username := "admin"
+	password := "admin"
+	depositTo := "Undeposited Funds"
+	incomeAcc := "Service Income"
+
+	if err := config.DB.First(&settings).Error; err == nil {
+		if settings.Username != "" {
+			username = settings.Username
+		}
+		if settings.PasswordHash != "" {
+			password = settings.PasswordHash
+		}
+		if settings.DepositToAccount != "" {
+			depositTo = settings.DepositToAccount
+		}
+		if settings.IncomeAccount != "" {
+			incomeAcc = settings.IncomeAccount
+		}
+	}
+
+	defaultProfile := quickbooksModels.QBProfile{
+		Number:           uuid.NewV4().String(),
+		Name:             "Default QuickBooks Account",
+		Username:         username,
+		PasswordHash:     password,
+		DepositToAccount: depositTo,
+		IncomeAccount:    incomeAcc,
+		FileID:           "{57F3B9B1-86F1-4fcc-B1EE-566DE1813D20}",
+		OwnerID:          "{90A44FB7-33D9-4815-AC85-BC87A7E7D1EB}",
+		IsDefault:        true,
+		IsActive:         true,
+		SchoolNumber:     "default",
+	}
+
+	config.DB.Create(&defaultProfile)
+}
+

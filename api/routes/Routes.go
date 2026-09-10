@@ -1230,6 +1230,13 @@ func SetupRoutes() *gin.Engine {
 			quickbooks.GET("deposit-accounts", quickbooksController.GetDepositAccounts)
 			quickbooks.PUT("deposit-accounts/:id", quickbooksController.UpdateDepositAccount)
 			quickbooks.DELETE("deposit-accounts/:id", quickbooksController.DeleteDepositAccount)
+
+			quickbooks.GET("profiles", quickbooksController.GetProfiles)
+			quickbooks.POST("profiles", quickbooksController.CreateProfile)
+			quickbooks.PUT("profiles/:id", quickbooksController.UpdateProfile)
+			quickbooks.DELETE("profiles/:id", quickbooksController.DeleteProfile)
+			quickbooks.GET("profiles/:id/qwc", quickbooksController.DownloadProfileQWC)
+			quickbooks.GET("customer-mappings/:user_number", quickbooksController.GetCustomerMappings)
 		}
 
 	}

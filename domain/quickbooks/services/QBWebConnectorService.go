@@ -4,11 +4,15 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	uuid "github.com/satori/go.uuid"
 )
+
+// activeSessions maps session tickets to QB profile numbers
+var activeSessions sync.Map
 
 type QBCustomerRet struct {
 	ListID       string `xml:"ListID"`
@@ -104,26 +108,39 @@ type AuthResponse struct {
 	Status string
 }
 
-// Authenticate checks the provided username and password against the QBSettings table.
+// Authenticate checks the provided username and password against QBProfile (and fallback to QBSettings).
 func Authenticate(username, password string) AuthResponse {
-	var settings models.QBSettings
-	if err := config.DB.Where("username = ? AND is_active = ?", username, true).First(&settings).Error; err != nil {
-		return AuthResponse{Ticket: "", Status: "nvu"} // nvu = invalid user
-	}
+	var profile models.QBProfile
+	var profileNumber string
 
-	// For simplicity in this example, we compare passwords.
-	// In production, compare hashes.
-	if settings.PasswordHash != password {
-		return AuthResponse{Ticket: "", Status: "nvu"}
+	if err := config.DB.Where("username = ? AND is_active = ?", username, true).First(&profile).Error; err == nil {
+		if profile.PasswordHash != password {
+			return AuthResponse{Ticket: "", Status: "nvu"} // nvu = invalid user
+		}
+		profileNumber = profile.Number
+	} else {
+		// Fallback to legacy QBSettings
+		var settings models.QBSettings
+		if err := config.DB.Where("username = ? AND is_active = ?", username, true).First(&settings).Error; err != nil {
+			return AuthResponse{Ticket: "", Status: "nvu"} // nvu = invalid user
+		}
+		if settings.PasswordHash != password {
+			return AuthResponse{Ticket: "", Status: "nvu"}
+		}
 	}
 
 	// Generate a unique session ticket
 	ticket := uuid.NewV4().String()
-	
-	// Check if there's any work in the queue
+	activeSessions.Store(ticket, profileNumber)
+
+	// Check if there's any work in the queue for this profile
 	var count int64
-	config.DB.Model(&models.QBSyncQueue{}).Where("status = ?", "QUEUED").Count(&count)
-	
+	query := config.DB.Model(&models.QBSyncQueue{}).Where("status = ?", "QUEUED")
+	if profileNumber != "" {
+		query = query.Where("qb_profile_number = ? OR qb_profile_number = ''", profileNumber)
+	}
+	query.Count(&count)
+
 	if count == 0 {
 		return AuthResponse{Ticket: ticket, Status: "none"} // "none" tells QBWC there is no work
 	}
@@ -133,9 +150,17 @@ func Authenticate(username, password string) AuthResponse {
 
 // SendRequestXML retrieves the oldest queued item and returns it as a qbXML request
 func SendRequestXML(ticket string) string {
+	var profileNumber string
+	if val, ok := activeSessions.Load(ticket); ok {
+		profileNumber, _ = val.(string)
+	}
+
 	var queueItem models.QBSyncQueue
-	
-	err := config.DB.Where("status = ?", "QUEUED").Order("created_at asc").First(&queueItem).Error
+	query := config.DB.Where("status = ?", "QUEUED")
+	if profileNumber != "" {
+		query = query.Where("qb_profile_number = ? OR qb_profile_number = ''", profileNumber)
+	}
+	err := query.Order("created_at asc").First(&queueItem).Error
 	if err != nil {
 		return ""
 	}
@@ -144,18 +169,24 @@ func SendRequestXML(ticket string) string {
 	queueItem.Status = "PROCESSING"
 	config.DB.Save(&queueItem)
 
-	// In a complete implementation, this qbXML string would be constructed dynamically 
-	// using the ItemReceiptNumber and Amount from the transactions table.
-	// For this prototype, we return the raw payload stored in the queue.
 	return `<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError">` + queueItem.QbXmlPayload + `</QBXMLMsgsRq></QBXML>`
 }
 
 // ReceiveResponseXML handles the result from QuickBooks
 func ReceiveResponseXML(ticket, response, hresult, message string) string {
+	var profileNumber string
+	if val, ok := activeSessions.Load(ticket); ok {
+		profileNumber, _ = val.(string)
+	}
+
 	var queueItem models.QBSyncQueue
-	
-	// Find the item we just processed
-	err := config.DB.Where("status = ?", "PROCESSING").Order("created_at asc").First(&queueItem).Error
+
+	// Find the item we just processed for this profile
+	query := config.DB.Where("status = ?", "PROCESSING")
+	if profileNumber != "" {
+		query = query.Where("qb_profile_number = ? OR qb_profile_number = ''", profileNumber)
+	}
+	err := query.Order("created_at asc").First(&queueItem).Error
 	if err == nil {
 		if hresult != "" && hresult != "0x00000000" {
 			// QB itself returned a COM-level error (e.g. bad XML)
@@ -168,23 +199,35 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 				var qbxml QBXMLResponse
 				xml.Unmarshal([]byte(response), &qbxml)
 
+				targetProfileNumber := queueItem.QBProfileNumber
+				if targetProfileNumber == "" {
+					targetProfileNumber = profileNumber
+				}
+
 				if queueItem.ActionType == "CUSTOMER_ADD" && qbxml.QBXMLMsgsRs.CustomerAddRs != nil {
 					ret := qbxml.QBXMLMsgsRs.CustomerAddRs.CustomerRet
 					mapping := models.QBCustomerMapping{
-						UserNumber:     queueItem.UserNumber,
-						QbListID:       ret.ListID,
-						QbEditSequence: ret.EditSequence,
-						QbFullName:     ret.FullName,
+						UserNumber:      queueItem.UserNumber,
+						QBProfileNumber: targetProfileNumber,
+						QbListID:        ret.ListID,
+						QbEditSequence:  ret.EditSequence,
+						QbFullName:      ret.FullName,
 					}
 					config.DB.Create(&mapping)
 				} else if queueItem.ActionType == "CUSTOMER_QUERY" && qbxml.QBXMLMsgsRs.CustomerQueryRs != nil {
 					for _, ret := range qbxml.QBXMLMsgsRs.CustomerQueryRs.CustomerRet {
 						var mapping models.QBCustomerMapping
-						err := config.DB.Where("qb_list_id = ?", ret.ListID).First(&mapping).Error
-						if err == nil {
+						q := config.DB.Where("qb_list_id = ?", ret.ListID)
+						if targetProfileNumber != "" {
+							q = q.Where("qb_profile_number = ? OR qb_profile_number = ''", targetProfileNumber)
+						}
+						if err := q.First(&mapping).Error; err == nil {
 							// Only update if it already exists. Do not create missing students from QB.
 							mapping.QbEditSequence = ret.EditSequence
 							mapping.QbFullName = ret.FullName
+							if mapping.QBProfileNumber == "" {
+								mapping.QBProfileNumber = targetProfileNumber
+							}
 							config.DB.Save(&mapping)
 						}
 					}
@@ -194,28 +237,31 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 				} else if queueItem.ActionType == "ITEM_SERVICE_ADD" && qbxml.QBXMLMsgsRs.ItemServiceAddRs != nil {
 					ret := qbxml.QBXMLMsgsRs.ItemServiceAddRs.ItemServiceRet
 					mapping := models.QBItemMapping{
-						ItemNumber:     queueItem.ItemNumber,
-						QbListID:       ret.ListID,
-						QbEditSequence: ret.EditSequence,
-						QbFullName:     ret.FullName,
+						ItemNumber:      queueItem.ItemNumber,
+						QBProfileNumber: targetProfileNumber,
+						QbListID:        ret.ListID,
+						QbEditSequence:  ret.EditSequence,
+						QbFullName:      ret.FullName,
 					}
 					config.DB.Create(&mapping)
 				} else if queueItem.ActionType == "ITEM_INVENTORY_ADD" && qbxml.QBXMLMsgsRs.ItemInventoryAddRs != nil {
 					ret := qbxml.QBXMLMsgsRs.ItemInventoryAddRs.ItemInventoryRet
 					mapping := models.QBItemMapping{
-						ItemNumber:     queueItem.ItemNumber,
-						QbListID:       ret.ListID,
-						QbEditSequence: ret.EditSequence,
-						QbFullName:     ret.FullName,
+						ItemNumber:      queueItem.ItemNumber,
+						QBProfileNumber: targetProfileNumber,
+						QbListID:        ret.ListID,
+						QbEditSequence:  ret.EditSequence,
+						QbFullName:      ret.FullName,
 					}
 					config.DB.Create(&mapping)
 				} else if queueItem.ActionType == "ITEM_NON_INVENTORY_ADD" && qbxml.QBXMLMsgsRs.ItemNonInventoryAddRs != nil {
 					ret := qbxml.QBXMLMsgsRs.ItemNonInventoryAddRs.ItemNonInventoryRet
 					mapping := models.QBItemMapping{
-						ItemNumber:     queueItem.ItemNumber,
-						QbListID:       ret.ListID,
-						QbEditSequence: ret.EditSequence,
-						QbFullName:     ret.FullName,
+						ItemNumber:      queueItem.ItemNumber,
+						QBProfileNumber: targetProfileNumber,
+						QbListID:        ret.ListID,
+						QbEditSequence:  ret.EditSequence,
+						QbFullName:      ret.FullName,
 					}
 					config.DB.Create(&mapping)
 				}
@@ -224,7 +270,7 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 			// QB returned a non-zero statusCode — extract the actual error from the XML
 			var qbxml QBXMLResponse
 			xml.Unmarshal([]byte(response), &qbxml)
-			
+
 			errMsg := message // fallback to SOAP message
 			if qbxml.QBXMLMsgsRs.SalesReceiptAddRs != nil && qbxml.QBXMLMsgsRs.SalesReceiptAddRs.StatusMessage != "" {
 				errMsg = fmt.Sprintf("[%s] %s", qbxml.QBXMLMsgsRs.SalesReceiptAddRs.StatusCode, qbxml.QBXMLMsgsRs.SalesReceiptAddRs.StatusMessage)
@@ -239,18 +285,23 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 		config.DB.Save(&queueItem)
 	}
 
-	// Check if there is more work to do
+	// Check if there is more work to do for this profile
 	var count int64
-	config.DB.Model(&models.QBSyncQueue{}).Where("status = ?", "QUEUED").Count(&count)
-	
+	remainingQuery := config.DB.Model(&models.QBSyncQueue{}).Where("status = ?", "QUEUED")
+	if profileNumber != "" {
+		remainingQuery = remainingQuery.Where("qb_profile_number = ? OR qb_profile_number = ''", profileNumber)
+	}
+	remainingQuery.Count(&count)
+
 	if count == 0 {
 		return "100" // 100% complete
 	}
-	
+
 	// Rough estimate of completion, e.g., "50"
-	return "50" 
+	return "50"
 }
 
 func CloseConnection(ticket string) {
 	fmt.Println("Closing QBWC session for ticket:", ticket)
+	activeSessions.Delete(ticket)
 }
