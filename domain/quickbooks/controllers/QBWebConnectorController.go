@@ -893,41 +893,140 @@ func GetSyncedReceipts(c *gin.Context) {
 }
 
 type QueueStatusEntry struct {
-	QueueNumber  string `json:"queue_number"`
-	Status       string `json:"status"`
-	ErrorMessage string `json:"error_message"`
+	QueueNumber     string             `json:"queue_number"`
+	Status          string             `json:"status"`
+	ErrorMessage    string             `json:"error_message"`
+	QBProfileNumber string             `json:"qb_profile_number"`
+	ProfileName     string             `json:"profile_name"`
+	Entries         []QueueStatusEntry `json:"entries,omitempty"`
 }
 
 // GetCustomerQueueStatus returns a map of user_number → queue status for CUSTOMER_ADD entries.
 // Supports optional ?profile_number= query parameter.
 func GetCustomerQueueStatus(c *gin.Context) {
 	profileNumber := c.Query("profile_number")
+
+	// Pre-fetch all profiles for name resolution
+	var profiles []qbModels.QBProfile
+	config.DB.Find(&profiles)
+	profileMap := make(map[string]string)
+	var defaultProfileName string
+	for _, p := range profiles {
+		profileMap[p.Number] = p.Name
+		if p.IsDefault {
+			defaultProfileName = p.Name
+		}
+	}
+	if defaultProfileName == "" && len(profiles) > 0 {
+		defaultProfileName = profiles[0].Name
+	}
+	if defaultProfileName == "" {
+		defaultProfileName = "QuickBooks"
+	}
+
 	query := config.DB.Where("action_type = ?", "CUSTOMER_ADD")
+	mapQuery := config.DB
 	if profileNumber != "" {
 		if isDefaultProfile(profileNumber) {
 			query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+			mapQuery = mapQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
 		} else {
 			query = query.Where("qb_profile_number = ?", profileNumber)
+			mapQuery = mapQuery.Where("qb_profile_number = ?", profileNumber)
 		}
 	}
 
 	var items []qbModels.QBSyncQueue
-	query.Find(&items)
+	query.Order("created_at asc").Find(&items)
+
+	var mappings []qbModels.QBCustomerMapping
+	mapQuery.Find(&mappings)
+
+	userEntries := make(map[string][]QueueStatusEntry)
+	seen := make(map[string]map[string]bool)
+
+	for _, item := range items {
+		pNum := item.QBProfileNumber
+		pName := profileMap[pNum]
+		if pName == "" {
+			pName = defaultProfileName
+		}
+
+		entry := QueueStatusEntry{
+			QueueNumber:     item.Number,
+			Status:          item.Status,
+			ErrorMessage:    item.ErrorMessage,
+			QBProfileNumber: pNum,
+			ProfileName:     pName,
+		}
+
+		if seen[item.UserNumber] == nil {
+			seen[item.UserNumber] = make(map[string]bool)
+		}
+		seen[item.UserNumber][pNum] = true
+		userEntries[item.UserNumber] = append(userEntries[item.UserNumber], entry)
+	}
+
+	// Also include confirmed mappings if not already tracked in active queue
+	for _, m := range mappings {
+		pNum := m.QBProfileNumber
+		if seen[m.UserNumber] != nil && seen[m.UserNumber][pNum] {
+			continue
+		}
+		pName := profileMap[pNum]
+		if pName == "" {
+			pName = defaultProfileName
+		}
+
+		entry := QueueStatusEntry{
+			QueueNumber:     "",
+			Status:          "SUCCESS",
+			ErrorMessage:    "",
+			QBProfileNumber: pNum,
+			ProfileName:     pName,
+		}
+
+		if seen[m.UserNumber] == nil {
+			seen[m.UserNumber] = make(map[string]bool)
+		}
+		seen[m.UserNumber][pNum] = true
+		userEntries[m.UserNumber] = append(userEntries[m.UserNumber], entry)
+	}
 
 	result := make(map[string]QueueStatusEntry)
-	for _, item := range items {
-		result[item.UserNumber] = QueueStatusEntry{
-			QueueNumber:  item.Number,
-			Status:       item.Status,
-			ErrorMessage: item.ErrorMessage,
+	for userNumber, entries := range userEntries {
+		if len(entries) == 0 {
+			continue
 		}
+		// Primary is the latest entry, with all entries listed
+		primary := entries[len(entries)-1]
+		primary.Entries = entries
+		result[userNumber] = primary
 	}
+
 	c.JSON(http.StatusOK, result)
 }
 
 // GetItemQueueStatus returns a map of item_number → queue status.
 // Covers services (ITEM_SERVICE_ADD) and both product types (ITEM_INVENTORY_ADD, ITEM_NON_INVENTORY_ADD).
 func GetItemQueueStatus(c *gin.Context) {
+	var profiles []qbModels.QBProfile
+	config.DB.Find(&profiles)
+	profileMap := make(map[string]string)
+	var defaultProfileName string
+	for _, p := range profiles {
+		profileMap[p.Number] = p.Name
+		if p.IsDefault {
+			defaultProfileName = p.Name
+		}
+	}
+	if defaultProfileName == "" && len(profiles) > 0 {
+		defaultProfileName = profiles[0].Name
+	}
+	if defaultProfileName == "" {
+		defaultProfileName = "QuickBooks"
+	}
+
 	var items []qbModels.QBSyncQueue
 	config.DB.Where(
 		"action_type IN ?",
@@ -936,10 +1035,16 @@ func GetItemQueueStatus(c *gin.Context) {
 
 	result := make(map[string]QueueStatusEntry)
 	for _, item := range items {
+		pName := profileMap[item.QBProfileNumber]
+		if pName == "" {
+			pName = defaultProfileName
+		}
 		result[item.ItemNumber] = QueueStatusEntry{
-			QueueNumber:  item.Number,
-			Status:       item.Status,
-			ErrorMessage: item.ErrorMessage,
+			QueueNumber:     item.Number,
+			Status:          item.Status,
+			ErrorMessage:    item.ErrorMessage,
+			QBProfileNumber: item.QBProfileNumber,
+			ProfileName:     pName,
 		}
 	}
 	c.JSON(http.StatusOK, result)
