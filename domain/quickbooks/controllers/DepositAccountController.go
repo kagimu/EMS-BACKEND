@@ -11,7 +11,8 @@ import (
 func CreateDepositAccount(c *gin.Context) {
 	var input struct {
 		Name                 string `json:"name" binding:"required"`
-		DepositAccountTypeID string `json:"deposit_account_type_id" binding:"required"`
+		AccountTypeID        string `json:"account_type_id"`
+		DepositAccountTypeID string `json:"deposit_account_type_id"`
 		Details              string `json:"details"`
 	}
 
@@ -20,9 +21,15 @@ func CreateDepositAccount(c *gin.Context) {
 		return
 	}
 
+	accountTypeID := input.AccountTypeID
+	if accountTypeID == "" {
+		accountTypeID = input.DepositAccountTypeID
+	}
+
 	depositAccount := models.QBDepositAccount{
 		Number:               uuid.NewV4().String(),
 		Name:                 input.Name,
+		AccountTypeID:        accountTypeID,
 		DepositAccountTypeID: input.DepositAccountTypeID,
 		Details:              input.Details,
 		IsActive:             true,
@@ -33,14 +40,14 @@ func CreateDepositAccount(c *gin.Context) {
 		return
 	}
 
-	config.DB.Preload("DepositAccountType").First(&depositAccount, "number = ?", depositAccount.Number)
+	config.DB.Preload("AccountType").Preload("DepositAccountType").First(&depositAccount, "number = ?", depositAccount.Number)
 
 	c.JSON(http.StatusCreated, depositAccount)
 }
 
 func GetDepositAccounts(c *gin.Context) {
 	var depositAccounts []models.QBDepositAccount
-	if err := config.DB.Preload("DepositAccountType").Find(&depositAccounts).Error; err != nil {
+	if err := config.DB.Preload("AccountType").Preload("DepositAccountType").Find(&depositAccounts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch deposit accounts"})
 		return
 	}
@@ -58,7 +65,8 @@ func UpdateDepositAccount(c *gin.Context) {
 
 	var input struct {
 		Name                 string `json:"name" binding:"required"`
-		DepositAccountTypeID string `json:"deposit_account_type_id" binding:"required"`
+		AccountTypeID        string `json:"account_type_id"`
+		DepositAccountTypeID string `json:"deposit_account_type_id"`
 		Details              string `json:"details"`
 		IsActive             bool   `json:"is_active"`
 	}
@@ -68,8 +76,16 @@ func UpdateDepositAccount(c *gin.Context) {
 		return
 	}
 
+	accountTypeID := input.AccountTypeID
+	if accountTypeID == "" {
+		accountTypeID = input.DepositAccountTypeID
+	}
+
 	depositAccount.Name = input.Name
-	depositAccount.DepositAccountTypeID = input.DepositAccountTypeID
+	depositAccount.AccountTypeID = accountTypeID
+	if input.DepositAccountTypeID != "" {
+		depositAccount.DepositAccountTypeID = input.DepositAccountTypeID
+	}
 	depositAccount.Details = input.Details
 	depositAccount.IsActive = input.IsActive
 
@@ -78,7 +94,7 @@ func UpdateDepositAccount(c *gin.Context) {
 		return
 	}
 
-	config.DB.Preload("DepositAccountType").First(&depositAccount, "number = ?", depositAccount.Number)
+	config.DB.Preload("AccountType").Preload("DepositAccountType").First(&depositAccount, "number = ?", depositAccount.Number)
 
 	c.JSON(http.StatusOK, depositAccount)
 }
