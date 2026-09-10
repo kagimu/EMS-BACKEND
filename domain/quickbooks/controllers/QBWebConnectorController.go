@@ -500,6 +500,136 @@ func QueueItemAdd(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Item addition queued for QuickBooks sync successfully."})
 }
 
+// QueueProductAdd handles POST /main/quickbooks/products.
+// It queues an Inventory Item or Non-Inventory Item in QuickBooks.
+type QueueProductRequest struct {
+	ItemNumber  string `json:"item_number" binding:"required"`
+	AccountID   string `json:"account_id"`
+	ProductType string `json:"product_type" binding:"required"` // "Inventory" | "NonInventory"
+}
+
+func QueueProductAdd(c *gin.Context) {
+	var req QueueProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate product type
+	if req.ProductType != "Inventory" && req.ProductType != "NonInventory" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "product_type must be 'Inventory' or 'NonInventory'"})
+		return
+	}
+
+	// Determine the QB action type string for this product type
+	var actionType string
+	switch req.ProductType {
+	case "Inventory":
+		actionType = "ITEM_INVENTORY_ADD"
+	case "NonInventory":
+		actionType = "ITEM_NON_INVENTORY_ADD"
+	}
+
+	// Check if already mapped in QB
+	var mapping qbModels.QBItemMapping
+	if err := config.DB.Where("item_number = ?", req.ItemNumber).First(&mapping).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This product is already exported to QuickBooks"})
+		return
+	}
+
+	// Check if already in the queue with a non-failed status
+	var existing qbModels.QBSyncQueue
+	if err := config.DB.Where(
+		"item_number = ? AND status IN ?",
+		req.ItemNumber, []string{"QUEUED", "PROCESSING", "SUCCESS"},
+	).First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This product is already queued for QuickBooks (status: " + existing.Status + ")"})
+		return
+	}
+
+	// Load the item record
+	var item itemModels.Item
+	if err := config.DB.Where("number = ?", req.ItemNumber).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+
+	// Derive the QB item name (use numeric code when available for uniqueness)
+	itemCode := item.Name
+	if item.Code != 0 {
+		itemCode = fmt.Sprintf("%d", item.Code)
+	}
+	desc := item.Name
+	price := fmt.Sprintf("%.2f", item.Cost)
+
+	// Resolve income account name
+	accountName := "Sales"
+	if req.AccountID != "" {
+		var chartOfAccount qbModels.QBChartOfAccount
+		if err := config.DB.Where("number = ?", req.AccountID).First(&chartOfAccount).Error; err == nil {
+			accountName = chartOfAccount.Name
+		}
+	} else {
+		var qbSettings qbModels.QBSettings
+		if err := config.DB.First(&qbSettings).Error; err == nil && qbSettings.IncomeAccount != "" {
+			accountName = qbSettings.IncomeAccount
+		}
+	}
+
+	// Build the QB XML payload based on product type
+	var qbxml string
+	switch req.ProductType {
+	case "Inventory":
+		qbxml = `<ItemInventoryAddRq>
+	<ItemInventoryAdd>
+		<Name>` + escapeXML(itemCode) + `</Name>
+		<IsActive>true</IsActive>
+		<SalesDesc>` + escapeXML(desc) + `</SalesDesc>
+		<SalesPrice>` + price + `</SalesPrice>
+		<IncomeAccountRef>
+			<FullName>` + escapeXML(accountName) + `</FullName>
+		</IncomeAccountRef>
+		<AssetAccountRef>
+			<FullName>Inventory Asset</FullName>
+		</AssetAccountRef>
+		<COGSAccountRef>
+			<FullName>Cost of Goods Sold</FullName>
+		</COGSAccountRef>
+	</ItemInventoryAdd>
+</ItemInventoryAddRq>`
+
+	case "NonInventory":
+		qbxml = `<ItemNonInventoryAddRq>
+	<ItemNonInventoryAdd>
+		<Name>` + escapeXML(itemCode) + `</Name>
+		<IsActive>true</IsActive>
+		<SalesOrPurchase>
+			<Desc>` + escapeXML(desc) + `</Desc>
+			<Price>` + price + `</Price>
+			<AccountRef>
+				<FullName>` + escapeXML(accountName) + `</FullName>
+			</AccountRef>
+		</SalesOrPurchase>
+	</ItemNonInventoryAdd>
+</ItemNonInventoryAddRq>`
+	}
+
+	queue := qbModels.QBSyncQueue{
+		Number:       uuid.NewV4().String(),
+		ActionType:   actionType,
+		Status:       "QUEUED",
+		QbXmlPayload: qbxml,
+		ItemNumber:   req.ItemNumber,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue product addition"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product queued for QuickBooks export successfully."})
+}
+
 type SyncedItemResponse struct {
 	ItemNumber string  `json:"item_number"`
 	ItemName   string  `json:"item_name"`
@@ -576,10 +706,14 @@ func GetCustomerQueueStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// GetItemQueueStatus returns a map of item_number → queue status for ITEM_SERVICE_ADD entries.
+// GetItemQueueStatus returns a map of item_number → queue status.
+// Covers services (ITEM_SERVICE_ADD) and both product types (ITEM_INVENTORY_ADD, ITEM_NON_INVENTORY_ADD).
 func GetItemQueueStatus(c *gin.Context) {
 	var items []qbModels.QBSyncQueue
-	config.DB.Where("action_type = ?", "ITEM_SERVICE_ADD").Find(&items)
+	config.DB.Where(
+		"action_type IN ?",
+		[]string{"ITEM_SERVICE_ADD", "ITEM_INVENTORY_ADD", "ITEM_NON_INVENTORY_ADD"},
+	).Find(&items)
 
 	result := make(map[string]QueueStatusEntry)
 	for _, item := range items {

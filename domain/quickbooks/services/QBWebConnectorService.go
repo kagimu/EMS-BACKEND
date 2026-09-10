@@ -57,13 +57,45 @@ type QBItemServiceAddRs struct {
 	ItemServiceRet QBItemServiceRet `xml:"ItemServiceRet"`
 }
 
+// Inventory Item response structs
+type QBItemInventoryRet struct {
+	ListID       string `xml:"ListID"`
+	EditSequence string `xml:"EditSequence"`
+	Name         string `xml:"Name"`
+	FullName     string `xml:"FullName"`
+}
+
+type QBItemInventoryAddRs struct {
+	XMLName           xml.Name           `xml:"ItemInventoryAddRs"`
+	StatusCode        string             `xml:"statusCode,attr"`
+	StatusMessage     string             `xml:"statusMessage,attr"`
+	ItemInventoryRet  QBItemInventoryRet `xml:"ItemInventoryRet"`
+}
+
+// Non-Inventory Item response structs
+type QBItemNonInventoryRet struct {
+	ListID       string `xml:"ListID"`
+	EditSequence string `xml:"EditSequence"`
+	Name         string `xml:"Name"`
+	FullName     string `xml:"FullName"`
+}
+
+type QBItemNonInventoryAddRs struct {
+	XMLName              xml.Name              `xml:"ItemNonInventoryAddRs"`
+	StatusCode           string                `xml:"statusCode,attr"`
+	StatusMessage        string                `xml:"statusMessage,attr"`
+	ItemNonInventoryRet  QBItemNonInventoryRet `xml:"ItemNonInventoryRet"`
+}
+
 type QBXMLResponse struct {
 	XMLName     xml.Name `xml:"QBXML"`
 	QBXMLMsgsRs struct {
-		CustomerQueryRs   *QBCustomerQueryRs   `xml:"CustomerQueryRs"`
-		CustomerAddRs     *QBCustomerAddRs     `xml:"CustomerAddRs"`
-		SalesReceiptAddRs *QBSalesReceiptAddRs `xml:"SalesReceiptAddRs"`
-		ItemServiceAddRs  *QBItemServiceAddRs  `xml:"ItemServiceAddRs"`
+		CustomerQueryRs        *QBCustomerQueryRs        `xml:"CustomerQueryRs"`
+		CustomerAddRs          *QBCustomerAddRs          `xml:"CustomerAddRs"`
+		SalesReceiptAddRs      *QBSalesReceiptAddRs      `xml:"SalesReceiptAddRs"`
+		ItemServiceAddRs       *QBItemServiceAddRs       `xml:"ItemServiceAddRs"`
+		ItemInventoryAddRs     *QBItemInventoryAddRs     `xml:"ItemInventoryAddRs"`
+		ItemNonInventoryAddRs  *QBItemNonInventoryAddRs  `xml:"ItemNonInventoryAddRs"`
 	} `xml:"QBXMLMsgsRs"`
 }
 
@@ -132,7 +164,7 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 		} else if strings.Contains(response, `statusCode="0"`) {
 			queueItem.Status = "SUCCESS"
 
-			if queueItem.ActionType == "CUSTOMER_ADD" || queueItem.ActionType == "CUSTOMER_QUERY" || queueItem.ActionType == "SALES_RECEIPT_ADD" || queueItem.ActionType == "ITEM_SERVICE_ADD" {
+			if queueItem.ActionType == "CUSTOMER_ADD" || queueItem.ActionType == "CUSTOMER_QUERY" || queueItem.ActionType == "SALES_RECEIPT_ADD" || queueItem.ActionType == "ITEM_SERVICE_ADD" || queueItem.ActionType == "ITEM_INVENTORY_ADD" || queueItem.ActionType == "ITEM_NON_INVENTORY_ADD" {
 				var qbxml QBXMLResponse
 				xml.Unmarshal([]byte(response), &qbxml)
 
@@ -161,6 +193,24 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 					queueItem.QbTxnID = qbxml.QBXMLMsgsRs.SalesReceiptAddRs.SalesReceiptRet.TxnID
 				} else if queueItem.ActionType == "ITEM_SERVICE_ADD" && qbxml.QBXMLMsgsRs.ItemServiceAddRs != nil {
 					ret := qbxml.QBXMLMsgsRs.ItemServiceAddRs.ItemServiceRet
+					mapping := models.QBItemMapping{
+						ItemNumber:     queueItem.ItemNumber,
+						QbListID:       ret.ListID,
+						QbEditSequence: ret.EditSequence,
+						QbFullName:     ret.FullName,
+					}
+					config.DB.Create(&mapping)
+				} else if queueItem.ActionType == "ITEM_INVENTORY_ADD" && qbxml.QBXMLMsgsRs.ItemInventoryAddRs != nil {
+					ret := qbxml.QBXMLMsgsRs.ItemInventoryAddRs.ItemInventoryRet
+					mapping := models.QBItemMapping{
+						ItemNumber:     queueItem.ItemNumber,
+						QbListID:       ret.ListID,
+						QbEditSequence: ret.EditSequence,
+						QbFullName:     ret.FullName,
+					}
+					config.DB.Create(&mapping)
+				} else if queueItem.ActionType == "ITEM_NON_INVENTORY_ADD" && qbxml.QBXMLMsgsRs.ItemNonInventoryAddRs != nil {
+					ret := qbxml.QBXMLMsgsRs.ItemNonInventoryAddRs.ItemNonInventoryRet
 					mapping := models.QBItemMapping{
 						ItemNumber:     queueItem.ItemNumber,
 						QbListID:       ret.ListID,
