@@ -283,6 +283,7 @@ func Init() error {
 		&quickbooksModels.QBItemMapping{},
 		&quickbooksModels.QBSettings{},
 		&quickbooksModels.QBAccountType{},
+		&quickbooksModels.QBDepositAccountType{},
 		&quickbooksModels.QBDepositAccount{},
 		&quickbooksModels.QBChartOfAccount{},
 		&models4.Attendance{},

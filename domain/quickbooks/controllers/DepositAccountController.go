@@ -10,8 +10,9 @@ import (
 
 func CreateDepositAccount(c *gin.Context) {
 	var input struct {
-		Name    string `json:"name" binding:"required"`
-		Details string `json:"details"`
+		Name                 string `json:"name" binding:"required"`
+		DepositAccountTypeID string `json:"deposit_account_type_id" binding:"required"`
+		Details              string `json:"details"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -20,10 +21,11 @@ func CreateDepositAccount(c *gin.Context) {
 	}
 
 	depositAccount := models.QBDepositAccount{
-		Number:   uuid.NewV4().String(),
-		Name:     input.Name,
-		Details:  input.Details,
-		IsActive: true,
+		Number:               uuid.NewV4().String(),
+		Name:                 input.Name,
+		DepositAccountTypeID: input.DepositAccountTypeID,
+		Details:              input.Details,
+		IsActive:             true,
 	}
 
 	if err := config.DB.Create(&depositAccount).Error; err != nil {
@@ -31,12 +33,14 @@ func CreateDepositAccount(c *gin.Context) {
 		return
 	}
 
+	config.DB.Preload("DepositAccountType").First(&depositAccount, "number = ?", depositAccount.Number)
+
 	c.JSON(http.StatusCreated, depositAccount)
 }
 
 func GetDepositAccounts(c *gin.Context) {
 	var depositAccounts []models.QBDepositAccount
-	if err := config.DB.Find(&depositAccounts).Error; err != nil {
+	if err := config.DB.Preload("DepositAccountType").Find(&depositAccounts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch deposit accounts"})
 		return
 	}
@@ -53,9 +57,10 @@ func UpdateDepositAccount(c *gin.Context) {
 	}
 
 	var input struct {
-		Name     string `json:"name" binding:"required"`
-		Details  string `json:"details"`
-		IsActive bool   `json:"is_active"`
+		Name                 string `json:"name" binding:"required"`
+		DepositAccountTypeID string `json:"deposit_account_type_id" binding:"required"`
+		Details              string `json:"details"`
+		IsActive             bool   `json:"is_active"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -64,6 +69,7 @@ func UpdateDepositAccount(c *gin.Context) {
 	}
 
 	depositAccount.Name = input.Name
+	depositAccount.DepositAccountTypeID = input.DepositAccountTypeID
 	depositAccount.Details = input.Details
 	depositAccount.IsActive = input.IsActive
 
@@ -71,6 +77,8 @@ func UpdateDepositAccount(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update deposit account"})
 		return
 	}
+
+	config.DB.Preload("DepositAccountType").First(&depositAccount, "number = ?", depositAccount.Number)
 
 	c.JSON(http.StatusOK, depositAccount)
 }

@@ -1221,6 +1221,11 @@ func SetupRoutes() *gin.Engine {
 			quickbooks.PUT("chart-of-accounts/:id", quickbooksController.UpdateChartOfAccount)
 			quickbooks.DELETE("chart-of-accounts/:id", quickbooksController.DeleteChartOfAccount)
 
+			quickbooks.POST("deposit-account-types", quickbooksController.CreateDepositAccountType)
+			quickbooks.GET("deposit-account-types", quickbooksController.GetDepositAccountTypes)
+			quickbooks.PUT("deposit-account-types/:id", quickbooksController.UpdateDepositAccountType)
+			quickbooks.DELETE("deposit-account-types/:id", quickbooksController.DeleteDepositAccountType)
+
 			quickbooks.POST("deposit-accounts", quickbooksController.CreateDepositAccount)
 			quickbooks.GET("deposit-accounts", quickbooksController.GetDepositAccounts)
 			quickbooks.PUT("deposit-accounts/:id", quickbooksController.UpdateDepositAccount)
