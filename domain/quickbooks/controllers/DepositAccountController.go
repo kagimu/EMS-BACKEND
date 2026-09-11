@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
-	"net/http"
 )
 
 func CreateDepositAccount(c *gin.Context) {
@@ -38,7 +40,8 @@ func CreateDepositAccount(c *gin.Context) {
 	}
 
 	if err := config.DB.Create(&depositAccount).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create deposit account"})
+		log.Printf("[CreateDepositAccount] DB error: %v | payload: name=%s accountTypeID=%s", err, input.Name, accountTypeID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create deposit account", "detail": err.Error()})
 		return
 	}
 
