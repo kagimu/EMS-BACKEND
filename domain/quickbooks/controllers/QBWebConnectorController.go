@@ -1240,3 +1240,14 @@ func DeleteQueueEntry(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Queue entry deleted. You can now re-export this record."})
 }
+
+// DeleteAllQueueErrors deletes all FAILED queue entries in one shot.
+func DeleteAllQueueErrors(c *gin.Context) {
+	result := config.DB.Unscoped().Where("status = ?", "FAILED").Delete(&qbModels.QBSyncQueue{})
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear sync errors"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "All sync errors cleared.", "deleted": result.RowsAffected})
+}
+
