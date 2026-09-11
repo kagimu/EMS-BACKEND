@@ -27,12 +27,14 @@ func CreateDepositAccount(c *gin.Context) {
 	}
 
 	depositAccount := models.QBDepositAccount{
-		Number:               uuid.NewV4().String(),
-		Name:                 input.Name,
-		AccountTypeID:        accountTypeID,
-		DepositAccountTypeID: input.DepositAccountTypeID,
-		Details:              input.Details,
-		IsActive:             true,
+		Number:        uuid.NewV4().String(),
+		Name:          input.Name,
+		AccountTypeID: accountTypeID,
+		Details:       input.Details,
+		IsActive:      true,
+	}
+	if input.DepositAccountTypeID != "" {
+		depositAccount.DepositAccountTypeID = input.DepositAccountTypeID
 	}
 
 	if err := config.DB.Create(&depositAccount).Error; err != nil {
