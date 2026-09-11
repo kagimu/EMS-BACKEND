@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -12,10 +11,9 @@ import (
 
 func CreateDepositAccount(c *gin.Context) {
 	var input struct {
-		Name                 string `json:"name" binding:"required"`
-		AccountTypeID        string `json:"account_type_id"`
-		DepositAccountTypeID string `json:"deposit_account_type_id"`
-		Details              string `json:"details"`
+		Name          string `json:"name" binding:"required"`
+		AccountTypeID string `json:"account_type_id"`
+		Details       string `json:"details"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -23,36 +21,27 @@ func CreateDepositAccount(c *gin.Context) {
 		return
 	}
 
-	accountTypeID := input.AccountTypeID
-	if accountTypeID == "" {
-		accountTypeID = input.DepositAccountTypeID
-	}
-
 	depositAccount := models.QBDepositAccount{
 		Number:        uuid.NewV4().String(),
 		Name:          input.Name,
-		AccountTypeID: accountTypeID,
+		AccountTypeID: input.AccountTypeID,
 		Details:       input.Details,
 		IsActive:      true,
 	}
-	if input.DepositAccountTypeID != "" {
-		depositAccount.DepositAccountTypeID = input.DepositAccountTypeID
-	}
 
 	if err := config.DB.Create(&depositAccount).Error; err != nil {
-		log.Printf("[CreateDepositAccount] DB error: %v | payload: name=%s accountTypeID=%s", err, input.Name, accountTypeID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create deposit account", "detail": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create deposit account"})
 		return
 	}
 
-	config.DB.Preload("AccountType").Preload("DepositAccountType").First(&depositAccount, "number = ?", depositAccount.Number)
+	config.DB.Preload("AccountType").First(&depositAccount, "number = ?", depositAccount.Number)
 
 	c.JSON(http.StatusCreated, depositAccount)
 }
 
 func GetDepositAccounts(c *gin.Context) {
 	var depositAccounts []models.QBDepositAccount
-	if err := config.DB.Preload("AccountType").Preload("DepositAccountType").Find(&depositAccounts).Error; err != nil {
+	if err := config.DB.Preload("AccountType").Find(&depositAccounts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch deposit accounts"})
 		return
 	}
@@ -69,11 +58,10 @@ func UpdateDepositAccount(c *gin.Context) {
 	}
 
 	var input struct {
-		Name                 string `json:"name" binding:"required"`
-		AccountTypeID        string `json:"account_type_id"`
-		DepositAccountTypeID string `json:"deposit_account_type_id"`
-		Details              string `json:"details"`
-		IsActive             bool   `json:"is_active"`
+		Name          string `json:"name" binding:"required"`
+		AccountTypeID string `json:"account_type_id"`
+		Details       string `json:"details"`
+		IsActive      bool   `json:"is_active"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -81,16 +69,8 @@ func UpdateDepositAccount(c *gin.Context) {
 		return
 	}
 
-	accountTypeID := input.AccountTypeID
-	if accountTypeID == "" {
-		accountTypeID = input.DepositAccountTypeID
-	}
-
 	depositAccount.Name = input.Name
-	depositAccount.AccountTypeID = accountTypeID
-	if input.DepositAccountTypeID != "" {
-		depositAccount.DepositAccountTypeID = input.DepositAccountTypeID
-	}
+	depositAccount.AccountTypeID = input.AccountTypeID
 	depositAccount.Details = input.Details
 	depositAccount.IsActive = input.IsActive
 
@@ -99,7 +79,7 @@ func UpdateDepositAccount(c *gin.Context) {
 		return
 	}
 
-	config.DB.Preload("AccountType").Preload("DepositAccountType").First(&depositAccount, "number = ?", depositAccount.Number)
+	config.DB.Preload("AccountType").First(&depositAccount, "number = ?", depositAccount.Number)
 
 	c.JSON(http.StatusOK, depositAccount)
 }
