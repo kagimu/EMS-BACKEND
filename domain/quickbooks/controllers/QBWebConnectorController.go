@@ -207,6 +207,19 @@ func QueueTransaction(c *gin.Context) {
 		if err := custQuery.First(&mapping).Error; err == nil {
 			customerRef = mapping.QbFullName
 		} else {
+			// Check if it's currently queued
+			var pendingQueue qbModels.QBSyncQueue
+			pendingQuery := config.DB.Where("user_number = ? AND action_type IN ('CUSTOMER_ADD', 'CUSTOMER_QUERY') AND status IN ('QUEUED', 'PROCESSING')", userNumber)
+			if isDef {
+				pendingQuery = pendingQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+			} else {
+				pendingQuery = pendingQuery.Where("qb_profile_number = ?", profileNumber)
+			}
+			
+			if err := pendingQuery.First(&pendingQueue).Error; err == nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' is currently queued for Quickbooks export but it is still processing. Please wait for the QuickBooks Web Connector to finish syncing."})
+				return
+			}
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' has not been exported to QuickBooks yet for this account. Please export the student first from the Enrollment page."})
 			return
 		}
@@ -226,6 +239,20 @@ func QueueTransaction(c *gin.Context) {
 	if err := itemQuery.First(&itemMapping).Error; err == nil {
 		itemCode = itemMapping.QbFullName
 	} else {
+		// Check if the item is currently queued
+		var pendingQueue qbModels.QBSyncQueue
+		pendingQuery := config.DB.Where("item_number = ? AND action_type IN ('ITEM_SERVICE_ADD', 'ITEM_INVENTORY_ADD', 'ITEM_NON_INVENTORY_ADD') AND status IN ('QUEUED', 'PROCESSING')", itemTx.InvoiceItem.Item.Number)
+		if isDef {
+			pendingQuery = pendingQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			pendingQuery = pendingQuery.Where("qb_profile_number = ?", profileNumber)
+		}
+		
+		if err := pendingQuery.First(&pendingQueue).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' is currently queued for Quickbooks export but it is still processing. Please wait for the QuickBooks Web Connector to finish syncing."})
+			return
+		}
+
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' has not been exported to QuickBooks yet for this account. Please export the item first from the Services page."})
 		return
 	}
@@ -344,6 +371,19 @@ func QueueCustomerAdd(c *gin.Context) {
 	}
 	if err := mapQuery.First(&mapping).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This user is already exported to this QuickBooks account"})
+		return
+	}
+
+	// Check if already in queue for this profile
+	var pendingQueue qbModels.QBSyncQueue
+	pendingQuery := config.DB.Where("user_number = ? AND action_type = 'CUSTOMER_ADD' AND status IN ('QUEUED', 'PROCESSING')", req.UserNumber)
+	if isDef {
+		pendingQuery = pendingQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		pendingQuery = pendingQuery.Where("qb_profile_number = ?", profileNumber)
+	}
+	if err := pendingQuery.First(&pendingQueue).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This user is already queued for export to this QuickBooks account and is waiting to be synced. Please wait for QuickBooks Web Connector to process it."})
 		return
 	}
 
