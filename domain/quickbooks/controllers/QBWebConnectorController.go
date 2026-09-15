@@ -220,6 +220,21 @@ func QueueTransaction(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' is currently queued for Quickbooks export but it is still processing. Please wait for the QuickBooks Web Connector to finish syncing."})
 				return
 			}
+			
+			// Check if it failed
+			var failedQueue qbModels.QBSyncQueue
+			failedQuery := config.DB.Where("user_number = ? AND action_type IN ('CUSTOMER_ADD', 'CUSTOMER_QUERY') AND status = 'FAILED'", userNumber)
+			if isDef {
+				failedQuery = failedQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+			} else {
+				failedQuery = failedQuery.Where("qb_profile_number = ?", profileNumber)
+			}
+			
+			if err := failedQuery.First(&failedQueue).Error; err == nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' was queued for Quickbooks export to this account, but the sync FAILED: " + failedQueue.ErrorMessage + ". Please clear the failed queue entry in the Enrollment page and re-export the student."})
+				return
+			}
+
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' has not been exported to QuickBooks yet for this account. Please export the student first from the Enrollment page."})
 			return
 		}
@@ -250,6 +265,20 @@ func QueueTransaction(c *gin.Context) {
 		
 		if err := pendingQuery.First(&pendingQueue).Error; err == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' is currently queued for Quickbooks export but it is still processing. Please wait for the QuickBooks Web Connector to finish syncing."})
+			return
+		}
+
+		// Check if it failed
+		var failedQueue qbModels.QBSyncQueue
+		failedQuery := config.DB.Where("item_number = ? AND action_type IN ('ITEM_SERVICE_ADD', 'ITEM_INVENTORY_ADD', 'ITEM_NON_INVENTORY_ADD') AND status = 'FAILED'", itemTx.InvoiceItem.Item.Number)
+		if isDef {
+			failedQuery = failedQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			failedQuery = failedQuery.Where("qb_profile_number = ?", profileNumber)
+		}
+		
+		if err := failedQuery.First(&failedQueue).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' was queued for Quickbooks export to this account, but the sync FAILED: " + failedQueue.ErrorMessage + ". Please clear the failed queue entry and re-export the item."})
 			return
 		}
 
