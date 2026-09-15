@@ -387,18 +387,6 @@ func QueueCustomerAdd(c *gin.Context) {
 		return
 	}
 
-	// Check if already queued for this profile
-	var existing qbModels.QBSyncQueue
-	queueQuery := config.DB.Where("user_number = ? AND action_type = ? AND status IN ?", req.UserNumber, "CUSTOMER_ADD", []string{"QUEUED", "PROCESSING", "SUCCESS"})
-	if isDef {
-		queueQuery = queueQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
-	} else {
-		queueQuery = queueQuery.Where("qb_profile_number = ?", profileNumber)
-	}
-	if err := queueQuery.First(&existing).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "This student is already queued for this QuickBooks account (status: " + existing.Status + ")"})
-		return
-	}
 
 	var user authModels.User
 	if err := config.DB.Where("number = ?", req.UserNumber).First(&user).Error; err != nil {
@@ -460,14 +448,26 @@ func QueueCustomerAdd(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Customer addition queued for QuickBooks sync successfully."})
 }
 
+type QueueCustomerQueryRequest struct {
+	QBProfileNumber string `json:"qb_profile_number"`
+}
+
 func QueueCustomerQuery(c *gin.Context) {
+	var req QueueCustomerQueryRequest
+	if err := c.ShouldBindJSON(&req); err != nil && err.Error() != "EOF" {
+		// Ignore EOF (empty body) and proceed with default
+	}
+
+	profileNumber := resolveProfileNumber(req.QBProfileNumber)
+
 	qbxml := `<CustomerQueryRq></CustomerQueryRq>`
 
 	queue := qbModels.QBSyncQueue{
-		Number:       uuid.NewV4().String(),
-		ActionType:   "CUSTOMER_QUERY",
-		Status:       "QUEUED",
-		QbXmlPayload: qbxml,
+		Number:          uuid.NewV4().String(),
+		ActionType:      "CUSTOMER_QUERY",
+		Status:          "QUEUED",
+		QbXmlPayload:    qbxml,
+		QBProfileNumber: profileNumber,
 	}
 
 	if err := config.DB.Create(&queue).Error; err != nil {
@@ -681,14 +681,14 @@ func QueueItemAdd(c *gin.Context) {
 
 	// Check if already queued
 	var existing qbModels.QBSyncQueue
-	queueQuery := config.DB.Where("item_number = ? AND status IN ?", req.ItemNumber, []string{"QUEUED", "PROCESSING", "SUCCESS"})
+	queueQuery := config.DB.Where("item_number = ? AND status IN ?", req.ItemNumber, []string{"QUEUED", "PROCESSING"})
 	if isDef {
 		queueQuery = queueQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
 	} else {
 		queueQuery = queueQuery.Where("qb_profile_number = ?", profileNumber)
 	}
 	if err := queueQuery.First(&existing).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "This item has already been queued for QuickBooks (status: " + existing.Status + ")"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This item is currently queued for export and is waiting for QuickBooks Web Connector to sync."})
 		return
 	}
 

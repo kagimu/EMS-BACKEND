@@ -14,6 +14,18 @@ import (
 // activeSessions maps session tickets to QB profile numbers
 var activeSessions sync.Map
 
+// Helper to check if a profile is the default one
+func isDefaultProfile(profileNumber string) bool {
+	if profileNumber == "" {
+		return true
+	}
+	var p models.QBProfile
+	if err := config.DB.Where("number = ?", profileNumber).First(&p).Error; err == nil {
+		return p.IsDefault
+	}
+	return false
+}
+
 type QBCustomerRet struct {
 	ListID       string `xml:"ListID"`
 	EditSequence string `xml:"EditSequence"`
@@ -136,8 +148,10 @@ func Authenticate(username, password string) AuthResponse {
 	// Check if there's any work in the queue for this profile
 	var count int64
 	query := config.DB.Model(&models.QBSyncQueue{}).Where("status = ?", "QUEUED")
-	if profileNumber != "" {
-		query = query.Where("qb_profile_number = ? OR qb_profile_number = ''", profileNumber)
+	if isDefaultProfile(profileNumber) {
+		query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		query = query.Where("qb_profile_number = ?", profileNumber)
 	}
 	query.Count(&count)
 
@@ -157,8 +171,10 @@ func SendRequestXML(ticket string) string {
 
 	var queueItem models.QBSyncQueue
 	query := config.DB.Where("status = ?", "QUEUED")
-	if profileNumber != "" {
-		query = query.Where("qb_profile_number = ? OR qb_profile_number = ''", profileNumber)
+	if isDefaultProfile(profileNumber) {
+		query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		query = query.Where("qb_profile_number = ?", profileNumber)
 	}
 	err := query.Order("created_at asc").First(&queueItem).Error
 	if err != nil {
@@ -183,8 +199,10 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 
 	// Find the item we just processed for this profile
 	query := config.DB.Where("status = ?", "PROCESSING")
-	if profileNumber != "" {
-		query = query.Where("qb_profile_number = ? OR qb_profile_number = ''", profileNumber)
+	if isDefaultProfile(profileNumber) {
+		query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		query = query.Where("qb_profile_number = ?", profileNumber)
 	}
 	err := query.Order("created_at asc").First(&queueItem).Error
 	if err == nil {
@@ -219,16 +237,28 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 						var mapping models.QBCustomerMapping
 						q := config.DB.Where("qb_list_id = ?", ret.ListID)
 						if targetProfileNumber != "" {
-							q = q.Where("qb_profile_number = ? OR qb_profile_number = ''", targetProfileNumber)
+							q = q.Where("qb_profile_number = ?", targetProfileNumber)
 						}
+						
 						if err := q.First(&mapping).Error; err == nil {
-							// Only update if it already exists. Do not create missing students from QB.
+							// Only update if it already exists for this profile
 							mapping.QbEditSequence = ret.EditSequence
 							mapping.QbFullName = ret.FullName
-							if mapping.QBProfileNumber == "" {
-								mapping.QBProfileNumber = targetProfileNumber
-							}
 							config.DB.Save(&mapping)
+						} else if targetProfileNumber != "" {
+							// If it doesn't exist for this profile, check if we have it in the default/legacy profile
+							var existingMapping models.QBCustomerMapping
+							if err := config.DB.Where("qb_list_id = ?", ret.ListID).Where("qb_profile_number = '' OR qb_profile_number IS NULL").First(&existingMapping).Error; err == nil {
+								// Duplicate the mapping for the new profile
+								newMapping := models.QBCustomerMapping{
+									UserNumber:      existingMapping.UserNumber,
+									QBProfileNumber: targetProfileNumber,
+									QbListID:        ret.ListID,
+									QbEditSequence:  ret.EditSequence,
+									QbFullName:      ret.FullName,
+								}
+								config.DB.Create(&newMapping)
+							}
 						}
 					}
 				} else if queueItem.ActionType == "SALES_RECEIPT_ADD" && qbxml.QBXMLMsgsRs.SalesReceiptAddRs != nil {
@@ -288,8 +318,10 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 	// Check if there is more work to do for this profile
 	var count int64
 	remainingQuery := config.DB.Model(&models.QBSyncQueue{}).Where("status = ?", "QUEUED")
-	if profileNumber != "" {
-		remainingQuery = remainingQuery.Where("qb_profile_number = ? OR qb_profile_number = ''", profileNumber)
+	if isDefaultProfile(profileNumber) {
+		remainingQuery = remainingQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		remainingQuery = remainingQuery.Where("qb_profile_number = ?", profileNumber)
 	}
 	remainingQuery.Count(&count)
 
