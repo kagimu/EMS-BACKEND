@@ -914,12 +914,12 @@ func QueueProductAdd(c *gin.Context) {
 		<IncomeAccountRef>
 			<FullName>` + escapeXML(accountName) + `</FullName>
 		</IncomeAccountRef>
-		<AssetAccountRef>
-			<FullName>` + escapeXML(assetAccountName) + `</FullName>
-		</AssetAccountRef>
 		<COGSAccountRef>
 			<FullName>` + escapeXML(cogsAccountName) + `</FullName>
 		</COGSAccountRef>
+		<AssetAccountRef>
+			<FullName>` + escapeXML(assetAccountName) + `</FullName>
+		</AssetAccountRef>
 	</ItemInventoryAdd>
 </ItemInventoryAddRq>`
 
