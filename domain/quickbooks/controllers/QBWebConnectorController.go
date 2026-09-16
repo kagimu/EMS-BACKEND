@@ -786,6 +786,8 @@ func QueueItemAdd(c *gin.Context) {
 type QueueProductRequest struct {
 	ItemNumber      string `json:"item_number" binding:"required"`
 	AccountID       string `json:"account_id"`
+	COGSAccountID   string `json:"cogs_account_id"`
+	AssetAccountID  string `json:"asset_account_id"`
 	ProductType     string `json:"product_type" binding:"required"` // "Inventory" | "NonInventory"
 	QBProfileNumber string `json:"qb_profile_number"`
 }
@@ -881,6 +883,24 @@ func QueueProductAdd(c *gin.Context) {
 		}
 	}
 
+	// Resolve COGS account name
+	cogsAccountName := "Cost of Goods Sold"
+	if req.COGSAccountID != "" {
+		var chartOfAccount qbModels.QBChartOfAccount
+		if err := config.DB.Where("number = ?", req.COGSAccountID).First(&chartOfAccount).Error; err == nil {
+			cogsAccountName = chartOfAccount.Name
+		}
+	}
+
+	// Resolve Asset account name
+	assetAccountName := "Inventory Asset"
+	if req.AssetAccountID != "" {
+		var chartOfAccount qbModels.QBChartOfAccount
+		if err := config.DB.Where("number = ?", req.AssetAccountID).First(&chartOfAccount).Error; err == nil {
+			assetAccountName = chartOfAccount.Name
+		}
+	}
+
 	// Build the QB XML payload based on product type
 	var qbxml string
 	switch req.ProductType {
@@ -895,10 +915,10 @@ func QueueProductAdd(c *gin.Context) {
 			<FullName>` + escapeXML(accountName) + `</FullName>
 		</IncomeAccountRef>
 		<AssetAccountRef>
-			<FullName>Inventory Asset</FullName>
+			<FullName>` + escapeXML(assetAccountName) + `</FullName>
 		</AssetAccountRef>
 		<COGSAccountRef>
-			<FullName>Cost of Goods Sold</FullName>
+			<FullName>` + escapeXML(cogsAccountName) + `</FullName>
 		</COGSAccountRef>
 	</ItemInventoryAdd>
 </ItemInventoryAddRq>`
