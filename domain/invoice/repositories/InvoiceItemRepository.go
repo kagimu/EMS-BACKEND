@@ -169,7 +169,7 @@ func GetInvoiceItemTransactionsHistoryByTransaction(transactionNumber string, tx
 	return history, nil
 }
 
-func GetAllItemTransactionsHistory(campusNumber, search string, page, perPage int, tx ...*gorm.DB) (int64, []invoiceModel.InvoiceItemTransaction, error) {
+func GetAllItemTransactionsHistory(campusNumber, search, startDate, endDate string, page, perPage int, tx ...*gorm.DB) (int64, []invoiceModel.InvoiceItemTransaction, error) {
 	db := config.DB
 	if len(tx) > 0 {
 		db = tx[0]
@@ -181,13 +181,21 @@ func GetAllItemTransactionsHistory(campusNumber, search string, page, perPage in
 	// Base query
 	query := db.Model(&invoiceModel.InvoiceItemTransaction{})
 
-	if campusNumber != "" || search != "" {
+	if campusNumber != "" || search != "" || startDate != "" || endDate != "" {
 		query = query.Joins("JOIN transactions on transactions.number = invoice_item_transactions.transaction_number").
 			Joins("JOIN statements on statements.number = transactions.statement_number")
 	}
 
 	if campusNumber != "" {
 		query = query.Where("statements.campus_number = ?", campusNumber)
+	}
+	
+	if startDate != "" {
+		query = query.Where("transactions.date >= ?", startDate)
+	}
+
+	if endDate != "" {
+		query = query.Where("transactions.date <= ?", endDate)
 	}
 
 	if search != "" {

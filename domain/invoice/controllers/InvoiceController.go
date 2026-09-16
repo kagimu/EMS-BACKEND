@@ -256,6 +256,8 @@ func GetAllItemTransactionsHistory(context *gin.Context) {
 
 	campusNumber := context.Query("campus_number")
 	search := context.Query("search")
+	startDate := context.Query("start_date")
+	endDate := context.Query("end_date")
 	
 	pageStr := context.Query("page")
 	perPageStr := context.Query("per_page")
@@ -270,7 +272,7 @@ func GetAllItemTransactionsHistory(context *gin.Context) {
 		perPage = pp
 	}
 
-	history, err := services.GetAllItemTransactionHistory(campusNumber, search, page, perPage)
+	history, err := services.GetAllItemTransactionHistory(campusNumber, search, startDate, endDate, page, perPage)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return

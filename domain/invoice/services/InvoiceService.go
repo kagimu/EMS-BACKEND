@@ -1994,9 +1994,9 @@ func GetInvoiceItemTransactionHistoryByTransaction(transactionNumber string) ([]
 	return response, nil
 }
 
-func GetAllItemTransactionHistory(campusNumber, search string, page, perPage int) (map[string]interface{}, error) {
+func GetAllItemTransactionHistory(campusNumber, search, startDate, endDate string, page, perPage int) (map[string]interface{}, error) {
 	var response []responses.ItemTransactionHistoryResponse
-	totalRows, history, err := invoiceRepositories.GetAllItemTransactionsHistory(campusNumber, search, page, perPage)
+	totalRows, history, err := invoiceRepositories.GetAllItemTransactionsHistory(campusNumber, search, startDate, endDate, page, perPage)
 	if err != nil {
 		return nil, err
 	}
