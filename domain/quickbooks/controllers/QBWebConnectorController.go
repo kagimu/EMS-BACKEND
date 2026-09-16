@@ -199,11 +199,8 @@ func QueueTransaction(c *gin.Context) {
 	if userNumber != "" {
 		var mapping qbModels.QBCustomerMapping
 		custQuery := config.DB.Where("user_number = ?", userNumber)
-		if isDef {
-			custQuery = custQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
-		} else {
-			custQuery = custQuery.Where("qb_profile_number = ?", profileNumber)
-		}
+		// We use global matching by user_number. If mapped in ANY profile, use the QbFullName.
+		// If they don't exist in the target QB profile, QB will return an error, which is the desired behavior.
 		if err := custQuery.First(&mapping).Error; err == nil {
 			customerRef = mapping.QbFullName
 		} else {
@@ -246,11 +243,7 @@ func QueueTransaction(c *gin.Context) {
 	var itemCode string
 	var itemMapping qbModels.QBItemMapping
 	itemQuery := config.DB.Where("item_number = ?", itemTx.InvoiceItem.Item.Number)
-	if isDef {
-		itemQuery = itemQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
-	} else {
-		itemQuery = itemQuery.Where("qb_profile_number = ?", profileNumber)
-	}
+	// We use global matching by item_number. If mapped in ANY profile, use the QbFullName.
 	if err := itemQuery.First(&itemMapping).Error; err == nil {
 		itemCode = itemMapping.QbFullName
 	} else {
