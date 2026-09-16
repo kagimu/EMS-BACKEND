@@ -289,26 +289,18 @@ func QueueTransaction(c *gin.Context) {
 	dateStr := itemTx.Transaction.Date.Format("2006-01-02")
 	amount := fmt.Sprintf("%.2f", itemTx.AmountPaidOff)
 
-	depositAccount := "Undeposited Funds"
-	
-	if itemTx.Transaction.DepositAccountNumber != "" {
-		var qbDepositAccount qbModels.QBDepositAccount
-		if err := config.DB.Where("number = ?", itemTx.Transaction.DepositAccountNumber).First(&qbDepositAccount).Error; err == nil && qbDepositAccount.Name != "" {
-			depositAccount = qbDepositAccount.Name
-		}
+	if itemTx.Transaction.DepositAccountNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No deposit account was selected for this transaction. Please ensure a deposit account is specified when paying invoices."})
+		return
+	}
+
+	var depositAccount string
+	var qbDepositAccount qbModels.QBDepositAccount
+	if err := config.DB.Where("number = ?", itemTx.Transaction.DepositAccountNumber).First(&qbDepositAccount).Error; err == nil && qbDepositAccount.Name != "" {
+		depositAccount = qbDepositAccount.Name
 	} else {
-		if profileNumber != "" {
-			var profile qbModels.QBProfile
-			if err := config.DB.Where("number = ?", profileNumber).First(&profile).Error; err == nil && profile.DepositToAccount != "" {
-				depositAccount = profile.DepositToAccount
-			}
-		}
-		if depositAccount == "Undeposited Funds" {
-			var qbSettings qbModels.QBSettings
-			if err := config.DB.First(&qbSettings).Error; err == nil && qbSettings.DepositToAccount != "" {
-				depositAccount = qbSettings.DepositToAccount
-			}
-		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "The selected deposit account for this transaction could not be found or is invalid."})
+		return
 	}
 
 	qbxml := `<SalesReceiptAddRq>

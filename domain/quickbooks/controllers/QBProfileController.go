@@ -15,7 +15,6 @@ type ProfileRequest struct {
 	Name             string `json:"name" binding:"required"`
 	Username         string `json:"username" binding:"required"`
 	Password         string `json:"password"`
-	DepositToAccount string `json:"deposit_to_account"`
 	IncomeAccount    string `json:"income_account"`
 	IsDefault        bool   `json:"is_default"`
 	IsActive         *bool  `json:"is_active"`
@@ -60,10 +59,7 @@ func CreateProfile(c *gin.Context) {
 		return
 	}
 
-	depositTo := req.DepositToAccount
-	if depositTo == "" {
-		depositTo = "Undeposited Funds"
-	}
+
 	incomeAcc := req.IncomeAccount
 	if incomeAcc == "" {
 		incomeAcc = "Service Income"
@@ -87,7 +83,6 @@ func CreateProfile(c *gin.Context) {
 		Name:             req.Name,
 		Username:         req.Username,
 		PasswordHash:     req.Password,
-		DepositToAccount: depositTo,
 		IncomeAccount:    incomeAcc,
 		FileID:           fileID,
 		OwnerID:          ownerID,
@@ -137,9 +132,6 @@ func UpdateProfile(c *gin.Context) {
 	profile.Username = req.Username
 	if req.Password != "" {
 		profile.PasswordHash = req.Password
-	}
-	if req.DepositToAccount != "" {
-		profile.DepositToAccount = req.DepositToAccount
 	}
 	if req.IncomeAccount != "" {
 		profile.IncomeAccount = req.IncomeAccount
