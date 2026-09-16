@@ -223,15 +223,17 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 				}
 
 				if queueItem.ActionType == "CUSTOMER_ADD" && qbxml.QBXMLMsgsRs.CustomerAddRs != nil {
-					ret := qbxml.QBXMLMsgsRs.CustomerAddRs.CustomerRet
-					mapping := models.QBCustomerMapping{
-						UserNumber:      queueItem.UserNumber,
-						QBProfileNumber: targetProfileNumber,
-						QbListID:        ret.ListID,
-						QbEditSequence:  ret.EditSequence,
-						QbFullName:      ret.FullName,
+					if qbxml.QBXMLMsgsRs.CustomerAddRs.StatusCode == "0" {
+						ret := qbxml.QBXMLMsgsRs.CustomerAddRs.CustomerRet
+						mapping := models.QBCustomerMapping{
+							UserNumber:      queueItem.UserNumber,
+							QBProfileNumber: targetProfileNumber,
+							QbListID:        ret.ListID,
+							QbEditSequence:  ret.EditSequence,
+							QbFullName:      ret.FullName,
+						}
+						config.DB.Create(&mapping)
 					}
-					config.DB.Create(&mapping)
 				} else if queueItem.ActionType == "CUSTOMER_QUERY" && qbxml.QBXMLMsgsRs.CustomerQueryRs != nil {
 					for _, ret := range qbxml.QBXMLMsgsRs.CustomerQueryRs.CustomerRet {
 						var mapping models.QBCustomerMapping
@@ -246,10 +248,10 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 							mapping.QbFullName = ret.FullName
 							config.DB.Save(&mapping)
 						} else if targetProfileNumber != "" {
-							// If it doesn't exist for this profile, check if we have it in the default/legacy profile
+							// If it doesn't exist for this profile, check if we have it ANYWHERE else (matching by FullName)
 							var existingMapping models.QBCustomerMapping
-							if err := config.DB.Where("qb_list_id = ?", ret.ListID).Where("qb_profile_number = '' OR qb_profile_number IS NULL").First(&existingMapping).Error; err == nil {
-								// Duplicate the mapping for the new profile
+							if err := config.DB.Where("qb_full_name = ?", ret.FullName).Where("qb_full_name != ''").First(&existingMapping).Error; err == nil {
+								// Duplicate the mapping for the new profile, securely linking it to the same UserNumber
 								newMapping := models.QBCustomerMapping{
 									UserNumber:      existingMapping.UserNumber,
 									QBProfileNumber: targetProfileNumber,
@@ -265,35 +267,41 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 					// Fix 4: Store QB TxnID for tracking
 					queueItem.QbTxnID = qbxml.QBXMLMsgsRs.SalesReceiptAddRs.SalesReceiptRet.TxnID
 				} else if queueItem.ActionType == "ITEM_SERVICE_ADD" && qbxml.QBXMLMsgsRs.ItemServiceAddRs != nil {
-					ret := qbxml.QBXMLMsgsRs.ItemServiceAddRs.ItemServiceRet
-					mapping := models.QBItemMapping{
-						ItemNumber:      queueItem.ItemNumber,
-						QBProfileNumber: targetProfileNumber,
-						QbListID:        ret.ListID,
-						QbEditSequence:  ret.EditSequence,
-						QbFullName:      ret.FullName,
+					if qbxml.QBXMLMsgsRs.ItemServiceAddRs.StatusCode == "0" {
+						ret := qbxml.QBXMLMsgsRs.ItemServiceAddRs.ItemServiceRet
+						mapping := models.QBItemMapping{
+							ItemNumber:      queueItem.ItemNumber,
+							QBProfileNumber: targetProfileNumber,
+							QbListID:        ret.ListID,
+							QbEditSequence:  ret.EditSequence,
+							QbFullName:      ret.FullName,
+						}
+						config.DB.Create(&mapping)
 					}
-					config.DB.Create(&mapping)
 				} else if queueItem.ActionType == "ITEM_INVENTORY_ADD" && qbxml.QBXMLMsgsRs.ItemInventoryAddRs != nil {
-					ret := qbxml.QBXMLMsgsRs.ItemInventoryAddRs.ItemInventoryRet
-					mapping := models.QBItemMapping{
-						ItemNumber:      queueItem.ItemNumber,
-						QBProfileNumber: targetProfileNumber,
-						QbListID:        ret.ListID,
-						QbEditSequence:  ret.EditSequence,
-						QbFullName:      ret.FullName,
+					if qbxml.QBXMLMsgsRs.ItemInventoryAddRs.StatusCode == "0" {
+						ret := qbxml.QBXMLMsgsRs.ItemInventoryAddRs.ItemInventoryRet
+						mapping := models.QBItemMapping{
+							ItemNumber:      queueItem.ItemNumber,
+							QBProfileNumber: targetProfileNumber,
+							QbListID:        ret.ListID,
+							QbEditSequence:  ret.EditSequence,
+							QbFullName:      ret.FullName,
+						}
+						config.DB.Create(&mapping)
 					}
-					config.DB.Create(&mapping)
 				} else if queueItem.ActionType == "ITEM_NON_INVENTORY_ADD" && qbxml.QBXMLMsgsRs.ItemNonInventoryAddRs != nil {
-					ret := qbxml.QBXMLMsgsRs.ItemNonInventoryAddRs.ItemNonInventoryRet
-					mapping := models.QBItemMapping{
-						ItemNumber:      queueItem.ItemNumber,
-						QBProfileNumber: targetProfileNumber,
-						QbListID:        ret.ListID,
-						QbEditSequence:  ret.EditSequence,
-						QbFullName:      ret.FullName,
+					if qbxml.QBXMLMsgsRs.ItemNonInventoryAddRs.StatusCode == "0" {
+						ret := qbxml.QBXMLMsgsRs.ItemNonInventoryAddRs.ItemNonInventoryRet
+						mapping := models.QBItemMapping{
+							ItemNumber:      queueItem.ItemNumber,
+							QBProfileNumber: targetProfileNumber,
+							QbListID:        ret.ListID,
+							QbEditSequence:  ret.EditSequence,
+							QbFullName:      ret.FullName,
+						}
+						config.DB.Create(&mapping)
 					}
-					config.DB.Create(&mapping)
 				}
 			}
 		} else {
