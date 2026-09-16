@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -254,8 +255,22 @@ func GetAllItemTransactionsHistory(context *gin.Context) {
 	}
 
 	campusNumber := context.Query("campus_number")
+	search := context.Query("search")
+	
+	pageStr := context.Query("page")
+	perPageStr := context.Query("per_page")
+	
+	page := 1
+	perPage := 20
+	
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	if pp, err := strconv.Atoi(perPageStr); err == nil && pp > 0 {
+		perPage = pp
+	}
 
-	history, err := services.GetAllItemTransactionHistory(campusNumber)
+	history, err := services.GetAllItemTransactionHistory(campusNumber, search, page, perPage)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return

@@ -1994,11 +1994,11 @@ func GetInvoiceItemTransactionHistoryByTransaction(transactionNumber string) ([]
 	return response, nil
 }
 
-func GetAllItemTransactionHistory(campusNumber string) ([]responses.ItemTransactionHistoryResponse, error) {
+func GetAllItemTransactionHistory(campusNumber, search string, page, perPage int) (map[string]interface{}, error) {
 	var response []responses.ItemTransactionHistoryResponse
-	history, err := invoiceRepositories.GetAllItemTransactionsHistory(campusNumber)
+	totalRows, history, err := invoiceRepositories.GetAllItemTransactionsHistory(campusNumber, search, page, perPage)
 	if err != nil {
-		return response, err
+		return nil, err
 	}
 
 	for _, h := range history {
@@ -2031,5 +2031,15 @@ func GetAllItemTransactionHistory(campusNumber string) ([]responses.ItemTransact
 			PaidOn:           h.Transaction.Date.Format(time.DateOnly),
 		})
 	}
-	return response, nil
+	
+	if response == nil {
+		response = []responses.ItemTransactionHistoryResponse{}
+	}
+
+	return map[string]interface{}{
+		"content":    response,
+		"total_rows": totalRows,
+		"page":       page,
+		"per_page":   perPage,
+	}, nil
 }
