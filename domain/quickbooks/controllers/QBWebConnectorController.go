@@ -186,7 +186,7 @@ func QueueTransaction(c *gin.Context) {
 	var itemTx invoiceModel.InvoiceItemTransaction
 	if err := config.DB.Preload("Transaction.Statement.User").
 		Preload("InvoiceItem.Item").
-		Where("item_receipt_number = ?", req.TransactionNumber).
+		Where("number = ?", req.TransactionNumber).
 		First(&itemTx).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Transaction not found"})
 		return

@@ -2016,6 +2016,7 @@ func GetAllItemTransactionHistory(campusNumber, search, startDate, endDate strin
 		}
 
 		response = append(response, responses.ItemTransactionHistoryResponse{
+			TransactionNumber: h.Number,
 			Date:             h.CreatedAt.Format(time.DateOnly),
 			ItemName:         h.InvoiceItem.Item.Name,
 			Amount:           h.AmountPaidOff,

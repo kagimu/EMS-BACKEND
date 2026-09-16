@@ -1,6 +1,7 @@
 package responses
 
 type ItemTransactionHistoryResponse struct {
+	TransactionNumber string  `json:"transaction_number"`
 	Date             string  `json:"date"`
 	ItemName         string  `json:"item_name"`
 	Amount           float64 `json:"amount"`
