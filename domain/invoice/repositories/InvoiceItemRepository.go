@@ -203,7 +203,7 @@ func GetAllItemTransactionsHistory(campusNumber, search, startDate, endDate stri
 		query = query.Joins("JOIN invoice_items on invoice_items.number = invoice_item_transactions.invoice_item_number").
 			Joins("JOIN items on items.number = invoice_items.item_number").
 			Joins("LEFT JOIN users on users.number = statements.user_number").
-			Where("invoice_item_transactions.item_receipt_number ILIKE ? OR transactions.client_reference ILIKE ? OR items.name ILIKE ? OR items.code ILIKE ? OR users.first_name ILIKE ? OR users.last_name ILIKE ? OR users.surname ILIKE ? OR users.adn ILIKE ?",
+			Where("invoice_item_transactions.item_receipt_number LIKE ? OR transactions.client_reference LIKE ? OR items.name LIKE ? OR items.code LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR users.surname LIKE ? OR users.adn LIKE ?",
 				searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
 	}
 
