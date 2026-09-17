@@ -182,6 +182,30 @@ func migrateJobPositionPostCode() error {
 	return nil
 }
 
+// migrateQBCustomerMappingIndex drops the old single-column unique index on user_number
+// that was created before multi-profile support. The composite unique index
+// (user_number + qb_profile_number) now correctly handles uniqueness per profile.
+func migrateQBCustomerMappingIndex() error {
+	db := config.DB
+
+	// Check if the old single-column unique index still exists
+	var idxCount int64
+	db.Raw(`
+		SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = 'qb_customer_mapping'
+		  AND INDEX_NAME = 'idx_qb_customer_mapping_user_number'
+	`).Scan(&idxCount)
+
+	if idxCount > 0 {
+		if err := db.Exec(`ALTER TABLE qb_customer_mapping DROP INDEX idx_qb_customer_mapping_user_number`).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func Init() error {
 	if err := migrateJobPositionPostCode(); err != nil {
 		return err
@@ -192,6 +216,10 @@ func Init() error {
 	}
 
 	if err := migrateStudyTimetableClassNumber(); err != nil {
+		return err
+	}
+
+	if err := migrateQBCustomerMappingIndex(); err != nil {
 		return err
 	}
 
