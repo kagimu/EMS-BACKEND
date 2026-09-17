@@ -198,9 +198,14 @@ func QueueTransaction(c *gin.Context) {
 	var customerRef string
 	if userNumber != "" {
 		var mapping qbModels.QBCustomerMapping
+		// Filter by target profile — prevents wrong customer name when a student
+		// is mapped to multiple QB accounts with different QbFullName values.
 		custQuery := config.DB.Where("user_number = ?", userNumber)
-		// We use global matching by user_number. If mapped in ANY profile, use the QbFullName.
-		// If they don't exist in the target QB profile, QB will return an error, which is the desired behavior.
+		if isDef {
+			custQuery = custQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			custQuery = custQuery.Where("qb_profile_number = ?", profileNumber)
+		}
 		if err := custQuery.First(&mapping).Error; err == nil {
 			customerRef = mapping.QbFullName
 		} else {
