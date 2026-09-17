@@ -20,6 +20,9 @@ type (
 		ItemNumber        string     `json:"item_number" gorm:"size:36"`
 		QBProfileNumber   string     `json:"qb_profile_number" gorm:"size:36;index"`
 		QbTxnID           string     `json:"qb_txn_id" gorm:"size:36"`
+		Priority          int        `json:"priority" gorm:"default:5"`
+		RetryCount        int        `json:"retry_count" gorm:"default:0"`
+		MaxRetries        int        `json:"max_retries" gorm:"default:3"`
 		ProcessedAt       *time.Time `json:"processed_at"`
 	}
 )

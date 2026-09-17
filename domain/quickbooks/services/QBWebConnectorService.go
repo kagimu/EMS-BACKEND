@@ -176,7 +176,7 @@ func SendRequestXML(ticket string) string {
 	} else {
 		query = query.Where("qb_profile_number = ?", profileNumber)
 	}
-	err := query.Order("created_at asc").First(&queueItem).Error
+	err := query.Order("priority asc, created_at asc").First(&queueItem).Error
 	if err != nil {
 		return ""
 	}
@@ -208,8 +208,13 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 	if err == nil {
 		if hresult != "" && hresult != "0x00000000" {
 			// QB itself returned a COM-level error (e.g. bad XML)
-			queueItem.Status = "FAILED"
 			queueItem.ErrorMessage = message
+			queueItem.RetryCount++
+			if queueItem.RetryCount < queueItem.MaxRetries {
+				queueItem.Status = "QUEUED"
+			} else {
+				queueItem.Status = "FAILED"
+			}
 		} else if strings.Contains(response, `statusCode="0"`) {
 			queueItem.Status = "SUCCESS"
 
@@ -317,8 +322,13 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 			} else if qbxml.QBXMLMsgsRs.CustomerAddRs != nil && qbxml.QBXMLMsgsRs.CustomerAddRs.StatusMessage != "" {
 				errMsg = fmt.Sprintf("[%s] %s", qbxml.QBXMLMsgsRs.CustomerAddRs.StatusCode, qbxml.QBXMLMsgsRs.CustomerAddRs.StatusMessage)
 			}
-			queueItem.Status = "FAILED"
 			queueItem.ErrorMessage = errMsg
+			queueItem.RetryCount++
+			if queueItem.RetryCount < queueItem.MaxRetries {
+				queueItem.Status = "QUEUED"
+			} else {
+				queueItem.Status = "FAILED"
+			}
 		}
 		config.DB.Save(&queueItem)
 	}
