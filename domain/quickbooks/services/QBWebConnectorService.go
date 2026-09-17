@@ -237,7 +237,10 @@ func ReceiveResponseXML(ticket, response, hresult, message string) string {
 							QbEditSequence:  ret.EditSequence,
 							QbFullName:      ret.FullName,
 						}
-						config.DB.Create(&mapping)
+						if err := config.DB.Create(&mapping).Error; err != nil {
+							queueItem.Status = "FAILED"
+							queueItem.ErrorMessage = "DB Insert Error: " + err.Error()
+						}
 					}
 				} else if queueItem.ActionType == "CUSTOMER_QUERY" && qbxml.QBXMLMsgsRs.CustomerQueryRs != nil {
 					for _, ret := range qbxml.QBXMLMsgsRs.CustomerQueryRs.CustomerRet {
