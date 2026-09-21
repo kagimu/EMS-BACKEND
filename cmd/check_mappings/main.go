@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 )
 
 func main() {
-	config.ConnectDB()
 	
 	var mappings []models.QBCustomerMapping
 	config.DB.Find(&mappings)
