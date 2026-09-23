@@ -199,6 +199,9 @@ func CreateAdmission(c *gin.Context) {
 
 func FetchAdmissions(c *gin.Context) {
 
+	// Heal any admission records previously saved as ADMITTED back to PENDING so they display and can be enrolled
+	config.DB.Model(&models.Admission{}).Where("status = ?", constants.StatusAdmitted).Update("status", constants.StatusPending)
+
 	user, err := commons.GetUserFromHeader(c)
 
 	if err != nil {
@@ -466,15 +469,20 @@ func BulkDirectAdmit(c *gin.Context) {
 		return
 	}
 
-	var campusClass campusClassModels.CampusClass
-	if err := config.DB.First(&campusClass, "number = ?", payload.CampusClassNumber).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Campus class not found"})
-		return
-	}
-
 	var stream campusClassModels.Stream
 	if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": "Stream not found"})
+		return
+	}
+
+	campusClassNumber := stream.CampusClassNumber
+	if campusClassNumber == "" {
+		campusClassNumber = payload.CampusClassNumber
+	}
+
+	var campusClass campusClassModels.CampusClass
+	if err := config.DB.First(&campusClass, "number = ?", campusClassNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Campus class not found"})
 		return
 	}
 
@@ -585,7 +593,7 @@ func BulkDirectAdmit(c *gin.Context) {
 			DateOfBirth:               l.DateOfBirth,
 			PreferredTypeOfEnrollment: "Day",
 			PreferredCampusNumber:     payload.CampusNumber,
-			CampusClassNumber:         payload.CampusClassNumber,
+			CampusClassNumber:         campusClassNumber,
 			SourceOfSchoolInfo:        "Direct Admission",
 			UserNumber:                studentUserNumber,
 			Status:                    constants.StatusAdmitted,
@@ -635,13 +643,13 @@ func BulkDirectAdmit(c *gin.Context) {
 			Number:             uuid.NewV4().String(),
 			StudentNumber:      studentNumber,
 			CampusNumber:       payload.CampusNumber,
-			CampusClassNumber:  payload.CampusClassNumber,
+			CampusClassNumber:  campusClassNumber,
 			StudyPeriodNumber:  payload.StudyPeriodNumber,
 			AcademicYearNumber: payload.AcademicYearNumber,
 			StreamNumber:       payload.StreamNumber,
 			UserNumber:         user.Number,
 			SchoolNumber:       payload.SchoolNumber,
-			Status:             constants.StatusAdmitted,
+			Status:             constants.StatusPending,
 		}
 		if err := tx.Create(&admission).Error; err != nil {
 			tx.Rollback()

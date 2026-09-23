@@ -39,7 +39,9 @@ func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, stud
 			filters.ByAnyField("admissions.stream_number", streamNumber),
 			filters.ByAnyField("admissions.school_number", schoolNumber),
 			filters.ByAnyField("admissions.campus_class_number", campusClassNumber),
-			filters.ByAnyField("admissions.status", constants.StatusPending),
+			func(db *gorm.DB) *gorm.DB {
+				return db.Where("admissions.status IN (?)", []string{constants.StatusPending, constants.StatusAdmitted})
+			},
 			filters.ByParent("applications.user_number", user),
 			paginateFunc,
 		).Find(&admissions).Error; err != nil {
