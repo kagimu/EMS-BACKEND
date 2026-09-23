@@ -424,6 +424,7 @@ func createMinInvoiceResponse(invoice models.Invoice) responses.MinInvoiceRespon
 		Names:           student.Surname + " " + student.SecondName + " " + student.OtherName,
 		CampusName:      campusName,
 		StudentNumber:   student.Number,
+		UserNumber:      statement.UserNumber,
 	}
 
 	return invoiceResponse
