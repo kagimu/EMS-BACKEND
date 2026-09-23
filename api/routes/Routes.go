@@ -616,6 +616,7 @@ func SetupRoutes() *gin.Engine {
 		{
 			admission.POST("", admissionController.CreateAdmission)
 			admission.POST("existing-admission", admissionController.CreateExistingAdmission)
+			admission.POST("bulk-direct-admit", admissionController.BulkDirectAdmit)
 			admission.GET("", admissionController.FetchAdmissions)
 			admission.GET("admission-requirements", admissionController.GetAdmissionRequirementsController)
 			admission.POST("admission-requirements", admissionController.NewAdmissionRequirementController)
