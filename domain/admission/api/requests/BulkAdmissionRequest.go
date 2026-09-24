@@ -18,6 +18,45 @@ type BulkLearnerItem struct {
 	ParentSecondName string `json:"parent_second_name"`
 	ParentPhone      string `json:"parent_phone"`
 	ParentEmail      string `json:"parent_email"`
+
+	// Medical
+	BloodTypeGroup    string `json:"blood_type_group"`
+	Allergies         string `json:"allergies"`
+	ExistingCondition string `json:"existing_condition"`
+	RegularMedication string `json:"regular_medication"`
+	DoctorName        string `json:"doctor_name"`
+	DoctorPhone       string `json:"doctor_phone"`
+
+	// Emergency
+	EmergencyContactPerson                 string `json:"emergency_contact_person"`
+	EmergencyContactPersonPhone            string `json:"emergency_contact_person_phone"`
+	EmergencyContactPersonAlternative      string `json:"emergency_contact_person_alternative"`
+	EmergencyContactPersonAlternativePhone string `json:"emergency_contact_person_alternative_phone"`
+	EmergencyContactDoctorName             string `json:"emergency_contact_doctor_name"`
+	EmergencyContactDoctorPhone            string `json:"emergency_contact_doctor_phone"`
+
+	// Language
+	PrimaryLanguage   string `json:"primary_language"`
+	SecondaryLanguage string `json:"secondary_language"`
+	TertiaryLanguage  string `json:"tertiary_language"`
+
+	// Father
+	FatherIsLiving          string `json:"father_is_living"`
+	FatherPlaceOfEmployment string `json:"father_place_of_employment"`
+	// Mother
+	MotherSurname           string `json:"mother_surname"`
+	MotherName              string `json:"mother_name"`
+	MotherPhone             string `json:"mother_phone"`
+	MotherEmail             string `json:"mother_email"`
+	MotherIsLiving          string `json:"mother_is_living"`
+	MotherPlaceOfEmployment string `json:"mother_place_of_employment"`
+	// Guardian
+	GuardianSurname           string `json:"guardian_surname"`
+	GuardianName              string `json:"guardian_name"`
+	GuardianIsLiving          string `json:"guardian_is_living"`
+	GuardianPhone             string `json:"guardian_phone"`
+	GuardianEmail             string `json:"guardian_email"`
+	GuardianPlaceOfEmployment string `json:"guardian_place_of_employment"`
 }
 
 type BulkDirectAdmitRequest struct {
@@ -60,6 +99,17 @@ func (r *BulkDirectAdmitRequest) Prepare() {
 		r.Learners[i].ParentSecondName = strings.TrimSpace(r.Learners[i].ParentSecondName)
 		r.Learners[i].ParentPhone = strings.TrimSpace(r.Learners[i].ParentPhone)
 		r.Learners[i].ParentEmail = strings.TrimSpace(r.Learners[i].ParentEmail)
+
+		// Defaults for living status
+		if r.Learners[i].FatherIsLiving == "" {
+			r.Learners[i].FatherIsLiving = "Yes"
+		}
+		if r.Learners[i].MotherIsLiving == "" {
+			r.Learners[i].MotherIsLiving = "Yes"
+		}
+		if r.Learners[i].GuardianIsLiving == "" {
+			r.Learners[i].GuardianIsLiving = "Yes"
+		}
 	}
 }
 

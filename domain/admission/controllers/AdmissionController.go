@@ -657,6 +657,125 @@ func BulkDirectAdmit(c *gin.Context) {
 			return
 		}
 
+		// ----------------------------------------------------
+		// Injecting Bio Data (Medical, Emergency, Languages, Family)
+		// ----------------------------------------------------
+		
+		// 1. Medical
+		if l.BloodTypeGroup != "" || l.Allergies != "" || l.ExistingCondition != "" || l.RegularMedication != "" || l.DoctorName != "" || l.DoctorPhone != "" {
+			medicalRecord := studentModels.MedicalRecord{
+				StudentNumber:     studentNumber,
+				BloodTypeGroup:    l.BloodTypeGroup,
+				Allergies:         l.Allergies,
+				ExistingCondition: l.ExistingCondition,
+				RegularMedication: l.RegularMedication,
+				DoctorName:        l.DoctorName,
+				DoctorPhone:       l.DoctorPhone,
+			}
+			if err := tx.Create(&medicalRecord).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save medical records: %s", rowNum, err.Error())})
+				return
+			}
+		}
+
+		// 2. Emergency
+		if l.EmergencyContactPerson != "" || l.EmergencyContactPersonPhone != "" {
+			emergencyRecord := studentModels.EmergencyInformation{
+				StudentNumber:                 studentNumber,
+				ContactPerson:                 l.EmergencyContactPerson,
+				ContactPersonPhone:            l.EmergencyContactPersonPhone,
+				ContactPersonAlternative:      l.EmergencyContactPersonAlternative,
+				ContactPersonAlternativePhone: l.EmergencyContactPersonAlternativePhone,
+				ContactDoctorName:             l.EmergencyContactDoctorName,
+				ContactDoctorPhone:            l.EmergencyContactDoctorPhone,
+			}
+			if err := tx.Create(&emergencyRecord).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save emergency records: %s", rowNum, err.Error())})
+				return
+			}
+		}
+
+		// 3. Languages
+		if l.PrimaryLanguage != "" {
+			langs := []string{l.PrimaryLanguage, l.SecondaryLanguage, l.TertiaryLanguage}
+			code := int64(1)
+			for _, langName := range langs {
+				if langName != "" {
+					langRecord := studentModels.StudentLanguage{
+						Number:        uuid.NewV4().String(),
+						StudentNumber: studentNumber,
+						Code:          code,
+						Name:          langName,
+					}
+					if err := tx.Create(&langRecord).Error; err != nil {
+						tx.Rollback()
+						c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save language records: %s", rowNum, err.Error())})
+						return
+					}
+					code++
+				}
+			}
+		}
+
+		// 4. Family Structure
+		createFamilyMember := func(rel, surname, name, living, phone, email, employer string) error {
+			if surname == "" && name == "" {
+				return nil
+			}
+			memberNum := uuid.NewV4().String()
+			member := studentModels.FamilyMember{
+				Number:                 memberNum,
+				StudentNumber:          studentNumber,
+				Relationship:           rel,
+				Surname:                surname,
+				OtherName:              name,
+				IsLiving:               living,
+				PlaceOfEmployment:      employer,
+				PhysicalContactAddress: "",
+			}
+			if err := tx.Create(&member).Error; err != nil {
+				return err
+			}
+			if phone != "" || email != "" {
+				contact := studentModels.FamilyMemberContact{
+					Number:             uuid.NewV4().String(),
+					FamilyMemberNumber: memberNum,
+					PhoneNumber:        phone,
+					Email:              email,
+				}
+				if err := tx.Create(&contact).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+
+		// Father (using ParentSurname/Name for backward compatibility)
+		fatherSurname := l.ParentSurname
+		fatherName := l.ParentSecondName
+		if fatherSurname == "" && fatherName == "" {
+			fatherSurname = l.Surname // Fallback if old template style
+		}
+		if err := createFamilyMember("FATHER", fatherSurname, fatherName, l.FatherIsLiving, l.ParentPhone, l.ParentEmail, l.FatherPlaceOfEmployment); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save father details: %s", rowNum, err.Error())})
+			return
+		}
+		// Mother
+		if err := createFamilyMember("MOTHER", l.MotherSurname, l.MotherName, l.MotherIsLiving, l.MotherPhone, l.MotherEmail, l.MotherPlaceOfEmployment); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save mother details: %s", rowNum, err.Error())})
+			return
+		}
+		// Guardian
+		if err := createFamilyMember("GUARDIAN", l.GuardianSurname, l.GuardianName, l.GuardianIsLiving, l.GuardianPhone, l.GuardianEmail, l.GuardianPlaceOfEmployment); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save guardian details: %s", rowNum, err.Error())})
+			return
+		}
+
 		admittedCount++
 	}
 
