@@ -1239,6 +1239,7 @@ func SetupRoutes() *gin.Engine {
 			quickbooks.DELETE("profiles/:id", quickbooksController.DeleteProfile)
 			quickbooks.GET("profiles/:id/qwc", quickbooksController.DownloadProfileQWC)
 			quickbooks.GET("customer-mappings/:user_number", quickbooksController.GetCustomerMappings)
+			quickbooks.DELETE("customer-mappings/:user_number", quickbooksController.ResetCustomerMapping)
 			quickbooks.GET("item-mappings/:item_number", quickbooksController.GetItemMappings)
 		}
 

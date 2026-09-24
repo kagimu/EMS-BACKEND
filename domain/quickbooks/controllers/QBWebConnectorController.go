@@ -1330,3 +1330,116 @@ func DeleteAllQueueErrors(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "All sync errors cleared.", "deleted": result.RowsAffected})
 }
 
+// ResetCustomerMapping hard-deletes a student's QB customer mapping and all related
+// queue entries so the student can be re-exported to QuickBooks from scratch.
+//
+// Route: DELETE /main/quickbooks/customer-mappings/:user_number
+// Optional query param: ?profile_number=<qb_profile_number>
+//   - If omitted, ALL profile mappings for this user are reset.
+//   - If provided, only that profile's mapping is reset.
+//
+// Deleted records:
+//   1. qb_customer_mapping rows for the user (+ profile filter)
+//   2. qb_sync_queue CUSTOMER_ADD / CUSTOMER_QUERY entries for the user+profile
+//      (any status except PROCESSING — those must finish first)
+//   3. qb_sync_queue SALES_RECEIPT_ADD entries in QUEUED or FAILED state for the
+//      user+profile (they cannot be synced without a valid customer mapping)
+func ResetCustomerMapping(c *gin.Context) {
+	userNumber := c.Param("user_number")
+	profileNumber := c.Query("profile_number")
+
+	if userNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_number is required"})
+		return
+	}
+
+	// Guard: refuse to reset while a CUSTOMER_ADD/QUERY is mid-flight (PROCESSING).
+	var processing qbModels.QBSyncQueue
+	pq := config.DB.Where(
+		"user_number = ? AND action_type IN ('CUSTOMER_ADD','CUSTOMER_QUERY') AND status = 'PROCESSING'",
+		userNumber,
+	)
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			pq = pq.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			pq = pq.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	if err := pq.First(&processing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"error": "This student's QB export is currently being processed by the Web Connector. " +
+				"Please wait for it to finish before resetting.",
+		})
+		return
+	}
+
+	// Build profile-aware scoping helper (applied inline below)
+
+	// 1. Delete qb_customer_mapping rows
+	mappingQ := config.DB.Where("user_number = ?", userNumber)
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			mappingQ = mappingQ.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			mappingQ = mappingQ.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	var mappingsDeleted int64
+	if r := mappingQ.Unscoped().Delete(&qbModels.QBCustomerMapping{}); r.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete customer mapping: " + r.Error.Error()})
+		return
+	} else {
+		mappingsDeleted = r.RowsAffected
+	}
+
+	// 2. Delete CUSTOMER_ADD / CUSTOMER_QUERY queue entries (except PROCESSING — guarded above)
+	customerQueueQ := config.DB.Where(
+		"user_number = ? AND action_type IN ('CUSTOMER_ADD','CUSTOMER_QUERY') AND status != 'PROCESSING'",
+		userNumber,
+	)
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			customerQueueQ = customerQueueQ.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			customerQueueQ = customerQueueQ.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	var customerQueueDeleted int64
+	if r := customerQueueQ.Unscoped().Delete(&qbModels.QBSyncQueue{}); r.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete customer queue entries: " + r.Error.Error()})
+		return
+	} else {
+		customerQueueDeleted = r.RowsAffected
+	}
+
+	// 3. Delete SALES_RECEIPT_ADD entries in QUEUED or FAILED state for this user+profile
+	//    (SUCCESS entries are already in QB — leave them alone)
+	receiptQueueQ := config.DB.Where(
+		"user_number = ? AND action_type = 'SALES_RECEIPT_ADD' AND status IN ('QUEUED','FAILED')",
+		userNumber,
+	)
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			receiptQueueQ = receiptQueueQ.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			receiptQueueQ = receiptQueueQ.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	var receiptsDeleted int64
+	if r := receiptQueueQ.Unscoped().Delete(&qbModels.QBSyncQueue{}); r.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete pending receipt queue entries: " + r.Error.Error()})
+		return
+	} else {
+		receiptsDeleted = r.RowsAffected
+	}
+
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":               "Customer mapping reset successfully. The student can now be re-exported to QuickBooks.",
+		"mappings_deleted":      mappingsDeleted,
+		"customer_queue_cleared": customerQueueDeleted,
+		"receipts_cleared":      receiptsDeleted,
+	})
+}
+
