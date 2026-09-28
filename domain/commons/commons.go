@@ -233,7 +233,7 @@ func PermissionGroups() []PermissionGroup {
 		{"ATTENDANCE": []string{
 			"view_attendance", "view_staff_attendance", "view_student_attendance",
 			"record_staff_attendance", "record_student_attendance",
-			"view_staff_attendace_records", "view_student_attendance_records",
+			"view_staff_attendace_records", "view_student_attendance_records", "v",
 		}},
 		{"QUICKBOOKS": []string{
 			"view_quickbooks_settings", "view_quickbooks_profiles",
