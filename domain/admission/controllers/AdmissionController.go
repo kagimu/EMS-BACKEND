@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/services"
@@ -720,8 +721,9 @@ func BulkDirectAdmit(c *gin.Context) {
 		}
 
 		// 4. Family Structure
-		createFamilyMember := func(rel, surname, name, living, phone, email, employer string) error {
-			if surname == "" && name == "" {
+		createFamilyMember := func(rel, surname, secondName, otherName, living, employer string, contacts []requests.BulkFamilyContact) error {
+			combinedOtherName := strings.TrimSpace(secondName + " " + otherName)
+			if surname == "" && combinedOtherName == "" {
 				return nil
 			}
 			memberNum := uuid.NewV4().String()
@@ -730,7 +732,7 @@ func BulkDirectAdmit(c *gin.Context) {
 				StudentNumber:          studentNumber,
 				Relationship:           rel,
 				Surname:                surname,
-				OtherName:              name,
+				OtherName:              combinedOtherName,
 				IsLiving:               living,
 				PlaceOfEmployment:      employer,
 				PhysicalContactAddress: "",
@@ -738,39 +740,36 @@ func BulkDirectAdmit(c *gin.Context) {
 			if err := tx.Create(&member).Error; err != nil {
 				return err
 			}
-			if phone != "" || email != "" {
-				contact := studentModels.FamilyMemberContact{
-					Number:             uuid.NewV4().String(),
-					FamilyMemberNumber: memberNum,
-					PhoneNumber:        phone,
-					Email:              email,
-				}
-				if err := tx.Create(&contact).Error; err != nil {
-					return err
+			for _, ct := range contacts {
+				if ct.Phone != "" || ct.Email != "" {
+					contact := studentModels.FamilyMemberContact{
+						Number:             uuid.NewV4().String(),
+						FamilyMemberNumber: memberNum,
+						PhoneNumber:        ct.Phone,
+						Email:              ct.Email,
+					}
+					if err := tx.Create(&contact).Error; err != nil {
+						return err
+					}
 				}
 			}
 			return nil
 		}
 
-		// Father (using ParentSurname/Name for backward compatibility)
-		fatherSurname := l.ParentSurname
-		fatherName := l.ParentSecondName
-		if fatherSurname == "" && fatherName == "" {
-			fatherSurname = l.Surname // Fallback if old template style
-		}
-		if err := createFamilyMember("FATHER", fatherSurname, fatherName, l.FatherIsLiving, l.ParentPhone, l.ParentEmail, l.FatherPlaceOfEmployment); err != nil {
+		// Father
+		if err := createFamilyMember("FATHER", l.FatherSurname, l.FatherSecondName, l.FatherOtherName, l.FatherIsLiving, l.FatherPlaceOfEmployment, l.FatherContacts); err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save father details: %s", rowNum, err.Error())})
 			return
 		}
 		// Mother
-		if err := createFamilyMember("MOTHER", l.MotherSurname, l.MotherName, l.MotherIsLiving, l.MotherPhone, l.MotherEmail, l.MotherPlaceOfEmployment); err != nil {
+		if err := createFamilyMember("MOTHER", l.MotherSurname, l.MotherSecondName, l.MotherOtherName, l.MotherIsLiving, l.MotherPlaceOfEmployment, l.MotherContacts); err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save mother details: %s", rowNum, err.Error())})
 			return
 		}
-		// Guardian
-		if err := createFamilyMember("GUARDIAN", l.GuardianSurname, l.GuardianName, l.GuardianIsLiving, l.GuardianPhone, l.GuardianEmail, l.GuardianPlaceOfEmployment); err != nil {
+		// Guardian (optional)
+		if err := createFamilyMember("GUARDIAN", l.GuardianSurname, l.GuardianSecondName, l.GuardianOtherName, l.GuardianIsLiving, l.GuardianPlaceOfEmployment, l.GuardianContacts); err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save guardian details: %s", rowNum, err.Error())})
 			return

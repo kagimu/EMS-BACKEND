@@ -6,14 +6,22 @@ import (
 	"strings"
 )
 
+// BulkFamilyContact holds a single phone/email pair for a family member.
+type BulkFamilyContact struct {
+	Phone string `json:"phone"`
+	Email string `json:"email"`
+}
+
 type BulkLearnerItem struct {
-	Surname          string `json:"surname"`
-	SecondName       string `json:"second_name"`
-	OtherName        string `json:"other_name"`
-	Gender           string `json:"gender"`
-	DateOfBirth      string `json:"date_of_birth"`
-	Adn              string `json:"adn"`
-	Lin              string `json:"lin"`
+	Surname     string `json:"surname"`
+	SecondName  string `json:"second_name"`
+	OtherName   string `json:"other_name"`
+	Gender      string `json:"gender"`
+	DateOfBirth string `json:"date_of_birth"`
+	Adn         string `json:"adn"`
+	Lin         string `json:"lin"`
+
+	// Legacy generic parent fields — kept for backward compatibility with old templates
 	ParentSurname    string `json:"parent_surname"`
 	ParentSecondName string `json:"parent_second_name"`
 	ParentPhone      string `json:"parent_phone"`
@@ -40,23 +48,29 @@ type BulkLearnerItem struct {
 	SecondaryLanguage string `json:"secondary_language"`
 	TertiaryLanguage  string `json:"tertiary_language"`
 
-	// Father
-	FatherIsLiving          string `json:"father_is_living"`
-	FatherPlaceOfEmployment string `json:"father_place_of_employment"`
-	// Mother
-	MotherSurname           string `json:"mother_surname"`
-	MotherName              string `json:"mother_name"`
-	MotherPhone             string `json:"mother_phone"`
-	MotherEmail             string `json:"mother_email"`
-	MotherIsLiving          string `json:"mother_is_living"`
-	MotherPlaceOfEmployment string `json:"mother_place_of_employment"`
-	// Guardian
-	GuardianSurname           string `json:"guardian_surname"`
-	GuardianName              string `json:"guardian_name"`
-	GuardianIsLiving          string `json:"guardian_is_living"`
-	GuardianPhone             string `json:"guardian_phone"`
-	GuardianEmail             string `json:"guardian_email"`
-	GuardianPlaceOfEmployment string `json:"guardian_place_of_employment"`
+	// Father — surname, second name, other name + up to 3 phone/email contacts
+	FatherSurname           string              `json:"father_surname"`
+	FatherSecondName        string              `json:"father_second_name"`
+	FatherOtherName         string              `json:"father_other_name"`
+	FatherIsLiving          string              `json:"father_is_living"`
+	FatherPlaceOfEmployment string              `json:"father_place_of_employment"`
+	FatherContacts          []BulkFamilyContact `json:"father_contacts"`
+
+	// Mother — surname, second name, other name + up to 3 phone/email contacts
+	MotherSurname           string              `json:"mother_surname"`
+	MotherSecondName        string              `json:"mother_second_name"`
+	MotherOtherName         string              `json:"mother_other_name"`
+	MotherIsLiving          string              `json:"mother_is_living"`
+	MotherPlaceOfEmployment string              `json:"mother_place_of_employment"`
+	MotherContacts          []BulkFamilyContact `json:"mother_contacts"`
+
+	// Guardian (optional) — surname, second name, other name + up to 3 phone/email contacts
+	GuardianSurname           string              `json:"guardian_surname"`
+	GuardianSecondName        string              `json:"guardian_second_name"`
+	GuardianOtherName         string              `json:"guardian_other_name"`
+	GuardianIsLiving          string              `json:"guardian_is_living"`
+	GuardianPlaceOfEmployment string              `json:"guardian_place_of_employment"`
+	GuardianContacts          []BulkFamilyContact `json:"guardian_contacts"`
 }
 
 type BulkDirectAdmitRequest struct {
@@ -78,37 +92,77 @@ func (r *BulkDirectAdmitRequest) Prepare() {
 	r.StudyPeriodNumber = strings.TrimSpace(r.StudyPeriodNumber)
 
 	for i := range r.Learners {
-		r.Learners[i].Surname = strings.TrimSpace(r.Learners[i].Surname)
-		r.Learners[i].SecondName = strings.TrimSpace(r.Learners[i].SecondName)
-		r.Learners[i].OtherName = strings.TrimSpace(r.Learners[i].OtherName)
-		r.Learners[i].Gender = strings.TrimSpace(r.Learners[i].Gender)
-		if strings.EqualFold(r.Learners[i].Gender, "m") {
-			r.Learners[i].Gender = "Male"
-		} else if strings.EqualFold(r.Learners[i].Gender, "f") {
-			r.Learners[i].Gender = "Female"
-		} else if strings.EqualFold(r.Learners[i].Gender, "male") {
-			r.Learners[i].Gender = "Male"
-		} else if strings.EqualFold(r.Learners[i].Gender, "female") {
-			r.Learners[i].Gender = "Female"
+		l := &r.Learners[i]
+		l.Surname = strings.TrimSpace(l.Surname)
+		l.SecondName = strings.TrimSpace(l.SecondName)
+		l.OtherName = strings.TrimSpace(l.OtherName)
+		l.Gender = strings.TrimSpace(l.Gender)
+		switch strings.ToLower(l.Gender) {
+		case "m", "male":
+			l.Gender = "Male"
+		case "f", "female":
+			l.Gender = "Female"
+		}
+		l.DateOfBirth = strings.TrimSpace(l.DateOfBirth)
+		l.Adn = strings.TrimSpace(l.Adn)
+		l.Lin = strings.TrimSpace(l.Lin)
+
+		// Legacy parent fields
+		l.ParentSurname = strings.TrimSpace(l.ParentSurname)
+		l.ParentSecondName = strings.TrimSpace(l.ParentSecondName)
+		l.ParentPhone = strings.TrimSpace(l.ParentPhone)
+		l.ParentEmail = strings.TrimSpace(l.ParentEmail)
+
+		// Father
+		l.FatherSurname = strings.TrimSpace(l.FatherSurname)
+		l.FatherSecondName = strings.TrimSpace(l.FatherSecondName)
+		l.FatherOtherName = strings.TrimSpace(l.FatherOtherName)
+		l.FatherPlaceOfEmployment = strings.TrimSpace(l.FatherPlaceOfEmployment)
+		for j := range l.FatherContacts {
+			l.FatherContacts[j].Phone = strings.TrimSpace(l.FatherContacts[j].Phone)
+			l.FatherContacts[j].Email = strings.TrimSpace(l.FatherContacts[j].Email)
 		}
 
-		r.Learners[i].DateOfBirth = strings.TrimSpace(r.Learners[i].DateOfBirth)
-		r.Learners[i].Adn = strings.TrimSpace(r.Learners[i].Adn)
-		r.Learners[i].Lin = strings.TrimSpace(r.Learners[i].Lin)
-		r.Learners[i].ParentSurname = strings.TrimSpace(r.Learners[i].ParentSurname)
-		r.Learners[i].ParentSecondName = strings.TrimSpace(r.Learners[i].ParentSecondName)
-		r.Learners[i].ParentPhone = strings.TrimSpace(r.Learners[i].ParentPhone)
-		r.Learners[i].ParentEmail = strings.TrimSpace(r.Learners[i].ParentEmail)
+		// Mother
+		l.MotherSurname = strings.TrimSpace(l.MotherSurname)
+		l.MotherSecondName = strings.TrimSpace(l.MotherSecondName)
+		l.MotherOtherName = strings.TrimSpace(l.MotherOtherName)
+		l.MotherPlaceOfEmployment = strings.TrimSpace(l.MotherPlaceOfEmployment)
+		for j := range l.MotherContacts {
+			l.MotherContacts[j].Phone = strings.TrimSpace(l.MotherContacts[j].Phone)
+			l.MotherContacts[j].Email = strings.TrimSpace(l.MotherContacts[j].Email)
+		}
 
-		// Defaults for living status
-		if r.Learners[i].FatherIsLiving == "" {
-			r.Learners[i].FatherIsLiving = "Yes"
+		// Guardian
+		l.GuardianSurname = strings.TrimSpace(l.GuardianSurname)
+		l.GuardianSecondName = strings.TrimSpace(l.GuardianSecondName)
+		l.GuardianOtherName = strings.TrimSpace(l.GuardianOtherName)
+		l.GuardianPlaceOfEmployment = strings.TrimSpace(l.GuardianPlaceOfEmployment)
+		for j := range l.GuardianContacts {
+			l.GuardianContacts[j].Phone = strings.TrimSpace(l.GuardianContacts[j].Phone)
+			l.GuardianContacts[j].Email = strings.TrimSpace(l.GuardianContacts[j].Email)
 		}
-		if r.Learners[i].MotherIsLiving == "" {
-			r.Learners[i].MotherIsLiving = "Yes"
+
+		// Backward compat: if new father fields are absent, promote legacy parent fields
+		if l.FatherSurname == "" && l.ParentSurname != "" {
+			l.FatherSurname = l.ParentSurname
 		}
-		if r.Learners[i].GuardianIsLiving == "" {
-			r.Learners[i].GuardianIsLiving = "Yes"
+		if l.FatherSecondName == "" && l.ParentSecondName != "" {
+			l.FatherSecondName = l.ParentSecondName
+		}
+		if len(l.FatherContacts) == 0 && (l.ParentPhone != "" || l.ParentEmail != "") {
+			l.FatherContacts = []BulkFamilyContact{{Phone: l.ParentPhone, Email: l.ParentEmail}}
+		}
+
+		// Default living status
+		if l.FatherIsLiving == "" {
+			l.FatherIsLiving = "Yes"
+		}
+		if l.MotherIsLiving == "" {
+			l.MotherIsLiving = "Yes"
+		}
+		if l.GuardianIsLiving == "" {
+			l.GuardianIsLiving = "Yes"
 		}
 	}
 }
