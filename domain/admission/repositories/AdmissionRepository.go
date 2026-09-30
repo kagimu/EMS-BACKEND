@@ -14,14 +14,14 @@ import (
 type AdmissionRepository interface {
 	FindAdmissionByStudentNumber(studentNumber string, txn ...*gorm.DB) (admissionModel.Admission, error)
 	SaveAdmission(admission admissionModel.Admission, txn ...*gorm.DB) error
-	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error)
+	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error)
 	FindAdmissionsByStreamNumber(streamNumber string, txn ...*gorm.DB) ([]admissionModel.Admission, error)
 }
 
 type admissionRepository struct {
 }
 
-func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error) {
+func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error) {
 
 	db := config.DB
 	if len(txn) > 0 {
@@ -39,6 +39,7 @@ func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, stud
 			filters.ByAnyField("admissions.stream_number", streamNumber),
 			filters.ByAnyField("admissions.school_number", schoolNumber),
 			filters.ByAnyField("admissions.campus_class_number", campusClassNumber),
+			filters.BySearchingAnyField([]string{"students.adn", "students.apn", "students.surname", "students.second_name", "students.other_name"}, search),
 			func(db *gorm.DB) *gorm.DB {
 				return db.Where("admissions.status IN (?)", []string{constants.StatusPending, constants.StatusAdmitted})
 			},
