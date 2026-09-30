@@ -244,7 +244,7 @@ func PermissionGroups() []PermissionGroup {
 			"view_qb_account_types", "create_qb_account_types", "edit_qb_account_types", "delete_qb_account_types",
 			"view_qb_chart_of_accounts", "create_qb_chart_of_accounts", "edit_qb_chart_of_accounts", "delete_qb_chart_of_accounts",
 			"view_qb_deposit_accounts", "create_qb_deposit_accounts", "edit_qb_deposit_accounts", "delete_qb_deposit_accounts",
-			"queue_qb_transactions", "queue_qb_services", "queue_qb_products",
+			"queue_qb_transactions", "queue_qb_services", "queue_qb_products","d",
 		}},
 		{"TIMETABLE": []string{
 			"add_timetable", "view_timetable-details",
