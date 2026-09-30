@@ -63,8 +63,36 @@ func verifyBioDataTargetExists(paramNumber string) bool {
 	return false
 }
 
+func resolveJobOfferNumber(paramNumber string) string {
+	if paramNumber == "" {
+		return ""
+	}
+	var jo models.JobOffer
+	if err := config.DB.Where("number = ?", paramNumber).First(&jo).Error; err == nil && jo.Number != "" {
+		return jo.Number
+	}
+	var user authModels.User
+	if err := config.DB.Where("number = ?", paramNumber).First(&user).Error; err == nil && user.Number != "" {
+		var apps []models.JobApplication
+		if err := config.DB.Where("user_number = ?", user.Number).Find(&apps).Error; err == nil {
+			for _, a := range apps {
+				if err := config.DB.Where("job_application_number = ?", a.Number).First(&jo).Error; err == nil && jo.Number != "" {
+					return jo.Number
+				}
+			}
+		}
+	}
+	var app models.JobApplication
+	if err := config.DB.Where("number = ?", paramNumber).First(&app).Error; err == nil && app.Number != "" {
+		if err := config.DB.Where("job_application_number = ?", app.Number).First(&jo).Error; err == nil && jo.Number != "" {
+			return jo.Number
+		}
+	}
+	return paramNumber
+}
+
 func CreatePersonalBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -127,7 +155,7 @@ func CreatePersonalBioData(ctx *gin.Context) {
 }
 
 func FetchPersonalBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -143,7 +171,7 @@ func FetchPersonalBioData(ctx *gin.Context) {
 }
 
 func EditPersonalBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -196,7 +224,7 @@ func EditPersonalBioData(ctx *gin.Context) {
 }
 
 func CreateContactBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -242,7 +270,7 @@ func CreateContactBioData(ctx *gin.Context) {
 }
 
 func FetchContactBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -258,7 +286,7 @@ func FetchContactBioData(ctx *gin.Context) {
 }
 
 func EditContactBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -301,7 +329,7 @@ func EditContactBioData(ctx *gin.Context) {
 }
 
 func CreateMedicalBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -352,7 +380,7 @@ func CreateMedicalBioData(ctx *gin.Context) {
 }
 
 func FetchMedicalBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -368,7 +396,7 @@ func FetchMedicalBioData(ctx *gin.Context) {
 }
 
 func EditMedicalBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -414,7 +442,7 @@ func EditMedicalBioData(ctx *gin.Context) {
 }
 
 func CreateFamilyBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -503,7 +531,7 @@ func CreateFamilyBioData(ctx *gin.Context) {
 }
 
 func FetchFamilyBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -519,7 +547,7 @@ func FetchFamilyBioData(ctx *gin.Context) {
 }
 
 func EditFamilyBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -607,7 +635,7 @@ func EditFamilyBioData(ctx *gin.Context) {
 }
 
 func CreateEducationBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -714,7 +742,7 @@ func CreateEducationBioData(ctx *gin.Context) {
 }
 
 func FetchEducationBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -777,7 +805,7 @@ func FetchEducationBioData(ctx *gin.Context) {
 }
 
 func EditEducationBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -878,7 +906,7 @@ func EditEducationBioData(ctx *gin.Context) {
 }
 
 func CreateLanguageBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -935,7 +963,7 @@ func CreateLanguageBioData(ctx *gin.Context) {
 }
 
 func FetchLanguageBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -965,7 +993,7 @@ func FetchLanguageBioData(ctx *gin.Context) {
 }
 
 func EditLanguageBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -1021,7 +1049,7 @@ func EditLanguageBioData(ctx *gin.Context) {
 }
 
 func CreateReferencesBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -1091,7 +1119,7 @@ func CreateReferencesBioData(ctx *gin.Context) {
 }
 
 func FetchReferencesBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -1146,7 +1174,7 @@ func FetchReferencesBioData(ctx *gin.Context) {
 }
 
 func EditReferencesBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -1217,7 +1245,7 @@ func EditReferencesBioData(ctx *gin.Context) {
 }
 
 func FetchFullStaffProfileBioData(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
@@ -1307,7 +1335,7 @@ func FetchFullStaffProfileBioData(ctx *gin.Context) {
 }
 
 func UploadStaffPhoto(ctx *gin.Context) {
-	jobOfferNumber := ctx.Param("job_offer_number")
+	jobOfferNumber := resolveJobOfferNumber(ctx.Param("job_offer_number"))
 	if jobOfferNumber == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Job offer number is required"})
 		return
