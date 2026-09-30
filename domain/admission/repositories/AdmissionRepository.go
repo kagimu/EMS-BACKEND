@@ -14,14 +14,14 @@ import (
 type AdmissionRepository interface {
 	FindAdmissionByStudentNumber(studentNumber string, txn ...*gorm.DB) (admissionModel.Admission, error)
 	SaveAdmission(admission admissionModel.Admission, txn ...*gorm.DB) error
-	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error)
+	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error)
 	FindAdmissionsByStreamNumber(streamNumber string, txn ...*gorm.DB) ([]admissionModel.Admission, error)
 }
 
 type admissionRepository struct {
 }
 
-func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error) {
+func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error) {
 
 	db := config.DB
 	if len(txn) > 0 {
@@ -39,7 +39,21 @@ func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, stud
 			filters.ByAnyField("admissions.stream_number", streamNumber),
 			filters.ByAnyField("admissions.school_number", schoolNumber),
 			filters.ByAnyField("admissions.campus_class_number", campusClassNumber),
+			filters.ByAnyField("admissions.academic_year_number", academicYearNumber),
 			filters.BySearchingAnyField([]string{"students.adn", "students.apn", "students.surname", "students.second_name", "students.other_name"}, search),
+			func(db *gorm.DB) *gorm.DB {
+				q := db
+				if classNumber != "" {
+					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE class_number = ?))", classNumber)
+				}
+				if levelNumber != "" {
+					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE curriculum_level_number IN (SELECT number FROM curriculum_levels WHERE level_number = ?)))", levelNumber)
+				}
+				if curriculumNumber != "" {
+					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE curriculum_level_number IN (SELECT number FROM curriculum_levels WHERE curriculum_number = ?)))", curriculumNumber)
+				}
+				return q
+			},
 			func(db *gorm.DB) *gorm.DB {
 				return db.Where("admissions.status IN (?)", []string{constants.StatusPending, constants.StatusAdmitted})
 			},

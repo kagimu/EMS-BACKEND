@@ -221,6 +221,10 @@ func FetchAdmissions(c *gin.Context) {
 	schoolNumber := c.Query("school_number")
 	campusClassNumber := c.Query("campus_class_number")
 	search := c.Query("search")
+	academicYearNumber := c.Query("academic_year_number")
+	classNumber := c.Query("class_number")
+	levelNumber := c.Query("level_number")
+	curriculumNumber := c.Query("curriculum_number")
 
 	if user.Type != constants.TypeClient {
 		if schoolNumber == "" {
@@ -229,7 +233,7 @@ func FetchAdmissions(c *gin.Context) {
 		}
 	}
 
-	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, user, paginate)
+	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber, user, paginate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
