@@ -44,13 +44,13 @@ func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, stud
 			func(db *gorm.DB) *gorm.DB {
 				q := db
 				if classNumber != "" {
-					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE class_number = ?))", classNumber)
+					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE deleted_at IS NULL AND curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE deleted_at IS NULL AND class_number = ?))", classNumber)
 				}
 				if levelNumber != "" {
-					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE curriculum_level_number IN (SELECT number FROM curriculum_levels WHERE level_number = ?)))", levelNumber)
+					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE deleted_at IS NULL AND campus_level_number = ?)", levelNumber)
 				}
 				if curriculumNumber != "" {
-					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE curriculum_level_number IN (SELECT number FROM curriculum_levels WHERE curriculum_number = ?)))", curriculumNumber)
+					q = q.Where("admissions.campus_class_number IN (SELECT number FROM campus_classes WHERE deleted_at IS NULL AND campus_level_number IN (SELECT number FROM campus_levels WHERE deleted_at IS NULL AND campus_curriculum_number = ?))", curriculumNumber)
 				}
 				return q
 			},
