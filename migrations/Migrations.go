@@ -441,6 +441,7 @@ func Init() error {
 		&jobPositionModels.StaffBioDataLanguageItem{},
 		&jobPositionModels.StaffBioDataReferences{},
 		&paymentModels.PaymentMethod{},
+		&admissionModel.TermsOfAdmission{},
 	)
 
 	if err != nil {

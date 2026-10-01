@@ -625,6 +625,10 @@ func SetupRoutes() *gin.Engine {
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 			admission.GET("items/:admission_number", admissionController.FetchItemsAddedOnAdmission)
 
+			// Terms of Admission (TOA)
+			admission.POST("toa", admissionController.SaveToaController)
+			admission.GET("toa/:school_number", admissionController.GetToaController)
+
 		}
 
 		templates := admission.Group("/templates")
