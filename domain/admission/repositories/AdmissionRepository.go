@@ -30,7 +30,7 @@ func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, stud
 
 	var admissions []admissionModel.Admission
 
-	if err := db.
+	if err := db.Model(&admissionModel.Admission{}).
 		Joins("JOIN students ON students.number = admissions.student_number").
 		Joins("JOIN applications ON applications.number = students.application_number").
 		Scopes(
