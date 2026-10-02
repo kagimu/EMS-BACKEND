@@ -629,6 +629,10 @@ func SetupRoutes() *gin.Engine {
 			admission.POST("toa", admissionController.SaveToaController)
 			admission.GET("toa/:school_number", admissionController.GetToaController)
 
+			// Signed TOA document upload / retrieval
+			admission.POST("toa/signed-upload", admissionController.UploadSignedToaController)
+			admission.GET("toa/signed-upload/:student_number", admissionController.GetSignedToaAttachmentsController)
+
 		}
 
 		templates := admission.Group("/templates")
