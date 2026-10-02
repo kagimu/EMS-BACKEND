@@ -33,8 +33,8 @@ func Paginate(ctx *gin.Context, pagination *PaginatedResponse) func(db *gorm.DB)
 		pageSizeStr := html.EscapeString(strings.TrimSpace(strings.ToLower(ctx.DefaultQuery("per_page", "10")))) //ctx.DefaultQuery("per_page", "10")
 		pageSize, _ := strconv.Atoi(pageSizeStr)
 		switch {
-		case pageSize > 100:
-			pageSize = 100
+		case pageSize > 1000000:
+			pageSize = 1000000
 		case pageSize <= 0:
 			pageSize = 10
 		}
