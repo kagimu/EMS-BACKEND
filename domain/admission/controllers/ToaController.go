@@ -51,23 +51,22 @@ func GetToaController(ctx *gin.Context) {
 // UploadSignedToaController handles POST /main/admissions/toa/signed-upload
 //
 // Expects multipart/form-data with:
-//   - file           – the signed Terms of Admission document (PDF / image / doc)
-//   - student_number – the student this signed document belongs to
+//   - file         – the signed Terms of Admission document (PDF / image / doc)
+//   - owner_number – the student's number (used as the attachment owner)
+//   - category     – should be "signed_toa"
+//   - title        – (optional) human-readable label
 //
-// The file is stored via the shared attachments service under category "signed_toa".
-// The response includes the attachment_number so the frontend can record / reference it.
+// The file is stored via the shared attachments service.
+// The response includes the attachment_number so the frontend can reference it.
 func UploadSignedToaController(ctx *gin.Context) {
-	studentNumber := ctx.PostForm("student_number")
-	if studentNumber == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "student_number is required"})
+	// The attachment service reads owner_number, category, and title directly
+	// from the multipart form — we just validate that owner_number is present.
+	ownerNumber := ctx.PostForm("owner_number")
+	if ownerNumber == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "owner_number is required"})
 		return
 	}
 
-	// Inject owner_number and category so the shared service picks them up from PostForm.
-	// (The service reads owner_number, title and category via ctx.PostForm internally.)
-	// We can set them by passing the values directly; the service already reads them from
-	// the multipart form, so we just need to make sure the client sends them — but to be
-	// safe and explicit we call the service with the form fields already present.
 	attachmentNumber, err := attachmentServices.UploadAttachment(ctx, "file")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload signed TOA document: " + err.Error()})
