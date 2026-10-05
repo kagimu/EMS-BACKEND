@@ -57,6 +57,7 @@ import (
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
+	reportsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reports/api/controllers"
 	staffMembersControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/controllers"
 	statisticsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/statistics/api/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
@@ -1104,6 +1105,11 @@ func SetupRoutes() *gin.Engine {
 			statistics.GET("summary", statisticsController.FetchStatistics)
 			statistics.POST("print", statisticsController.PrintReport)
 			statistics.POST("test", statisticsController.PrintTestReport)
+		}
+
+		reports := main.Group("reports")
+		{
+			reports.GET("summary", reportsController.FetchSummary)
 		}
 
 		activityReporting := main.Group("activity-reporting")
