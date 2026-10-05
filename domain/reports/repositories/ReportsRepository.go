@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"strings"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reports/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reports/api/responses"
@@ -18,6 +20,9 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	}
 	if filters.CampusNumber != "" {
 		enrollmentBase = enrollmentBase.Where("enrollments.campus_number = ?", filters.CampusNumber)
+	}
+	if filters.StudyPeriodNumber != "" {
+		enrollmentBase = enrollmentBase.Where("enrollments.study_period_number = ?", filters.StudyPeriodNumber)
 	}
 	if filters.AcademicYear != "" {
 		enrollmentBase = enrollmentBase.Where("enrollments.study_period_number IN (SELECT number FROM study_periods WHERE academic_year_number = ? AND deleted_at IS NULL)", filters.AcademicYear)
@@ -47,6 +52,9 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	if filters.CampusNumber != "" {
 		attendanceBase = attendanceBase.Where("attendances.campus_number = ?", filters.CampusNumber)
 	}
+	if filters.StudyPeriodNumber != "" {
+		attendanceBase = attendanceBase.Where("attendances.study_period_number = ?", filters.StudyPeriodNumber)
+	}
 	var totalAttendance int64
 	var presentCount int64
 	attendanceBase.Count(&totalAttendance)
@@ -67,6 +75,9 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	if filters.CampusNumber != "" {
 		admissionBase = admissionBase.Where("admissions.campus_number = ?", filters.CampusNumber)
 	}
+	if filters.StudyPeriodNumber != "" {
+		admissionBase = admissionBase.Where("admissions.study_period_number = ?", filters.StudyPeriodNumber)
+	}
 	admissionBase.Count(&pendingAdmissions)
 	resp.KPIs.PendingAdmissions = responses.KPIValue{Value: float64(pendingAdmissions), Trend: 0.0}
 
@@ -84,13 +95,16 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	if filters.CampusNumber != "" {
 		enrollmentForLevel = enrollmentForLevel.Where("enrollments.campus_number = ?", filters.CampusNumber)
 	}
+	if filters.StudyPeriodNumber != "" {
+		enrollmentForLevel = enrollmentForLevel.Where("enrollments.study_period_number = ?", filters.StudyPeriodNumber)
+	}
 	
+	// Removed levels.deleted_at IS NULL because levels table doesn't have deleted_at
 	enrollmentForLevel.Select("levels.name as name, count(enrollments.id) as count").
 		Joins("JOIN campus_classes ON enrollments.campus_class_number = campus_classes.number").
 		Joins("JOIN curriculum_classes ON campus_classes.curriculum_class_number = curriculum_classes.number").
 		Joins("JOIN classes ON curriculum_classes.class_number = classes.number").
 		Joins("JOIN levels ON classes.level_number = levels.number").
-		Where("levels.deleted_at IS NULL").
 		Group("levels.name").Scan(&lResults)
 
 	for _, r := range lResults {
@@ -114,6 +128,9 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	if filters.CampusNumber != "" {
 		enrollmentForGender = enrollmentForGender.Where("enrollments.campus_number = ?", filters.CampusNumber)
 	}
+	if filters.StudyPeriodNumber != "" {
+		enrollmentForGender = enrollmentForGender.Where("enrollments.study_period_number = ?", filters.StudyPeriodNumber)
+	}
 
 	enrollmentForGender.Select("students.gender as gender, count(enrollments.id) as count").
 		Joins("JOIN students ON enrollments.student_number = students.number").
@@ -121,9 +138,10 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 		Group("students.gender").Scan(&gResults)
 
 	for _, g := range gResults {
-		if g.Gender == "Male" || g.Gender == "MALE" {
+		upperGender := strings.ToUpper(g.Gender)
+		if upperGender == "MALE" || upperGender == "M" {
 			resp.GenderSplit.Male = g.Count
-		} else if g.Gender == "Female" || g.Gender == "FEMALE" {
+		} else if upperGender == "FEMALE" || upperGender == "F" {
 			resp.GenderSplit.Female = g.Count
 		}
 	}
@@ -141,6 +159,9 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	}
 	if filters.CampusNumber != "" {
 		enrollmentForMonth = enrollmentForMonth.Where("enrollments.campus_number = ?", filters.CampusNumber)
+	}
+	if filters.StudyPeriodNumber != "" {
+		enrollmentForMonth = enrollmentForMonth.Where("enrollments.study_period_number = ?", filters.StudyPeriodNumber)
 	}
 
 	enrollmentForMonth.Select("DATE_FORMAT(STR_TO_DATE(enrollments.enrollment_date, '%Y-%m-%d'), '%b') as month, count(enrollments.id) as count").

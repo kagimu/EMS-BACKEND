@@ -5,7 +5,8 @@ type ReportsFilterRequest struct {
 	CampusNumber string `form:"campus_number"`
 	AcademicYear string `form:"academic_year"`
 	DateFrom     string `form:"date_from"`
-	DateTo       string `form:"date_to"`
-	Level        string `form:"level"`
-	ClassNo      string `form:"class_no"`
+	DateTo            string `form:"date_to"`
+	Level             string `form:"level"`
+	ClassNo           string `form:"class_no"`
+	StudyPeriodNumber string `form:"study_period_number"`
 }
