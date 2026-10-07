@@ -431,7 +431,7 @@ func CreateAPN(tx *gorm.DB) (string, error) {
 	}
 
 	savedID := saveAPN.ID + 1
-	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%04s", strconv.FormatUint(uint64(savedID), 10))}, "")
+	result := strings.Join([]string{saveAPN.Year, "01", fmt.Sprintf("%06s", strconv.FormatUint(uint64(savedID), 10))}, "")
 
 	return result, nil
 }

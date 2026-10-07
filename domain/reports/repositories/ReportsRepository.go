@@ -24,6 +24,13 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	if filters.StudyPeriodNumber != "" {
 		enrollmentBase = enrollmentBase.Where("enrollments.study_period_number = ?", filters.StudyPeriodNumber)
 	}
+	if filters.ClassNo != "" {
+		enrollmentBase = enrollmentBase.Where("enrollments.campus_class_number = ?", filters.ClassNo)
+	}
+	if filters.Curriculum != "" {
+		enrollmentBase = enrollmentBase.Joins("JOIN campus_classes cc1 ON enrollments.campus_class_number = cc1.number").
+			Where("cc1.curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE curriculum_level_number IN (SELECT number FROM curriculum_levels WHERE campus_curriculum_number = ?))", filters.Curriculum)
+	}
 	if filters.AcademicYear != "" {
 		enrollmentBase = enrollmentBase.Where("enrollments.study_period_number IN (SELECT number FROM study_periods WHERE academic_year_number = ? AND deleted_at IS NULL)", filters.AcademicYear)
 	}
@@ -55,6 +62,9 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	if filters.StudyPeriodNumber != "" {
 		attendanceBase = attendanceBase.Where("attendances.study_period_number = ?", filters.StudyPeriodNumber)
 	}
+	if filters.ClassNo != "" {
+		attendanceBase = attendanceBase.Where("attendances.campus_class_number = ?", filters.ClassNo)
+	}
 	var totalAttendance int64
 	var presentCount int64
 	attendanceBase.Count(&totalAttendance)
@@ -78,6 +88,9 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	if filters.StudyPeriodNumber != "" {
 		admissionBase = admissionBase.Where("admissions.study_period_number = ?", filters.StudyPeriodNumber)
 	}
+	if filters.ClassNo != "" {
+		admissionBase = admissionBase.Where("admissions.campus_class_number = ?", filters.ClassNo)
+	}
 	admissionBase.Count(&pendingAdmissions)
 	resp.KPIs.PendingAdmissions = responses.KPIValue{Value: float64(pendingAdmissions), Trend: 0.0}
 
@@ -97,6 +110,13 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	}
 	if filters.StudyPeriodNumber != "" {
 		enrollmentForLevel = enrollmentForLevel.Where("enrollments.study_period_number = ?", filters.StudyPeriodNumber)
+	}
+	if filters.ClassNo != "" {
+		enrollmentForLevel = enrollmentForLevel.Where("enrollments.campus_class_number = ?", filters.ClassNo)
+	}
+	if filters.Curriculum != "" {
+		enrollmentForLevel = enrollmentForLevel.Joins("JOIN campus_classes cc2 ON enrollments.campus_class_number = cc2.number").
+			Where("cc2.curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE curriculum_level_number IN (SELECT number FROM curriculum_levels WHERE campus_curriculum_number = ?))", filters.Curriculum)
 	}
 	
 	// Removed levels.deleted_at IS NULL because levels table doesn't have deleted_at
@@ -131,6 +151,13 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	if filters.StudyPeriodNumber != "" {
 		enrollmentForGender = enrollmentForGender.Where("enrollments.study_period_number = ?", filters.StudyPeriodNumber)
 	}
+	if filters.ClassNo != "" {
+		enrollmentForGender = enrollmentForGender.Where("enrollments.campus_class_number = ?", filters.ClassNo)
+	}
+	if filters.Curriculum != "" {
+		enrollmentForGender = enrollmentForGender.Joins("JOIN campus_classes cc3 ON enrollments.campus_class_number = cc3.number").
+			Where("cc3.curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE curriculum_level_number IN (SELECT number FROM curriculum_levels WHERE campus_curriculum_number = ?))", filters.Curriculum)
+	}
 
 	enrollmentForGender.Select("students.gender as gender, count(enrollments.id) as count").
 		Joins("JOIN students ON enrollments.student_number = students.number").
@@ -162,6 +189,13 @@ func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (resp
 	}
 	if filters.StudyPeriodNumber != "" {
 		enrollmentForMonth = enrollmentForMonth.Where("enrollments.study_period_number = ?", filters.StudyPeriodNumber)
+	}
+	if filters.ClassNo != "" {
+		enrollmentForMonth = enrollmentForMonth.Where("enrollments.campus_class_number = ?", filters.ClassNo)
+	}
+	if filters.Curriculum != "" {
+		enrollmentForMonth = enrollmentForMonth.Joins("JOIN campus_classes cc4 ON enrollments.campus_class_number = cc4.number").
+			Where("cc4.curriculum_class_number IN (SELECT number FROM curriculum_classes WHERE curriculum_level_number IN (SELECT number FROM curriculum_levels WHERE campus_curriculum_number = ?))", filters.Curriculum)
 	}
 
 	enrollmentForMonth.Select("DATE_FORMAT(STR_TO_DATE(enrollments.enrollment_date, '%Y-%m-%d'), '%b') as month, count(enrollments.id) as count").

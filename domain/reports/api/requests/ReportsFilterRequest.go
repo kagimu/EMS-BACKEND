@@ -8,5 +8,6 @@ type ReportsFilterRequest struct {
 	DateTo            string `form:"date_to"`
 	Level             string `form:"level"`
 	ClassNo           string `form:"class_no"`
+	Curriculum        string `form:"curriculum_number"`
 	StudyPeriodNumber string `form:"study_period_number"`
 }
