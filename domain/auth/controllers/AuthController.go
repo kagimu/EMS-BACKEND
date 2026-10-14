@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
@@ -27,6 +29,57 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
+
+// bootstrapLockName is the server-global MySQL named lock that serialises the
+// initial-administrator determination across every registration to the same
+// database. It is created and released on a single pinned connection so it can
+// never leak back into the pool.
+const bootstrapLockName = "ems_installation_bootstrap"
+
+// resolveInitialUserType returns the authority type for a registrant given the
+// number of users already present in the installation.
+//
+// A genuinely fresh installation (zero users) designates its first registrant
+// as the initial administrator. Every subsequent registrant is an ordinary
+// user. This does NOT grant administration merely because no *active* admin
+// exists — only a truly empty installation bootstraps an administrator.
+func resolveInitialUserType(existingUserCount int64) string {
+	if existingUserCount == 0 {
+		return constants.TypeAdmin
+	}
+	return "User"
+}
+
+// acquireBootstrapLock takes the installation bootstrap named lock on a pinned
+// database connection. It returns a release function (idempotent) and whether
+// the lock was obtained within the timeout. A false result means the caller
+// must not proceed with registration.
+func acquireBootstrapLock() (func(), bool) {
+	sqlDB, err := config.DB.DB()
+	if err != nil {
+		return func() {}, false
+	}
+	conn, err := sqlDB.Conn(context.Background())
+	if err != nil {
+		return func() {}, false
+	}
+
+	var got sql.NullInt64
+	if err := conn.QueryRowContext(context.Background(), "SELECT GET_LOCK(?, 10)", bootstrapLockName).Scan(&got); err != nil || !got.Valid || got.Int64 != 1 {
+		conn.Close()
+		return func() {}, false
+	}
+
+	released := false
+	return func() {
+		if released {
+			return
+		}
+		released = true
+		_, _ = conn.ExecContext(context.Background(), "SELECT RELEASE_LOCK(?)", bootstrapLockName)
+		conn.Close()
+	}, true
+}
 
 func Login(context *gin.Context) {
 
@@ -330,15 +383,29 @@ func Register(context *gin.Context) {
 
 	///save user data
 
+	// SEC-BOOTSTRAP: serialise the first-user determination across concurrent
+	// registrations (and across instances sharing this database) with a
+	// server-global named lock, so two simultaneous registrations on a fresh
+	// installation cannot both be granted the initial Admin type. The lock is
+	// held until the handler returns (commit or rollback) and is always released
+	// on the same pinned connection.
+	releaseBootstrapLock, bootstrapLocked := acquireBootstrapLock()
+	if !bootstrapLocked {
+		context.JSON(http.StatusServiceUnavailable, gin.H{"message": "Registration is temporarily busy, please retry."})
+		return
+	}
+	defer releaseBootstrapLock()
+
 	//first time registration user type must be admin
-	var user models.User
-	userType := "User"
 	userStatus := "Inactive"
 
-	if userTypeChecker := config.DB.
-		First(&user).Error; userTypeChecker != nil {
-		userType = constants.TypeAdmin
+	var existingUserCount int64
+	countErr := config.DB.Model(&models.User{}).Count(&existingUserCount).Error
+	if countErr != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Registration is temporarily unavailable, please retry."})
+		return
 	}
+	userType := resolveInitialUserType(existingUserCount)
 
 	//creates a secure uuid user number
 

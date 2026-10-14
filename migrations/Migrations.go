@@ -17,6 +17,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	cateringModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"
 	classModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
+	commercialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commercial/models"
 	assessmentAreaModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/models"
 	conceptModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/models"
 	curriculumModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
@@ -26,6 +27,16 @@ import (
 	subTopicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/models"
 	topicModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/models"
 	currDelivery "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculumdelivery/models"
+	emsAddonModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/addons/models"
+	emsAssignmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/assignments/models"
+	emsAuditModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/audit/models"
+	emsAuthorityModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/authority/models"
+	customfieldModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/customfields/models"
+	emsLicensingModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/models"
+	emsNotificationsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/notifications/models"
+	emsOrganisationModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/models"
+	emsStakeholderModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/stakeholders/models"
+	emsWorkflowModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/workflow/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	interviewModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/models"
@@ -236,6 +247,57 @@ func Init() error {
 		&admissionModel.AdmissionRequirement{},
 		&studentModels.StudentBioData{},
 		&admissionModel.AdmissionInterview{},
+		// EMS Core Foundation A: addon/module registry (additive; ems_modules only).
+		&emsAddonModels.Module{},
+		// EMS Core Foundation B: organisation units (additive; ems_organisation_units only).
+		&emsOrganisationModels.OrganisationUnit{},
+		// EMS Core Foundation C1: generic stakeholder registry (additive; ems_stakeholders only).
+		&emsStakeholderModels.Stakeholder{},
+		// EMS Core Foundation C3: generic user assignments (additive; ems_user_assignments only).
+		&emsAssignmentModels.UserAssignment{},
+		// EMS Core Foundation D: decision authority (additive; ems_decision_authorities only).
+		&emsAuthorityModels.DecisionAuthority{},
+		// EMS Core Foundation E1: workflow and approvals (additive; ems_approval_requests,
+		// ems_approval_steps and ems_approval_assignments only).
+		&emsWorkflowModels.ApprovalRequest{},
+		&emsWorkflowModels.ApprovalStep{},
+		&emsWorkflowModels.ApprovalAssignment{},
+		// EMS Core Foundation D (unit narrowing): normalised unit-aware approval
+		// anchors (ratified D6). Additive — the legacy ems_approval_steps.anchors
+		// column is retained for pre-amendment rows and is never migrated.
+		&emsWorkflowModels.ApprovalStepAnchor{},
+		// Foundation E4 (E4-2): organisation-scoped advisor default deadline
+		// configuration (ems_workflow_deadline_configs). Additive only; the
+		// resolved deadline is persisted per request on ems_approval_requests.
+		&emsWorkflowModels.WorkflowDeadlineConfig{},
+		// EMS Core Foundation F (Increment 1): licence registry.
+		&emsLicensingModels.Licence{},
+		// EMS Core Foundation F (Increment 2): installation and activation.
+		&emsLicensingModels.Installation{},
+		// EMS Core Foundation F (Increment 5): append-only licensing facts for
+		// Foundation G to reference later (§17/§18). Facts only — no engine,
+		// no delivery and no derived state.
+		&emsLicensingModels.LicenceEvent{},
+		// EMS Core Foundation G (Increment 1): general cross-cutting audit
+		// facts (ems_audit_logs). Append-only; Foundation F's ems_licence_events
+		// remains the authoritative licensing fact source and is not duplicated.
+		&emsAuditModels.AuditLog{},
+		// EMS Core Foundation G (Increment 3): recipient-scoped in-app
+		// notifications (ems_notifications). In-app only — no external delivery,
+		// scheduler, worker or queue (§14/§21).
+		&emsNotificationsModels.Notification{},
+		// EMS Commercial Onboarding (test-payment workflow, additive): the
+		// installation-package catalogue, installation setup orders and their
+		// quotation snapshots, software-subscription orders, one-shot activation
+		// tokens (setup/subscription; hash only) and simulated payments. No
+		// existing licensing table is altered.
+		&commercialModels.InstallationPackage{},
+		&commercialModels.SetupOrder{},
+		&commercialModels.SubscriptionOrder{},
+		&commercialModels.ActivationToken{},
+		&commercialModels.SimulatedPayment{},
+		&customfieldModels.FieldDefinition{},
+		&customfieldModels.FieldValue{},
 	)
 
 	if err != nil {

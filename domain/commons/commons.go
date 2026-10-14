@@ -79,13 +79,29 @@ func Feedback(message string) map[string]any {
 }
 
 func GetUserFromHeader(c *gin.Context) (*models.User, error) {
-	userNumber := c.Request.Header["User-Number"][0]
+	// SEC-1: the authenticated identity is authoritative only from the validated
+	// JWT (set by AuthorizeJWT). The JWT-derived context is therefore preferred;
+	// the User-Number header is only a legacy fallback for non-JWT callers (the
+	// JWT middleware also overwrites it with the JWT-derived value, so a client
+	// can never influence identity).
 	var user models.User
 
-	if err := config.DB.
-		Where("number = ?", userNumber).
-		First(&user).Error; err != nil {
-		return nil, err
+	if value, exists := c.Get("user"); exists {
+		if jwtUser, ok := value.(models.User); ok && jwtUser.Number != "" {
+			user = jwtUser
+		}
+	}
+
+	if user.Number == "" {
+		userNumber := c.GetHeader("User-Number")
+		if userNumber == "" {
+			return nil, errors.New("authenticated user is not available")
+		}
+		if err := config.DB.
+			Where("number = ?", userNumber).
+			First(&user).Error; err != nil {
+			return nil, err
+		}
 	}
 
 	entityService := services.EntityService{}
@@ -106,7 +122,17 @@ func GetUserEntityNumber(c *gin.Context) (string, error) {
 
 	entityService := services.EntityService{}
 
-	userNumber := c.Request.Header["User-Number"][0]
+	// SEC-1: identity comes from the validated JWT context when available; the
+	// User-Number header is only a legacy fallback and cannot override the JWT.
+	userNumber := ""
+	if value, exists := c.Get("user"); exists {
+		if jwtUser, ok := value.(models.User); ok {
+			userNumber = jwtUser.Number
+		}
+	}
+	if userNumber == "" {
+		userNumber = c.GetHeader("User-Number")
+	}
 
 	fmt.Println("Getting current entity for: " + userNumber)
 

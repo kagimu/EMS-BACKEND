@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"html/template"
 	"log"
+	"os"
+	"strconv"
 
 	"gopkg.in/gomail.v2"
 )
@@ -48,17 +50,31 @@ func (i Info) SendEmail() error {
 
 	result := buff.String()
 
+	// EMS Release 1 (security fix B2): SMTP credentials are read from the
+	// environment (MAIL_FROM / MAIL_HOST / MAIL_PORT / MAIL_USERNAME /
+	// MAIL_PASSWORD) instead of being hardcoded in source. No other email
+	// behaviour is changed.
+	from := os.Getenv("MAIL_FROM")
+	host := os.Getenv("MAIL_HOST")
+	username := os.Getenv("MAIL_USERNAME")
+	password := os.Getenv("MAIL_PASSWORD")
+
+	port, err := strconv.Atoi(os.Getenv("MAIL_PORT"))
+	if err != nil {
+		port = 587
+	}
+
 	m := gomail.NewMessage()
-	m.SetHeader("From", "andysteve2222@gmail.com")
+	if from != "" {
+		m.SetHeader("From", from)
+	} else {
+		m.SetHeader("From", username)
+	}
 	m.SetHeader("To", i.Email)
 	m.SetHeader("Subject", i.MailType)
-	//m.SetAddressHeader("Cc", "dan@example.com", "Dan")
-	//m.SetBody("text/html", "Hello Andy steve please find this email! "+i.Token)
 	m.SetBody("text/html", result)
-	//m.Attach("/home/Alex/lolcat.jpg")
 
-	d := gomail.NewDialer("smtp.gmail.com", 587, "andysteve2222@gmail.com", "rhknebyyuqbqfity")
-	//d := gomail.NewDialer(os.Getenv("MAIL_HOST"), os.Getenv("MAIL_PORT"), os.Getenv("MAIL_USERNAME"), os.Getenv("MAIL_PASSWORD"))
+	d := gomail.NewDialer(host, port, username, password)
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	if err := d.DialAndSend(m); err != nil {
 		log.Println("Error sending email:", err)

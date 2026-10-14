@@ -21,7 +21,9 @@ func ValidatePermission(permission string) gin.HandlerFunc {
 		if permission != "" {
 
 			var allowed = false
-			permissions, err := repository.FetchAllPermissionsByUser(c.GetHeader("User-Number"))
+			// SEC-1: permissions are resolved for the validated JWT identity
+			// (`c.MustGet("user")`), never for a client-supplied User-Number header.
+			permissions, err := repository.FetchAllPermissionsByUser(user.Number)
 
 			if err != nil {
 				c.JSON(http.StatusForbidden, commons.Feedback(err.Error()))

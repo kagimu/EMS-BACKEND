@@ -30,12 +30,13 @@ func JWTAuthService() JWTService {
 	}
 }
 
+// getSecretKey returns the configured JWT signing secret.
+//
+// Release 1 (EMS security fix B1): the previous "secret" fallback was removed.
+// A missing JWT_SECRET must never silently produce a predictable signing key.
+// Startup is refused in main.go when JWT_SECRET is empty.
 func getSecretKey() string {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "secret"
-	}
-	return secret
+	return os.Getenv("JWT_SECRET")
 }
 
 func (service *jwtServices) GenerateToken(UserNumber string) (string, error) {

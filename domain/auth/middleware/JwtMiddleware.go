@@ -52,7 +52,11 @@ func AuthorizeJWT() gin.HandlerFunc {
 
 		if token.Valid {
 			claims := token.Claims.(*services.AuthCustomClaims)
-			c.Request.Header.Add("User-Number", claims.UserNumber)
+			// SEC-1: the application identity must come exclusively from the
+			// validated JWT. Set (do NOT Add) the header so any client-supplied
+			// User-Number values are discarded and exactly one trusted value —
+			// the JWT-derived one — is present for every consumer.
+			c.Request.Header.Set("User-Number", claims.UserNumber)
 
 			var userData models.User
 			//check if user is a valid user

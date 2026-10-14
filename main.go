@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
+	commercialServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commercial/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -30,6 +32,13 @@ func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
+	}
+
+	// EMS Release 1 (security fix B1): fail fast if the JWT signing secret is
+	// absent. This replaces the removed "secret" fallback so that a predictable
+	// signing key can never be used in any environment.
+	if os.Getenv("JWT_SECRET") == "" {
+		log.Fatal("JWT_SECRET is not set; refusing to start")
 	}
 
 	gin.SetMode(gin.DebugMode)
@@ -66,6 +75,16 @@ func main() {
 	if err := migrations.Init(); err != nil {
 		log.Println(err)
 		return
+	}
+
+	// Development-only, idempotent illustrative package catalogue for the
+	// disposable onboarding environment. Never enabled in production.
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("DEV_SEED_PACKAGES")), "true") {
+		if n, err := commercialServices.SeedTestPackages(); err != nil {
+			log.Println("test package seed failed:", err)
+		} else if n > 0 {
+			log.Printf("seeded %d illustrative installation package(s)", n)
+		}
 	}
 
 	router := routes.SetupRoutes()

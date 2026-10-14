@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"os"
+	"strings"
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/attachments/controller"
@@ -23,6 +25,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/controllers"
 	cateringController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/controllers"
 	classController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/controllers"
+	commercialController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commercial/controllers"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	assessmentAreaController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/assessmentArea/controllers"
 	conceptController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/concept/controllers"
@@ -32,6 +35,19 @@ import (
 	subjectClusterController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subjectcluster/controllers"
 	subTopicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/subtopic/controllers"
 	topicController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/topic/controllers"
+	devController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/dev/controllers"
+	addonsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/addons/controllers"
+	userAssignmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/assignments/controllers"
+	auditController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/audit/controllers"
+	auditMiddleware "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/audit/middleware"
+	decisionAuthorityController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/authority/controllers"
+	customFieldController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/customfields/controllers"
+	licensingController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/controllers"
+	licensingMiddleware "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/middleware"
+	notificationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/notifications/controllers"
+	organisationUnitController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/controllers"
+	stakeholderController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/stakeholders/controllers"
+	approvalController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/workflow/controllers"
 	enrollmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
 	interviewController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/interview/controllers"
@@ -53,6 +69,7 @@ import (
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
+	setupController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/setup/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
 	statisticsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/statistics/api/controllers"
@@ -71,17 +88,26 @@ func SetupRoutes() *gin.Engine {
 	router := gin.Default()
 
 	//setting cors in the system
+	// EMS Release 1 (security fix B3): origins are restricted to an explicit
+	// allow-list. APP_CORS_ORIGINS (comma-separated) overrides the defaults.
+	// The previous permissive origin callback that accepted every origin was removed.
+	allowedOrigins := []string{"http://localhost:2054", "https://wholesome-api.noregrets.ug", "https://test-api.wholesome.noregrets.ug"}
+	if envOrigins := os.Getenv("APP_CORS_ORIGINS"); envOrigins != "" {
+		allowedOrigins = make([]string, 0)
+		for _, origin := range strings.Split(envOrigins, ",") {
+			if trimmed := strings.TrimSpace(origin); trimmed != "" {
+				allowedOrigins = append(allowedOrigins, trimmed)
+			}
+		}
+	}
+
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:2054", "https://wholesome-api.noregrets.ug", "https://test-api.wholesome.noregrets.ug"},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "OPTIONS", "DELETE"},
-		AllowHeaders:     []string{"Access-Control-Allow-Origin", "Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host", "Token", "Authorization", "Accept-Encoding", "X-CSRF-Token", "Access-Control-Allow-Headers", "Content-Type", "user-number"},
+		AllowHeaders:     []string{"Access-Control-Allow-Origin", "Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host", "Token", "Authorization", "user-number", "User-Number", "Accept-Encoding", "X-CSRF-Token", "Access-Control-Allow-Headers", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		AllowOriginFunc: func(origin string) bool {
-			///return origin == "https://github.com"
-			return true
-		},
-		MaxAge: 12 * time.Hour,
+		MaxAge:           12 * time.Hour,
 	}))
 
 	//router.Use(middlewares.JWTMiddleware())
@@ -91,6 +117,28 @@ func SetupRoutes() *gin.Engine {
 
 	router.NoRoute(commons.RouteNotFound)
 	router.GET("ping", commons.APIHealth)
+
+	// Public, read-only installation-setup status. Lets the client root decide
+	// between the first-time setup experience and login without trusting any
+	// client state. Returns only the routing state (see SetupController.Status).
+	router.GET("setup/status", setupController.Status)
+
+	// Commercial onboarding (test-payment workflow). Public: catalogue read,
+	// quotation/order creation, setup-token validation and subscription
+	// quotation. Simulated payment routes exist ONLY when the dev flag is set.
+	router.GET("setup/packages", commercialController.ListPackages)
+	router.GET("setup/locations", commercialController.ListLocations)
+	router.POST("setup/orders", commercialController.CreateSetupOrder)
+	router.POST("setup/tokens/validate", commercialController.ValidateSetupToken)
+	router.POST("setup/subscription-quotation", commercialController.SubscriptionQuote)
+	// Onboarding subscription (before sign-in), bound to a paid setup token; a
+	// successful payment issues the account activation token.
+	router.POST("setup/subscription", commercialController.CreateOnboardingSubscription)
+	router.POST("setup/subscription/tokens/validate", commercialController.ValidateSubscriptionToken)
+	if commercialController.SimulatedPaymentsEnabled() {
+		router.POST("setup/orders/:number/simulate-payment", commercialController.SimulateSetupPayment)
+		router.POST("setup/subscription/orders/:number/simulate-payment", commercialController.SimulateOnboardingSubscriptionPayment)
+	}
 
 	landingPage := router.Group("/landing-page")
 	{
@@ -106,12 +154,17 @@ func SetupRoutes() *gin.Engine {
 	}
 
 	main := router.Group("/main", middleware.AuthorizeJWT())
+	// Foundation F Increment 3: additive licence entitlement enforcement.
+	// Licensed-module routes (Education today) require an active or in-grace
+	// entitled licence; EMS Core, licensing status/activation/renewal and
+	// profile are exempt so the licence can always be managed or recovered.
+	main.Use(licensingMiddleware.RequireLicenceEntitlement("education"))
 	{
 		main.GET("profile", authController.Profile)
 
 		curriculum := main.Group("/curriculum")
 		{
-			curriculum.GET("all", curriculumController.FetchCurriculum, middleware.ValidatePermission("view_curriculum"))
+			curriculum.GET("all", middleware.ValidatePermission("view_curriculum"), curriculumController.FetchCurriculum)
 			curriculum.POST("new", curriculumController.NewCurriculum)
 			curriculum.GET("/info", curriculumController.CurriculumInfo)
 			curriculum.GET("/campus-curriculum-level", curriculumController.FetchCampusCurriculumLevel)
@@ -407,7 +460,7 @@ func SetupRoutes() *gin.Engine {
 			{
 				entity.POST("add", eosController.AddEntity)
 				entity.POST("update", middleware.ValidatePermission(constants.CanUpdateEntity), eosController.UpdateEntity)
-				entity.POST("delete", eosController.DeleteEntity, middleware.ValidatePermission(constants.CanDeleteEntity))
+				entity.POST("delete", middleware.ValidatePermission(constants.CanDeleteEntity), eosController.DeleteEntity)
 				entity.POST("current", eosController.SaveCurrentEntity)
 				entity.GET("current", eosController.GetCurrentEntity)
 			}
@@ -1021,6 +1074,213 @@ func SetupRoutes() *gin.Engine {
 			curriculumDelivery.GET("students/:curriculum_delivery_number", controllers3.GetStudentsBySession)
 			curriculumDelivery.PUT("update-session", controllers3.UpdateSession)
 			curriculumDelivery.GET("percentage-by-stream/:stream_number", controllers3.GetCurriculumDeliveryProgressByStream)
+		}
+
+		// EMS Core Foundation A: addon/module registry.
+		// Registry state only: these endpoints never gate or change Education.
+		// ValidatePermission MUST run before the handler so an unauthorised
+		// request is rejected before any response is written.
+		emsModules := main.Group("/ems/modules")
+		{
+			emsModules.GET("", middleware.ValidatePermission("view_ems_modules"), addonsController.FetchModules)
+			emsModules.GET(":code", middleware.ValidatePermission("view_ems_modules"), addonsController.FetchModule)
+			emsModules.PATCH(":code/enable", middleware.ValidatePermission("manage_ems_modules"), addonsController.EnableModule)
+			emsModules.PATCH(":code/disable", middleware.ValidatePermission("manage_ems_modules"), addonsController.DisableModule)
+		}
+
+		// EMS Core Foundation B: organisation units.
+		// Organisation-scoped; permission middleware runs before the handler.
+		emsOrganisationUnits := main.Group("/ems/organisation-units")
+		{
+			emsOrganisationUnits.GET("", middleware.ValidatePermission("view_ems_organisation"), organisationUnitController.FetchOrganisationUnits)
+			emsOrganisationUnits.GET(":number", middleware.ValidatePermission("view_ems_organisation"), organisationUnitController.FetchOrganisationUnit)
+			emsOrganisationUnits.POST("", middleware.ValidatePermission("manage_ems_organisation"), organisationUnitController.CreateOrganisationUnit)
+			emsOrganisationUnits.PUT(":number", middleware.ValidatePermission("manage_ems_organisation"), organisationUnitController.UpdateOrganisationUnit)
+			emsOrganisationUnits.PATCH(":number/status", middleware.ValidatePermission("manage_ems_organisation"), organisationUnitController.UpdateOrganisationUnitStatus)
+			emsOrganisationUnits.DELETE(":number", middleware.ValidatePermission("manage_ems_organisation"), organisationUnitController.DeleteOrganisationUnit)
+		}
+
+		// EMS Core Foundation C1: generic stakeholder registry.
+		// Organisation-scoped; permission middleware runs before the handler.
+		emsStakeholders := main.Group("/ems/stakeholders")
+		{
+			emsStakeholders.GET("", middleware.ValidatePermission("view_ems_stakeholders"), stakeholderController.FetchStakeholders)
+			emsStakeholders.GET(":number", middleware.ValidatePermission("view_ems_stakeholders"), stakeholderController.FetchStakeholder)
+			emsStakeholders.POST("", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.CreateStakeholder)
+			emsStakeholders.PUT(":number", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.UpdateStakeholder)
+			emsStakeholders.PATCH(":number/status", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.UpdateStakeholderStatus)
+		}
+
+		// EMS Core Foundation C3: generic user assignments.
+		// Organisation-scoped; permission middleware runs before the handler.
+		emsUserAssignments := main.Group("/ems/user-assignments")
+		{
+			emsUserAssignments.GET("", middleware.ValidatePermission("view_ems_assignments"), userAssignmentController.FetchUserAssignments)
+			emsUserAssignments.GET(":number", middleware.ValidatePermission("view_ems_assignments"), userAssignmentController.FetchUserAssignment)
+			emsUserAssignments.POST("", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.CreateUserAssignment)
+			emsUserAssignments.PUT(":number", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.UpdateUserAssignment)
+			emsUserAssignments.PATCH(":number/status", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.UpdateUserAssignmentStatus)
+		}
+
+		// EMS Core Foundation D: decision authority.
+		// Definitions are organisation-scoped; the resolver is read-only.
+		// Permission middleware runs before the handler on every route.
+		emsDecisionAuthorities := main.Group("/ems/decision-authorities")
+		{
+			emsDecisionAuthorities.GET("", middleware.ValidatePermission("view_ems_authority"), decisionAuthorityController.FetchDecisionAuthorities)
+			emsDecisionAuthorities.GET(":number", middleware.ValidatePermission("view_ems_authority"), decisionAuthorityController.FetchDecisionAuthority)
+			emsDecisionAuthorities.POST("", middleware.ValidatePermission("manage_ems_authority"), decisionAuthorityController.CreateDecisionAuthority)
+			emsDecisionAuthorities.PUT(":number", middleware.ValidatePermission("manage_ems_authority"), decisionAuthorityController.UpdateDecisionAuthority)
+			emsDecisionAuthorities.PATCH(":number/status", middleware.ValidatePermission("manage_ems_authority"), decisionAuthorityController.UpdateDecisionAuthorityStatus)
+		}
+
+		// The resolver uses a separate static path because Gin/httprouter cannot
+		// register "resolve" and ":number" as siblings (registration would panic).
+		emsAuthorityResolution := main.Group("/ems/authority-resolution")
+		{
+			emsAuthorityResolution.GET("", middleware.ValidatePermission("view_ems_authority"), decisionAuthorityController.ResolveAuthority)
+		}
+
+		// EMS Core Foundation E1: workflow and approvals.
+		// Requests are organisation-scoped and permission-gated. Creating and
+		// cancelling require management rights; approving or rejecting requires
+		// the approval permission AND a live assignment for the current step.
+		// Permission middleware runs before the handler on every route.
+		emsApprovals := main.Group("/ems/approvals")
+		{
+			emsApprovals.GET("", middleware.ValidatePermission("view_ems_workflow"), approvalController.FetchApprovalRequests)
+			emsApprovals.POST("", middleware.ValidatePermission("manage_ems_workflow"), approvalController.CreateApprovalRequest)
+			emsApprovals.GET(":number", middleware.ValidatePermission("view_ems_workflow"), approvalController.FetchApprovalRequest)
+			emsApprovals.POST(":number/approve", middleware.ValidatePermission("act_ems_approval"), approvalController.ApproveApprovalRequest)
+			emsApprovals.POST(":number/reject", middleware.ValidatePermission("act_ems_approval"), approvalController.RejectApprovalRequest)
+			emsApprovals.POST(":number/return", middleware.ValidatePermission("act_ems_approval"), approvalController.ReturnApprovalRequest)
+			emsApprovals.POST(":number/cancel", middleware.ValidatePermission("manage_ems_workflow"), approvalController.CancelApprovalRequest)
+		}
+
+		// The approver inbox lives on a separate static path so it can never be
+		// confused with a request number.
+		emsApprovalTasks := main.Group("/ems/approval-tasks")
+		{
+			emsApprovalTasks.GET("", middleware.ValidatePermission("view_ems_workflow"), approvalController.FetchApprovalTasks)
+		}
+
+		// Foundation E4 (E4-2): organisation-scoped workflow deadline
+		// configuration. Read uses the existing view_ems_workflow; update uses the
+		// existing manage_ems_workflow authority (E4-D10). No new permission.
+		emsWorkflow := main.Group("/ems/workflow")
+		{
+			emsWorkflow.GET("/deadline-config", middleware.ValidatePermission("view_ems_workflow"), approvalController.FetchDeadlineConfig)
+			emsWorkflow.PUT("/deadline-config", middleware.ValidatePermission("manage_ems_workflow"), approvalController.UpdateDeadlineConfig)
+		}
+
+		// EMS Core Foundation F (Increment 1): licence registry and client
+		// licence status. The control plane uses a dedicated authority guard
+		// (RequireLicenceRegistryAuthority) that deliberately does NOT honour
+		// the Admin user-type pass-through: registry authority is explicit.
+		emsLicenceRegistry := main.Group("/ems/licence-registry")
+		{
+			emsLicenceRegistry.POST("/licences", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.IssueLicence)
+			emsLicenceRegistry.GET("/licences", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchLicences)
+			emsLicenceRegistry.GET("/licences/:number", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchLicence)
+			emsLicenceRegistry.PUT("/licences/:number", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.ConfigureLicence)
+			emsLicenceRegistry.POST("/licences/:number/renew", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.RenewLicence)
+			emsLicenceRegistry.POST("/licences/:number/suspend", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.SuspendLicence)
+			emsLicenceRegistry.POST("/licences/:number/revoke", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.RevokeLicence)
+			emsLicenceRegistry.POST("/licences/:number/replace", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.ReplaceLicence)
+			emsLicenceRegistry.GET("/installations", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchInstallations)
+			emsLicenceRegistry.GET("/installations/:number", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchInstallation)
+			emsLicenceRegistry.POST("/installations/:number/release", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.ReleaseInstallation)
+			emsLicenceRegistry.GET("/events", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchLicenceEvents)
+		}
+
+		// Client plane: the organisation's own licence status and installation
+		// activation. Never exposes the licence key and never reaches another
+		// organisation. Self-deactivation terminates access only; capacity is
+		// released only through the control plane.
+		emsLicence := main.Group("/ems/licence")
+		{
+			emsLicence.GET("", middleware.ValidatePermission("view_licence_status"), licensingController.ClientLicenceStatus)
+			emsLicence.POST("/activate", middleware.ValidatePermission("activate_licence_installation"), licensingMiddleware.RequireActivationRateLimit(), licensingController.ActivateInstallation)
+			emsLicence.GET("/installations", middleware.ValidatePermission("view_licence_status"), licensingController.FetchClientInstallations)
+			emsLicence.POST("/installations/:number/deactivate", middleware.ValidatePermission("deactivate_own_installation"), licensingController.DeactivateOwnInstallation)
+			emsLicence.POST("/renewal-request", middleware.ValidatePermission("request_licence_renewal"), licensingController.RequestRenewal)
+		}
+
+		// EMS Core Foundation G (Increment 1): general cross-cutting audit
+		// facts. Client reads are organisation-scoped; control-plane reads use
+		// a dedicated authority that deliberately does NOT honour the Admin
+		// user-type pass-through. Read-only: no update/delete route exists.
+		emsAudit := main.Group("/ems/audit")
+		{
+			emsAudit.GET("", middleware.ValidatePermission("view_ems_audit"), auditController.FetchOrganisationAuditLogs)
+			emsAudit.GET("/:number", middleware.ValidatePermission("view_ems_audit"), auditController.FetchOrganisationAuditLog)
+		}
+
+		emsAuditRegistry := main.Group("/ems/audit-registry")
+		{
+			emsAuditRegistry.GET("", auditMiddleware.RequireAuditRegistryAuthority(), auditController.FetchAuditRegistryLogs)
+		}
+
+		// EMS Core Foundation G (Increment 3): recipient-scoped in-app
+		// notifications. Reads are limited to the authenticated recipient in the
+		// authenticated organisation; mark-read changes only read_at. No route
+		// edits or deletes a notification.
+		emsNotifications := main.Group("/ems/notifications")
+		{
+			emsNotifications.GET("", middleware.ValidatePermission("view_ems_notifications"), notificationController.FetchNotifications)
+			emsNotifications.GET("/:number", middleware.ValidatePermission("view_ems_notifications"), notificationController.FetchNotification)
+			emsNotifications.POST("/:number/read", middleware.ValidatePermission("view_ems_notifications"), notificationController.MarkNotificationRead)
+		}
+
+		// Commercial onboarding (authenticated): package management (admin),
+		// setup-token redemption for the organisation, and the software
+		// subscription (order, simulated payment [dev-only] and activation).
+		// These paths are under /main/ems/ so they remain licence-exempt: a
+		// subscription must be purchasable before any licence exists.
+		emsPackages := main.Group("/ems/packages")
+		{
+			emsPackages.POST("", middleware.ValidatePermission("manage_ems_packages"), commercialController.CreatePackage)
+		}
+
+		emsSetup := main.Group("/ems/setup")
+		{
+			emsSetup.POST("/redeem", commercialController.RedeemSetupToken)
+		}
+
+		emsSubscription := main.Group("/ems/subscription")
+		{
+			emsSubscription.GET("/status", middleware.ValidatePermission("view_licence_status"), commercialController.SubscriptionStatus)
+			emsSubscription.POST("/orders", middleware.ValidatePermission("activate_licence_installation"), commercialController.CreateSubscriptionOrder)
+			emsSubscription.POST("/activate", middleware.ValidatePermission("activate_licence_installation"), commercialController.ActivateSubscription)
+			if commercialController.SimulatedPaymentsEnabled() {
+				emsSubscription.POST("/orders/:number/simulate-payment", middleware.ValidatePermission("activate_licence_installation"), commercialController.SimulateSubscriptionPayment)
+			}
+		}
+
+		// Organisation custom fields (data-driven). Reads need view_ems_organisation;
+		// definitions and values are admin-managed (manage_ems_organisation). All
+		// operations are scoped to the caller's current organisation.
+		emsCustomFields := main.Group("/ems/organisation/custom-fields")
+		{
+			emsCustomFields.GET("", middleware.ValidatePermission("view_ems_organisation"), customFieldController.List)
+			emsCustomFields.POST("", middleware.ValidatePermission("manage_ems_organisation"), customFieldController.Create)
+			emsCustomFields.PUT("/:number", middleware.ValidatePermission("manage_ems_organisation"), customFieldController.Update)
+		}
+		emsCustomFieldValues := main.Group("/ems/organisation/custom-field-values")
+		{
+			emsCustomFieldValues.PUT("", middleware.ValidatePermission("manage_ems_organisation"), customFieldController.SaveValues)
+		}
+
+		// Developer-only onboarding reset (First-Time Setup acceptance testing).
+		// Registered ONLY when DEV_RESET_ENABLED=true, so no production route
+		// exists. JWT authentication still applies (this is the /main group) and
+		// the handler additionally requires an admin caller, the exact
+		// confirmation phrase, and a verified disposable database identity.
+		if devController.DevResetEnabled() {
+			dev := main.Group("/dev")
+			{
+				dev.POST("/reset-onboarding", devController.ResetOnboardingDatabase)
+			}
 		}
 
 	}
