@@ -90,7 +90,7 @@ func main() {
 		}
 		// Development-only, idempotent illustrative package catalogue for the
 		// disposable onboarding environment. Never enabled in production.
-		if strings.EqualFold(strings.TrimSpace(os.Getenv("DEV_SEED_PACKAGES")), "true") {
+		if commercialServices.SeedingEnabled() {
 			if n, err := commercialServices.SeedTestPackages(); err != nil {
 				log.Println("test package seed failed:", err)
 			} else if n > 0 {

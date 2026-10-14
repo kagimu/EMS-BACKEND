@@ -33,7 +33,8 @@ func commercialError(c *gin.Context, err error) {
 		errors.Is(err, commercialServices.ErrTokenWrongPurpose),
 		errors.Is(err, commercialServices.ErrTokenAlreadyUsed):
 		fail(c, http.StatusBadRequest, err)
-	case errors.Is(err, commercialServices.ErrSubscriptionDuration),
+	case errors.Is(err, commercialServices.ErrUnknownPackage),
+		errors.Is(err, commercialServices.ErrSubscriptionDuration),
 		errors.Is(err, commercialServices.ErrNegativeQuantity),
 		errors.Is(err, commercialServices.ErrUnknownService),
 		errors.Is(err, commercialServices.ErrInvalidMethod),
@@ -63,11 +64,26 @@ func currentOrganisation(c *gin.Context) (string, bool) {
 // ---- Installation packages ----
 
 // ListPackages returns the active installation-package catalogue (public read).
+//
+// Self-heal: when the catalogue is empty and seeding is enabled
+// (DEV_SEED_PACKAGES=true) the illustrative packages are (re)seeded, so a reset
+// never leaves the commercial page blank. The seed is idempotent (matched by
+// code) and is a no-op unless the flag is explicitly set.
 func ListPackages(c *gin.Context) {
 	packages, err := commercialServices.ListActivePackages()
 	if err != nil {
 		fail(c, http.StatusInternalServerError, err)
 		return
+	}
+	if len(packages) == 0 && commercialServices.SeedingEnabled() {
+		if _, seedErr := commercialServices.SeedTestPackages(); seedErr != nil {
+			fail(c, http.StatusInternalServerError, errors.New("could not seed installation packages"))
+			return
+		}
+		if packages, err = commercialServices.ListActivePackages(); err != nil {
+			fail(c, http.StatusInternalServerError, err)
+			return
+		}
 	}
 	c.JSON(http.StatusOK, gin.H{"data": packages})
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"time"
 
@@ -16,6 +17,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
+
+// SeedingEnabled reports whether the illustrative installation-package
+// catalogue may be seeded. It is opt-in via DEV_SEED_PACKAGES=true and is the
+// single gate used by startup seeding and by the catalogue read self-heal.
+func SeedingEnabled() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv("DEV_SEED_PACKAGES")), "true")
+}
 
 var (
 	ErrOrderNotFound       = errors.New("order not found")
