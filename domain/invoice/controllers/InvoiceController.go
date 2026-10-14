@@ -100,7 +100,8 @@ func GetAllInvoices(context *gin.Context) {
 		}
 	}
 
-	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber, itemNumbers, startDate, endDate, user)
+	mine := context.Query("mine") == "true"
+	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber, itemNumbers, startDate, endDate, user, mine)
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get invoices, try again", "err": err.Error()})

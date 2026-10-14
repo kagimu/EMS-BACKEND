@@ -33,7 +33,7 @@ import (
 
 type EnrolmentService interface {
 	NewEnrolment(enrolmentRequest requests.EnrollmentRequest, currentUserNumber string) (responses.EnrollmentResponse, error)
-	Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error)
+	Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB, isMine ...bool) ([]responses.Enrollment, error)
 	GetEnrollmentDetailsByNumber(number string) (responses.EnrollmentDetails, error)
 	UpdateEnrollmentItem(id uint, quantity float64, brought bool, dateBrought string, remarks string, currentUserNumber string) error
 	GetRequirementClearanceLogs(enrollmentNumber, itemNumber, dateFrom, dateTo, staffNumber string) ([]responses.RequirementClearanceLogResponse, error)
@@ -43,9 +43,9 @@ type EnrolmentService interface {
 type enrolmentService struct {
 }
 
-func (enrolment *enrolmentService) Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB) ([]responses.Enrollment, error) {
+func (enrolment *enrolmentService) Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status string, user *userModel.User, page func(db *gorm.DB) *gorm.DB, isMine ...bool) ([]responses.Enrollment, error) {
 
-	paginatedResponse, err := enrolmentRepository.PaginatedEnrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
+	paginatedResponse, err := enrolmentRepository.PaginatedEnrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page, isMine...)
 	students := make([]responses.Enrollment, 0)
 
 	if err != nil {

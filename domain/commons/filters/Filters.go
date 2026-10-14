@@ -166,7 +166,7 @@ func ByAnyAmountField(fieldName, comparator string, fieldValue float64) func(db 
 	}
 }
 
-func ByParent(fieldName string, user *userModel.User) func(db *gorm.DB) *gorm.DB {
+func ByParent(fieldName string, user *userModel.User, forceMine ...bool) func(db *gorm.DB) *gorm.DB {
 
 	if user == nil {
 		return func(db *gorm.DB) *gorm.DB {
@@ -174,7 +174,9 @@ func ByParent(fieldName string, user *userModel.User) func(db *gorm.DB) *gorm.DB
 		}
 	}
 
-	if user.Type == constants.TypeAdmin || user.Type == constants.TypeStaff {
+	isMine := len(forceMine) > 0 && forceMine[0]
+
+	if !isMine && (user.Type == constants.TypeAdmin || user.Type == constants.TypeStaff) {
 		return func(db *gorm.DB) *gorm.DB {
 			return db
 		}

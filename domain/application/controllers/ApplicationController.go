@@ -53,7 +53,7 @@ func FetchApplications(c *gin.Context) {
 	var applications []models.Application
 
 	//check for user account type and return applications accordingly
-	if user.Type == "User" {
+	if user.Type == "User" || c.Query("mine") == "true" {
 
 		if err := config.DB.Model(&models.Application{}).
 			Scopes(

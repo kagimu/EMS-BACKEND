@@ -53,9 +53,10 @@ func FindInvoiceByNumber(invoiceNumber string, tx ...*gorm.DB) (invoiceModel.Inv
 	return invoice, nil
 }
 
-func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string, startDate time.Time, endDate time.Time, parentUser *userModel.User) ([]invoiceModel.Invoice, error) {
+func FindAllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, invoiceItems []string, startDate time.Time, endDate time.Time, parentUser *userModel.User, isMine ...bool) ([]invoiceModel.Invoice, error) {
 
 	db := config.DB
+	mine := len(isMine) > 0 && isMine[0]
 
 	var invoices []invoiceModel.Invoice
 
@@ -66,7 +67,7 @@ func FindAllInvoices(status string, userNumber string, campusNumber string, scho
 		Joins("JOIN students ON students.user_number = users.number").
 		Joins("JOIN applications ON applications.number = students.application_number").
 		Scopes(
-			filters.ByParent("applications.user_number", parentUser),
+			filters.ByParent("applications.user_number", parentUser, mine),
 			filters.ByAnyField("invoices.status", status),
 			filters.ByAnyField("statements.user_number", userNumber),
 			filters.ByAnyField("statements.school_number", schoolNumber),

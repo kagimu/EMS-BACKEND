@@ -14,19 +14,17 @@ import (
 type AdmissionRepository interface {
 	FindAdmissionByStudentNumber(studentNumber string, txn ...*gorm.DB) (admissionModel.Admission, error)
 	SaveAdmission(admission admissionModel.Admission, txn ...*gorm.DB) error
-	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error)
+	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, isMine ...bool) ([]admissionModel.Admission, error)
 	FindAdmissionsByStreamNumber(streamNumber string, txn ...*gorm.DB) ([]admissionModel.Admission, error)
 }
 
 type admissionRepository struct {
 }
 
-func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, txn ...*gorm.DB) ([]admissionModel.Admission, error) {
+func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, isMine ...bool) ([]admissionModel.Admission, error) {
 
 	db := config.DB
-	if len(txn) > 0 {
-		db = txn[0]
-	}
+	mine := len(isMine) > 0 && isMine[0]
 
 	var admissions []admissionModel.Admission
 
@@ -57,7 +55,7 @@ func (admissionRepository *admissionRepository) AllAdmissions(campusNumber, stud
 			func(db *gorm.DB) *gorm.DB {
 				return db.Where("admissions.status IN (?)", []string{constants.StatusPending, constants.StatusAdmitted})
 			},
-			filters.ByParent("applications.user_number", user),
+			filters.ByParent("applications.user_number", user, mine),
 			paginateFunc,
 		).Find(&admissions).Error; err != nil {
 

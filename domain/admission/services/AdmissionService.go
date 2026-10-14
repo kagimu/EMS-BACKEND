@@ -23,7 +23,7 @@ import (
 )
 
 type AdmissionService interface {
-	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error)
+	AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, isMine ...bool) ([]responses.AdmissionResponse, error)
 }
 
 type admissionService struct {
@@ -31,11 +31,11 @@ type admissionService struct {
 
 var admissionRepository = repositories.NewAdmissionRepository()
 
-func (admissionService *admissionService) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB) ([]responses.AdmissionResponse, error) {
+func (admissionService *admissionService) AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber string, user *userModel.User, paginateFunc func(db *gorm.DB) *gorm.DB, isMine ...bool) ([]responses.AdmissionResponse, error) {
 
 	var admissionResponse = make([]responses.AdmissionResponse, 0)
 
-	admissions, err := admissionRepository.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber, user, paginateFunc)
+	admissions, err := admissionRepository.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber, user, paginateFunc, isMine...)
 	if err != nil {
 		return admissionResponse, errors.New("Error getting admissions " + err.Error())
 	}

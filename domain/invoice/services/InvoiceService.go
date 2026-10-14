@@ -334,7 +334,7 @@ func doSaveBillableInvoiceItem(invoiceItem models.BillableItem, newInvoiceNumber
 	return nil
 }
 
-func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, commaSeperatedItems string, startDate time.Time, endDate time.Time, user *userModel.User) ([]responses.MinInvoiceResponse, error) {
+func AllInvoices(status string, userNumber string, campusNumber string, schoolNumber string, commaSeperatedItems string, startDate time.Time, endDate time.Time, user *userModel.User, isMine ...bool) ([]responses.MinInvoiceResponse, error) {
 
 	var invoiceResponses = make([]responses.MinInvoiceResponse, 0)
 
@@ -344,7 +344,7 @@ func AllInvoices(status string, userNumber string, campusNumber string, schoolNu
 		invoiceItems = strings.Split(commaSeperatedItems, ",")
 	}
 
-	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber, invoiceItems, startDate, endDate, user)
+	invoices, err := invoiceRepositories.FindAllInvoices(status, userNumber, campusNumber, schoolNumber, invoiceItems, startDate, endDate, user, isMine...)
 	if err != nil {
 		return invoiceResponses, err
 	}
