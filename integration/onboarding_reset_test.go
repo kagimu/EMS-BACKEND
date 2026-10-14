@@ -170,6 +170,24 @@ func TestOnboardingResetDedicatedDatabase(t *testing.T) {
 		}
 	}
 
+	// --- EVERY enumerated base table is empty (full verification, B2). ---
+	var allTables []string
+	if err := db.Raw("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'").Scan(&allTables).Error; err != nil {
+		t.Fatalf("could not enumerate base tables: %v", err)
+	}
+	if len(allTables) == 0 {
+		t.Fatal("no base tables found to verify")
+	}
+	for _, table := range allTables {
+		var count int64
+		if err := db.Raw("SELECT COUNT(*) FROM `" + table + "`").Scan(&count).Error; err != nil {
+			t.Fatalf("counting %s: %v", table, err)
+		}
+		if count != 0 {
+			t.Fatalf("after reset, table %s still has %d row(s)", table, count)
+		}
+	}
+
 	// --- Schema preserved. ---
 	var tablesAfter int64
 	if err := db.Raw("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()").Scan(&tablesAfter).Error; err != nil {

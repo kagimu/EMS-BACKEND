@@ -36,6 +36,12 @@ import (
 // never leak back into the pool.
 const bootstrapLockName = "ems_installation_bootstrap"
 
+// BootstrapLockName is the exported name of the installation bootstrap named
+// lock. Other packages (e.g. the developer reset) MUST use this same name so
+// that reset and first-owner registration are mutually exclusive — it is one
+// lock, not a second bootstrap lock.
+const BootstrapLockName = bootstrapLockName
+
 // resolveInitialUserType returns the authority type for a registrant given the
 // number of users already present in the installation.
 //
@@ -362,7 +368,12 @@ func Register(context *gin.Context) {
 		Where("contact = ?", userEmail).
 		Where("contact_type = ?", "email").
 		First(&contact).Error; duplicateEmail == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Email already exists"})
+		// Initial registration is already recorded for this email. Do not create a
+		// second account or grant any privilege.
+		context.JSON(http.StatusConflict, gin.H{
+			"message":     "An account already exists for this email. Sign in, or resume activation through the existing activation/reset flow.",
+			"next_action": "existing_account",
+		})
 		return
 	}
 
@@ -377,7 +388,10 @@ func Register(context *gin.Context) {
 		Where("contact = ?", userPhone).
 		Where("contact_type = ?", "phone").
 		First(&contact).Error; duplicatePhone == nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Phone already exists"})
+		context.JSON(http.StatusConflict, gin.H{
+			"message":     "An account already exists for this phone number. Sign in, or resume activation through the existing activation/reset flow.",
+			"next_action": "existing_account",
+		})
 		return
 	}
 
@@ -395,6 +409,32 @@ func Register(context *gin.Context) {
 		return
 	}
 	defer releaseBootstrapLock()
+
+	// Serialised duplicate re-checks. Every registration holds the bootstrap
+	// lock from here, so two concurrent registrations cannot both pass these
+	// checks and then both create an account. If the account already exists we
+	// return 409 and never create a second account or grant any privilege.
+	var bootstrapContact models.Contact
+	if duplicateEmail := config.DB.
+		Where("contact = ?", userEmail).
+		Where("contact_type = ?", "email").
+		First(&bootstrapContact).Error; duplicateEmail == nil {
+		context.JSON(http.StatusConflict, gin.H{
+			"message":     "An account already exists for this email. Sign in, or resume activation through the existing activation/reset flow.",
+			"next_action": "existing_account",
+		})
+		return
+	}
+	if duplicatePhone := config.DB.
+		Where("contact = ?", userPhone).
+		Where("contact_type = ?", "phone").
+		First(&bootstrapContact).Error; duplicatePhone == nil {
+		context.JSON(http.StatusConflict, gin.H{
+			"message":     "An account already exists for this phone number. Sign in, or resume activation through the existing activation/reset flow.",
+			"next_action": "existing_account",
+		})
+		return
+	}
 
 	//first time registration user type must be admin
 	userStatus := "Inactive"
@@ -478,20 +518,6 @@ func Register(context *gin.Context) {
 		return
 	}
 
-	//email sender
-	Token := userToken
-	d := emailSender.Info{Email: userEmail, Token: Token, MailType: "WholesomeEd: User Account Confirmation", UserName: secondName, CurrentYear: time.Now().Year(), Type: "registration"}
-	err = d.SendEmail()
-	if err != nil {
-		// If any error occurs, rollback the transaction
-		tx.Rollback()
-		// Handle or return the error as needed
-		//fmt.Println(fmt.Printf("Sending mail error %s\n", err.Error()))
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to send email\n" + err.Error()})
-		return
-		//fmt.Printf("Sending mail error %s\n", err.Error())
-	}
-
 	var collection []interface{}
 	collection = append(collection, saveEmailContact)
 	collection = append(collection, savePhoneContact)
@@ -506,19 +532,32 @@ func Register(context *gin.Context) {
 		collection,
 	}
 
-	// Commit the transaction if there is no error
+	// Commit the account BEFORE sending any email. This keeps the transaction
+	// (and its row locks) short — addressing 1205 lock waits — and guarantees an
+	// activation email is never sent for an account that was rolled back.
 	if err := tx.Commit().Error; err != nil {
-		// Handle or return the error as needed
+		tx.Rollback()
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to create user"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"status":    http.StatusOK,
 		"message":   "Registered Successfully!",
 		"data":      UserDataInfo,
 		"tokenInfo": saveUserPasswordToken.Token,
-	})
+	}
+
+	// Email delivery is handled separately from the database commit: a delivery
+	// failure must not be reported as "account not created" and must not expose
+	// SMTP details.
+	emailInfo := emailSender.Info{Email: userEmail, Token: userToken, MailType: "WholesomeEd: User Account Confirmation", UserName: secondName, CurrentYear: time.Now().Year(), Type: "registration"}
+	if emailErr := emailInfo.SendEmail(); emailErr != nil {
+		response["message"] = "Account created. Activation email delivery needs attention — use your activation token, or the existing password-reset flow, to continue."
+		response["email_delivery"] = "failed"
+	}
+
+	context.JSON(http.StatusOK, response)
 
 }
 

@@ -122,6 +122,9 @@ func SetupRoutes() *gin.Engine {
 	// between the first-time setup experience and login without trusting any
 	// client state. Returns only the routing state (see SetupController.Status).
 	router.GET("setup/status", setupController.Status)
+	// Public, read-only installation-progress facts (booleans + next action).
+	// Extends /setup/status without changing its contract.
+	router.GET("setup/progress", setupController.Progress)
 
 	// Commercial onboarding (test-payment workflow). Public: catalogue read,
 	// quotation/order creation, setup-token validation and subscription

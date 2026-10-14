@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -8,10 +10,48 @@ import (
 	"strings"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/controllers"
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/gin-gonic/gin"
 )
+
+// resetLockTimeoutSeconds bounds how long the reset waits for the bootstrap
+// named lock before aborting with a conflict.
+const resetLockTimeoutSeconds = 10
+
+// acquireResetLock takes the SAME installation bootstrap named lock used by
+// first-owner registration, on one pinned connection, so a reset and a
+// registration can never interleave. MySQL named locks are connection-scoped
+// and are NOT released by COMMIT/ROLLBACK, so the lock is always released
+// explicitly on the connection that acquired it. Returns false when the lock
+// could not be acquired within the timeout.
+func acquireResetLock() (func(), bool) {
+	sqlDB, err := config.DB.DB()
+	if err != nil {
+		return func() {}, false
+	}
+	conn, err := sqlDB.Conn(context.Background())
+	if err != nil {
+		return func() {}, false
+	}
+
+	var got sql.NullInt64
+	if err := conn.QueryRowContext(context.Background(), "SELECT GET_LOCK(?, ?)", authController.BootstrapLockName, resetLockTimeoutSeconds).Scan(&got); err != nil || !got.Valid || got.Int64 != 1 {
+		conn.Close()
+		return func() {}, false
+	}
+
+	released := false
+	return func() {
+		if released {
+			return
+		}
+		released = true
+		_, _ = conn.ExecContext(context.Background(), "SELECT RELEASE_LOCK(?)", authController.BootstrapLockName)
+		conn.Close()
+	}, true
+}
 
 // Developer-only onboarding reset.
 //
@@ -153,6 +193,16 @@ func ResetOnboardingDatabase(ctx *gin.Context) {
 		return
 	}
 
+	// 4b. Coordinate with first-owner registration using the SAME bootstrap
+	// named lock, held for the critical reset period and released on every exit
+	// path via defer. If the lock cannot be acquired, abort without resetting.
+	releaseBootstrapLock, locked := acquireResetLock()
+	if !locked {
+		ctx.JSON(http.StatusConflict, commons.Feedback("Another installation operation (registration or reset) is in progress. Please retry shortly."))
+		return
+	}
+	defer releaseBootstrapLock()
+
 	// 5. Enumerate every application table in the connected database.
 	var tables []string
 	if err := config.DB.Raw(
@@ -193,17 +243,11 @@ func ResetOnboardingDatabase(ctx *gin.Context) {
 		}
 	}
 
-	// 7. Verify the final state BEFORE committing; roll back if anything remains.
-	verifyTables := []string{
-		"users", "contacts", "user_passwords", "password_resets",
-		"roles", "role_permissions", "user_roles", "scopes",
-		"entities", "entity_users", "active_user_entities",
-		"ems_licences", "ems_installations", "ems_licence_events",
-		"ems_stakeholders", "ems_user_assignments", "ems_decision_authorities",
-		"ems_approval_requests", "ems_approval_steps", "ems_approval_assignments",
-		"ems_notifications", "ems_audit_logs",
-	}
-	for _, table := range verifyTables {
+	// 7. Verify EVERY table that was cleared is now empty BEFORE committing;
+	// roll back if anything remains. The same slice that was deleted from is
+	// checked, so a partial reset anywhere — including the commercial and
+	// custom-field tables — is caught rather than reported as success.
+	for _, table := range tables {
 		var count int64
 		if err := tx.Raw("SELECT COUNT(*) FROM `" + table + "`").Scan(&count).Error; err != nil {
 			fail(http.StatusInternalServerError, "Reset verification failed for table "+table)
