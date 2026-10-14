@@ -29,9 +29,11 @@ func init() {
 }
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	// .env is optional: it is used for local development, but in the container
+	// (e.g. Render) configuration is supplied through process environment
+	// variables. A missing file must not prevent startup.
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("No .env file found; using process environment variables")
 	}
 
 	// EMS Release 1 (security fix B1): fail fast if the JWT signing secret is
@@ -43,7 +45,7 @@ func main() {
 
 	gin.SetMode(gin.DebugMode)
 
-	err = os.Setenv("TZ", "Africa/Nairobi")
+	err := os.Setenv("TZ", "Africa/Nairobi")
 	if err != nil {
 		return
 	}
@@ -88,7 +90,16 @@ func main() {
 	}
 
 	router := routes.SetupRoutes()
+
+	// Prefer APP_PORT; fall back to the platform-provided PORT (Render sets
+	// PORT), then a local default, so the container always binds a real port.
 	port := os.Getenv("APP_PORT")
+	if strings.TrimSpace(port) == "" {
+		port = os.Getenv("PORT")
+	}
+	if strings.TrimSpace(port) == "" {
+		port = "2053"
+	}
 
 	server := router.Run(":" + port)
 	if server != nil {
