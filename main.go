@@ -73,21 +73,31 @@ func main() {
 		}
 	}(sqlDB)
 
-	//All auto migrations
-	if err := migrations.Init(); err != nil {
-		log.Println(err)
-		return
-	}
-
-	// Development-only, idempotent illustrative package catalogue for the
-	// disposable onboarding environment. Never enabled in production.
-	if strings.EqualFold(strings.TrimSpace(os.Getenv("DEV_SEED_PACKAGES")), "true") {
-		if n, err := commercialServices.SeedTestPackages(); err != nil {
-			log.Println("test package seed failed:", err)
-		} else if n > 0 {
-			log.Printf("seeded %d illustrative installation package(s)", n)
+	// Apply the schema migration WITHOUT blocking the listening port.
+	//
+	// Render (and similar platforms) fail the deploy if the container does not
+	// accept connections on PORT promptly, and GORM AutoMigrate against a remote
+	// database can take minutes (it issues several introspection queries per
+	// table at ~150 ms each over the network). The HTTP server therefore opens
+	// the port immediately, and migrations (plus the optional dev seed) run in
+	// the background. On a first deploy, requests that touch a not-yet-created
+	// table may fail until the migration finishes; subsequent deploys find the
+	// schema already present.
+	go func() {
+		if err := migrations.Init(); err != nil {
+			log.Println("schema migration error:", err)
+			return
 		}
-	}
+		// Development-only, idempotent illustrative package catalogue for the
+		// disposable onboarding environment. Never enabled in production.
+		if strings.EqualFold(strings.TrimSpace(os.Getenv("DEV_SEED_PACKAGES")), "true") {
+			if n, err := commercialServices.SeedTestPackages(); err != nil {
+				log.Println("test package seed failed:", err)
+			} else if n > 0 {
+				log.Printf("seeded %d illustrative installation package(s)", n)
+			}
+		}
+	}()
 
 	router := routes.SetupRoutes()
 
