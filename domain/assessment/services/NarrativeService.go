@@ -153,16 +153,28 @@ func (narrativeService NarrativeService) doCreateNarrative(narrativeRequest requ
 		return errors.New(fmt.Sprint("Passing reference date time error: ", err))
 	}
 
-	if dateTime.After(time.Now().UTC()) {
-		return errors.New("Date and time should not be in the future ")
+	refDate, err := time.Parse(time.DateOnly, narrativeRequest.ReferenceDate)
+	if err != nil {
+		refDate, err = dateparse.ParseAny(narrativeRequest.ReferenceDate)
+		if err != nil {
+			return errors.New(fmt.Sprint("Passing reference date error: ", err))
+		}
+	}
+	refDateOnly, _ := time.Parse(time.DateOnly, refDate.Format(time.DateOnly))
+
+	today, _ := time.Parse(time.DateOnly, time.Now().Format(time.DateOnly))
+	if refDateOnly.After(today) {
+		return errors.New("Reference date should not be in the future ")
 	}
 
-	if dateTime.Before(studyPeriod.StudyPeriodStartDate) {
+	studyPeriodStartDate, _ := time.Parse(time.DateOnly, studyPeriod.StudyPeriodStartDate.Format(time.DateOnly))
+	if refDateOnly.Before(studyPeriodStartDate) {
 		return errors.New("Reference date should be after the study period starts ")
 	}
 
-	if dateTime.After(studyPeriod.StudyPeriodEndDate) {
-		return errors.New("Reference date should be withing the study period ")
+	studyPeriodEndDate, _ := time.Parse(time.DateOnly, studyPeriod.StudyPeriodEndDate.Format(time.DateOnly))
+	if refDateOnly.After(studyPeriodEndDate) {
+		return errors.New("Reference date should be within the study period ")
 	}
 
 	narrative := models.Narrative{
