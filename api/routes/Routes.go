@@ -1276,14 +1276,18 @@ func SetupRoutes() *gin.Engine {
 
 		// Developer-only onboarding reset (First-Time Setup acceptance testing).
 		// Registered ONLY when DEV_RESET_ENABLED=true, so no production route
-		// exists. JWT authentication still applies (this is the /main group) and
-		// the handler additionally requires an admin caller, the exact
-		// confirmation phrase, and a verified disposable database identity.
+		// exists. Two entry points, both sharing the same disposable-database
+		// safety checks:
+		//   1. /main/dev/reset-onboarding  — authenticated administrator caller.
+		//   2. /setup/dev/reset-onboarding — sign-in-free, password-gated, so an
+		//      operator who has forgotten the admin password can still repeat
+		//      first-time setup. The password is verified server-side.
 		if devController.DevResetEnabled() {
 			dev := main.Group("/dev")
 			{
 				dev.POST("/reset-onboarding", devController.ResetOnboardingDatabase)
 			}
+			router.POST("setup/dev/reset-onboarding", devController.ResetOnboardingDatabaseWithPassword)
 		}
 
 	}

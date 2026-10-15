@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/subtle"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -83,6 +84,14 @@ const (
 
 	devResetEnabledEnv    = "DEV_RESET_ENABLED"
 	onboardingDatabaseEnv = "DEV_ONBOARDING_DB_NAME"
+
+	// DefaultDevResetPassword is the password required by the sign-in-free
+	// testing reset. Overridable with DEV_RESET_PASSWORD. This is a testing
+	// convenience gate, NOT a security boundary: it is only reachable when
+	// DEV_RESET_ENABLED=true, and it can only ever clear the disposable
+	// onboarding database (protected databases are always refused below).
+	DefaultDevResetPassword = "12345"
+	devResetPasswordEnv     = "DEV_RESET_PASSWORD"
 )
 
 // protectedDatabases must never be reset by this feature, even if misconfigured.
@@ -106,8 +115,20 @@ func OnboardingDatabaseName() string {
 	return DefaultOnboardingDatabase
 }
 
+// DevResetPassword returns the password required by the sign-in-free testing
+// reset. Absent configuration falls back to DefaultDevResetPassword.
+func DevResetPassword() string {
+	if password := os.Getenv(devResetPasswordEnv); password != "" {
+		return password
+	}
+	return DefaultDevResetPassword
+}
+
 type onboardingResetRequest struct {
 	Confirmation string `json:"confirmation"`
+	// Password is only used by the sign-in-free testing route; it is ignored by
+	// the authenticated administrator route.
+	Password string `json:"password"`
 }
 
 // Reset-target refusal reasons (exported for tests).
@@ -171,6 +192,50 @@ func ResetOnboardingDatabase(ctx *gin.Context) {
 		return
 	}
 
+	performOnboardingReset(ctx)
+}
+
+// ResetOnboardingDatabaseWithPassword clears the dedicated disposable onboarding
+// database WITHOUT a signed-in session, for the testing phase only. It is
+// registered outside the authenticated /main group and is gated by
+// DEV_RESET_ENABLED plus a password (DEV_RESET_PASSWORD, defaulting to
+// DefaultDevResetPassword).
+//
+// Every other server-side safety property still applies unchanged: the exact
+// confirmation phrase, the disposable-database identity check (protected
+// databases are always refused), the bootstrap lock, and the transactional
+// clear-and-verify. Only the caller-identity step (JWT + administrator) is
+// replaced by the password, because an operator who has forgotten the admin
+// password must still be able to repeat first-time setup.
+func ResetOnboardingDatabaseWithPassword(ctx *gin.Context) {
+	// 1. Environment gate (defence in depth; the route is also gated).
+	if !DevResetEnabled() {
+		ctx.JSON(http.StatusNotFound, commons.Feedback("Not found"))
+		return
+	}
+
+	// 2. Exact confirmation phrase + reset password.
+	var req onboardingResetRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Confirmation phrase is required"))
+		return
+	}
+	if req.Confirmation != OnboardingResetConfirmation {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Confirmation phrase does not match"))
+		return
+	}
+	if subtle.ConstantTimeCompare([]byte(req.Password), []byte(DevResetPassword())) != 1 {
+		ctx.JSON(http.StatusForbidden, commons.Feedback("The developer reset password is incorrect"))
+		return
+	}
+
+	performOnboardingReset(ctx)
+}
+
+// performOnboardingReset carries out the shared, caller-independent part of the
+// reset: verify the ACTUAL connected database, take the bootstrap lock, clear
+// every table in a single transaction, verify the result and commit.
+func performOnboardingReset(ctx *gin.Context) {
 	// 4. Verify the ACTUAL connected database (never trust a client value).
 	var current string
 	if err := config.DB.Raw("SELECT DATABASE()").Scan(&current).Error; err != nil {

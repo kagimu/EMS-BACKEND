@@ -2,7 +2,12 @@ package controllers
 
 import (
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 // TestEvaluateResetTarget verifies the pure refusal rules that protect every
@@ -53,5 +58,70 @@ func TestDevResetDisabledByDefault(t *testing.T) {
 	t.Setenv("DEV_RESET_ENABLED", "true")
 	if !DevResetEnabled() {
 		t.Fatalf("DevResetEnabled() = false with DEV_RESET_ENABLED=true, want true")
+	}
+}
+
+// TestDevResetPasswordDefaultAndOverride verifies the sign-in-free reset
+// password is configurable and falls back to the documented default.
+func TestDevResetPasswordDefaultAndOverride(t *testing.T) {
+	t.Setenv("DEV_RESET_PASSWORD", "")
+	if got := DevResetPassword(); got != DefaultDevResetPassword {
+		t.Fatalf("DevResetPassword() = %q with no override, want %q", got, DefaultDevResetPassword)
+	}
+	t.Setenv("DEV_RESET_PASSWORD", "s3cret")
+	if got := DevResetPassword(); got != "s3cret" {
+		t.Fatalf("DevResetPassword() = %q with override, want %q", got, "s3cret")
+	}
+}
+
+func newResetContext(body string) (*gin.Context, *httptest.ResponseRecorder) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/setup/dev/reset-onboarding", strings.NewReader(body))
+	ctx.Request.Header.Set("Content-Type", "application/json")
+	return ctx, rec
+}
+
+// TestResetWithPasswordRejections covers the guard paths of the sign-in-free
+// route. None of these reach the database: the request is refused before any
+// database work begins.
+func TestResetWithPasswordRejections(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	t.Setenv("DEV_RESET_ENABLED", "true")
+	t.Setenv("DEV_RESET_PASSWORD", "12345")
+
+	cases := []struct {
+		name string
+		body string
+		want int
+	}{
+		{"wrong password refused", `{"confirmation":"RESET EMS TEST SYSTEM","password":"nope"}`, http.StatusForbidden},
+		{"missing password refused", `{"confirmation":"RESET EMS TEST SYSTEM"}`, http.StatusForbidden},
+		{"wrong phrase refused before password", `{"confirmation":"WRONG","password":"12345"}`, http.StatusBadRequest},
+		{"malformed body refused", `not json`, http.StatusBadRequest},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, rec := newResetContext(tc.body)
+			ResetOnboardingDatabaseWithPassword(ctx)
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d (body %s)", rec.Code, tc.want, rec.Body.String())
+			}
+		})
+	}
+}
+
+// TestResetWithPasswordDisabledByFlag ensures the route is inert unless the
+// feature is explicitly enabled.
+func TestResetWithPasswordDisabledByFlag(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	t.Setenv("DEV_RESET_ENABLED", "false")
+
+	ctx, rec := newResetContext(`{"confirmation":"RESET EMS TEST SYSTEM","password":"12345"}`)
+	ResetOnboardingDatabaseWithPassword(ctx)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
 	}
 }
