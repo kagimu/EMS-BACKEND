@@ -36,16 +36,14 @@ func (i Info) SendEmail() error {
 	}
 
 	t, err := template.ParseFiles(templateUrl)
-
 	if err != nil {
 		log.Println(err)
-		//log.Println("Error one")
+		return err
 	}
 	buff := new(bytes.Buffer)
-	//var tpl bytes.Buffer
 	if err := t.Execute(buff, i); err != nil {
 		log.Println(err)
-		//log.Println("Error two")
+		return err
 	}
 
 	result := buff.String()

@@ -548,16 +548,23 @@ func Register(context *gin.Context) {
 		"tokenInfo": saveUserPasswordToken.Token,
 	}
 
-	// Email delivery is handled separately from the database commit: a delivery
-	// failure must not be reported as "account not created" and must not expose
-	// SMTP details.
-	emailInfo := emailSender.Info{Email: userEmail, Token: userToken, MailType: "WholesomeEd: User Account Confirmation", UserName: secondName, CurrentYear: time.Now().Year(), Type: "registration"}
-	if emailErr := emailInfo.SendEmail(); emailErr != nil {
-		response["message"] = "Account created. Activation email delivery needs attention — use your activation token, or the existing password-reset flow, to continue."
-		response["email_delivery"] = "failed"
-	}
-
+	// The account is already committed and the client needs tokenInfo to
+	// continue setup. Respond first: a slow or blocked SMTP connection must
+	// never delay (and thereby lose) the registration response.
 	context.JSON(http.StatusOK, response)
+
+	go func() {
+		defer func() { _ = recover() }()
+		info := emailSender.Info{
+			Email:       userEmail,
+			Token:       userToken,
+			MailType:    "WholesomeEd: User Account Confirmation",
+			UserName:    secondName,
+			CurrentYear: time.Now().Year(),
+			Type:        "registration",
+		}
+		_ = info.SendEmail()
+	}()
 
 }
 
