@@ -3,13 +3,13 @@ package controllers
 import (
 	"errors"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/repository"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -17,9 +17,8 @@ import (
 )
 
 func CreateRole(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	organisation, actor, ok := roleOrganisationContext(c)
+	if !ok {
 		return
 	}
 
@@ -35,12 +34,32 @@ func CreateRole(c *gin.Context) {
 
 	}
 
+	if payload.EntityNumber != organisation {
+		c.JSON(http.StatusForbidden, gin.H{"message": "You can only manage roles for your current organisation"})
+		return
+	}
+
+	if err := validatePermissionCatalogue(payload.Permissions); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	allowed, err := actorMayDelegate(actor, organisation, payload.Permissions)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role authority"})
+		return
+	}
+	if !allowed {
+		c.JSON(http.StatusForbidden, gin.H{"message": "You cannot grant permissions you do not hold"})
+		return
+	}
+
 	roleNumber := uuid.NewV4().String()
 	saveRole := models.Role{
 		Number:       roleNumber,
 		Name:         payload.Name,
 		Status:       constants.StatusActive,
-		UserNumber:   user.Number,
+		UserNumber:   actor.Number,
 		Description:  payload.Description,
 		EntityNumber: payload.EntityNumber,
 	}
@@ -57,7 +76,7 @@ func CreateRole(c *gin.Context) {
 	for _, permission := range payload.Permissions {
 		savePermission := models.RolePermission{
 			RoleNumber:    roleNumber,
-			AddedByNumber: user.Number,
+			AddedByNumber: actor.Number,
 			Permission:    permission,
 		}
 
@@ -126,9 +145,8 @@ func FetchRoles(c *gin.Context) {
 }
 
 func AssignRolesToAUser(c *gin.Context) {
-	user, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+	organisation, actor, ok := roleOrganisationContext(c)
+	if !ok {
 		return
 	}
 
@@ -156,6 +174,46 @@ func AssignRolesToAUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "User number is required"})
 		return
 	}
+
+	var targetUser authModel.User
+	if err := config.DB.Where("number = ?", payload.UserNumber).First(&targetUser).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User not found"})
+		return
+	}
+
+	member, err := userIsMemberOfOrganisation(payload.UserNumber, organisation)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify user membership"})
+		return
+	}
+	if !member {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "The target user is not a member of this organisation"})
+		return
+	}
+
+	for _, roleAssignment := range payload.Roles {
+		role, ok := loadRoleInOrganisation(c, roleAssignment.RoleNumber, organisation)
+		if !ok {
+			return
+		}
+
+		rolePermissions, err := rolePermissionStrings(role.Number)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role permissions"})
+			return
+		}
+
+		allowed, err := actorMayDelegate(actor, organisation, rolePermissions)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role authority"})
+			return
+		}
+		if !allowed {
+			c.JSON(http.StatusForbidden, gin.H{"message": "You cannot grant permissions you do not hold"})
+			return
+		}
+	}
+
 	tx := config.DB.Begin()
 
 	for _, role := range payload.Roles {
@@ -170,7 +228,7 @@ func AssignRolesToAUser(c *gin.Context) {
 		saveRole := models.UserRole{
 			RoleNumber: role.RoleNumber,
 			UserNumber: payload.UserNumber,
-			AddedBy:    user.Number,
+			AddedBy:    actor.Number,
 			ExpiryDate: date,
 		}
 
@@ -214,22 +272,13 @@ func AssignRolesToAUser(c *gin.Context) {
 }
 
 func FetchRoleDetails(c *gin.Context) {
-	_, err := commons.GetUserFromHeader(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	organisation, _, ok := roleOrganisationContext(c)
+	if !ok {
 		return
 	}
 
-	roleNumber := c.Param("role_number")
-
-	var role models.Role
-	if err := config.DB.Where("number = ?", roleNumber).First(&role).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"message": "Role not found"})
-			return
-		}
-
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch role details"})
+	role, ok := loadRoleInOrganisation(c, c.Param("role_number"), organisation)
+	if !ok {
 		return
 	}
 
@@ -237,6 +286,10 @@ func FetchRoleDetails(c *gin.Context) {
 }
 
 func RemoveRoleAssignment(c *gin.Context) {
+	organisation, _, ok := roleOrganisationContext(c)
+	if !ok {
+		return
+	}
 
 	type RemoveRoleRequest struct {
 		UserNumber string `json:"user_number"`
@@ -254,6 +307,10 @@ func RemoveRoleAssignment(c *gin.Context) {
 		return
 	}
 
+	if _, ok := loadRoleInOrganisation(c, payload.RoleNumber, organisation); !ok {
+		return
+	}
+
 	// delete the role assignment
 
 	if err := config.DB.Where("user_number = ?", payload.UserNumber).Where("role_number = ?", payload.RoleNumber).Delete(&models.UserRole{}).Error; err != nil {
@@ -265,14 +322,16 @@ func RemoveRoleAssignment(c *gin.Context) {
 }
 
 func UpdateRole(ctx *gin.Context) {
-
-	user, err := commons.GetUserFromHeader(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+	organisation, actor, ok := roleOrganisationContext(ctx)
+	if !ok {
 		return
 	}
 
-	roleNumber := ctx.Param("role_number")
+	role, ok := loadRoleInOrganisation(ctx, ctx.Param("role_number"), organisation)
+	if !ok {
+		return
+	}
+	roleNumber := role.Number
 
 	var payload requests.EditRoleRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
@@ -285,20 +344,27 @@ func UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	// find role with the role number and set the new values then save
+	if err := validatePermissionCatalogue(payload.Permissions); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
 
-	var role models.Role
-	if err := config.DB.Where("number = ?", roleNumber).First(&role).Error; err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "Role not found"})
+	allowed, err := actorMayDelegate(actor, organisation, payload.Permissions)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role authority"})
+		return
+	}
+	if !allowed {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": "You cannot grant permissions you do not hold"})
 		return
 	}
 
 	role.Name = payload.Name
 	role.Description = payload.Description
 	role.Status = constants.StatusActive
-	role.UserNumber = user.Number
+	role.UserNumber = actor.Number
 
-	if err := config.DB.Save(&role).Error; err != nil {
+	if err := config.DB.Save(role).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update role"})
 		return
 
@@ -317,7 +383,7 @@ func UpdateRole(ctx *gin.Context) {
 	for _, permission := range payload.Permissions {
 		savePermission := models.RolePermission{
 			RoleNumber:    roleNumber,
-			AddedByNumber: user.Number,
+			AddedByNumber: actor.Number,
 			Permission:    permission,
 		}
 
@@ -336,18 +402,16 @@ func UpdateRole(ctx *gin.Context) {
 }
 
 func DeleteRole(context *gin.Context) {
-	roleNumber := context.Param("role_number")
-	if roleNumber == "" {
-		context.JSON(400, gin.H{"message": "Role number is required"})
+	organisation, _, ok := roleOrganisationContext(context)
+	if !ok {
 		return
 	}
 
-	//check if role exists
-	_, err := repository.FindRoleByNumber(roleNumber)
-	if err != nil {
-		context.JSON(404, gin.H{"message": "Role not found"})
+	role, ok := loadRoleInOrganisation(context, context.Param("role_number"), organisation)
+	if !ok {
 		return
 	}
+	roleNumber := role.Number
 
 	tx := config.DB.Begin()
 	// delete associated permissions

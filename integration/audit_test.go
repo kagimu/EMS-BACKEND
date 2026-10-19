@@ -61,7 +61,8 @@ func setupAuditFixture(t *testing.T) *auFixture {
 
 	users := []string{auOwner, auAdminNoPerm, auClientA, auClientB, auNoPerm, auNoCtx}
 	organisations := []string{auOrgA, auOrgB}
-	roles := []string{auRoleRegistry, auRoleView}
+	viewRoleB := auRoleView + "-b"
+	roles := []string{auRoleRegistry, auRoleView, viewRoleB}
 
 	cleanup := func() {
 		db.Unscoped().Where("organisation_number IN ?", organisations).Delete(&auditModel.AuditLog{})
@@ -118,9 +119,16 @@ func setupAuditFixture(t *testing.T) *auFixture {
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 			t.Fatalf("setting active entity for %s: %v", spec.userNumber, err)
 		}
+		if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+			EntityNumber:  spec.entityNumber,
+			UserNumber:    spec.userNumber,
+			AddedByNumber: spec.userNumber,
+		}).Error; err != nil {
+			t.Fatalf("seeding membership for %s: %v", spec.userNumber, err)
+		}
 	}
 
-	for _, number := range roles {
+	for _, number := range []string{auRoleRegistry, auRoleView} {
 		role := permissionsModel.Role{
 			Number: number, Name: number, EntityNumber: auOrgA, Status: "ACTIVE", UserNumber: auOwner,
 		}
@@ -142,10 +150,11 @@ func setupAuditFixture(t *testing.T) *auFixture {
 	}
 
 	expiry := time.Now().Add(365 * 24 * time.Hour)
+	cloneRoleForOrganisation(t, db, auRoleView, viewRoleB, auOrgB, auOwner)
 	for _, spec := range []struct{ userNumber, roleNumber string }{
 		{auOwner, auRoleRegistry},
 		{auClientA, auRoleView},
-		{auClientB, auRoleView},
+		{auClientB, viewRoleB},
 		{auNoCtx, auRoleView},
 	} {
 		userRole := permissionsModel.UserRole{

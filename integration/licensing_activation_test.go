@@ -63,7 +63,10 @@ func setupFActivationFixture(t *testing.T) *faFixture {
 
 	users := []string{faOwner, faAdminNoPerm, faClientA, faClientB, faClientC, faClientD}
 	organisations := []string{faOrgA, faOrgB, faOrgC, faOrgD}
-	roles := []string{faRoleRegistry, faRoleClient}
+	clientRoleB := faRoleClient + "-b"
+	clientRoleC := faRoleClient + "-c"
+	clientRoleD := faRoleClient + "-d"
+	roles := []string{faRoleRegistry, faRoleClient, clientRoleB, clientRoleC, clientRoleD}
 
 	cleanup := func() {
 		db.Unscoped().Where("organisation_number IN ?", organisations).Delete(&licensingModel.LicenceEvent{})
@@ -124,9 +127,16 @@ func setupFActivationFixture(t *testing.T) *faFixture {
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 			t.Fatalf("setting active entity for %s: %v", spec.userNumber, err)
 		}
+		if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+			EntityNumber:  spec.entityNumber,
+			UserNumber:    spec.userNumber,
+			AddedByNumber: spec.userNumber,
+		}).Error; err != nil {
+			t.Fatalf("seeding membership for %s: %v", spec.userNumber, err)
+		}
 	}
 
-	for _, number := range roles {
+	for _, number := range []string{faRoleRegistry, faRoleClient} {
 		role := permissionsModel.Role{
 			Number: number, Name: number, EntityNumber: faOrgA, Status: "ACTIVE", UserNumber: faOwner,
 		}
@@ -150,12 +160,15 @@ func setupFActivationFixture(t *testing.T) *faFixture {
 	}
 
 	expiry := time.Now().Add(365 * 24 * time.Hour)
+	cloneRoleForOrganisation(t, db, faRoleClient, clientRoleB, faOrgB, faOwner)
+	cloneRoleForOrganisation(t, db, faRoleClient, clientRoleC, faOrgC, faOwner)
+	cloneRoleForOrganisation(t, db, faRoleClient, clientRoleD, faOrgD, faOwner)
 	for _, spec := range []struct{ userNumber, roleNumber string }{
 		{faOwner, faRoleRegistry},
 		{faClientA, faRoleClient},
-		{faClientB, faRoleClient},
-		{faClientC, faRoleClient},
-		{faClientD, faRoleClient},
+		{faClientB, clientRoleB},
+		{faClientC, clientRoleC},
+		{faClientD, clientRoleD},
 	} {
 		userRole := permissionsModel.UserRole{
 			UserNumber: spec.userNumber, RoleNumber: spec.roleNumber, ExpiryDate: expiry, AddedBy: faOwner,

@@ -15,6 +15,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/models"
 	licenceRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/repositories"
 	eosRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
+	eosServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
@@ -36,14 +37,15 @@ var (
 // authenticated user through the existing eos mechanism (User.Number ->
 // ActiveUserEntity -> Entity.Number). No fallback organisation is invented.
 func currentOrganisationNumber(userNumber string) (string, error) {
-	active, err := eosRepositories.FindActiveUserEntityByUserNumber(userNumber)
+	entityService := eosServices.EntityService{}
+	active, err := entityService.GetCurrentEntity(userNumber)
 	if err != nil {
 		return "", err
 	}
-	if active.UserNumber == "" || active.EntityNumber == "" {
+	if active.Number == "" {
 		return "", ErrNoActiveOrganisation
 	}
-	return active.EntityNumber, nil
+	return active.Number, nil
 }
 
 // OrganisationNumberForUser resolves the authenticated user's organisation

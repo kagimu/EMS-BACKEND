@@ -4,8 +4,9 @@ import "time"
 
 // StakeholderResponse is the API representation of a stakeholder relationship.
 //
-// Privacy: only the referenced user's number is exposed — never their name,
-// contact details, password, or any authentication data.
+// Privacy: the referenced user's number and display name (first/second/last
+// name) are exposed for organisation-scoped presentation. Contact details,
+// passwords and any authentication data are never exposed.
 //
 // CanAuthenticate is a derived, read-only flag (Foundation C2.3): it is true
 // only when the referenced user currently has a usable login (an Email contact
@@ -15,6 +16,7 @@ type StakeholderResponse struct {
 	Number             string     `json:"number"`
 	OrganisationNumber string     `json:"organisation_number"`
 	UserNumber         string     `json:"user_number"`
+	DisplayName        string     `json:"display_name"`
 	StakeholderType    string     `json:"stakeholder_type"`
 	Title              string     `json:"title"`
 	SharePercentage    *float64   `json:"share_percentage"`

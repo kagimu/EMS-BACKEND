@@ -18,7 +18,7 @@ import (
 type DecisionAuthority struct {
 	gorm.Model
 	Number                 string     `json:"number" gorm:"size:36;unique;not null"`
-	OrganisationNumber     string     `json:"organisation_number" gorm:"size:36;not null;index"`
+	OrganisationNumber     string     `json:"organisation_number" gorm:"size:36;not null;index;index:idx_ems_decision_authorities_org_status,priority:1"`
 	DecisionType           string     `json:"decision_type" gorm:"size:50;not null;index"`
 	ApprovalLevel          int        `json:"approval_level" gorm:"not null;index"`
 	MinAmount              *float64   `json:"min_amount" gorm:"type:decimal(18,2)"`
@@ -26,7 +26,7 @@ type DecisionAuthority struct {
 	RoleNumber             string     `json:"role_number" gorm:"size:36;index"`
 	StakeholderType        string     `json:"stakeholder_type" gorm:"size:30;index"`
 	OrganisationUnitNumber string     `json:"organisation_unit_number" gorm:"size:36;index"`
-	Status                 string     `json:"status" gorm:"size:20;not null"`
+	Status                 string     `json:"status" gorm:"size:20;not null;index:idx_ems_decision_authorities_org_status,priority:2"`
 	ValidFrom              *time.Time `json:"valid_from"`
 	ValidTo                *time.Time `json:"valid_to"`
 	AddedByNumber          string     `json:"added_by_number" gorm:"size:36;not null"`

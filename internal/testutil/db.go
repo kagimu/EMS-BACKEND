@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	eosModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -52,9 +53,43 @@ func RequireTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("connecting to test database: %v", err)
 	}
 
+	// Test fixtures frequently seed active_user_entities directly. Production
+	// only writes that row after verifying entity_users membership, so mirror
+	// that invariant in the test database: every newly created active row gets a
+	// matching membership row when one does not already exist.
+	_ = db.Callback().Create().After("gorm:create").Register("testutil:active_entity_membership", ensureActiveEntityMembership)
+
 	config.DB = db
 
 	return db
+}
+
+func ensureActiveEntityMembership(tx *gorm.DB) {
+	if tx.Statement == nil || tx.Statement.Schema == nil || tx.Statement.Schema.Name != "ActiveUserEntity" {
+		return
+	}
+
+	active, ok := tx.Statement.Dest.(*eosModel.ActiveUserEntity)
+	if !ok || active == nil || active.UserNumber == "" || active.EntityNumber == "" {
+		return
+	}
+
+	db := tx.Session(&gorm.Session{NewDB: true})
+	var count int64
+	if err := db.Model(&eosModel.EntityUser{}).
+		Where("user_number = ? AND entity_number = ?", active.UserNumber, active.EntityNumber).
+		Count(&count).Error; err != nil || count > 0 {
+		return
+	}
+
+	membership := eosModel.EntityUser{
+		EntityNumber:  active.EntityNumber,
+		UserNumber:    active.UserNumber,
+		AddedByNumber: active.UserNumber,
+	}
+	if err := db.Omit("Entity", "User", "AddedBy").Create(&membership).Error; err != nil {
+		_ = tx.AddError(err)
+	}
 }
 
 // LoginCredentials returns the email and password of the seeded integration

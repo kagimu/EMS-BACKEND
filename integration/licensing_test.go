@@ -60,7 +60,8 @@ func setupFLicensingFixture(t *testing.T) *flFixture {
 
 	users := []string{flOwner, flClientA, flClientB, flClientNoCtx, flAdminNoPerm, flUserNoPerm}
 	organisations := []string{flOrgA, flOrgB}
-	roles := []string{flRoleRegistry, flRoleView}
+	viewRoleB := flRoleView + "-b"
+	roles := []string{flRoleRegistry, flRoleView, viewRoleB}
 
 	cleanup := func() {
 		db.Unscoped().Where("organisation_number IN ?", organisations).Delete(&licensingModel.LicenceEvent{})
@@ -118,9 +119,16 @@ func setupFLicensingFixture(t *testing.T) *flFixture {
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 			t.Fatalf("setting active entity for %s: %v", spec.userNumber, err)
 		}
+		if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+			EntityNumber:  spec.entityNumber,
+			UserNumber:    spec.userNumber,
+			AddedByNumber: spec.userNumber,
+		}).Error; err != nil {
+			t.Fatalf("seeding membership for %s: %v", spec.userNumber, err)
+		}
 	}
 
-	for _, number := range roles {
+	for _, number := range []string{flRoleRegistry, flRoleView} {
 		role := permissionsModel.Role{
 			Number: number, Name: number, EntityNumber: flOrgA, Status: "ACTIVE", UserNumber: flOwner,
 		}
@@ -142,10 +150,11 @@ func setupFLicensingFixture(t *testing.T) *flFixture {
 	}
 
 	expiry := time.Now().Add(365 * 24 * time.Hour)
+	cloneRoleForOrganisation(t, db, flRoleView, viewRoleB, flOrgB, flOwner)
 	for _, spec := range []struct{ userNumber, roleNumber string }{
 		{flOwner, flRoleRegistry},
 		{flClientA, flRoleView},
-		{flClientB, flRoleView},
+		{flClientB, viewRoleB},
 		{flClientNoCtx, flRoleView},
 	} {
 		userRole := permissionsModel.UserRole{

@@ -61,7 +61,9 @@ func setupFEnforcementFixture(t *testing.T) *feFixture {
 
 	users := []string{feOwner, feAdminNoPerm, feClientA, feClientB, feClientC}
 	organisations := []string{feOrgA, feOrgB, feOrgC}
-	roles := []string{feRoleRegistry, feRoleClient}
+	clientRoleB := feRoleClient + "-b"
+	clientRoleC := feRoleClient + "-c"
+	roles := []string{feRoleRegistry, feRoleClient, clientRoleB, clientRoleC}
 
 	cleanup := func() {
 		db.Unscoped().Where("organisation_number IN ?", organisations).Delete(&licensingModel.LicenceEvent{})
@@ -119,9 +121,16 @@ func setupFEnforcementFixture(t *testing.T) *feFixture {
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 			t.Fatalf("setting active entity for %s: %v", spec.userNumber, err)
 		}
+		if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+			EntityNumber:  spec.entityNumber,
+			UserNumber:    spec.userNumber,
+			AddedByNumber: spec.userNumber,
+		}).Error; err != nil {
+			t.Fatalf("seeding membership for %s: %v", spec.userNumber, err)
+		}
 	}
 
-	for _, number := range roles {
+	for _, number := range []string{feRoleRegistry, feRoleClient} {
 		role := permissionsModel.Role{
 			Number: number, Name: number, EntityNumber: feOrgA, Status: "ACTIVE", UserNumber: feOwner,
 		}
@@ -147,11 +156,13 @@ func setupFEnforcementFixture(t *testing.T) *feFixture {
 	}
 
 	expiry := time.Now().Add(365 * 24 * time.Hour)
+	cloneRoleForOrganisation(t, db, feRoleClient, clientRoleB, feOrgB, feOwner)
+	cloneRoleForOrganisation(t, db, feRoleClient, clientRoleC, feOrgC, feOwner)
 	for _, spec := range []struct{ userNumber, roleNumber string }{
 		{feOwner, feRoleRegistry},
 		{feClientA, feRoleClient},
-		{feClientB, feRoleClient},
-		{feClientC, feRoleClient},
+		{feClientB, clientRoleB},
+		{feClientC, clientRoleC},
 	} {
 		userRole := permissionsModel.UserRole{
 			UserNumber: spec.userNumber, RoleNumber: spec.roleNumber, ExpiryDate: expiry, AddedBy: feOwner,

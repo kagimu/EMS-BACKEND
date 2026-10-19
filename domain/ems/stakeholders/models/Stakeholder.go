@@ -53,15 +53,15 @@ func IsValidStakeholderType(value string) bool {
 type Stakeholder struct {
 	gorm.Model
 	Number             string     `json:"number" gorm:"size:36;unique;not null"`
-	OrganisationNumber string     `json:"organisation_number" gorm:"size:36;not null;index"`
+	OrganisationNumber string     `json:"organisation_number" gorm:"size:36;not null;index;index:idx_ems_stakeholders_org_type_status,priority:1"`
 	UserNumber         string     `json:"user_number" gorm:"size:36;not null;index"`
-	StakeholderType    string     `json:"stakeholder_type" gorm:"size:30;not null;index"`
+	StakeholderType    string     `json:"stakeholder_type" gorm:"size:30;not null;index;index:idx_ems_stakeholders_org_type_status,priority:2"`
 	Title              string     `json:"title" gorm:"size:100"`
 	SharePercentage    *float64   `json:"share_percentage" gorm:"type:decimal(6,3)"`
 	Shares             *int64     `json:"shares"`
 	ValidFrom          *time.Time `json:"valid_from"`
 	ValidTo            *time.Time `json:"valid_to"`
-	Status             string     `json:"status" gorm:"size:20;not null"`
+	Status             string     `json:"status" gorm:"size:20;not null;index:idx_ems_stakeholders_org_type_status,priority:3"`
 	AddedByNumber      string     `json:"added_by_number" gorm:"size:36;not null"`
 }
 

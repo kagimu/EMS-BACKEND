@@ -12,12 +12,12 @@ import "gorm.io/gorm"
 type OrganisationUnit struct {
 	gorm.Model
 	Number             string `json:"number" gorm:"size:36;unique;not null"`
-	OrganisationNumber string `json:"organisation_number" gorm:"size:36;not null;index"`
+	OrganisationNumber string `json:"organisation_number" gorm:"size:36;not null;index;index:idx_ems_organisation_units_org_status,priority:1"`
 	ParentNumber       string `json:"parent_number" gorm:"size:36;index"`
 	UnitType           string `json:"unit_type" gorm:"size:50;not null"`
 	Name               string `json:"name" gorm:"size:128;not null"`
 	Code               string `json:"code" gorm:"size:64;index"`
-	Status             string `json:"status" gorm:"size:20;not null"`
+	Status             string `json:"status" gorm:"size:20;not null;index:idx_ems_organisation_units_org_status,priority:2"`
 	AddedByNumber      string `json:"added_by_number" gorm:"size:36;not null"`
 }
 

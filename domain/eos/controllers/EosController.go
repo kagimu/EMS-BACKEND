@@ -1,15 +1,21 @@
 package controllers
 
 import (
-	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	authRepository "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -184,21 +190,88 @@ func GetAllCalendars(ctx *gin.Context) {
 }
 
 func AddUserToEntity(context *gin.Context) {
+	actor, err := commons.GetUserFromHeader(context)
+	if err != nil || actor == nil || actor.Number == "" {
+		context.JSON(http.StatusUnauthorized, commons.Feedback("Unauthorized"))
+		return
+	}
 
-	var userEntity models.EntityUser
 	var userEntityRequest requests.UserEntityRequest
-
-	err := context.BindJSON(&userEntityRequest)
-	if err != nil {
+	if err := context.ShouldBindJSON(&userEntityRequest); err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+	if err := userEntityRequest.Validate(); err != nil {
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
-	userEntity.UserNumber = userEntityRequest.UserNumber
-	userEntity.EntityNumber = userEntityRequest.EntityNumber
-
-	err = config.DB.Create(&userEntity).Error
+	entity, err := repositories.FindEntityByNumber(userEntityRequest.EntityNumber)
 	if err != nil {
+		context.JSON(http.StatusInternalServerError, commons.Feedback("Could not validate the organisation"))
+		return
+	}
+	if entity.Number == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Organisation not found"))
+		return
+	}
+
+	var targetUser authModel.User
+	if err := config.DB.Where("number = ?", userEntityRequest.UserNumber).First(&targetUser).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			context.JSON(http.StatusBadRequest, commons.Feedback("User not found"))
+			return
+		}
+		context.JSON(http.StatusInternalServerError, commons.Feedback("Could not validate the user"))
+		return
+	}
+
+	actorMembership, err := repositories.FindEntityUser(actor.Number, userEntityRequest.EntityNumber)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, commons.Feedback("Could not verify organisation membership"))
+		return
+	}
+	if actorMembership.UserNumber == "" {
+		context.JSON(http.StatusForbidden, commons.Feedback("You are not a member of this organisation"))
+		return
+	}
+
+	if !strings.EqualFold(actor.Type, "Admin") {
+		permissions, err := authRepository.FetchPermissionsByUserAndEntity(actor.Number, userEntityRequest.EntityNumber)
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, commons.Feedback("Could not verify organisation authority"))
+			return
+		}
+		authorised := false
+		for _, permission := range permissions {
+			if permission == constants.CanUpdateEntity {
+				authorised = true
+				break
+			}
+		}
+		if !authorised {
+			context.JSON(http.StatusForbidden, commons.Feedback("You are not authorised to manage membership of this organisation"))
+			return
+		}
+	}
+
+	existing, err := repositories.FindEntityUser(userEntityRequest.UserNumber, userEntityRequest.EntityNumber)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, commons.Feedback("Could not verify existing membership"))
+		return
+	}
+	if existing.UserNumber != "" {
+		context.JSON(http.StatusOK, commons.Feedback("User is already a member of this organisation"))
+		return
+	}
+
+	userEntity := models.EntityUser{
+		EntityNumber:  userEntityRequest.EntityNumber,
+		UserNumber:    userEntityRequest.UserNumber,
+		AddedByNumber: actor.Number,
+	}
+
+	if err := config.DB.Create(&userEntity).Error; err != nil {
 		context.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
 		return
 	}
@@ -283,6 +356,10 @@ func UpdateEntity(context *gin.Context) {
 
 	err = entityService.UpdateEntity(payload, user.Number)
 	if err != nil {
+		if errors.Is(err, services.ErrEntityNotInActiveOrganisation) || errors.Is(err, services.ErrNoActiveOrganisation) {
+			context.JSON(http.StatusForbidden, commons.Feedback(err.Error()))
+			return
+		}
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
@@ -304,13 +381,17 @@ func DeleteEntity(context *gin.Context) {
 		return
 	}
 
-	err = services.DeleteEntity(entityNumber, user.Number)
+	err = services.DeactivateEntity(entityNumber, user.Number)
 	if err != nil {
+		if errors.Is(err, services.ErrEntityNotInActiveOrganisation) || errors.Is(err, services.ErrNoActiveOrganisation) {
+			context.JSON(http.StatusForbidden, commons.Feedback(err.Error()))
+			return
+		}
 		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
 
-	context.JSON(http.StatusOK, commons.Feedback("Entity removed successfully"))
+	context.JSON(http.StatusOK, commons.Feedback("Entity deactivated successfully"))
 }
 
 func AllCalendarEvents(context *gin.Context) {

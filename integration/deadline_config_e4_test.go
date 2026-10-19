@@ -50,6 +50,13 @@ func TestFoundationE4DeadlineConfig(t *testing.T) {
 	if err := fx.db.Omit("Entity", "User").Create(&eosModel.ActiveUserEntity{UserNumber: e4WfManager, EntityNumber: eOrgA}).Error; err != nil {
 		t.Fatalf("activating workflow manager entity: %v", err)
 	}
+	if err := fx.db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+		EntityNumber:  eOrgA,
+		UserNumber:    e4WfManager,
+		AddedByNumber: e4WfManager,
+	}).Error; err != nil {
+		t.Fatalf("seeding workflow manager membership: %v", err)
+	}
 	role := permissionsModel.Role{Number: e4WfRole, Name: e4WfRole, EntityNumber: eOrgA, Status: "ACTIVE", UserNumber: e4WfManager}
 	if err := fx.db.Omit("User", "Entity", "Permissions").Create(&role).Error; err != nil {
 		t.Fatalf("seeding workflow role: %v", err)

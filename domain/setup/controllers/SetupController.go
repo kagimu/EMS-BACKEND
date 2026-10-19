@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -50,12 +51,7 @@ const (
 // installation, an inactive initial administrator, or an organisation without an
 // owner all report "uninitialized" — they are never treated as complete.
 func Status(c *gin.Context) {
-	var activeOwners int64
-	err := config.DB.
-		Model(&stakeholderModel.Stakeholder{}).
-		Where("stakeholder_type = ?", stakeholderModel.StakeholderTypeOwner).
-		Where("status = ?", constants.StatusActive).
-		Count(&activeOwners).Error
+	ownerExists, err := effectiveOwnerExists()
 	if err != nil {
 		// Never guess the state: the caller must show a retry state rather than
 		// assume the installation is new or complete.
@@ -64,11 +60,35 @@ func Status(c *gin.Context) {
 	}
 
 	state := SetupStateUninitialized
-	if activeOwners > 0 {
+	if ownerExists {
 		state = SetupStateInitialized
 	}
 
 	c.JSON(http.StatusOK, gin.H{"state": state})
+}
+
+// effectiveOwnerExists reports whether the installation has at least one
+// effective owner attached to a live (non-deactivated) organisation.
+//
+// Orphaned stakeholder rows — for example after an organisation was removed by
+// the old membership-deleting path — do not establish a completed installation.
+// The predicate matches the effective-owner rule used by the last-owner
+// invariant (status + validity window).
+func effectiveOwnerExists() (bool, error) {
+	now := time.Now()
+	var count int64
+	err := config.DB.
+		Table("ems_stakeholders AS s").
+		Joins("JOIN entities AS e ON e.number = s.organisation_number AND e.deleted_at IS NULL").
+		Where("s.deleted_at IS NULL").
+		Where("s.stakeholder_type = ? AND s.status = ?", stakeholderModel.StakeholderTypeOwner, constants.StatusActive).
+		Where("(s.valid_from IS NULL OR s.valid_from <= ?)", now).
+		Where("(s.valid_to IS NULL OR s.valid_to >= ?)", now).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 // Progress reports, as database facts only, which first-installation steps have
@@ -91,7 +111,7 @@ func Progress(c *gin.Context) {
 		unavailable(c)
 		return
 	}
-	ownerExists, err := countExists(&stakeholderModel.Stakeholder{}, "stakeholder_type = ? AND status = ?", stakeholderModel.StakeholderTypeOwner, constants.StatusActive)
+	ownerExists, err := effectiveOwnerExists()
 	if err != nil {
 		unavailable(c)
 		return

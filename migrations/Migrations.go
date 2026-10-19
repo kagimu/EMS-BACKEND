@@ -35,6 +35,7 @@ import (
 	emsLicensingModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/models"
 	emsNotificationsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/notifications/models"
 	emsOrganisationModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/models"
+	emsReportingModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/reporting/models"
 	emsStakeholderModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/stakeholders/models"
 	emsWorkflowModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/workflow/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
@@ -255,6 +256,9 @@ func Init() error {
 		&emsStakeholderModels.Stakeholder{},
 		// EMS Core Foundation C3: generic user assignments (additive; ems_user_assignments only).
 		&emsAssignmentModels.UserAssignment{},
+		// EMS Core Stage 4: explicit reporting lines between assignments
+		// (additive; ems_reporting_lines only). No existing table is altered.
+		&emsReportingModels.ReportingLine{},
 		// EMS Core Foundation D: decision authority (additive; ems_decision_authorities only).
 		&emsAuthorityModels.DecisionAuthority{},
 		// EMS Core Foundation E1: workflow and approvals (additive; ems_approval_requests,

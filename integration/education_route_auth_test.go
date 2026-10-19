@@ -62,12 +62,20 @@ func TestEducationPermissionEnforcedBeforeHandler(t *testing.T) {
 	if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 		t.Fatalf("setting active entity: %v", err)
 	}
+	if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+		EntityNumber:  orgNumber,
+		UserNumber:    emsUserNumber,
+		AddedByNumber: emsUserNumber,
+	}).Error; err != nil {
+		t.Fatalf("seeding membership: %v", err)
+	}
 	if err := db.Create(&licence).Error; err != nil {
 		t.Fatalf("seeding licence: %v", err)
 	}
 	t.Cleanup(func() {
 		db.Unscoped().Where("number = ?", licenceNumber).Delete(&licensingModel.Licence{})
 		db.Unscoped().Where("user_number = ?", emsUserNumber).Delete(&eosModel.ActiveUserEntity{})
+		db.Unscoped().Where("user_number = ? AND entity_number = ?", emsUserNumber, orgNumber).Delete(&eosModel.EntityUser{})
 		db.Unscoped().Where("number = ?", orgNumber).Delete(&eosModel.Entity{})
 	})
 

@@ -116,6 +116,13 @@ func setupNotificationFixture(t *testing.T) *ntFixture {
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 			t.Fatalf("setting active entity for %s: %v", spec.userNumber, err)
 		}
+		if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+			EntityNumber:  spec.entityNumber,
+			UserNumber:    spec.userNumber,
+			AddedByNumber: spec.userNumber,
+		}).Error; err != nil {
+			t.Fatalf("seeding membership for %s: %v", spec.userNumber, err)
+		}
 	}
 
 	role := permissionsModel.Role{

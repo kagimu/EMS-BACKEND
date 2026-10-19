@@ -156,7 +156,8 @@ func writeServiceError(c *gin.Context, err error) {
 	case errors.Is(err, services.ErrStakeholderNotFound):
 		c.JSON(http.StatusNotFound, commons.Feedback(err.Error()))
 	case errors.Is(err, services.ErrDuplicateActiveStakeholder),
-		errors.Is(err, services.ErrLastActiveOwner):
+		errors.Is(err, services.ErrLastActiveOwner),
+		errors.Is(err, services.ErrOwnershipChangeBusy):
 		c.JSON(http.StatusConflict, commons.Feedback(err.Error()))
 	case errors.Is(err, services.ErrInvalidStakeholderType),
 		errors.Is(err, services.ErrInvalidStatus),

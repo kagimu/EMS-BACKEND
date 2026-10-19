@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -32,9 +34,14 @@ func FindAllByOrganisation(organisationNumber, stakeholderType, status string) (
 
 // FindByNumberAndOrganisation returns a stakeholder only when it belongs to the
 // given organisation, which prevents cross-organisation (IDOR) disclosure.
-func FindByNumberAndOrganisation(number, organisationNumber string) (*models.Stakeholder, error) {
+func FindByNumberAndOrganisation(number, organisationNumber string, tx ...*gorm.DB) (*models.Stakeholder, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var stakeholder models.Stakeholder
-	if err := config.DB.
+	if err := db.
 		Where("number = ? AND organisation_number = ?", number, organisationNumber).
 		First(&stakeholder).Error; err != nil {
 		return nil, err
@@ -44,10 +51,15 @@ func FindByNumberAndOrganisation(number, organisationNumber string) (*models.Sta
 
 // FindActiveByOrgUserType returns the ACTIVE relationship for a person and type
 // within an organisation, or (nil, nil) when none exists.
-func FindActiveByOrgUserType(organisationNumber, userNumber, stakeholderType string) (*models.Stakeholder, error) {
+func FindActiveByOrgUserType(organisationNumber, userNumber, stakeholderType string, tx ...*gorm.DB) (*models.Stakeholder, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var stakeholder models.Stakeholder
 
-	err := config.DB.
+	err := db.
 		Where("organisation_number = ? AND user_number = ? AND stakeholder_type = ? AND status = ?",
 			organisationNumber, userNumber, stakeholderType, constants.StatusActive).
 		First(&stakeholder).Error
@@ -62,27 +74,79 @@ func FindActiveByOrgUserType(organisationNumber, userNumber, stakeholderType str
 	return &stakeholder, nil
 }
 
-// CountActiveOwners counts the ACTIVE owner relationships of one organisation.
+// CountEffectiveOwners counts the organisation's effective owners at now.
 //
-// Foundation C4: used by the last-owner invariant. Only ACTIVE owner rows count;
-// INACTIVE and ENDED owners are not counted. The query is organisation-scoped.
-func CountActiveOwners(organisationNumber string) (int64, error) {
+// This is the ratified effective-owner predicate (Foundation C/E2, D10):
+// stakeholder_type='owner', status='ACTIVE', and the validity window contains
+// now (valid_to inclusive; NULL on either side is unbounded). It is the only
+// predicate used by the last-owner invariant, so an ACTIVE but expired or
+// future-dated owner never satisfies it.
+func CountEffectiveOwners(organisationNumber string, now time.Time, tx ...*gorm.DB) (int64, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
 	var count int64
-	if err := config.DB.Model(&models.Stakeholder{}).
+	if err := db.Model(&models.Stakeholder{}).
 		Where("organisation_number = ? AND stakeholder_type = ? AND status = ?",
 			organisationNumber, models.StakeholderTypeOwner, constants.StatusActive).
+		Where("(valid_from IS NULL OR valid_from <= ?)", now).
+		Where("(valid_to IS NULL OR valid_to >= ?)", now).
 		Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil
 }
 
-func Create(stakeholder *models.Stakeholder) error {
-	return config.DB.Create(stakeholder).Error
+func Create(stakeholder *models.Stakeholder, tx ...*gorm.DB) error {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+	return db.Create(stakeholder).Error
 }
 
-func Save(stakeholder *models.Stakeholder) error {
-	return config.DB.Save(stakeholder).Error
+func Save(stakeholder *models.Stakeholder, tx ...*gorm.DB) error {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+	return db.Save(stakeholder).Error
+}
+
+// FindUserDisplayNames returns the display name for each supplied user number in
+// one batched query. It is used only for the organisation-scoped stakeholder
+// display_name field and returns no contact or credential data.
+func FindUserDisplayNames(userNumbers []string) (map[string]string, error) {
+	result := make(map[string]string)
+	unique := make([]string, 0, len(userNumbers))
+	seen := make(map[string]bool, len(userNumbers))
+	for _, number := range userNumbers {
+		if number == "" || seen[number] {
+			continue
+		}
+		seen[number] = true
+		unique = append(unique, number)
+	}
+	if len(unique) == 0 {
+		return result, nil
+	}
+
+	var users []authModel.User
+	if err := config.DB.Where("number IN ?", unique).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	for _, user := range users {
+		parts := make([]string, 0, 3)
+		for _, part := range []string{user.FirstName, user.SecondName, user.LastName} {
+			if trimmed := strings.TrimSpace(part); trimmed != "" {
+				parts = append(parts, trimmed)
+			}
+		}
+		result[user.Number] = strings.Join(parts, " ")
+	}
+	return result, nil
 }
 
 // FindAuthenticatableUserNumbers reports which of the supplied user numbers

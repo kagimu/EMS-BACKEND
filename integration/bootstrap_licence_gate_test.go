@@ -21,11 +21,11 @@ import (
 
 const (
 	// Unique prefixes to avoid collision with other test fixtures.
-	bUserNoOrg       = "ems-bootstrap-no-org"
-	bUserWithOrg     = "ems-bootstrap-with-org"
-	bOrgWithLicence  = "ems-bootstrap-org-licence"
-	bRegistryUser    = "ems-bootstrap-registry"
-	bRegistryRole    = "ems-bootstrap-role-registry"
+	bUserNoOrg      = "ems-bootstrap-no-org"
+	bUserWithOrg    = "ems-bootstrap-with-org"
+	bOrgWithLicence = "ems-bootstrap-org-licence"
+	bRegistryUser   = "ems-bootstrap-registry"
+	bRegistryRole   = "ems-bootstrap-role-registry"
 )
 
 // TestBootstrapLicenceGateExemption verifies the narrowly scoped exemption

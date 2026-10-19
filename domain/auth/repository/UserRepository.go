@@ -2,9 +2,11 @@ package repository
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
-	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -64,36 +66,46 @@ func GetUserByNumber(userNumber string, txn ...*gorm.DB) (models.User, error) {
 	return user, nil
 }
 
+// FetchAllPermissionsByUser returns every effective permission the user holds
+// across all organisations. It is the installation-level view used only by the
+// explicit control-plane authorities (licence registry and audit registry); it
+// still applies the role-status and assignment-expiry rules.
 func FetchAllPermissionsByUser(userNumber string) ([]string, error) {
-	db := config.DB
-	//prepare roles and permissions
-	//get user roles
-	var userRoles []permissionModels.UserRole
+	return fetchPermissions(userNumber, "")
+}
+
+// FetchPermissionsByUserAndEntity returns the effective permissions the user
+// holds through ACTIVE, unexpired roles that belong to the given organisation.
+//
+// This is the organisation-scoped view used by business-request authorisation
+// and by role administration to decide what an actor may delegate.
+func FetchPermissionsByUserAndEntity(userNumber string, entityNumber string) ([]string, error) {
+	return fetchPermissions(userNumber, entityNumber)
+}
+
+// fetchPermissions applies the shared status and expiry rules. An empty
+// entityNumber keeps the installation-wide view; a non-empty value adds the
+// organisation predicate.
+func fetchPermissions(userNumber string, entityNumber string) ([]string, error) {
 	permissions := make([]string, 0)
-
-	if err := db.Where("user_number = ?", userNumber).Find(&userRoles).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return permissions, nil
-		}
-		return permissions, err
-
+	if userNumber == "" {
+		return permissions, nil
 	}
 
-	for _, item := range userRoles {
-		//get role permissions
-		var rolePermissions []permissionModels.RolePermission
-		if err := db.Where("role_number = ?", item.RoleNumber).Find(&rolePermissions).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return permissions, nil
-			}
-			return permissions, err
-		}
+	query := config.DB.
+		Table("user_roles").
+		Select("DISTINCT role_permissions.permission").
+		Joins("JOIN roles ON roles.number = user_roles.role_number AND roles.deleted_at IS NULL").
+		Joins("JOIN role_permissions ON role_permissions.role_number = roles.number AND role_permissions.deleted_at IS NULL").
+		Where("user_roles.user_number = ?", userNumber).
+		Where("user_roles.deleted_at IS NULL").
+		Where("user_roles.expiry_date >= ?", time.Now()).
+		Where("roles.status = ?", constants.StatusActive)
 
-		for _, permission := range rolePermissions {
-			permissions = append(permissions, permission.Permission)
-		}
-
+	if entityNumber != "" {
+		query = query.Where("roles.entity_number = ?", entityNumber)
 	}
-	return permissions, nil
 
+	err := query.Scan(&permissions).Error
+	return permissions, err
 }

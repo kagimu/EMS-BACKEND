@@ -56,7 +56,9 @@ func setupFReplacementFixture(t *testing.T) *frFixture {
 
 	users := []string{frOwner, frAdminNoPerm, frClientA, frClientB, frClientC}
 	organisations := []string{frOrgA, frOrgB, frOrgC}
-	roles := []string{frRoleRegistry, frRoleClient}
+	clientRoleB := frRoleClient + "-b"
+	clientRoleC := frRoleClient + "-c"
+	roles := []string{frRoleRegistry, frRoleClient, clientRoleB, clientRoleC}
 
 	cleanup := func() {
 		db.Unscoped().Where("organisation_number IN ?", organisations).Delete(&licensingModel.LicenceEvent{})
@@ -114,9 +116,16 @@ func setupFReplacementFixture(t *testing.T) *frFixture {
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 			t.Fatalf("setting active entity for %s: %v", spec.userNumber, err)
 		}
+		if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+			EntityNumber:  spec.entityNumber,
+			UserNumber:    spec.userNumber,
+			AddedByNumber: spec.userNumber,
+		}).Error; err != nil {
+			t.Fatalf("seeding membership for %s: %v", spec.userNumber, err)
+		}
 	}
 
-	for _, number := range roles {
+	for _, number := range []string{frRoleRegistry, frRoleClient} {
 		role := permissionsModel.Role{
 			Number: number, Name: number, EntityNumber: frOrgA, Status: "ACTIVE", UserNumber: frOwner,
 		}
@@ -140,11 +149,13 @@ func setupFReplacementFixture(t *testing.T) *frFixture {
 	}
 
 	expiry := time.Now().Add(365 * 24 * time.Hour)
+	cloneRoleForOrganisation(t, db, frRoleClient, clientRoleB, frOrgB, frOwner)
+	cloneRoleForOrganisation(t, db, frRoleClient, clientRoleC, frOrgC, frOwner)
 	for _, spec := range []struct{ userNumber, roleNumber string }{
 		{frOwner, frRoleRegistry},
 		{frClientA, frRoleClient},
-		{frClientB, frRoleClient},
-		{frClientC, frRoleClient},
+		{frClientB, clientRoleB},
+		{frClientC, clientRoleC},
 	} {
 		userRole := permissionsModel.UserRole{
 			UserNumber: spec.userNumber, RoleNumber: spec.roleNumber, ExpiryDate: expiry, AddedBy: frOwner,

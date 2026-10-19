@@ -55,7 +55,8 @@ func setupFEventsFixture(t *testing.T) *sevFixture {
 
 	users := []string{sevOwner, sevAdminNoPerm, sevClient, sevRateUser}
 	organisations := []string{sevOrgA, sevOrgB}
-	roles := []string{sevRoleRegistry, sevRoleClient}
+	clientRoleB := sevRoleClient + "-b"
+	roles := []string{sevRoleRegistry, sevRoleClient, clientRoleB}
 
 	cleanup := func() {
 		db.Unscoped().Where("organisation_number IN ?", organisations).Delete(&licensingModel.LicenceEvent{})
@@ -110,9 +111,16 @@ func setupFEventsFixture(t *testing.T) *sevFixture {
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 			t.Fatalf("setting active entity for %s: %v", spec.userNumber, err)
 		}
+		if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+			EntityNumber:  spec.entityNumber,
+			UserNumber:    spec.userNumber,
+			AddedByNumber: spec.userNumber,
+		}).Error; err != nil {
+			t.Fatalf("seeding membership for %s: %v", spec.userNumber, err)
+		}
 	}
 
-	for _, number := range roles {
+	for _, number := range []string{sevRoleRegistry, sevRoleClient} {
 		role := permissionsModel.Role{
 			Number: number, Name: number, EntityNumber: sevOrgA, Status: "ACTIVE", UserNumber: sevOwner,
 		}
@@ -137,10 +145,11 @@ func setupFEventsFixture(t *testing.T) *sevFixture {
 	}
 
 	expiry := time.Now().Add(365 * 24 * time.Hour)
+	cloneRoleForOrganisation(t, db, sevRoleClient, clientRoleB, sevOrgB, sevOwner)
 	for _, spec := range []struct{ userNumber, roleNumber string }{
 		{sevOwner, sevRoleRegistry},
 		{sevClient, sevRoleClient},
-		{sevRateUser, sevRoleClient},
+		{sevRateUser, clientRoleB},
 	} {
 		userRole := permissionsModel.UserRole{
 			UserNumber: spec.userNumber, RoleNumber: spec.roleNumber, ExpiryDate: expiry, AddedBy: sevOwner,

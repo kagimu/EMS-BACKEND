@@ -46,6 +46,7 @@ import (
 	licensingMiddleware "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/middleware"
 	notificationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/notifications/controllers"
 	organisationUnitController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/controllers"
+	reportingController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/reporting/controllers"
 	stakeholderController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/stakeholders/controllers"
 	approvalController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/workflow/controllers"
 	enrollmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/controllers"
@@ -739,13 +740,13 @@ func SetupRoutes() *gin.Engine {
 
 			roles := settings.Group("roles")
 			{
-				roles.POST("", permissionController.CreateRole)
-				roles.GET("", permissionController.FetchRoles)
-				roles.GET(":role_number", permissionController.FetchRoleDetails)
-				roles.PUT("assign", permissionController.AssignRolesToAUser)
-				roles.POST("remove", permissionController.RemoveRoleAssignment)
-				roles.POST("update/:role_number", permissionController.UpdateRole)
-				roles.DELETE("delete/:role_number", permissionController.DeleteRole)
+				roles.POST("", middleware.ValidatePermission("update_permission"), permissionController.CreateRole)
+				roles.GET("", middleware.ValidatePermission("view_roles"), permissionController.FetchRoles)
+				roles.GET(":role_number", middleware.ValidatePermission("view_roles"), permissionController.FetchRoleDetails)
+				roles.PUT("assign", middleware.ValidatePermission("update_permission"), permissionController.AssignRolesToAUser)
+				roles.POST("remove", middleware.ValidatePermission("update_permission"), permissionController.RemoveRoleAssignment)
+				roles.POST("update/:role_number", middleware.ValidatePermission("update_permission"), permissionController.UpdateRole)
+				roles.DELETE("delete/:role_number", middleware.ValidatePermission("update_permission"), permissionController.DeleteRole)
 
 			}
 
@@ -1123,6 +1124,18 @@ func SetupRoutes() *gin.Engine {
 			emsUserAssignments.POST("", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.CreateUserAssignment)
 			emsUserAssignments.PUT(":number", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.UpdateUserAssignment)
 			emsUserAssignments.PATCH(":number/status", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.UpdateUserAssignmentStatus)
+		}
+
+		// EMS Core reporting: explicit person-to-person reporting lines between
+		// assignments. Organisation-scoped and gated with the assignment
+		// permissions (reporting is a property of assignments).
+		emsReportingLines := main.Group("/ems/reporting-lines")
+		{
+			emsReportingLines.GET("", middleware.ValidatePermission("view_ems_assignments"), reportingController.FetchReportingLines)
+			emsReportingLines.GET(":number", middleware.ValidatePermission("view_ems_assignments"), reportingController.FetchReportingLine)
+			emsReportingLines.POST("", middleware.ValidatePermission("manage_ems_assignments"), reportingController.CreateReportingLine)
+			emsReportingLines.PUT(":number", middleware.ValidatePermission("manage_ems_assignments"), reportingController.UpdateReportingLine)
+			emsReportingLines.PATCH(":number/status", middleware.ValidatePermission("manage_ems_assignments"), reportingController.UpdateReportingLineStatus)
 		}
 
 		// EMS Core Foundation D: decision authority.

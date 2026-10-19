@@ -107,6 +107,13 @@ func setupStakeholderFixture(t *testing.T) *stakeholderFixture {
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
 			t.Fatalf("setting active entity for %s: %v", spec.userNumber, err)
 		}
+		if err := db.Omit("Entity", "User", "AddedBy").Create(&eosModel.EntityUser{
+			EntityNumber:  spec.entityNumber,
+			UserNumber:    spec.userNumber,
+			AddedByNumber: spec.userNumber,
+		}).Error; err != nil {
+			t.Fatalf("seeding membership for %s: %v", spec.userNumber, err)
+		}
 	}
 
 	token := func(userNumber string) string {
@@ -131,6 +138,7 @@ type stakeholderEnvelope struct {
 	Data    struct {
 		Number          string   `json:"number"`
 		UserNumber      string   `json:"user_number"`
+		DisplayName     string   `json:"display_name"`
 		StakeholderType string   `json:"stakeholder_type"`
 		Title           string   `json:"title"`
 		Status          string   `json:"status"`
@@ -223,6 +231,9 @@ func TestStakeholders(t *testing.T) {
 		created := decode(t, body)
 		if created.Data.StakeholderType != "owner" || created.Data.Status != "ACTIVE" {
 			t.Fatalf("unexpected owner stakeholder: %s", string(body))
+		}
+		if created.Data.DisplayName != "Stake User" {
+			t.Fatalf("display_name = %q, want %q", created.Data.DisplayName, "Stake User")
 		}
 
 		// The referenced person has no password, proving a stakeholder needs no login.
