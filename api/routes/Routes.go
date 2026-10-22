@@ -50,6 +50,7 @@ import (
 	quickbooksController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/controllers"
 	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
 	reportTemplate "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/controllers"
+	reportsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reports/api/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
 	departmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/departments/controllers"
@@ -57,7 +58,6 @@ import (
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
-	reportsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reports/api/controllers"
 	staffMembersControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/controllers"
 	statisticsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/statistics/api/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
@@ -445,6 +445,7 @@ func SetupRoutes() *gin.Engine {
 			}
 
 			eos.GET("my-entities", eosController.GetUserEntities)
+			eos.GET("staff-entities", eosController.GetStaffEntities)
 			eos.GET("calendars", eosController.GetAllCalendars)
 			eos.POST("calendars", eosController.AddGeneralCalendar)
 			eos.GET("calendars/:calendar_number", eosController.GetCalendarDetails)

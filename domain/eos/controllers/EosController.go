@@ -221,6 +221,21 @@ func GetUserEntities(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, entities)
 }
 
+func GetStaffEntities(ctx *gin.Context) {
+	var entities []models.Entity
+	user, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, commons.Feedback("Unauthorized"))
+		return
+	}
+	if err := config.DB.Where("entity_users.user_number = ? ", user.Number).Joins("JOIN entity_users ON entity_users.entity_number = entities.number").Find(&entities).Error; err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, entities)
+}
+
 func SaveCurrentEntity(context *gin.Context) {
 	user, err := commons.GetUserFromHeader(context)
 	if err != nil {
