@@ -222,13 +222,14 @@ func GetUserEntities(ctx *gin.Context) {
 }
 
 func GetStaffEntities(ctx *gin.Context) {
-	var entities []models.Entity
-	user, err := commons.GetUserFromHeader(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, commons.Feedback("Unauthorized"))
+	userNumber := ctx.Query("user_number")
+	if userNumber == "" {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Provide user_number"))
 		return
 	}
-	if err := config.DB.Where("entity_users.user_number = ? ", user.Number).Joins("JOIN entity_users ON entity_users.entity_number = entities.number").Find(&entities).Error; err != nil {
+
+	var entities []models.Entity
+	if err := config.DB.Where("entity_users.user_number = ? ", userNumber).Joins("JOIN entity_users ON entity_users.entity_number = entities.number").Find(&entities).Error; err != nil {
 		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 		return
 	}
