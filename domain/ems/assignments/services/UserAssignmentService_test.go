@@ -1,6 +1,7 @@
 package services
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -45,11 +46,20 @@ func TestAssignmentTypeCatalogue(t *testing.T) {
 		models.AssignmentTypeHead,
 		models.AssignmentTypeStaff,
 	} {
-		if !models.IsValidAssignmentType(expected) {
+		normalized, err := models.NormalizeAssignmentType(expected)
+		if err != nil || normalized != expected {
 			t.Errorf("%q must be a valid assignment type", expected)
 		}
 	}
-	if models.IsValidAssignmentType("superhero") {
-		t.Fatal("unknown assignment types must be rejected")
+
+	custom, err := models.NormalizeAssignmentType("superhero")
+	if err != nil || custom != "superhero" {
+		t.Fatal("custom assignment types must be accepted")
+	}
+	if _, err := models.NormalizeAssignmentType(""); err == nil {
+		t.Fatal("empty assignment types must be rejected")
+	}
+	if _, err := models.NormalizeAssignmentType(strings.Repeat("a", models.AssignmentTypeMaxLength+1)); err == nil {
+		t.Fatal("assignment types longer than the column must be rejected")
 	}
 }

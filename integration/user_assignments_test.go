@@ -367,8 +367,8 @@ func TestUserAssignments(t *testing.T) {
 			t.Fatalf("reversed date range = %d, want %d", status, http.StatusBadRequest)
 		}
 
-		if status, _ := create(fx.tokenAdminA, c3UserAlt, c3UnitA, "superhero", ""); status != http.StatusBadRequest {
-			t.Fatalf("invalid type = %d, want %d", status, http.StatusBadRequest)
+		if status, _ := create(fx.tokenAdminA, c3UserAlt, c3UnitA, "assignment-type-over-thirty-characters", ""); status != http.StatusBadRequest {
+			t.Fatalf("overlong type = %d, want %d", status, http.StatusBadRequest)
 		}
 		if status, _ := create(fx.tokenAdminA, "does-not-exist", c3UnitA, "member", ""); status != http.StatusBadRequest {
 			t.Fatalf("unknown user = %d, want %d", status, http.StatusBadRequest)

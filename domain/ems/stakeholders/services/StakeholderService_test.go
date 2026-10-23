@@ -1,6 +1,7 @@
 package services
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -63,12 +64,21 @@ func TestStakeholderTypeCatalogue(t *testing.T) {
 		models.StakeholderTypePartner,
 		models.StakeholderTypeOther,
 	} {
-		if !models.IsValidStakeholderType(expected) {
+		normalized, err := models.NormalizeStakeholderType(expected)
+		if err != nil || normalized != expected {
 			t.Errorf("%q must be a valid stakeholder type", expected)
 		}
 	}
-	if models.IsValidStakeholderType("superhero") {
-		t.Fatal("unknown stakeholder types must be rejected")
+
+	custom, err := models.NormalizeStakeholderType("superhero")
+	if err != nil || custom != "superhero" {
+		t.Fatal("custom stakeholder types must be accepted")
+	}
+	if _, err := models.NormalizeStakeholderType(""); err == nil {
+		t.Fatal("empty stakeholder types must be rejected")
+	}
+	if _, err := models.NormalizeStakeholderType(strings.Repeat("a", models.StakeholderTypeMaxLength+1)); err == nil {
+		t.Fatal("stakeholder types longer than the column must be rejected")
 	}
 }
 

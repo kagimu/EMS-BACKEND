@@ -363,11 +363,11 @@ func TestDecisionAuthority(t *testing.T) {
 		}); status != http.StatusBadRequest {
 			t.Fatalf("both anchors = %d, want %d", status, http.StatusBadRequest)
 		}
-		// Unknown stakeholder type.
+		// Overlong stakeholder type.
 		if status, _ := createAuthority(fx.tokenAdminA, map[string]any{
-			"decision_type": "purchase_request", "approval_level": 1, "stakeholder_type": "superhero",
+			"decision_type": "purchase_request", "approval_level": 1, "stakeholder_type": "stakeholder-type-over-thirty-chars",
 		}); status != http.StatusBadRequest {
-			t.Fatalf("bad stakeholder type = %d, want %d", status, http.StatusBadRequest)
+			t.Fatalf("overlong stakeholder type = %d, want %d", status, http.StatusBadRequest)
 		}
 		// Unknown role.
 		if status, _ := createAuthority(fx.tokenAdminA, map[string]any{

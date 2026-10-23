@@ -129,6 +129,33 @@ func UpdateStakeholderStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Stakeholder status updated", "data": stakeholder})
 }
 
+// CreateEmployee creates a new staff identity (server-generated user number),
+// attaches it to the current organisation and records its stakeholder
+// relationship in one operation.
+func CreateEmployee(c *gin.Context) {
+	actorNumber, organisationNumber, ok := stakeholderOrganisationContext(c)
+	if !ok {
+		return
+	}
+
+	var request requests.CreateEmployeeRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback("Invalid request body"))
+		return
+	}
+
+	employee, err := services.CreateEmployee(actorNumber, organisationNumber, request)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	// Foundation G (G2): best-effort audit fact. Never changes the result.
+	auditHooks.Record(c, organisationNumber, "employee.create", "ems_employee", employee.UserNumber, employee)
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Employee created", "data": employee})
+}
+
 // stakeholderOrganisationContext resolves the authenticated actor and the
 // authoritative organisation through the shared resolver.
 func stakeholderOrganisationContext(c *gin.Context) (actorNumber string, organisationNumber string, ok bool) {
@@ -157,14 +184,23 @@ func writeServiceError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, commons.Feedback(err.Error()))
 	case errors.Is(err, services.ErrDuplicateActiveStakeholder),
 		errors.Is(err, services.ErrLastActiveOwner),
-		errors.Is(err, services.ErrOwnershipChangeBusy):
+		errors.Is(err, services.ErrOwnershipChangeBusy),
+		errors.Is(err, services.ErrEmployeeEmailExists),
+		errors.Is(err, services.ErrEmployeePhoneExists):
 		c.JSON(http.StatusConflict, commons.Feedback(err.Error()))
 	case errors.Is(err, services.ErrInvalidStakeholderType),
 		errors.Is(err, services.ErrInvalidStatus),
 		errors.Is(err, services.ErrInvalidSharePercentage),
 		errors.Is(err, services.ErrInvalidDateRange),
 		errors.Is(err, services.ErrUserRequired),
-		errors.Is(err, services.ErrUserNotFound):
+		errors.Is(err, services.ErrUserNotFound),
+		errors.Is(err, services.ErrEmployeeNameRequired),
+		errors.Is(err, services.ErrEmployeeGenderRequired),
+		errors.Is(err, services.ErrEmployeeGenderInvalid),
+		errors.Is(err, services.ErrEmployeeEmailRequired),
+		errors.Is(err, services.ErrEmployeeEmailInvalid),
+		errors.Is(err, services.ErrEmployeePhoneInvalid),
+		errors.Is(err, services.ErrEmployeeTitleInvalid):
 		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
 	default:
 		c.JSON(http.StatusInternalServerError, commons.Feedback("Something went wrong"))

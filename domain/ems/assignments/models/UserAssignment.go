@@ -1,7 +1,10 @@
 package models
 
 import (
+	"errors"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gorm.io/gorm"
 )
@@ -14,9 +17,14 @@ const (
 	AssignmentTypeManager = "manager"
 	AssignmentTypeHead    = "head"
 	AssignmentTypeStaff   = "staff"
+
+	// AssignmentTypeMaxLength matches the ems_user_assignments.assignment_type
+	// column. Custom titles are allowed within this limit.
+	AssignmentTypeMaxLength = 30
 )
 
-// AssignmentTypes is the initial catalogue of valid assignment types.
+// AssignmentTypes is the suggested catalogue of assignment types. It is not a
+// closed set: organisations may use custom titles.
 var AssignmentTypes = []string{
 	AssignmentTypeMember,
 	AssignmentTypeManager,
@@ -24,14 +32,23 @@ var AssignmentTypes = []string{
 	AssignmentTypeStaff,
 }
 
-// IsValidAssignmentType reports whether the value is in the initial catalogue.
-func IsValidAssignmentType(value string) bool {
+// NormalizeAssignmentType trims and validates an assignment type. Known
+// catalogue values are canonicalised to lower case; any other non-empty title
+// is accepted as a custom type.
+func NormalizeAssignmentType(value string) (string, error) {
+	normalized := strings.TrimSpace(value)
+	if normalized == "" {
+		return "", errors.New("assignment type is required")
+	}
+	if utf8.RuneCountInString(normalized) > AssignmentTypeMaxLength {
+		return "", errors.New("assignment type must be 30 characters or fewer")
+	}
 	for _, candidate := range AssignmentTypes {
-		if candidate == value {
-			return true
+		if strings.EqualFold(normalized, candidate) {
+			return candidate, nil
 		}
 	}
-	return false
+	return normalized, nil
 }
 
 // UserAssignment records where a person operates within an organisation's unit

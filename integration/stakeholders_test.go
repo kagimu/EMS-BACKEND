@@ -3,10 +3,12 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
@@ -331,8 +333,8 @@ func TestStakeholders(t *testing.T) {
 	})
 
 	t.Run("invalid_inputs_rejected", func(t *testing.T) {
-		if status, _ := create(fx.tokenAdminA, stakePersonC, "superhero", nil); status != http.StatusBadRequest {
-			t.Fatalf("invalid type = %d, want %d", status, http.StatusBadRequest)
+		if status, _ := create(fx.tokenAdminA, stakePersonC, "stakeholder-type-over-thirty-chars", nil); status != http.StatusBadRequest {
+			t.Fatalf("overlong type = %d, want %d", status, http.StatusBadRequest)
 		}
 		if status, _ := create(fx.tokenAdminA, "does-not-exist", "staff", nil); status != http.StatusBadRequest {
 			t.Fatalf("unknown user = %d, want %d", status, http.StatusBadRequest)
@@ -383,6 +385,80 @@ func TestStakeholders(t *testing.T) {
 		}
 		if status, _ = request(http.MethodPatch, path+"/status", fx.tokenAdminB, map[string]any{"status": "ENDED"}); status != http.StatusNotFound {
 			t.Fatalf("cross-organisation status = %d, want %d", status, http.StatusNotFound)
+		}
+	})
+
+	t.Run("employee_creation_generates_user_number", func(t *testing.T) {
+		email := fmt.Sprintf("employee-%d@example.com", time.Now().UnixNano())
+		status, body := request(http.MethodPost, "/main/ems/employees", fx.tokenAdminA, map[string]any{
+			"first_name":       "New",
+			"second_name":      "Employee",
+			"gender":           "Female",
+			"email":            email,
+			"stakeholder_type": "supervisor",
+		})
+		if status != http.StatusCreated {
+			t.Fatalf("create employee = %d (%s)", status, string(body))
+		}
+
+		var employee struct {
+			Data struct {
+				UserNumber     string `json:"user_number"`
+				InvitationSent bool   `json:"invitation_sent"`
+				Stakeholder    struct {
+					UserNumber      string `json:"user_number"`
+					DisplayName     string `json:"display_name"`
+					StakeholderType string `json:"stakeholder_type"`
+				} `json:"stakeholder"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(body, &employee); err != nil {
+			t.Fatalf("decoding employee: %v", err)
+		}
+		if employee.Data.UserNumber == "" {
+			t.Fatalf("employee user number must be generated: %s", string(body))
+		}
+		if employee.Data.Stakeholder.UserNumber != employee.Data.UserNumber {
+			t.Fatalf("employee stakeholder must reference the generated user: %s", string(body))
+		}
+		if employee.Data.Stakeholder.StakeholderType != "supervisor" {
+			t.Fatalf("custom stakeholder type must be stored: %s", string(body))
+		}
+
+		userNumber := employee.Data.UserNumber
+		t.Cleanup(func() {
+			fx.db.Unscoped().Where("user_number = ?", userNumber).Delete(&authModel.Contact{})
+			fx.db.Unscoped().Where("user_number = ?", userNumber).Delete(&authModel.PasswordReset{})
+			fx.db.Unscoped().Where("user_number = ?", userNumber).Delete(&eosModel.EntityUser{})
+			fx.db.Unscoped().Where("number = ?", userNumber).Delete(&authModel.User{})
+		})
+
+		var user authModel.User
+		if err := fx.db.Where("number = ?", userNumber).First(&user).Error; err != nil {
+			t.Fatalf("loading employee user: %v", err)
+		}
+		if user.FirstName != "New" || user.Type != "Staff" {
+			t.Fatalf("employee user not stored correctly: %+v", user)
+		}
+
+		var membershipCount int64
+		if err := fx.db.Model(&eosModel.EntityUser{}).
+			Where("entity_number = ? AND user_number = ?", stakeOrgA, userNumber).
+			Count(&membershipCount).Error; err != nil {
+			t.Fatalf("counting membership: %v", err)
+		}
+		if membershipCount != 1 {
+			t.Fatalf("employee must be attached to the organisation once, got %d", membershipCount)
+		}
+
+		var contactCount int64
+		if err := fx.db.Model(&authModel.Contact{}).
+			Where("user_number = ? AND LOWER(contact) = ?", userNumber, email).
+			Count(&contactCount).Error; err != nil {
+			t.Fatalf("counting contact: %v", err)
+		}
+		if contactCount != 1 {
+			t.Fatalf("employee email contact must be stored, got %d", contactCount)
 		}
 	})
 

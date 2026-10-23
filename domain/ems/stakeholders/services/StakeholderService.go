@@ -112,8 +112,12 @@ func authenticatableUserNumbers(userNumbers []string) (map[string]bool, error) {
 // ListStakeholders returns the stakeholders of an organisation, optionally
 // filtered by stakeholder type and/or status.
 func ListStakeholders(organisationNumber, stakeholderType, status string) ([]responses.StakeholderResponse, error) {
-	if stakeholderType != "" && !models.IsValidStakeholderType(stakeholderType) {
-		return nil, ErrInvalidStakeholderType
+	if stakeholderType != "" {
+		normalizedType, err := models.NormalizeStakeholderType(stakeholderType)
+		if err != nil {
+			return nil, ErrInvalidStakeholderType
+		}
+		stakeholderType = normalizedType
 	}
 	if status != "" && !isValidStakeholderStatus(status) {
 		return nil, ErrInvalidStatus
@@ -174,12 +178,12 @@ func GetStakeholder(organisationNumber, number string) (*responses.StakeholderRe
 // authentication table.
 func CreateStakeholder(actorNumber, organisationNumber string, request requests.CreateStakeholderRequest) (*responses.StakeholderResponse, error) {
 	userNumber := strings.TrimSpace(request.UserNumber)
-	stakeholderType := strings.TrimSpace(request.StakeholderType)
+	stakeholderType, typeErr := models.NormalizeStakeholderType(request.StakeholderType)
 
 	if userNumber == "" {
 		return nil, ErrUserRequired
 	}
-	if !models.IsValidStakeholderType(stakeholderType) {
+	if typeErr != nil {
 		return nil, ErrInvalidStakeholderType
 	}
 	if !isValidSharePercentage(request.SharePercentage) {

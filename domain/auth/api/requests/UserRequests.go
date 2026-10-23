@@ -80,9 +80,6 @@ func (sr *StaffAccountRequest) ValidateStaffAccountRequest() error {
 	if sr.SecondName == "" {
 		return errors.New("second name is required")
 	}
-	if sr.LastName == "" {
-		return errors.New("last name is required")
-	}
 	if sr.Gender == "" {
 		return errors.New("gender is required")
 	}

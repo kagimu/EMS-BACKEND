@@ -11,7 +11,7 @@ type (
 		Number     string    `json:"number" gorm:"size:36;unique;not null"`
 		FirstName  string    `json:"first_name" form:"name" binding:"required" gorm:"size:60;not null"`
 		SecondName string    `json:"second_name" form:"name" binding:"required" gorm:"size:60;not null"`
-		LastName   string    `json:"last_name" form:"name" binding:"required" gorm:"size:60;"`
+		LastName   string    `json:"last_name" form:"name" gorm:"size:60;"`
 		Gender     string    `json:"gender" form:"gender" binding:"required" gorm:"size:8;not null"`
 		Type       string    `json:"type" gorm:"size:8;not null"`
 		Photo      string    `json:"photo"`

@@ -33,3 +33,18 @@ type UpdateStakeholderRequest struct {
 type UpdateStakeholderStatusRequest struct {
 	Status string `json:"status"`
 }
+
+// CreateEmployeeRequest creates a new staff identity and its stakeholder record
+// in one organisation-scoped operation. The server generates the user number.
+type CreateEmployeeRequest struct {
+	FirstName       string     `json:"first_name"`
+	SecondName      string     `json:"second_name"`
+	LastName        string     `json:"last_name"`
+	Gender          string     `json:"gender"`
+	Email           string     `json:"email"`
+	Phone           string     `json:"phone"`
+	StakeholderType string     `json:"stakeholder_type"`
+	Title           string     `json:"title"`
+	ValidFrom       *time.Time `json:"valid_from"`
+	ValidTo         *time.Time `json:"valid_to"`
+}

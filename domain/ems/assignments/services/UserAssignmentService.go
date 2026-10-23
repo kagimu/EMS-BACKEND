@@ -103,9 +103,9 @@ func GetAssignment(organisationNumber, number string) (*responses.UserAssignment
 func CreateAssignment(actorNumber, organisationNumber string, request requests.CreateUserAssignmentRequest) (*responses.UserAssignmentResponse, error) {
 	userNumber := strings.TrimSpace(request.UserNumber)
 	unitNumber := strings.TrimSpace(request.OrganisationUnitNumber)
-	assignmentType := strings.TrimSpace(request.AssignmentType)
+	assignmentType, typeErr := models.NormalizeAssignmentType(request.AssignmentType)
 
-	if !models.IsValidAssignmentType(assignmentType) {
+	if typeErr != nil {
 		return nil, ErrInvalidAssignmentType
 	}
 	if !isValidDateRange(request.ValidFrom, request.ValidTo) {
@@ -165,9 +165,9 @@ func UpdateAssignment(organisationNumber, number string, request requests.Update
 	}
 
 	unitNumber := strings.TrimSpace(request.OrganisationUnitNumber)
-	assignmentType := strings.TrimSpace(request.AssignmentType)
+	assignmentType, typeErr := models.NormalizeAssignmentType(request.AssignmentType)
 
-	if !models.IsValidAssignmentType(assignmentType) {
+	if typeErr != nil {
 		return nil, ErrInvalidAssignmentType
 	}
 	if !isValidDateRange(request.ValidFrom, request.ValidTo) {

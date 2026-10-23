@@ -1,7 +1,10 @@
 package models
 
 import (
+	"errors"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gorm.io/gorm"
 )
@@ -19,9 +22,14 @@ const (
 	StakeholderTypeConsultant  = "consultant"
 	StakeholderTypePartner     = "partner"
 	StakeholderTypeOther       = "other"
+
+	// StakeholderTypeMaxLength matches the ems_stakeholders.stakeholder_type
+	// column. Custom titles are allowed within this limit.
+	StakeholderTypeMaxLength = 30
 )
 
-// StakeholderTypes is the initial catalogue of valid stakeholder types.
+// StakeholderTypes is the suggested catalogue of stakeholder types. It is not a
+// closed set: organisations may use custom titles.
 var StakeholderTypes = []string{
 	StakeholderTypeOwner,
 	StakeholderTypeShareholder,
@@ -34,14 +42,24 @@ var StakeholderTypes = []string{
 	StakeholderTypeOther,
 }
 
-// IsValidStakeholderType reports whether the value is in the initial catalogue.
-func IsValidStakeholderType(value string) bool {
+// NormalizeStakeholderType trims and validates a stakeholder type. Known
+// catalogue values are canonicalised to lower case; any other non-empty title
+// is accepted as a custom type. "owner" remains the only type with ownership
+// semantics.
+func NormalizeStakeholderType(value string) (string, error) {
+	normalized := strings.TrimSpace(value)
+	if normalized == "" {
+		return "", errors.New("stakeholder type is required")
+	}
+	if utf8.RuneCountInString(normalized) > StakeholderTypeMaxLength {
+		return "", errors.New("stakeholder type must be 30 characters or fewer")
+	}
 	for _, candidate := range StakeholderTypes {
-		if candidate == value {
-			return true
+		if strings.EqualFold(normalized, candidate) {
+			return candidate, nil
 		}
 	}
-	return false
+	return normalized, nil
 }
 
 // Stakeholder is a generic relationship between one person (auth.User) and one

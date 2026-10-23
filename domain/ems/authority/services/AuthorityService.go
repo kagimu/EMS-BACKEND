@@ -143,8 +143,10 @@ func validateAnchor(organisationNumber, roleNumber, stakeholderType string) erro
 		return ErrInvalidAnchor
 	}
 
-	if stakeholder != "" && !stakeholderModels.IsValidStakeholderType(stakeholder) {
-		return ErrInvalidStakeholderType
+	if stakeholder != "" {
+		if _, err := stakeholderModels.NormalizeStakeholderType(stakeholder); err != nil {
+			return ErrInvalidStakeholderType
+		}
 	}
 
 	if role != "" {

@@ -1115,6 +1115,14 @@ func SetupRoutes() *gin.Engine {
 			emsStakeholders.PATCH(":number/status", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.UpdateStakeholderStatus)
 		}
 
+		// EMS employee intake: creates a staff identity with a server-generated
+		// user number, attaches it to the active organisation and records its
+		// stakeholder relationship. Uses the stakeholder management permission.
+		emsEmployees := main.Group("/ems/employees")
+		{
+			emsEmployees.POST("", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.CreateEmployee)
+		}
+
 		// EMS Core Foundation C3: generic user assignments.
 		// Organisation-scoped; permission middleware runs before the handler.
 		emsUserAssignments := main.Group("/ems/user-assignments")
