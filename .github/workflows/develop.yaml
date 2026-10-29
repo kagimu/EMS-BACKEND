@@ -1,7 +1,7 @@
 name: HEIMS Core API (develop)
 
 env:
-  GOPRIVATE: "github.com/Noregrets-*"
+  GOPRIVATE: "github.com/Noregrets-Systems-*"
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   api-build:
-    uses: Noregrets/devops/.github/workflows/go-build-migrate-2.yaml@v2
+    uses: Noregrets-Systems/devops/.github/workflows/go-build-migrate-2.yaml@v2
     with:
       service: core-api
       go-file: './cmd'
@@ -28,7 +28,7 @@ jobs:
 
   api-deploy:
     needs: api-build
-    uses: Noregrets/devops/.github/workflows/ts-docker-deploy.yaml@v2
+    uses: Noregrets-Systems/devops/.github/workflows/ts-docker-deploy.yaml@v2
     with:
       service: core-api
       tag: ${{ github.sha }}
