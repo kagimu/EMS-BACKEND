@@ -16,7 +16,7 @@ jobs:
       go-file: ''
       version: develop
       go-version: '1.25'
-      migration-path: ./internal/store/sql/migrations
+      migration-path: ./migrations
     secrets:
       git-token: ${{ secrets.GOMOD_TOKEN }}
       git-user: ${{ secrets.GOMOD_USER }}
