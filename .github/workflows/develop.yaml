@@ -13,7 +13,7 @@ jobs:
     uses: Noregrets-Systems/devops/.github/workflows/go-build-migrate-2.yaml@v2
     with:
       service: core-api
-      go-file: './cmd'
+      go-file: ''
       version: develop
       go-version: '1.25'
       migration-path: ./internal/store/sql/migrations
