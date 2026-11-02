@@ -42,6 +42,8 @@ type LicenceStatusResponse struct {
 	LicensedAddons     []string   `json:"licensed_addons"`
 	MaxInstallations   int        `json:"max_installations"`
 	RenewalRequestedAt *time.Time `json:"renewal_requested_at,omitempty"`
+	Scopes             []ScopeResponse       `json:"scopes,omitempty"`
+	Entitlements       []EntitlementResponse `json:"entitlements,omitempty"`
 }
 
 // InstallationResponse is the installation view used by both planes. It never

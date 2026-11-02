@@ -46,10 +46,17 @@ func validatePermissionCatalogue(permissions []string) error {
 }
 
 // actorMayDelegate reports whether the actor may grant the requested
-// permissions in the given organisation. An installation-level Admin may grant
-// any catalogue permission; every other actor may only grant permissions they
+// permissions in the given organisation. Control-plane permissions are never
+// delegable by an ordinary client administrator, even if the actor is an
+// installation-level Admin. A deployment-configured software owner may grant
+// them. For all other permissions an installation-level Admin may grant any
+// catalogue permission; every other actor may only grant permissions they
 // themselves hold through roles in that same organisation.
 func actorMayDelegate(actor *authModel.User, organisation string, permissions []string) (bool, error) {
+	if commons.ContainsControlPlanePermission(permissions) && !commons.IsSoftwareOwner(actor.Number) {
+		return false, nil
+	}
+
 	if actor.Type == "Admin" {
 		return true, nil
 	}
@@ -69,6 +76,31 @@ func actorMayDelegate(actor *authModel.User, organisation string, permissions []
 		}
 	}
 	return true, nil
+}
+
+// roleHasControlPlanePermission reports whether an existing role currently
+// contains a control-plane permission. It is used to prevent a non-owner from
+// removing or deleting owner authority merely by editing or deleting the role.
+func roleHasControlPlanePermission(roleNumber string) (bool, error) {
+	permissions, err := rolePermissionStrings(roleNumber)
+	if err != nil {
+		return false, err
+	}
+	return commons.ContainsControlPlanePermission(permissions), nil
+}
+
+// actorMayMutateRole reports whether the actor may edit, delete or unassign an
+// existing role. Non-owners cannot mutate a role that carries control-plane
+// authority.
+func actorMayMutateRole(actor *authModel.User, roleNumber string) (bool, error) {
+	if commons.IsSoftwareOwner(actor.Number) {
+		return true, nil
+	}
+	hasControlPlane, err := roleHasControlPlanePermission(roleNumber)
+	if err != nil {
+		return false, err
+	}
+	return !hasControlPlane, nil
 }
 
 // loadRoleInOrganisation returns the role only when it belongs to the actor's

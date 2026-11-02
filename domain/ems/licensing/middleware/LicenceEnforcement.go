@@ -17,6 +17,7 @@ import (
 var licenceExemptPrefixes = []string{
 	"/main/ems/", // EMS Core + licensing status/activation/renewal/registry
 	"/main/profile",
+	"/main/users/all", // owner-only installation directory; guarded separately
 }
 
 // bootstrapExemptEndpoints lists the minimal method+path pairs required to

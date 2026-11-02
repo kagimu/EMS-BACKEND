@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	authModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	authServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	assignmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/assignments/models"
 	auditModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/audit/models"
 	authorityModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/authority/models"
@@ -47,6 +48,7 @@ func setupAuditIntegrationFixture(t *testing.T) *g2Fixture {
 		t.Fatalf("running migrations: %v", err)
 	}
 	t.Setenv("JWT_SECRET", "ems-foundation-g-integration-test-secret")
+	t.Setenv(commons.SoftwareOwnerUserNumbersEnv, g2Actor)
 
 	users := []string{g2Actor, g2Person}
 	organisations := []string{g2OrgA, g2OrgB}

@@ -286,7 +286,7 @@ func FetchRoleDetails(c *gin.Context) {
 }
 
 func RemoveRoleAssignment(c *gin.Context) {
-	organisation, _, ok := roleOrganisationContext(c)
+	organisation, actor, ok := roleOrganisationContext(c)
 	if !ok {
 		return
 	}
@@ -307,7 +307,17 @@ func RemoveRoleAssignment(c *gin.Context) {
 		return
 	}
 
-	if _, ok := loadRoleInOrganisation(c, payload.RoleNumber, organisation); !ok {
+	role, ok := loadRoleInOrganisation(c, payload.RoleNumber, organisation)
+	if !ok {
+		return
+	}
+	allowed, err := actorMayMutateRole(actor, role.Number)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role authority"})
+		return
+	}
+	if !allowed {
+		c.JSON(http.StatusForbidden, gin.H{"message": "You cannot modify owner-only role authority"})
 		return
 	}
 
@@ -333,6 +343,16 @@ func UpdateRole(ctx *gin.Context) {
 	}
 	roleNumber := role.Number
 
+	allowed, err := actorMayMutateRole(actor, roleNumber)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role authority"})
+		return
+	}
+	if !allowed {
+		ctx.JSON(http.StatusForbidden, gin.H{"message": "You cannot modify owner-only role authority"})
+		return
+	}
+
 	var payload requests.EditRoleRequest
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate payload"})
@@ -349,7 +369,7 @@ func UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	allowed, err := actorMayDelegate(actor, organisation, payload.Permissions)
+	allowed, err = actorMayDelegate(actor, organisation, payload.Permissions)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role authority"})
 		return
@@ -402,7 +422,7 @@ func UpdateRole(ctx *gin.Context) {
 }
 
 func DeleteRole(context *gin.Context) {
-	organisation, _, ok := roleOrganisationContext(context)
+	organisation, actor, ok := roleOrganisationContext(context)
 	if !ok {
 		return
 	}
@@ -412,6 +432,16 @@ func DeleteRole(context *gin.Context) {
 		return
 	}
 	roleNumber := role.Number
+
+	allowed, err := actorMayMutateRole(actor, roleNumber)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role authority"})
+		return
+	}
+	if !allowed {
+		context.JSON(http.StatusForbidden, gin.H{"message": "You cannot modify owner-only role authority"})
+		return
+	}
 
 	tx := config.DB.Begin()
 	// delete associated permissions

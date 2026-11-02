@@ -32,6 +32,13 @@ var emsPermissionCatalogue = []string{
 	"manage_ems_audit",
 	"view_ems_notifications",
 	"manage_ems_packages",
+	"view_all_users",
+	"view_support_tickets",
+	"create_support_ticket",
+	"reply_to_support_tickets",
+	"manage_support_tickets",
+	"assign_support_tickets",
+	"manage_support_settings",
 }
 
 var (

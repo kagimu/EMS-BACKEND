@@ -14,13 +14,15 @@ import (
 const ManageLicenceRegistryPermission = "manage_licence_registry"
 
 // RequireLicenceRegistryAuthority enforces the explicit licensing-management
-// permission for the licensing control plane.
+// authority for the licensing control plane.
 //
-// Unlike middleware.ValidatePermission it deliberately does NOT grant the
-// Admin user-type pass-through: licensing registry access is a narrow control
-// plane authority and must be granted explicitly. An Admin without the
-// permission is rejected. No second identity system is introduced — the
-// existing user-role-permission infrastructure is used.
+// A deployment-configured software owner is allowed directly. Otherwise the
+// actor must hold manage_licence_registry explicitly. Unlike
+// middleware.ValidatePermission it deliberately does NOT grant the Admin
+// user-type pass-through: registry access is a narrow control-plane authority.
+// No second identity system is introduced — owner access is an explicit
+// deployment grant and ordinary authority still uses the existing
+// user-role-permission infrastructure.
 func RequireLicenceRegistryAuthority() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		value, exists := c.Get("user")
@@ -33,6 +35,11 @@ func RequireLicenceRegistryAuthority() gin.HandlerFunc {
 		if !ok || user.Number == "" {
 			c.JSON(http.StatusUnauthorized, commons.Feedback("Unauthorized"))
 			c.Abort()
+			return
+		}
+
+		if commons.IsSoftwareOwner(user.Number) {
+			c.Next()
 			return
 		}
 

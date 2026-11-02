@@ -15,11 +15,12 @@ import (
 const ManageAuditRegistryPermission = "manage_ems_audit"
 
 // RequireAuditRegistryAuthority enforces the explicit cross-organisation audit
-// authority. Unlike middleware.ValidatePermission it deliberately does NOT
-// grant the Admin user-type pass-through: cross-organisation audit access
-// requires an explicit authority, never a generic Admin bypass (Foundation G
-// §8/§20/§9). No second identity system is introduced — the existing
-// user-role-permission infrastructure is used.
+// authority. A deployment-configured software owner is allowed directly;
+// otherwise the actor must hold manage_ems_audit explicitly. Unlike
+// middleware.ValidatePermission it deliberately does NOT grant the Admin
+// user-type pass-through: cross-organisation audit access requires an explicit
+// authority, never a generic Admin bypass (Foundation G §8/§20/§9). No second
+// identity system is introduced.
 func RequireAuditRegistryAuthority() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		value, exists := c.Get("user")
@@ -32,6 +33,11 @@ func RequireAuditRegistryAuthority() gin.HandlerFunc {
 		if !ok || user.Number == "" {
 			c.JSON(http.StatusUnauthorized, commons.Feedback("Unauthorized"))
 			c.Abort()
+			return
+		}
+
+		if commons.IsSoftwareOwner(user.Number) {
+			c.Next()
 			return
 		}
 

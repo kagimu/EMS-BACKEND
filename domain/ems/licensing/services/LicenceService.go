@@ -236,6 +236,7 @@ func IssueLicence(actorUserNumber string, request requests.IssueLicenceRequest) 
 
 	var updated models.Licence
 	updated = licence
+	_ = ensureFlexible(&updated)
 
 	// Record licence issuance event for Foundation G audit
 	RecordLicenceIssued(&updated, actorUserNumber)
@@ -270,6 +271,7 @@ func GetLicence(number string) (*responses.LicenceResponse, error) {
 	if licence == nil {
 		return nil, ErrLicenceNotFound
 	}
+	_ = ensureFlexible(licence)
 	response := toResponse(*licence, time.Now())
 	return &response, nil
 }
@@ -587,7 +589,12 @@ func ClientLicenceStatus(userNumber string) (*responses.LicenceStatusResponse, e
 	if licence == nil {
 		return nil, ErrLicenceNotFound
 	}
+	_ = ensureFlexible(licence)
 	response := toLicenceStatusResponse(*licence, time.Now())
+	if flexible, viewErr := flexibleView(licence.Number); viewErr == nil {
+		response.Scopes = flexible.Scopes
+		response.Entitlements = flexible.Entitlements
+	}
 	return &response, nil
 }
 
@@ -649,7 +656,7 @@ func IsAddonLicensed(organisationNumber, addonCode string) (bool, error) {
 	if !LicencePermitsAccess(*licence, time.Now()) {
 		return false, nil
 	}
-	return LicenceContainsAddon(*licence, addonCode), nil
+	return FlexibleAddonLicensed(licence, addonCode), nil
 }
 
 func toResponse(licence models.Licence, now time.Time) responses.LicenceResponse {

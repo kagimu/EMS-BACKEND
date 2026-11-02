@@ -123,9 +123,24 @@ func FetchUser(c *gin.Context) {
 		return
 	}
 
+	entityNumber, err := commons.GetUserEntityNumber(c)
+	if err != nil || entityNumber == "" {
+		c.JSON(http.StatusConflict, gin.H{"message": "No active organisation is selected"})
+		return
+	}
+
 	var user models.User
-	if err := config.DB.Where("id = ?", c.Param("id")).First(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch user"})
+	if err := config.DB.Where("number = ?", c.Param("user_number")).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		return
+	}
+
+	// A user outside the actor's active organisation is reported as not found
+	// so its existence is not disclosed.
+	var membership eosModels.EntityUser
+	if err := config.DB.Where("user_number = ? AND entity_number = ?", user.Number, entityNumber).
+		First(&membership).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
 		return
 	}
 
@@ -157,6 +172,40 @@ func UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 
+func actorCanAssignRole(actor *models.User, organisation, roleNumber string) (bool, error) {
+	var rows []permissionModels.RolePermission
+	if err := config.DB.Where("role_number = ?", roleNumber).Find(&rows).Error; err != nil {
+		return false, err
+	}
+
+	rolePermissions := make([]string, 0, len(rows))
+	for _, row := range rows {
+		rolePermissions = append(rolePermissions, row.Permission)
+	}
+
+	if commons.ContainsControlPlanePermission(rolePermissions) && !commons.IsSoftwareOwner(actor.Number) {
+		return false, nil
+	}
+	if actor.Type == "Admin" {
+		return true, nil
+	}
+
+	granted, err := repository.FetchPermissionsByUserAndEntity(actor.Number, organisation)
+	if err != nil {
+		return false, err
+	}
+	allowed := make(map[string]struct{}, len(granted))
+	for _, permission := range granted {
+		allowed[permission] = struct{}{}
+	}
+	for _, permission := range rolePermissions {
+		if _, ok := allowed[permission]; !ok {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 func CreateUser(c *gin.Context) {
 
 	var user requests.StaffAccountRequest
@@ -169,6 +218,48 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 
+	}
+
+	actor, err := commons.GetUserFromHeader(c)
+	if err != nil || actor == nil || actor.Number == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	activeEntity, err := commons.GetUserEntityNumber(c)
+	if err != nil || activeEntity == "" {
+		c.JSON(http.StatusConflict, gin.H{"message": "No active organisation is selected"})
+		return
+	}
+
+	if user.EntityNumber == "" {
+		user.EntityNumber = activeEntity
+	}
+	if user.EntityNumber != activeEntity {
+		c.JSON(http.StatusForbidden, gin.H{"message": "You can only add users to your current organisation"})
+		return
+	}
+
+	for _, role := range user.Roles {
+		var roleModel permissionModels.Role
+		if err := config.DB.Where("number = ?", role.RoleNumber).First(&roleModel).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Role not found"})
+			return
+		}
+		if roleModel.EntityNumber != activeEntity {
+			c.JSON(http.StatusForbidden, gin.H{"message": "You can only assign roles from your current organisation"})
+			return
+		}
+
+		allowed, err := actorCanAssignRole(actor, activeEntity, role.RoleNumber)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify role authority"})
+			return
+		}
+		if !allowed {
+			c.JSON(http.StatusForbidden, gin.H{"message": "You cannot assign a role with permissions you do not hold"})
+			return
+		}
 	}
 
 	tx := config.DB.Begin()
@@ -252,7 +343,7 @@ func CreateUser(c *gin.Context) {
 			return
 		}
 		userRole.ExpiryDate = date
-		userRole.AddedBy = c.GetHeader("User-Number")
+		userRole.AddedBy = actor.Number
 
 		if err := tx.Create(&userRole).Error; err != nil {
 			tx.Rollback()
@@ -285,7 +376,7 @@ func CreateUser(c *gin.Context) {
 		var entityUser = eosModels.EntityUser{
 			EntityNumber:  user.EntityNumber,
 			UserNumber:    userObject.Number,
-			AddedByNumber: c.GetHeader("User-Number"),
+			AddedByNumber: actor.Number,
 		}
 
 		if err := tx.Create(&entityUser).Error; err != nil {
@@ -316,7 +407,7 @@ func CreateUser(c *gin.Context) {
 	//email sender
 	Token := userToken
 	d := emailSender.Info{Email: user.Email, Token: Token, MailType: "WholesomeEd: User Account Confirmation", UserName: userObject.SecondName, CurrentYear: time.Now().Year(), Type: "registration"}
-	err := d.SendEmail()
+	err = d.SendEmail()
 	if err != nil {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()

@@ -46,8 +46,11 @@ import (
 	licensingMiddleware "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/middleware"
 	notificationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/notifications/controllers"
 	organisationUnitController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/controllers"
+	ownerController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/owner/controllers"
 	reportingController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/reporting/controllers"
 	stakeholderController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/stakeholders/controllers"
+	supportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/support/controllers"
+	supportMiddleware "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/support/middleware"
 	approvalController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/workflow/controllers"
 	enrollmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/controllers"
 	eosController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/controllers"
@@ -759,10 +762,10 @@ func SetupRoutes() *gin.Engine {
 
 		users := main.Group("users")
 		{
-			users.GET("", authController.FetchUsers)
-			users.GET("all", authController.FetchAllUsers)
-			users.GET(":user_number", authController.FetchUser)
-			users.POST("", authController.CreateUser)
+			users.GET("", middleware.ValidatePermission("view_users"), authController.FetchUsers)
+			users.GET("all", middleware.RequireInstallationAuthority("view_all_users"), authController.FetchAllUsers)
+			users.GET(":user_number", middleware.ValidatePermission("view_users"), authController.FetchUser)
+			users.POST("", middleware.ValidatePermission("create_user"), authController.CreateUser)
 			users.GET("meals", cateringController.FetchUserMeals)
 		}
 
@@ -1088,8 +1091,8 @@ func SetupRoutes() *gin.Engine {
 		{
 			emsModules.GET("", middleware.ValidatePermission("view_ems_modules"), addonsController.FetchModules)
 			emsModules.GET(":code", middleware.ValidatePermission("view_ems_modules"), addonsController.FetchModule)
-			emsModules.PATCH(":code/enable", middleware.ValidatePermission("manage_ems_modules"), addonsController.EnableModule)
-			emsModules.PATCH(":code/disable", middleware.ValidatePermission("manage_ems_modules"), addonsController.DisableModule)
+			emsModules.PATCH(":code/enable", middleware.RequireInstallationAuthority("manage_ems_modules"), addonsController.EnableModule)
+			emsModules.PATCH(":code/disable", middleware.RequireInstallationAuthority("manage_ems_modules"), addonsController.DisableModule)
 		}
 
 		// EMS Core Foundation B: organisation units.
@@ -1230,6 +1233,67 @@ func SetupRoutes() *gin.Engine {
 			emsLicence.POST("/renewal-request", middleware.ValidatePermission("request_licence_renewal"), licensingController.RequestRenewal)
 		}
 
+		// Software Owner Console. Every route requires the deployment-configured
+		// owner; ordinary client Admins are rejected even if they know the URL.
+		emsOwner := main.Group("/ems/owner")
+		emsOwner.Use(middleware.RequireSoftwareOwner())
+		{
+			emsOwner.GET("/access", ownerController.Access)
+			emsOwner.GET("/overview", ownerController.Overview)
+			emsOwner.GET("/organisations", ownerController.FetchOrganisations)
+			emsOwner.GET("/organisations/:number", ownerController.FetchOrganisation)
+			emsOwner.GET("/licences", ownerController.FetchLicences)
+			emsOwner.GET("/licences/:number", ownerController.FetchLicence)
+			emsOwner.GET("/installations", ownerController.FetchInstallations)
+			emsOwner.GET("/installations/:number", ownerController.FetchInstallation)
+			emsOwner.GET("/addons", ownerController.FetchAddons)
+			emsOwner.GET("/support/overview", supportController.OwnerOverview)
+			emsOwner.GET("/support/tickets", supportController.OwnerTickets)
+			emsOwner.POST("/support/tickets", supportController.OwnerCreateTicket)
+			emsOwner.GET("/support/tickets/:number", supportController.OwnerTicket)
+			emsOwner.POST("/support/tickets/:number/messages", supportController.OwnerMessage)
+			emsOwner.PATCH("/support/tickets/:number", supportController.OwnerUpdate)
+			emsOwner.POST("/support/tickets/:number/escalate", supportController.OwnerEscalate)
+			emsOwner.GET("/support/staff", supportController.OwnerStaff)
+			emsOwner.POST("/support/staff", supportController.OwnerAddStaff)
+			emsOwner.PATCH("/support/staff/:user_number/status", supportController.OwnerStaffStatus)
+			emsOwner.DELETE("/support/staff/:user_number", supportController.OwnerRemoveStaff)
+			emsOwner.GET("/support/workload", supportController.OwnerWorkload)
+			emsOwner.GET("/support/sla", supportController.OwnerSLATargets)
+			emsOwner.PUT("/support/sla", supportController.OwnerSaveSLATargets)
+			emsOwner.GET("/support/reports", supportController.OwnerSupportReport)
+		}
+
+		// Client-facing support requests. Access is organisation-scoped from the
+		// authenticated session; no client-supplied organisation identifier is
+		// trusted.
+		emsSupport := main.Group("/ems/support")
+		{
+			emsSupport.GET("/tickets", middleware.ValidatePermission("view_support_tickets"), supportController.ClientTickets)
+			emsSupport.POST("/tickets", middleware.ValidatePermission("create_support_ticket"), supportController.ClientCreateTicket)
+			emsSupport.GET("/tickets/:number", middleware.ValidatePermission("view_support_tickets"), supportController.ClientTicket)
+			emsSupport.POST("/tickets/:number/messages", middleware.ValidatePermission("reply_to_support_tickets"), supportController.ClientMessage)
+			emsSupport.POST("/tickets/:number/attachments", middleware.ValidatePermission("reply_to_support_tickets"), supportController.ClientAttachments)
+			emsSupport.GET("/attachments/:number", middleware.ValidatePermission("view_support_tickets"), supportController.ClientAttachmentDownload)
+		}
+
+		// Support workspace: owner, manager and agent access only. This is
+		// deliberately separate from client organisation roles.
+		emsSupportAdmin := main.Group("/ems/support/admin")
+		emsSupportAdmin.Use(supportMiddleware.RequireSupportStaff())
+		{
+			emsSupportAdmin.GET("/profile", supportController.StaffProfile)
+			emsSupportAdmin.GET("/overview", supportController.StaffOverview)
+			emsSupportAdmin.GET("/tickets", supportController.StaffTickets)
+			emsSupportAdmin.GET("/tickets/:number", supportController.StaffTicket)
+			emsSupportAdmin.POST("/tickets/:number/messages", supportController.StaffMessage)
+			emsSupportAdmin.PATCH("/tickets/:number", supportController.StaffUpdate)
+			emsSupportAdmin.POST("/tickets/:number/escalate", supportController.StaffEscalate)
+			emsSupportAdmin.GET("/workload", supportController.StaffWorkload)
+			emsSupportAdmin.POST("/tickets/:number/attachments", supportController.StaffAttachments)
+			emsSupportAdmin.GET("/attachments/:number", supportController.StaffAttachmentDownload)
+		}
+
 		// EMS Core Foundation G (Increment 1): general cross-cutting audit
 		// facts. Client reads are organisation-scoped; control-plane reads use
 		// a dedicated authority that deliberately does NOT honour the Admin
@@ -1263,7 +1327,7 @@ func SetupRoutes() *gin.Engine {
 		// subscription must be purchasable before any licence exists.
 		emsPackages := main.Group("/ems/packages")
 		{
-			emsPackages.POST("", middleware.ValidatePermission("manage_ems_packages"), commercialController.CreatePackage)
+			emsPackages.POST("", middleware.RequireInstallationAuthority("manage_ems_packages"), commercialController.CreatePackage)
 		}
 
 		emsSetup := main.Group("/ems/setup")

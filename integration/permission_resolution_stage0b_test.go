@@ -33,12 +33,14 @@ const (
 	s0bUserNoOrg  = "stage0b-user-no-org"
 	s0bRegistry   = "stage0b-registry"
 	s0bOwnerUser  = "stage0b-owner-user"
+	s0bUserOnlyB  = "stage0b-user-only-b"
 
-	s0bRoleAValid    = "stage0b-role-a-valid"
-	s0bRoleAExpired  = "stage0b-role-a-expired"
-	s0bRoleAInactive = "stage0b-role-a-inactive"
-	s0bRoleBValid    = "stage0b-role-b-valid"
-	s0bRoleRegistry  = "stage0b-role-registry"
+	s0bRoleAValid      = "stage0b-role-a-valid"
+	s0bRoleAExpired    = "stage0b-role-a-expired"
+	s0bRoleAInactive   = "stage0b-role-a-inactive"
+	s0bRoleBValid      = "stage0b-role-b-valid"
+	s0bRoleRegistry    = "stage0b-role-registry"
+	s0bRoleLegacyOwner = "stage0b-role-legacy-owner"
 
 	s0bUnitB    = "stage0b-unit-b"
 	s0bUnits    = "/main/ems/organisation-units"
@@ -71,9 +73,10 @@ func setupStage0BFixture(t *testing.T) *stage0bFixture {
 	users := []string{
 		s0bAdminA, s0bAdminNoOrg, s0bUserBoth, s0bUserExpiry, s0bUserInact,
 		s0bUserCross, s0bUserPermB, s0bUserNoOrg, s0bRegistry, s0bOwnerUser,
+		s0bUserOnlyB,
 	}
 	organisations := []string{s0bOrgA, s0bOrgB}
-	roles := []string{s0bRoleAValid, s0bRoleAExpired, s0bRoleAInactive, s0bRoleBValid, s0bRoleRegistry}
+	roles := []string{s0bRoleAValid, s0bRoleAExpired, s0bRoleAInactive, s0bRoleBValid, s0bRoleRegistry, s0bRoleLegacyOwner}
 
 	cleanup := func() {
 		db.Unscoped().Where("organisation_number IN ?", organisations).Delete(&organisationModel.OrganisationUnit{})
@@ -135,6 +138,7 @@ func setupStage0BFixture(t *testing.T) *stage0bFixture {
 		{s0bUserNoOrg, s0bOrgA},
 		{s0bRegistry, s0bOrgA},
 		{s0bOwnerUser, s0bOrgA},
+		{s0bUserOnlyB, s0bOrgB},
 	}
 	for _, spec := range memberships {
 		membership := eosModel.EntityUser{
@@ -155,6 +159,7 @@ func setupStage0BFixture(t *testing.T) *stage0bFixture {
 		{s0bUserCross, s0bOrgB},
 		{s0bUserPermB, s0bOrgA},
 		{s0bOwnerUser, s0bOrgA},
+		{s0bUserOnlyB, s0bOrgB},
 	} {
 		active := eosModel.ActiveUserEntity{UserNumber: spec.user, EntityNumber: spec.entity}
 		if err := db.Omit("Entity", "User").Create(&active).Error; err != nil {
@@ -214,11 +219,12 @@ func setupStage0BFixture(t *testing.T) *stage0bFixture {
 		}
 	}
 
-	seedRole(s0bRoleAValid, s0bOrgA, "ACTIVE", []string{"view_ems_organisation"})
+	seedRole(s0bRoleAValid, s0bOrgA, "ACTIVE", []string{"view_ems_organisation", "view_users", "view_support_tickets", "create_support_ticket", "reply_to_support_tickets"})
 	seedRole(s0bRoleAExpired, s0bOrgA, "ACTIVE", []string{"view_ems_organisation"})
 	seedRole(s0bRoleAInactive, s0bOrgA, "INACTIVE", []string{"view_ems_organisation"})
 	seedRole(s0bRoleBValid, s0bOrgB, "ACTIVE", []string{"view_ems_organisation"})
 	seedRole(s0bRoleRegistry, s0bOrgA, "ACTIVE", []string{"manage_ems_audit"})
+	seedRole(s0bRoleLegacyOwner, s0bOrgA, "ACTIVE", []string{"manage_licence_registry"})
 
 	now := time.Now()
 	assign := func(user, role string, expiry time.Time) {

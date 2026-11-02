@@ -95,7 +95,7 @@ func ActivateInstallation(userNumber string, request requests.ActivateInstallati
 		// licensing information.
 		return nil, ErrInvalidLicenceKey
 	}
-	if addonCode != "" && !LicenceContainsAddon(*licence, addonCode) {
+	if addonCode != "" && !FlexibleAddonLicensed(licence, addonCode) {
 		return nil, ErrAddonNotLicensed
 	}
 	if err := activationBlockedError(*licence, time.Now()); err != nil {
@@ -112,7 +112,7 @@ func ActivateInstallation(userNumber string, request requests.ActivateInstallati
 		if locked == nil {
 			return ErrLicenceNotFound
 		}
-		if addonCode != "" && !LicenceContainsAddon(*locked, addonCode) {
+		if addonCode != "" && !FlexibleAddonLicensed(locked, addonCode) {
 			return ErrAddonNotLicensed
 		}
 		if err := activationBlockedError(*locked, time.Now()); err != nil {
@@ -150,7 +150,7 @@ func ActivateInstallation(userNumber string, request requests.ActivateInstallati
 		if err != nil {
 			return err
 		}
-		if capacity >= int64(locked.MaxInstallations) {
+		if capacity >= int64(InstallationScopeLimit(locked)) {
 			return ErrCapacityReached
 		}
 
@@ -167,6 +167,9 @@ func ActivateInstallation(userNumber string, request requests.ActivateInstallati
 			Status:               models.InstallationStatusActive,
 		}
 		if err := licensingRepositories.CreateInstallation(&installation, tx); err != nil {
+			return err
+		}
+		if err := CreateInstallationUnit(locked, identity); err != nil {
 			return err
 		}
 

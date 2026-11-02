@@ -37,6 +37,7 @@ import (
 	emsOrganisationModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/models"
 	emsReportingModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/reporting/models"
 	emsStakeholderModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/stakeholders/models"
+	emsSupportModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/support/models"
 	emsWorkflowModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/workflow/models"
 	enrollmentModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/enrollment/models"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
@@ -300,6 +301,19 @@ func Init() error {
 		&commercialModels.SubscriptionOrder{},
 		&commercialModels.ActivationToken{},
 		&commercialModels.SimulatedPayment{},
+		// Software Owner Support Centre (Stage 3): tickets, conversation
+		// messages and append-only support audit facts. Additive only.
+		&emsSupportModels.Ticket{},
+		&emsSupportModels.Message{},
+		&emsSupportModels.Audit{},
+		&emsSupportModels.Staff{},
+		&emsSupportModels.Attachment{},
+		&emsSupportModels.Notification{},
+		&emsSupportModels.SLATarget{},
+		// Stage 5 flexible licensing scopes, entitlements and licensed units.
+		&emsLicensingModels.LicenceScope{},
+		&emsLicensingModels.LicenceEntitlement{},
+		&emsLicensingModels.LicensedUnit{},
 		&customfieldModels.FieldDefinition{},
 		&customfieldModels.FieldValue{},
 	)
