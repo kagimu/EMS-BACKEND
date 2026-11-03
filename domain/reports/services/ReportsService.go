@@ -10,3 +10,7 @@ import (
 func FetchSummary(ctx *gin.Context, filters requests.ReportsFilterRequest) (responses.SummaryResponse, error) {
 	return repositories.FetchSummary(ctx, filters)
 }
+
+func FetchSchoolStructureReport(ctx *gin.Context, filters requests.ReportsFilterRequest) (responses.SchoolStructureReportResponse, error) {
+	return repositories.FetchSchoolStructureReport(ctx, filters)
+}
