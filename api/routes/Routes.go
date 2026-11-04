@@ -1111,6 +1111,7 @@ func SetupRoutes() *gin.Engine {
 		reports := main.Group("reports")
 		{
 			reports.GET("summary", reportsController.FetchSummary)
+			reports.GET("school-structure", reportsController.FetchSchoolStructureReport)
 		}
 
 		activityReporting := main.Group("activity-reporting")
