@@ -15,7 +15,7 @@ func DownloadAttachment(context *gin.Context) {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "File not found " + err.Error()})
 		return
 	}
-	filePath := "/fileRepo/attachments/" + fileDetails.FileName
+	filePath := "fileRepo/attachments/" + fileDetails.FileName
 	// get bytes from file
 	byteFile, err := os.ReadFile(filePath)
 	if err != nil {
