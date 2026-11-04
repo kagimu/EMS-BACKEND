@@ -32,79 +32,73 @@ func FetchSchoolStructureReport(ctx *gin.Context, filters requests.ReportsFilter
 	// 1. Resolve current entity number from user header / context
 	entityNumber, _ := commons.GetUserEntityNumber(ctx)
 
-	// 2. Fetch all entity Schools & Campuses for FilterOptions dropdowns
+	// 2. Fetch all entity Schools & Campuses first to populate FilterOptions
 	var allEntitySchools []schoolModel.School
-	allSchoolsQuery := db.Model(&schoolModel.School{})
+	baseSchoolQuery := db.Model(&schoolModel.School{})
 	if entityNumber != "" {
-		allSchoolsQuery = allSchoolsQuery.Where("entity_number = ?", entityNumber)
+		baseSchoolQuery = baseSchoolQuery.Where("entity_number = ?", entityNumber)
 	}
-	if err := allSchoolsQuery.Order("created_at asc").Find(&allEntitySchools).Error; err == nil && len(allEntitySchools) > 0 {
-		allSchoolNums := make([]string, 0, len(allEntitySchools))
-		for _, s := range allEntitySchools {
-			allSchoolNums = append(allSchoolNums, s.Number)
-			resp.FilterOptions.Schools = append(resp.FilterOptions.Schools, responses.SchoolFilterOption{
-				Number: s.Number,
-				Name:   s.Name,
-			})
-		}
-
-		var allEntityCampuses []campusModel.Campus
-		if err := db.Model(&campusModel.Campus{}).
-			Where("school_number IN ?", allSchoolNums).
-			Order("created_at asc").
-			Find(&allEntityCampuses).Error; err == nil {
-			for _, c := range allEntityCampuses {
-				resp.FilterOptions.Campuses = append(resp.FilterOptions.Campuses, responses.CampusFilterOption{
-					Number:       c.Number,
-					SchoolNumber: c.SchoolNumber,
-					Name:         c.Name,
-				})
-			}
-		}
-	}
-
-	// 3. Fetch Filtered Schools with their SchoolCurriculum preloaded
-	var schools []schoolModel.School
-	schoolQuery := db.Model(&schoolModel.School{}).
-		Preload("SchoolCurriculum.Curriculum").
-		Preload("SchoolCurriculum")
-	if entityNumber != "" {
-		schoolQuery = schoolQuery.Where("entity_number = ?", entityNumber)
-	}
-	if filters.SchoolNumber != "" {
-		schoolQuery = schoolQuery.Where("number = ?", filters.SchoolNumber)
-	}
-	if err := schoolQuery.Order("created_at asc").Find(&schools).Error; err != nil {
+	if err := baseSchoolQuery.Order("created_at asc").Find(&allEntitySchools).Error; err != nil {
 		return resp, err
+	}
+
+	if len(allEntitySchools) == 0 {
+		return resp, nil
+	}
+
+	allSchoolNumbers := make([]string, 0, len(allEntitySchools))
+	for _, s := range allEntitySchools {
+		allSchoolNumbers = append(allSchoolNumbers, s.Number)
+		resp.FilterOptions.Schools = append(resp.FilterOptions.Schools, responses.SchoolFilterOption{
+			Number: s.Number,
+			Name:   s.Name,
+		})
+	}
+
+	var allEntityCampuses []campusModel.Campus
+	if err := db.Model(&campusModel.Campus{}).
+		Where("school_number IN ?", allSchoolNumbers).
+		Order("created_at asc").
+		Find(&allEntityCampuses).Error; err != nil {
+		return resp, err
+	}
+
+	for _, c := range allEntityCampuses {
+		resp.FilterOptions.Campuses = append(resp.FilterOptions.Campuses, responses.CampusFilterOption{
+			Number:       c.Number,
+			SchoolNumber: c.SchoolNumber,
+			Name:         c.Name,
+		})
+	}
+
+	// 3. Apply optional SchoolNumber filter
+	schools := make([]schoolModel.School, 0, len(allEntitySchools))
+	for _, s := range allEntitySchools {
+		if filters.SchoolNumber != "" && s.Number != filters.SchoolNumber {
+			continue
+		}
+		schools = append(schools, s)
 	}
 
 	if len(schools) == 0 {
 		return resp, nil
 	}
 
-	schoolNumbers := make([]string, 0, len(schools))
-	for _, s := range schools {
-		schoolNumbers = append(schoolNumbers, s.Number)
-	}
-
-	// 4. Fetch Campuses under these schools (applying optional campus_number filter)
-	var campuses []campusModel.Campus
-	campusQuery := db.Model(&campusModel.Campus{}).Where("school_number IN ?", schoolNumbers)
-	if filters.CampusNumber != "" {
-		campusQuery = campusQuery.Where("number = ?", filters.CampusNumber)
-	}
-	if err := campusQuery.Order("created_at asc").Find(&campuses).Error; err != nil {
-		return resp, err
-	}
-
-	campusNumbers := make([]string, 0, len(campuses))
+	// 4. Apply optional CampusNumber filter
+	campusNumbers := make([]string, 0, len(allEntityCampuses))
 	campusesBySchool := make(map[string][]campusModel.Campus)
-	for _, c := range campuses {
+	for _, c := range allEntityCampuses {
+		if filters.SchoolNumber != "" && c.SchoolNumber != filters.SchoolNumber {
+			continue
+		}
+		if filters.CampusNumber != "" && c.Number != filters.CampusNumber {
+			continue
+		}
 		campusNumbers = append(campusNumbers, c.Number)
 		campusesBySchool[c.SchoolNumber] = append(campusesBySchool[c.SchoolNumber], c)
 	}
 
-	// 5. Fetch CampusCurriculums under these campuses
+	// 5. Fetch CampusCurriculums under the filtered campuses
 	var campusCurriculums []campusModel.CampusCurriculum
 	if len(campusNumbers) > 0 {
 		ccQuery := db.Model(&campusModel.CampusCurriculum{}).
@@ -218,40 +212,13 @@ func FetchSchoolStructureReport(ctx *gin.Context, filters requests.ReportsFilter
 
 	for idx, sch := range schools {
 		schCampuses := campusesBySchool[sch.Number]
-		// When filtering by a specific campus_number, skip schools that don't own that campus
+		// If a specific campus filter was requested and this school doesn't own that campus, skip this school
 		if filters.CampusNumber != "" && len(schCampuses) == 0 {
 			continue
 		}
 
-		// Build the school's own curricula list from school_curriculums (`sch.SchoolCurriculum`)
-		schoolCurrItems := make([]responses.SchoolReportSchoolCurriculumItem, 0, len(sch.SchoolCurriculum))
-		uniqueSchoolCurrKeys := make(map[string]bool)
-		for _, sc := range sch.SchoolCurriculum {
-			if filters.Curriculum != "" {
-				cName := strings.ToLower(sc.Curriculum.Name)
-				fCurr := strings.ToLower(filters.Curriculum)
-				if sc.Number != filters.Curriculum &&
-					sc.CurriculumNumber != filters.Curriculum &&
-					!strings.Contains(cName, fCurr) {
-					continue
-				}
-			}
-			key := sc.CurriculumNumber
-			if key == "" {
-				key = sc.Number
-			}
-			if key != "" && !uniqueSchoolCurrKeys[key] {
-				uniqueSchoolCurrKeys[key] = true
-				schoolCurrItems = append(schoolCurrItems, responses.SchoolReportSchoolCurriculumItem{
-					Number:           sc.Number,
-					CurriculumNumber: sc.CurriculumNumber,
-					Name:             sc.Curriculum.Name,
-				})
-			}
-		}
-
 		campusNodes := make([]responses.SchoolReportCampusNode, 0, len(schCampuses))
-		uniqueCampusCurrForSchool := make(map[string]bool)
+		schCurriculaCount := 0
 		schClassesCount := 0
 		defaultSchoolLocation := ""
 
@@ -265,17 +232,6 @@ func FetchSchoolStructureReport(ctx *gin.Context, filters requests.ReportsFilter
 			cmpClassesCount := 0
 
 			for curIdx, cc := range cmpCurrs {
-				currKey := cc.SchoolCurriculum.CurriculumNumber
-				if currKey == "" {
-					currKey = cc.SchoolCurriculumNumber
-				}
-				if currKey == "" {
-					currKey = cc.Number
-				}
-				if currKey != "" {
-					uniqueCampusCurrForSchool[currKey] = true
-				}
-
 				clsList := classesByCampusCurr[cc.Number]
 				if len(clsList) == 0 {
 					fallbackKey := cmp.Number + ":" + cc.SchoolCurriculum.CurriculumNumber
@@ -290,7 +246,7 @@ func FetchSchoolStructureReport(ctx *gin.Context, filters requests.ReportsFilter
 					lvlSummary = clsList[0].LevelName
 				}
 				if lvlSummary == "" {
-					lvlSummary = "Curriculum"
+					lvlSummary = "General"
 				}
 
 				currCode := fmt.Sprintf("CUR-%02d", curIdx+1)
@@ -330,17 +286,8 @@ func FetchSchoolStructureReport(ctx *gin.Context, filters requests.ReportsFilter
 				Curricula:      currNodes,
 			})
 
+			schCurriculaCount += len(currNodes)
 			schClassesCount += cmpClassesCount
-		}
-
-		// School curricula count:
-		// - When filtering by a specific campus, use the count of distinct curricula in the filtered campus(es)
-		// - Otherwise, use the school's assigned curricula in `school_curriculums` (falling back to distinct campus curricula if `school_curriculums` is empty)
-		schCurriculaCount := len(schoolCurrItems)
-		if filters.CampusNumber != "" {
-			schCurriculaCount = len(uniqueCampusCurrForSchool)
-		} else if schCurriculaCount == 0 && len(uniqueCampusCurrForSchool) > 0 {
-			schCurriculaCount = len(uniqueCampusCurrForSchool)
 		}
 
 		headLabel := sch.PrincipalName
@@ -349,20 +296,19 @@ func FetchSchoolStructureReport(ctx *gin.Context, filters requests.ReportsFilter
 		}
 
 		resp.Data = append(resp.Data, responses.SchoolReportSchoolNode{
-			ID:               sch.Number,
-			Number:           sch.Number,
-			Code:             fmt.Sprintf("SCH-%02d", idx+1),
-			Name:             sch.Name,
-			Type:             "School",
-			Location:         defaultSchoolLocation,
-			Head:             headLabel,
-			Motto:            sch.Motto,
-			Status:           "Active",
-			CampusesCount:    len(campusNodes),
-			CurriculaCount:   schCurriculaCount,
-			ClassesCount:     schClassesCount,
-			SchoolCurriculum: schoolCurrItems,
-			Campuses:         campusNodes,
+			ID:             sch.Number,
+			Number:         sch.Number,
+			Code:           fmt.Sprintf("SCH-%02d", idx+1),
+			Name:           sch.Name,
+			Type:           "School",
+			Location:       defaultSchoolLocation,
+			Head:           headLabel,
+			Motto:          sch.Motto,
+			Status:         "Active",
+			CampusesCount:  len(campusNodes),
+			CurriculaCount: schCurriculaCount,
+			ClassesCount:   schClassesCount,
+			Campuses:       campusNodes,
 		})
 
 		totalCampuses += len(campusNodes)
@@ -379,4 +325,3 @@ func FetchSchoolStructureReport(ctx *gin.Context, filters requests.ReportsFilter
 
 	return resp, nil
 }
-

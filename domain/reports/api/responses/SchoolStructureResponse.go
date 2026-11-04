@@ -64,27 +64,20 @@ type SchoolReportCampusNode struct {
 	Curricula      []SchoolReportCurriculumNode `json:"curricula"`
 }
 
-type SchoolReportSchoolCurriculumItem struct {
-	Number           string `json:"number"`
-	CurriculumNumber string `json:"curriculum_number"`
-	Name             string `json:"name"`
-}
-
 type SchoolReportSchoolNode struct {
-	ID               string                             `json:"id"`
-	Number           string                             `json:"number"`
-	Code             string                             `json:"code"`
-	Name             string                             `json:"name"`
-	Type             string                             `json:"type"`
-	Location         string                             `json:"location"`
-	Head             string                             `json:"head"`
-	Motto            string                             `json:"motto"`
-	Status           string                             `json:"status"`
-	CampusesCount    int                                `json:"campuses_count"`
-	CurriculaCount   int                                `json:"curricula_count"`
-	ClassesCount     int                                `json:"classes_count"`
-	SchoolCurriculum []SchoolReportSchoolCurriculumItem `json:"school_curriculum"`
-	Campuses         []SchoolReportCampusNode           `json:"campuses"`
+	ID             string                   `json:"id"`
+	Number         string                   `json:"number"`
+	Code           string                   `json:"code"`
+	Name           string                   `json:"name"`
+	Type           string                   `json:"type"`
+	Location       string                   `json:"location"`
+	Head           string                   `json:"head"`
+	Motto          string                   `json:"motto"`
+	Status         string                   `json:"status"`
+	CampusesCount  int                      `json:"campuses_count"`
+	CurriculaCount int                      `json:"curricula_count"`
+	ClassesCount   int                      `json:"classes_count"`
+	Campuses       []SchoolReportCampusNode `json:"campuses"`
 }
 
 type SchoolStructureReportResponse struct {
@@ -94,4 +87,3 @@ type SchoolStructureReportResponse struct {
 	Summary       SchoolStructureSummary       `json:"summary"`
 	Data          []SchoolReportSchoolNode     `json:"data"`
 }
-
