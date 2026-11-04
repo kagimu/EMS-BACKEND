@@ -38,7 +38,7 @@ func SaveInvoiceItem(invoiceItem invoiceModel.InvoiceItem, tx ...*gorm.DB) (invo
 		db = tx[0]
 	}
 
-	if err := db.Save(&invoiceItem).Error; err != nil {
+	if err := db.Omit("Invoice", "Item").Save(&invoiceItem).Error; err != nil {
 		return invoiceModel.InvoiceItem{}, err
 	}
 
@@ -71,6 +71,31 @@ func GetInvoiceAmount(invoiceNumber string, tx ...*gorm.DB) (float64, error) {
 	return totalAmount, nil
 }
 
+func GetInvoiceItemPaidAmount(invoiceItemNumber string, tx ...*gorm.DB) (float64, error) {
+
+	db := config.DB
+
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var paidAmount float64
+
+	if err := db.Model(&invoiceModel.InvoiceItemTransaction{}).
+		Where("invoice_item_number = ? ", invoiceItemNumber).
+		Select("COALESCE(sum(amount_paid_off),0)").
+		Scan(&paidAmount).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+
+		return paidAmount, err
+	}
+
+	return paidAmount, nil
+}
+
 func GetInvoiceItems(invoiceNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItem, error) {
 
 	db := config.DB
@@ -99,4 +124,110 @@ func DeleteInvoiceItem(item invoiceModel.InvoiceItem, tx *gorm.DB) error {
 		return err
 	}
 	return nil
+}
+
+func GetInvoiceItemTransactionsHistory(invoiceNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItemTransaction, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var history []invoiceModel.InvoiceItemTransaction
+	err := db.Preload("Transaction.Statement.AddedBy").
+		Preload("Transaction.Statement.Campus").
+		Preload("Transaction.Statement.School").
+		Preload("InvoiceItem.Item").
+		Joins("JOIN invoice_items on invoice_items.number = invoice_item_transactions.invoice_item_number").
+		Where("invoice_items.invoice_number = ?", invoiceNumber).
+		Find(&history).Error
+
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return history, err
+	}
+
+	return history, nil
+}
+
+func GetInvoiceItemTransactionsHistoryByTransaction(transactionNumber string, tx ...*gorm.DB) ([]invoiceModel.InvoiceItemTransaction, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var history []invoiceModel.InvoiceItemTransaction
+	err := db.Preload("Transaction.Statement.AddedBy").
+		Preload("Transaction.Statement.Campus").
+		Preload("Transaction.Statement.School").
+		Preload("InvoiceItem.Item").
+		Where("transaction_number = ?", transactionNumber).
+		Find(&history).Error
+
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return history, err
+	}
+
+	return history, nil
+}
+
+func GetAllItemTransactionsHistory(campusNumber, search, startDate, endDate string, page, perPage int, tx ...*gorm.DB) (int64, []invoiceModel.InvoiceItemTransaction, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var history []invoiceModel.InvoiceItemTransaction
+	var totalRows int64
+
+	// Base query
+	query := db.Model(&invoiceModel.InvoiceItemTransaction{})
+
+	if campusNumber != "" || search != "" || startDate != "" || endDate != "" {
+		query = query.Joins("JOIN transactions on transactions.number = invoice_item_transactions.transaction_number").
+			Joins("JOIN statements on statements.number = transactions.statement_number")
+	}
+
+	if campusNumber != "" {
+		query = query.Where("statements.campus_number = ?", campusNumber)
+	}
+	
+	if startDate != "" {
+		query = query.Where("transactions.date >= ?", startDate)
+	}
+
+	if endDate != "" {
+		query = query.Where("transactions.date <= ?", endDate)
+	}
+
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		query = query.Joins("JOIN invoice_items on invoice_items.number = invoice_item_transactions.invoice_item_number").
+			Joins("JOIN items on items.number = invoice_items.item_number").
+			Joins("LEFT JOIN users on users.number = statements.user_number").
+			Joins("LEFT JOIN students on students.user_number = statements.user_number").
+			Where("invoice_item_transactions.item_receipt_number LIKE ? OR transactions.client_reference LIKE ? OR items.name LIKE ? OR items.code LIKE ? OR users.first_name LIKE ? OR users.last_name LIKE ? OR students.surname LIKE ? OR students.adn LIKE ?",
+				searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+
+	err := query.Count(&totalRows).Error
+	if err != nil {
+		return 0, history, err
+	}
+
+	if perPage > 0 {
+		offset := (page - 1) * perPage
+		query = query.Limit(perPage).Offset(offset)
+	}
+
+	query = query.Preload("Transaction.Statement.AddedBy").
+		Preload("Transaction.Statement.Campus").
+		Preload("Transaction.Statement.School").
+		Preload("InvoiceItem.Item").
+		Order("invoice_item_transactions.created_at desc")
+
+	err = query.Find(&history).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return totalRows, history, err
+	}
+
+	return totalRows, history, nil
 }

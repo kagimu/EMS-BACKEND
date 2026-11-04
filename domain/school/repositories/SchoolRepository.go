@@ -84,3 +84,20 @@ func (s SchoolRepositoryImpl) FindSchoolsByEntityNumber(entityNumber string, ctx
 
 	return schools, nil
 }
+
+// GetSchoolCurriculumByNumber fetches a SchoolCurriculum by its number, exposing CurriculumNumber.
+func GetSchoolCurriculumByNumber(schoolCurriculumNumber string, tx ...*gorm.DB) (schoolModel.SchoolCurriculum, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var schoolCurriculum schoolModel.SchoolCurriculum
+	if err := db.Where("number = ?", schoolCurriculumNumber).First(&schoolCurriculum).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schoolCurriculum, nil
+		}
+		return schoolCurriculum, err
+	}
+	return schoolCurriculum, nil
+}

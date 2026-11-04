@@ -42,24 +42,187 @@ import (
 	previousSchoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchool/models"
 	previousSchoolResultsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/models"
 	progressReportModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/models"
+	quickbooksModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
 	promotionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/models"
 	reportSettings "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	reportTemplateModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/models"
 	schemeOfWorkmodel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/models"
 	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	departmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/departments/models"
 	materialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/models"
 	LevelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
 	sourceOfSchoolInfoModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/models"
 	staffModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/models"
+	jobPositionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails"
 	studentDetailsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentDetails/models"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
+	uuid "github.com/satori/go.uuid"
 	subjectModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/subject/models"
 	timetableModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/models"
+	"gorm.io/gorm"
 )
 
+type billPaymentPlanConstraint struct {
+	ConstraintName string
+}
+
+func migrateBillPaymentPlanPromissoryNote() error {
+	db := config.DB
+
+	if !db.Migrator().HasTable(&invoiceModel.BillPaymentPlan{}) {
+		return nil
+	}
+
+	return db.Transaction(func(tx *gorm.DB) error {
+
+		// Remove FK from billable_number
+		if tx.Migrator().HasColumn(&invoiceModel.BillPaymentPlan{}, "billable_number") {
+
+			var constraints []billPaymentPlanConstraint
+
+			if err := tx.Raw(`
+				SELECT CONSTRAINT_NAME AS constraint_name
+				FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+				WHERE TABLE_SCHEMA = DATABASE()
+					AND TABLE_NAME = 'bill_payment_plans'
+					AND COLUMN_NAME = 'billable_number'
+					AND REFERENCED_TABLE_NAME IS NOT NULL
+			`).Scan(&constraints).Error; err != nil {
+				return err
+			}
+
+			for _, constraint := range constraints {
+				if constraint.ConstraintName == "" {
+					continue
+				}
+
+				if err := tx.Exec(
+					"ALTER TABLE bill_payment_plans DROP FOREIGN KEY `" + constraint.ConstraintName + "`",
+				).Error; err != nil {
+					return err
+				}
+			}
+
+			if err := tx.Exec(`
+				ALTER TABLE bill_payment_plans
+				MODIFY COLUMN billable_number VARCHAR(36) NULL DEFAULT NULL
+			`).Error; err != nil {
+				return err
+			}
+		}
+
+		// Add promissory_note_number column
+		if !tx.Migrator().HasColumn(&invoiceModel.BillPaymentPlan{}, "promissory_note_number") {
+
+			if err := tx.Exec(`
+				ALTER TABLE bill_payment_plans
+				ADD COLUMN promissory_note_number VARCHAR(36) NULL DEFAULT NULL
+			`).Error; err != nil {
+				return err
+			}
+
+			// Add FK to invoices.number
+			if err := tx.Exec(`
+				ALTER TABLE bill_payment_plans
+				ADD CONSTRAINT fk_bill_payment_plans_promissory_note
+				FOREIGN KEY (promissory_note_number)
+				REFERENCES invoices(number)
+			`).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+func migrateStudyTimetableClassNumber() error {
+	db := config.DB
+
+	if !db.Migrator().HasTable("study_timetables") {
+		return nil
+	}
+
+	// Make the old class_number column nullable so it no longer blocks inserts.
+	// campus_class_number is now the authoritative column (added by AutoMigrate).
+	// Use INFORMATION_SCHEMA because HasColumn checks the model struct, not the live DB.
+	var count int64
+	db.Raw(`
+		SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = 'study_timetables'
+		  AND COLUMN_NAME = 'class_number'
+		  AND IS_NULLABLE = 'NO'
+	`).Scan(&count)
+
+	if count > 0 {
+		return db.Exec(`ALTER TABLE study_timetables MODIFY COLUMN class_number VARCHAR(36) NULL DEFAULT NULL`).Error
+	}
+
+	return nil
+}
+
+func migrateJobPositionPostCode() error {
+	db := config.DB
+
+	var count int64
+	db.Raw(`
+		SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = 'job_positions'
+		  AND COLUMN_NAME = 'post_code'
+	`).Scan(&count)
+
+	if count > 0 {
+		return db.Exec(`ALTER TABLE job_positions DROP COLUMN post_code`).Error
+	}
+
+	return nil
+}
+
+// migrateQBCustomerMappingIndex drops the old single-column unique index on user_number
+// that was created before multi-profile support. The composite unique index
+// (user_number + qb_profile_number) now correctly handles uniqueness per profile.
+func migrateQBCustomerMappingIndex() error {
+	db := config.DB
+
+	// Check if the old single-column unique index still exists
+	var idxCount int64
+	db.Raw(`
+		SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = 'qb_customer_mapping'
+		  AND INDEX_NAME = 'idx_qb_customer_mapping_user_number'
+	`).Scan(&idxCount)
+
+	if idxCount > 0 {
+		if err := db.Exec(`ALTER TABLE qb_customer_mapping DROP INDEX idx_qb_customer_mapping_user_number`).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func Init() error {
+	if err := migrateJobPositionPostCode(); err != nil {
+		return err
+	}
+
+	if err := migrateBillPaymentPlanPromissoryNote(); err != nil {
+		return err
+	}
+
+	if err := migrateStudyTimetableClassNumber(); err != nil {
+		return err
+	}
+
+	if err := migrateQBCustomerMappingIndex(); err != nil {
+		return err
+	}
+
 	err := config.DB.AutoMigrate(
 		&authModels.User{},
 		&eosModels.Entity{},
@@ -130,15 +293,29 @@ func Init() error {
 		&invoiceModel.Statement{},
 		&invoiceModel.Invoice{},
 		&invoiceModel.InvoiceItem{},
+		&invoiceModel.BillPaymentPlan{},
+		&invoiceModel.BillPaymentPlanInstallment{},
+		&invoiceModel.BillPaymentPlanInstallmentPayment{},
 		&serviceModel.Discount{},
 		&invoiceModel.Transaction{},
+		&invoiceModel.Credit{},
 		&invoiceModel.InvoiceTransaction{},
+		&invoiceModel.InvoiceItemTransaction{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentAreaModel.AssessmentArea{},
 		&assessmentModel.Assessment{},
 		&assessmentModel.Metric{},
 		&assessmentScaleModels.GradingStandard{},
 		&assessmentModel.AssessmentMetric{},
+		&quickbooksModels.QBSyncQueue{},
+		&quickbooksModels.QBCustomerMapping{},
+		&quickbooksModels.QBItemMapping{},
+		&quickbooksModels.QBSettings{},
+		&quickbooksModels.QBProfile{},
+		&quickbooksModels.QBAccountType{},
+		&quickbooksModels.QBDepositAccountType{},
+		&quickbooksModels.QBDepositAccount{},
+		&quickbooksModels.QBChartOfAccount{},
 		&models4.Attendance{},
 		&permissionModels.Role{},
 		&permissionModels.RolePermission{},
@@ -176,6 +353,7 @@ func Init() error {
 		&cateringModels.Feeding{},
 		&cateringModels.FeedingSessionItem{},
 		&cateringModels.FeedingGroupUser{},
+		&cateringModels.FeedingGroupStaff{},
 		&cateringModels.FeedingGroupSession{},
 		&cateringModels.FeedingAllGroups{},
 		&cateringModels.Meal{},
@@ -187,10 +365,13 @@ func Init() error {
 		&cateringModels.MealCourseCount{},
 		&cateringModels.MealCourse{},
 		&enrollmentModel.EnrollmentItem{},
+		&enrollmentModel.RequirementClearanceLog{},
 		&cateringModels.MealCourseFeedingSession{},
 		&cateringModels.CampusMealCourse{},
 		&cateringModels.FeedingGroupMealCourse{},
 		&cateringModels.MealStock{},
+		&cateringModels.StaffMeal{},
+		&cateringModels.StaffMealStock{},
 		&eosModels.EntityUser{},
 		&reportSettings.HeadTeacherComment{},
 		&reportingActivityModels.Indicator{},
@@ -214,6 +395,7 @@ func Init() error {
 		&studentDetails.StudentPhoto{},
 		&models3.Attachment{},
 		&staffModel.StreamTeacher{},
+		&staffModel.StaffScope{},
 		&assessmentModel.ScriptMarkingGuide{},
 		&currDelivery.CurriculumDelivery{},
 		&currDelivery.StudentCurriculumDelivery{},
@@ -236,11 +418,92 @@ func Init() error {
 		&admissionModel.AdmissionRequirement{},
 		&studentModels.StudentBioData{},
 		&admissionModel.AdmissionInterview{},
+		&reportSettings.SubjectTeacherReport{},
+		&reportSettings.SubjectTeacherReportComment{},
+		&reportSettings.ReportSummaryCorrespondence{},
+		invoiceModel.Credit{},
+		&departmentModels.Department{},
+		&jobPositionModels.JobPosition{},
+		&jobPositionModels.JobVacancy{},
+		&jobPositionModels.JobApplication{},
+		&jobPositionModels.JobInterview{},
+		&jobPositionModels.JobInterviewSchedule{},
+		&jobPositionModels.JobOffer{},
+		&jobPositionModels.StaffDeployment{},
+		&jobPositionModels.StaffBioDataPersonal{},
+		&jobPositionModels.StaffBioDataContact{},
+		&jobPositionModels.StaffBioDataMedical{},
+		&jobPositionModels.StaffBioDataFamily{},
+		&jobPositionModels.StaffBioDataFamilyChild{},
+		&jobPositionModels.StaffBioDataEducation{},
+		&jobPositionModels.StaffBioDataEducationItem{},
+		&jobPositionModels.StaffBioDataLanguage{},
+		&jobPositionModels.StaffBioDataLanguageItem{},
+		&jobPositionModels.StaffBioDataReferences{},
+		&paymentModels.PaymentMethod{},
+		&admissionModel.TermsOfAdmission{},
 	)
 
 	if err != nil {
 		return err
 	}
 
+	if err := migrateUserTypeColumn(); err != nil {
+		return err
+	}
+
+	seedDefaultQBProfile()
+
 	return nil
 }
+
+func migrateUserTypeColumn() error {
+	db := config.DB
+	return db.Exec(`ALTER TABLE users MODIFY COLUMN type VARCHAR(32) NOT NULL`).Error
+}
+
+func seedDefaultQBProfile() {
+	var count int64
+	config.DB.Model(&quickbooksModels.QBProfile{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	var settings quickbooksModels.QBSettings
+	username := "admin"
+	password := "admin"
+	depositTo := "Undeposited Funds"
+	incomeAcc := "Service Income"
+
+	if err := config.DB.First(&settings).Error; err == nil {
+		if settings.Username != "" {
+			username = settings.Username
+		}
+		if settings.PasswordHash != "" {
+			password = settings.PasswordHash
+		}
+		if settings.DepositToAccount != "" {
+			depositTo = settings.DepositToAccount
+		}
+		if settings.IncomeAccount != "" {
+			incomeAcc = settings.IncomeAccount
+		}
+	}
+
+	defaultProfile := quickbooksModels.QBProfile{
+		Number:           uuid.NewV4().String(),
+		Name:             "Default QuickBooks Account",
+		Username:         username,
+		PasswordHash:     password,
+		DepositToAccount: depositTo,
+		IncomeAccount:    incomeAcc,
+		FileID:           "{57F3B9B1-86F1-4fcc-B1EE-566DE1813D20}",
+		OwnerID:          "{90A44FB7-33D9-4815-AC85-BC87A7E7D1EB}",
+		IsDefault:        true,
+		IsActive:         true,
+		SchoolNumber:     "default",
+	}
+
+	config.DB.Create(&defaultProfile)
+}
+

@@ -26,7 +26,7 @@ func CreateADN(apnStatus string, tx *gorm.DB) (string, error) {
 		}
 
 		savedID := saveADN.ID
-		result := fmt.Sprintf("%s02%04d", saveADN.Year, savedID)
+		result := fmt.Sprintf("%s02%06d", saveADN.Year, savedID)
 
 		return result, nil
 	}

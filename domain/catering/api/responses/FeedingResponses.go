@@ -26,13 +26,61 @@ type FeedingSessionPerDayResponse struct {
 }
 
 type FeedingUserGroupResponse struct {
-	UserNumber         string `json:"user_number"`
-	Number             string `json:"number"`
-	Gender             string `json:"gender"`
-	Name               string `json:"name"`
+	// Feeding group fields
 	FeedingGroupNumber string `json:"feeding_group_number"`
 	FeedingGroupName   string `json:"feeding_group_name"`
+
+	// User / student identity
+	UserNumber        string `json:"user_number"`
+	Number            string `json:"number"` // feeding_group_user record number
+	Gender            string `json:"gender"`
+	Name              string `json:"name"` // full name (concatenated)
+	StudentSurname    string `json:"student_surname"`
+	StudentSecondName string `json:"student_second_name"`
+	StudentOtherName  string `json:"student_other_name"`
+	ADN               string `json:"adn"`
+	Photo             string `json:"photo"`
+
+	// Enrollment fields
+	EnrollmentNumber     string `json:"enrollment_number"`
+	EnrollmentStatus     string `json:"enrollment_status"`
+	EnrollmentDate       string `json:"enrollment_date"`
+	StudyPeriodStartDate string `json:"study_period_start_date"`
+	StudyPeriodEndDate   string `json:"study_period_end_date"`
+	ContinuingStudent    bool   `json:"continuing_student"`
+
+	// Location / class
+	SchoolNumber      string `json:"school_number"`
+	School            string `json:"school"`
+	CampusNumber      string `json:"campus_number"`
+	CampusName        string `json:"campus_name"`
+	CampusClassNumber string `json:"campus_class_number"`
+	StudyPeriodNumber string `json:"study_period_number"`
+	StreamNumber      string `json:"stream_number"`
+	Class             string `json:"class"`
+	Level             string `json:"level"`
+	AcademicYear      string `json:"academic_year"`
+	StudyPeriod       string `json:"study_period"`
+}
+
+type FeedingStaffGroupResponse struct {
+	Number             string `json:"number"`
+	StaffNumber        string `json:"staff_number"`
+	UserNumber         string `json:"user_number"`
+	Name               string `json:"name"`
+	Gender             string `json:"gender"`
+	STN                string `json:"stn"`
+	ADN                string `json:"adn"`
+	Email              string `json:"email"`
+	PhoneNumber        string `json:"phone_number"`
+	JobPosition        string `json:"job_position"`
+	FeedingGroupNumber string `json:"feeding_group_number"`
+	FeedingGroupName   string `json:"feeding_group_name"`
+	CampusNumber       string `json:"campus_number"`
 	CampusName         string `json:"campus_name"`
+	SchoolNumber       string `json:"school_number"`
+	SchoolName         string `json:"school_name"`
+	Status             string `json:"status"`
 }
 
 type ItemAssemblyResponse struct {
@@ -86,6 +134,7 @@ type StockingResponse struct {
 	CampusName       string  `json:"campus_name"`
 	MenuItemType     string  `json:"menu_item_type"`
 	DateTime         string  `json:"date_time"`
+	DateOfPurchase   string  `json:"date_of_purchase"`
 }
 
 type FeedingGroupSessionResponse struct {

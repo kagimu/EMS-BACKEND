@@ -325,6 +325,9 @@ func FetchReportSummaries(ctx *gin.Context) {
 			Position:        position,
 			Aggregate:       reportSummary.Aggregate,
 			TotalScore:      reportSummary.TotalScore,
+			Stage:           reportSummary.Stage,
+			Status:          reportSummary.Status,
+			ADN:             reportSummary.Student.ADN,
 		})
 
 		position = position + 1
@@ -839,12 +842,41 @@ func CreateSubjectTeacherComment(context *gin.Context) {
 
 func FetchSubjectTeacherComments(context *gin.Context) {
 	campusClassNumber := context.Query("campus_class_number")
+	classNumber := context.Query("class_number")
+	campusNumber := context.Query("campus_number")
+	curriculumNumber := context.Query("curriculum_number")
+	campusCurriculumNumber := context.Query("campus_curriculum_number")
+	academicYearNumber := context.Query("academic_year_number")
+	studyPeriodNumber := context.Query("study_period_number")
+	assessmentAreaNumber := context.Query("assessment_area_number")
+
+	// Backward compatibility: allow class_number and resolve to campus_class_number
+	if campusClassNumber == "" && classNumber != "" {
+		if campusNumber == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Please provide campus_number when using class_number"})
+			return
+		}
+
+		campusClass, err := services.ResolveCampusClass(classNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		if campusClass.Number == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "The selected class is not active on the selected campus"})
+			return
+		}
+
+		campusClassNumber = campusClass.Number
+	}
+
 	if campusClassNumber == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Please select a class to view comments"})
 		return
 	}
 
-	subjectTeacherComments, err := services3.FetchSubjectTeacherComments()
+	subjectTeacherComments, err := services3.FetchSubjectTeacherComments(campusClassNumber, academicYearNumber, studyPeriodNumber, assessmentAreaNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -966,4 +998,81 @@ func UpdateReportScoreSummariesComments(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Class teacher comment updated successfully"})
+}
+
+func ApproveReportSummaries(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+		return
+	}
+
+	var payload requests.ApproveReportSummariesRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err := services3.ApproveReportSummaries(payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Report summaries approved successfully"))
+}
+
+func ForwardReportSummary(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+		return
+	}
+
+	var payload requests.ForwardReportSummaryRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	commenterName := user.FirstName + " " + user.LastName + " " + user.SecondName
+	err = services3.ForwardReportSummary(payload, commenterName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, commons.Feedback("Report summary forwarded successfully"))
+}
+
+func FetchReportSummaryCorrespondences(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found"})
+		return
+	}
+
+	reportSummaryNumber := c.Query("report_summary_number")
+	if reportSummaryNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide report_summary_number query param"})
+		return
+	}
+
+	correspondences, err := services3.GetReportSummaryCorrespondences(reportSummaryNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": correspondences,
+	})
 }

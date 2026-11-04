@@ -12,3 +12,9 @@ type StatementResponse struct {
 	LearnerUserNumber string  `json:"learner_user_number"`
 	StudentNumber     string  `json:"student_number"`
 }
+
+type StatementReportResponse struct {
+	Statements           []StatementResponse `json:"statements"`
+	TotalAmountInCredits float64             `json:"total_amount_in_credits"`
+	NetBalance           float64             `json:"net_balance"`
+}

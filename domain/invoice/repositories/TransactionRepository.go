@@ -19,7 +19,7 @@ func SaveTransaction(transaction invoiceModels.Transaction, tx ...*gorm.DB) (inv
 		db = tx[0]
 	}
 
-	if err := db.Save(&transaction).Error; err != nil {
+	if err := db.Omit("Statement").Save(&transaction).Error; err != nil {
 		return transaction, err
 	}
 

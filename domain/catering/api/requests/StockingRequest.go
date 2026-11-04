@@ -1,9 +1,13 @@
 package requests
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type StockingRequest struct {
 	CampusNumber         string                 `json:"campus_number"`
+	DateOfPurchase       string                 `json:"date_of_purchase"`
 	ItemPriceAndQuantity []ItemPriceAndQuantity `json:"item_price_and_quantity"`
 }
 
@@ -19,6 +23,15 @@ func (s *StockingRequest) Validate() error {
 	}
 	if s.CampusNumber == "" {
 		return errors.New("campus number is required")
+	}
+
+	if s.DateOfPurchase == "" {
+		return errors.New("date of purchase is required")
+	}
+
+	_, err := time.Parse(time.DateOnly, s.DateOfPurchase)
+	if err != nil {
+		return errors.New("invalid date of purchase format, expected YYYY-MM-DD")
 	}
 
 	for _, item := range s.ItemPriceAndQuantity {

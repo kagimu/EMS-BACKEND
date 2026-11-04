@@ -3,13 +3,19 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	academicYearModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/academicYear/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/services"
+	applicationModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/application/models"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	campusClassModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	parentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/parent/models"
+	schoolModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
+	studentServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/services"
 	studyPeriodModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/models"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
@@ -194,6 +200,9 @@ func CreateAdmission(c *gin.Context) {
 
 func FetchAdmissions(c *gin.Context) {
 
+	// Heal any admission records previously saved as ADMITTED back to PENDING so they display and can be enrolled
+	config.DB.Model(&models.Admission{}).Where("status = ?", constants.StatusAdmitted).Update("status", constants.StatusPending)
+
 	user, err := commons.GetUserFromHeader(c)
 
 	if err != nil {
@@ -211,15 +220,21 @@ func FetchAdmissions(c *gin.Context) {
 	streamNumber := c.Query("stream_number")
 	schoolNumber := c.Query("school_number")
 	campusClassNumber := c.Query("campus_class_number")
+	search := c.Query("search")
+	academicYearNumber := c.Query("academic_year_number")
+	classNumber := c.Query("class_number")
+	levelNumber := c.Query("level_number")
+	curriculumNumber := c.Query("curriculum_number")
 
-	if user.Type != constants.TypeClient {
+	mine := c.Query("mine") == "true"
+	if user.Type != constants.TypeClient && !mine {
 		if schoolNumber == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view admissions for"})
 			return
 		}
 	}
 
-	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, user, paginate)
+	admissions, err := admissionService.AllAdmissions(campusNumber, studyPeriodNumber, streamNumber, schoolNumber, campusClassNumber, search, academicYearNumber, classNumber, levelNumber, curriculumNumber, user, paginate, mine)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -429,3 +444,355 @@ func CreateExistingAdmission(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Admission created successfully"})
 
 }
+
+func BulkDirectAdmit(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "User not found"})
+		return
+	}
+
+	var payload requests.BulkDirectAdmitRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request payload: " + err.Error()})
+		return
+	}
+
+	payload.Prepare()
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	var school schoolModels.School
+	if err := config.DB.First(&school, "number = ?", payload.SchoolNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "School not found"})
+		return
+	}
+
+	var campus campusModels.Campus
+	if err := config.DB.First(&campus, "number = ?", payload.CampusNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Campus not found"})
+		return
+	}
+
+	var stream campusClassModels.Stream
+	if err := config.DB.First(&stream, "number = ?", payload.StreamNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Stream not found"})
+		return
+	}
+
+	campusClassNumber := stream.CampusClassNumber
+	if campusClassNumber == "" {
+		campusClassNumber = payload.CampusClassNumber
+	}
+
+	var campusClass campusClassModels.CampusClass
+	if err := config.DB.First(&campusClass, "number = ?", campusClassNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Campus class not found"})
+		return
+	}
+
+	var academicYear academicYearModel.AcademicYear
+	if err := config.DB.First(&academicYear, "number = ?", payload.AcademicYearNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Academic year not found"})
+		return
+	}
+
+	var studyPeriod studyPeriodModel.StudyPeriod
+	if err := config.DB.First(&studyPeriod, "number = ?", payload.StudyPeriodNumber).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Study period not found"})
+		return
+	}
+
+	var modeOfStudy schoolModels.ModeOfStudy
+	if err := config.DB.First(&modeOfStudy, "school_number = ?", payload.SchoolNumber).Error; err != nil {
+		config.DB.First(&modeOfStudy)
+	}
+
+	tx := config.DB.Begin()
+
+	admittedCount := 0
+
+	for i, l := range payload.Learners {
+		rowNum := i + 1
+
+		linValue := l.Lin
+		if linValue != "" {
+			var existingStudent studentModels.Student
+			if err := tx.Where("lin = ?", linValue).First(&existingStudent).Error; err == nil {
+				var existingAdm models.Admission
+				if err := tx.Where("student_number = ? AND academic_year_number = ? AND study_period_number = ?", existingStudent.Number, payload.AcademicYearNumber, payload.StudyPeriodNumber).First(&existingAdm).Error; err == nil {
+					tx.Rollback()
+					c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Row %d: Learner %s %s with LIN %s is already admitted for this study period", rowNum, l.Surname, l.SecondName, linValue)})
+					return
+				}
+			}
+		} else {
+			linValue = uuid.NewV4().String()
+		}
+
+		studentUserNumber := uuid.NewV4().String()
+		studentUser := authModels.User{
+			Number:     studentUserNumber,
+			FirstName:  l.SecondName,
+			SecondName: l.OtherName,
+			LastName:   l.Surname,
+			Gender:     l.Gender,
+			Type:       constants.TypeStudent,
+			Status:     constants.StatusInactive,
+		}
+		if err := tx.Create(&studentUser).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to create student user account: %s", rowNum, err.Error())})
+			return
+		}
+
+		appNumber := uuid.NewV4().String()
+		application := applicationModels.Application{
+			Number:                appNumber,
+			UserNumber:            user.Number,
+			Type:                  "direct-application",
+			Status:                constants.StatusAdmitted,
+			ApplicationFeePayment: true,
+			InterviewMode:         "OFFLINE",
+		}
+		if err := tx.Create(&application).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to create application: %s", rowNum, err.Error())})
+			return
+		}
+
+		apn, err := studentServices.CreateAPN(tx)
+		if err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to generate APN: %s", rowNum, err.Error())})
+			return
+		}
+
+		adnValue := l.Adn
+		if adnValue == "" {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Row %d: ADN (Admission Number) is required and cannot be empty", rowNum)})
+			return
+		}
+
+		var existingStudentWithAdn studentModels.Student
+		if err := tx.Where("adn = ?", adnValue).First(&existingStudentWithAdn).Error; err == nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("Row %d: Learner with ADN '%s' already exists in the system", rowNum, adnValue)})
+			return
+		}
+		adnStatus := "Active"
+
+		studentNumber := uuid.NewV4().String()
+		student := studentModels.Student{
+			Number:                    studentNumber,
+			APN:                       apn,
+			ADN:                       adnValue,
+			ADNStatus:                 adnStatus,
+			Lin:                       linValue,
+			APNStatus:                 "Archive",
+			Surname:                   l.Surname,
+			SecondName:                l.SecondName,
+			OtherName:                 l.OtherName,
+			Gender:                    l.Gender,
+			DateOfBirth:               l.DateOfBirth,
+			PreferredTypeOfEnrollment: "Day",
+			PreferredCampusNumber:     payload.CampusNumber,
+			CampusClassNumber:         campusClassNumber,
+			SourceOfSchoolInfo:        "Direct Admission",
+			UserNumber:                studentUserNumber,
+			Status:                    constants.StatusAdmitted,
+			SchoolNumber:              payload.SchoolNumber,
+			ModeOfStudyNumber:         modeOfStudy.Number,
+			ApplicationNumber:         appNumber,
+			AddedBy:                   user.Number,
+		}
+		if err := tx.Create(&student).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to create student record: %s", rowNum, err.Error())})
+			return
+		}
+
+		if l.ParentSurname != "" || l.ParentSecondName != "" || l.ParentPhone != "" {
+			parentSurname := l.ParentSurname
+			if parentSurname == "" {
+				parentSurname = l.Surname
+			}
+			parentSecondName := l.ParentSecondName
+			if parentSecondName == "" {
+				parentSecondName = l.SecondName
+			}
+			parentEmail := l.ParentEmail
+			if parentEmail == "" {
+				parentEmail = fmt.Sprintf("parent_%s@school.local", studentNumber[:8])
+			}
+
+			parent := parentModels.Parent{
+				Number:              uuid.NewV4().String(),
+				Surname:             parentSurname,
+				SecondName:          parentSecondName,
+				OtherName:           "",
+				ApplicationNumber:   appNumber,
+				MainTelephoneNumber: l.ParentPhone,
+				Email:               parentEmail,
+				UserNumber:          user.Number,
+			}
+			if err := tx.Create(&parent).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save parent details: %s", rowNum, err.Error())})
+				return
+			}
+		}
+
+		admission := models.Admission{
+			Number:             uuid.NewV4().String(),
+			StudentNumber:      studentNumber,
+			CampusNumber:       payload.CampusNumber,
+			CampusClassNumber:  campusClassNumber,
+			StudyPeriodNumber:  payload.StudyPeriodNumber,
+			AcademicYearNumber: payload.AcademicYearNumber,
+			StreamNumber:       payload.StreamNumber,
+			UserNumber:         user.Number,
+			SchoolNumber:       payload.SchoolNumber,
+			Status:             constants.StatusPending,
+		}
+		if err := tx.Create(&admission).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to create admission record: %s", rowNum, err.Error())})
+			return
+		}
+
+		// ----------------------------------------------------
+		// Injecting Bio Data (Medical, Emergency, Languages, Family)
+		// ----------------------------------------------------
+		
+		// 1. Medical
+		if l.BloodTypeGroup != "" || l.Allergies != "" || l.ExistingCondition != "" || l.RegularMedication != "" || l.DoctorName != "" || l.DoctorPhone != "" {
+			medicalRecord := studentModels.MedicalRecord{
+				StudentNumber:     studentNumber,
+				BloodTypeGroup:    l.BloodTypeGroup,
+				Allergies:         l.Allergies,
+				ExistingCondition: l.ExistingCondition,
+				RegularMedication: l.RegularMedication,
+				DoctorName:        l.DoctorName,
+				DoctorPhone:       l.DoctorPhone,
+			}
+			if err := tx.Create(&medicalRecord).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save medical records: %s", rowNum, err.Error())})
+				return
+			}
+		}
+
+		// 2. Emergency
+		if l.EmergencyContactPerson != "" || l.EmergencyContactPersonPhone != "" {
+			emergencyRecord := studentModels.EmergencyInformation{
+				StudentNumber:                 studentNumber,
+				ContactPerson:                 l.EmergencyContactPerson,
+				ContactPersonPhone:            l.EmergencyContactPersonPhone,
+				ContactPersonAlternative:      l.EmergencyContactPersonAlternative,
+				ContactPersonAlternativePhone: l.EmergencyContactPersonAlternativePhone,
+				ContactDoctorName:             l.EmergencyContactDoctorName,
+				ContactDoctorPhone:            l.EmergencyContactDoctorPhone,
+			}
+			if err := tx.Create(&emergencyRecord).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save emergency records: %s", rowNum, err.Error())})
+				return
+			}
+		}
+
+		// 3. Languages
+		if l.PrimaryLanguage != "" {
+			langs := []string{l.PrimaryLanguage, l.SecondaryLanguage, l.TertiaryLanguage}
+			code := int64(1)
+			for _, langName := range langs {
+				if langName != "" {
+					langRecord := studentModels.StudentLanguage{
+						Number:        uuid.NewV4().String(),
+						StudentNumber: studentNumber,
+						Code:          code,
+						Name:          langName,
+					}
+					if err := tx.Create(&langRecord).Error; err != nil {
+						tx.Rollback()
+						c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save language records: %s", rowNum, err.Error())})
+						return
+					}
+					code++
+				}
+			}
+		}
+
+		// 4. Family Structure
+		createFamilyMember := func(rel, surname, secondName, otherName, living, employer string, contacts []requests.BulkFamilyContact) error {
+			combinedOtherName := strings.TrimSpace(secondName + " " + otherName)
+			if surname == "" && combinedOtherName == "" {
+				return nil
+			}
+			memberNum := uuid.NewV4().String()
+			member := studentModels.FamilyMember{
+				Number:                 memberNum,
+				StudentNumber:          studentNumber,
+				Relationship:           rel,
+				Surname:                surname,
+				OtherName:              combinedOtherName,
+				IsLiving:               living,
+				PlaceOfEmployment:      employer,
+				PhysicalContactAddress: "",
+			}
+			if err := tx.Create(&member).Error; err != nil {
+				return err
+			}
+			for _, ct := range contacts {
+				if ct.Phone != "" || ct.Email != "" {
+					contact := studentModels.FamilyMemberContact{
+						Number:             uuid.NewV4().String(),
+						FamilyMemberNumber: memberNum,
+						PhoneNumber:        ct.Phone,
+						Email:              ct.Email,
+					}
+					if err := tx.Create(&contact).Error; err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		}
+
+		// Father
+		if err := createFamilyMember("FATHER", l.FatherSurname, l.FatherSecondName, l.FatherOtherName, l.FatherIsLiving, l.FatherPlaceOfEmployment, l.FatherContacts); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save father details: %s", rowNum, err.Error())})
+			return
+		}
+		// Mother
+		if err := createFamilyMember("MOTHER", l.MotherSurname, l.MotherSecondName, l.MotherOtherName, l.MotherIsLiving, l.MotherPlaceOfEmployment, l.MotherContacts); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save mother details: %s", rowNum, err.Error())})
+			return
+		}
+		// Guardian (optional)
+		if err := createFamilyMember("GUARDIAN", l.GuardianSurname, l.GuardianSecondName, l.GuardianOtherName, l.GuardianIsLiving, l.GuardianPlaceOfEmployment, l.GuardianContacts); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Row %d: Failed to save guardian details: %s", rowNum, err.Error())})
+			return
+		}
+
+		admittedCount++
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit transaction: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("Successfully admitted %d learners", admittedCount),
+		"count":   admittedCount,
+	})
+}
+

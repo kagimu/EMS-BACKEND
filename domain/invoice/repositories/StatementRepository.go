@@ -2,11 +2,12 @@ package repositories
 
 import (
 	"errors"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
 	"gorm.io/gorm"
-	"time"
 )
 
 func GetStatementByNumber(statementNumber string, tx ...*gorm.DB) (models.Statement, error) {
@@ -38,7 +39,7 @@ func SaveStatement(statement models.Statement, tx ...*gorm.DB) error {
 		db = tx[0]
 	}
 
-	return db.Save(&statement).Error
+	return db.Omit("School", "Campus", "User", "AddedBy").Save(&statement).Error
 }
 
 func GetRecentStatementByUserNumber(userNumber string, tx ...*gorm.DB) (models.Statement, error) {

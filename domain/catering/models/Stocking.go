@@ -4,6 +4,7 @@ import (
 	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"gorm.io/gorm"
+	"time"
 )
 
 type Stocking struct {
@@ -13,6 +14,7 @@ type Stocking struct {
 	Quantity                    float64             `json:"quantity" gorm:"not null"`
 	UnitCost                    float64             `json:"unit_cost" gorm:"not null"`
 	ConversionToPurchase        float64             `json:"conversion_to_purchase"`
+	DateOfPurchase              *time.Time          `json:"date_of_purchase" gorm:"type:date"`
 	MenuItemNumber              string              `json:"menu_item_number" gorm:"size:36;"`
 	MenuItem                    MenuItem            `gorm:"foreignKey:MenuItemNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`
 	Campus                      campusModels.Campus `gorm:"foreignKey:CampusNumber;references:Number;constraint: OnUpdate:CASCADE, OnDelete:RESTRICT;"`

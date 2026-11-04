@@ -12,6 +12,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/api/responses"
 	schoolCurriculumModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/services"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/scopes"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -334,7 +335,12 @@ func FetchSchools(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": schools, "message": "Schools fetched successfully!"})
+	context.JSON(http.StatusOK, gin.H{
+		"status":      http.StatusOK,
+		"data":        schools,
+		"message":     "Schools fetched successfully!",
+		"debug_scope": scopes.GetDebugInfo(context),
+	})
 }
 
 func UploadSchoolLogo(context *gin.Context) {

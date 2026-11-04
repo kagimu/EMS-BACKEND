@@ -37,7 +37,7 @@ func (studyPeriodRequest *StudyPeriodRequest) Validate() error {
 		return errors.New("Choose study period name ")
 	}
 
-	if studyPeriodRequest.StudyPeriodNameNumber == "" {
+	if studyPeriodRequest.AcademicYearNumber == "" {
 		return errors.New("Choose the academic year ")
 	}
 	if studyPeriodRequest.NextTermBeginsOn == "" {

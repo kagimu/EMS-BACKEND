@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	campusModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
 	"gorm.io/gorm"
@@ -57,7 +58,7 @@ func GetCampusByCampusClassNumber(campusClassNumber string, tx ...*gorm.DB) (cam
 	var campus campusModel.Campus
 
 	if err := db.
-		Joins("JOIN campus_classes ON campus.number = campus_classes.campus_number").
+		Joins("JOIN campus_classes ON campuses.number = campus_classes.campus_number").
 		Where("campus_classes.number = ?", campusClassNumber).
 		First(&campus).Error; err != nil {
 
@@ -70,3 +71,22 @@ func GetCampusByCampusClassNumber(campusClassNumber string, tx ...*gorm.DB) (cam
 
 	return campus, nil
 }
+
+// GetCampusCurriculumByNumber fetches a CampusCurriculum by its number.
+// The returned struct includes SchoolCurriculumNumber which links to school_curricula.curriculum_number.
+func GetCampusCurriculumByNumber(campusCurriculumNumber string, tx ...*gorm.DB) (campusModel.CampusCurriculum, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var campusCurriculum campusModel.CampusCurriculum
+	if err := db.Where("number = ?", campusCurriculumNumber).First(&campusCurriculum).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return campusCurriculum, nil
+		}
+		return campusCurriculum, err
+	}
+	return campusCurriculum, nil
+}
+

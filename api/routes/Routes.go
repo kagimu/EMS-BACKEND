@@ -47,14 +47,18 @@ import (
 	previousSchoolResultsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/controllers"
 	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
 	promotionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/controllers"
+	quickbooksController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/controllers"
 	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
 	reportTemplate "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/controllers"
+	reportsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reports/api/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	departmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/departments/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
+	staffMembersControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/controllers"
 	statisticsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/statistics/api/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentAssessmentAreaReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/controllers"
@@ -95,6 +99,24 @@ func SetupRoutes() *gin.Engine {
 	landingPage := router.Group("/landing-page")
 	{
 		landingPage.GET("", controllers2.GetLandingPage)
+		landingPage.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+		landingPage.POST("application", staffMembersControllers.CreateJobApplication)
+		landingCareers := landingPage.Group("/careers")
+		{
+			landingCareers.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+			landingCareers.POST("application", staffMembersControllers.CreateJobApplication)
+		}
+	}
+
+	public := router.Group("/public")
+	{
+		public.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+		public.POST("application", staffMembersControllers.CreateJobApplication)
+		careers := public.Group("/careers")
+		{
+			careers.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+			careers.POST("application", staffMembersControllers.CreateJobApplication)
+		}
 	}
 
 	auth := router.Group("/auth")
@@ -230,6 +252,15 @@ func SetupRoutes() *gin.Engine {
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
 		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 
+		//payment methods
+		paymentMethods := main.Group("/payment-methods")
+		{
+			paymentMethods.GET("", paymentsController.FetchPaymentMethods)
+			paymentMethods.POST("", paymentsController.CreatePaymentMethod)
+			paymentMethods.PUT("/edit", paymentsController.EditPaymentMethod)
+			paymentMethods.DELETE("/delete", paymentsController.DeletePaymentMethod)
+		}
+
 		//subject cluster
 		subjectCluster := main.Group("/subject-cluster")
 		{
@@ -361,6 +392,7 @@ func SetupRoutes() *gin.Engine {
 			// StudyTimetable endpoints
 			timetable.GET("study-timetables", timetableController.GetAllStudyTimetables)
 			timetable.GET("study-timetables/:timetable_number", timetableController.GetStudyTimetable)
+			timetable.DELETE("study-timetables/:timetable_number", timetableController.DeleteStudyTimetable)
 
 			// StudyTimetablePeriod endpoints
 			timetable.POST("study-timetable-periods", timetableController.CreateStudyTimetablePeriod)
@@ -413,6 +445,7 @@ func SetupRoutes() *gin.Engine {
 			}
 
 			eos.GET("my-entities", eosController.GetUserEntities)
+			eos.GET("staff-entities", eosController.GetStaffEntities)
 			eos.GET("calendars", eosController.GetAllCalendars)
 			eos.POST("calendars", eosController.AddGeneralCalendar)
 			eos.GET("calendars/:calendar_number", eosController.GetCalendarDetails)
@@ -516,11 +549,19 @@ func SetupRoutes() *gin.Engine {
 		{
 			invoices.POST("", invoiceController.CreateInvoice)
 			invoices.GET("", invoiceController.GetAllInvoices)
+			invoices.POST("payment-plans", invoiceController.CreateBillPaymentPlan)
+			invoices.GET("payment-plans", invoiceController.FetchBillPaymentPlans)
+			invoices.PUT("payment-plans/:bill_payment_plan_number", invoiceController.UpdateBillPaymentPlan)
+			invoices.POST("payment-plans-installment-pay", invoiceController.PayBillPaymentPlanInstallment)
+			invoices.POST("payment-plans-installment-pay-cancelled", invoiceController.CancelBillPaymentPlanInstallmentPayment)
 			invoices.POST("pay", invoiceController.CreateInvoicePayment)
 			invoices.GET("details", invoiceController.GetInvoiceDetails)
 			invoices.GET("financial-summary", invoiceController.FinancialSummary)
 			invoices.POST("update", invoiceController.UpdateInvoice)
 			invoices.GET("general-statement", invoiceController.GeneralStatement)
+			invoices.GET("item-transactions", invoiceController.GetInvoiceItemTransactionsHistory)
+			invoices.GET("all-item-transactions", invoiceController.GetAllItemTransactionsHistory)
+			invoices.GET("transaction-item-transactions", invoiceController.GetInvoiceItemTransactionsHistoryByTransaction)
 
 			payments := invoices.Group("/payments")
 			{
@@ -532,6 +573,9 @@ func SetupRoutes() *gin.Engine {
 				payments.POST("delete", invoiceController.DeletePayment)
 				payments.POST("prepaid", invoiceController.PrepaidDeposit)
 				payments.GET("prepaid", invoiceController.GetPrepaidBalance)
+				payments.GET("credits-new", invoiceController.GetCreditsByUser)
+				payments.POST("credits/update", invoiceController.EditCredit)
+				payments.DELETE("credits/:credit_number", invoiceController.DeleteCredit)
 			}
 
 			invoices.POST("delete", invoiceController.DeleteInvoice)
@@ -543,6 +587,7 @@ func SetupRoutes() *gin.Engine {
 				billable.PUT("", invoiceController.UpdateBillable)
 				billable.DELETE("/:billable_number", invoiceController.DeleteBillable)
 				billable.GET("", invoiceController.AllBillable)
+				billable.GET("with-items", invoiceController.AllBillableWithItems)
 				billable.GET("details", invoiceController.BillableDetails)
 				billable.GET("determine", invoiceController.GetBill)
 			}
@@ -573,11 +618,22 @@ func SetupRoutes() *gin.Engine {
 		{
 			admission.POST("", admissionController.CreateAdmission)
 			admission.POST("existing-admission", admissionController.CreateExistingAdmission)
+			admission.POST("bulk-direct-admit", admissionController.BulkDirectAdmit)
 			admission.GET("", admissionController.FetchAdmissions)
 			admission.GET("admission-requirements", admissionController.GetAdmissionRequirementsController)
 			admission.POST("admission-requirements", admissionController.NewAdmissionRequirementController)
+			admission.DELETE("admission-requirements/:number", admissionController.DeleteAdmissionRequirementController)
+			admission.PUT("admission-requirements/:number/status", admissionController.UpdateAdmissionRequirementStatusController)
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 			admission.GET("items/:admission_number", admissionController.FetchItemsAddedOnAdmission)
+
+			// Terms of Admission (TOA)
+			admission.POST("toa", admissionController.SaveToaController)
+			admission.GET("toa/:school_number", admissionController.GetToaController)
+
+			// Signed TOA document upload / retrieval
+			admission.POST("toa/signed-upload", admissionController.UploadSignedToaController)
+			admission.GET("toa/signed-upload/:student_number", admissionController.GetSignedToaAttachmentsController)
 
 		}
 
@@ -613,6 +669,7 @@ func SetupRoutes() *gin.Engine {
 			assessment.POST("", assessmentController.CreateAssessment)
 			assessment.GET("", assessmentController.FetchAssessmentByStudent)
 			assessment.GET("student-assessment-area-report", studentAssessmentAreaReportController.GetStudentAssessmentAreaReport)
+			assessment.GET("all-student-assessment-area-reports", studentAssessmentAreaReportController.GetAllStudentAssessmentAreaReportsByClassAndStudyPeriod)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.DELETE("assessment-metrics/:assessment_metric_number", assessmentController.DeleteAssessmentMetric)
@@ -698,14 +755,29 @@ func SetupRoutes() *gin.Engine {
 				scopes.POST("", permissionController.CreateScope)
 				scopes.GET("", permissionController.FetchScopes)
 			}
+
+			departments := settings.Group("departments")
+			{
+				departments.GET("", departmentController.FetchAllDepartments)
+				departments.DELETE("delete/:id", departmentController.DeleteDepartment)
+			}
+
+			department := settings.Group("department")
+			{
+				department.POST("", departmentController.CreateDepartment)
+				department.PUT("edit", departmentController.EditDepartment)
+			}
 		}
 
 		users := main.Group("users")
 		{
 			users.GET("", authController.FetchUsers)
 			users.GET("all", authController.FetchAllUsers)
+			users.GET("pending", authController.FetchPendingUsers)
+			users.POST("resend-activation", authController.ResendActivationEmail)
 			users.GET(":user_number", authController.FetchUser)
 			users.POST("", authController.CreateUser)
+			users.DELETE(":user_number", authController.DeletePendingUser)
 			users.GET("meals", cateringController.FetchUserMeals)
 		}
 
@@ -735,6 +807,8 @@ func SetupRoutes() *gin.Engine {
 			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
 			enrollment.GET("/:enrollment_number", enrollmentController.FetchEnrollmentDetails)
 			enrollment.PUT("/enrollment-items/:id", enrollmentController.UpdateEnrollmentItem)
+			enrollment.GET("/clearance-logs", enrollmentController.FetchClearanceLogs)
+			enrollment.DELETE("/clearance-logs-delete/:id", enrollmentController.DeleteClearanceLog)
 			enrollment.POST("terminate-student/:student_number", enrollmentController.TerminateStudentEnrollment)
 			enrollment.POST("re-enroll-student/:student_number", enrollmentController.ReEnrollStudent)
 		}
@@ -744,6 +818,10 @@ func SetupRoutes() *gin.Engine {
 			staff.POST("attach-staff-to-stream", staffController.AttachStaffToStream)
 			staff.GET("", staffController.GetStaffOnStream)
 			staff.DELETE("", staffController.DetachStaffFromStream)
+			staff.POST("staff-scope", staffController.SaveStaffScope)
+			staff.PUT("staff-scope", staffController.UpdateStaffScope)
+			staff.GET("staff-scope/:staff_number", staffController.GetStaffScope)
+			staff.DELETE("staff-scope/:staff_number", staffController.DeleteStaffScope)
 
 			salaryScale := staff.Group("salary-scale")
 			{
@@ -789,6 +867,9 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("report-settings-by-student", reportSettingsController.FetchReportSummaryByStudentAndStudyPeriodAndClass)
 			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
 			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)
+			reportSettings.POST("report-summary/approve", reportSettingsController.ApproveReportSummaries)
+			reportSettings.POST("report-summary/forward", reportSettingsController.ForwardReportSummary)
+			reportSettings.GET("report-summary/correspondences", reportSettingsController.FetchReportSummaryCorrespondences)
 			reportSettings.GET("report-summary-promotion-details/:report_summary_number", reportSettingsController.FetchReportPromotionDetails)
 			reportSettings.POST("add-head-teachers-comment/:report_setting_number", reportSettingsController.CreateHeadTeacherComment)
 			reportSettings.GET("head-teachers-comments", reportSettingsController.FetchHeadTeacherComments)
@@ -816,6 +897,17 @@ func SetupRoutes() *gin.Engine {
 				subjectTeacherComment.DELETE("/:comment_number", reportSettingsController.DeleteSubjectTeacherComment)
 				subjectTeacherComment.POST("/:number", reportSettingsController.UpdateSubjectTeacherComment)
 
+			}
+
+			subjectTeacherReport := reportSettings.Group("subject-teacher-report")
+			{
+				subjectTeacherReport.POST("", reportSettingsController.CreateSubjectTeacherReport)
+				subjectTeacherReport.GET("all", reportSettingsController.FetchAllSubjectTeacherReports)
+				subjectTeacherReport.DELETE("/:number", reportSettingsController.RemoveSubjectTeacherReport)
+				subjectTeacherReport.PUT("/:number", reportSettingsController.UpdateSubjectTeacherReport)
+				subjectTeacherReport.POST("forward", reportSettingsController.ForwardSubjectTeacherReport)
+				subjectTeacherReport.POST("/:number/approve", reportSettingsController.ApproveSubjectTeacherReport)
+				subjectTeacherReport.GET("comments", reportSettingsController.FetchSubjectTeacherReportComments)
 			}
 
 			narrative := reportSettings.Group("narrative")
@@ -961,6 +1053,17 @@ func SetupRoutes() *gin.Engine {
 				feedingGroupUsers.GET("", cateringController.FetchFeedingGroupUsers)
 				feedingGroupUsers.GET("available", cateringController.FetchAvailableUsers)
 			}
+			feedingGroupStaffs := catering.Group("feeding-group-staffs")
+			{
+				feedingGroupStaffs.POST("", cateringController.CreateFeedingGroupStaff)
+				feedingGroupStaffs.GET("", cateringController.FetchFeedingGroupStaffs)
+				feedingGroupStaffs.PUT("", cateringController.UpdateFeedingGroupStaff)
+				feedingGroupStaffs.POST("update", cateringController.UpdateFeedingGroupStaff)
+				feedingGroupStaffs.DELETE("", cateringController.DeleteFeedingGroupStaff)
+				feedingGroupStaffs.DELETE("/:number", cateringController.DeleteFeedingGroupStaff)
+				feedingGroupStaffs.POST("delete", cateringController.DeleteFeedingGroupStaff)
+			}
+			catering.GET("feeding-group-learners", cateringController.FetchFeedingGroupLearners)
 
 			// Feeding group session
 			catering.POST("feeding-group-sessions", cateringController.CreateFeedingGroupSession)
@@ -975,9 +1078,16 @@ func SetupRoutes() *gin.Engine {
 			// Meals
 			catering.POST("meals", cateringController.AddMeal)
 			catering.GET("meals", cateringController.FetUsersMeals)
+			catering.GET("meals/learners", cateringController.FetchLearnersMeals)
+			catering.GET("meals/learners/history", cateringController.FetchLearnersMealsHistory)
+			catering.GET("meals/staff", cateringController.FetchStaffMeals)
+			catering.GET("meals/staff/history", cateringController.FetchStaffMealsHistory)
+			catering.POST("meals/staff", cateringController.AddStaffMeal)
 			catering.GET("meal-projections", cateringController.MealsProjections)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
 			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
+			catering.PUT("meal-course-feeding-sessions", cateringController.UpdateFeedingSessionsToMealCourse)
+			catering.POST("meal-course-feeding-sessions/delete", cateringController.DeleteMealCourseFeedingSession)
 			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)
 			catering.POST("activate-meal-course", cateringController.ActivateMealCourse)
 
@@ -998,6 +1108,12 @@ func SetupRoutes() *gin.Engine {
 			statistics.POST("test", statisticsController.PrintTestReport)
 		}
 
+		reports := main.Group("reports")
+		{
+			reports.GET("summary", reportsController.FetchSummary)
+			reports.GET("school-structure", reportsController.FetchSchoolStructureReport)
+		}
+
 		activityReporting := main.Group("activity-reporting")
 		{
 			indicators := activityReporting.Group("indicators")
@@ -1013,6 +1129,76 @@ func SetupRoutes() *gin.Engine {
 			landingPage.GET("all", controllers2.GetLandingPage)
 		}
 
+		staffMembers := main.Group("staffMembers")
+		{
+			staffMembers.POST("job-position", staffMembersControllers.CreateJobPosition)
+			staffMembers.GET("job-positions", staffMembersControllers.FetchJobPositions)
+			staffMembers.PUT("job-position/edit", staffMembersControllers.EditJobPosition)
+			staffMembers.DELETE("job-position/:id", staffMembersControllers.DeleteJobPosition)
+
+			staffMembers.POST("vacancy", staffMembersControllers.CreateJobVacancy)
+			staffMembers.GET("vacancies", staffMembersControllers.FetchJobVacancies)
+			staffMembers.PUT("vacancy/edit", staffMembersControllers.EditJobVacancy)
+			staffMembers.DELETE("vacancy/:id", staffMembersControllers.DeleteJobVacancy)
+
+			staffMembers.POST("application", staffMembersControllers.CreateJobApplication)
+			staffMembers.GET("applications", staffMembersControllers.FetchJobApplications)
+			staffMembers.PUT("application/edit", staffMembersControllers.EditJobApplication)
+			staffMembers.DELETE("application/:id", staffMembersControllers.DeleteJobApplication)
+
+			staffMembers.POST("interview", staffMembersControllers.CreateJobInterview)
+			staffMembers.GET("interviews", staffMembersControllers.FetchJobInterviews)
+			staffMembers.PUT("interview/edit", staffMembersControllers.EditJobInterview)
+			staffMembers.DELETE("interview/:id", staffMembersControllers.DeleteJobInterview)
+			staffMembers.POST("schedule-interview", staffMembersControllers.ScheduleInterview)
+			staffMembers.GET("scheduled-interviews", staffMembersControllers.FetchScheduledInterviews)
+			staffMembers.DELETE("scheduled-interview/:id", staffMembersControllers.DeleteScheduledInterview)
+			staffMembers.POST("interview-score", staffMembersControllers.ScoreInterview)
+			staffMembers.GET("completed-interviews", staffMembersControllers.FetchCompletedInterviews)
+
+			staffMembers.POST("job-offer", staffMembersControllers.CreateJobOffer)
+			staffMembers.GET("job-offer", staffMembersControllers.FetchJobOffers)
+			staffMembers.GET("job-offers", staffMembersControllers.FetchJobOffers)
+			staffMembers.DELETE("job-offer/:id", staffMembersControllers.DeleteJobOffer)
+
+			staffMembers.POST("deployment", staffMembersControllers.CreateStaffDeployment)
+			staffMembers.GET("deployments", staffMembersControllers.FetchStaffDeployments)
+			staffMembers.PUT("deployment/edit", staffMembersControllers.EditStaffDeployment)
+			staffMembers.DELETE("deployment/:id", staffMembersControllers.DeleteStaffDeployment)
+			staffMembers.PUT("deployment/assign-role", staffMembersControllers.AssignStaffRole)
+
+			staffMembers.POST("biodata/:job_offer_number/personal", staffMembersControllers.CreatePersonalBioData)
+			staffMembers.GET("biodata/:job_offer_number/personal", staffMembersControllers.FetchPersonalBioData)
+			staffMembers.PUT("biodata/:job_offer_number/personal", staffMembersControllers.EditPersonalBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/contact", staffMembersControllers.CreateContactBioData)
+			staffMembers.GET("biodata/:job_offer_number/contact", staffMembersControllers.FetchContactBioData)
+			staffMembers.PUT("biodata/:job_offer_number/contact", staffMembersControllers.EditContactBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/medical", staffMembersControllers.CreateMedicalBioData)
+			staffMembers.GET("biodata/:job_offer_number/medical", staffMembersControllers.FetchMedicalBioData)
+			staffMembers.PUT("biodata/:job_offer_number/medical", staffMembersControllers.EditMedicalBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/family", staffMembersControllers.CreateFamilyBioData)
+			staffMembers.GET("biodata/:job_offer_number/family", staffMembersControllers.FetchFamilyBioData)
+			staffMembers.PUT("biodata/:job_offer_number/family", staffMembersControllers.EditFamilyBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/education", staffMembersControllers.CreateEducationBioData)
+			staffMembers.GET("biodata/:job_offer_number/education", staffMembersControllers.FetchEducationBioData)
+			staffMembers.PUT("biodata/:job_offer_number/education", staffMembersControllers.EditEducationBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/languages", staffMembersControllers.CreateLanguageBioData)
+			staffMembers.GET("biodata/:job_offer_number/languages", staffMembersControllers.FetchLanguageBioData)
+			staffMembers.PUT("biodata/:job_offer_number/languages", staffMembersControllers.EditLanguageBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/references", staffMembersControllers.CreateReferencesBioData)
+			staffMembers.GET("biodata/:job_offer_number/references", staffMembersControllers.FetchReferencesBioData)
+			staffMembers.PUT("biodata/:job_offer_number/references", staffMembersControllers.EditReferencesBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/photo", staffMembersControllers.UploadStaffPhoto)
+			staffMembers.GET("biodata/:job_offer_number/full-profile", staffMembersControllers.FetchFullStaffProfileBioData)
+		}
+
 		curriculumDelivery := main.Group("curriculum-delivery")
 		{
 			curriculumDelivery.POST("add-session", controllers3.AddSession)
@@ -1023,11 +1209,76 @@ func SetupRoutes() *gin.Engine {
 			curriculumDelivery.GET("percentage-by-stream/:stream_number", controllers3.GetCurriculumDeliveryProgressByStream)
 		}
 
+		quickbooks := main.Group("quickbooks")
+		{
+			quickbooks.GET("download-qwc", quickbooksController.DownloadQWC)
+			quickbooks.POST("queue-transaction", quickbooksController.QueueTransaction)
+			quickbooks.GET("settings", quickbooksController.GetSettings)
+			quickbooks.POST("settings", quickbooksController.UpdateSettings)
+			quickbooks.GET("queue-status", quickbooksController.GetQueueStatus)
+			quickbooks.POST("customers", quickbooksController.QueueCustomerAdd)
+			quickbooks.GET("customers", quickbooksController.QueueCustomerQuery)
+			quickbooks.GET("synced-customers", quickbooksController.GetSyncedCustomers)
+			quickbooks.POST("items", quickbooksController.QueueItemAdd)
+			quickbooks.POST("products", quickbooksController.QueueProductAdd)
+			quickbooks.GET("synced-items", quickbooksController.GetSyncedItems)
+			quickbooks.GET("queue-errors", quickbooksController.GetQueueErrors)
+			quickbooks.GET("synced-receipts", quickbooksController.GetSyncedReceipts)
+			quickbooks.GET("customer-queue-status", quickbooksController.GetCustomerQueueStatus)
+			quickbooks.GET("item-queue-status", quickbooksController.GetItemQueueStatus)
+			quickbooks.DELETE("queue/:number", quickbooksController.DeleteQueueEntry)
+			quickbooks.DELETE("queue-errors", quickbooksController.DeleteAllQueueErrors)
+
+			quickbooks.POST("account-types", quickbooksController.CreateAccountType)
+			quickbooks.GET("account-types", quickbooksController.GetAccountTypes)
+			quickbooks.PUT("account-types/:id", quickbooksController.UpdateAccountType)
+			quickbooks.DELETE("account-types/:id", quickbooksController.DeleteAccountType)
+
+			quickbooks.POST("chart-of-accounts", quickbooksController.CreateChartOfAccount)
+			quickbooks.GET("chart-of-accounts", quickbooksController.GetChartOfAccounts)
+			quickbooks.PUT("chart-of-accounts/:id", quickbooksController.UpdateChartOfAccount)
+			quickbooks.DELETE("chart-of-accounts/:id", quickbooksController.DeleteChartOfAccount)
+
+			quickbooks.POST("deposit-account-types", quickbooksController.CreateDepositAccountType)
+			quickbooks.GET("deposit-account-types", quickbooksController.GetDepositAccountTypes)
+			quickbooks.PUT("deposit-account-types/:id", quickbooksController.UpdateDepositAccountType)
+			quickbooks.DELETE("deposit-account-types/:id", quickbooksController.DeleteDepositAccountType)
+
+			quickbooks.POST("deposit-accounts", quickbooksController.CreateDepositAccount)
+			quickbooks.GET("deposit-accounts", quickbooksController.GetDepositAccounts)
+			quickbooks.PUT("deposit-accounts/:id", quickbooksController.UpdateDepositAccount)
+			quickbooks.DELETE("deposit-accounts/:id", quickbooksController.DeleteDepositAccount)
+
+			quickbooks.GET("profiles", quickbooksController.GetProfiles)
+			quickbooks.POST("profiles", quickbooksController.CreateProfile)
+			quickbooks.PUT("profiles/:id", quickbooksController.UpdateProfile)
+			quickbooks.DELETE("profiles/:id", quickbooksController.DeleteProfile)
+			quickbooks.GET("profiles/:id/qwc", quickbooksController.DownloadProfileQWC)
+			quickbooks.GET("customer-mappings/:user_number", quickbooksController.GetCustomerMappings)
+			quickbooks.DELETE("customer-mappings/:user_number", quickbooksController.ResetCustomerMapping)
+			quickbooks.GET("item-mappings/:item_number", quickbooksController.GetItemMappings)
+		}
+
 	}
 	attachments := router.Group("attachments")
 	{
 		attachments.GET("download/:attachment_number", controller.DownloadAttachment)
+		attachments.GET("by-owner/:owner_number", controller.GetAttachmentsByOwner)
+		attachments.POST("upload", controller.UploadAttachment)
 		attachments.POST("delete", controller.DeleteAttachment)
+		attachments.POST("delete/:attachment_number", controller.DeleteAttachmentByParam)
+	}
+
+	// Support URL for QuickBooks Web Connector
+	router.GET("/support", func(c *gin.Context) {
+		c.String(200, "Support page for WholesomeEd QuickBooks Integration.")
+	})
+
+	// QuickBooks Web Connector SOAP Endpoints (Unauthenticated, uses SOAP Auth)
+	qbwc := router.Group("/api/quickbooks")
+	{
+		qbwc.POST("soap", quickbooksController.HandleQBWC)
+		qbwc.GET("soap", quickbooksController.HandleQBWC)
 	}
 
 	return router

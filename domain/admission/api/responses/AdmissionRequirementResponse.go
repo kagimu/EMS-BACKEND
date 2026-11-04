@@ -8,9 +8,12 @@ type AdmissionRequirementResponse struct {
 	ItemNumber          string    `json:"item_number"`
 	ItemName            string    `json:"item_name"`
 	ItemCost            float64   `json:"item_cost"`
+	Quantity            float64   `json:"quantity"`
 	CampusClassNumber   string    `json:"campus_class_number"`
-	CampusNumber        string    `json:"campus_number"`
-	StudyPeriodNumber   string    `json:"study_period_number"`
+	CampusNumber              string    `json:"campus_number"`
+	CampusCurriculumNumber    string    `json:"campus_curriculum_number"`
+	CampusLevelNumber         string    `json:"campus_level_number"`
+	StudyPeriodNumber         string    `json:"study_period_number"`
 	AcademicYearNumber  string    `json:"academic_year_number"`
 	SchoolNumber        string    `json:"school_number"`
 	SchoolName          string    `json:"school_name"`
@@ -19,6 +22,10 @@ type AdmissionRequirementResponse struct {
 	ClassName           string    `json:"class_name"`
 	StudyPeriodName     string    `json:"study_period_name"`
 	UserNumber          string    `json:"user_number"`
+	Status              string    `json:"status"`
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
+	ModeOfStudyNumber   string    `json:"mode_of_study_number"`
+	ModeOfStudyName     string    `json:"mode_of_study_name"`
+	StudentType         string    `json:"student_type"`
 }

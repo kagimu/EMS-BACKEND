@@ -1,6 +1,9 @@
 package services
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/api/responses"
@@ -8,6 +11,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/admission/repositories"
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	repositories3 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/repositories"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	repositories4 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/repositories"
 	repositories5 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	repositories6 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studyPeriod/repositories"
@@ -20,16 +24,45 @@ func SaveAdmissionRequirementsService(req *requests.AdmissionRequirementsRequest
 	return repo.SaveAdmissionRequirementsBatch(requirements)
 }
 
+func DeleteAdmissionRequirementService(number string) error {
+	if number == "" {
+		return errors.New("number is required")
+	}
+	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
+	return repo.DeleteAdmissionRequirementByNumber(number)
+}
+
+func UpdateAdmissionRequirementStatusService(number, status string) error {
+	if number == "" {
+		return errors.New("number is required")
+	}
+	if status == "" {
+		return errors.New("status is required")
+	}
+	if status != constants.StatusActive && status != constants.StatusInactive {
+		return fmt.Errorf("status must be %s or %s", constants.StatusActive, constants.StatusInactive)
+	}
+	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
+	return repo.UpdateAdmissionRequirementStatus(number, status)
+}
+
 // createAdmissionRequirementResponse maps a model to the API response with resolved names.
-func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolName, campusName, curriculumName, className, studyPeriodName, itemName string, itemCost float64) responses.AdmissionRequirementResponse {
+func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolName, campusName, curriculumName, className, studyPeriodName, itemName string, itemCost float64, modeOfStudyName string) responses.AdmissionRequirementResponse {
+	qty := m.Quantity
+	if qty <= 0 {
+		qty = 1
+	}
 	return responses.AdmissionRequirementResponse{
 		Number:             m.Number,
 		ItemNumber:         m.ItemNumber,
 		ItemName:           itemName,
 		ItemCost:           itemCost,
-		CampusClassNumber:  m.CampusClassNumber,
-		CampusNumber:       m.CampusNumber,
-		StudyPeriodNumber:  m.StudyPeriodNumber,
+		Quantity:           qty,
+		CampusClassNumber:        m.CampusClassNumber,
+		CampusNumber:             m.CampusNumber,
+		CampusCurriculumNumber:   m.CampusCurriculumNumber,
+		CampusLevelNumber:        m.CampusLevelNumber,
+		StudyPeriodNumber:        m.StudyPeriodNumber,
 		AcademicYearNumber: m.AcademicYearNumber,
 		SchoolNumber:       m.SchoolNumber,
 		SchoolName:         schoolName,
@@ -38,15 +71,43 @@ func createAdmissionRequirementResponse(m models.AdmissionRequirement, schoolNam
 		ClassName:          className,
 		StudyPeriodName:    studyPeriodName,
 		UserNumber:         m.UserNumber,
+		Status:             m.Status,
 		CreatedAt:          m.CreatedAt,
 		UpdatedAt:          m.UpdatedAt,
+		ModeOfStudyNumber:  m.ModeOfStudyNumber,
+		ModeOfStudyName:    modeOfStudyName,
+		StudentType:        m.StudentType,
 	}
 }
 
 // FetchAdmissionRequirementsService returns admission requirements filtered by non-empty params, as response DTOs.
-func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber string) ([]responses.AdmissionRequirementResponse, error) {
+func FetchAdmissionRequirementsService(
+	schoolNumber,
+	campusClassNumber,
+	classNumber,
+	campusNumber,
+	campusCurriculumNumber,
+	campusLevelNumber,
+	studyPeriodNumber,
+	academicYearNumber,
+	itemNumber,
+	modeOfStudyNumber,
+	studentType string,
+) ([]responses.AdmissionRequirementResponse, error) {
 	repo := repositories.NewAdmissionRequirementsRepository(config.DB)
-	list, err := repo.FindAdmissionRequirements(schoolNumber, campusClassNumber, studyPeriodNumber, academicYearNumber, itemNumber)
+	list, err := repo.FindAdmissionRequirements(
+		schoolNumber,
+		campusClassNumber,
+		classNumber,
+		campusNumber,
+		campusCurriculumNumber,
+		campusLevelNumber,
+		studyPeriodNumber,
+		academicYearNumber,
+		itemNumber,
+		modeOfStudyNumber,
+		studentType,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +156,14 @@ func FetchAdmissionRequirementsService(schoolNumber, campusClassNumber, studyPer
 			}
 		}
 
-		out = append(out, createAdmissionRequirementResponse(m, schoolName, campusName, curriculumName, className, studyPeriodName, itemName, itemCost))
+		modeOfStudyName := ""
+		if m.ModeOfStudyNumber != "" {
+			if modeOfStudy, err := repositories5.GetModeOfStudyByNumber(m.ModeOfStudyNumber); err == nil && modeOfStudy.Number != "" {
+				modeOfStudyName = modeOfStudy.Name
+			}
+		}
+
+		out = append(out, createAdmissionRequirementResponse(m, schoolName, campusName, curriculumName, className, studyPeriodName, itemName, itemCost, modeOfStudyName))
 	}
 	return out, nil
 }

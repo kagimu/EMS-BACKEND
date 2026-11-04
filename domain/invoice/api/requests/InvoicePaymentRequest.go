@@ -2,19 +2,29 @@ package requests
 
 import "errors"
 
+type ItemPayment struct {
+	InvoiceItemNumber string  `json:"invoice_item_number"`
+	Amount            float64 `json:"amount"`
+}
+
 type InvoicePaymentRequest struct {
-	InvoiceNumber string   `json:"invoice_number"`
-	Amount        float64  `json:"amount"`
-	Date          string   `json:"date"`
-	Credits       []string `json:"credits"`
+	InvoiceNumber        string        `json:"invoice_number"`
+	Amount               float64       `json:"amount"`
+	Date                 string        `json:"date"`
+	Credits              []string      `json:"credits"`
+	ItemPayments         []ItemPayment `json:"item_payments,omitempty"`
+	PaymentMethod        string        `json:"payment_method,omitempty"`
+	PaymentReference     string        `json:"payment_reference,omitempty"`
+	DepositAccountNumber string        `json:"deposit_account_number,omitempty"`
 }
 
 type AccountTopUpRequest struct {
-	UserNumber      string  `json:"user_number"`
-	Amount          float64 `json:"amount"`
-	Description     *string `json:"description"`
-	DatePaid        string  `json:"date_paid"`
-	ClientReference *string `json:"client_reference"`
+	UserNumber           string  `json:"user_number"`
+	Amount               float64 `json:"amount"`
+	Description          *string `json:"description,omitempty"`
+	DatePaid             string  `json:"date_paid,omitempty"`
+	ClientReference      *string `json:"client_reference,omitempty"`
+	DepositAccountNumber string  `json:"deposit_account_number,omitempty"`
 }
 
 func (r *AccountTopUpRequest) Validate() error {

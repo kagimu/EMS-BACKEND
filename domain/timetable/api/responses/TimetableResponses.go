@@ -17,15 +17,26 @@ type ClassResponse struct {
 }
 
 type StudyTimetables struct {
-	Name         string `json:"name"`
-	Number       string `json:"number"`
-	Status       string `json:"status"`
-	School       string `json:"school"`
-	Campus       string `json:"campus"`
-	CLass        string `json:"class"`
-	Stream       string `json:"stream"`
-	StudyPeriod  string `json:"study_period"`
-	AcademicYear string `json:"academic_year"`
+	Name                   string `json:"name"`
+	Number                 string `json:"number"`
+	Status                 string `json:"status"`
+	// Display names
+	School                 string `json:"school"`
+	Campus                 string `json:"campus"`
+	CLass                  string `json:"class"`
+	Stream                 string `json:"stream"`
+	StudyPeriod            string `json:"study_period"`
+	AcademicYear           string `json:"academic_year"`
+	// Number fields
+	SchoolNumber           string `json:"school_number"`
+	CampusNumber           string `json:"campus_number"`
+	LevelNumber            string `json:"level_number"`
+	ClassNumber            string `json:"class_number"`
+	StreamNumber           string `json:"stream_number"`
+	AcademicYearNumber     string `json:"academic_year_number"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	CurriculumNumber       string `json:"curriculum_number"`
+	StudyPeriodNumber      string `json:"study_period_number"`
 }
 
 type StudyingTimeBlockResponse struct {
@@ -81,7 +92,60 @@ type DayPeriods struct {
 }
 
 type TimetablePeriodsResponse struct {
-	StudyTimetableNumber string       `json:"study_timetable_number"`
-	Days                 []DayPeriods `json:"days"`
-	SLots                []string     `json:"slots"`
+	StudyTimetableNumber   string       `json:"study_timetable_number"`
+	Days                   []DayPeriods `json:"days"`
+	SLots                  []string     `json:"slots"`
+	// Timetable-level number fields
+	SchoolNumber           string       `json:"school_number"`
+	CampusNumber           string       `json:"campus_number"`
+	LevelNumber            string       `json:"level_number"`
+	ClassNumber            string       `json:"class_number"`
+	StreamNumber           string       `json:"stream_number"`
+	AcademicYearNumber     string       `json:"academic_year_number"`
+	CampusCurriculumNumber string       `json:"campus_curriculum_number"`
+	CurriculumNumber       string       `json:"curriculum_number"`
+	StudyPeriodNumber      string       `json:"study_period_number"`
+}
+
+type TimetableTaskResponse struct {
+	Number           string `json:"number"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+	Code			 int64  `json:"code"`
+	UserNumber       string `json:"user_number"`
+	ClassNumber      string `json:"class_number"`
+	StreamNumber     string `json:"stream_number"`
+	SchoolNumber     string `json:"school_number"`
+	CampusNumber     string `json:"campus_number"`
+	CurriculumNumber string `json:"curriculum_number"`
+	LevelNumber      string `json:"level_number"`
+	School           string `json:"school"`
+	Campus           string `json:"campus"`
+	Level            string `json:"level"`
+	Classes          string `json:"classes"`
+	Class            string `json:"class"`
+}
+
+type TimetableSlotResponse struct {
+	ID                     uint   `json:"id"`
+	Number                 string `json:"number"`
+	Name                   string `json:"name"`
+	SchoolNumber           string `json:"school_number"`
+	CampusNumber           string `json:"campus_number"`
+	CampusCurriculumNumber string `json:"campus_curriculum_number"`
+	LevelNumber            string `json:"level_number"`
+	AcademicYearNumber     string `json:"academic_year_number"`
+	ClassNumber            string `json:"class_number"`
+	StreamNumber           string `json:"stream_number"`
+	Type                   string `json:"type"`
+	StartTime              string `json:"start_time"`
+	EndTime                string `json:"end_time"`
+	
+	// Display names
+	School                 string `json:"school"`
+	Campus                 string `json:"campus"`
+	Curriculum             string `json:"curriculum"`
+	Level                  string `json:"level"`
+	Class                  string `json:"class"`
+	Stream                 string `json:"stream"`
 }

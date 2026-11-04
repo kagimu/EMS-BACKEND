@@ -37,14 +37,14 @@ func CreateEnrollment(c *gin.Context) {
 		return
 	}
 
-	err = enrolmentService.NewEnrolment(payload, user.Number)
+	enrolmentResponse, err := enrolmentService.NewEnrolment(payload, user.Number)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Enrollment created successfully", "data": enrolmentResponse})
 }
 
 func FetchEnrolledStudents(c *gin.Context) {
@@ -66,7 +66,8 @@ func FetchEnrolledStudents(c *gin.Context) {
 	status := c.Query("status")
 	search := c.Query("search")
 
-	if user.Type != constants.TypeClient {
+	mine := c.Query("mine") == "true"
+	if user.Type != constants.TypeClient && !mine {
 		if schoolNumber == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "Please select the school you want to view enrollments for"})
 			return
@@ -75,7 +76,7 @@ func FetchEnrolledStudents(c *gin.Context) {
 
 	page := pagination.Paginate(c, &paginatedResponse)
 
-	students_, err := enrolmentService.Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page)
+	students_, err := enrolmentService.Enrolments(search, schoolNumber, streamNumber, campusNumber, campusClassNumber, studyPeriodNumber, academicYear, status, user, page, mine)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -150,6 +151,11 @@ func FetchEnrollmentDetails(c *gin.Context) {
 }
 
 func UpdateEnrollmentItem(c *gin.Context) {
+	user, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
 	var req requests.UpdateEnrollmentItemRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -166,9 +172,50 @@ func UpdateEnrollmentItem(c *gin.Context) {
 		return
 	}
 	id := uint(parsed)
-	if err := enrolmentService.UpdateEnrollmentItem(id, req.Quantity, req.Brought); err != nil {
+	if err := enrolmentService.UpdateEnrollmentItem(id, req.Quantity, req.Brought, req.DateBrought, req.Remarks, user.Number); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Enrollment item updated successfully"})
+}
+
+func FetchClearanceLogs(c *gin.Context) {
+	enrollmentNumber := c.Query("enrollment_number")
+	itemNumber := c.Query("item_number")
+	dateFrom := c.Query("date_from")
+	dateTo := c.Query("date_to")
+	staffNumber := c.Query("staff_number")
+
+	logs, err := enrolmentService.GetRequirementClearanceLogs(enrollmentNumber, itemNumber, dateFrom, dateTo, staffNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": logs})
+}
+
+func DeleteClearanceLog(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	idParam := c.Param("id")
+	if idParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "clearance log id is required"})
+		return
+	}
+	parsed, parseErr := strconv.ParseUint(idParam, 10, 0)
+	if parseErr != nil || parsed == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid clearance log id"})
+		return
+	}
+
+	if err := enrolmentService.DeleteClearanceLog(uint(parsed)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Clearance log deleted and item quantity recalculated successfully"})
 }

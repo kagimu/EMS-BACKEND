@@ -139,6 +139,63 @@ func FeedingSessionsToMealCourse(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, commons.Feedback("Feeding sessions successfully added"))
 }
 
+func UpdateFeedingSessionsToMealCourse(ctx *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.MealCourseFeedingSessionRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// AddFeedingSessionsToMealCourse already handles replacing existing ones
+	err = services.AddFeedingSessionsToMealCourse(payload)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Updating feeding sessions error: "+err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, commons.Feedback("Feeding sessions successfully updated"))
+}
+
+func DeleteMealCourseFeedingSession(ctx *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.DeleteMealCourseFeedingSessionRequest
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Check request body and try again"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.DeleteMealCourseFeedingSession(payload)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Deleting feeding session error: "+err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, commons.Feedback("Feeding session successfully deleted"))
+}
+
 func AllMealCourseFeedingSessions(ctx *gin.Context) {
 
 	_, err := commons.GetUserFromHeader(ctx)
@@ -222,6 +279,174 @@ func FetUsersMeals(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": usersMeal})
 }
 
+// FetchLearnersMeals mirrors FetUsersMeals but only returns enrolled learners (students
+// with an active enrollment).  Each record includes full enrollment details just like
+// the enrollment GET endpoint, and the list can be narrowed down with the optional filters:
+//
+//	campus_number          (required)
+//	meal_course_number     (required)
+//	feeding_group_number   (optional)
+//	study_period_number    (optional)
+//	academic_year_number   (optional)
+//	campus_class_number    (optional)
+//	stream_number          (optional)
+func FetchLearnersMeals(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	campusNumber := c.Query("campus_number")
+	if campusNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose campus"})
+		return
+	}
+
+	mealCourseNumber := c.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a meal course"})
+		return
+	}
+
+	feedingGroupNumber := c.Query("feeding_group_number")
+	studyPeriodNumber := c.Query("study_period_number")
+	academicYearNumber := c.Query("academic_year_number")
+	campusClassNumber := c.Query("campus_class_number")
+	streamNumber := c.Query("stream_number")
+	classNumber := c.Query("class_number")
+
+	learnersMeal, err := services.GetLearnerMeals(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, classNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": learnersMeal})
+}
+
+// FetchLearnersMealsHistory returns historical meal delivery data for enrolled learners
+// for a specific date, along with the same filtering capabilities as FetchLearnersMeals.
+func FetchLearnersMealsHistory(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	campusNumber := c.Query("campus_number")
+	if campusNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose campus"})
+		return
+	}
+
+	mealCourseNumber := c.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a meal course"})
+		return
+	}
+
+	date := c.Query("date")
+	if date == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Date is required"})
+		return
+	}
+
+	feedingGroupNumber := c.Query("feeding_group_number")
+	studyPeriodNumber := c.Query("study_period_number")
+	academicYearNumber := c.Query("academic_year_number")
+	campusClassNumber := c.Query("campus_class_number")
+	streamNumber := c.Query("stream_number")
+	classNumber := c.Query("class_number")
+
+	learnersMealHistory, err := services.GetLearnerMealsHistory(mealCourseNumber, campusNumber, feedingGroupNumber, studyPeriodNumber, academicYearNumber, campusClassNumber, streamNumber, classNumber, date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": learnersMealHistory})
+}
+
+// FetchStaffMeals returns meal eligibility and served status for staff members
+// that are assigned to feeding groups for the given school and meal course.
+//
+// Query params:
+//
+//	school_number        (required)
+//	meal_course_number   (required)
+//	feeding_group_number (optional)
+func FetchStaffMeals(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+	if schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school"})
+		return
+	}
+
+	mealCourseNumber := c.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a meal course"})
+		return
+	}
+
+	feedingGroupNumber := c.Query("feeding_group_number")
+
+	staffMeals, err := services.GetStaffMeals(mealCourseNumber, schoolNumber, feedingGroupNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": staffMeals})
+}
+
+// FetchStaffMealsHistory returns historical meal delivery data for staff members
+func FetchStaffMealsHistory(c *gin.Context) {
+
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+	if schoolNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a school"})
+		return
+	}
+
+	mealCourseNumber := c.Query("meal_course_number")
+	if mealCourseNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Choose a meal course"})
+		return
+	}
+
+	date := c.Query("date")
+	if date == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Date is required"})
+		return
+	}
+
+	feedingGroupNumber := c.Query("feeding_group_number")
+
+	staffMealsHistory, err := services.GetStaffMealsHistory(mealCourseNumber, schoolNumber, feedingGroupNumber, date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": staffMealsHistory})
+}
+
 func AddMeal(c *gin.Context) {
 	loggedInUser, err := commons.GetUserFromHeader(c)
 	if err != nil {
@@ -247,6 +472,33 @@ func AddMeal(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Meal created successfully"})
+}
+
+func AddStaffMeal(c *gin.Context) {
+	loggedInUser, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	var payload requests.StaffMealRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to validate payload"})
+		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = services.AddStaffMeal(payload, loggedInUser.Number)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Staff meal recorded successfully"})
 }
 
 func UpdateMealCourseItem(ctx *gin.Context) {
@@ -319,7 +571,9 @@ func MealsProjections(context *gin.Context) {
 		return
 	}
 
-	response, err := services.MenuProjectedCalender(startDate, campusNumber, endDate)
+	mealCourseNumber := context.Query("meal_course_number")
+
+	response, err := services.MenuProjectedCalender(startDate, campusNumber, endDate, mealCourseNumber)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Getting projections error: " + err.Error()})
 		return

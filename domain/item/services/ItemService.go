@@ -18,10 +18,10 @@ import (
 type ItemService struct {
 }
 
-func (receiver ItemService) AllServiceItems(schoolNumber string) ([]responses.ServiceResponse, error) {
+func (receiver ItemService) AllServiceItems(schoolNumber string, itemType string) ([]responses.ServiceResponse, error) {
 	result := make([]responses.ServiceResponse, 0)
 
-	items, err := repositories.FetchAllServiceItems(schoolNumber)
+	items, err := repositories.FetchAllServiceItems(schoolNumber, itemType)
 	if err != nil {
 		return result, errors.New(fmt.Sprintf("Error %s fetching service items", err.Error()))
 	}

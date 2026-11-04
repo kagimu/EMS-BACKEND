@@ -18,6 +18,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/curriculum/importCurriculum/models"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/api/responses"
 	levelModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/scopes"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
@@ -489,9 +490,10 @@ func FetchCampusClassesByLevel(context *gin.Context) {
 	var classLevel_ []responses.CampusClassInfo
 	if err := config.DB.
 		Where("campus_level_number = ?", campusLevelNumber).
+		Scopes(scopes.FilterClassesByStaffScope(context)).
 		Preload("CurriculumClass.Class").
 		Preload("CurriculumClass").
-		Preload("Streams").
+		Preload("Streams", scopes.FilterStreamsByStaffScope(context)).
 		Order("code asc").
 		Find(&classLevel).Error; err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
@@ -562,7 +564,7 @@ func FetchClassLevel(context *gin.Context) {
 	var campusLevel []levelModels.CampusLevel
 	var campusLevel_ []responses3.CampusLevelDataList
 	if err := config.DB.
-		Scopes(levelClassFilter(campusLevelNumber)).
+		Scopes(levelClassFilter(campusLevelNumber), scopes.FilterLevelsByStaffScope(context)).
 		Where("campus_curriculum_number = ?", campusCurriculumNumber).
 		Preload("CurriculumLevel.Level").
 		Preload("CurriculumLevel").
@@ -577,9 +579,10 @@ func FetchClassLevel(context *gin.Context) {
 		var classLevel_ []responses.CampusClassInfo
 		if err := config.DB.
 			Where("campus_level_number = ?", items.Number).
+			Scopes(scopes.FilterClassesByStaffScope(context)).
 			Preload("CurriculumClass.Class").
 			Preload("CurriculumClass").
-			Preload("Streams").
+			Preload("Streams", scopes.FilterStreamsByStaffScope(context)).
 			Order("code asc").
 			Find(&classLevel).Error; err != nil {
 			context.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "No Class!"})
@@ -923,7 +926,7 @@ func FetchClassesBySchoolNumber(context *gin.Context) {
 		}
 	}
 
-	classes, err := services.FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber)
+	classes, err := services.FindSchoolClasses(schoolNumber, campusLevelNumber, campusNumber, curriculumNumber, campusCurriculumNumber, context)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "message": err.Error()})
 		return

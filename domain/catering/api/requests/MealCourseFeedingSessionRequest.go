@@ -21,3 +21,18 @@ func (mealCourseFeedingSessionRequest *MealCourseFeedingSessionRequest) Validate
 
 	return nil
 }
+
+type DeleteMealCourseFeedingSessionRequest struct {
+	MealCourseNumber     string `json:"meal_course_number"`
+	FeedingSessionNumber string `json:"feeding_session_number"`
+}
+
+func (req *DeleteMealCourseFeedingSessionRequest) Validate() error {
+	if req.MealCourseNumber == "" {
+		return errors.New("provide meal course number")
+	}
+	if req.FeedingSessionNumber == "" {
+		return errors.New("provide feeding session number")
+	}
+	return nil
+}

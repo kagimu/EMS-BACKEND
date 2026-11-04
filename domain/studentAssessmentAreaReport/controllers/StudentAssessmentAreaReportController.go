@@ -31,3 +31,18 @@ func GetStudentAssessmentAreaReport(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": report})
 }
+
+func GetAllStudentAssessmentAreaReportsByClassAndStudyPeriod(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	report, err := services.GetAllStudentScoresReportByClassNumberAndStudyPeriod(c.Query("class_number"), c.Query("study_period_number"), c.Query("campus_number"), c.Query("curriculum_number"), c.Query("campus_curriculum_number"), c.Query("assessment_area_number"), c.Query("appearing_on_report"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": report})
+}
