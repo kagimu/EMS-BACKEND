@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/pagination"
+	licensingServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/services"
 	eosModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
 	"net/http"
 	"time"
@@ -373,6 +375,15 @@ func CreateUser(c *gin.Context) {
 
 	// attach user to this entity
 	if user.EntityNumber != "" {
+		if err := licensingServices.EnsureMembershipSeat(tx, actor.Number, user.EntityNumber, userObject.Number); err != nil {
+			tx.Rollback()
+			if errors.Is(err, licensingServices.ErrSeatCapacityReached) || errors.Is(err, licensingServices.ErrSeatScopeInactive) {
+				c.JSON(http.StatusConflict, gin.H{"message": err.Error()})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to reserve a user seat"})
+			}
+			return
+		}
 		var entityUser = eosModels.EntityUser{
 			EntityNumber:  user.EntityNumber,
 			UserNumber:    userObject.Number,

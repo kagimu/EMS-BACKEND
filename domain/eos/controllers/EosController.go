@@ -11,6 +11,7 @@ import (
 	authRepository "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/repository"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
+	licensingServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/models"
@@ -265,18 +266,44 @@ func AddUserToEntity(context *gin.Context) {
 		return
 	}
 
-	userEntity := models.EntityUser{
-		EntityNumber:  userEntityRequest.EntityNumber,
-		UserNumber:    userEntityRequest.UserNumber,
-		AddedByNumber: actor.Number,
-	}
-
-	if err := config.DB.Create(&userEntity).Error; err != nil {
-		context.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+	if err := licensingServices.AddEntityMembership(actor.Number, userEntityRequest.EntityNumber, userEntityRequest.UserNumber); err != nil {
+		if errors.Is(err, licensingServices.ErrSeatCapacityReached) || errors.Is(err, licensingServices.ErrSeatScopeInactive) {
+			context.JSON(http.StatusConflict, commons.Feedback(err.Error()))
+		} else {
+			context.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+		}
 		return
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("User added to entity successfully"))
+}
+
+// RemoveUserFromEntity removes a membership and releases its USER_SEAT unit atomically.
+func RemoveUserFromEntity(context *gin.Context) {
+	actor, err := commons.GetUserFromHeader(context)
+	if err != nil || actor == nil || actor.Number == "" {
+		context.JSON(http.StatusUnauthorized, commons.Feedback("Unauthorized"))
+		return
+	}
+	var request requests.UserEntityRequest
+	if err := context.ShouldBindJSON(&request); err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+	if err := request.Validate(); err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+	active, err := commons.GetUserEntityNumber(context)
+	if err != nil || active != request.EntityNumber {
+		context.JSON(http.StatusForbidden, commons.Feedback("You can only remove members from your active organisation"))
+		return
+	}
+	if err := licensingServices.RemoveEntityMembership(actor.Number, request.EntityNumber, request.UserNumber); err != nil {
+		context.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+		return
+	}
+	context.JSON(http.StatusOK, commons.Feedback("User removed from entity successfully"))
 }
 
 func GetUserEntities(ctx *gin.Context) {

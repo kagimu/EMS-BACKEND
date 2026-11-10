@@ -219,7 +219,7 @@ func setupStage0BFixture(t *testing.T) *stage0bFixture {
 		}
 	}
 
-	seedRole(s0bRoleAValid, s0bOrgA, "ACTIVE", []string{"view_ems_organisation", "view_users", "view_support_tickets", "create_support_ticket", "reply_to_support_tickets"})
+	seedRole(s0bRoleAValid, s0bOrgA, "ACTIVE", []string{"view_ems_organisation", "view_users", "view_support_tickets", "create_support_ticket", "reply_to_support_tickets", "view_licence_status"})
 	seedRole(s0bRoleAExpired, s0bOrgA, "ACTIVE", []string{"view_ems_organisation"})
 	seedRole(s0bRoleAInactive, s0bOrgA, "INACTIVE", []string{"view_ems_organisation"})
 	seedRole(s0bRoleBValid, s0bOrgB, "ACTIVE", []string{"view_ems_organisation"})

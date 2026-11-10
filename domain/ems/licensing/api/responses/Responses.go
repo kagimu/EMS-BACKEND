@@ -34,14 +34,14 @@ type IssuedLicenceResponse struct {
 // LicenceStatusResponse is the client-plane view of the organisation's active
 // licence. It never carries the licence key.
 type LicenceStatusResponse struct {
-	Number             string     `json:"number"`
-	EffectiveStatus    string     `json:"effective_status"`
-	ValidFrom          time.Time  `json:"valid_from"`
-	ValidTo            time.Time  `json:"valid_to"`
-	GraceDays          int        `json:"grace_days"`
-	LicensedAddons     []string   `json:"licensed_addons"`
-	MaxInstallations   int        `json:"max_installations"`
-	RenewalRequestedAt *time.Time `json:"renewal_requested_at,omitempty"`
+	Number             string                `json:"number"`
+	EffectiveStatus    string                `json:"effective_status"`
+	ValidFrom          time.Time             `json:"valid_from"`
+	ValidTo            time.Time             `json:"valid_to"`
+	GraceDays          int                   `json:"grace_days"`
+	LicensedAddons     []string              `json:"licensed_addons"`
+	MaxInstallations   int                   `json:"max_installations"`
+	RenewalRequestedAt *time.Time            `json:"renewal_requested_at,omitempty"`
 	Scopes             []ScopeResponse       `json:"scopes,omitempty"`
 	Entitlements       []EntitlementResponse `json:"entitlements,omitempty"`
 }

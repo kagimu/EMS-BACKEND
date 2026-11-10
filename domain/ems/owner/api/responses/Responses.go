@@ -3,6 +3,7 @@ package responses
 import (
 	"time"
 
+	commercialResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/commercial/api/responses"
 	licensingResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/api/responses"
 )
 
@@ -51,17 +52,21 @@ type InstallationSummary struct {
 // existing commercial/licensing records; it is not a separately stored
 // customer entity.
 type OrganisationSummary struct {
-	Number              string     `json:"number"`
-	Name                string     `json:"name"`
-	Email               string     `json:"email"`
-	Phone               string     `json:"phone"`
-	CreatedAt           time.Time  `json:"created_at"`
-	CustomerStatus      string     `json:"customer_status"`
-	LicenceCount        int64      `json:"licence_count"`
-	ActiveLicenceCount  int64      `json:"active_licence_count"`
-	InstallationCount   int64      `json:"installation_count"`
-	OwnerNames          []string   `json:"owner_names"`
-	LatestLicenceExpiry *time.Time `json:"latest_licence_expiry,omitempty"`
+	Number                  string     `json:"number"`
+	Name                    string     `json:"name"`
+	Email                   string     `json:"email"`
+	Phone                   string     `json:"phone"`
+	CreatedAt               time.Time  `json:"created_at"`
+	CustomerStatus          string     `json:"customer_status"`
+	LicenceCount            int64      `json:"licence_count"`
+	ActiveLicenceCount      int64      `json:"active_licence_count"`
+	InstallationCount       int64      `json:"installation_count"`
+	OwnerNames              []string   `json:"owner_names"`
+	LatestLicenceExpiry     *time.Time `json:"latest_licence_expiry,omitempty"`
+	HasCommercialProfile    bool       `json:"has_commercial_profile"`
+	CommercialStatus        string     `json:"commercial_status,omitempty"`
+	CustomerCategory        string     `json:"customer_category,omitempty"`
+	CommercialCustomerSince *time.Time `json:"commercial_customer_since,omitempty"`
 }
 
 // OverviewResponse is the aggregate owner dashboard payload. It contains counts
@@ -86,12 +91,13 @@ type OverviewResponse struct {
 // OrganisationDetail is the owner customer profile. It uses existing
 // organisations, owners, licences, installations and licence events.
 type OrganisationDetail struct {
-	Organisation       OrganisationSummary                       `json:"organisation"`
-	Licences           []licensingResponses.LicenceResponse      `json:"licences"`
-	Installations      []licensingResponses.InstallationResponse `json:"installations"`
-	Events             []licensingResponses.LicenceEventResponse `json:"events"`
-	SetupOrders        int64                                     `json:"setup_orders"`
-	SubscriptionOrders int64                                     `json:"subscription_orders"`
+	Organisation       OrganisationSummary                          `json:"organisation"`
+	Licences           []licensingResponses.LicenceResponse         `json:"licences"`
+	Installations      []licensingResponses.InstallationResponse    `json:"installations"`
+	Events             []licensingResponses.LicenceEventResponse    `json:"events"`
+	SetupOrders        int64                                        `json:"setup_orders"`
+	SubscriptionOrders int64                                        `json:"subscription_orders"`
+	CommercialProfile  *commercialResponses.CustomerProfileResponse `json:"commercial_profile"`
 }
 
 // LicenceDetail is an owner licence view plus its event timeline.

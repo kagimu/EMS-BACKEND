@@ -243,6 +243,11 @@ func currentUserNumber(c *gin.Context) (string, bool) {
 
 // writeServiceError maps service errors to HTTP status codes.
 func writeServiceError(c *gin.Context, err error) {
+	var replacementCapacity *services.ReplacementCapacityError
+	if errors.As(err, &replacementCapacity) {
+		c.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
 	switch {
 	case errors.Is(err, services.ErrNoActiveOrganisation):
 		c.JSON(http.StatusConflict, commons.Feedback(err.Error()))

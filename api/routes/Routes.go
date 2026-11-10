@@ -41,6 +41,8 @@ import (
 	auditController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/audit/controllers"
 	auditMiddleware "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/audit/middleware"
 	decisionAuthorityController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/authority/controllers"
+	commercialProductController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/commercial/controllers"
+	commercialProfileController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/commercial/controllers"
 	customFieldController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/customfields/controllers"
 	licensingController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/controllers"
 	licensingMiddleware "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/middleware"
@@ -479,6 +481,7 @@ func SetupRoutes() *gin.Engine {
 			eos.POST("calendars/update", eosController.AddCalendarEvent)
 			eos.POST("calendars/add-event", eosController.AddCalendarEvent)
 			eos.POST("add-user-to-entity", eosController.AddUserToEntity)
+			eos.POST("remove-user-from-entity", middleware.ValidatePermission(constants.CanUpdateEntity), eosController.RemoveUserFromEntity)
 			eos.GET("calendars/events", eosController.AllCalendarEvents)
 		}
 
@@ -1242,8 +1245,24 @@ func SetupRoutes() *gin.Engine {
 			emsOwner.GET("/overview", ownerController.Overview)
 			emsOwner.GET("/organisations", ownerController.FetchOrganisations)
 			emsOwner.GET("/organisations/:number", ownerController.FetchOrganisation)
+			emsOwner.GET("/customers/:number/profile", commercialProfileController.GetCustomerProfile)
+			emsOwner.POST("/customers/:number/profile", commercialProfileController.CreateCustomerProfile)
+			emsOwner.PUT("/customers/:number/profile", commercialProfileController.UpdateCustomerProfile)
+			emsOwner.GET("/products", commercialProductController.FetchCommercialProducts)
+			emsOwner.POST("/products", commercialProductController.CreateCommercialProduct)
+			emsOwner.GET("/products/:number", commercialProductController.FetchCommercialProduct)
+			emsOwner.PUT("/products/:number", commercialProductController.UpdateCommercialProduct)
+			emsOwner.PATCH("/products/:number/status", commercialProductController.SetCommercialProductStatus)
+			emsOwner.GET("/products/:number/components", commercialProductController.FetchCommercialProductComponents)
+			emsOwner.POST("/products/:number/components", commercialProductController.CreateCommercialProductComponent)
+			emsOwner.PUT("/products/:number/components/:componentNumber", commercialProductController.UpdateCommercialProductComponent)
+			emsOwner.PATCH("/products/:number/components/:componentNumber/status", commercialProductController.SetCommercialProductComponentStatus)
 			emsOwner.GET("/licences", ownerController.FetchLicences)
 			emsOwner.GET("/licences/:number", ownerController.FetchLicence)
+			emsOwner.GET("/licences/:number/flexible", licensingController.FetchFlexibleLicence)
+			emsOwner.PUT("/licences/:number/flexible", licensingController.ConfigureFlexibleLicence)
+			emsOwner.POST("/licences/:number/units", licensingController.RegisterLicensedUnit)
+			emsOwner.POST("/licences/:number/units/:unit/release", licensingController.ReleaseLicensedUnit)
 			emsOwner.GET("/installations", ownerController.FetchInstallations)
 			emsOwner.GET("/installations/:number", ownerController.FetchInstallation)
 			emsOwner.GET("/addons", ownerController.FetchAddons)

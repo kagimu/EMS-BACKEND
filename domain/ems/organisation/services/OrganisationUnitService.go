@@ -4,14 +4,17 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
 	assignmentRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/assignments/repositories"
+	licensingServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/api/responses"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/models"
 	organisationRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/repositories"
 	eosRepositories "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/eos/repositories"
 	uuid "github.com/satori/go.uuid"
+	"gorm.io/gorm"
 )
 
 var (
@@ -175,7 +178,16 @@ func CreateUnit(actorUserNumber, organisationNumber string, request requests.Cre
 		AddedByNumber:      actorUserNumber,
 	}
 
-	if err := organisationRepositories.Create(&unit); err != nil {
+	if licensingServices.IsSiteUnitType(unit.UnitType) {
+		if err := config.DB.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(&unit).Error; err != nil {
+				return err
+			}
+			return licensingServices.RegisterSiteSeatTx(tx, actorUserNumber, organisationNumber, unit.Number)
+		}); err != nil {
+			return nil, err
+		}
+	} else if err := organisationRepositories.Create(&unit); err != nil {
 		return nil, err
 	}
 

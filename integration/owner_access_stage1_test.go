@@ -64,6 +64,7 @@ func cleanupStage1Role(t *testing.T, fx *stage0bFixture, name string) {
 
 func seedStage1Licence(t *testing.T, fx *stage0bFixture, organisation, number string) {
 	t.Helper()
+	fx.db.Model(&licensingModel.Licence{}).Where("organisation_number = ? AND active_org_number IS NOT NULL", organisation).Updates(map[string]any{"status": licensingModel.StatusRevoked, "active_org_number": nil})
 	activeOrg := organisation
 	licence := licensingModel.Licence{
 		Number:             number,

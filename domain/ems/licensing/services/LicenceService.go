@@ -390,6 +390,7 @@ func RenewLicence(actorUserNumber, number string, request requests.RenewLicenceR
 	// preserves the licence number, key, organisation, installations and
 	// entitlements; only validity is extended.
 	RecordLicenceRenewed(&updated, actorUserNumber, previousValidTo)
+	_ = extendFlexibleValidity(updated.Number, previousValidTo, updated.ValidTo)
 
 	response := toResponse(updated, time.Now())
 	return &response, nil
@@ -492,10 +493,23 @@ func ReplaceLicence(actorUserNumber, supersededNumber string, request requests.R
 		if err := licenceRepositories.Create(&newLicence, tx); err != nil {
 			return err
 		}
+		if err := copyFlexibleScopesTx(tx, *old, newLicence); err != nil {
+			return err
+		}
+		if err := migrateReplacementUnitsTx(tx, *old, newLicence, actorUserNumber, reason); err != nil {
+			return err
+		}
+		if err := ReleaseAllUnitsForLicence(tx, old.Number, actorUserNumber, old.OrganisationNumber, reason); err != nil {
+			return err
+		}
 		created = newLicence
 		return nil
 	})
 	if err != nil {
+		var replacementCapacity *ReplacementCapacityError
+		if errors.As(err, &replacementCapacity) {
+			return nil, err
+		}
 		// Preserve explicit domain failures. A duplicate active_org_number from
 		// a concurrent issuance is reported as the active-licence conflict.
 		if errors.Is(err, ErrLicenceNotFound) || errors.Is(err, ErrInvalidTransition) ||
@@ -694,4 +708,18 @@ func toIssuedResponse(licence models.Licence, now time.Time) responses.IssuedLic
 		LicenceResponse: toResponse(licence, now),
 		LicenceKey:      licence.LicenceKey,
 	}
+}
+
+func extendFlexibleValidity(licenceNumber string, previousValidTo, newValidTo time.Time) error {
+	if !newValidTo.After(previousValidTo) {
+		return nil
+	}
+	if err := config.DB.Model(&models.LicenceScope{}).
+		Where("licence_number = ? AND valid_to <= ?", licenceNumber, previousValidTo).
+		Update("valid_to", newValidTo).Error; err != nil {
+		return err
+	}
+	return config.DB.Model(&models.LicenceEntitlement{}).
+		Where("licence_number = ? AND valid_to <= ?", licenceNumber, previousValidTo).
+		Update("valid_to", newValidTo).Error
 }

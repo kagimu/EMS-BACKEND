@@ -263,17 +263,18 @@ func Login(context *gin.Context) {
 	}
 
 	userView := responses.UserView{
-		Number:      userProfile.Number,
-		FirstName:   userProfile.FirstName,
-		SecondName:  userProfile.SecondName,
-		LastName:    userProfile.LastName,
-		Gender:      userProfile.Gender,
-		Type:        userProfile.Type,
-		Roles:       userRolesList,
-		Permissions: permissions,
-		Scopes:      scopes,
-		Campuses:    campuses,
-		Schools:     schools,
+		Number:          userProfile.Number,
+		FirstName:       userProfile.FirstName,
+		SecondName:      userProfile.SecondName,
+		LastName:        userProfile.LastName,
+		Gender:          userProfile.Gender,
+		Type:            userProfile.Type,
+		Roles:           userRolesList,
+		Permissions:     permissions,
+		Scopes:          scopes,
+		Campuses:        campuses,
+		Schools:         schools,
+		IsSoftwareOwner: commons.IsSoftwareOwner(user.Number),
 	}
 
 	token, err := services.JWTAuthService().GenerateToken(user.Number)
@@ -312,14 +313,15 @@ func Profile(context *gin.Context) {
 	}
 
 	_userProfile := responses.GetUserList{
-		Number:     userProfile.Number,
-		FirstName:  userProfile.FirstName,
-		SecondName: userProfile.SecondName,
-		LastName:   userProfile.LastName,
-		Gender:     userProfile.Gender,
-		Contacts:   contactListInfo,
-		Type:       userProfile.Type,
-		Status:     userProfile.Status,
+		Number:          userProfile.Number,
+		FirstName:       userProfile.FirstName,
+		SecondName:      userProfile.SecondName,
+		LastName:        userProfile.LastName,
+		Gender:          userProfile.Gender,
+		Contacts:        contactListInfo,
+		Type:            userProfile.Type,
+		Status:          userProfile.Status,
+		IsSoftwareOwner: commons.IsSoftwareOwner(userProfile.Number),
 	}
 
 	context.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "data": _userProfile})

@@ -10,6 +10,9 @@ import (
 	commercialModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commercial/models"
 	addonResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/addons/api/responses"
 	addonServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/addons/services"
+	commercialResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/commercial/api/responses"
+	commercialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/commercial/models"
+	commercialServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/commercial/services"
 	licensingModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/models"
 	licensingServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/services"
 	ownerResponses "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/owner/api/responses"
@@ -290,7 +293,13 @@ func ListOrganisations(search, status string, page, perPage int) (*ownerResponse
 	licencesByOrg := make(map[string][]licensingModels.Licence)
 	installationCounts := make(map[string]int64)
 	orderOrgs := make(map[string]bool)
+	profileByOrg := make(map[string]commercialModels.CustomerProfile)
 	if len(numbers) > 0 {
+		var profiles []commercialModels.CustomerProfile
+		config.DB.Where("organisation_number IN ?", numbers).Find(&profiles)
+		for _, profile := range profiles {
+			profileByOrg[profile.OrganisationNumber] = profile
+		}
 		var licences []licensingModels.Licence
 		config.DB.Where("organisation_number IN ?", numbers).Find(&licences)
 		for _, licence := range licences {
@@ -329,17 +338,21 @@ func ListOrganisations(search, status string, page, perPage int) (*ownerResponse
 			}
 		}
 		items = append(items, ownerResponses.OrganisationSummary{
-			Number:              entity.Number,
-			Name:                entity.Name,
-			Email:               entity.Email,
-			Phone:               entity.Phone,
-			CreatedAt:           entity.CreatedAt,
-			CustomerStatus:      customerStatus(licences, orderOrgs[entity.Number], now),
-			LicenceCount:        int64(len(licences)),
-			ActiveLicenceCount:  activeCount,
-			InstallationCount:   installationCounts[entity.Number],
-			OwnerNames:          ownerNames(entity.Number),
-			LatestLicenceExpiry: latestExpiry,
+			Number:                  entity.Number,
+			Name:                    entity.Name,
+			Email:                   entity.Email,
+			Phone:                   entity.Phone,
+			CreatedAt:               entity.CreatedAt,
+			CustomerStatus:          customerStatus(licences, orderOrgs[entity.Number], now),
+			LicenceCount:            int64(len(licences)),
+			ActiveLicenceCount:      activeCount,
+			InstallationCount:       installationCounts[entity.Number],
+			OwnerNames:              ownerNames(entity.Number),
+			LatestLicenceExpiry:     latestExpiry,
+			HasCommercialProfile:    profileByOrg[entity.Number].Number != "",
+			CommercialStatus:        profileByOrg[entity.Number].CommercialStatus,
+			CustomerCategory:        profileByOrg[entity.Number].CustomerCategory,
+			CommercialCustomerSince: profileByOrg[entity.Number].CustomerSince,
 		})
 	}
 
@@ -381,6 +394,11 @@ func OrganisationDetail(number string) (*ownerResponses.OrganisationDetail, erro
 	config.DB.Model(&commercialModel.SetupOrder{}).Where("organisation_number = ?", number).Count(&setupOrders)
 	config.DB.Model(&commercialModel.SubscriptionOrder{}).Where("organisation_number = ?", number).Count(&subscriptionOrders)
 
+	var profileResponse *commercialResponses.CustomerProfileResponse
+	if profile, profileErr := commercialServices.GetProfile(number); profileErr == nil {
+		profileResponse = profile
+	}
+
 	return &ownerResponses.OrganisationDetail{
 		Organisation: ownerResponses.OrganisationSummary{
 			Number:             entity.Number,
@@ -399,6 +417,7 @@ func OrganisationDetail(number string) (*ownerResponses.OrganisationDetail, erro
 		Events:             events,
 		SetupOrders:        setupOrders,
 		SubscriptionOrders: subscriptionOrders,
+		CommercialProfile:  profileResponse,
 	}, nil
 }
 

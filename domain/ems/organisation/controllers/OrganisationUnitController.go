@@ -3,9 +3,11 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
 	auditHooks "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/audit/hooks"
+	licensingServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/api/requests"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/services"
 	"github.com/gin-gonic/gin"
@@ -62,6 +64,8 @@ func CreateOrganisationUnit(c *gin.Context) {
 		return
 	}
 
+	// SITE capacity is consumed inside the same transaction as unit creation.
+
 	// Foundation G (G2): best-effort audit fact. Never changes the result.
 	auditHooks.Record(c, organisationNumber, "organisation_unit.create", "ems_organisation_unit", unit.Number, unit)
 
@@ -95,7 +99,7 @@ func UpdateOrganisationUnit(c *gin.Context) {
 
 // UpdateOrganisationUnitStatus activates or deactivates a unit.
 func UpdateOrganisationUnitStatus(c *gin.Context) {
-	_, organisationNumber, ok := organisationContext(c)
+	actorNumber, organisationNumber, ok := organisationContext(c)
 	if !ok {
 		return
 	}
@@ -110,6 +114,21 @@ func UpdateOrganisationUnitStatus(c *gin.Context) {
 	if err != nil {
 		writeServiceError(c, err)
 		return
+	}
+
+	if licensingServices.IsSiteUnitType(unit.UnitType) {
+		if strings.EqualFold(request.Status, "INACTIVE") {
+			if err := licensingServices.ReleaseSiteSeat(actorNumber, organisationNumber, unit.Number, "Site deactivated"); err != nil {
+				c.JSON(http.StatusInternalServerError, commons.Feedback(err.Error()))
+				return
+			}
+		} else if strings.EqualFold(request.Status, "ACTIVE") {
+			if err := licensingServices.RegisterSiteSeat(actorNumber, organisationNumber, unit.Number); err != nil {
+				_, _ = services.SetUnitStatus(organisationNumber, unit.Number, "INACTIVE")
+				c.JSON(http.StatusConflict, commons.Feedback(err.Error()))
+				return
+			}
+		}
 	}
 
 	// Foundation G (G2): best-effort audit fact. Never changes the result.
@@ -165,7 +184,9 @@ func writeServiceError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, commons.Feedback(err.Error()))
 	case errors.Is(err, services.ErrHasChildren),
 		errors.Is(err, services.ErrHasActiveAssignments),
-		errors.Is(err, services.ErrDuplicateCode):
+		errors.Is(err, services.ErrDuplicateCode),
+		errors.Is(err, licensingServices.ErrSiteCapacityReached),
+		errors.Is(err, licensingServices.ErrSiteScopeInactive):
 		c.JSON(http.StatusConflict, commons.Feedback(err.Error()))
 	case errors.Is(err, services.ErrParentNotFound),
 		errors.Is(err, services.ErrParentInactive),

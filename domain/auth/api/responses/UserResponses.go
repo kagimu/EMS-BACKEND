@@ -16,6 +16,9 @@ type GetUserList struct {
 	Type       string               `json:"type"`
 	Status     string               `json:"status"`
 	Contacts   []models.ContactList `json:"contacts"`
+	// IsSoftwareOwner distinguishes the EMS vendor/developer from a customer
+	// organisation administrator. It is derived from the deployment allow-list.
+	IsSoftwareOwner bool `json:"is_software_owner"`
 }
 
 type ModelResponse struct {
@@ -39,6 +42,7 @@ type UserView struct {
 	Schools             []ModelResponse
 	CurrentAcademicYear ModelResponse `json:"current_academic_year"`
 	CurrentStudyPeriod  ModelResponse `json:"current_study_period"`
+	IsSoftwareOwner     bool          `json:"is_software_owner"`
 }
 
 type AuthCampusResponse struct {

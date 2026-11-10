@@ -31,6 +31,7 @@ import (
 	emsAssignmentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/assignments/models"
 	emsAuditModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/audit/models"
 	emsAuthorityModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/authority/models"
+	emsCommercialModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/commercial/models"
 	customfieldModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/customfields/models"
 	emsLicensingModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/models"
 	emsNotificationsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/notifications/models"
@@ -314,6 +315,11 @@ func Init() error {
 		&emsLicensingModels.LicenceScope{},
 		&emsLicensingModels.LicenceEntitlement{},
 		&emsLicensingModels.LicensedUnit{},
+		// Stage 6B.1 commercial customer profiles and append-only commercial audit.
+		&emsCommercialModels.CustomerProfile{},
+		&emsCommercialModels.CommercialEvent{},
+		&emsCommercialModels.CommercialProduct{},
+		&emsCommercialModels.CommercialProductComponent{},
 		&customfieldModels.FieldDefinition{},
 		&customfieldModels.FieldValue{},
 	)
