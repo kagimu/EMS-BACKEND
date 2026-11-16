@@ -50,7 +50,7 @@ func randomKey() (string, error) {
 // defaultAddonsJSON returns the addon codes that are default-enabled in the EMS
 // catalogue (excluding core). A new subscription licence is entitled to these,
 // so addons such as Education are reachable after activation. It uses the
-// existing catalogue — no parallel entitlement system.
+// existing catalogue â€” no parallel entitlement system.
 func defaultAddonsJSON() string {
 	addons := make([]string, 0)
 	for _, def := range addonCatalog.Catalog {
@@ -345,9 +345,44 @@ func findToken(raw, purpose string) (*commercialModels.ActivationToken, error) {
 	return &token, nil
 }
 
+// ResolveSubscriptionComputers uses an explicit quantity when supplied, or
+// derives it from the paid setup order/package for onboarding subscriptions.
+func ResolveSubscriptionComputers(setupToken string, requested int) (int, error) {
+	if requested > 0 {
+		return NormalizeComputers(requested), nil
+	}
+	if strings.TrimSpace(setupToken) == "" {
+		return 1, nil
+	}
+	token, err := findToken(setupToken, TokenPurposeSetup)
+	if err != nil {
+		return 0, err
+	}
+	var order commercialModels.SetupOrder
+	if err := config.DB.Where("number = ?", token.SetupOrderNumber).First(&order).Error; err != nil {
+		return 1, nil
+	}
+	var cfg struct {
+		Devices int `json:"devices"`
+	}
+	if err := json.Unmarshal([]byte(order.ConfigurationJSON), &cfg); err == nil && cfg.Devices > 0 {
+		return cfg.Devices, nil
+	}
+	var pkg commercialModels.InstallationPackage
+	if err := config.DB.Where("number = ?", order.PackageNumber).First(&pkg).Error; err == nil && pkg.IncludedDevices > 0 {
+		return pkg.IncludedDevices, nil
+	}
+	return 1, nil
+}
+
 // CreateSubscriptionOrder quotes and persists a subscription order.
 func CreateSubscriptionOrder(days int, organisationNumber string) (*commercialModels.SubscriptionOrder, error) {
-	total, err := SubscriptionAmount(days)
+	return CreateSubscriptionOrderWithComputers(days, 1, organisationNumber)
+}
+
+func CreateSubscriptionOrderWithComputers(days, computers int, organisationNumber string) (*commercialModels.SubscriptionOrder, error) {
+	computers = NormalizeComputers(computers)
+	total, err := SubscriptionAmount(days, computers)
 	if err != nil {
 		return nil, err
 	}
@@ -356,6 +391,7 @@ func CreateSubscriptionOrder(days int, organisationNumber string) (*commercialMo
 		Status:             "AWAITING_PAYMENT",
 		Currency:           "UGX",
 		DurationDays:       days,
+		Computers:          computers,
 		DailyRateUGX:       SubscriptionDailyRateUGX,
 		TotalUGX:           total,
 		OrganisationNumber: organisationNumber,
@@ -364,7 +400,7 @@ func CreateSubscriptionOrder(days int, organisationNumber string) (*commercialMo
 		return nil, err
 	}
 	audit("commercial.subscription_order.created", "subscription_order", order.Number, "", organisationNumber, map[string]interface{}{
-		"days": days, "total_ugx": total, "rate": SubscriptionDailyRateUGX,
+		"days": days, "computers": computers, "total_ugx": total, "rate": SubscriptionDailyRateUGX,
 	})
 	return &order, nil
 }
@@ -373,6 +409,10 @@ func CreateSubscriptionOrder(days int, organisationNumber string) (*commercialMo
 // bound to a paid setup token (no organisation yet). Used so the subscription
 // payment can issue the account activation token.
 func CreateOnboardingSubscriptionOrder(setupToken string, days int) (*commercialModels.SubscriptionOrder, error) {
+	return CreateOnboardingSubscriptionOrderWithComputers(setupToken, days, 0)
+}
+
+func CreateOnboardingSubscriptionOrderWithComputers(setupToken string, days, computers int) (*commercialModels.SubscriptionOrder, error) {
 	token, err := findToken(setupToken, TokenPurposeSetup)
 	if err != nil {
 		return nil, err
@@ -380,7 +420,11 @@ func CreateOnboardingSubscriptionOrder(setupToken string, days int) (*commercial
 	if token.Status == TokenStatusRedeemed {
 		return nil, ErrTokenAlreadyUsed
 	}
-	total, err := SubscriptionAmount(days)
+	computers, err = ResolveSubscriptionComputers(setupToken, computers)
+	if err != nil {
+		return nil, err
+	}
+	total, err := SubscriptionAmount(days, computers)
 	if err != nil {
 		return nil, err
 	}
@@ -389,6 +433,7 @@ func CreateOnboardingSubscriptionOrder(setupToken string, days int) (*commercial
 		Status:           "AWAITING_PAYMENT",
 		Currency:         "UGX",
 		DurationDays:     days,
+		Computers:        computers,
 		DailyRateUGX:     SubscriptionDailyRateUGX,
 		TotalUGX:         total,
 		SetupOrderNumber: token.SetupOrderNumber,
@@ -397,7 +442,7 @@ func CreateOnboardingSubscriptionOrder(setupToken string, days int) (*commercial
 		return nil, err
 	}
 	audit("commercial.onboarding_subscription.created", "subscription_order", order.Number, "", "", map[string]interface{}{
-		"days": days, "total_ugx": total, "rate": SubscriptionDailyRateUGX, "setup_order": token.SetupOrderNumber,
+		"days": days, "computers": computers, "total_ugx": total, "rate": SubscriptionDailyRateUGX, "setup_order": token.SetupOrderNumber,
 	})
 	return &order, nil
 }
@@ -657,7 +702,7 @@ type testPackage struct {
 }
 
 // SeedTestPackages inserts the illustrative installation-package catalogue into
-// the connected database. It is idempotent (matched by code — never duplicated)
+// the connected database. It is idempotent (matched by code â€” never duplicated)
 // and MUST only be called in the dedicated disposable onboarding environment
 // (gated by DEV_SEED_PACKAGES). The prices are ILLUSTRATIVE TEST PRICES, not an
 // approved commercial price list. Standard transport: small setups 20,000;
@@ -669,11 +714,11 @@ func SeedTestPackages() (int, error) {
 
 	definitions := []testPackage{
 		{"ems-starter", "EMS Starter", 250000, 5, 5, 1, 1, 1, 20000, "Single-computer installation for a small business.", false},
-		{"ems-business", "EMS Business", 450000, 15, 15, 1, 2, 2, 20000, "Client-owned server with local-network access (1–2 working days).", false},
-		{"ems-professional", "EMS Professional", 750000, 30, 30, 2, 4, 3, 50000, "Client-owned server with local-network access (2–3 working days). Multi-location deployment must be confirmed as technically feasible.", false},
-		{"ems-enterprise", "EMS Enterprise", 1500000, 75, 75, 3, 8, 5, 50000, "Client-owned server with local-network access (3–5 working days). Confirm infrastructure requirements before promising the deployment.", false},
-		{"ems-multi-branch", "EMS Multi-Branch", 2500000, 100, 100, 5, 12, 7, 50000, "Assessment required (5–7 working days). Multi-branch synchronisation or connectivity is not supported until verified.", false},
-		{"ems-custom", "EMS Custom Deployment", 0, 0, 0, 0, 0, 0, 0, "Custom deployment — scope, allowances, training and duration are agreed after assessment (custom quotation).", true},
+		{"ems-business", "EMS Business", 450000, 15, 15, 1, 2, 2, 20000, "Client-owned server with local-network access (1â€“2 working days).", false},
+		{"ems-professional", "EMS Professional", 750000, 30, 30, 2, 4, 3, 50000, "Client-owned server with local-network access (2â€“3 working days). Multi-location deployment must be confirmed as technically feasible.", false},
+		{"ems-enterprise", "EMS Enterprise", 1500000, 75, 75, 3, 8, 5, 50000, "Client-owned server with local-network access (3â€“5 working days). Confirm infrastructure requirements before promising the deployment.", false},
+		{"ems-multi-branch", "EMS Multi-Branch", 2500000, 100, 100, 5, 12, 7, 50000, "Assessment required (5â€“7 working days). Multi-branch synchronisation or connectivity is not supported until verified.", false},
+		{"ems-custom", "EMS Custom Deployment", 0, 0, 0, 0, 0, 0, 0, "Custom deployment â€” scope, allowances, training and duration are agreed after assessment (custom quotation).", true},
 	}
 
 	created := 0

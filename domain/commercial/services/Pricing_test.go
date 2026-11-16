@@ -89,3 +89,18 @@ func TestValidateMethod(t *testing.T) {
 		t.Fatalf("hybrid should be rejected: %v", err)
 	}
 }
+
+func TestSubscriptionAmountPerComputer(t *testing.T) {
+	got, err := SubscriptionAmount(7, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := int64(7 * 1200 * 3); got != want {
+		t.Fatalf("SubscriptionAmount(7, 3) = %d, want %d", got, want)
+	}
+	// omitted/zero computer count falls back to one computer for compatibility
+	got, _ = SubscriptionAmount(7, 0)
+	if want := int64(7 * 1200); got != want {
+		t.Fatalf("SubscriptionAmount(7, 0) = %d, want %d", got, want)
+	}
+}

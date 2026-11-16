@@ -49,6 +49,7 @@ import (
 	notificationController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/notifications/controllers"
 	organisationUnitController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/controllers"
 	ownerController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/owner/controllers"
+	mobileMoneyController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/payments/controllers"
 	reportingController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/reporting/controllers"
 	stakeholderController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/stakeholders/controllers"
 	supportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/support/controllers"
@@ -144,6 +145,29 @@ func SetupRoutes() *gin.Engine {
 	// successful payment issues the account activation token.
 	router.POST("setup/subscription", commercialController.CreateOnboardingSubscription)
 	router.POST("setup/subscription/tokens/validate", commercialController.ValidateSubscriptionToken)
+
+	// Mobile-money collections (MTN MoMo and Airtel Money). Public because
+	// onboarding happens before sign-in. Amounts always come from the order.
+	router.GET("setup/payment-options", mobileMoneyController.Options)
+	router.POST("setup/orders/:number/pay", mobileMoneyController.RateLimit(20, time.Minute), mobileMoneyController.InitiateSetupPayment)
+	router.POST("setup/subscription/orders/:number/pay", mobileMoneyController.RateLimit(20, time.Minute), mobileMoneyController.InitiateOnboardingSubscriptionPayment)
+	router.GET("setup/payments/:number", mobileMoneyController.RateLimit(60, time.Minute), mobileMoneyController.PublicPaymentStatus)
+	router.POST("setup/payments/:number/claim", mobileMoneyController.RateLimit(20, time.Minute), mobileMoneyController.PublicClaimPayment)
+
+	// Manual fallback: configured mobile-money/bank instructions, proof upload,
+	// and owner review. Approval does not trust the upload as payment proof.
+	router.GET("setup/manual-payment-options", mobileMoneyController.ManualOptions)
+	router.POST("setup/orders/:number/manual-payment", mobileMoneyController.RateLimit(10, time.Minute), mobileMoneyController.UploadSetupManualPayment)
+	router.POST("setup/subscription/orders/:number/manual-payment", mobileMoneyController.RateLimit(10, time.Minute), mobileMoneyController.UploadOnboardingSubscriptionManualPayment)
+	router.GET("setup/manual-payments/:number", mobileMoneyController.RateLimit(60, time.Minute), mobileMoneyController.PublicManualPaymentStatus)
+	router.POST("setup/manual-payments/:number/claim", mobileMoneyController.RateLimit(20, time.Minute), mobileMoneyController.PublicManualPaymentClaim)
+
+	// Provider callbacks. The body is never trusted as proof: the payment
+	// service re-queries the telecom provider before changing state.
+	router.POST("payments/callbacks/mtn", mobileMoneyController.RateLimit(120, time.Minute), mobileMoneyController.MTNCallback)
+	router.PUT("payments/callbacks/mtn", mobileMoneyController.RateLimit(120, time.Minute), mobileMoneyController.MTNCallback)
+	router.POST("payments/callbacks/airtel", mobileMoneyController.RateLimit(120, time.Minute), mobileMoneyController.AirtelCallback)
+
 	if commercialController.SimulatedPaymentsEnabled() {
 		router.POST("setup/orders/:number/simulate-payment", commercialController.SimulateSetupPayment)
 		router.POST("setup/subscription/orders/:number/simulate-payment", commercialController.SimulateOnboardingSubscriptionPayment)
@@ -1257,6 +1281,14 @@ func SetupRoutes() *gin.Engine {
 			emsOwner.POST("/products/:number/components", commercialProductController.CreateCommercialProductComponent)
 			emsOwner.PUT("/products/:number/components/:componentNumber", commercialProductController.UpdateCommercialProductComponent)
 			emsOwner.PATCH("/products/:number/components/:componentNumber/status", commercialProductController.SetCommercialProductComponentStatus)
+			emsOwner.GET("/payments", mobileMoneyController.OwnerList)
+			emsOwner.GET("/payments/:number", mobileMoneyController.OwnerDetail)
+			emsOwner.POST("/payments/:number/verify", mobileMoneyController.OwnerVerify)
+			emsOwner.GET("/manual-payments", mobileMoneyController.OwnerManualPaymentList)
+			emsOwner.GET("/manual-payments/:number", mobileMoneyController.OwnerManualPaymentDetail)
+			emsOwner.GET("/manual-payments/:number/proof", mobileMoneyController.OwnerManualPaymentProof)
+			emsOwner.POST("/manual-payments/:number/approve", mobileMoneyController.OwnerManualPaymentApprove)
+			emsOwner.POST("/manual-payments/:number/reject", mobileMoneyController.OwnerManualPaymentReject)
 			emsOwner.GET("/licences", ownerController.FetchLicences)
 			emsOwner.GET("/licences/:number", ownerController.FetchLicence)
 			emsOwner.GET("/licences/:number/flexible", licensingController.FetchFlexibleLicence)
@@ -1359,6 +1391,13 @@ func SetupRoutes() *gin.Engine {
 			emsSubscription.GET("/status", middleware.ValidatePermission("view_licence_status"), commercialController.SubscriptionStatus)
 			emsSubscription.POST("/orders", middleware.ValidatePermission("activate_licence_installation"), commercialController.CreateSubscriptionOrder)
 			emsSubscription.POST("/activate", middleware.ValidatePermission("activate_licence_installation"), commercialController.ActivateSubscription)
+			emsSubscription.POST("/orders/:number/pay", middleware.ValidatePermission("activate_licence_installation"), mobileMoneyController.InitiateSubscriptionPayment)
+			emsSubscription.GET("/payments", middleware.ValidatePermission("view_licence_status"), mobileMoneyController.ClientList)
+			emsSubscription.GET("/payments/:number", middleware.ValidatePermission("view_licence_status"), mobileMoneyController.ClientPaymentStatus)
+			emsSubscription.POST("/payments/:number/claim", middleware.ValidatePermission("activate_licence_installation"), mobileMoneyController.ClientClaimPayment)
+			emsSubscription.POST("/orders/:number/manual-payment", middleware.ValidatePermission("activate_licence_installation"), mobileMoneyController.UploadSubscriptionManualPayment)
+			emsSubscription.GET("/manual-payments/:number", middleware.ValidatePermission("view_licence_status"), mobileMoneyController.ClientManualPaymentStatus)
+			emsSubscription.POST("/manual-payments/:number/claim", middleware.ValidatePermission("activate_licence_installation"), mobileMoneyController.ClientManualPaymentClaim)
 			if commercialController.SimulatedPaymentsEnabled() {
 				emsSubscription.POST("/orders/:number/simulate-payment", middleware.ValidatePermission("activate_licence_installation"), commercialController.SimulateSubscriptionPayment)
 			}

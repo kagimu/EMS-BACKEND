@@ -36,6 +36,7 @@ import (
 	emsLicensingModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/licensing/models"
 	emsNotificationsModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/notifications/models"
 	emsOrganisationModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/organisation/models"
+	emsPaymentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/payments/models"
 	emsReportingModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/reporting/models"
 	emsStakeholderModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/stakeholders/models"
 	emsSupportModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/support/models"
@@ -320,11 +321,26 @@ func Init() error {
 		&emsCommercialModels.CommercialEvent{},
 		&emsCommercialModels.CommercialProduct{},
 		&emsCommercialModels.CommercialProductComponent{},
+		// Stage 7 (mobile money): MTN MoMo Collections and Airtel Money
+		// collection attempts. Additive only; no commercial order is altered
+		// except its existing status field.
+		&emsPaymentModels.MobileMoneyPayment{},
+		&emsPaymentModels.PaymentProvider{},
+		&emsPaymentModels.PaymentEvent{},
+		&emsPaymentModels.PaymentReconciliation{},
+		&emsPaymentModels.ManualPaymentSubmission{},
 		&customfieldModels.FieldDefinition{},
 		&customfieldModels.FieldValue{},
 	)
 
 	if err != nil {
+		return err
+	}
+
+	// Seed non-secret payment-provider metadata. Runtime enablement remains
+	// environment-controlled; Airtel stays disabled until its contract is
+	// verified.
+	if err := emsPaymentModels.EnsurePaymentProviders(config.DB); err != nil {
 		return err
 	}
 
