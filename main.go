@@ -1,16 +1,20 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/routes"
 	commercialServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commercial/services"
+	paymentServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/ems/payments/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -74,6 +78,8 @@ func main() {
 	// the background. On a first deploy, requests that touch a not-yet-created
 	// table may fail until the migration finishes; subsequent deploys find the
 	// schema already present.
+	workerCtx, stopWorker := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopWorker()
 	go func() {
 		if err := migrations.Init(); err != nil {
 			log.Println("schema migration error:", err)
@@ -88,6 +94,7 @@ func main() {
 				log.Printf("seeded %d illustrative installation package(s)", n)
 			}
 		}
+		paymentServices.StartReconciliationWorker(workerCtx)
 	}()
 
 	router := routes.SetupRoutes()

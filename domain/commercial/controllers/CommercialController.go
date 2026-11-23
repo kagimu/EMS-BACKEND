@@ -246,7 +246,9 @@ func RedeemSetupToken(c *gin.Context) {
 // ---- Subscription ----
 
 type subscriptionDaysRequest struct {
-	DurationDays int `json:"duration_days"`
+	DurationDays int    `json:"duration_days"`
+	Computers    int    `json:"computers"`
+	SetupToken   string `json:"setup_token"`
 }
 
 // SubscriptionQuote returns the authoritative subscription amount (public).
@@ -256,17 +258,24 @@ func SubscriptionQuote(c *gin.Context) {
 		fail(c, http.StatusBadRequest, errors.New("invalid duration payload"))
 		return
 	}
-	total, err := commercialServices.SubscriptionAmount(req.DurationDays)
+	computers, err := commercialServices.ResolveSubscriptionComputers(req.SetupToken, req.Computers)
+	if err != nil {
+		commercialError(c, err)
+		return
+	}
+	total, err := commercialServices.SubscriptionAmount(req.DurationDays, computers)
 	if err != nil {
 		commercialError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{
-		"duration_days":  req.DurationDays,
-		"daily_rate_ugx": commercialServices.SubscriptionDailyRateUGX,
-		"total_ugx":      total,
-		"currency":       "UGX",
-		"min_days":       commercialServices.SubscriptionMinDays,
+		"duration_days":               req.DurationDays,
+		"computers":                   computers,
+		"daily_rate_ugx":              commercialServices.SubscriptionDailyRateUGX,
+		"daily_rate_per_computer_ugx": commercialServices.SubscriptionDailyRateUGX,
+		"total_ugx":                   total,
+		"currency":                    "UGX",
+		"min_days":                    commercialServices.SubscriptionMinDays,
 	}})
 }
 
@@ -281,7 +290,7 @@ func CreateSubscriptionOrder(c *gin.Context) {
 		fail(c, http.StatusBadRequest, errors.New("invalid duration payload"))
 		return
 	}
-	order, err := commercialServices.CreateSubscriptionOrder(req.DurationDays, org)
+	order, err := commercialServices.CreateSubscriptionOrderWithComputers(req.DurationDays, req.Computers, org)
 	if err != nil {
 		commercialError(c, err)
 		return
@@ -322,12 +331,13 @@ func CreateOnboardingSubscription(c *gin.Context) {
 	var req struct {
 		SetupToken   string `json:"setup_token"`
 		DurationDays int    `json:"duration_days"`
+		Computers    int    `json:"computers"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		fail(c, http.StatusBadRequest, errors.New("invalid subscription payload"))
 		return
 	}
-	order, err := commercialServices.CreateOnboardingSubscriptionOrder(req.SetupToken, req.DurationDays)
+	order, err := commercialServices.CreateOnboardingSubscriptionOrderWithComputers(req.SetupToken, req.DurationDays, req.Computers)
 	if err != nil {
 		commercialError(c, err)
 		return

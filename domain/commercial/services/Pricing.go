@@ -32,11 +32,22 @@ var (
 
 // SubscriptionAmount computes the authoritative subscription total for a whole
 // number of days. Zero, negative and sub-minimum durations are rejected.
-func SubscriptionAmount(days int) (int64, error) {
+func SubscriptionAmount(days int, computers ...int) (int64, error) {
 	if days < SubscriptionMinDays {
 		return 0, ErrSubscriptionDuration
 	}
-	return int64(days) * SubscriptionDailyRateUGX, nil
+	count := 1
+	if len(computers) > 0 && computers[0] > 0 {
+		count = computers[0]
+	}
+	return int64(days) * SubscriptionDailyRateUGX * int64(count), nil
+}
+
+func NormalizeComputers(computers int) int {
+	if computers < 1 {
+		return 1
+	}
+	return computers
 }
 
 // ServiceOption is one selectable additional service on a package.
@@ -47,7 +58,7 @@ type ServiceOption struct {
 }
 
 // QuoteInput is the client-supplied installation configuration. It contains no
-// total — the client cannot influence the authoritative price.
+// total â€” the client cannot influence the authoritative price.
 type QuoteInput struct {
 	Users        int      `json:"users"`
 	Devices      int      `json:"devices"`
@@ -183,7 +194,7 @@ func QuoteInstallation(pkg commercialModels.InstallationPackage, in QuoteInput) 
 			if !ok {
 				return Quote{}, ErrUnknownLocation
 			}
-			// Kampala city centre is local — no transport charge.
+			// Kampala city centre is local â€” no transport charge.
 			if km > 0 {
 				fee := pkg.TransportStandardUGX
 				if fee <= 0 {
@@ -196,7 +207,7 @@ func QuoteInstallation(pkg commercialModels.InstallationPackage, in QuoteInput) 
 				}
 				if fee > 0 {
 					lines = append(lines, QuoteLine{
-						Label:     fmt.Sprintf("Transport (Kampala City Centre → %s, ~%d km)", location, km),
+						Label:     fmt.Sprintf("Transport (Kampala City Centre â†’ %s, ~%d km)", location, km),
 						AmountUGX: fee,
 					})
 				}

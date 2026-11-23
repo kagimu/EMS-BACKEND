@@ -10,11 +10,11 @@ import (
 // no existing licence/auth table is altered.
 //
 // NOTE: every field carries an explicit snake_case json tag. Without them Go
-// serialises the exported Go names (PascalCase) and the frontend — which reads
-// snake_case — would see undefined values.
+// serialises the exported Go names (PascalCase) and the frontend â€” which reads
+// snake_case â€” would see undefined values.
 
 // InstallationPackage is a configurable catalogue entry. No commercial prices
-// are seeded as production defaults — authorised administrators create them.
+// are seeded as production defaults â€” authorised administrators create them.
 //
 // Fixed-price packages carry a base price and included allowances. A "custom"
 // package (Custom=true) carries no fabricated price: it must be assessed and
@@ -77,6 +77,7 @@ type SubscriptionOrder struct {
 	Status                 string `json:"status" gorm:"index;size:32"`
 	Currency               string `json:"currency" gorm:"size:8;default:UGX"`
 	DurationDays           int    `json:"duration_days"`
+	Computers              int    `json:"computers" gorm:"default:1"`
 	DailyRateUGX           int64  `json:"daily_rate_ugx"`
 	TotalUGX               int64  `json:"total_ugx"`
 	OrganisationNumber     string `json:"organisation_number" gorm:"index;size:36"`
@@ -86,7 +87,7 @@ type SubscriptionOrder struct {
 
 // ActivationToken is a one-shot activation token for either a setup order or a
 // subscription order. Only the SHA-256 hash is stored; the raw token is never
-// persisted or logged — and the hash is never serialised.
+// persisted or logged â€” and the hash is never serialised.
 type ActivationToken struct {
 	gorm.Model
 	Number                  string     `json:"number" gorm:"uniqueIndex;size:36"`

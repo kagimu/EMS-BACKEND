@@ -3,6 +3,7 @@ package emailSender
 import (
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"html/template"
 	"log"
 	"os"
@@ -112,4 +113,36 @@ func (i Info) SendEmail() error {
 	}
 
 	return nil
+}
+
+// SendSimpleEmail sends a small HTML notification using the configured SMTP
+// settings. It is used for operational payment notices where the legacy
+// template-based mailer is not appropriate.
+func SendSimpleEmail(to, subject, body string) error {
+	if strings.TrimSpace(to) == "" || strings.TrimSpace(subject) == "" {
+		return errors.New("email recipient and subject are required")
+	}
+	from := os.Getenv("MAIL_FROM")
+	host := os.Getenv("MAIL_HOST")
+	username := os.Getenv("MAIL_USERNAME")
+	password := os.Getenv("MAIL_PASSWORD")
+	if host == "" || username == "" {
+		return errors.New("SMTP is not configured")
+	}
+	port, err := strconv.Atoi(os.Getenv("MAIL_PORT"))
+	if err != nil {
+		port = 587
+	}
+	m := gomail.NewMessage()
+	if from != "" {
+		m.SetHeader("From", from)
+	} else {
+		m.SetHeader("From", username)
+	}
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", body)
+	d := gomail.NewDialer(host, port, username, password)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	return d.DialAndSend(m)
 }
