@@ -14,5 +14,6 @@ type PackItem struct {
 	Name              string                `json:"name"`
 	Type              string                `json:"type"`
 	ItemNumber        string                `json:"item_number"`
+	Price             float64               `json:"price"`
 	UnitOfConsumption UnitOfMeasureResponse `json:"unit_of_consumption"`
 }

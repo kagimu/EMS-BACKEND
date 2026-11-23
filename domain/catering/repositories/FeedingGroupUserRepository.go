@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	userModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/catering/models"

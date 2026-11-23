@@ -37,12 +37,19 @@ func UploadAttachment(c *gin.Context, formKey string) (string, error) {
 		return "", err
 	}
 
+	ownerNumber := c.PostForm("owner_number")
+	title := c.PostForm("title")
+	category := c.PostForm("category")
+
 	repo := repository.NewAttachmentRepositoryImpl(config.DB)
 	attachmentNumber := uuid.NewV4().String()
 	err = repo.CreateAttachment(&models.Attachment{
 		AttachmentName: fileName,
 		Number:         attachmentNumber,
 		AttachmentType: extension,
+		OwnerNumber:    ownerNumber,
+		Title:          title,
+		Category:       category,
 	})
 
 	if err != nil {
@@ -61,11 +68,39 @@ func GetAttachmentByNumber(number string) (responses.AttachmentResponse, error) 
 		return resp, err
 	}
 
+	resp.Number = attachment.Number
+	resp.Title = attachment.Title
+	resp.Category = attachment.Category
+	resp.CreatedAt = attachment.CreatedAt.Format(time.RFC3339)
 	resp.FilePath = "/fileRepo/attachments/" + attachment.AttachmentName
 	resp.Extension = attachment.AttachmentType
 	resp.FileName = attachment.AttachmentName
+	resp.URL = "/attachments/download/" + attachment.Number
 
 	return resp, nil
+}
+
+func GetAttachmentsByOwner(ownerNumber string) ([]responses.AttachmentResponse, error) {
+	repo := repository.NewAttachmentRepositoryImpl(config.DB)
+	attachments, err := repo.GetAttachmentsByOwner(ownerNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	var respList []responses.AttachmentResponse
+	for _, att := range attachments {
+		respList = append(respList, responses.AttachmentResponse{
+			Number:    att.Number,
+			Title:     att.Title,
+			Category:  att.Category,
+			CreatedAt: att.CreatedAt.Format(time.RFC3339),
+			FilePath:  "/attachments/download/" + att.Number,
+			FileName:  att.AttachmentName,
+			Extension: att.AttachmentType,
+			URL:       "/attachments/download/" + att.Number,
+		})
+	}
+	return respList, nil
 }
 
 func DeleteAttachment(name string, category string) error {
@@ -93,10 +128,10 @@ func DeleteAttachment(name string, category string) error {
 		}
 	}
 	// unlink file from file system
-	filePath := "/fileRepo/attachments/" + attachment.Number + attachment.AttachmentType
+	filePath := "/fileRepo/attachments/" + attachment.AttachmentName
 	//delete file
 	err = os.Remove(filePath)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		tx.Rollback()
 		return err
 	}

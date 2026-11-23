@@ -441,3 +441,192 @@ func CreateUserAcc(c *gin.Context) {
 	fmt.Println(userRepo)
 	//userService := services.NewUserService(userRepo)
 }
+
+// FetchPendingUsers returns a paginated list of Staff users who have registered
+// but have not yet activated their account (status = "Inactive").
+// Results are scoped to the calling user's entity.
+// Supports ?page, ?per_page, and ?search query parameters.
+func FetchPendingUsers(c *gin.Context) {
+
+	schoolNumber := c.Query("school_number")
+	search := c.Query("search")
+
+	var paginatedResponse = pagination.PaginatedResponse{}
+	var users []models.User
+
+	query := config.DB.Model(&models.User{}).Scopes(
+		filters.ByStatus("Inactive"),
+		filters.ByType("JobApplicant"),
+		filters.BySearchingAnyField([]string{"users.first_name", "users.second_name", "users.last_name"}, search),
+	)
+
+	if schoolNumber != "" {
+		query = query.Where(
+			"users.number IN (SELECT user_number FROM entity_users WHERE entity_number = ?)", schoolNumber,
+		)
+	}
+
+	// Apply pagination AFTER all filters so the count is accurate
+	if err := query.Scopes(pagination.Paginate(c, &paginatedResponse)).Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch pending users"})
+		return
+	}
+
+	type PendingUser struct {
+		models.User
+		Email     string `json:"email"`
+	}
+
+	var result = make([]PendingUser, 0)
+
+	for _, user := range users {
+		var emailContact models.Contact
+		email := ""
+		if err := config.DB.
+			Where("user_number = ? AND contact_type = ?", user.Number, "Email").
+			First(&emailContact).Error; err == nil {
+			email = emailContact.Contact
+		}
+		result = append(result, PendingUser{User: user, Email: email})
+	}
+
+	paginatedResponse.Content = result
+	c.JSON(http.StatusOK, paginatedResponse)
+}
+
+// ResendActivationEmail resends the account activation email to a pending user.
+// It reuses the existing Inactive token from password_resets, or creates a new one
+// if none exists. The user must be in "Inactive" status.
+func ResendActivationEmail(c *gin.Context) {
+
+	type ResendRequest struct {
+		UserNumber string `json:"user_number" binding:"required"`
+	}
+
+	var req ResendRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user_number is required"})
+		return
+	}
+
+	// Fetch user and verify they are pending
+	var user models.User
+	if err := config.DB.
+		Where("number = ?", req.UserNumber).
+		Preload("Contacts").
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		return
+	}
+
+	if user.Status != "Inactive" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "User account is already active"})
+		return
+	}
+
+	// Resolve the user's email from contacts
+	userEmail := ""
+	for _, contact := range user.Contacts {
+		if contact.ContactType == "Email" {
+			userEmail = contact.Contact
+			break
+		}
+	}
+	if userEmail == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "No email address found for this user"})
+		return
+	}
+
+	// Fetch or create activation token
+	var passwordReset models.PasswordReset
+	tokenErr := config.DB.
+		Where("user_number = ? AND status = ?", req.UserNumber, "Inactive").
+		First(&passwordReset).Error
+
+	if tokenErr != nil {
+		// No existing token — create a fresh one inside a transaction
+		newToken := uuid.NewV4().String()
+		passwordReset = models.PasswordReset{
+			Number:     uuid.NewV4().String(),
+			UserNumber: req.UserNumber,
+			Token:      newToken,
+			Status:     "Inactive",
+		}
+		if err := config.DB.Create(&passwordReset).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to generate activation token"})
+			return
+		}
+	}
+
+	// Send activation email
+	d := emailSender.Info{
+		Email:       userEmail,
+		Token:       passwordReset.Token,
+		MailType:    "WholesomeEd: User Account Confirmation",
+		UserName:    user.SecondName,
+		CurrentYear: time.Now().Year(),
+		Type:        "registration",
+	}
+	if err := d.SendEmail(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to send activation email: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Activation email sent successfully"})
+}
+
+// DeletePendingUser permanently removes a pending (Inactive) user and all their
+// associated data (password_resets, contacts) from the database.
+// Only users with status "Inactive" can be deleted through this endpoint.
+func DeletePendingUser(c *gin.Context) {
+
+	userNumber := c.Param("user_number")
+	if userNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "user_number is required"})
+		return
+	}
+
+	// Fetch and validate the user
+	var user models.User
+	if err := config.DB.
+		Where("number = ?", userNumber).
+		First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+		return
+	}
+
+	if user.Status != "Inactive" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Only pending (Inactive) users can be deleted through this endpoint"})
+		return
+	}
+
+	tx := config.DB.Begin()
+
+	// Delete password reset tokens
+	if err := tx.Where("user_number = ?", userNumber).Delete(&models.PasswordReset{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to remove user token data"})
+		return
+	}
+
+	// Delete contacts (email, phone)
+	if err := tx.Where("user_number = ?", userNumber).Delete(&models.Contact{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to remove user contact data"})
+		return
+	}
+
+	// Delete the user record (hard delete — bypass GORM soft-delete)
+	if err := tx.Unscoped().Delete(&user).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete user"})
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to commit deletion"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Pending user deleted successfully"})
+}

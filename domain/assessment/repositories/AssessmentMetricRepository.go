@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	assessmenModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/assessment/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
@@ -15,6 +16,7 @@ type AssessmentMetricRepository interface {
 	AllAssessmentMetric(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
 	SaveAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error
 	DeleteAssessmentMetric(assessmentMetric assessmenModels.AssessmentMetric, tx ...*gorm.DB) error
+	FindAssessmentMetricsByDistinctAssessmentAreasNumbers(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error)
 }
 
 type repository struct {
@@ -133,6 +135,39 @@ func (a *repository) SaveAssessmentMetric(assessmentMetric assessmenModels.Asses
 	}
 
 	return db.Save(&assessmentMetric).Error
+}
+
+func (a *repository) FindAssessmentMetricsByDistinctAssessmentAreasNumbers(assessmentAreaNumber, studyPeriodNumber, campusClassNumber, metricNumber, classNumber, campusNumber string, tx ...*gorm.DB) ([]assessmenModels.AssessmentMetric, error) {
+	db := config.DB
+	if len(tx) > 0 {
+		db = tx[0]
+	}
+
+	var assessmentMetrics []assessmenModels.AssessmentMetric
+
+	subQuery := db.Table("assessment_metrics").
+		Select("MAX(id)").
+		Scopes(
+			filters.ByStudyPeriodNumber(studyPeriodNumber),
+			filters.ByAnyField("campus_class_number", campusClassNumber),
+			filters.ByAssessmentAreaNumber(assessmentAreaNumber),
+		).
+		Group("assessment_area_number")
+
+	if err := db.Table("assessment_metrics am").
+		Preload("AssessmentArea").
+		Where("id IN (?)", subQuery).
+		Find(&assessmentMetrics).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return assessmentMetrics, nil
+		}
+
+		return assessmentMetrics, err
+
+	}
+
+	return assessmentMetrics, nil
 }
 
 func NewAssessmentMetricRepository() AssessmentMetricRepository {

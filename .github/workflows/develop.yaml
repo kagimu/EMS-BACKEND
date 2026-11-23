@@ -1,0 +1,44 @@
+name: HEIMS Core API (develop)
+
+env:
+  GOPRIVATE: "github.com/Noregrets-Systems-*"
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  api-build:
+    uses: Noregrets-Systems/devops/.github/workflows/go-build-migrate-2.yaml@v2
+    with:
+      service: core-api
+      go-file: ''
+      version: develop
+      go-version: '1.25'
+      migration-path: ./migrations
+    secrets:
+      git-token: ${{ secrets.GOMOD_TOKEN }}
+      git-user: ${{ secrets.GOMOD_USER }}
+      dockerhub-user: ${{ secrets.DOCKER_USERNAME }}
+      dockerhub-token: ${{ secrets.DOCKER_TOKEN }}
+    permissions:
+      id-token: write
+      contents: read
+
+  api-deploy:
+    needs: api-build
+    uses: Noregrets-Systems/devops/.github/workflows/ts-docker-deploy.yaml@v2
+    with:
+      service: core-api
+      tag: ${{ github.sha }}
+      docker-compose-dir: ${{ vars.LABS_DOCKER_DIR }}
+      host-ip: ${{ vars.LABS_SSH_HOST }}
+      host-port: ${{ fromJSON(vars.LABS_SSH_PORT) }}
+      tailscale-server: headscale.noregrets.ug
+    secrets:
+      ts-auth-key: ${{ secrets.LABS_TS_AUTH_KEY }}
+      ssh-private-key: ${{ secrets.LABS_SSH_PRIVATE_KEY }}
+    permissions:
+      id-token: write
+      contents: read

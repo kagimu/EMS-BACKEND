@@ -104,6 +104,7 @@ func FetchServices(c *gin.Context) {
 	}
 
 	schoolNumber := c.Query("school_number")
+	itemType := c.Query("type")
 
 	if user.Type != constants.TypeClient {
 		if schoolNumber == "" {
@@ -112,7 +113,7 @@ func FetchServices(c *gin.Context) {
 		}
 	}
 
-	response, err := itemService.AllServiceItems(schoolNumber)
+	response, err := itemService.AllServiceItems(schoolNumber, itemType)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

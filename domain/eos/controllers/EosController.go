@@ -321,6 +321,22 @@ func GetUserEntities(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, entities)
 }
 
+func GetStaffEntities(ctx *gin.Context) {
+	userNumber := ctx.Query("user_number")
+	if userNumber == "" {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback("Provide user_number"))
+		return
+	}
+
+	var entities []models.Entity
+	if err := config.DB.Where("entity_users.user_number = ? ", userNumber).Joins("JOIN entity_users ON entity_users.entity_number = entities.number").Find(&entities).Error; err != nil {
+		ctx.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, entities)
+}
+
 func SaveCurrentEntity(context *gin.Context) {
 	user, err := commons.GetUserFromHeader(context)
 	if err != nil {

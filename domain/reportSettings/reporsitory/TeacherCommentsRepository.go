@@ -1,6 +1,7 @@
 package reporsitory
 
 import (
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/filters"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/models"
 	"gorm.io/gorm"
 )
@@ -13,7 +14,7 @@ type TeacherCommentsRepository interface {
 	GetSubjectTeacherCommentByNumber(number string) (models.SubjectTeacherComment, error)
 	DeleteSubjectTeacherComment(number string) error
 	FindClassTeacherComments() ([]models.ClassTeacherComment, error)
-	FindSubjectTeacherComments() ([]models.SubjectTeacherComment, error)
+	FindSubjectTeacherComments(campusClassNumber, academicYearNumber, studyPeriodNumber, assessmentAreaNumber string) ([]models.SubjectTeacherComment, error)
 	UpdateClassTeacherComment(comment models.ClassTeacherComment) error
 	UpdateSubjectTeacherComment(comment models.SubjectTeacherComment) error
 }
@@ -44,9 +45,22 @@ func (c classTeacherCommentsRepository) FindClassTeacherComments() ([]models.Cla
 	return classTeacherComments, nil
 }
 
-func (c classTeacherCommentsRepository) FindSubjectTeacherComments() ([]models.SubjectTeacherComment, error) {
+func (c classTeacherCommentsRepository) FindSubjectTeacherComments(campusClassNumber, academicYearNumber, studyPeriodNumber, assessmentAreaNumber string) ([]models.SubjectTeacherComment, error) {
 	var subjectTeacherComments = make([]models.SubjectTeacherComment, 0)
-	if err := c.DB.Find(&subjectTeacherComments).Error; err != nil {
+	if err := c.DB.
+		Model(&models.SubjectTeacherComment{}).
+		Joins("JOIN assessment_areas ON assessment_areas.number = subject_teacher_comments.assessment_area_number").
+		Joins("JOIN curriculum_classes ON curriculum_classes.number = assessment_areas.curriculum_class_number").
+		Joins("JOIN campus_classes ON campus_classes.curriculum_class_number = curriculum_classes.number").
+		Joins("JOIN study_periods ON study_periods.number = subject_teacher_comments.study_period_number").
+		Scopes(
+			filters.ByAnyField("campus_classes.number", campusClassNumber),
+			filters.ByAnyField("study_periods.academic_year_number", academicYearNumber),
+			filters.ByAnyField("subject_teacher_comments.study_period_number", studyPeriodNumber),
+			filters.ByAnyField("subject_teacher_comments.assessment_area_number", assessmentAreaNumber),
+		).
+		Distinct("subject_teacher_comments.*").
+		Find(&subjectTeacherComments).Error; err != nil {
 		return subjectTeacherComments, err
 	}
 	return subjectTeacherComments, nil

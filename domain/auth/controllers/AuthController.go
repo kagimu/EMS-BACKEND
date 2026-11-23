@@ -4,6 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net/http"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/repositories"
 	services2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/class/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/constants"
@@ -12,10 +17,6 @@ import (
 	repositories2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/repositories"
 	responses2 "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/timetable/api/responses"
 	"gorm.io/gorm"
-	"net/http"
-	"regexp"
-	"strings"
-	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/api/requests"
@@ -26,6 +27,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/emailSender"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons/hassPassTokenGen"
 	permissionModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/permissions/models"
+	staffModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -116,28 +118,25 @@ func Login(context *gin.Context) {
 		return
 	}
 
-	Email = strings.TrimSpace(strings.ToLower(Email))
+	identifier := strings.TrimSpace(Email)
+	var userNumber string
 
-	//email validation
-	var rxEmail = regexp.MustCompile(".+@.+\\..+")
-	match := rxEmail.Match([]byte(Email))
-	if match == false {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Email!"})
-		return
-	}
-
-	//	check if user exists
+	// Check contacts table (email or phone)
 	var contact models.Contact
-
-	userContact := config.DB.
-		Where("contact = ?", Email).
-		First(&contact)
-	if userContact.Error != nil {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Email not found!"})
-		return
+	userContact := config.DB.Where("LOWER(contact) = ? OR contact = ?", strings.ToLower(identifier), identifier).First(&contact)
+	if userContact.Error == nil {
+		userNumber = contact.UserNumber
+	} else {
+		// If not found in contacts, check staff_deployments by STN (staff_id_number)
+		var deployment staffModels.StaffDeployment
+		depErr := config.DB.Preload("JobOffer.JobApplication").Where("LOWER(staff_id_number) = ? OR staff_id_number = ?", strings.ToLower(identifier), identifier).First(&deployment).Error
+		if depErr == nil && deployment.JobOffer.JobApplication.UserNumber != "" {
+			userNumber = deployment.JobOffer.JobApplication.UserNumber
+		} else {
+			context.JSON(http.StatusNotFound, gin.H{"message": "Account not found with this Email or Staff ID (STN)!"})
+			return
+		}
 	}
-
-	userNumber := contact.UserNumber
 
 	//get user password from the password table
 	var userPassword models.UserPassword
@@ -439,6 +438,11 @@ func Register(context *gin.Context) {
 	}
 
 	//first time registration user type must be admin
+	var user models.User
+	userType := "User"
+	if userPostData.Type != "" {
+		userType = userPostData.Type
+	}
 	userStatus := "Inactive"
 
 	var existingUserCount int64
@@ -468,7 +472,7 @@ func Register(context *gin.Context) {
 		// If any error occurs, rollback the transaction
 		tx.Rollback()
 		// Handle or return the error as needed
-		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create user"})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "failed to create user: " + err.Error()})
 		return
 	}
 

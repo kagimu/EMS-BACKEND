@@ -66,10 +66,8 @@ func FetchFeedingGroupUsers(c *gin.Context) {
 	}
 
 	schoolNumber := c.Query("school_number")
-	groupNumber := c.Query("group_number")
-	campusNumber := c.Query("campus_number")
 
-	response, err := services.MealUsers(schoolNumber, campusNumber, groupNumber)
+	response, err := services.MealUsers(schoolNumber, "", "")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -96,4 +94,28 @@ func FetchAvailableUsers(context *gin.Context) {
 
 	context.JSON(http.StatusOK, gin.H{"data": response})
 
+}
+
+func FetchFeedingGroupLearners(c *gin.Context) {
+	_, err := commons.GetUserFromHeader(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	schoolNumber := c.Query("school_number")
+	campusNumber := c.Query("campus_number")
+	groupNumber := c.Query("group_number")
+	academicYearNumber := c.Query("academic_year_number")
+	studyPeriodNumber := c.Query("study_period_number")
+	classNumber := c.Query("class_number")
+	levelNumber := c.Query("level_number")
+
+	response, err := services.FeedingGroupLearners(schoolNumber, campusNumber, groupNumber, academicYearNumber, studyPeriodNumber, classNumber, levelNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }

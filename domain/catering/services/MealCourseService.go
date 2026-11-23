@@ -435,7 +435,7 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 
 		for _, feedingSession := range mealCourseFeedingSessionRequest.FeedingSessions {
 
-			mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Number, feedingSession)
+			mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(mealCourse.Number, feedingSession, tx)
 			if err != nil {
 				return errors.New("Checking duplicates error " + err.Error())
 			}
@@ -458,6 +458,27 @@ func AddFeedingSessionsToMealCourse(mealCourseFeedingSessionRequest requests.Mea
 
 		}
 
+		return nil
+	})
+
+	return err
+}
+
+func DeleteMealCourseFeedingSession(req requests.DeleteMealCourseFeedingSessionRequest) error {
+	mealCourseFeedingSession, err := repositories.GetMealCourseFeedingSession(req.MealCourseNumber, req.FeedingSessionNumber)
+	if err != nil {
+		return errors.New("Getting session error " + err.Error())
+	}
+
+	if mealCourseFeedingSession.Number == "" {
+		return errors.New("feeding session is not associated with this meal course")
+	}
+
+	err = config.DB.Transaction(func(tx *gorm.DB) error {
+		err := repositories.DeleteMealCourseFeedingSession(mealCourseFeedingSession, tx)
+		if err != nil {
+			return errors.New("Deleting session error " + err.Error())
+		}
 		return nil
 	})
 

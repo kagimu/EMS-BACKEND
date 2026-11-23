@@ -21,6 +21,7 @@ type ProjectionCalenderMeal struct {
 type ProjectionMenuItem struct {
 	Name                  string  `json:"name"`
 	Quantity              float64 `json:"quantity"`
+	UserQuantity          float64 `json:"user_quantity"`
 	PurchaseQuantity      float64 `json:"purchase_quantity"`
 	UnitOfMeasure         string  `json:"unit_of_measure"`
 	PurchaseUnitOfMeasure string  `json:"purchase_unit_of_measure"`

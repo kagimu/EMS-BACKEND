@@ -5,6 +5,7 @@ import (
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/services"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commons"
@@ -30,12 +31,13 @@ func CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	if err = services.CreateInvoice(payload, user.Number); err != nil {
+	invoiceUUID, err := services.CreateInvoice(payload, user.Number)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Promissory note created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Promissory note created successfully", "number": invoiceUUID})
 }
 
 func UpdateInvoice(c *gin.Context) {
@@ -98,7 +100,8 @@ func GetAllInvoices(context *gin.Context) {
 		}
 	}
 
-	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber, itemNumbers, startDate, endDate, user)
+	mine := context.Query("mine") == "true"
+	invoices, err := services.AllInvoices(status, userNumber, campusNumber, schoolNumber, itemNumbers, startDate, endDate, user, mine)
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to get invoices, try again", "err": err.Error()})
@@ -202,4 +205,79 @@ func CancelInvoice(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, commons.Feedback("Promissory note cancelled successfully"))
+}
+
+func GetInvoiceItemTransactionsHistory(context *gin.Context) {
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	invoiceNumber := context.Query("invoice_number")
+	if invoiceNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide promissory note number"))
+		return
+	}
+
+	history, err := services.GetInvoiceItemTransactionHistory(invoiceNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Item transaction history", "data": history})
+}
+
+func GetInvoiceItemTransactionsHistoryByTransaction(context *gin.Context) {
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	transactionNumber := context.Query("transaction_number")
+	if transactionNumber == "" {
+		context.JSON(http.StatusBadRequest, commons.Feedback("Provide transaction number"))
+		return
+	}
+
+	history, err := services.GetInvoiceItemTransactionHistoryByTransaction(transactionNumber)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Item transaction history", "data": history})
+}
+
+func GetAllItemTransactionsHistory(context *gin.Context) {
+	if _, err := commons.GetUserFromHeader(context); err != nil {
+		context.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	campusNumber := context.Query("campus_number")
+	search := context.Query("search")
+	startDate := context.Query("start_date")
+	endDate := context.Query("end_date")
+	
+	pageStr := context.Query("page")
+	perPageStr := context.Query("per_page")
+	
+	page := 1
+	perPage := 20
+	
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	if pp, err := strconv.Atoi(perPageStr); err == nil && pp > 0 {
+		perPage = pp
+	}
+
+	history, err := services.GetAllItemTransactionHistory(campusNumber, search, startDate, endDate, page, perPage)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, commons.Feedback(err.Error()))
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "All item transactions history", "data": history})
 }

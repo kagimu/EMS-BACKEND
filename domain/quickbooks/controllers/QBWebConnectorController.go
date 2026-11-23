@@ -1,0 +1,1445 @@
+package controllers
+
+import (
+	"encoding/xml"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/api/config"
+	authModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/auth/models"
+	campusModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/campus/models"
+	invoiceModel "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/invoice/models"
+	itemModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/item/models"
+	qbModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/models"
+	"github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/services"
+	studentModels "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/models"
+	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+)
+
+// Simplified SOAP Envelope
+type Envelope struct {
+	XMLName xml.Name `xml:"Envelope"`
+	Body    Body     `xml:"Body"`
+}
+
+type Body struct {
+	Authenticate       *Authenticate       `xml:"authenticate"`
+	SendRequestXML     *SendRequestXML     `xml:"sendRequestXML"`
+	ReceiveResponseXML *ReceiveResponseXML `xml:"receiveResponseXML"`
+	CloseConnection    *CloseConnection    `xml:"closeConnection"`
+	ServerVersion      *ServerVersion      `xml:"serverVersion"`
+	ClientVersion      *ClientVersion      `xml:"clientVersion"`
+	ConnectionError    *ConnectionError    `xml:"connectionError"`
+	GetLastError       *GetLastError       `xml:"getLastError"`
+}
+
+type Authenticate struct {
+	UserName string `xml:"strUserName"`
+	Password string `xml:"strPassword"`
+}
+
+type SendRequestXML struct {
+	Ticket string `xml:"ticket"`
+}
+
+type ReceiveResponseXML struct {
+	Ticket   string `xml:"ticket"`
+	Response string `xml:"response"`
+	HResult  string `xml:"hresult"`
+	Message  string `xml:"message"`
+}
+
+type CloseConnection struct {
+	Ticket string `xml:"ticket"`
+}
+
+type ServerVersion struct{}
+type ClientVersion struct{}
+type ConnectionError struct{}
+type GetLastError struct {
+	Ticket string `xml:"ticket"`
+}
+
+func HandleQBWC(c *gin.Context) {
+	if c.Request.Method == "GET" {
+		c.String(http.StatusOK, "QuickBooks Web Connector SOAP Endpoint is Active.")
+		return
+	}
+
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid request")
+		return
+	}
+
+	var env Envelope
+	if err := xml.Unmarshal(bodyBytes, &env); err != nil {
+		// Log the error if necessary
+		c.String(http.StatusBadRequest, "Invalid XML")
+		return
+	}
+
+	var responseXML string
+
+	if env.Body.ServerVersion != nil {
+		responseXML = `<serverVersionResponse xmlns="http://developer.intuit.com/"><serverVersionResult>1.0</serverVersionResult></serverVersionResponse>`
+	} else if env.Body.ClientVersion != nil {
+		responseXML = `<clientVersionResponse xmlns="http://developer.intuit.com/"><clientVersionResult></clientVersionResult></clientVersionResponse>`
+	} else if env.Body.Authenticate != nil {
+		res := services.Authenticate(env.Body.Authenticate.UserName, env.Body.Authenticate.Password)
+		responseXML = `<authenticateResponse xmlns="http://developer.intuit.com/"><authenticateResult><string>` + res.Ticket + `</string><string>` + res.Status + `</string></authenticateResult></authenticateResponse>`
+	} else if env.Body.SendRequestXML != nil {
+		reqXML := services.SendRequestXML(env.Body.SendRequestXML.Ticket)
+		responseXML = `<sendRequestXMLResponse xmlns="http://developer.intuit.com/"><sendRequestXMLResult>` + escapeXML(reqXML) + `</sendRequestXMLResult></sendRequestXMLResponse>`
+	} else if env.Body.ReceiveResponseXML != nil {
+		progress := services.ReceiveResponseXML(env.Body.ReceiveResponseXML.Ticket, env.Body.ReceiveResponseXML.Response, env.Body.ReceiveResponseXML.HResult, env.Body.ReceiveResponseXML.Message)
+		responseXML = `<receiveResponseXMLResponse xmlns="http://developer.intuit.com/"><receiveResponseXMLResult>` + progress + `</receiveResponseXMLResult></receiveResponseXMLResponse>`
+	} else if env.Body.ConnectionError != nil {
+		responseXML = `<connectionErrorResponse xmlns="http://developer.intuit.com/"><connectionErrorResult>done</connectionErrorResult></connectionErrorResponse>`
+	} else if env.Body.GetLastError != nil {
+		responseXML = `<getLastErrorResponse xmlns="http://developer.intuit.com/"><getLastErrorResult>Error occurred</getLastErrorResult></getLastErrorResponse>`
+	} else if env.Body.CloseConnection != nil {
+		services.CloseConnection(env.Body.CloseConnection.Ticket)
+		responseXML = `<closeConnectionResponse xmlns="http://developer.intuit.com/"><closeConnectionResult>OK</closeConnectionResult></closeConnectionResponse>`
+	} else {
+		c.String(http.StatusBadRequest, "Unknown SOAP Action")
+		return
+	}
+
+	// Wrap in SOAP Envelope
+	finalResponse := `<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Body>` + responseXML + `</soap:Body></soap:Envelope>`
+
+	c.Data(http.StatusOK, "text/xml; charset=utf-8", []byte(finalResponse))
+}
+
+func escapeXML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	return s
+}
+
+func DownloadQWC(c *gin.Context) {
+	// Determine protocol (default to https since QB Web Connector requires it in production unless using localhost)
+	proto := c.GetHeader("X-Forwarded-Proto")
+	if proto == "" {
+		proto = "https"
+		if c.Request.TLS == nil && strings.Contains(c.Request.Host, "localhost") {
+			proto = "http"
+		}
+	}
+	baseURL := fmt.Sprintf("%s://%s", proto, c.Request.Host)
+
+	// A minimal standard qwc file template
+	qwc := fmt.Sprintf(`<?xml version="1.0"?>
+<QBWCXML>
+   <AppName>WholesomeEd QB Sync</AppName>
+   <AppID></AppID>
+   <AppURL>%s/api/quickbooks/soap</AppURL>
+   <AppDescription>Sync payments to QuickBooks Desktop</AppDescription>
+   <AppSupport>%s/support</AppSupport>
+   <UserName>admin</UserName>
+   <OwnerID>{90A44FB7-33D9-4815-AC85-BC87A7E7D1EB}</OwnerID>
+   <FileID>{57F3B9B1-86F1-4fcc-B1EE-566DE1813D20}</FileID>
+   <QBType>QBFS</QBType>
+   <Scheduler>
+      <RunEveryNMinutes>5</RunEveryNMinutes>
+   </Scheduler>
+   <IsReadOnly>false</IsReadOnly>
+</QBWCXML>`, baseURL, baseURL)
+
+	c.Header("Content-Disposition", `attachment; filename="wholesome_ed.qwc"`)
+	c.Data(http.StatusOK, "application/x-qbwc", []byte(qwc))
+}
+
+type QueueTransactionRequest struct {
+	TransactionNumber string `json:"transaction_number" binding:"required"`
+	QBProfileNumber   string `json:"qb_profile_number"`
+}
+
+func QueueTransaction(c *gin.Context) {
+	var req QueueTransactionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	profileNumber := resolveProfileNumber(req.QBProfileNumber)
+	isDef := isDefaultProfile(profileNumber)
+
+	// Duplicate check — prevent queueing the same receipt twice for the same QB account
+	var existing qbModels.QBSyncQueue
+	dupQuery := config.DB.Where("transaction_number = ? AND status IN ?", req.TransactionNumber, []string{"QUEUED", "PROCESSING", "SUCCESS"})
+	if isDef {
+		dupQuery = dupQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		dupQuery = dupQuery.Where("qb_profile_number = ?", profileNumber)
+	}
+	if err := dupQuery.First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This transaction has already been queued or synced to QuickBooks (status: " + existing.Status + ")"})
+		return
+	}
+
+	var itemTx invoiceModel.InvoiceItemTransaction
+	if err := config.DB.Preload("Transaction.Statement.User").
+		Preload("InvoiceItem.Item").
+		Where("number = ?", req.TransactionNumber).
+		First(&itemTx).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Transaction not found"})
+		return
+	}
+
+	// Require customer to be exported to QB first for this profile
+	userNumber := itemTx.Transaction.Statement.User.Number
+	studentName := itemTx.Transaction.Statement.User.FirstName + " " + itemTx.Transaction.Statement.User.LastName
+	var customerRef string
+	if userNumber != "" {
+		var mapping qbModels.QBCustomerMapping
+		// Filter by target profile — prevents wrong customer name when a student
+		// is mapped to multiple QB accounts with different QbFullName values.
+		custQuery := config.DB.Where("user_number = ?", userNumber)
+		if isDef {
+			custQuery = custQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			custQuery = custQuery.Where("qb_profile_number = ?", profileNumber)
+		}
+		if err := custQuery.First(&mapping).Error; err == nil {
+			customerRef = mapping.QbFullName
+		} else {
+			// Check if it's currently queued
+			var pendingQueue qbModels.QBSyncQueue
+			pendingQuery := config.DB.Where("user_number = ? AND action_type IN ('CUSTOMER_ADD', 'CUSTOMER_QUERY') AND status IN ('QUEUED', 'PROCESSING')", userNumber)
+			if isDef {
+				pendingQuery = pendingQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+			} else {
+				pendingQuery = pendingQuery.Where("qb_profile_number = ?", profileNumber)
+			}
+			
+			if err := pendingQuery.First(&pendingQueue).Error; err == nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' is currently queued for Quickbooks export but it is still processing. Please wait for the QuickBooks Web Connector to finish syncing."})
+				return
+			}
+			
+			// Check if it failed
+			var failedQueue qbModels.QBSyncQueue
+			failedQuery := config.DB.Where("user_number = ? AND action_type IN ('CUSTOMER_ADD', 'CUSTOMER_QUERY') AND status = 'FAILED'", userNumber)
+			if isDef {
+				failedQuery = failedQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+			} else {
+				failedQuery = failedQuery.Where("qb_profile_number = ?", profileNumber)
+			}
+			
+			if err := failedQuery.First(&failedQueue).Error; err == nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' was queued for Quickbooks export to this account, but the sync FAILED: " + failedQueue.ErrorMessage + ". Please clear the failed queue entry in the Enrollment page and re-export the student."})
+				return
+			}
+
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Student '" + studentName + "' has not been exported to QuickBooks yet for this account. Please export the student first from the Enrollment page."})
+			return
+		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot identify student for this transaction."})
+		return
+	}
+
+	var itemCode string
+	var itemMapping qbModels.QBItemMapping
+	itemQuery := config.DB.Where("item_number = ?", itemTx.InvoiceItem.Item.Number)
+	// We use global matching by item_number. If mapped in ANY profile, use the QbFullName.
+	if err := itemQuery.First(&itemMapping).Error; err == nil {
+		itemCode = itemMapping.QbFullName
+	} else {
+		// Check if the item is currently queued
+		var pendingQueue qbModels.QBSyncQueue
+		pendingQuery := config.DB.Where("item_number = ? AND action_type IN ('ITEM_SERVICE_ADD', 'ITEM_INVENTORY_ADD', 'ITEM_NON_INVENTORY_ADD') AND status IN ('QUEUED', 'PROCESSING')", itemTx.InvoiceItem.Item.Number)
+		if isDef {
+			pendingQuery = pendingQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			pendingQuery = pendingQuery.Where("qb_profile_number = ?", profileNumber)
+		}
+		
+		if err := pendingQuery.First(&pendingQueue).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' is currently queued for Quickbooks export but it is still processing. Please wait for the QuickBooks Web Connector to finish syncing."})
+			return
+		}
+
+		// Check if it failed
+		var failedQueue qbModels.QBSyncQueue
+		failedQuery := config.DB.Where("item_number = ? AND action_type IN ('ITEM_SERVICE_ADD', 'ITEM_INVENTORY_ADD', 'ITEM_NON_INVENTORY_ADD') AND status = 'FAILED'", itemTx.InvoiceItem.Item.Number)
+		if isDef {
+			failedQuery = failedQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			failedQuery = failedQuery.Where("qb_profile_number = ?", profileNumber)
+		}
+		
+		if err := failedQuery.First(&failedQueue).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' was queued for Quickbooks export to this account, but the sync FAILED: " + failedQueue.ErrorMessage + ". Please clear the failed queue entry and re-export the item."})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Item '" + itemTx.InvoiceItem.Item.Name + "' has not been exported to QuickBooks yet for this account. Please export the item first from the Services page."})
+		return
+	}
+
+	dateStr := itemTx.Transaction.Date.Format("2006-01-02")
+	amount := fmt.Sprintf("%.2f", itemTx.AmountPaidOff)
+
+	if itemTx.Transaction.DepositAccountNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No deposit account was selected for this transaction. Please ensure a deposit account is specified when paying invoices."})
+		return
+	}
+
+	var depositAccount string
+	var qbDepositAccount qbModels.QBDepositAccount
+	if err := config.DB.Where("number = ?", itemTx.Transaction.DepositAccountNumber).First(&qbDepositAccount).Error; err == nil && qbDepositAccount.Name != "" {
+		depositAccount = qbDepositAccount.Name
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "The selected deposit account for this transaction could not be found or is invalid."})
+		return
+	}
+
+	qbxml := `<SalesReceiptAddRq>
+	<SalesReceiptAdd>
+		<CustomerRef>
+			<FullName>` + escapeXML(customerRef) + `</FullName>
+		</CustomerRef>
+		<TxnDate>` + dateStr + `</TxnDate>
+		<RefNumber>` + escapeXML(itemTx.ItemReceiptNumber) + `</RefNumber>
+		<DepositToAccountRef>
+			<FullName>` + escapeXML(depositAccount) + `</FullName>
+		</DepositToAccountRef>
+		<SalesReceiptLineAdd>
+			<ItemRef>
+				<FullName>` + escapeXML(itemCode) + `</FullName>
+			</ItemRef>
+			<Rate>` + amount + `</Rate>
+			<Amount>` + amount + `</Amount>
+		</SalesReceiptLineAdd>
+	</SalesReceiptAdd>
+</SalesReceiptAddRq>`
+
+	queue := qbModels.QBSyncQueue{
+		Number:            uuid.NewV4().String(),
+		TransactionNumber: req.TransactionNumber,
+		ActionType:        "SALES_RECEIPT_ADD",
+		Status:            "QUEUED",
+		QbXmlPayload:      qbxml,
+		UserNumber:        userNumber,
+		QBProfileNumber:   profileNumber,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue transaction"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Transaction queued for QuickBooks sync successfully."})
+}
+
+type QueueCustomerRequest struct {
+	UserNumber      string `json:"user_number" binding:"required"`
+	QBProfileNumber string `json:"qb_profile_number"`
+}
+
+func resolveProfileNumber(requested string) string {
+	if requested != "" {
+		return requested
+	}
+	var defaultProf qbModels.QBProfile
+	if err := config.DB.Where("is_default = ?", true).First(&defaultProf).Error; err == nil {
+		return defaultProf.Number
+	}
+	var anyProf qbModels.QBProfile
+	if err := config.DB.Where("is_active = ?", true).First(&anyProf).Error; err == nil {
+		return anyProf.Number
+	}
+	return ""
+}
+
+func isDefaultProfile(profileNumber string) bool {
+	if profileNumber == "" {
+		return true
+	}
+	var p qbModels.QBProfile
+	if err := config.DB.Where("number = ?", profileNumber).First(&p).Error; err == nil {
+		return p.IsDefault
+	}
+	return false
+}
+
+func QueueCustomerAdd(c *gin.Context) {
+	var req QueueCustomerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	profileNumber := resolveProfileNumber(req.QBProfileNumber)
+	isDef := isDefaultProfile(profileNumber)
+
+	// Check if already mapped for this profile
+	var mapping qbModels.QBCustomerMapping
+	mapQuery := config.DB.Where("user_number = ?", req.UserNumber)
+	if isDef {
+		mapQuery = mapQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		mapQuery = mapQuery.Where("qb_profile_number = ?", profileNumber)
+	}
+	if err := mapQuery.First(&mapping).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This user is already exported to this QuickBooks account"})
+		return
+	}
+
+	// Check if already in queue for this profile
+	var pendingQueue qbModels.QBSyncQueue
+	pendingQuery := config.DB.Where("user_number = ? AND action_type = 'CUSTOMER_ADD' AND status IN ('QUEUED', 'PROCESSING')", req.UserNumber)
+	if isDef {
+		pendingQuery = pendingQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		pendingQuery = pendingQuery.Where("qb_profile_number = ?", profileNumber)
+	}
+	if err := pendingQuery.First(&pendingQueue).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This user is already queued for export to this QuickBooks account and is waiting to be synced. Please wait for QuickBooks Web Connector to process it."})
+		return
+	}
+
+
+	var user authModels.User
+	if err := config.DB.Where("number = ?", req.UserNumber).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Fetch student for ADN and campus
+	var student studentModels.Student
+	config.DB.Where("user_number = ?", req.UserNumber).First(&student)
+
+	fullName := user.FirstName + " " + user.LastName
+	if student.ADN != "" {
+		fullName = fullName + " - " + student.ADN
+	}
+
+	// Fetch campus name to use as CompanyName in QB
+	companyName := ""
+	if student.PreferredCampusNumber != "" {
+		var campus campusModels.Campus
+		if err := config.DB.Where("number = ?", student.PreferredCampusNumber).First(&campus).Error; err == nil {
+			companyName = campus.Name
+		}
+	}
+
+	companyNameXML := ""
+	classRefXML := ""
+	if companyName != "" {
+		companyNameXML = `
+			<CompanyName>` + escapeXML(companyName) + `</CompanyName>`
+		classRefXML = `
+			<ClassRef>
+				<FullName>` + escapeXML(companyName) + `</FullName>
+			</ClassRef>`
+	}
+
+	qbxml := `<CustomerAddRq>
+		<CustomerAdd>
+			<Name>` + escapeXML(fullName) + `</Name>` + classRefXML + companyNameXML + `
+			<FirstName>` + escapeXML(user.FirstName) + `</FirstName>
+			<LastName>` + escapeXML(user.LastName) + `</LastName>
+		</CustomerAdd>
+	</CustomerAddRq>`
+
+	queue := qbModels.QBSyncQueue{
+		Number:          uuid.NewV4().String(),
+		ActionType:      "CUSTOMER_ADD",
+		Status:          "QUEUED",
+		QbXmlPayload:    qbxml,
+		UserNumber:      req.UserNumber,
+		QBProfileNumber: profileNumber,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue customer addition"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Customer addition queued for QuickBooks sync successfully."})
+}
+
+type QueueCustomerQueryRequest struct {
+	QBProfileNumber string `json:"qb_profile_number"`
+}
+
+func QueueCustomerQuery(c *gin.Context) {
+	var req QueueCustomerQueryRequest
+	if err := c.ShouldBindJSON(&req); err != nil && err.Error() != "EOF" {
+		// Ignore EOF (empty body) and proceed with default
+	}
+
+	profileNumber := resolveProfileNumber(req.QBProfileNumber)
+
+	qbxml := `<CustomerQueryRq></CustomerQueryRq>`
+
+	queue := qbModels.QBSyncQueue{
+		Number:          uuid.NewV4().String(),
+		ActionType:      "CUSTOMER_QUERY",
+		Status:          "QUEUED",
+		QbXmlPayload:    qbxml,
+		QBProfileNumber: profileNumber,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue customer query"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Customer query queued for QuickBooks sync successfully."})
+}
+
+type SyncedCustomerResponse struct {
+	UserNumber      string `json:"user_number"`
+	FullName        string `json:"full_name"`
+	ADN             string `json:"adn"`
+	QBListID        string `json:"qb_list_id"`
+	CampusName      string `json:"campus_name"`
+	QBProfileNumber string `json:"qb_profile_number"`
+}
+
+func GetSyncedCustomers(c *gin.Context) {
+	schoolNumber := c.Query("school_number")
+	campusNumber := c.Query("campus_number")
+	profileNumber := c.Query("profile_number")
+
+	query := config.DB
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			query = query.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+
+	var mappings []qbModels.QBCustomerMapping
+	if err := query.Find(&mappings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch synced customers"})
+		return
+	}
+
+	var responses []SyncedCustomerResponse
+	for _, mapping := range mappings {
+		var user authModels.User
+		var student studentModels.Student
+
+		config.DB.Where("number = ?", mapping.UserNumber).First(&user)
+		config.DB.Where("user_number = ?", mapping.UserNumber).First(&student)
+
+		// Apply school filter
+		if schoolNumber != "" && student.SchoolNumber != schoolNumber {
+			continue
+		}
+		// Apply campus filter
+		if campusNumber != "" && student.PreferredCampusNumber != campusNumber {
+			continue
+		}
+
+		// Resolve campus name for display
+		campusName := ""
+		if student.PreferredCampusNumber != "" {
+			var campus campusModels.Campus
+			if err := config.DB.Where("number = ?", student.PreferredCampusNumber).First(&campus).Error; err == nil {
+				campusName = campus.Name
+			}
+		}
+
+		fullName := user.FirstName + " " + user.SecondName + " " + user.LastName
+
+		responses = append(responses, SyncedCustomerResponse{
+			UserNumber:      mapping.UserNumber,
+			FullName:        strings.TrimSpace(fullName),
+			ADN:             student.ADN,
+			QBListID:        mapping.QbListID,
+			CampusName:      campusName,
+			QBProfileNumber: mapping.QBProfileNumber,
+		})
+	}
+
+	c.JSON(http.StatusOK, responses)
+}
+
+type CustomerMappingDetail struct {
+	UserNumber      string `json:"user_number"`
+	QBProfileNumber string `json:"qb_profile_number"`
+	ProfileName     string `json:"profile_name"`
+	QBListID        string `json:"qb_list_id"`
+	QBFullName      string `json:"qb_full_name"`
+}
+
+func GetCustomerMappings(c *gin.Context) {
+	userNumber := c.Param("user_number")
+	var mappings []qbModels.QBCustomerMapping
+	if err := config.DB.Where("user_number = ?", userNumber).Find(&mappings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch customer mappings"})
+		return
+	}
+
+	var profiles []qbModels.QBProfile
+	config.DB.Find(&profiles)
+	profileMap := make(map[string]string)
+	var defaultProfileName string
+	for _, p := range profiles {
+		profileMap[p.Number] = p.Name
+		if p.IsDefault {
+			defaultProfileName = p.Name
+		}
+	}
+
+	var res []CustomerMappingDetail
+	for _, m := range mappings {
+		pName := profileMap[m.QBProfileNumber]
+		if pName == "" {
+			if defaultProfileName != "" {
+				pName = defaultProfileName + " (Default)"
+			} else {
+				pName = "Primary Account"
+			}
+		}
+		res = append(res, CustomerMappingDetail{
+			UserNumber:      m.UserNumber,
+			QBProfileNumber: m.QBProfileNumber,
+			ProfileName:     pName,
+			QBListID:        m.QbListID,
+			QBFullName:      m.QbFullName,
+		})
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+type ItemMappingDetail struct {
+	ItemNumber      string `json:"item_number"`
+	QBProfileNumber string `json:"qb_profile_number"`
+	ProfileName     string `json:"profile_name"`
+	QBListID        string `json:"qb_list_id"`
+	QBFullName      string `json:"qb_full_name"`
+}
+
+func GetItemMappings(c *gin.Context) {
+	itemNumber := c.Param("item_number")
+	var mappings []qbModels.QBItemMapping
+	if err := config.DB.Where("item_number = ?", itemNumber).Find(&mappings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch item mappings"})
+		return
+	}
+
+	var profiles []qbModels.QBProfile
+	config.DB.Find(&profiles)
+	profileMap := make(map[string]string)
+	var defaultProfileName string
+	for _, p := range profiles {
+		profileMap[p.Number] = p.Name
+		if p.IsDefault {
+			defaultProfileName = p.Name
+		}
+	}
+	if defaultProfileName == "" && len(profiles) > 0 {
+		defaultProfileName = profiles[0].Name
+	}
+	if defaultProfileName == "" {
+		defaultProfileName = "QuickBooks"
+	}
+
+	var res []ItemMappingDetail
+	for _, m := range mappings {
+		pName := profileMap[m.QBProfileNumber]
+		if pName == "" {
+			if defaultProfileName != "" {
+				pName = defaultProfileName + " (Default)"
+			} else {
+				pName = "Primary Account"
+			}
+		}
+		res = append(res, ItemMappingDetail{
+			ItemNumber:      m.ItemNumber,
+			QBProfileNumber: m.QBProfileNumber,
+			ProfileName:     pName,
+			QBListID:        m.QbListID,
+			QBFullName:      m.QbFullName,
+		})
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+type QueueItemRequest struct {
+	ItemNumber      string `json:"item_number" binding:"required"`
+	AccountID       string `json:"account_id"`
+	QBProfileNumber string `json:"qb_profile_number"`
+}
+
+func QueueItemAdd(c *gin.Context) {
+	var req QueueItemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	profileNumber := resolveProfileNumber(req.QBProfileNumber)
+	isDef := isDefaultProfile(profileNumber)
+
+	// Check if already mapped
+	var mapping qbModels.QBItemMapping
+	mapQuery := config.DB.Where("item_number = ?", req.ItemNumber)
+	if isDef {
+		mapQuery = mapQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		mapQuery = mapQuery.Where("qb_profile_number = ?", profileNumber)
+	}
+	if err := mapQuery.First(&mapping).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This item is already exported to QuickBooks"})
+		return
+	}
+
+	// Check if already queued
+	var existing qbModels.QBSyncQueue
+	queueQuery := config.DB.Where("item_number = ? AND status IN ?", req.ItemNumber, []string{"QUEUED", "PROCESSING"})
+	if isDef {
+		queueQuery = queueQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		queueQuery = queueQuery.Where("qb_profile_number = ?", profileNumber)
+	}
+	if err := queueQuery.First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This item is currently queued for export and is waiting for QuickBooks Web Connector to sync."})
+		return
+	}
+
+	var item itemModels.Item
+	if err := config.DB.Where("number = ?", req.ItemNumber).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
+		return
+	}
+
+	itemCode := item.Name
+	if item.Code != 0 {
+		itemCode = fmt.Sprintf("%d", item.Code)
+	}
+
+	// Always use the item Name as the description in QuickBooks
+	desc := item.Name
+	price := fmt.Sprintf("%.2f", item.Cost)
+
+	// Load income account from request or fallback to profile/settings
+	accountName := "Service Income"
+	if req.AccountID != "" {
+		var chartOfAccount qbModels.QBChartOfAccount
+		if err := config.DB.Where("number = ?", req.AccountID).First(&chartOfAccount).Error; err == nil {
+			accountName = chartOfAccount.Name
+		}
+	} else {
+		if profileNumber != "" {
+			var profile qbModels.QBProfile
+			if err := config.DB.Where("number = ?", profileNumber).First(&profile).Error; err == nil && profile.IncomeAccount != "" {
+				accountName = profile.IncomeAccount
+			}
+		}
+		if accountName == "Service Income" {
+			var qbSettingsForItem qbModels.QBSettings
+			if err := config.DB.First(&qbSettingsForItem).Error; err == nil && qbSettingsForItem.IncomeAccount != "" {
+				accountName = qbSettingsForItem.IncomeAccount
+			}
+		}
+	}
+
+	qbxml := `<ItemServiceAddRq>
+	<ItemServiceAdd>
+		<Name>` + escapeXML(itemCode) + `</Name>
+		<IsActive>true</IsActive>
+		<SalesOrPurchase>
+			<Desc>` + escapeXML(desc) + `</Desc>
+			<Price>` + price + `</Price>
+			<AccountRef>
+				<FullName>` + escapeXML(accountName) + `</FullName>
+			</AccountRef>
+		</SalesOrPurchase>
+	</ItemServiceAdd>
+</ItemServiceAddRq>`
+
+	queue := qbModels.QBSyncQueue{
+		Number:          uuid.NewV4().String(),
+		ActionType:      "ITEM_SERVICE_ADD",
+		Status:          "QUEUED",
+		QbXmlPayload:    qbxml,
+		ItemNumber:      req.ItemNumber,
+		QBProfileNumber: profileNumber,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue item addition"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Item addition queued for QuickBooks sync successfully."})
+}
+
+// QueueProductAdd handles POST /main/quickbooks/products.
+// It queues an Inventory Item or Non-Inventory Item in QuickBooks.
+type QueueProductRequest struct {
+	ItemNumber      string `json:"item_number" binding:"required"`
+	AccountID       string `json:"account_id"`
+	COGSAccountID   string `json:"cogs_account_id"`
+	AssetAccountID  string `json:"asset_account_id"`
+	ProductType     string `json:"product_type" binding:"required"` // "Inventory" | "NonInventory"
+	QBProfileNumber string `json:"qb_profile_number"`
+}
+
+func QueueProductAdd(c *gin.Context) {
+	var req QueueProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate product type
+	if req.ProductType != "Inventory" && req.ProductType != "NonInventory" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "product_type must be 'Inventory' or 'NonInventory'"})
+		return
+	}
+
+	profileNumber := resolveProfileNumber(req.QBProfileNumber)
+	isDef := isDefaultProfile(profileNumber)
+
+	// Determine the QB action type string for this product type
+	var actionType string
+	switch req.ProductType {
+	case "Inventory":
+		actionType = "ITEM_INVENTORY_ADD"
+	case "NonInventory":
+		actionType = "ITEM_NON_INVENTORY_ADD"
+	}
+
+	// Check if already mapped in QB
+	var mapping qbModels.QBItemMapping
+	mapQuery := config.DB.Where("item_number = ?", req.ItemNumber)
+	if isDef {
+		mapQuery = mapQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		mapQuery = mapQuery.Where("qb_profile_number = ?", profileNumber)
+	}
+	if err := mapQuery.First(&mapping).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This product is already exported to QuickBooks"})
+		return
+	}
+
+	// Check if already in the queue with a non-failed status
+	var existing qbModels.QBSyncQueue
+	queueQuery := config.DB.Where(
+		"item_number = ? AND status IN ?",
+		req.ItemNumber, []string{"QUEUED", "PROCESSING", "SUCCESS"},
+	)
+	if isDef {
+		queueQuery = queueQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+	} else {
+		queueQuery = queueQuery.Where("qb_profile_number = ?", profileNumber)
+	}
+	if err := queueQuery.First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This product is already queued for QuickBooks (status: " + existing.Status + ")"})
+		return
+	}
+
+	// Load the item record
+	var item itemModels.Item
+	if err := config.DB.Where("number = ?", req.ItemNumber).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+
+	// Derive the QB item name (use numeric code when available for uniqueness)
+	itemCode := item.Name
+	if item.Code != 0 {
+		itemCode = fmt.Sprintf("%d", item.Code)
+	}
+	desc := item.Name
+	price := fmt.Sprintf("%.2f", item.Cost)
+
+	// Resolve income account name
+	accountName := "Sales"
+	if req.AccountID != "" {
+		var chartOfAccount qbModels.QBChartOfAccount
+		if err := config.DB.Where("number = ?", req.AccountID).First(&chartOfAccount).Error; err == nil {
+			accountName = chartOfAccount.Name
+		}
+	} else {
+		if profileNumber != "" {
+			var profile qbModels.QBProfile
+			if err := config.DB.Where("number = ?", profileNumber).First(&profile).Error; err == nil && profile.IncomeAccount != "" {
+				accountName = profile.IncomeAccount
+			}
+		}
+		if accountName == "Sales" {
+			var qbSettings qbModels.QBSettings
+			if err := config.DB.First(&qbSettings).Error; err == nil && qbSettings.IncomeAccount != "" {
+				accountName = qbSettings.IncomeAccount
+			}
+		}
+	}
+
+	// Resolve COGS account name
+	cogsAccountName := "Cost of Goods Sold"
+	if req.COGSAccountID != "" {
+		var chartOfAccount qbModels.QBChartOfAccount
+		if err := config.DB.Where("number = ?", req.COGSAccountID).First(&chartOfAccount).Error; err == nil {
+			cogsAccountName = chartOfAccount.Name
+		}
+	}
+
+	// Resolve Asset account name
+	assetAccountName := "Inventory Asset"
+	if req.AssetAccountID != "" {
+		var chartOfAccount qbModels.QBChartOfAccount
+		if err := config.DB.Where("number = ?", req.AssetAccountID).First(&chartOfAccount).Error; err == nil {
+			assetAccountName = chartOfAccount.Name
+		}
+	}
+
+	// Build the QB XML payload based on product type
+	var qbxml string
+	switch req.ProductType {
+	case "Inventory":
+		qbxml = `<ItemInventoryAddRq>
+	<ItemInventoryAdd>
+		<Name>` + escapeXML(itemCode) + `</Name>
+		<IsActive>true</IsActive>
+		<SalesDesc>` + escapeXML(desc) + `</SalesDesc>
+		<SalesPrice>` + price + `</SalesPrice>
+		<IncomeAccountRef>
+			<FullName>` + escapeXML(accountName) + `</FullName>
+		</IncomeAccountRef>
+		<COGSAccountRef>
+			<FullName>` + escapeXML(cogsAccountName) + `</FullName>
+		</COGSAccountRef>
+		<AssetAccountRef>
+			<FullName>` + escapeXML(assetAccountName) + `</FullName>
+		</AssetAccountRef>
+	</ItemInventoryAdd>
+</ItemInventoryAddRq>`
+
+	case "NonInventory":
+		qbxml = `<ItemNonInventoryAddRq>
+	<ItemNonInventoryAdd>
+		<Name>` + escapeXML(itemCode) + `</Name>
+		<IsActive>true</IsActive>
+		<SalesOrPurchase>
+			<Desc>` + escapeXML(desc) + `</Desc>
+			<Price>` + price + `</Price>
+			<AccountRef>
+				<FullName>` + escapeXML(accountName) + `</FullName>
+			</AccountRef>
+		</SalesOrPurchase>
+	</ItemNonInventoryAdd>
+</ItemNonInventoryAddRq>`
+	}
+
+	queue := qbModels.QBSyncQueue{
+		Number:          uuid.NewV4().String(),
+		ActionType:      actionType,
+		Status:          "QUEUED",
+		QbXmlPayload:    qbxml,
+		ItemNumber:      req.ItemNumber,
+		QBProfileNumber: profileNumber,
+	}
+
+	if err := config.DB.Create(&queue).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to queue product addition"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Product queued for QuickBooks export successfully."})
+}
+
+type SyncedItemResponse struct {
+	ItemNumber      string  `json:"item_number"`
+	ItemName        string  `json:"item_name"`
+	QBListID        string  `json:"qb_list_id"`
+	QBFullName      string  `json:"qb_full_name"`
+	Cost            float64 `json:"cost"`
+	QBProfileNumber string  `json:"qb_profile_number"`
+}
+
+func GetSyncedItems(c *gin.Context) {
+	profileNumber := c.Query("profile_number")
+	query := config.DB
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			query = query.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+
+	var mappings []qbModels.QBItemMapping
+	if err := query.Find(&mappings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch synced items"})
+		return
+	}
+
+	var responses []SyncedItemResponse
+	for _, mapping := range mappings {
+		var item itemModels.Item
+		config.DB.Where("number = ?", mapping.ItemNumber).First(&item)
+
+		responses = append(responses, SyncedItemResponse{
+			ItemNumber:      mapping.ItemNumber,
+			ItemName:        item.Name,
+			QBListID:        mapping.QbListID,
+			QBFullName:      mapping.QbFullName,
+			Cost:            item.Cost,
+			QBProfileNumber: mapping.QBProfileNumber,
+		})
+	}
+
+	c.JSON(http.StatusOK, responses)
+}
+
+func GetQueueErrors(c *gin.Context) {
+	var items []qbModels.QBSyncQueue
+	if err := config.DB.Where("status = ?", "FAILED").Order("created_at desc").Limit(10).Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch errors"})
+		return
+	}
+	c.JSON(http.StatusOK, items)
+}
+
+type SyncedReceiptResponse struct {
+	Number            string `json:"number"`
+	TransactionNumber string `json:"transaction_number"`
+	Status            string `json:"status"`
+	ErrorMessage      string `json:"error_message"`
+	QBProfileNumber   string `json:"qb_profile_number"`
+	ProfileName       string `json:"profile_name"`
+}
+
+func GetSyncedReceipts(c *gin.Context) {
+	profileNumber := c.Query("profile_number")
+
+	var profiles []qbModels.QBProfile
+	config.DB.Find(&profiles)
+	profileMap := make(map[string]string)
+	var defaultProfileName string
+	for _, p := range profiles {
+		profileMap[p.Number] = p.Name
+		if p.IsDefault {
+			defaultProfileName = p.Name
+		}
+	}
+	if defaultProfileName == "" && len(profiles) > 0 {
+		defaultProfileName = profiles[0].Name
+	}
+	if defaultProfileName == "" {
+		defaultProfileName = "QuickBooks"
+	}
+
+	query := config.DB.Where("action_type = ?", "SALES_RECEIPT_ADD")
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			query = query.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	var items []qbModels.QBSyncQueue
+	if err := query.Order("created_at asc").Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch synced receipts"})
+		return
+	}
+
+	var responses []SyncedReceiptResponse
+	for _, item := range items {
+		pName := profileMap[item.QBProfileNumber]
+		if pName == "" {
+			pName = defaultProfileName
+		}
+		responses = append(responses, SyncedReceiptResponse{
+			Number:            item.Number,
+			TransactionNumber: item.TransactionNumber,
+			Status:            item.Status,
+			ErrorMessage:      item.ErrorMessage,
+			QBProfileNumber:   item.QBProfileNumber,
+			ProfileName:       pName,
+		})
+	}
+	c.JSON(http.StatusOK, responses)
+}
+
+type QueueStatusEntry struct {
+	QueueNumber     string             `json:"queue_number"`
+	Status          string             `json:"status"`
+	ErrorMessage    string             `json:"error_message"`
+	QBProfileNumber string             `json:"qb_profile_number"`
+	ProfileName     string             `json:"profile_name"`
+	Entries         []QueueStatusEntry `json:"entries,omitempty"`
+}
+
+// GetCustomerQueueStatus returns a map of user_number → queue status for CUSTOMER_ADD entries.
+// Supports optional ?profile_number= query parameter.
+func GetCustomerQueueStatus(c *gin.Context) {
+	profileNumber := c.Query("profile_number")
+
+	// Pre-fetch all profiles for name resolution
+	var profiles []qbModels.QBProfile
+	config.DB.Find(&profiles)
+	profileMap := make(map[string]string)
+	var defaultProfileName string
+	for _, p := range profiles {
+		profileMap[p.Number] = p.Name
+		if p.IsDefault {
+			defaultProfileName = p.Name
+		}
+	}
+	if defaultProfileName == "" && len(profiles) > 0 {
+		defaultProfileName = profiles[0].Name
+	}
+	if defaultProfileName == "" {
+		defaultProfileName = "QuickBooks"
+	}
+
+	query := config.DB.Where("action_type = ?", "CUSTOMER_ADD")
+	mapQuery := config.DB
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+			mapQuery = mapQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			query = query.Where("qb_profile_number = ?", profileNumber)
+			mapQuery = mapQuery.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+
+	var items []qbModels.QBSyncQueue
+	query.Order("created_at asc").Find(&items)
+
+	var mappings []qbModels.QBCustomerMapping
+	mapQuery.Find(&mappings)
+
+	userEntries := make(map[string][]QueueStatusEntry)
+	seen := make(map[string]map[string]bool)
+
+	for _, item := range items {
+		pNum := item.QBProfileNumber
+		pName := profileMap[pNum]
+		if pName == "" {
+			pName = defaultProfileName
+		}
+
+		entry := QueueStatusEntry{
+			QueueNumber:     item.Number,
+			Status:          item.Status,
+			ErrorMessage:    item.ErrorMessage,
+			QBProfileNumber: pNum,
+			ProfileName:     pName,
+		}
+
+		if seen[item.UserNumber] == nil {
+			seen[item.UserNumber] = make(map[string]bool)
+		}
+		seen[item.UserNumber][pNum] = true
+		userEntries[item.UserNumber] = append(userEntries[item.UserNumber], entry)
+	}
+
+	// Also include confirmed mappings if not already tracked in active queue
+	for _, m := range mappings {
+		pNum := m.QBProfileNumber
+		if seen[m.UserNumber] != nil && seen[m.UserNumber][pNum] {
+			continue
+		}
+		pName := profileMap[pNum]
+		if pName == "" {
+			pName = defaultProfileName
+		}
+
+		entry := QueueStatusEntry{
+			QueueNumber:     "",
+			Status:          "SUCCESS",
+			ErrorMessage:    "",
+			QBProfileNumber: pNum,
+			ProfileName:     pName,
+		}
+
+		if seen[m.UserNumber] == nil {
+			seen[m.UserNumber] = make(map[string]bool)
+		}
+		seen[m.UserNumber][pNum] = true
+		userEntries[m.UserNumber] = append(userEntries[m.UserNumber], entry)
+	}
+
+	result := make(map[string]QueueStatusEntry)
+	for userNumber, entries := range userEntries {
+		if len(entries) == 0 {
+			continue
+		}
+		// Primary is the latest entry, with all entries listed
+		primary := entries[len(entries)-1]
+		primary.Entries = entries
+		result[userNumber] = primary
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// GetItemQueueStatus returns a map of item_number → queue status.
+// Covers services (ITEM_SERVICE_ADD) and both product types (ITEM_INVENTORY_ADD, ITEM_NON_INVENTORY_ADD).
+// Supports optional ?profile_number= query parameter.
+func GetItemQueueStatus(c *gin.Context) {
+	profileNumber := c.Query("profile_number")
+
+	var profiles []qbModels.QBProfile
+	config.DB.Find(&profiles)
+	profileMap := make(map[string]string)
+	var defaultProfileName string
+	for _, p := range profiles {
+		profileMap[p.Number] = p.Name
+		if p.IsDefault {
+			defaultProfileName = p.Name
+		}
+	}
+	if defaultProfileName == "" && len(profiles) > 0 {
+		defaultProfileName = profiles[0].Name
+	}
+	if defaultProfileName == "" {
+		defaultProfileName = "QuickBooks"
+	}
+
+	query := config.DB.Where(
+		"action_type IN ?",
+		[]string{"ITEM_SERVICE_ADD", "ITEM_INVENTORY_ADD", "ITEM_NON_INVENTORY_ADD"},
+	)
+	mapQuery := config.DB
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			query = query.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+			mapQuery = mapQuery.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			query = query.Where("qb_profile_number = ?", profileNumber)
+			mapQuery = mapQuery.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+
+	var items []qbModels.QBSyncQueue
+	query.Order("created_at asc").Find(&items)
+
+	var mappings []qbModels.QBItemMapping
+	mapQuery.Find(&mappings)
+
+	itemEntries := make(map[string][]QueueStatusEntry)
+	seen := make(map[string]map[string]bool)
+
+	for _, item := range items {
+		pNum := item.QBProfileNumber
+		pName := profileMap[pNum]
+		if pName == "" {
+			pName = defaultProfileName
+		}
+
+		entry := QueueStatusEntry{
+			QueueNumber:     item.Number,
+			Status:          item.Status,
+			ErrorMessage:    item.ErrorMessage,
+			QBProfileNumber: pNum,
+			ProfileName:     pName,
+		}
+
+		if seen[item.ItemNumber] == nil {
+			seen[item.ItemNumber] = make(map[string]bool)
+		}
+		seen[item.ItemNumber][pNum] = true
+		itemEntries[item.ItemNumber] = append(itemEntries[item.ItemNumber], entry)
+	}
+
+	// Also include confirmed mappings if not already tracked in active queue
+	for _, m := range mappings {
+		pNum := m.QBProfileNumber
+		if seen[m.ItemNumber] != nil && seen[m.ItemNumber][pNum] {
+			continue
+		}
+		pName := profileMap[pNum]
+		if pName == "" {
+			pName = defaultProfileName
+		}
+
+		entry := QueueStatusEntry{
+			QueueNumber:     "",
+			Status:          "SUCCESS",
+			ErrorMessage:    "",
+			QBProfileNumber: pNum,
+			ProfileName:     pName,
+		}
+
+		if seen[m.ItemNumber] == nil {
+			seen[m.ItemNumber] = make(map[string]bool)
+		}
+		seen[m.ItemNumber][pNum] = true
+		itemEntries[m.ItemNumber] = append(itemEntries[m.ItemNumber], entry)
+	}
+
+	result := make(map[string]QueueStatusEntry)
+	for itemNumber, entries := range itemEntries {
+		if len(entries) == 0 {
+			continue
+		}
+		primary := entries[len(entries)-1]
+		primary.Entries = entries
+		result[itemNumber] = primary
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// DeleteQueueEntry deletes a QUEUED or FAILED queue entry.
+// SUCCESS and PROCESSING entries cannot be deleted.
+func DeleteQueueEntry(c *gin.Context) {
+	number := c.Param("number")
+
+	var item qbModels.QBSyncQueue
+	if err := config.DB.Where("number = ?", number).First(&item).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Queue entry not found"})
+		return
+	}
+
+	if item.Status == "SUCCESS" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot delete a successfully synced entry — it already exists in QuickBooks."})
+		return
+	}
+	if item.Status == "PROCESSING" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot delete an entry that is currently being processed by the Web Connector."})
+		return
+	}
+
+	// Hard delete the queue entry so the entity can be re-exported
+	if err := config.DB.Unscoped().Delete(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete queue entry"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Queue entry deleted. You can now re-export this record."})
+}
+
+// DeleteAllQueueErrors deletes all FAILED queue entries in one shot.
+func DeleteAllQueueErrors(c *gin.Context) {
+	result := config.DB.Unscoped().Where("status = ?", "FAILED").Delete(&qbModels.QBSyncQueue{})
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear sync errors"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "All sync errors cleared.", "deleted": result.RowsAffected})
+}
+
+// ResetCustomerMapping hard-deletes a student's QB customer mapping and all related
+// queue entries so the student can be re-exported to QuickBooks from scratch.
+//
+// Route: DELETE /main/quickbooks/customer-mappings/:user_number
+// Optional query param: ?profile_number=<qb_profile_number>
+//   - If omitted, ALL profile mappings for this user are reset.
+//   - If provided, only that profile's mapping is reset.
+//
+// Deleted records:
+//   1. qb_customer_mapping rows for the user (+ profile filter)
+//   2. qb_sync_queue CUSTOMER_ADD / CUSTOMER_QUERY entries for the user+profile
+//      (any status except PROCESSING — those must finish first)
+//   3. qb_sync_queue SALES_RECEIPT_ADD entries in QUEUED or FAILED state for the
+//      user+profile (they cannot be synced without a valid customer mapping)
+func ResetCustomerMapping(c *gin.Context) {
+	userNumber := c.Param("user_number")
+	profileNumber := c.Query("profile_number")
+
+	if userNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_number is required"})
+		return
+	}
+
+	// Guard: refuse to reset while a CUSTOMER_ADD/QUERY is mid-flight (PROCESSING).
+	var processing qbModels.QBSyncQueue
+	pq := config.DB.Where(
+		"user_number = ? AND action_type IN ('CUSTOMER_ADD','CUSTOMER_QUERY') AND status = 'PROCESSING'",
+		userNumber,
+	)
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			pq = pq.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			pq = pq.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	if err := pq.First(&processing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"error": "This student's QB export is currently being processed by the Web Connector. " +
+				"Please wait for it to finish before resetting.",
+		})
+		return
+	}
+
+	// Build profile-aware scoping helper (applied inline below)
+
+	// 1. Delete qb_customer_mapping rows
+	mappingQ := config.DB.Where("user_number = ?", userNumber)
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			mappingQ = mappingQ.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			mappingQ = mappingQ.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	var mappingsDeleted int64
+	if r := mappingQ.Unscoped().Delete(&qbModels.QBCustomerMapping{}); r.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete customer mapping: " + r.Error.Error()})
+		return
+	} else {
+		mappingsDeleted = r.RowsAffected
+	}
+
+	// 2. Delete CUSTOMER_ADD / CUSTOMER_QUERY queue entries (except PROCESSING — guarded above)
+	customerQueueQ := config.DB.Where(
+		"user_number = ? AND action_type IN ('CUSTOMER_ADD','CUSTOMER_QUERY') AND status != 'PROCESSING'",
+		userNumber,
+	)
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			customerQueueQ = customerQueueQ.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			customerQueueQ = customerQueueQ.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	var customerQueueDeleted int64
+	if r := customerQueueQ.Unscoped().Delete(&qbModels.QBSyncQueue{}); r.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete customer queue entries: " + r.Error.Error()})
+		return
+	} else {
+		customerQueueDeleted = r.RowsAffected
+	}
+
+	// 3. Delete SALES_RECEIPT_ADD entries in QUEUED or FAILED state for this user+profile
+	//    (SUCCESS entries are already in QB — leave them alone)
+	receiptQueueQ := config.DB.Where(
+		"user_number = ? AND action_type = 'SALES_RECEIPT_ADD' AND status IN ('QUEUED','FAILED')",
+		userNumber,
+	)
+	if profileNumber != "" {
+		if isDefaultProfile(profileNumber) {
+			receiptQueueQ = receiptQueueQ.Where("qb_profile_number = ? OR qb_profile_number = '' OR qb_profile_number IS NULL", profileNumber)
+		} else {
+			receiptQueueQ = receiptQueueQ.Where("qb_profile_number = ?", profileNumber)
+		}
+	}
+	var receiptsDeleted int64
+	if r := receiptQueueQ.Unscoped().Delete(&qbModels.QBSyncQueue{}); r.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete pending receipt queue entries: " + r.Error.Error()})
+		return
+	} else {
+		receiptsDeleted = r.RowsAffected
+	}
+
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":               "Customer mapping reset successfully. The student can now be re-exported to QuickBooks.",
+		"mappings_deleted":      mappingsDeleted,
+		"customer_queue_cleared": customerQueueDeleted,
+		"receipts_cleared":      receiptsDeleted,
+	})
+}
+

@@ -43,6 +43,23 @@ type ReportColumnAssessmentResponse struct {
 	Description      string `json:"description"`
 }
 
+type SubjectTeacherReportResponse struct {
+	Number               string `json:"number"`
+	AssessmentArea       string `json:"assessment_area"`
+	SubmittedOn          string `json:"submitted_on"`
+	UpdatedOn            string `json:"updated_on"`
+	Class                string `json:"class"`
+	AcademicYear         string `json:"academic_year"`
+	StudyPeriod          string `json:"study_period"`
+	SubjectTeacher       string `json:"subject_teacher"`
+	Status               string `json:"status"`
+	Stage                string `json:"stage"`
+	AssessmentAreaNumber string `json:"assessment_area_number"`
+	StudyPeriodNumber    string `json:"study_period_number" `
+	ClassNumber          string `json:"class_number" `
+	MetricNumber         string `json:"metric_number" `
+}
+
 type SummarizedFinalReportResponse struct {
 	Student           string `json:"student"`
 	StudentNumber     string `json:"student_number"`
@@ -66,6 +83,9 @@ type LeanReportSummary struct {
 	Position        int     `json:"position"`
 	Aggregate       float64 `json:"aggregate"`
 	TotalScore      float64 `json:"total_score"`
+	Status          string  `json:"status"`
+	Stage           string  `json:"stage"`
+	ADN             string  `json:"adn"`
 }
 type ClassLeanReportSummary struct {
 	Number          string `json:"number"`
@@ -86,6 +106,7 @@ type LeanStudent struct {
 	OtherName   string `json:"other_name"`
 	Gender      string `json:"gender"`
 	DateOfBirth string `json:"date_of_birth"`
+	ADN         string `json:"adn"`
 }
 
 type Assessments struct {
@@ -135,6 +156,8 @@ type FullReportSummary struct {
 	Position            int            `json:"position"`
 	Aggregate           float64        `json:"aggregate"`
 	TotalScore          float64        `json:"total_score"`
+	Status              string         `json:"status"`
+	Stage               string         `json:"stage"`
 }
 
 type ClassFullReportSummary struct {
@@ -150,6 +173,8 @@ type ClassFullReportSummary struct {
 	PromotionStatus     string         `json:"promotion_status"`
 	ReportTemplate      string         `json:"report_template"`
 	TeachersComment     string         `json:"teachers_comment"`
+	Status              string         `json:"status"`
+	Stage               string         `json:"stage"`
 }
 
 type LeanSchool struct {

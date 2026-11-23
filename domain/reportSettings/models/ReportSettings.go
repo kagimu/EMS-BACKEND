@@ -82,6 +82,8 @@ type ReportSummary struct {
 	AggregateScaleUsed         string                  `json:"aggregate_scale_used" gorm:"size:100"`
 	PromotionStatus            string                  `json:"promotion_status" gorm:"size:100;column:promotion_status;default:'NOT_SET'"`
 	AssessmentGradeScaleNumber string                  `json:"assessment_grade_scale_number" gorm:"column:assessment_grade_scale_number;size:36;"`
+	Status                     string                  `json:"status" gorm:"size:100;"`
+	Stage                      string                  `json:"stage" gorm:"size:100;"`
 }
 
 type ReportScore struct {

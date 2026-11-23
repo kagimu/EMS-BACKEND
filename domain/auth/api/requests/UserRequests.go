@@ -13,6 +13,7 @@ type UserDataRequest struct {
 	Gender     string `json:"gender"`
 	Email      string `json:"email"`
 	Phone      string `json:"phone"`
+	Type       string `json:"type"`
 }
 
 func (ur *UserDataRequest) Prepare() {
@@ -21,6 +22,7 @@ func (ur *UserDataRequest) Prepare() {
 	ur.LastName = html.EscapeString(strings.TrimSpace(ur.LastName))
 	ur.Email = html.EscapeString(strings.TrimSpace(ur.Email))
 	ur.Phone = html.EscapeString(strings.TrimSpace(ur.Phone))
+	ur.Type = html.EscapeString(strings.TrimSpace(ur.Type))
 }
 
 func (ur *UserDataRequest) Validate() error {

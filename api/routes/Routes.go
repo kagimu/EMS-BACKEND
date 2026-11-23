@@ -69,15 +69,19 @@ import (
 	previousSchoolResultsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/previousSchoolResults/controllers"
 	progressReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/progressReport/controllers"
 	promotionController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/promotion/controllers"
+	quickbooksController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/quickbooks/controllers"
 	reportSettingsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportSettings/controllers"
 	reportTemplate "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reportTemplate/api/controllers"
+	reportsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/reports/api/controllers"
 	schemeOfWorkControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/schemeOfWork/controllers"
 	schoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/school/controllers"
+	departmentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/departments/controllers"
 	learningMaterialsControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/learningMaterials/controllers"
 	learningLevelControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/settings/level/controllers"
 	setupController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/setup/controllers"
 	sourceOfSchoolController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/sourceOfSchoolInfo/controllers"
 	staffController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staff/controllers"
+	staffMembersControllers "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/staffMembers/controllers"
 	statisticsController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/statistics/api/controllers"
 	studentController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/student/controllers"
 	studentAssessmentAreaReportController "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/studentAssessmentAreaReport/controllers"
@@ -152,6 +156,24 @@ func SetupRoutes() *gin.Engine {
 	landingPage := router.Group("/landing-page")
 	{
 		landingPage.GET("", controllers2.GetLandingPage)
+		landingPage.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+		landingPage.POST("application", staffMembersControllers.CreateJobApplication)
+		landingCareers := landingPage.Group("/careers")
+		{
+			landingCareers.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+			landingCareers.POST("application", staffMembersControllers.CreateJobApplication)
+		}
+	}
+
+	public := router.Group("/public")
+	{
+		public.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+		public.POST("application", staffMembersControllers.CreateJobApplication)
+		careers := public.Group("/careers")
+		{
+			careers.GET("vacancies", staffMembersControllers.FetchPublicJobVacancies)
+			careers.POST("application", staffMembersControllers.CreateJobApplication)
+		}
 	}
 
 	auth := router.Group("/auth")
@@ -292,6 +314,15 @@ func SetupRoutes() *gin.Engine {
 		main.POST("new-learning-area", learningAreaController.NewLearningArea)
 		main.GET("learning-areas", learningAreaController.FetchLearningArea)
 
+		//payment methods
+		paymentMethods := main.Group("/payment-methods")
+		{
+			paymentMethods.GET("", paymentsController.FetchPaymentMethods)
+			paymentMethods.POST("", paymentsController.CreatePaymentMethod)
+			paymentMethods.PUT("/edit", paymentsController.EditPaymentMethod)
+			paymentMethods.DELETE("/delete", paymentsController.DeletePaymentMethod)
+		}
+
 		//subject cluster
 		subjectCluster := main.Group("/subject-cluster")
 		{
@@ -423,6 +454,7 @@ func SetupRoutes() *gin.Engine {
 			// StudyTimetable endpoints
 			timetable.GET("study-timetables", timetableController.GetAllStudyTimetables)
 			timetable.GET("study-timetables/:timetable_number", timetableController.GetStudyTimetable)
+			timetable.DELETE("study-timetables/:timetable_number", timetableController.DeleteStudyTimetable)
 
 			// StudyTimetablePeriod endpoints
 			timetable.POST("study-timetable-periods", timetableController.CreateStudyTimetablePeriod)
@@ -475,6 +507,7 @@ func SetupRoutes() *gin.Engine {
 			}
 
 			eos.GET("my-entities", eosController.GetUserEntities)
+			eos.GET("staff-entities", eosController.GetStaffEntities)
 			eos.GET("calendars", eosController.GetAllCalendars)
 			eos.POST("calendars", eosController.AddGeneralCalendar)
 			eos.GET("calendars/:calendar_number", eosController.GetCalendarDetails)
@@ -579,11 +612,19 @@ func SetupRoutes() *gin.Engine {
 		{
 			invoices.POST("", invoiceController.CreateInvoice)
 			invoices.GET("", invoiceController.GetAllInvoices)
+			invoices.POST("payment-plans", invoiceController.CreateBillPaymentPlan)
+			invoices.GET("payment-plans", invoiceController.FetchBillPaymentPlans)
+			invoices.PUT("payment-plans/:bill_payment_plan_number", invoiceController.UpdateBillPaymentPlan)
+			invoices.POST("payment-plans-installment-pay", invoiceController.PayBillPaymentPlanInstallment)
+			invoices.POST("payment-plans-installment-pay-cancelled", invoiceController.CancelBillPaymentPlanInstallmentPayment)
 			invoices.POST("pay", invoiceController.CreateInvoicePayment)
 			invoices.GET("details", invoiceController.GetInvoiceDetails)
 			invoices.GET("financial-summary", invoiceController.FinancialSummary)
 			invoices.POST("update", invoiceController.UpdateInvoice)
 			invoices.GET("general-statement", invoiceController.GeneralStatement)
+			invoices.GET("item-transactions", invoiceController.GetInvoiceItemTransactionsHistory)
+			invoices.GET("all-item-transactions", invoiceController.GetAllItemTransactionsHistory)
+			invoices.GET("transaction-item-transactions", invoiceController.GetInvoiceItemTransactionsHistoryByTransaction)
 
 			payments := invoices.Group("/payments")
 			{
@@ -595,6 +636,9 @@ func SetupRoutes() *gin.Engine {
 				payments.POST("delete", invoiceController.DeletePayment)
 				payments.POST("prepaid", invoiceController.PrepaidDeposit)
 				payments.GET("prepaid", invoiceController.GetPrepaidBalance)
+				payments.GET("credits-new", invoiceController.GetCreditsByUser)
+				payments.POST("credits/update", invoiceController.EditCredit)
+				payments.DELETE("credits/:credit_number", invoiceController.DeleteCredit)
 			}
 
 			invoices.POST("delete", invoiceController.DeleteInvoice)
@@ -606,6 +650,7 @@ func SetupRoutes() *gin.Engine {
 				billable.PUT("", invoiceController.UpdateBillable)
 				billable.DELETE("/:billable_number", invoiceController.DeleteBillable)
 				billable.GET("", invoiceController.AllBillable)
+				billable.GET("with-items", invoiceController.AllBillableWithItems)
 				billable.GET("details", invoiceController.BillableDetails)
 				billable.GET("determine", invoiceController.GetBill)
 			}
@@ -636,11 +681,22 @@ func SetupRoutes() *gin.Engine {
 		{
 			admission.POST("", admissionController.CreateAdmission)
 			admission.POST("existing-admission", admissionController.CreateExistingAdmission)
+			admission.POST("bulk-direct-admit", admissionController.BulkDirectAdmit)
 			admission.GET("", admissionController.FetchAdmissions)
 			admission.GET("admission-requirements", admissionController.GetAdmissionRequirementsController)
 			admission.POST("admission-requirements", admissionController.NewAdmissionRequirementController)
+			admission.DELETE("admission-requirements/:number", admissionController.DeleteAdmissionRequirementController)
+			admission.PUT("admission-requirements/:number/status", admissionController.UpdateAdmissionRequirementStatusController)
 			admission.GET("/:admission_number", admissionController.FetchAdmissionById)
 			admission.GET("items/:admission_number", admissionController.FetchItemsAddedOnAdmission)
+
+			// Terms of Admission (TOA)
+			admission.POST("toa", admissionController.SaveToaController)
+			admission.GET("toa/:school_number", admissionController.GetToaController)
+
+			// Signed TOA document upload / retrieval
+			admission.POST("toa/signed-upload", admissionController.UploadSignedToaController)
+			admission.GET("toa/signed-upload/:student_number", admissionController.GetSignedToaAttachmentsController)
 
 		}
 
@@ -676,6 +732,7 @@ func SetupRoutes() *gin.Engine {
 			assessment.POST("", assessmentController.CreateAssessment)
 			assessment.GET("", assessmentController.FetchAssessmentByStudent)
 			assessment.GET("student-assessment-area-report", studentAssessmentAreaReportController.GetStudentAssessmentAreaReport)
+			assessment.GET("all-student-assessment-area-reports", studentAssessmentAreaReportController.GetAllStudentAssessmentAreaReportsByClassAndStudyPeriod)
 
 			assessment.POST("assessment-metrics", assessmentController.CreateAssessmentMetric)
 			assessment.DELETE("assessment-metrics/:assessment_metric_number", assessmentController.DeleteAssessmentMetric)
@@ -761,14 +818,26 @@ func SetupRoutes() *gin.Engine {
 				scopes.POST("", permissionController.CreateScope)
 				scopes.GET("", permissionController.FetchScopes)
 			}
+
+			departments := settings.Group("departments")
+			{
+				departments.GET("", departmentController.FetchAllDepartments)
+				departments.DELETE("delete/:id", departmentController.DeleteDepartment)
+			}
+
+			department := settings.Group("department")
+			{
+				department.POST("", departmentController.CreateDepartment)
+				department.PUT("edit", departmentController.EditDepartment)
+			}
 		}
 
 		users := main.Group("users")
 		{
-			users.GET("", middleware.ValidatePermission("view_users"), authController.FetchUsers)
-			users.GET("all", middleware.RequireInstallationAuthority("view_all_users"), authController.FetchAllUsers)
-			users.GET(":user_number", middleware.ValidatePermission("view_users"), authController.FetchUser)
-			users.POST("", middleware.ValidatePermission("create_user"), authController.CreateUser)
+			users.GET("", authController.FetchUsers)
+			users.GET("all", authController.FetchAllUsers)
+			users.GET(":user_number", authController.FetchUser)
+			users.POST("", authController.CreateUser)
 			users.GET("meals", cateringController.FetchUserMeals)
 		}
 
@@ -798,6 +867,8 @@ func SetupRoutes() *gin.Engine {
 			enrollment.GET("", enrollmentController.FetchEnrolledStudents)
 			enrollment.GET("/:enrollment_number", enrollmentController.FetchEnrollmentDetails)
 			enrollment.PUT("/enrollment-items/:id", enrollmentController.UpdateEnrollmentItem)
+			enrollment.GET("/clearance-logs", enrollmentController.FetchClearanceLogs)
+			enrollment.DELETE("/clearance-logs-delete/:id", enrollmentController.DeleteClearanceLog)
 			enrollment.POST("terminate-student/:student_number", enrollmentController.TerminateStudentEnrollment)
 			enrollment.POST("re-enroll-student/:student_number", enrollmentController.ReEnrollStudent)
 		}
@@ -807,6 +878,10 @@ func SetupRoutes() *gin.Engine {
 			staff.POST("attach-staff-to-stream", staffController.AttachStaffToStream)
 			staff.GET("", staffController.GetStaffOnStream)
 			staff.DELETE("", staffController.DetachStaffFromStream)
+			staff.POST("staff-scope", staffController.SaveStaffScope)
+			staff.PUT("staff-scope", staffController.UpdateStaffScope)
+			staff.GET("staff-scope/:staff_number", staffController.GetStaffScope)
+			staff.DELETE("staff-scope/:staff_number", staffController.DeleteStaffScope)
 
 			salaryScale := staff.Group("salary-scale")
 			{
@@ -852,6 +927,9 @@ func SetupRoutes() *gin.Engine {
 			reportSettings.GET("report-settings-by-student", reportSettingsController.FetchReportSummaryByStudentAndStudyPeriodAndClass)
 			reportSettings.POST("generate-report", reportSettingsController.GenerateReportSummary)
 			reportSettings.GET("report-summary-details/:report_summary_number", reportSettingsController.FetchReportSummaryDetails)
+			reportSettings.POST("report-summary/approve", reportSettingsController.ApproveReportSummaries)
+			reportSettings.POST("report-summary/forward", reportSettingsController.ForwardReportSummary)
+			reportSettings.GET("report-summary/correspondences", reportSettingsController.FetchReportSummaryCorrespondences)
 			reportSettings.GET("report-summary-promotion-details/:report_summary_number", reportSettingsController.FetchReportPromotionDetails)
 			reportSettings.POST("add-head-teachers-comment/:report_setting_number", reportSettingsController.CreateHeadTeacherComment)
 			reportSettings.GET("head-teachers-comments", reportSettingsController.FetchHeadTeacherComments)
@@ -879,6 +957,17 @@ func SetupRoutes() *gin.Engine {
 				subjectTeacherComment.DELETE("/:comment_number", reportSettingsController.DeleteSubjectTeacherComment)
 				subjectTeacherComment.POST("/:number", reportSettingsController.UpdateSubjectTeacherComment)
 
+			}
+
+			subjectTeacherReport := reportSettings.Group("subject-teacher-report")
+			{
+				subjectTeacherReport.POST("", reportSettingsController.CreateSubjectTeacherReport)
+				subjectTeacherReport.GET("all", reportSettingsController.FetchAllSubjectTeacherReports)
+				subjectTeacherReport.DELETE("/:number", reportSettingsController.RemoveSubjectTeacherReport)
+				subjectTeacherReport.PUT("/:number", reportSettingsController.UpdateSubjectTeacherReport)
+				subjectTeacherReport.POST("forward", reportSettingsController.ForwardSubjectTeacherReport)
+				subjectTeacherReport.POST("/:number/approve", reportSettingsController.ApproveSubjectTeacherReport)
+				subjectTeacherReport.GET("comments", reportSettingsController.FetchSubjectTeacherReportComments)
 			}
 
 			narrative := reportSettings.Group("narrative")
@@ -1024,6 +1113,17 @@ func SetupRoutes() *gin.Engine {
 				feedingGroupUsers.GET("", cateringController.FetchFeedingGroupUsers)
 				feedingGroupUsers.GET("available", cateringController.FetchAvailableUsers)
 			}
+			feedingGroupStaffs := catering.Group("feeding-group-staffs")
+			{
+				feedingGroupStaffs.POST("", cateringController.CreateFeedingGroupStaff)
+				feedingGroupStaffs.GET("", cateringController.FetchFeedingGroupStaffs)
+				feedingGroupStaffs.PUT("", cateringController.UpdateFeedingGroupStaff)
+				feedingGroupStaffs.POST("update", cateringController.UpdateFeedingGroupStaff)
+				feedingGroupStaffs.DELETE("", cateringController.DeleteFeedingGroupStaff)
+				feedingGroupStaffs.DELETE("/:number", cateringController.DeleteFeedingGroupStaff)
+				feedingGroupStaffs.POST("delete", cateringController.DeleteFeedingGroupStaff)
+			}
+			catering.GET("feeding-group-learners", cateringController.FetchFeedingGroupLearners)
 
 			// Feeding group session
 			catering.POST("feeding-group-sessions", cateringController.CreateFeedingGroupSession)
@@ -1038,9 +1138,16 @@ func SetupRoutes() *gin.Engine {
 			// Meals
 			catering.POST("meals", cateringController.AddMeal)
 			catering.GET("meals", cateringController.FetUsersMeals)
+			catering.GET("meals/learners", cateringController.FetchLearnersMeals)
+			catering.GET("meals/learners/history", cateringController.FetchLearnersMealsHistory)
+			catering.GET("meals/staff", cateringController.FetchStaffMeals)
+			catering.GET("meals/staff/history", cateringController.FetchStaffMealsHistory)
+			catering.POST("meals/staff", cateringController.AddStaffMeal)
 			catering.GET("meal-projections", cateringController.MealsProjections)
 			catering.GET("meal-calendar", cateringController.MealCourseCalendar)
 			catering.POST("meal-course-feeding-sessions", cateringController.FeedingSessionsToMealCourse)
+			catering.PUT("meal-course-feeding-sessions", cateringController.UpdateFeedingSessionsToMealCourse)
+			catering.POST("meal-course-feeding-sessions/delete", cateringController.DeleteMealCourseFeedingSession)
 			catering.GET("meal-course-feeding-sessions", cateringController.AllMealCourseFeedingSessions)
 			catering.POST("activate-meal-course", cateringController.ActivateMealCourse)
 
@@ -1061,6 +1168,12 @@ func SetupRoutes() *gin.Engine {
 			statistics.POST("test", statisticsController.PrintTestReport)
 		}
 
+		reports := main.Group("reports")
+		{
+			reports.GET("summary", reportsController.FetchSummary)
+			reports.GET("school-structure", reportsController.FetchSchoolStructureReport)
+		}
+
 		activityReporting := main.Group("activity-reporting")
 		{
 			indicators := activityReporting.Group("indicators")
@@ -1076,6 +1189,76 @@ func SetupRoutes() *gin.Engine {
 			landingPage.GET("all", controllers2.GetLandingPage)
 		}
 
+		staffMembers := main.Group("staffMembers")
+		{
+			staffMembers.POST("job-position", staffMembersControllers.CreateJobPosition)
+			staffMembers.GET("job-positions", staffMembersControllers.FetchJobPositions)
+			staffMembers.PUT("job-position/edit", staffMembersControllers.EditJobPosition)
+			staffMembers.DELETE("job-position/:id", staffMembersControllers.DeleteJobPosition)
+
+			staffMembers.POST("vacancy", staffMembersControllers.CreateJobVacancy)
+			staffMembers.GET("vacancies", staffMembersControllers.FetchJobVacancies)
+			staffMembers.PUT("vacancy/edit", staffMembersControllers.EditJobVacancy)
+			staffMembers.DELETE("vacancy/:id", staffMembersControllers.DeleteJobVacancy)
+
+			staffMembers.POST("application", staffMembersControllers.CreateJobApplication)
+			staffMembers.GET("applications", staffMembersControllers.FetchJobApplications)
+			staffMembers.PUT("application/edit", staffMembersControllers.EditJobApplication)
+			staffMembers.DELETE("application/:id", staffMembersControllers.DeleteJobApplication)
+
+			staffMembers.POST("interview", staffMembersControllers.CreateJobInterview)
+			staffMembers.GET("interviews", staffMembersControllers.FetchJobInterviews)
+			staffMembers.PUT("interview/edit", staffMembersControllers.EditJobInterview)
+			staffMembers.DELETE("interview/:id", staffMembersControllers.DeleteJobInterview)
+			staffMembers.POST("schedule-interview", staffMembersControllers.ScheduleInterview)
+			staffMembers.GET("scheduled-interviews", staffMembersControllers.FetchScheduledInterviews)
+			staffMembers.DELETE("scheduled-interview/:id", staffMembersControllers.DeleteScheduledInterview)
+			staffMembers.POST("interview-score", staffMembersControllers.ScoreInterview)
+			staffMembers.GET("completed-interviews", staffMembersControllers.FetchCompletedInterviews)
+
+			staffMembers.POST("job-offer", staffMembersControllers.CreateJobOffer)
+			staffMembers.GET("job-offer", staffMembersControllers.FetchJobOffers)
+			staffMembers.GET("job-offers", staffMembersControllers.FetchJobOffers)
+			staffMembers.DELETE("job-offer/:id", staffMembersControllers.DeleteJobOffer)
+
+			staffMembers.POST("deployment", staffMembersControllers.CreateStaffDeployment)
+			staffMembers.GET("deployments", staffMembersControllers.FetchStaffDeployments)
+			staffMembers.PUT("deployment/edit", staffMembersControllers.EditStaffDeployment)
+			staffMembers.DELETE("deployment/:id", staffMembersControllers.DeleteStaffDeployment)
+			staffMembers.PUT("deployment/assign-role", staffMembersControllers.AssignStaffRole)
+
+			staffMembers.POST("biodata/:job_offer_number/personal", staffMembersControllers.CreatePersonalBioData)
+			staffMembers.GET("biodata/:job_offer_number/personal", staffMembersControllers.FetchPersonalBioData)
+			staffMembers.PUT("biodata/:job_offer_number/personal", staffMembersControllers.EditPersonalBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/contact", staffMembersControllers.CreateContactBioData)
+			staffMembers.GET("biodata/:job_offer_number/contact", staffMembersControllers.FetchContactBioData)
+			staffMembers.PUT("biodata/:job_offer_number/contact", staffMembersControllers.EditContactBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/medical", staffMembersControllers.CreateMedicalBioData)
+			staffMembers.GET("biodata/:job_offer_number/medical", staffMembersControllers.FetchMedicalBioData)
+			staffMembers.PUT("biodata/:job_offer_number/medical", staffMembersControllers.EditMedicalBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/family", staffMembersControllers.CreateFamilyBioData)
+			staffMembers.GET("biodata/:job_offer_number/family", staffMembersControllers.FetchFamilyBioData)
+			staffMembers.PUT("biodata/:job_offer_number/family", staffMembersControllers.EditFamilyBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/education", staffMembersControllers.CreateEducationBioData)
+			staffMembers.GET("biodata/:job_offer_number/education", staffMembersControllers.FetchEducationBioData)
+			staffMembers.PUT("biodata/:job_offer_number/education", staffMembersControllers.EditEducationBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/languages", staffMembersControllers.CreateLanguageBioData)
+			staffMembers.GET("biodata/:job_offer_number/languages", staffMembersControllers.FetchLanguageBioData)
+			staffMembers.PUT("biodata/:job_offer_number/languages", staffMembersControllers.EditLanguageBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/references", staffMembersControllers.CreateReferencesBioData)
+			staffMembers.GET("biodata/:job_offer_number/references", staffMembersControllers.FetchReferencesBioData)
+			staffMembers.PUT("biodata/:job_offer_number/references", staffMembersControllers.EditReferencesBioData)
+
+			staffMembers.POST("biodata/:job_offer_number/photo", staffMembersControllers.UploadStaffPhoto)
+			staffMembers.GET("biodata/:job_offer_number/full-profile", staffMembersControllers.FetchFullStaffProfileBioData)
+		}
+
 		curriculumDelivery := main.Group("curriculum-delivery")
 		{
 			curriculumDelivery.POST("add-session", controllers3.AddSession)
@@ -1086,319 +1269,26 @@ func SetupRoutes() *gin.Engine {
 			curriculumDelivery.GET("percentage-by-stream/:stream_number", controllers3.GetCurriculumDeliveryProgressByStream)
 		}
 
-		// EMS Core Foundation A: addon/module registry.
-		// Registry state only: these endpoints never gate or change Education.
-		// ValidatePermission MUST run before the handler so an unauthorised
-		// request is rejected before any response is written.
-		emsModules := main.Group("/ems/modules")
-		{
-			emsModules.GET("", middleware.ValidatePermission("view_ems_modules"), addonsController.FetchModules)
-			emsModules.GET(":code", middleware.ValidatePermission("view_ems_modules"), addonsController.FetchModule)
-			emsModules.PATCH(":code/enable", middleware.RequireInstallationAuthority("manage_ems_modules"), addonsController.EnableModule)
-			emsModules.PATCH(":code/disable", middleware.RequireInstallationAuthority("manage_ems_modules"), addonsController.DisableModule)
-		}
-
-		// EMS Core Foundation B: organisation units.
-		// Organisation-scoped; permission middleware runs before the handler.
-		emsOrganisationUnits := main.Group("/ems/organisation-units")
-		{
-			emsOrganisationUnits.GET("", middleware.ValidatePermission("view_ems_organisation"), organisationUnitController.FetchOrganisationUnits)
-			emsOrganisationUnits.GET(":number", middleware.ValidatePermission("view_ems_organisation"), organisationUnitController.FetchOrganisationUnit)
-			emsOrganisationUnits.POST("", middleware.ValidatePermission("manage_ems_organisation"), organisationUnitController.CreateOrganisationUnit)
-			emsOrganisationUnits.PUT(":number", middleware.ValidatePermission("manage_ems_organisation"), organisationUnitController.UpdateOrganisationUnit)
-			emsOrganisationUnits.PATCH(":number/status", middleware.ValidatePermission("manage_ems_organisation"), organisationUnitController.UpdateOrganisationUnitStatus)
-			emsOrganisationUnits.DELETE(":number", middleware.ValidatePermission("manage_ems_organisation"), organisationUnitController.DeleteOrganisationUnit)
-		}
-
-		// EMS Core Foundation C1: generic stakeholder registry.
-		// Organisation-scoped; permission middleware runs before the handler.
-		emsStakeholders := main.Group("/ems/stakeholders")
-		{
-			emsStakeholders.GET("", middleware.ValidatePermission("view_ems_stakeholders"), stakeholderController.FetchStakeholders)
-			emsStakeholders.GET(":number", middleware.ValidatePermission("view_ems_stakeholders"), stakeholderController.FetchStakeholder)
-			emsStakeholders.POST("", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.CreateStakeholder)
-			emsStakeholders.PUT(":number", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.UpdateStakeholder)
-			emsStakeholders.PATCH(":number/status", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.UpdateStakeholderStatus)
-		}
-
-		// EMS employee intake: creates a staff identity with a server-generated
-		// user number, attaches it to the active organisation and records its
-		// stakeholder relationship. Uses the stakeholder management permission.
-		emsEmployees := main.Group("/ems/employees")
-		{
-			emsEmployees.POST("", middleware.ValidatePermission("manage_ems_stakeholders"), stakeholderController.CreateEmployee)
-		}
-
-		// EMS Core Foundation C3: generic user assignments.
-		// Organisation-scoped; permission middleware runs before the handler.
-		emsUserAssignments := main.Group("/ems/user-assignments")
-		{
-			emsUserAssignments.GET("", middleware.ValidatePermission("view_ems_assignments"), userAssignmentController.FetchUserAssignments)
-			emsUserAssignments.GET(":number", middleware.ValidatePermission("view_ems_assignments"), userAssignmentController.FetchUserAssignment)
-			emsUserAssignments.POST("", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.CreateUserAssignment)
-			emsUserAssignments.PUT(":number", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.UpdateUserAssignment)
-			emsUserAssignments.PATCH(":number/status", middleware.ValidatePermission("manage_ems_assignments"), userAssignmentController.UpdateUserAssignmentStatus)
-		}
-
-		// EMS Core reporting: explicit person-to-person reporting lines between
-		// assignments. Organisation-scoped and gated with the assignment
-		// permissions (reporting is a property of assignments).
-		emsReportingLines := main.Group("/ems/reporting-lines")
-		{
-			emsReportingLines.GET("", middleware.ValidatePermission("view_ems_assignments"), reportingController.FetchReportingLines)
-			emsReportingLines.GET(":number", middleware.ValidatePermission("view_ems_assignments"), reportingController.FetchReportingLine)
-			emsReportingLines.POST("", middleware.ValidatePermission("manage_ems_assignments"), reportingController.CreateReportingLine)
-			emsReportingLines.PUT(":number", middleware.ValidatePermission("manage_ems_assignments"), reportingController.UpdateReportingLine)
-			emsReportingLines.PATCH(":number/status", middleware.ValidatePermission("manage_ems_assignments"), reportingController.UpdateReportingLineStatus)
-		}
-
-		// EMS Core Foundation D: decision authority.
-		// Definitions are organisation-scoped; the resolver is read-only.
-		// Permission middleware runs before the handler on every route.
-		emsDecisionAuthorities := main.Group("/ems/decision-authorities")
-		{
-			emsDecisionAuthorities.GET("", middleware.ValidatePermission("view_ems_authority"), decisionAuthorityController.FetchDecisionAuthorities)
-			emsDecisionAuthorities.GET(":number", middleware.ValidatePermission("view_ems_authority"), decisionAuthorityController.FetchDecisionAuthority)
-			emsDecisionAuthorities.POST("", middleware.ValidatePermission("manage_ems_authority"), decisionAuthorityController.CreateDecisionAuthority)
-			emsDecisionAuthorities.PUT(":number", middleware.ValidatePermission("manage_ems_authority"), decisionAuthorityController.UpdateDecisionAuthority)
-			emsDecisionAuthorities.PATCH(":number/status", middleware.ValidatePermission("manage_ems_authority"), decisionAuthorityController.UpdateDecisionAuthorityStatus)
-		}
-
-		// The resolver uses a separate static path because Gin/httprouter cannot
-		// register "resolve" and ":number" as siblings (registration would panic).
-		emsAuthorityResolution := main.Group("/ems/authority-resolution")
-		{
-			emsAuthorityResolution.GET("", middleware.ValidatePermission("view_ems_authority"), decisionAuthorityController.ResolveAuthority)
-		}
-
-		// EMS Core Foundation E1: workflow and approvals.
-		// Requests are organisation-scoped and permission-gated. Creating and
-		// cancelling require management rights; approving or rejecting requires
-		// the approval permission AND a live assignment for the current step.
-		// Permission middleware runs before the handler on every route.
-		emsApprovals := main.Group("/ems/approvals")
-		{
-			emsApprovals.GET("", middleware.ValidatePermission("view_ems_workflow"), approvalController.FetchApprovalRequests)
-			emsApprovals.POST("", middleware.ValidatePermission("manage_ems_workflow"), approvalController.CreateApprovalRequest)
-			emsApprovals.GET(":number", middleware.ValidatePermission("view_ems_workflow"), approvalController.FetchApprovalRequest)
-			emsApprovals.POST(":number/approve", middleware.ValidatePermission("act_ems_approval"), approvalController.ApproveApprovalRequest)
-			emsApprovals.POST(":number/reject", middleware.ValidatePermission("act_ems_approval"), approvalController.RejectApprovalRequest)
-			emsApprovals.POST(":number/return", middleware.ValidatePermission("act_ems_approval"), approvalController.ReturnApprovalRequest)
-			emsApprovals.POST(":number/cancel", middleware.ValidatePermission("manage_ems_workflow"), approvalController.CancelApprovalRequest)
-		}
-
-		// The approver inbox lives on a separate static path so it can never be
-		// confused with a request number.
-		emsApprovalTasks := main.Group("/ems/approval-tasks")
-		{
-			emsApprovalTasks.GET("", middleware.ValidatePermission("view_ems_workflow"), approvalController.FetchApprovalTasks)
-		}
-
-		// Foundation E4 (E4-2): organisation-scoped workflow deadline
-		// configuration. Read uses the existing view_ems_workflow; update uses the
-		// existing manage_ems_workflow authority (E4-D10). No new permission.
-		emsWorkflow := main.Group("/ems/workflow")
-		{
-			emsWorkflow.GET("/deadline-config", middleware.ValidatePermission("view_ems_workflow"), approvalController.FetchDeadlineConfig)
-			emsWorkflow.PUT("/deadline-config", middleware.ValidatePermission("manage_ems_workflow"), approvalController.UpdateDeadlineConfig)
-		}
-
-		// EMS Core Foundation F (Increment 1): licence registry and client
-		// licence status. The control plane uses a dedicated authority guard
-		// (RequireLicenceRegistryAuthority) that deliberately does NOT honour
-		// the Admin user-type pass-through: registry authority is explicit.
-		emsLicenceRegistry := main.Group("/ems/licence-registry")
-		{
-			emsLicenceRegistry.POST("/licences", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.IssueLicence)
-			emsLicenceRegistry.GET("/licences", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchLicences)
-			emsLicenceRegistry.GET("/licences/:number", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchLicence)
-			emsLicenceRegistry.PUT("/licences/:number", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.ConfigureLicence)
-			emsLicenceRegistry.POST("/licences/:number/renew", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.RenewLicence)
-			emsLicenceRegistry.POST("/licences/:number/suspend", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.SuspendLicence)
-			emsLicenceRegistry.POST("/licences/:number/revoke", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.RevokeLicence)
-			emsLicenceRegistry.POST("/licences/:number/replace", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.ReplaceLicence)
-			emsLicenceRegistry.GET("/installations", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchInstallations)
-			emsLicenceRegistry.GET("/installations/:number", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchInstallation)
-			emsLicenceRegistry.POST("/installations/:number/release", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.ReleaseInstallation)
-			emsLicenceRegistry.GET("/events", licensingMiddleware.RequireLicenceRegistryAuthority(), licensingController.FetchLicenceEvents)
-		}
-
-		// Client plane: the organisation's own licence status and installation
-		// activation. Never exposes the licence key and never reaches another
-		// organisation. Self-deactivation terminates access only; capacity is
-		// released only through the control plane.
-		emsLicence := main.Group("/ems/licence")
-		{
-			emsLicence.GET("", middleware.ValidatePermission("view_licence_status"), licensingController.ClientLicenceStatus)
-			emsLicence.POST("/activate", middleware.ValidatePermission("activate_licence_installation"), licensingMiddleware.RequireActivationRateLimit(), licensingController.ActivateInstallation)
-			emsLicence.GET("/installations", middleware.ValidatePermission("view_licence_status"), licensingController.FetchClientInstallations)
-			emsLicence.POST("/installations/:number/deactivate", middleware.ValidatePermission("deactivate_own_installation"), licensingController.DeactivateOwnInstallation)
-			emsLicence.POST("/renewal-request", middleware.ValidatePermission("request_licence_renewal"), licensingController.RequestRenewal)
-		}
-
-		// Software Owner Console. Every route requires the deployment-configured
-		// owner; ordinary client Admins are rejected even if they know the URL.
-		emsOwner := main.Group("/ems/owner")
-		emsOwner.Use(middleware.RequireSoftwareOwner())
-		{
-			emsOwner.GET("/access", ownerController.Access)
-			emsOwner.GET("/overview", ownerController.Overview)
-			emsOwner.GET("/organisations", ownerController.FetchOrganisations)
-			emsOwner.GET("/organisations/:number", ownerController.FetchOrganisation)
-			emsOwner.GET("/customers/:number/profile", commercialProfileController.GetCustomerProfile)
-			emsOwner.POST("/customers/:number/profile", commercialProfileController.CreateCustomerProfile)
-			emsOwner.PUT("/customers/:number/profile", commercialProfileController.UpdateCustomerProfile)
-			emsOwner.GET("/products", commercialProductController.FetchCommercialProducts)
-			emsOwner.POST("/products", commercialProductController.CreateCommercialProduct)
-			emsOwner.GET("/products/:number", commercialProductController.FetchCommercialProduct)
-			emsOwner.PUT("/products/:number", commercialProductController.UpdateCommercialProduct)
-			emsOwner.PATCH("/products/:number/status", commercialProductController.SetCommercialProductStatus)
-			emsOwner.GET("/products/:number/components", commercialProductController.FetchCommercialProductComponents)
-			emsOwner.POST("/products/:number/components", commercialProductController.CreateCommercialProductComponent)
-			emsOwner.PUT("/products/:number/components/:componentNumber", commercialProductController.UpdateCommercialProductComponent)
-			emsOwner.PATCH("/products/:number/components/:componentNumber/status", commercialProductController.SetCommercialProductComponentStatus)
-			emsOwner.GET("/licences", ownerController.FetchLicences)
-			emsOwner.GET("/licences/:number", ownerController.FetchLicence)
-			emsOwner.GET("/licences/:number/flexible", licensingController.FetchFlexibleLicence)
-			emsOwner.PUT("/licences/:number/flexible", licensingController.ConfigureFlexibleLicence)
-			emsOwner.POST("/licences/:number/units", licensingController.RegisterLicensedUnit)
-			emsOwner.POST("/licences/:number/units/:unit/release", licensingController.ReleaseLicensedUnit)
-			emsOwner.GET("/installations", ownerController.FetchInstallations)
-			emsOwner.GET("/installations/:number", ownerController.FetchInstallation)
-			emsOwner.GET("/addons", ownerController.FetchAddons)
-			emsOwner.GET("/support/overview", supportController.OwnerOverview)
-			emsOwner.GET("/support/tickets", supportController.OwnerTickets)
-			emsOwner.POST("/support/tickets", supportController.OwnerCreateTicket)
-			emsOwner.GET("/support/tickets/:number", supportController.OwnerTicket)
-			emsOwner.POST("/support/tickets/:number/messages", supportController.OwnerMessage)
-			emsOwner.PATCH("/support/tickets/:number", supportController.OwnerUpdate)
-			emsOwner.POST("/support/tickets/:number/escalate", supportController.OwnerEscalate)
-			emsOwner.GET("/support/staff", supportController.OwnerStaff)
-			emsOwner.POST("/support/staff", supportController.OwnerAddStaff)
-			emsOwner.PATCH("/support/staff/:user_number/status", supportController.OwnerStaffStatus)
-			emsOwner.DELETE("/support/staff/:user_number", supportController.OwnerRemoveStaff)
-			emsOwner.GET("/support/workload", supportController.OwnerWorkload)
-			emsOwner.GET("/support/sla", supportController.OwnerSLATargets)
-			emsOwner.PUT("/support/sla", supportController.OwnerSaveSLATargets)
-			emsOwner.GET("/support/reports", supportController.OwnerSupportReport)
-		}
-
-		// Client-facing support requests. Access is organisation-scoped from the
-		// authenticated session; no client-supplied organisation identifier is
-		// trusted.
-		emsSupport := main.Group("/ems/support")
-		{
-			emsSupport.GET("/tickets", middleware.ValidatePermission("view_support_tickets"), supportController.ClientTickets)
-			emsSupport.POST("/tickets", middleware.ValidatePermission("create_support_ticket"), supportController.ClientCreateTicket)
-			emsSupport.GET("/tickets/:number", middleware.ValidatePermission("view_support_tickets"), supportController.ClientTicket)
-			emsSupport.POST("/tickets/:number/messages", middleware.ValidatePermission("reply_to_support_tickets"), supportController.ClientMessage)
-			emsSupport.POST("/tickets/:number/attachments", middleware.ValidatePermission("reply_to_support_tickets"), supportController.ClientAttachments)
-			emsSupport.GET("/attachments/:number", middleware.ValidatePermission("view_support_tickets"), supportController.ClientAttachmentDownload)
-		}
-
-		// Support workspace: owner, manager and agent access only. This is
-		// deliberately separate from client organisation roles.
-		emsSupportAdmin := main.Group("/ems/support/admin")
-		emsSupportAdmin.Use(supportMiddleware.RequireSupportStaff())
-		{
-			emsSupportAdmin.GET("/profile", supportController.StaffProfile)
-			emsSupportAdmin.GET("/overview", supportController.StaffOverview)
-			emsSupportAdmin.GET("/tickets", supportController.StaffTickets)
-			emsSupportAdmin.GET("/tickets/:number", supportController.StaffTicket)
-			emsSupportAdmin.POST("/tickets/:number/messages", supportController.StaffMessage)
-			emsSupportAdmin.PATCH("/tickets/:number", supportController.StaffUpdate)
-			emsSupportAdmin.POST("/tickets/:number/escalate", supportController.StaffEscalate)
-			emsSupportAdmin.GET("/workload", supportController.StaffWorkload)
-			emsSupportAdmin.POST("/tickets/:number/attachments", supportController.StaffAttachments)
-			emsSupportAdmin.GET("/attachments/:number", supportController.StaffAttachmentDownload)
-		}
-
-		// EMS Core Foundation G (Increment 1): general cross-cutting audit
-		// facts. Client reads are organisation-scoped; control-plane reads use
-		// a dedicated authority that deliberately does NOT honour the Admin
-		// user-type pass-through. Read-only: no update/delete route exists.
-		emsAudit := main.Group("/ems/audit")
-		{
-			emsAudit.GET("", middleware.ValidatePermission("view_ems_audit"), auditController.FetchOrganisationAuditLogs)
-			emsAudit.GET("/:number", middleware.ValidatePermission("view_ems_audit"), auditController.FetchOrganisationAuditLog)
-		}
-
-		emsAuditRegistry := main.Group("/ems/audit-registry")
-		{
-			emsAuditRegistry.GET("", auditMiddleware.RequireAuditRegistryAuthority(), auditController.FetchAuditRegistryLogs)
-		}
-
-		// EMS Core Foundation G (Increment 3): recipient-scoped in-app
-		// notifications. Reads are limited to the authenticated recipient in the
-		// authenticated organisation; mark-read changes only read_at. No route
-		// edits or deletes a notification.
-		emsNotifications := main.Group("/ems/notifications")
-		{
-			emsNotifications.GET("", middleware.ValidatePermission("view_ems_notifications"), notificationController.FetchNotifications)
-			emsNotifications.GET("/:number", middleware.ValidatePermission("view_ems_notifications"), notificationController.FetchNotification)
-			emsNotifications.POST("/:number/read", middleware.ValidatePermission("view_ems_notifications"), notificationController.MarkNotificationRead)
-		}
-
-		// Commercial onboarding (authenticated): package management (admin),
-		// setup-token redemption for the organisation, and the software
-		// subscription (order, simulated payment [dev-only] and activation).
-		// These paths are under /main/ems/ so they remain licence-exempt: a
-		// subscription must be purchasable before any licence exists.
-		emsPackages := main.Group("/ems/packages")
-		{
-			emsPackages.POST("", middleware.RequireInstallationAuthority("manage_ems_packages"), commercialController.CreatePackage)
-		}
-
-		emsSetup := main.Group("/ems/setup")
-		{
-			emsSetup.POST("/redeem", commercialController.RedeemSetupToken)
-		}
-
-		emsSubscription := main.Group("/ems/subscription")
-		{
-			emsSubscription.GET("/status", middleware.ValidatePermission("view_licence_status"), commercialController.SubscriptionStatus)
-			emsSubscription.POST("/orders", middleware.ValidatePermission("activate_licence_installation"), commercialController.CreateSubscriptionOrder)
-			emsSubscription.POST("/activate", middleware.ValidatePermission("activate_licence_installation"), commercialController.ActivateSubscription)
-			if commercialController.SimulatedPaymentsEnabled() {
-				emsSubscription.POST("/orders/:number/simulate-payment", middleware.ValidatePermission("activate_licence_installation"), commercialController.SimulateSubscriptionPayment)
-			}
-		}
-
-		// Organisation custom fields (data-driven). Reads need view_ems_organisation;
-		// definitions and values are admin-managed (manage_ems_organisation). All
-		// operations are scoped to the caller's current organisation.
-		emsCustomFields := main.Group("/ems/organisation/custom-fields")
-		{
-			emsCustomFields.GET("", middleware.ValidatePermission("view_ems_organisation"), customFieldController.List)
-			emsCustomFields.POST("", middleware.ValidatePermission("manage_ems_organisation"), customFieldController.Create)
-			emsCustomFields.PUT("/:number", middleware.ValidatePermission("manage_ems_organisation"), customFieldController.Update)
-		}
-		emsCustomFieldValues := main.Group("/ems/organisation/custom-field-values")
-		{
-			emsCustomFieldValues.PUT("", middleware.ValidatePermission("manage_ems_organisation"), customFieldController.SaveValues)
-		}
-
-		// Developer-only onboarding reset (First-Time Setup acceptance testing).
-		// Registered ONLY when DEV_RESET_ENABLED=true, so no production route
-		// exists. Two entry points, both sharing the same disposable-database
-		// safety checks:
-		//   1. /main/dev/reset-onboarding  — authenticated administrator caller.
-		//   2. /setup/dev/reset-onboarding — sign-in-free, password-gated, so an
-		//      operator who has forgotten the admin password can still repeat
-		//      first-time setup. The password is verified server-side.
-		if devController.DevResetEnabled() {
-			dev := main.Group("/dev")
-			{
-				dev.POST("/reset-onboarding", devController.ResetOnboardingDatabase)
-			}
-			router.POST("setup/dev/reset-onboarding", devController.ResetOnboardingDatabaseWithPassword)
-		}
-
 	}
 	attachments := router.Group("attachments")
 	{
 		attachments.GET("download/:attachment_number", controller.DownloadAttachment)
+		attachments.GET("by-owner/:owner_number", controller.GetAttachmentsByOwner)
+		attachments.POST("upload", controller.UploadAttachment)
 		attachments.POST("delete", controller.DeleteAttachment)
+		attachments.POST("delete/:attachment_number", controller.DeleteAttachmentByParam)
+	}
+
+	// Support URL for QuickBooks Web Connector
+	router.GET("/support", func(c *gin.Context) {
+		c.String(200, "Support page for WholesomeEd QuickBooks Integration.")
+	})
+
+	// QuickBooks Web Connector SOAP Endpoints (Unauthenticated, uses SOAP Auth)
+	qbwc := router.Group("/api/quickbooks")
+	{
+		qbwc.POST("soap", quickbooksController.HandleQBWC)
+		qbwc.GET("soap", quickbooksController.HandleQBWC)
 	}
 
 	return router

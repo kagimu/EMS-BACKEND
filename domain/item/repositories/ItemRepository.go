@@ -180,16 +180,25 @@ func DeleteCampusItem(itemNumber string, tx ...*gorm.DB) error {
 	return nil
 }
 
-func FetchAllServiceItems(schoolNumber string, tx ...*gorm.DB) ([]itemModels.Item, error) {
+func FetchAllServiceItems(schoolNumber string, itemType string, tx ...*gorm.DB) ([]itemModels.Item, error) {
 	db := config.DB
 	if len(tx) > 0 {
 		db = tx[0]
 	}
 
+	var typeFilter func(db *gorm.DB) *gorm.DB
+	if itemType != "" {
+		typeFilter = filters.ByAnyField("items.type", itemType)
+	} else {
+		typeFilter = filters.ByValueIn("items.type", []string{"Service", "Product"})
+	}
+
 	var items []itemModels.Item
 	if err := db.
-		Joins("JOIN services sv ON items.number = sv.item_number").
-		Scopes(filters.ByAnyField("items.school_number", schoolNumber)).Find(&items).Error; err != nil {
+		Scopes(
+			filters.ByAnyField("items.school_number", schoolNumber),
+			typeFilter,
+		).Find(&items).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return []itemModels.Item{}, nil
 		}

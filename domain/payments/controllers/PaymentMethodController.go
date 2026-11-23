@@ -19,6 +19,8 @@ func CreatePaymentMethod(c *gin.Context) {
 
 	type Payload struct {
 		Name         string `json:"name"`
+		Account      string `json:"account"`
+		OtherDetails string `json:"other_details"`
 		CampusNumber string `json:"campus_number"`
 	}
 
@@ -28,16 +30,27 @@ func CreatePaymentMethod(c *gin.Context) {
 		return
 	}
 
+	campusNumber := payload.CampusNumber
+	if campusNumber == "" {
+		campusNumber = c.Request.Header.Get("Campus-Number")
+	}
+	if campusNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Campus is required"})
+		return
+	}
+
 	savePaymentMethod := models.PaymentMethod{
 		Number:       uuid.NewV4().String(),
 		Name:         payload.Name,
-		CampusNumber: payload.CampusNumber,
+		Account:      payload.Account,
+		OtherDetails: payload.OtherDetails,
+		CampusNumber: campusNumber,
 		UserNumber:   user.Number,
 	}
 
 	var duplicatePaymentMethod models.PaymentMethod
-	if err := config.DB.Where("name = ?", payload.Name).First(&duplicatePaymentMethod).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Payment method already exists"})
+	if err := config.DB.Where("name = ? AND campus_number = ?", payload.Name, campusNumber).First(&duplicatePaymentMethod).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Payment method already exists in this campus"})
 		return
 	}
 
@@ -49,30 +62,86 @@ func CreatePaymentMethod(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Payment method created"})
 }
 
+func EditPaymentMethod(c *gin.Context) {
+	if _, err := commons.GetUserFromHeader(c); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	type Payload struct {
+		ID           string `json:"id"`
+		Name         string `json:"name"`
+		Account      string `json:"account"`
+		OtherDetails string `json:"other_details"`
+		CampusNumber string `json:"campus_number"`
+	}
+
+	var payload Payload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to process payload"})
+		return
+	}
+
+	var method models.PaymentMethod
+	if err := config.DB.Where("number = ?", payload.ID).First(&method).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Payment method not found"})
+		return
+	}
+
+	method.Name = payload.Name
+	method.Account = payload.Account
+	method.OtherDetails = payload.OtherDetails
+	if payload.CampusNumber != "" {
+		method.CampusNumber = payload.CampusNumber
+	}
+
+	if err := config.DB.Save(&method).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update payment method"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Payment method updated"})
+}
+
 func FetchPaymentMethods(c *gin.Context) {
 	if _, err := commons.GetUserFromHeader(c); err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"message": "Unauthorized"})
 		return
 	}
 
+	campusNumber := c.Request.Header.Get("Campus-Number")
+
 	var paymentMethods []models.PaymentMethod
-	if err := config.DB.Preload("Campus").Find(&paymentMethods).Error; err != nil {
+	query := config.DB.Preload("Campus")
+	if campusNumber != "" {
+		query = query.Where("campus_number = ?", campusNumber)
+	}
+
+	if err := query.Find(&paymentMethods).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch payment methods"})
 		return
 	}
 
 	type PaymentMethodResponse struct {
+		ID           string `json:"id"`
 		Name         string `json:"name"`
+		Account      string `json:"account"`
+		OtherDetails string `json:"other_details"`
 		CampusName   string `json:"campus_name"`
 		CampusNumber string `json:"campus_number"`
+		SchoolNumber string `json:"school_number"`
 	}
 
 	var response []PaymentMethodResponse
 	for _, paymentMethod := range paymentMethods {
 		response = append(response, PaymentMethodResponse{
+			ID:           paymentMethod.Number,
 			Name:         paymentMethod.Name,
+			Account:      paymentMethod.Account,
+			OtherDetails: paymentMethod.OtherDetails,
 			CampusName:   paymentMethod.Campus.Name,
 			CampusNumber: paymentMethod.Campus.Number,
+			SchoolNumber: paymentMethod.Campus.SchoolNumber,
 		})
 	}
 
@@ -85,19 +154,19 @@ func DeletePaymentMethod(c *gin.Context) {
 		return
 	}
 
-	paymentMethodNumber := c.Param("number")
+	paymentMethodNumber := c.Query("id")
 	if paymentMethodNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Payment method number is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Payment method id is required"})
 		return
 	}
 
-	var bank models.Bank
-	if err := config.DB.Where("number = ?", paymentMethodNumber).First(&bank).Error; err != nil {
+	var method models.PaymentMethod
+	if err := config.DB.Where("number = ?", paymentMethodNumber).First(&method).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Payment method not found"})
 		return
 	}
 
-	if err := config.DB.Delete(&bank).Error; err != nil {
+	if err := config.DB.Delete(&method).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete payment method"})
 		return
 	}

@@ -13,12 +13,12 @@ import (
 	commercialServices "github.com/Noregrets-Systems/wholesomeEdBackEnd/domain/commercial/services"
 	"github.com/Noregrets-Systems/wholesomeEdBackEnd/migrations"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
+// ..
 // Initialize the timezone globally
 func init() {
 	loc, err := time.LoadLocation("Africa/Kampala")
@@ -29,18 +29,9 @@ func init() {
 }
 
 func main() {
-	// .env is optional: it is used for local development, but in the container
-	// (e.g. Render) configuration is supplied through process environment
-	// variables. A missing file must not prevent startup.
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("No .env file found; using process environment variables")
-	}
-
-	// EMS Release 1 (security fix B1): fail fast if the JWT signing secret is
-	// absent. This replaces the removed "secret" fallback so that a predictable
-	// signing key can never be used in any environment.
-	if os.Getenv("JWT_SECRET") == "" {
-		log.Fatal("JWT_SECRET is not set; refusing to start")
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
 	}
 
 	gin.SetMode(gin.DebugMode)

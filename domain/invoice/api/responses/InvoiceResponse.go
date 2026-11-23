@@ -22,4 +22,5 @@ type MinInvoiceResponse struct {
 	CampusName      string  `json:"campus_name"`
 	StudyPeriodName string  `json:"study_period_name"`
 	StudentNumber   string  `json:"student_number"`
+	UserNumber      string  `json:"user_number"`
 }
